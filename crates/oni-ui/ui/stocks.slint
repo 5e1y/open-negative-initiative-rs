@@ -1,7 +1,8 @@
 // `StockPickerSheet`: Select Film Stock, the stocks grouped by brand, one click picking and closing.
 import { Space, StockStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView } from "ds/ds.slint";
 
-export struct StockCell { index: int, name: string, artwork: image, has-artwork: bool, picked: bool }
+// `note`: what a line, its stock never named, says under its name.
+export struct StockCell { index: int, name: string, note: string, artwork: image, has-artwork: bool, picked: bool }
 export struct StockRow { cells: [StockCell] }
 export struct StockBrand { brand: string, rows: [StockRow] }
 
@@ -38,6 +39,7 @@ export component StockPickerSheet inherits Sheet {
                         artwork: cell.artwork;
                         has-artwork: cell.has-artwork;
                         name: cell.name;
+                        note: cell.note;
                         picked: cell.picked;
                         clicked => { Stocks.chosen(cell.index); }
                     }

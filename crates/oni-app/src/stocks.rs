@@ -97,11 +97,17 @@ fn sized(data: &[u8], side: u32) -> Option<Vec<u8>> {
     Some(format!(r#"<svg width="{side}" height="{side}"{rest}"#).into_bytes())
 }
 
+/// What a line, its stock never named, says under its name wherever it is shown; nothing for a precise stock.
+pub fn unspecified(kind: &oni_settings::film::FilmStockKind) -> &'static str {
+    if kind.line { oni_i18n::tr("Stock not specified") } else { "" }
+}
+
 /// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with the stocks it offers, as
-/// indices into the catalogue.
-pub fn by_brand() -> Vec<(&'static str, Vec<usize>)> {
+/// indices into the catalogue; `current`, when a line, stays at its place among the line's stocks.
+pub fn by_brand(current: Option<&str>) -> Vec<(&'static str, Vec<usize>)> {
     let mut out: Vec<(&'static str, Vec<usize>)> = Vec::new();
-    for (i, kind) in oni_settings::film::offered_stocks() {
+    let shown = oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| k.offered || (k.line && current == Some(k.id)));
+    for (i, kind) in shown {
         match out.iter_mut().find(|(b, _)| *b == kind.brand) {
             Some((_, list)) => list.push(i),
             None => out.push((kind.brand, vec![i])),
@@ -121,20 +127,41 @@ mod tests {
         }
         assert!(icon("kodak-portra").is_some_and(|i| i.size().width > 0));
         assert!(icon("no-such-stock").is_none(), "twin: an unknown stock has no artwork");
-        let brands: Vec<&str> = by_brand().iter().map(|(b, _)| *b).collect();
+        let brands: Vec<&str> = by_brand(None).iter().map(|(b, _)| *b).collect();
         assert_eq!(&brands[..3], ["Generic", "AgfaPhoto", "CineStill"]);
-        assert_eq!(by_brand().iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::offered_stocks().count());
+        assert_eq!(by_brand(None).iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::offered_stocks().count());
     }
 
     #[test]
     fn the_picker_lists_no_foma_401_yet_its_artwork_still_draws() {
-        let listed: Vec<&str> = by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::FILM_STOCKS[i].id).collect();
+        let listed: Vec<&str> = by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::FILM_STOCKS[i].id).collect();
         assert!(!listed.contains(&"foma-fomapan401"), "Foma 401 is not offered");
         assert!(row_icon("foma-fomapan401", 44).is_some() && icon("foma-fomapan401").is_some(), "a roll on it still draws its canister");
         // Twin: Foma 400 stays among Foma's stocks.
-        let foma = by_brand().into_iter().find(|(b, _)| *b == "Foma").map(|(_, l)| l).unwrap_or_default();
+        let foma = by_brand(None).into_iter().find(|(b, _)| *b == "Foma").map(|(_, l)| l).unwrap_or_default();
         let names: Vec<&str> = foma.iter().map(|&i| oni_settings::film::FILM_STOCKS[i].display_name).collect();
         assert_eq!(names, ["Foma Fomapan 200", "Foma Fomapan 400"]);
+    }
+
+    /// The sheet lists a line's stocks in its place, and a roll still on the line finds it shown among them.
+    #[test]
+    fn the_picker_lists_a_lines_stocks_and_shows_the_line_a_roll_is_on() {
+        let names = |current: Option<&str>| -> Vec<&str> {
+            let kodak = by_brand(current).into_iter().find(|(b, _)| *b == "Kodak").map(|(_, l)| l).unwrap_or_default();
+            kodak.iter().map(|&i| oni_settings::film::FILM_STOCKS[i].display_name).collect()
+        };
+        let listed = names(None);
+        assert!(["Kodak Portra 160", "Kodak Portra 400", "Kodak Portra 800", "Kodak Gold 200", "Kodak Vision3 250D"].iter().all(|n| listed.contains(n)), "{listed:?}");
+        assert!(!listed.contains(&"Kodak Portra"), "the line is no longer offered");
+        let on_line = names(Some("kodak-portra"));
+        let at = on_line.iter().position(|n| *n == "Kodak Portra").expect("the roll's line is shown");
+        assert_eq!(on_line[at + 1], "Kodak Portra 160", "at its catalogue place, before its stocks");
+        assert_eq!(on_line.len(), listed.len() + 1);
+        // Twin: a current stock already offered is listed once, and Foma 401, withdrawn, never.
+        assert_eq!(names(Some("kodak-portra400")), listed);
+        assert!(!by_brand(Some("foma-fomapan401")).into_iter().flat_map(|(_, l)| l).any(|i| oni_settings::film::FILM_STOCKS[i].id == "foma-fomapan401"));
+        let stock = oni_settings::film::film_stock(Some("kodak-portra400")).unwrap();
+        assert!(icon(stock.icon_name).is_some() && stock.icon_name == "kodak-portra", "a stock draws its line's canister");
     }
 
     #[test]

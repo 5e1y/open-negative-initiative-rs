@@ -29,7 +29,7 @@ fn read(bytes: &[u8]) -> PipelineSettings {
 
 #[test]
 fn a_grained_frame_from_before_reads_the_colours_rest() {
-    assert_eq!(VERSION, chain::STOCK_DYES_VERSION);
+    assert_eq!(VERSION, chain::STOCK_SPLIT_VERSION);
     let mut mono = grained();
     mono.grain.colour = GrainColour { black: 0.0, white: 0.0 };
     for version in [chain::GRAIN_COLOUR_VERSION - 2, chain::GRAIN_COLOUR_VERSION - 1] {

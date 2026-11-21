@@ -4846,6 +4846,10 @@ msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
 
 #: crates/oni-app/src/app/prepare/publishing.rs
+msgid "The precise stock is not specified: its colours are separated on {stock}'s measured dyes until one is picked."
+msgstr "La emulsión precisa no está especificada: sus colores se separan sobre los tintes medidos de {stock} hasta que se elija una."
+
+#: crates/oni-app/src/app/prepare/publishing.rs
 msgid "Its colours are separated on {stock}'s measured dyes."
 msgstr "Sus colores se separan sobre los tintes medidos de {stock}."
 
@@ -5484,6 +5488,10 @@ msgstr "{seconds} s"
 #: crates/oni-app/src/starter.rs
 msgid "Compiling the image kernels"
 msgstr "Compilando los núcleos de imagen"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Stock not specified"
+msgstr "Emulsión no especificada"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

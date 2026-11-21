@@ -261,7 +261,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_pick_film(0);
     let stocks = w.global::<oni_app::Stocks>();
     assert!(stocks.get_shown(), "the film stock field opens Select Film Stock");
-    let gold = oni_settings::film::FILM_STOCKS.iter().position(|k| k.display_name == "Kodak Gold").expect("Kodak Gold listed");
+    let gold = oni_settings::film::FILM_STOCKS.iter().position(|k| k.display_name == "Kodak Gold 200").expect("Kodak Gold 200 listed");
     stocks.invoke_chosen(gold as i32);
     assert!(!stocks.get_shown());
     e.invoke_format_picked(0);
@@ -326,7 +326,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     // What a hand set kept beside the photo, the artist remembered rather than frozen in it, the journal
     // noted and the settings remembered.
     let exif = oni_settings::sidecar::read(Path::new(&first), true).unwrap().exif;
-    assert_eq!((exif.film.as_deref(), exif.artist), ((stock != "Kodak Gold").then_some("Kodak Gold"), None));
+    assert_eq!((exif.film.as_deref(), exif.artist), ((stock != "Kodak Gold 200").then_some("Kodak Gold 200"), None));
     assert!(support.join("Journal/events.bin").exists());
     let prefs: serde_json::Value = serde_json::from_slice(&std::fs::read(support.join("preferences.json")).unwrap()).unwrap();
     assert_eq!(prefs["exportArtist"], "A. Tester");

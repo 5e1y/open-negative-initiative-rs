@@ -19,6 +19,8 @@ export component StockCellView inherits Rectangle {
     in property <image> artwork;
     in property <bool> has-artwork;
     in property <string> name;
+    // A line under its name, empty for none.
+    in property <string> note;
     in property <bool> picked;
     callback clicked();
     border-radius: Radius.badge;
@@ -43,6 +45,13 @@ export component StockCellView inherits Rectangle {
             text: root.name;
             role: TextRole.value;
             tone: root.picked ? Tone.primary : Tone.secondary;
+            centred: true;
+            wrap: word-wrap;
+        }
+        if root.note != "": Label {
+            text: root.note;
+            role: TextRole.caption;
+            tone: Tone.tertiary;
             centred: true;
             wrap: word-wrap;
         }

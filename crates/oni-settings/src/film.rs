@@ -42,10 +42,17 @@ pub struct FilmStockKind {
     pub brand: &'static str,
     /// The picker lists it; a stock it no longer lists still reads, names and draws on a roll that has it.
     pub offered: bool,
+    /// A whole line, the stock within it never named: the picker lists the line's stocks in its place.
+    pub line: bool,
 }
 
 const fn stock(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    FilmStockKind { id, display_name, icon_name: id, brand, offered: true }
+    FilmStockKind { id, display_name, icon_name: id, brand, offered: true, line: false }
+}
+
+/// A stock of a line, drawn with the line's canister.
+const fn of_line(id: &'static str, display_name: &'static str, brand: &'static str, line: &'static str) -> FilmStockKind {
+    FilmStockKind { icon_name: line, ..stock(id, display_name, brand) }
 }
 
 /// A stock the picker no longer lists (owner's call), kept so a roll already on it reads as it did.
@@ -53,7 +60,17 @@ const fn withdrawn(id: &'static str, display_name: &'static str, brand: &'static
     FilmStockKind { offered: false, ..stock(id, display_name, brand) }
 }
 
-pub const FILM_STOCKS: [FilmStockKind; 41] = [
+/// A line split into its stocks: a roll set on the line keeps its name, canister and dyes, its stock unstated.
+const fn line(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
+    FilmStockKind { line: true, ..withdrawn(id, display_name, brand) }
+}
+
+/// A stock whose own canister is still to be drawn: the generic colour negative's stands in.
+const fn undrawn(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
+    of_line(id, display_name, brand, "generic-color-negative")
+}
+
+pub const FILM_STOCKS: [FilmStockKind; 55] = [
     stock("generic-azure", "Generic Azure", "Generic"),
     stock("generic-black-and-white", "Generic Black & White", "Generic"),
     stock("generic-color-negative", "Generic Colour Negative", "Generic"),
@@ -67,10 +84,13 @@ pub const FILM_STOCKS: [FilmStockKind; 41] = [
     stock("foma-fomapan400", "Foma Fomapan 400", "Foma"),
     withdrawn("foma-fomapan401", "Foma Fomapan 401", "Foma"),
     stock("fujifilm-acros", "Fujifilm Acros", "Fujifilm"),
-    stock("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm"),
-    stock("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm"),
+    of_line("fujifilm-c200", "Fujifilm C200", "Fujifilm", "fujifilm-fujicolor"),
+    line("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm"),
+    line("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm"),
+    of_line("fujifilm-pro400h", "Fujifilm Pro 400H", "Fujifilm", "fujifilm-fujicolor-pro"),
     stock("fujifilm-provia100", "Fujifilm Provia 100", "Fujifilm"),
-    stock("fujifilm-superia", "Fujifilm Superia", "Fujifilm"),
+    line("fujifilm-superia", "Fujifilm Superia", "Fujifilm"),
+    of_line("fujifilm-superia-xtra400", "Fujifilm Superia X-TRA 400", "Fujifilm", "fujifilm-superia"),
     stock("fujifilm-velvia100", "Fujifilm Velvia 100", "Fujifilm"),
     stock("fujifilm-velvia50", "Fujifilm Velvia 50", "Fujifilm"),
     stock("harman-phoenix", "Harman Phoenix", "Harman"),
@@ -88,9 +108,20 @@ pub const FILM_STOCKS: [FilmStockKind; 41] = [
     stock("kodak-400tx", "Kodak Tri-X 400", "Kodak"),
     stock("kodak-colorplus", "Kodak ColorPlus", "Kodak"),
     stock("kodak-ektachrome", "Kodak Ektachrome", "Kodak"),
-    stock("kodak-gold", "Kodak Gold", "Kodak"),
-    stock("kodak-portra", "Kodak Portra", "Kodak"),
-    stock("kodak-ultramax", "Kodak UltraMax", "Kodak"),
+    undrawn("kodak-ektar100", "Kodak Ektar 100", "Kodak"),
+    line("kodak-gold", "Kodak Gold", "Kodak"),
+    of_line("kodak-gold200", "Kodak Gold 200", "Kodak", "kodak-gold"),
+    line("kodak-portra", "Kodak Portra", "Kodak"),
+    of_line("kodak-portra160", "Kodak Portra 160", "Kodak", "kodak-portra"),
+    of_line("kodak-portra400", "Kodak Portra 400", "Kodak", "kodak-portra"),
+    of_line("kodak-portra800", "Kodak Portra 800", "Kodak", "kodak-portra"),
+    line("kodak-ultramax", "Kodak UltraMax", "Kodak"),
+    of_line("kodak-ultramax400", "Kodak UltraMax 400", "Kodak", "kodak-ultramax"),
+    undrawn("kodak-verita200d", "Kodak Verita 200D", "Kodak"),
+    undrawn("kodak-vision3-50d", "Kodak Vision3 50D", "Kodak"),
+    undrawn("kodak-vision3-200t", "Kodak Vision3 200T", "Kodak"),
+    undrawn("kodak-vision3-250d", "Kodak Vision3 250D", "Kodak"),
+    undrawn("kodak-vision3-500t", "Kodak Vision3 500T", "Kodak"),
     stock("lomography-lomo-turquoise", "Lomography LomoChrome Turquoise", "Lomography"),
     stock("lucky-color200", "Lucky Color 200", "Lucky"),
     stock("mira-color400", "Mira Color 400", "Mira"),
@@ -234,7 +265,8 @@ mod tests {
     fn foma_401_is_no_longer_offered_yet_a_roll_on_it_still_reads() {
         let offered: Vec<&str> = offered_stocks().map(|(_, k)| k.id).collect();
         assert!(!offered.contains(&"foma-fomapan401"), "the picker no longer lists Foma 401");
-        assert_eq!(offered.len(), FILM_STOCKS.len() - 1, "every other stock is still offered");
+        let lines = FILM_STOCKS.iter().filter(|k| k.line).count();
+        assert_eq!(offered.len(), FILM_STOCKS.len() - 1 - lines, "every other stock but the lines is still offered");
         assert!(offered.contains(&"foma-fomapan400") && offered.contains(&"foma-fomapan200"), "twin: the other Fomapans stay");
         for (i, kind) in offered_stocks() {
             assert_eq!(FILM_STOCKS[i].id, kind.id, "a pick names the stock's place in the catalogue");
@@ -248,6 +280,35 @@ mod tests {
         // Twin: a stock still offered is listed, so the filter is the withdrawn flag's alone.
         assert!(film_stock(Some("foma-fomapan400")).is_some_and(|k| k.offered));
         assert!(!kept.offered);
+    }
+
+    /// A line's stocks draw with its canister under their own names, and a roll set on the line still reads,
+    /// names and draws it, its key unchanged in its marker.
+    #[test]
+    fn a_lines_stocks_keep_its_canister_and_a_roll_on_the_line_reads_as_it_did() {
+        for (line, stocks) in [
+            ("kodak-portra", &["kodak-portra160", "kodak-portra400", "kodak-portra800"][..]),
+            ("kodak-gold", &["kodak-gold200"]),
+            ("kodak-ultramax", &["kodak-ultramax400"]),
+            ("fujifilm-fujicolor", &["fujifilm-c200"]),
+            ("fujifilm-fujicolor-pro", &["fujifilm-pro400h"]),
+            ("fujifilm-superia", &["fujifilm-superia-xtra400"]),
+        ] {
+            let kept = film_stock(Some(line)).expect("a line still reads");
+            assert!(kept.line && !kept.offered && kept.icon_name == line, "{line}");
+            for id in stocks {
+                let kind = film_stock(Some(id)).expect("a line's stock is in the catalogue");
+                assert!(kind.offered && !kind.line, "{id}");
+                assert_eq!((kind.icon_name, kind.brand), (line, kept.brand), "{id} draws its line's canister");
+                assert_ne!(kind.display_name, kept.display_name, "{id} is named as the precise stock");
+            }
+            let mut film = Film::new("Roll");
+            film.stock = Some(line.into());
+            let back = roll_folder::decode(roll_folder::encode(&film).as_bytes()).unwrap();
+            assert_eq!(back.stock.as_deref(), Some(line), "its marker keeps the line's key");
+        }
+        // Twin: a precise stock is no line, and Foma 401, withdrawn, is no line either.
+        assert!(!film_stock(Some("kodak-portra400")).unwrap().line && !film_stock(Some("foma-fomapan401")).unwrap().line);
     }
 
     #[test]

@@ -11640,5 +11640,26 @@
     "title": "colour_trace prints a digital photo at rest at any dose; film_compare renders the measured dyes at chosen doses, a scan on its roll's stock",
     "status": "done",
     "detail": "colour_trace takes rest:<dose> in place of a settings file; film_compare adds B-dyes-<dose> for each dose ONI_COMPARE_DOSES lists, the measured set a digital photo's film's, else its roll marker's stock's; cost.rs times the dye separation's pass on a full-screen region."
+  },
+  {
+    "id": 2800,
+    "type": "change",
+    "title": "The film stock catalogue splits each line into its stocks wherever a spektrafilm profile measures them, each on its own dyes",
+    "status": "done",
+    "detail": "oni_settings::film: Kodak Portra 160, 400 and 800, Gold 200 and UltraMax 400 (their line's canister), Ektar 100, Verita 200D, Vision3 50D, 200T, 250D and 500T (the generic colour negative's canister until their own is drawn), Fujifilm C200 (Fujicolor's), Pro 400H (Fujicolor Pro's) and Superia X-TRA 400 (Superia's); CineStill 50D and 800T stay on their Vision3 base. oni_settings::dyes gains Portra 160, Ektar 100, Verita 200D, Vision3 200T and 250D; every precise stock separates on the profile of its own name. The six lines (Kodak Portra, Gold, UltraMax, Fujifilm Fujicolor, Fujicolor Pro, Superia) become `line` entries the picker no longer offers, each kept on the profile it stood for. Lines no profile splits stay as they were, on the generic C-41 set, itself unchanged. A digital photo's virtual film names Kodak Portra 800 in the catalogue, on its Portra 800 dyes as before."
+  },
+  {
+    "id": 2801,
+    "type": "change",
+    "title": "A roll set on a line keeps its key and its render, said 'Stock not specified' until a hand picks a precise stock",
+    "status": "done",
+    "detail": "Old line keys stay catalogue entries rather than migrating: a roll set on Kodak Portra was never said to be Portra 400, so writing a precise stock on its marker would state what nobody stated, the marker carries no version a migration could guard, and its frames already hold the line's measured set, so the render is the same to the bit either way. The picker shows a roll's line at its catalogue place among the line's stocks, marked and noted 'Stock not specified'; the roll column says it under the name, Prepare the Roll's Film step says its dyes are the line's profile's until one is picked; the export's film field keeps the line's name. Texts in French and Spanish. Checks: each split stock unmixes its own profile file's dyes, every pair on different matrices (twin: Portra 160 against Portra 400's file); the six lines, the generic set, CineStill 800T and the virtual Portra 800 separate on numbers pinned to the bit, identical on the build before; the picker's window check lists the stocks with their line's canister and shows a roll's line marked, gone once a stock is picked."
+  },
+  {
+    "id": 2802,
+    "type": "change",
+    "title": "Sidecar format 40: a frame's dyes may name a split stock's set, which a build of 39 cannot read",
+    "status": "done",
+    "detail": "No step: a document of 39 reads its dye set and dose unmoved (crates/oni-settings/tests/stock_split.rs, every set by its own key, twin: a key a build of 39 lacks fails its typed read). A build of 39 takes a file of 40 for a newer one and leaves it as it is, where a set it cannot read, under its own format, would read as a broken file. The newer-file corpus moves to version-41. resources/film gains kodak_vision3_200t, kodak_vision3_250d and kodak_verita_200d from spektrafilm 3bb2c2d, unchanged, under CC BY-SA 4.0, named in its CHANGELOG; the README credits the measured dyes beside the virtual films."
   }
 ]
