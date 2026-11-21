@@ -11,7 +11,7 @@ use crate::common::{self, Placed};
 use crate::help_demo::{leave_help, mark, press_help};
 use crate::panel_bindings::opened;
 
-const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper, Exposure is the enlarger's, Contrast the paper's grade, Temperature and Tint its filters, 30 CC a stop.";
+const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself, on paper the ends of the print.\n\nOn paper, the enlarger rests where the scan's grey prints neutral, the paper's black and white laid on pure black and pure white: the sliders act on that print as above, Temperature and Tint on the enlarger's filters, 30 CC a stop.";
 /// The card's padding, `Gap.m`, its step from the column, `TipStyle.card-gap`, the window's margin, and
 /// the menu bar a check's window draws above the interface's coordinates.
 const PAD: f32 = 16.0;

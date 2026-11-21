@@ -1,5 +1,5 @@
-//! The paper: an enlarger's light through the negative's dyes exposes a colour paper's three layers by their
-//! spectral sensitivities, the paper develops on its characteristic curves, and its dyes are read under D50.
+//! The paper: an enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
+//! curves; the print's dyes are read under D50, then ONI's window lays its black on 0, its white on 1, its grey placed.
 
 use super::*;
 
@@ -16,7 +16,7 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// A negative printed on a paper: how its pixel is read as dye amounts, the enlarger's light, the paper's
-/// curves and its print seen under D50, in Rec. 2020.
+/// curves, its print seen under D50 in Rec. 2020, and the window it is laid through.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
@@ -32,11 +32,8 @@ pub struct Paper {
     pub dichroic: &'static [V3],
     /// Each dichroic filter's transmittance where it absorbs, `10^(−CC/100)`: the enlarger's filtration.
     pub filters: V3,
-    /// The print's exposure as a factor of the light: the reference grey's normalisation and Exposure's stops.
+    /// The print's exposure as a factor of the light, the reference grey's normalisation.
     pub scale: f32,
-    /// Each layer's log exposure the contrast turns about, and its slope's factor there.
-    pub pivot: V3,
-    pub contrast: f32,
     /// Each layer's density along the log exposure from `curve_low` by `curve_step`, held at either end.
     pub curves: &'static [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
@@ -45,6 +42,12 @@ pub struct Paper {
     pub print: &'static [V4],
     /// Per wavelength the print reflects: D50 read by the 1931 observer, adapted to D65, in Rec. 2020.
     pub view: &'static [V3],
+    /// Each channel's window on the print's light: the light printing black, the one printing white, its gamma.
+    pub window_black: V3,
+    pub window_white: V3,
+    pub window_gamma: V3,
+    /// A black and white print reads its window on its luma, one window for its three channels.
+    pub window_luma: bool,
 }
 
 impl Paper {
@@ -58,8 +61,10 @@ impl Paper {
             v3(self.gain, self.pedestal),
             v3(self.black, self.log_guard),
             v3(self.filters, self.scale),
-            v3(self.pivot, self.contrast),
             [self.curve_low, self.curve_step, 0.0, 0.0],
+            v3(self.window_black, if self.window_luma { 1.0 } else { 0.0 }),
+            v3(self.window_white, 0.0),
+            v3(self.window_gamma, 0.0),
         ];
         let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
         rows.extend(self.negative.iter().copied().chain(pad(self.negative.len())));
@@ -76,7 +81,7 @@ impl Paper {
         map(rgb(s), |c, v| -((v + self.pedestal) * self.gain[c]).max(self.log_guard).ln() * LOG10_E - self.black[c])
     }
 
-    /// Each layer's log exposure under the negative holding `amounts`, before the contrast turns it.
+    /// Each layer's log exposure under the negative holding `amounts`.
     pub fn exposed(&self, amounts: V3) -> V3 {
         let mut raw = [0.0f32; 3];
         for ((dye, weight), filter) in self.negative.iter().zip(self.exposure).zip(self.dichroic) {
@@ -87,11 +92,10 @@ impl Paper {
         map(raw, |_, v| (v.max(0.0) * self.scale + PAPER_EXPOSURE_FLOOR).ln() * LOG10_E)
     }
 
-    /// Each layer's density at log exposure `log`, turned about its pivot by the contrast.
+    /// Each layer's density at log exposure `log`.
     pub fn developed(&self, log: V3) -> V3 {
         map(log, |c, v| {
-            let turned = self.pivot[c] + (v - self.pivot[c]) * self.contrast;
-            let f = clamp((turned - self.curve_low) / self.curve_step, 0.0, (PAPER_CURVE_NODES - 1) as f32);
+            let f = clamp((v - self.curve_low) / self.curve_step, 0.0, (PAPER_CURVE_NODES - 1) as f32);
             let i = f.floor().min((PAPER_CURVE_NODES - 2) as f32);
             let at = i as usize;
             mix(self.curves[at][c], self.curves[at + 1][c], f - i)
@@ -107,11 +111,23 @@ impl Paper {
         }
         out
     }
+
+    /// The print's light through its window, still linear: a scale of the paper's light, its black's offset felt in the
+    /// deep shadows alone, where on the display code the same offset steepens every shadow (2.5 against 1.75 at 0.02).
+    pub fn windowed(&self, light: V3) -> V3 {
+        let read = if self.window_luma { [dot(light, LUMA); 3] } else { light };
+        map(read, |c, v| ((v - self.window_black[c]) / (self.window_white[c] - self.window_black[c])).max(0.0).powf(self.window_gamma[c]))
+    }
+
+    /// The print's light, before its window.
+    pub fn printed(&self, amounts: V3) -> V3 {
+        self.viewed(self.developed(self.exposed(amounts)))
+    }
 }
 
-/// One negative pixel printed on the paper, in linear Rec. 2020; alpha kept.
+/// One negative pixel printed on the paper through its window, in linear Rec. 2020; alpha kept.
 pub fn paper(s: V4, k: &Paper) -> V4 {
-    with_alpha(k.viewed(k.developed(k.exposed(k.amounts(s)))), s[3])
+    with_alpha(k.windowed(k.printed(k.amounts(s))), s[3])
 }
 
 #[cfg(test)]
@@ -138,13 +154,15 @@ mod tests {
             dichroic: &DICHROIC,
             filters: [1.0; 3],
             scale: 1.0,
-            pivot: [0.0; 3],
-            contrast: 1.0,
             curves: &CURVES,
             curve_low: -2.0,
             curve_step: 0.01,
             print: &PRINT,
             view: &VIEW,
+            window_black: [0.0; 3],
+            window_white: [1.0; 3],
+            window_gamma: [1.0; 3],
+            window_luma: false,
         }
     }
 
@@ -163,17 +181,33 @@ mod tests {
     }
 
     #[test]
-    fn the_curves_hold_their_ends_and_the_contrast_turns_about_the_pivot() {
-        let k = Paper { pivot: [-1.0; 3], ..narrow() };
+    fn the_curves_hold_their_ends_and_run_between_their_nodes() {
+        let k = narrow();
         assert_eq!(k.developed([-5.0, -5.0, -5.0]), [0.0; 3], "held under the first node");
         let top = k.developed([5.0; 3]);
         assert!((top[2] - 3.0 * 0.01 * (PAPER_CURVE_NODES - 1) as f32).abs() < 1e-4, "held past the last: {top:?}");
-        let mid = k.developed([-1.5; 3]);
-        assert!((mid[0] - 0.5).abs() < 1e-5, "{mid:?}");
-        let steep = Paper { contrast: 2.0, ..k }.developed([-1.5, -1.0, -0.5]);
-        assert!((steep[0] - 0.0).abs() < 1e-5 && (steep[1] - 2.0).abs() < 1e-4 && (steep[2] - 6.0).abs() < 1e-4, "{steep:?}");
-        // Twin: the plain contrast leaves the slope as it is, away from the pivot.
-        assert!((k.developed([-0.5; 3])[2] - 4.5).abs() < 1e-4);
+        let mid = k.developed([-1.495; 3]);
+        assert!((mid[0] - 0.505).abs() < 1e-5 && (mid[2] - 1.515).abs() < 1e-4, "between two nodes: {mid:?}");
+        // Twin: the node below read alone misses the half step.
+        assert!((k.developed([-1.5; 3])[0] - 0.505).abs() > 4e-3);
+    }
+
+    #[test]
+    fn the_window_lays_each_channels_black_on_zero_its_white_on_one_and_its_grey_by_its_gamma() {
+        let k = Paper { window_black: [0.01, 0.02, 0.03], window_white: [0.8, 0.85, 0.9], window_gamma: [1.1, 1.0, 0.9], ..narrow() };
+        assert_eq!(k.windowed([0.01, 0.02, 0.03]), [0.0; 3]);
+        let white = k.windowed([0.8, 0.85, 0.9]);
+        assert!(white.iter().all(|v| (v - 1.0).abs() < 1e-6), "{white:?}");
+        let grey = k.windowed([0.2; 3]);
+        let expected = [0.19 / 0.79, 0.18 / 0.83, 0.17 / 0.87].iter().zip([1.1, 1.0, 0.9]).map(|(u, g): (&f32, f32)| u.powf(g)).collect::<Vec<_>>();
+        assert!((0..3).all(|c| (grey[c] - expected[c]).abs() < 1e-6), "{grey:?}");
+        assert_eq!(k.windowed([0.0; 3]), [0.0; 3], "under the black held at black");
+        // One window on the luma: a coloured light reads its luma on every channel.
+        let luma = Paper { window_luma: true, window_black: [0.0; 3], window_white: [1.0; 3], window_gamma: [1.0; 3], ..narrow() };
+        let read = luma.windowed([0.5, 0.2, 0.1]);
+        assert!(read.iter().all(|v| (v - dot([0.5, 0.2, 0.1], LUMA)).abs() < 1e-7), "{read:?}");
+        // Twin: the channels' own windows keep the colour.
+        assert_ne!(narrow().windowed([0.5, 0.2, 0.1]), read);
     }
 
     #[test]
