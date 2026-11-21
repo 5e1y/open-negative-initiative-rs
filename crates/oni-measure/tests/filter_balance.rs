@@ -175,3 +175,25 @@ fn a_digital_photo_s_key_balances_its_print_on_its_films_reference() {
     let pressed = applied_outcome(&found, &s);
     assert_eq!((pressed.gains, pressed.levels, pressed.roll_reference.is_none()), (s.gains, s.levels, true), "the film's reference kept");
 }
+
+/// On a paper the key reads the paper's print, its Temperature and Tint toning it as on ONI's print: the filters it finds
+/// land the paper's means together; twin: the filters found on ONI's print of the same photo leave the paper's parted.
+#[test]
+fn on_a_paper_the_key_balances_the_papers_own_print() {
+    let check = "filter_balance::paper";
+    let Some(mut graph) = graph(check) else { return };
+    let mut pipeline = Pipeline::new();
+    let source = scene(&mut graph, &[(0, 96, [0.30, 0.22, 0.14]), (32, 64, [0.05, 0.035, 0.022]), (0, 32, [0.55, 0.42, 0.27])], None);
+    let copy = Copy { source: &source, full_width: None };
+    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
+    let paper = PipelineSettings::rest(ConversionMode::Digital, false);
+    assert!(paper.paper().is_some(), "a digital photo at rest prints on the paper");
+    let onis = PipelineSettings { print_paper: None, ..paper.clone() };
+    let found = key::filters(&mut r, copy, &paper, printable).expect("the cast photo reads");
+    let on_onis = key::filters(&mut r, copy, &onis, printable).expect("the cast photo reads");
+    let balanced = parted(key::shades(&mut r, copy, &unlit(&paper), found, printable).unwrap());
+    let misread = parted(key::shades(&mut r, copy, &unlit(&paper), on_onis, printable).unwrap());
+    println!("on the paper {:?}, on ONI's print {:?}; the paper's means part by {balanced:.1e}, by {misread:.1e} on ONI's filters", filters_to_axes(found), filters_to_axes(on_onis));
+    assert!(balanced < 1e-3, "{found:?} parts by {balanced}");
+    assert!(misread > 3e-3, "twin: ONI's filters on the paper part by {misread}");
+}
