@@ -277,7 +277,7 @@ fn the_dye_separation_s_gpu_time_on_a_full_screen_region() {
 }
 
 /// A print notch on the same full-screen region, past the dye separation the cache keeps: the paper laid with the rest
-/// of stage 4-7 in one pass, against ONI's own print in its pass.
+/// of stage 4-7 in one pass, against ONI's own print in its pass; then the notch's arguments solved on the CPU.
 #[test]
 fn the_paper_s_gpu_time_on_a_full_screen_region() {
     if std::env::var_os("ONI_BENCH_COST").is_none() {
@@ -299,7 +299,7 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
     let source = g.upload(w, h, &pixels).unwrap();
     let after = separated.after_dyes();
     let printed = stages::laid(Image::new(&source), vec![stages::paper(&separated.paper.expect("a digital photo's paper")), stages::stage47(&after)]);
-    let onis = oni_pipeline::conversion::stage47(&PipelineSettings { print_paper: None, ..paper });
+    let onis = oni_pipeline::conversion::stage47(&PipelineSettings { print_paper: None, ..paper.clone() });
     let plain = Image::new(&source).then(stages::stage47(&onis.after_dyes()));
     let (mut a, mut b) = (Vec::new(), Vec::new());
     for _ in 0..RUNS {
@@ -307,4 +307,15 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
         b.push(ms(&mut g, &plain));
     }
     println!("paper and stage 4-7 on {w}x{h}: {:.2} ms; ONI's print alone {:.2} ms", median(a), median(b));
+    // A Lighting notch's arguments on the CPU: the enlarger solved and its print laid out again.
+    let notches: Vec<f64> = (0..RUNS)
+        .map(|i| {
+            let mut t = paper.clone();
+            t.print.exposure += i as f32 * 0.01;
+            let started = Instant::now();
+            std::hint::black_box(oni_pipeline::conversion::stage47(&t));
+            started.elapsed().as_secs_f64() * 1000.0
+        })
+        .collect();
+    println!("a Lighting notch's paper arguments on the CPU: {:.3} ms", median(notches));
 }

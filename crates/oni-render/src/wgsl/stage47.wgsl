@@ -78,8 +78,8 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_co
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print on the display
-// gamma, its windows Lighting's points.
+// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's windowed print on the
+// display gamma, its windows Lighting's points.
 fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;

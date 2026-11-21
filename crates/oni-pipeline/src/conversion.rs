@@ -48,7 +48,7 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 }
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
-/// black and white print, no channel's own tone; the frame's paper in place of the windows and print curve.
+/// black and white print, no channel's own tone; the frame's paper, windowed, in place of the scan's windows.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let k = unprinted(s);
     match crate::paper::printing(s, &k, k.dyes.as_ref()) {
@@ -109,8 +109,8 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
     }
 }
 
-/// Stage 4-7 printing on `paper` in place of the windows and the print curve: the paper's print read on the display
-/// gamma, Lighting's points as its windows, its zones, each channel's contrast and mids and the colour density after.
+/// Stage 4-7 printing on `paper`, windowed on its anchors, in place of the scan's windows: its print read on the display
+/// gamma, Lighting's points moving its ends, then ONI's print curve from its mode's rest, which is none, and the colour density.
 fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Stage47 {
     let points = s.print.channel_points(s.mode.is_monochrome());
     let window = |c: usize| [points[c].0, 1.0 - points[c].1, 1.0];
@@ -120,8 +120,7 @@ fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Sta
         blue: window(2),
         low_points: [0.25; 3],
         high_points: [0.75; 3],
-        print_stops: 0.0,
-        print_contrast: 0.0,
+        print_stops: s.print.exposure - Print::resting_exposure(s.mode),
         own_stops: [0.0; 3],
         hunt: 0.0,
         follow: 1.0,

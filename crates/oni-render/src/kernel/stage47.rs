@@ -1,5 +1,5 @@
 //! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
-//! or the dye separation then the paper's print, read on the display gamma for Lighting's zones and points.
+//! or the dye separation then the paper's windowed print, read on the display gamma for Lighting's points and curve.
 
 use super::*;
 
@@ -196,8 +196,8 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     [e[0], e[1], e[2], s[3]]
 }
 
-/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print on the display
-/// gamma, its windows Lighting's points.
+/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's windowed print on the
+/// display gamma, its windows Lighting's points.
 fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
