@@ -5,6 +5,9 @@ use super::*;
 use crate::AppSettings;
 use std::sync::atomic::Ordering;
 
+/// The projects the About page credits, in its keys' order.
+const CREDITS: [&str; 2] = ["https://github.com/andreavolpato/spektrafilm", "https://github.com/hanatos/vkdt"];
+
 impl Ctl {
     pub(super) fn wire_settings(me: &Rc<Self>, window: &MainWindow) {
         let p = me.clone();
@@ -13,6 +16,11 @@ impl Ctl {
         window.global::<AppSettings>().on_language_picked(move |i| p.pick_language(i));
         let p = me.clone();
         window.global::<AppSettings>().on_close(move || p.act(crate::Act::CloseSettings));
+        window.global::<AppSettings>().on_open_credit(|i| {
+            if let Some(url) = CREDITS.get(i as usize) {
+                crate::system::open_url(url);
+            }
+        });
         let p = me.clone();
         window.global::<crate::Clicks>().on_press(move || {
             if !p.state.borrow().muted {

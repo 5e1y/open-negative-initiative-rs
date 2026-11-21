@@ -66,6 +66,8 @@ impl Pipeline {
             Some(k) => grain::grained(haloed, &k.seeded(inputs.seed), grain::dissolve(s, scan)),
             None => haloed,
         };
+        // A virtual film takes that scene's light, its halation and grain on it, as a pass of its own too.
+        let grained = self.filmed(graph, grained, s)?;
         let picture = stages::stage47(&conversion::stage47(s));
         // A digital photo's Lighting, or the machine's print, follows its levels.
         let lit = conversion::lighting(s).map(|k| stages::print(&k));

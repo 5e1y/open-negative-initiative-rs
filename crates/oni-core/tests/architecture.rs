@@ -16,7 +16,7 @@ const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-measure/src/registration.rs", 432),
     ("crates/oni-pipeline/tests/swift_checks.rs", 728),
     ("crates/oni-settings/src/json.rs", 521),
-    ("crates/oni-settings/tests/codec_checks.rs", 725),
+    ("crates/oni-settings/tests/codec_checks.rs", 720),
 ];
 
 /// A Rust line past this many characters is hard to read whole.

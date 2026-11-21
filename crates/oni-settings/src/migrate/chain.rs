@@ -56,6 +56,9 @@ pub const DIGITAL_BLACK_AND_WHITE_VERSION: i64 = 35;
 /// The version a dust correction came to name the gesture that laid it, absent read as laid alone: a build before
 /// it would drop the gesture it rewrites.
 pub const GESTURE_VERSION: i64 = 36;
+/// The version a digital photo came to be shot on a virtual film, absent read as none: a build before it
+/// would drop the film it rewrites.
+pub const VIRTUAL_FILM_VERSION: i64 = 37;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

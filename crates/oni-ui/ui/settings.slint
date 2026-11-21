@@ -25,6 +25,8 @@ export global AppSettings {
     in property <string> version;
     callback flip(Act);
     callback close();
+    // The page of a project ONI's conversion draws on, named by its credit's place.
+    callback open-credit(int);
 }
 
 // Keys whose gesture opens a sheet of its own close this one first, so the two never stack.
@@ -217,6 +219,22 @@ component AboutPage inherits Page {
         SheetKeys {
             keys: [@tr("Check for Updates"), @tr("What's New")];
             acts: [Act.check-updates, Act.whats-new];
+        }
+    }
+    // The data the virtual films are shot on, credited as their licences ask.
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.sheet-before;
+        title: @tr("Credits");
+        Label {
+            role: TextRole.note;
+            wrap: word-wrap;
+            text: @tr("The virtual films are made from the film profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops and scans its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences.");
+        }
+        ButtonRows {
+            keys: [@tr("spektrafilm"), @tr("vkdt")];
+            pressed(i) => { AppSettings.open-credit(i); }
         }
     }
     Section {

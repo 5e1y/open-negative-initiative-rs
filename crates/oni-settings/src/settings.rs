@@ -16,6 +16,7 @@ use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
 use crate::tone::{Print, Tone};
+use crate::virtual_film::VirtualFilm;
 use crate::white::White;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -33,6 +34,10 @@ pub struct PipelineSettings {
     /// false, and unwritten, on every other frame.
     #[serde(rename = "blackAndWhite", skip_serializing_if = "std::ops::Not::not", default)]
     pub black_and_white: bool,
+    /// The virtual film a digital photo is shot on, its negative read as a scanned one; none, and
+    /// unwritten, on every other frame.
+    #[serde(rename = "virtualFilm", skip_serializing_if = "Option::is_none", default)]
+    pub virtual_film: Option<VirtualFilm>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub film: Option<Film>,
     #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
@@ -126,6 +131,7 @@ impl Default for PipelineSettings {
             mode: ConversionMode::Negative,
             inverted_source: false,
             black_and_white: false,
+            virtual_film: None,
             film: None,
             manual_order: None,
             sheet: None,
@@ -230,6 +236,16 @@ impl PipelineSettings {
     /// photo's picture as its levels and curves receive it.
     pub fn unlit(&self) -> PipelineSettings {
         PipelineSettings { print: self.unlit_print(), density: crate::tone::color_density::BASE, ..self.clone() }
+    }
+
+    /// The virtual film a digital photo is shot on; none on a film mode, which keeps it unrendered.
+    pub fn filmed(&self) -> Option<&VirtualFilm> {
+        self.virtual_film.as_ref().filter(|_| self.mode == ConversionMode::Digital)
+    }
+
+    /// The axis stage 4 reads the image on: a filmed digital photo's virtual negative is a negative's.
+    pub fn read_as(&self) -> ConversionMode {
+        if self.filmed().is_some() { ConversionMode::Negative } else { self.mode }
     }
 
     /// The print with Lighting and each channel's own tone at rest, bypassed where this one is.

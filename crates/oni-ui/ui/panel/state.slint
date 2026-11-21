@@ -90,6 +90,9 @@ export global PanelState {
     // A digital photo printed in black and white, by its switch at the head of the Color tab.
     in property <bool> black-and-white;
     callback black-and-white-toggled(bool);
+    // The virtual film a digital photo is shot on: 0 none, then each stock, by the Film block's tabs.
+    in-out property <int> virtual-film;
+    callback virtual-film-picked(int);
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

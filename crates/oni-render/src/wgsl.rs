@@ -54,6 +54,8 @@ pub const SCANNER_DENSITY: &str = include_str!("wgsl/scanner_density.wgsl");
 pub const SCANNER_OUTPUT: &str = include_str!("wgsl/scanner_output.wgsl");
 /// `scanner_encode_px(s)`.
 pub const SCANNER_ENCODE: &str = include_str!("wgsl/scanner_encode.wgsl");
+/// `virtual_negative_px(s)`, reading `negative_table(i, j)`.
+pub const VIRTUAL_NEGATIVE: &str = include_str!("wgsl/virtual_negative.wgsl");
 
 /// `gaussian_px(p)`, `CIGaussianBlur` along one axis; needs `DETAIL_TAPS`.
 pub const GAUSSIAN: &str = include_str!("wgsl/gaussian.wgsl");

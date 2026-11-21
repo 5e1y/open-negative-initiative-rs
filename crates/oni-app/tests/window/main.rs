@@ -173,6 +173,7 @@ mod updates;
 mod visible;
 mod whole_roll;
 mod wrapped;
+mod virtual_film;
 
 
 fn main() {

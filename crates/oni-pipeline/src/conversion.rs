@@ -34,13 +34,24 @@ fn vector(w: &Levels) -> [f32; 3] {
 
 /// The ceiling the render reads: a positive's rests on the axis' base, a plain RAW's (owner's call).
 pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
-    if s.mode.reads_positive() { density_axis::base() } else { s.density_ceiling }
+    if s.filmed().is_some() {
+        crate::film::CEILING
+    } else if s.mode.reads_positive() {
+        density_axis::base()
+    } else {
+        s.density_ceiling
+    }
 }
 
 /// The windows the kernel reads before the points reach them: a digital photo has no film to place
 /// them on, so its stored ones wait, unrendered, for the film mode they were placed in.
+/// A filmed one's virtual negative is read on its film's own windows.
 pub fn placed_levels(s: &PipelineSettings) -> LevelsSet {
-    if s.mode.is_film() { s.levels } else { LevelsSet::neutral(s.mode, density_axis::base()) }
+    match s.filmed() {
+        Some(f) => f.levels(),
+        None if s.mode.is_film() => s.levels,
+        None => LevelsSet::neutral(s.mode, density_axis::base()),
+    }
 }
 
 /// A digital photo's balance on its chosen white, relative to the white its decode stands on; none
@@ -79,14 +90,17 @@ pub fn lighting(s: &PipelineSettings) -> Option<Stage47> {
 }
 
 /// The gains the kernel renders, in stops: a film's own, or the machine's keys on a digital photo's Scanner
-/// face; a digital photo's stored gains wait, unrendered, for the film mode they were placed in.
+/// face, on its virtual negative's own; a digital photo's stored gains wait, unrendered, for the film mode
+/// they were placed in.
 pub fn rendered_gains(s: &PipelineSettings) -> [f32; 3] {
+    let film = s.filmed().map_or([0.0; 3], |f| f.stops);
     if s.mode.is_film() {
         s.gains.stops
     } else if s.face == Face::Scanner {
-        crate::scanner::gain_stops(s)
+        let keys = crate::scanner::gain_stops(s);
+        std::array::from_fn(|c| film[c] + keys[c])
     } else {
-        [0.0; 3]
+        film
     }
 }
 
@@ -108,7 +122,7 @@ fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
         red: vector(&lv.red),
         green: vector(&lv.green),
         blue: vector(&lv.blue),
-        invert: s.mode.invert_flag(),
+        invert: s.read_as().invert_flag(),
         density: if mono { 1.0 } else { color_density::factor(density) },
         pedestal,
         log_guard: density_axis::log_guard(ceiling),

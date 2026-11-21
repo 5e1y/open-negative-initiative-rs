@@ -80,6 +80,16 @@ fields! {
     BlueContrast => set_blue_contrast_fraction, get_blue_contrast_fraction, set_blue_contrast_readout, set_blue_contrast_value;
     GrainColourBlack => set_grain_colour_black_fraction, get_grain_colour_black_fraction, set_grain_colour_black_readout, set_grain_colour_black_value;
     GrainColourWhite => set_grain_colour_white_fraction, get_grain_colour_white_fraction, set_grain_colour_white_readout, set_grain_colour_white_value;
+    FilmExposure => set_film_exposure_fraction, get_film_exposure_fraction, set_film_exposure_readout, set_film_exposure_value;
+    FilmRed => set_film_red_fraction, get_film_red_fraction, set_film_red_readout, set_film_red_value;
+    FilmGreen => set_film_green_fraction, get_film_green_fraction, set_film_green_readout, set_film_green_value;
+    FilmBlue => set_film_blue_fraction, get_film_blue_fraction, set_film_blue_readout, set_film_blue_value;
+    FilmRedBlack => set_film_red_black_fraction, get_film_red_black_fraction, set_film_red_black_readout, set_film_red_black_value;
+    FilmGreenBlack => set_film_green_black_fraction, get_film_green_black_fraction, set_film_green_black_readout, set_film_green_black_value;
+    FilmBlueBlack => set_film_blue_black_fraction, get_film_blue_black_fraction, set_film_blue_black_readout, set_film_blue_black_value;
+    FilmRedWhite => set_film_red_white_fraction, get_film_red_white_fraction, set_film_red_white_readout, set_film_red_white_value;
+    FilmGreenWhite => set_film_green_white_fraction, get_film_green_white_fraction, set_film_green_white_readout, set_film_green_white_value;
+    FilmBlueWhite => set_film_blue_white_fraction, get_film_blue_white_fraction, set_film_blue_white_readout, set_film_blue_white_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
@@ -98,5 +108,6 @@ pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
         Block::ChannelPoints => g.set_channel_points_modified(on),
         Block::FilmEffects => g.set_film_effects_modified(on),
         Block::LensCorrections => g.set_lens_corrections_modified(on),
+        Block::Film => g.set_film_modified(on),
     }
 }

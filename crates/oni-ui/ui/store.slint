@@ -172,6 +172,37 @@ export global Store {
     in property <float> grain-colour-white-fraction;
     in property <string> grain-colour-white-readout;
     in property <string> grain-colour-white-value;
+    // A digital photo's virtual film: its exposure, its negative's gains and each channel's ends.
+    in property <float> film-exposure-fraction;
+    in property <string> film-exposure-readout;
+    in property <string> film-exposure-value;
+    in property <float> film-red-fraction;
+    in property <string> film-red-readout;
+    in property <string> film-red-value;
+    in property <float> film-green-fraction;
+    in property <string> film-green-readout;
+    in property <string> film-green-value;
+    in property <float> film-blue-fraction;
+    in property <string> film-blue-readout;
+    in property <string> film-blue-value;
+    in property <float> film-red-black-fraction;
+    in property <string> film-red-black-readout;
+    in property <string> film-red-black-value;
+    in property <float> film-green-black-fraction;
+    in property <string> film-green-black-readout;
+    in property <string> film-green-black-value;
+    in property <float> film-blue-black-fraction;
+    in property <string> film-blue-black-readout;
+    in property <string> film-blue-black-value;
+    in property <float> film-red-white-fraction;
+    in property <string> film-red-white-readout;
+    in property <string> film-red-white-value;
+    in property <float> film-green-white-fraction;
+    in property <string> film-green-white-readout;
+    in property <string> film-green-white-value;
+    in property <float> film-blue-white-fraction;
+    in property <string> film-blue-white-readout;
+    in property <string> film-blue-white-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -186,6 +217,7 @@ export global Store {
     in property <bool> channel-points-modified;
     in property <bool> film-effects-modified;
     in property <bool> lens-corrections-modified;
+    in property <bool> film-modified;
     // More Color Settings' channels moved off their rest, red, green then blue, for their tabs' marks.
     in property <[bool]> channel-marked: [false, false, false];
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a

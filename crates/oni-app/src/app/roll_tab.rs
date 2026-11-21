@@ -9,7 +9,7 @@ use oni_core::Command;
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::film::{FilmStockKind, dye_family};
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding};
+use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding, VirtualFilm, VirtualStock};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
@@ -108,6 +108,21 @@ pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
     next
 }
 
+/// The Film block's tab for a photo: 0 on no film, else its stock's place after it.
+pub fn film_tab(s: &PipelineSettings) -> i32 {
+    s.virtual_film.as_ref().and_then(|f| VirtualStock::ALL.iter().position(|k| *k == f.stock)).map_or(0, |i| i as i32 + 1)
+}
+
+/// The film a pick of tab `i` shoots the photo on: the one it stands on kept, another stock on its own
+/// reference at the film's speed, none at 0.
+pub fn picked_film(s: &PipelineSettings, i: i32) -> Option<VirtualFilm> {
+    let stock = *VirtualStock::ALL.get(usize::try_from(i).ok()?.checked_sub(1)?)?;
+    match &s.virtual_film {
+        Some(f) if f.stock == stock => Some(f.clone()),
+        _ => Some(oni_pipeline::film::stock(stock).reference.clone()),
+    }
+}
+
 impl Ctl {
     pub(super) fn wire_roll_tab(me: &Rc<Ctl>, window: &crate::MainWindow) {
         let panel = window.global::<PanelState>();
@@ -127,6 +142,8 @@ impl Ctl {
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
         panel.on_black_and_white_toggled(move |on| p.write_settings(|s| s.black_and_white = on));
+        let p = me.clone();
+        panel.on_virtual_film_picked(move |i| p.write_settings(|s| s.virtual_film = picked_film(s, i)));
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
@@ -194,6 +211,7 @@ impl Ctl {
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
         panel.set_black_and_white(settings.black_and_white);
+        panel.set_virtual_film(film_tab(&settings));
         panel.set_sheet(settings.sheet.is_some());
         let flat = &settings.flat_field;
         panel.set_flat_field_on(flat.mask != FlatFieldMask::None);

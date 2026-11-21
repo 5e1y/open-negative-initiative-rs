@@ -1,0 +1,268 @@
+//! The virtual negative against a double-precision reference written from spektrafilm's own steps: its
+//! Mitchell-cubic lookup of the light table, `np.interp` on the profile's curves, the scan summed on every
+//! wavelength the profile measures. The kernel is f32, bilinear, on a uniform curve grid; each verdict has a twin.
+
+mod common;
+
+use common::{V4, graph, judge, mapped, noise, whole};
+use oni_graph::Image;
+use oni_pipeline::film::{self, GREY, bake, cie, profile::Profile};
+use oni_pipeline::{Pipeline, Request, stages};
+use oni_render::{VirtualNegative, cpu};
+use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+
+const PROFILE: &[u8] = include_bytes!("../resources/film/kodak_portra_800.json");
+const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
+
+fn mitchell(t: f64) -> f64 {
+    let (b, c) = (1.0 / 3.0, 1.0 / 3.0);
+    let x = t.abs();
+    if x < 1.0 {
+        ((12.0 - 9.0 * b - 6.0 * c) * x.powi(3) + (-18.0 + 12.0 * b + 6.0 * c) * x * x + (6.0 - 2.0 * b)) / 6.0
+    } else if x < 2.0 {
+        ((-b - 6.0 * c) * x.powi(3) + (6.0 * b + 30.0 * c) * x * x + (-12.0 * b - 48.0 * c) * x + (8.0 * b + 24.0 * c)) / 6.0
+    } else {
+        0.0
+    }
+}
+
+/// `_cubic_interp_lut_at_2d`: Mitchell weights, indices reflected at the edges, normalised.
+fn cubic(table: &[[f64; 3]], n: usize, tc: [f64; 2]) -> [f64; 3] {
+    let cell = |v: f64| {
+        let c = (v * (n - 1) as f64).clamp(0.0, (n - 1) as f64);
+        if c >= (n - 1) as f64 { (n - 2, 1.0) } else { (c.floor() as usize, c - c.floor()) }
+    };
+    let reflect = |i: i64| -> usize {
+        let l = n as i64;
+        (if i < 0 { -i } else if i >= l { 2 * (l - 1) - i } else { i }) as usize
+    };
+    let ((xb, xf), (yb, yf)) = (cell(tc[0]), cell(tc[1]));
+    let (mut out, mut sum) = ([0.0; 3], 0.0);
+    for i in 0..4 {
+        for j in 0..4 {
+            let w = mitchell(xf + 1.0 - i as f64) * mitchell(yf + 1.0 - j as f64);
+            let v = table[reflect(xb as i64 - 1 + i as i64) * n + reflect(yb as i64 - 1 + j as i64)];
+            sum += w;
+            for c in 0..3 {
+                out[c] += w * v[c];
+            }
+        }
+    }
+    out.map(|v| v / sum)
+}
+
+struct Reference {
+    profile: Profile,
+    light: Vec<[f64; 3]>,
+    n: usize,
+    to_film: bake::M3,
+    curves: (Vec<[f64; 3]>, Vec<[f64; 3]>),
+    weights: Vec<[f64; 3]>,
+}
+
+impl Reference {
+    fn new() -> Self {
+        let profile = Profile::read(PROFILE).unwrap();
+        let spectra = film::profile::Spectra::read(SPECTRA).unwrap();
+        let sensitivity = bake::windowed_sensitivity(&profile, &cie::D55);
+        let light = bake::light_table(&spectra, &sensitivity, &cie::D55);
+        let curves = bake::curves(&profile);
+        Reference { light, n: spectra.nodes, to_film: bake::to_film(&cie::D55), curves, weights: bake::scan_weights(&cie::D50), profile }
+    }
+
+    /// The film's log exposure per channel for a scene pixel, at `stops`.
+    fn log_raw(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
+        let xyz = bake::apply(&self.to_film, rgb);
+        let b = xyz[0] + xyz[1] + xyz[2];
+        let tc = bake::square_of_xy([xyz[0] / b.max(1e-10), xyz[1] / b.max(1e-10)]);
+        cubic(&self.light, self.n, tc).map(|v| (v * b * stops.exp2()).max(0.0) + 1e-10).map(f64::log10)
+    }
+
+    /// The dyes' densities the negative develops.
+    fn developed(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
+        let le = &self.profile.log_exposure;
+        let log = self.log_raw(rgb, stops);
+        let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &self.curves.0, c));
+        let inhibited: [f64; 3] = std::array::from_fn(|m| log[m] - (0..3).map(|k| first[k] * bake::COUPLERS[k][m]).sum::<f64>());
+        std::array::from_fn(|c| bake::interpolate(inhibited[c], le, &self.curves.1, c))
+    }
+
+    fn scan(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
+        let d = self.developed(rgb, stops);
+        let mut out = [0.0; 3];
+        for l in 0..cie::WAVELENGTHS {
+            let [c, m, y] = self.profile.channel_density[l];
+            let (Some(c), Some(m), Some(y), Some(base)) = (c, m, y, self.profile.base_density[l]) else { continue };
+            let t = 10f64.powf(-(d[0] * c + d[1] * m + d[2] * y + base));
+            for k in 0..3 {
+                out[k] += t * self.weights[l][k];
+            }
+        }
+        out
+    }
+}
+
+/// The ColorChecker's patches as their sRGB code is usually given, decoded and laid in Rec. 2020.
+fn chart() -> Vec<[f64; 3]> {
+    let code: [[f64; 3]; 24] = [
+        [115.0, 82.0, 68.0], [194.0, 150.0, 130.0], [98.0, 122.0, 157.0], [87.0, 108.0, 67.0], [133.0, 128.0, 177.0], [103.0, 189.0, 170.0],
+        [214.0, 126.0, 44.0], [80.0, 91.0, 166.0], [193.0, 90.0, 99.0], [94.0, 60.0, 108.0], [157.0, 188.0, 64.0], [224.0, 163.0, 46.0],
+        [56.0, 61.0, 150.0], [70.0, 148.0, 73.0], [175.0, 54.0, 60.0], [231.0, 199.0, 31.0], [187.0, 86.0, 149.0], [8.0, 133.0, 161.0],
+        [243.0, 243.0, 242.0], [200.0, 200.0, 200.0], [160.0, 160.0, 160.0], [122.0, 122.0, 121.0], [85.0, 85.0, 85.0], [52.0, 52.0, 52.0],
+    ];
+    let to2020 = [[0.6274, 0.3293, 0.0433], [0.0691, 0.9195, 0.0114], [0.0164, 0.0880, 0.8956]];
+    let decode = |v: f64| {
+        let v = v / 255.0;
+        if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
+    };
+    code.iter().map(|c| bake::apply(&to2020, c.map(decode))).collect()
+}
+
+/// Every scene the checks expose: a grey ramp from 8 stops under the film's grey to 6 over, the chart
+/// at three exposures, and the working space's primaries, whose chromaticities lie on the locus.
+fn scenes() -> Vec<([f64; 3], f64)> {
+    let mut out: Vec<([f64; 3], f64)> = (-16..=12).map(|h| ([f64::from(GREY) * 2f64.powf(f64::from(h) / 2.0); 3], 0.0)).collect();
+    for stops in [-2.0, 0.0, 2.0] {
+        out.extend(chart().into_iter().map(|c| (c, stops)));
+    }
+    out.extend([[0.18, 0.0, 0.0], [0.0, 0.18, 0.0], [0.0, 0.0, 0.18], [0.5, 0.5, 0.0], [0.0, 0.5, 0.5]].map(|c| (c, 0.0)));
+    out
+}
+
+fn density(t: [f64; 3]) -> [f64; 3] {
+    t.map(|v| -v.log10())
+}
+
+/// The largest density gap between the kernel and the reference over every scene.
+fn worst(kernel: &VirtualNegative, table: &[[f32; 4]], reference: &Reference) -> f64 {
+    scenes()
+        .iter()
+        .map(|(rgb, stops)| {
+            let k = VirtualNegative { exposure: (*stops as f32).exp2(), ..kernel.clone() };
+            let out = cpu::virtual_negative([rgb[0] as f32, rgb[1] as f32, rgb[2] as f32, 1.0], &k, table);
+            let got = density([out[0], out[1], out[2]].map(f64::from));
+            let want = density(reference.scan(*rgb, *stops));
+            (0..3).map(|c| (got[c] - want[c]).abs()).fold(0.0, f64::max)
+        })
+        .fold(0.0, f64::max)
+}
+
+/// The kernel within 0.001 density of the reference on every scene, under a hundredth of a stop on the
+/// negative's straight line; the twins, couplers left out or an exposure off a tenth of a stop, are refused.
+#[test]
+fn the_kernel_reads_the_negative_the_reference_develops() {
+    let reference = Reference::new();
+    let stock = film::stock(VirtualStock::KodakPortra800);
+    let gap = worst(&stock.kernel, &stock.table, &reference);
+    eprintln!("kernel against the reference: {gap:.5} density at worst");
+    assert!(gap < 0.001, "{gap}");
+    let uncoupled = VirtualNegative { couplers: [[0.0; 3]; 3], ..stock.kernel.clone() };
+    assert!(worst(&uncoupled, &stock.table, &reference) > 0.001);
+    let off = VirtualNegative { to_film: stock.kernel.to_film.map(|r| r.map(|v| v * 1.072)), ..stock.kernel.clone() };
+    assert!(worst(&off, &stock.table, &reference) > 0.001);
+}
+
+/// The film is balanced on its reference white: a grey at its speed exposes every layer within a tenth of a
+/// stop of log 0, and the
+/// couplers hold a developed grey ramp on the data sheet's curves. Twins: a grey a stop over is off log 0,
+/// and couplers acting on the data sheet's own curves move the ramp off it.
+#[test]
+fn a_grey_exposes_and_develops_on_the_data_sheet() {
+    let reference = Reference::new();
+    let log = reference.log_raw([f64::from(GREY); 3], 0.0);
+    eprintln!("grey's log exposure {log:?}");
+    assert!(log.iter().all(|v| v.abs() < 0.03), "{log:?}");
+    assert!(reference.log_raw([f64::from(GREY); 3], 1.0).iter().all(|v| v.abs() > 0.2));
+    let le = &reference.profile.log_exposure;
+    // The gap to the data sheet of a grey ramp developed through `second`, the curve the couplers act on.
+    let gap = |second: &[[f64; 3]]| {
+        let mut gap: f64 = 0.0;
+        for h in -12..=8 {
+            let log = reference.log_raw([f64::from(GREY) * 2f64.powf(f64::from(h) / 2.0); 3], 0.0);
+            let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &reference.curves.0, c));
+            for m in 0..3 {
+                let inhibited = log[m] - (0..3).map(|k| first[k] * bake::COUPLERS[k][m]).sum::<f64>();
+                gap = gap.max((bake::interpolate(inhibited, le, second, m) - first[m]).abs());
+            }
+        }
+        gap
+    };
+    let held = gap(&reference.curves.1);
+    eprintln!("a grey's development off the data sheet: {held:.5} density at worst");
+    // A grey's layers take log exposures a few hundredths apart, which the neighbours' inhibition reads.
+    assert!(held < 0.02, "{held}");
+    assert!(gap(&reference.curves.0) > 0.1);
+}
+
+/// The GPU's virtual negative against its scalar reference, on scenes reaching every branch: a dark, a
+/// negative and a blinding light past the curves' ends, chromaticities past the table's square, and plain
+/// noise. Twins: the scene's light a hundredth stronger, and the channels swapped.
+#[test]
+fn the_gpu_develops_the_negative_its_reference_does() {
+    let Some(mut g) = graph("the_gpu_develops_the_negative_its_reference_does") else { return };
+    let (w, h) = (41, 29);
+    let mut pixels = noise(w, h, 7, -0.05, 6.0);
+    let edges: [V4; 8] = [
+        [0.0, 0.0, 0.0, 1.0],
+        [-0.2, -0.1, -0.3, 1.0],
+        [4000.0, 3000.0, 2000.0, 1.0],
+        [0.3, -0.05, -0.05, 1.0],
+        [-0.05, 0.3, -0.05, 1.0],
+        [-0.05, -0.05, 0.3, 0.5],
+        [1e-6, 0.0, 0.0, 1.0],
+        [0.184, 0.184, 0.184, 1.0],
+    ];
+    pixels[..edges.len()].copy_from_slice(&edges);
+    let input = g.upload(w, h, &pixels).unwrap();
+    let stock = film::stock(VirtualStock::KodakPortra800);
+    let (tw, th) = stock.kernel.table_size();
+    let table = g.upload(tw as u32, th as u32, &stock.table).unwrap();
+    let k = stock.kernel_at(0.4);
+    let image = Image::new(&input).then_reading(stages::virtual_negative(&k), &[Image::new(&table)]);
+    let out = whole(&mut g, &image);
+    let brighter = VirtualNegative { exposure: k.exposure * 1.01, ..k.clone() };
+    let reference = mapped(&pixels, |p| cpu::virtual_negative(p, &k, &stock.table));
+    judge("virtual negative", &out, &reference, &mapped(&pixels, |p| cpu::virtual_negative(p, &brighter, &stock.table)));
+    judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
+}
+
+/// A digital photo on its film's own reference, its neighbourhood stages off so a pixel prints alone.
+fn filmed() -> PipelineSettings {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    s.virtual_film = Some(film::stock(VirtualStock::KodakPortra800).reference.clone());
+    s
+}
+
+/// The stock's own reference prints a scene grey where the digital photo prints it, and neutral, every
+/// channel on its bare film's black; the film off renders the digital photo to the bit. Twins: the film a
+/// stop over prints that grey lighter, and the film on renders another picture.
+#[test]
+fn the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back() {
+    let Some(mut g) = graph("the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back") else { return };
+    let (w, h) = (64, 8);
+    let scene: Vec<V4> = (0..w * h).map(|i| {
+        let x = (i % w) as f32 / (w - 1) as f32;
+        let v = GREY * 2f32.powf(8.0 * x - 5.0);
+        if i / w < 4 { [v, v, v, 1.0] } else { [v, v * 0.6, v * 0.3, 1.0] }
+    }).collect();
+    let mut probe = scene.clone();
+    probe[0] = [GREY, GREY, GREY, 1.0];
+    let source = g.upload(w, h, &probe).unwrap();
+    let mut pipeline = Pipeline::new();
+    let mut render = |s: &PipelineSettings| pipeline.render(&mut g, &source, s, &Request::default(), &Default::default(), None).unwrap().1;
+    let digital = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    let (photo, on) = (render(&digital), render(&filmed()));
+    let grey = (photo[0], on[0]);
+    println!("a scene grey: the photo {:?}, the film {:?}", grey.0, grey.1);
+    for c in 0..3 {
+        assert!((grey.1[c] - grey.0[1]).abs() < 1e-5, "channel {c}: {grey:?}");
+    }
+    let mut over = filmed();
+    over.virtual_film.as_mut().unwrap().exposure = 1.0;
+    assert!(render(&over)[0][1] > grey.1[1] + 0.02);
+    let mut off = filmed();
+    off.virtual_film = None;
+    assert_eq!(render(&off), photo);
+    assert_ne!(on, photo);
+    assert!(on.iter().all(|p| p.iter().all(|v| v.is_finite())));
+}

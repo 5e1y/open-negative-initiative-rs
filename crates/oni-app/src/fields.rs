@@ -7,11 +7,15 @@ use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white;
+use oni_settings::VirtualFilm;
 use crate::track::Bend;
 
+mod block;
 mod knob;
 mod names;
 mod readout;
+
+pub use block::Block;
 
 pub use readout::{Axis, Readout, Unit, number};
 
@@ -75,81 +79,16 @@ pub enum Field {
     BlueContrast,
     GrainColourBlack,
     GrainColourWhite,
-}
-
-/// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Block {
-    Color,
-    Lighting,
-    Effects,
-    DensityCeiling,
-    DyeSeparation,
-    Sharpening,
-    ChromaDenoise,
-    Texture,
-    PaperCorrection,
-    SourceBalance,
-    FlatField,
-    ChannelPoints,
-    FilmEffects,
-    LensCorrections,
-}
-
-impl Block {
-    pub const ALL: [Block; 14] = [
-        Block::Color,
-        Block::Lighting,
-        Block::Effects,
-        Block::DensityCeiling,
-        Block::DyeSeparation,
-        Block::Sharpening,
-        Block::ChromaDenoise,
-        Block::Texture,
-        Block::PaperCorrection,
-        Block::SourceBalance,
-        Block::FlatField,
-        Block::ChannelPoints,
-        Block::FilmEffects,
-        Block::LensCorrections,
-    ];
-
-    pub fn from_index(i: i32) -> Option<Block> {
-        Self::ALL.get(usize::try_from(i).ok()?).copied()
-    }
-
-    pub fn fields(self) -> &'static [Field] {
-        use Field::*;
-        match self {
-            Block::Color => &[Temperature, Tint, ColorDensity, WhiteKelvin, WhiteTint],
-            Block::Lighting => &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
-            Block::Effects => &[Vignette, Chrome],
-            Block::DensityCeiling => &[DensityCeiling],
-            Block::DyeSeparation => &[DyeSeparation],
-            Block::Sharpening => &[SharpenAmount, SharpenRadius, SharpenHalo],
-            Block::ChromaDenoise => &[ChromaAmount, ChromaRadius],
-            Block::Texture => &[Texture],
-            Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
-            Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
-            Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
-            Block::ChannelPoints => &[
-                RedWhitePoint,
-                GreenWhitePoint,
-                BlueWhitePoint,
-                RedBlackPoint,
-                GreenBlackPoint,
-                BlueBlackPoint,
-                RedMid,
-                GreenMid,
-                BlueMid,
-                RedContrast,
-                GreenContrast,
-                BlueContrast,
-            ],
-            Block::FilmEffects => &[GrainAmount, GrainSize, GrainColourBlack, GrainColourWhite, HalationAmount, HalationSize, HalationSensitivity],
-            Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
-        }
-    }
+    FilmExposure,
+    FilmRed,
+    FilmGreen,
+    FilmBlue,
+    FilmRedBlack,
+    FilmGreenBlack,
+    FilmBlueBlack,
+    FilmRedWhite,
+    FilmGreenWhite,
+    FilmBlueWhite,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -166,7 +105,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 57] = [
+    pub const ALL: [Field; 67] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -224,6 +163,16 @@ impl Field {
         Field::BlueContrast,
         Field::GrainColourBlack,
         Field::GrainColourWhite,
+        Field::FilmExposure,
+        Field::FilmRed,
+        Field::FilmGreen,
+        Field::FilmBlue,
+        Field::FilmRedBlack,
+        Field::FilmGreenBlack,
+        Field::FilmBlueBlack,
+        Field::FilmRedWhite,
+        Field::FilmGreenWhite,
+        Field::FilmBlueWhite,
     ];
 
     pub fn index(self) -> i32 {
@@ -246,6 +195,7 @@ impl Field {
             Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => !mode.is_film(),
             Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
+            f if f.block() == Some(Block::Film) => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
         }
@@ -330,6 +280,17 @@ impl Field {
             Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::FringeBlue => s("Blue fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
+            // A virtual film's exposure, its negative's gains, and each channel's ends as shares of the window.
+            Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
+            Field::FilmRed => s("Red ↔ Cyan", Gains::RANGE, Readout::Stops),
+            Field::FilmGreen => s("Green ↔ Magenta", Gains::RANGE, Readout::Stops),
+            Field::FilmBlue => s("Blue ↔ Yellow", Gains::RANGE, Readout::Stops),
+            Field::FilmRedBlack => s("Red black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmGreenBlack => s("Green black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmBlueBlack => s("Blue black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmRedWhite => s("Red white", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmGreenWhite => s("Green white", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmBlueWhite => s("Blue white", VirtualFilm::SHARE_RANGE, Readout::Percent),
         }
     }
 
@@ -343,6 +304,11 @@ impl Field {
             // `restingGains`: a measured roll rests on its window's stops; a slide, on its own measure's.
             rest = settings.clone();
             rest.gains.stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
+        }
+        if self.block() == Some(Block::Film) {
+            // A virtual film rests on its stock's own reference, at the film's speed.
+            rest = settings.clone();
+            rest.virtual_film = settings.virtual_film.as_ref().map(|f| oni_pipeline::film::stock(f.stock).reference.clone());
         }
         self.knob().get(&rest)
     }

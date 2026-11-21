@@ -1,0 +1,24 @@
+Changes to the spektrafilm data shipped in this folder
+======================================================
+
+Source: spektrafilm by Andrea Volpato, https://github.com/andreavolpato/spektrafilm,
+commit 3bb2c2d (2026-06-07). Licence: SPEKTRAFILM_LICENSE.txt (CC BY-SA 4.0), kept unchanged.
+
+2026-11-21, by the Open Negative Initiative contributors:
+
+- kodak_portra_800.json: shipped unchanged.
+- irradiance_xy_tc.npy: shipped unchanged (Jakob and Hanika's spectra, see SPECTRA_LICENCE.txt).
+
+Derivatives Open Negative Initiative computes from them at run time, never written to a file
+(crates/oni-pipeline/src/film/bake.rs):
+
+- The light per chromaticity: the spectra contracted with the profile's sensitivities through its
+  band-pass window (its window parameters, each channel's response to D55 kept), the input gamut
+  compression (radial, Reinhard knee of power 6 toward the spectral locus) laid in, 192 x 192 nodes
+  in 32-bit floats, read bilinearly.
+- The density curves above their least density, and the curves before the DIR couplers act
+  (spektrafilm's colour-negative coupler matrix), so a developed grey lands on the profile's curves.
+- The scan: the dyes' and the base's densities on 405 to 695 nm, where the profile measures both,
+  read under D50 by the CIE 1931 observer, adapted to D65 by Bradford, in linear Rec. 2020.
+
+Everything derived from the profile stays under CC BY-SA 4.0.

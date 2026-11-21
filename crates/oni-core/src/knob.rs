@@ -10,7 +10,7 @@ use oni_settings::levels::{Levels, LevelsChannel};
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white::{self, White};
-use oni_settings::PipelineSettings;
+use oni_settings::{PipelineSettings, VirtualFilm};
 
 /// Chroma denoise's Amount slider.
 pub const CHROMA_FORCE_RANGE: (f32, f32) = (0.0, 1.0);
@@ -104,6 +104,11 @@ pub enum Knob {
     LensRed,
     LensBlue,
     LensVignetting,
+    /// A digital photo's virtual film: its exposure, then its negative's gains and each channel's ends.
+    FilmExposure,
+    FilmGain(Channel),
+    FilmBlack(Channel),
+    FilmWhite(Channel),
 }
 
 impl Knob {
@@ -141,6 +146,7 @@ impl Knob {
             Knob::GrainAmount | Knob::GrainSize | Knob::GrainColourBlack | Knob::GrainColourWhite => Field::Grain,
             Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => Field::VirtualFilm,
         }
     }
 
@@ -197,6 +203,9 @@ impl Knob {
             Knob::HalationSize => Halation::SIZE_RANGE,
             Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
+            Knob::FilmExposure => VirtualFilm::EXPOSURE_RANGE,
+            Knob::FilmGain(_) => Gains::RANGE,
+            Knob::FilmBlack(_) | Knob::FilmWhite(_) => VirtualFilm::SHARE_RANGE,
         })
     }
 
@@ -250,6 +259,7 @@ impl Knob {
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
             Knob::LensVignetting => s.lens_correction.vignetting,
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::get(self, s),
         }
     }
 
@@ -321,6 +331,7 @@ impl Knob {
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,
             Knob::LensVignetting => out.lens_correction.vignetting = v,
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::set(self, &mut out, v),
         }
         out
     }
@@ -329,24 +340,6 @@ impl Knob {
 /// The white a digital photo renders for: its own, else the one its decode stands on.
 pub fn white_of(s: &PipelineSettings) -> White {
     s.white.unwrap_or_else(|| white::of_uv(white::anchor(s.decoded_from_mosaic)))
-}
-
-/// Unit moves of the gains' temperature and tint, each leaving the other and the mean where they are.
-const GAIN_TEMPERATURE_AXIS: [f32; 3] = [1.0, 0.0, -1.0];
-const GAIN_TINT_AXIS: [f32; 3] = [-1.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0];
-
-pub fn gain_temperature(g: [f32; 3]) -> f32 {
-    (g[0] - g[2]) / 2.0
-}
-
-pub fn gain_tint(g: [f32; 3]) -> f32 {
-    g[1] - (g[0] + g[2]) / 2.0
-}
-
-fn shift_gains(g: &mut Gains, axis: [f32; 3], by: f32) {
-    for (stop, a) in g.stops.iter_mut().zip(axis) {
-        *stop = (*stop + by * a).clamp(Gains::RANGE.0, Gains::RANGE.1);
-    }
 }
 
 fn shift_filters(p: &mut Print, axis: [f32; 3], by: f32) {
@@ -390,6 +383,13 @@ fn levels_mut(s: &mut PipelineSettings, c: Channel) -> &mut Levels {
         Channel::Blue => &mut s.levels.blue,
     }
 }
+
+mod film;
+mod gains;
+
+pub use film::FILM_MINIMUM_SPAN;
+pub use gains::{gain_temperature, gain_tint};
+use gains::{GAIN_TEMPERATURE_AXIS, GAIN_TINT_AXIS, shift_gains};
 
 #[cfg(test)]
 mod tests;

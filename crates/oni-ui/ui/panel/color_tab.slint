@@ -6,6 +6,7 @@ import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEdito
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
+import { FilmBlock } from "film_block.slint";
 
 export component ColorPane inherits Pane {
     property <bool> balance-settings;
@@ -28,6 +29,8 @@ export component ColorPane inherits Pane {
             toggled(on) => { PanelState.black-and-white-toggled(on); }
         }
     }
+    // A digital photo's film on either face, as it decides what both print.
+    if PanelState.digital: FilmBlock {}
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");
