@@ -13,6 +13,7 @@ struct Params {
     min_radius: f32,
     grid_n: u32,
     size: u32,
+    masked: u32,
 }
 
 @group(0) @binding(0) var<uniform> P: Params;
@@ -23,20 +24,21 @@ fn infinite() -> f32 {
     return bitcast<f32>(0x7f800000u);
 }
 
-// `Region::texel`: clear past the frame, edge-clamped inside the region.
-fn texel(col: i32, row_up: i32) -> vec3<f32> {
+// `Region::texel`: clear past the frame, edge-clamped inside the region; its alpha is `Region::awaits`, 0 for
+// a pixel awaiting a patch, and past the frame none does.
+fn texel(col: i32, row_up: i32) -> vec4<f32> {
     let frame_h = i32(P.frame.y);
     if (col < 0 || row_up < 0 || f32(col) >= P.frame.x || f32(row_up) >= P.frame.y) {
-        return vec3<f32>(0.0);
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
     let row_down = frame_h - 1 - row_up;
     let c = clamp(col - P.region.x, 0, P.region.z - 1);
     let r = clamp(row_down - P.region.y, 0, P.region.w - 1);
-    return src[u32(r * P.region.z + c)].rgb;
+    return src[u32(r * P.region.z + c)];
 }
 
-// `Region::sample`: bilinear, texel centres on the half pixel.
-fn sampled(p: vec2<f32>) -> vec3<f32> {
+// `Region::sample`: bilinear, texel centres on the half pixel; its alpha is what `Region::clear` compares.
+fn sampled(p: vec2<f32>) -> vec4<f32> {
     let u = p - vec2<f32>(0.5);
     let base = floor(u);
     let t = u - base;
@@ -81,8 +83,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
                 continue;
             }
             let d = sampled(dest);
-            let diff = d - sampled(source);
-            accum += diff * diff / (d * d + vec3<f32>(0.001));
+            let s = sampled(source);
+            // A cell reading a pixel that awaits a patch compares dust too.
+            if (P.masked == 1u && (d.a < 0.999 || s.a < 0.999)) {
+                continue;
+            }
+            let diff = d.rgb - s.rgb;
+            accum += diff * diff / (d.rgb * d.rgb + vec3<f32>(0.001));
             counted++;
         }
     }

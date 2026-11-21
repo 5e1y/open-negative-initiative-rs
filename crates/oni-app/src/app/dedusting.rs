@@ -183,14 +183,14 @@ impl Ctl {
         }
     }
 
-    /// `appendCorrection`: a stroke becomes a correction kept on the scan, a click a dot of the brush's size;
-    /// the write asks the render, which starts its patch and shows it pending before the next frame.
+    /// `appendCorrection`: a stroke becomes a correction kept on the scan, a click a dot of the brush's size, a long
+    /// stroke one for each part of it, one undo step; the write asks the render, which starts their patches and shows them pending.
     pub(super) fn paint_end(self: &Rc<Self>) {
-        let (mut stroke, radius, placing) = {
+        let (mut stroke, radius, placing, scan) = {
             let mut s = self.state.borrow_mut();
-            (s.frame.as_mut().map(|f| f.painting_stroke.take()).unwrap_or_default(), s.brush, s.placing())
+            (s.frame.as_mut().map(|f| f.painting_stroke.take()).unwrap_or_default(), s.brush, s.placing(), s.negative().map(|n| n.full()))
         };
-        let (Some(&(x, y)), Some(placing)) = (stroke.last(), placing) else { return self.publish_dedust() };
+        let (Some(&(x, y)), Some(placing), Some(scan)) = (stroke.last(), placing, scan) else { return self.publish_dedust() };
         if stroke.len() == 1 {
             stroke.push((x + DOT, y));
         }
@@ -198,9 +198,10 @@ impl Ctl {
             id: oni_settings::id::Id::new(),
             stroke: stroke.iter().map(|&(x, y)| placing.on_scan(oni_settings::cg::Point { x, y })).collect(),
             radius: f64::from(radius),
+            gesture: None,
         };
         let mut next = self.state.borrow().store.settings().clone();
-        next.corrections.push(correction);
+        next.corrections.extend(correction.split(scan));
         self.write(Command::Write(Box::new(next)));
     }
 

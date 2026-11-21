@@ -56,7 +56,7 @@ pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_
     settings.corrections = (0..3)
         .map(|k| {
             let x = 0.2 + 0.25 * k as f64;
-            Correction { id: Id::new(), stroke: vec![Point { x, y: 0.6 }, Point { x: x + 0.04, y: 0.6 }], radius: 4.0 }
+            Correction { id: Id::new(), stroke: vec![Point { x, y: 0.6 }, Point { x: x + 0.04, y: 0.6 }], radius: 4.0, gesture: None }
         })
         .collect();
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();

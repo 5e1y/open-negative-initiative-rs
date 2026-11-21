@@ -181,7 +181,7 @@ fn a_block_written_whole_keeps_its_cleared_fields_and_a_sparse_one_derives_the_r
 #[test]
 fn a_correction_round_trips_and_its_absent_keys_read_their_defaults() {
     let id = Id::parse("11111111-2222-3333-4444-555555555555").unwrap();
-    let full = Correction { id, stroke: vec![Point::new(0.12, 0.34), Point::new(0.56, 0.78)], radius: 9.5 };
+    let full = Correction { id, stroke: vec![Point::new(0.12, 0.34), Point::new(0.56, 0.78)], radius: 9.5, gesture: None };
     let data = serde_json::to_string(&full).unwrap();
     assert_eq!(serde_json::from_str::<Correction>(&data).unwrap(), full);
 

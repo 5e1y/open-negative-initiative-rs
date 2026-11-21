@@ -10,8 +10,8 @@ pub(super) struct Candidate {
     pub cost: f32,
 }
 
-/// `correctionCost` over a grid of candidate offsets, row-major from the bottom as Core Image
-/// dispatches it: a ring's cells sampled at each, the hole left out on either side.
+/// `correctionCost` over a grid of candidate offsets, row-major from the bottom as Core Image dispatches it: a
+/// ring's cells sampled at each, the hole and the pixels awaiting a patch left out on either side.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, f64), step: f64, grid_n: usize, size: usize, min_radius: f64) -> Vec<Candidate> {
     let e = f.extent;
@@ -23,7 +23,7 @@ pub(super) fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, 
         .map(|n| {
             let t = (cell(n % grid_n) * half.0, cell(n / grid_n) * half.1);
             let dest = (f.centre.0 + t.0, f.centre.1 + t.1);
-            (t, (!inside(dest)).then(|| src.sample(dest.0, dest.1)))
+            (t, (!inside(dest) && src.clear(dest.0, dest.1)).then(|| src.sample(dest.0, dest.1)))
         })
         .collect();
     let one = |index: usize| {
@@ -41,7 +41,7 @@ pub(super) fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, 
         let (mut accum, mut counted) = ([0.0f32; 3], 0usize);
         for &(t, d) in &cells {
             let from = (cand.0 + t.0, cand.1 + t.1);
-            let Some(d) = d.filter(|_| !inside(from)) else { continue };
+            let Some(d) = d.filter(|_| !inside(from) && src.clear(from.0, from.1)) else { continue };
             let s = src.sample(from.0, from.1);
             for k in 0..3 {
                 let diff = d[k] - s[k];
@@ -101,6 +101,9 @@ struct Params {
     min_radius: f32,
     grid_n: u32,
     size: u32,
+    /// 1 when the source's alpha tells the pixels awaiting a patch, 0 for those, 1 for the rest.
+    masked: u32,
+    pad: [u32; 3],
 }
 
 const SHADER: &str = include_str!("cost.wgsl");
@@ -156,7 +159,11 @@ impl<'a> Costs<'a> {
                 return None;
             }
             use wgpu::util::DeviceExt;
-            let pixels = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("search source"), contents: bytemuck::cast_slice(&src.pixels), usage: wgpu::BufferUsages::STORAGE });
+            // The pixels awaiting a patch ride in the alpha, which the costs read for nothing else.
+            let masked: Vec<[f32; 4]> = src.pixels.iter().zip(&src.awaited).map(|(p, &awaited)| [p[0], p[1], p[2], if awaited { 0.0 } else { 1.0 }]).collect();
+            let contents = if src.awaited.is_empty() { &src.pixels } else { &masked };
+            let source = wgpu::util::BufferInitDescriptor { label: Some("search source"), contents: bytemuck::cast_slice(contents), usage: wgpu::BufferUsages::STORAGE };
+            let pixels = gpu.device.create_buffer_init(&source);
             Some(Laid { gpu, pixels })
         });
         Costs { src, laid }
@@ -195,6 +202,8 @@ impl Laid {
             min_radius: min_radius as f32,
             grid_n: grid_n as u32,
             size: size as u32,
+            masked: u32::from(!src.awaited.is_empty()),
+            pad: [0; 3],
         };
         use wgpu::util::DeviceExt;
         let uniform = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("cost params"), contents: bytemuck::bytes_of(&params), usage: wgpu::BufferUsages::UNIFORM });
@@ -243,7 +252,7 @@ mod tests {
                 [0.3 + 0.2 * (x * 0.07).sin() * (y * 0.05).cos(), 0.4 + 0.1 * (x * 0.03 + y * 0.02).sin(), 0.5 + 0.15 * (y * 0.09).sin(), 1.0]
             })
             .collect();
-        Region { x: 40, y: 30, width, height, pixels, frame_width: 400.0, frame_height: 340.0 }
+        Region { x: 40, y: 30, width, height, pixels, frame_width: 400.0, frame_height: 340.0, awaited: Vec::new() }
     }
 
     fn frame() -> Frame {
@@ -278,6 +287,42 @@ mod tests {
         // Twin: the same grid with another ring size scores otherwise, so the comparison can fail.
         let other = cost_map(&src, &f, (20.0, 26.0), origin, 3.0, 16, size, 40.0);
         assert!(gpu_map.iter().zip(&other).any(|(g, o)| o.cost.is_finite() && (g.cost - o.cost).abs() > 1e-2));
+    }
+
+    #[test]
+    fn the_gpu_costs_leave_out_the_pixels_awaiting_a_patch_as_the_cpu_reference_does() {
+        let Some(gpu) = gpu_or_skip() else { return eprintln!("no adapter: the GPU costs are not exercised") };
+        let (src, f) = (region(), frame());
+        // A stroke across the ring and one where the candidates read, each a band of other values.
+        use oni_settings::{cg::Point, frame::Correction};
+        let on = |p: (f64, f64)| Point::new(p.0 / 400.0, p.1 / 340.0);
+        let along = |a: (f64, f64), b: (f64, f64)| Correction { radius: 7.0, ..Correction::new(vec![on(a), on(b)]) };
+        let awaiting = [along((150.0, 150.0), (230.0, 150.0)), along((120.0, 90.0), (160.0, 230.0))];
+        let bare = cost_map(&src, &f, (30.0, 26.0), (-60.0, -60.0), 3.0, 16, 41, 40.0);
+        let mut src = src.awaiting(awaiting.iter());
+        for (p, awaited) in src.pixels.iter_mut().zip(&src.awaited) {
+            if *awaited {
+                *p = [0.9, 0.05, 0.9, 1.0];
+            }
+        }
+        let costs = Costs::on(Some(gpu), &src);
+        let (half, origin, size) = ((30.0, 26.0), (-60.0, -60.0), 41);
+        let gpu_map = costs.map(&f, half, origin, 3.0, 16, size, 40.0);
+        let cpu_map = cost_map(&src, &f, half, origin, 3.0, 16, size, 40.0);
+        let mut same = 0;
+        for ((g, c), b) in gpu_map.iter().zip(&cpu_map).zip(&bare) {
+            assert_eq!(g.cost.is_finite(), c.cost.is_finite(), "at {:?}", c.offset);
+            if c.cost.is_finite() {
+                assert!((g.cost - c.cost).abs() <= 1e-3 * c.cost.abs().max(1e-3), "at {:?}: {} against {}", c.offset, g.cost, c.cost);
+                // The bands' own values count for nothing: a cost is at most what the image under them cost.
+                assert!(c.cost < 1.0, "a band was compared at {:?}: {}", c.offset, c.cost);
+                same += usize::from((c.cost - b.cost).abs() <= 1e-6 * b.cost);
+            }
+        }
+        assert!(same < cpu_map.len() / 2, "the bands left most costs as they were: {same}");
+        // Twin: read as image, the bands cost what no texture does.
+        src.awaited.clear();
+        assert!(cost_map(&src, &f, half, origin, 3.0, 16, size, 40.0).iter().any(|c| c.cost.is_finite() && c.cost > 1.0));
     }
 }
 

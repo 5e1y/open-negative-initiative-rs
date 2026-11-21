@@ -1,7 +1,5 @@
-use super::stroke::{HALO, distance_to_segment};
 use super::*;
 use oni_settings::ConversionMode;
-use oni_settings::frame::Correction;
 use oni_settings::levels::Levels;
 
 /// A map as large as the checks' frames.
@@ -351,36 +349,30 @@ fn a_map_reduced_keeps_the_earliest_notch_of_its_pixels() {
     assert_eq!(reading.map.texels[50 * 200 + 50], 0, "the darkest of the cell's pixels sets it");
 }
 
-fn pixels_of(runs: &[(u32, u32, u32)]) -> Speck {
-    let runs: Vec<Run> = runs.iter().map(|&(row, start, end)| Run { row, start, end }).collect();
-    Speck { area: runs.iter().map(|r| r.end - r.start).sum(), bounds: [0; 4], runs }
+/// A hair 2 wide down a ground of 0.15: opaque at both ends, its middle third at `middle`.
+fn wavering_hair(middle: f32) -> Vec<[f32; 4]> {
+    let mut pixels = vec![grey(0.15); 40_000];
+    for row in 40..160 {
+        for col in 100..102 {
+            pixels[row * 200 + col] = grey(if (80..120).contains(&row) { middle } else { 0.01 });
+        }
+    }
+    pixels
 }
 
 #[test]
-fn a_stroke_follows_a_curved_hair_where_a_straight_one_could_not() {
-    // A U of a thousand frame pixels: two arms 80 long, 60 apart, joined along the bottom.
-    let mut runs: Vec<(u32, u32, u32)> = (100..180).map(|row| (row, 100, 101)).collect();
-    runs.extend((100..180).map(|row| (row, 160, 161)));
-    runs.push((180, 100, 161));
-    runs.sort();
-    let (points, radius) = stroke(&pixels_of(&runs), 1000, 1000);
-    assert!(radius <= HALO + 4.0, "the walk runs along it: {radius}");
-    assert!(points.len() > 10);
-    // Twin: the chord between its two ends would have to reach 80 pixels down.
-    let (a, b) = (points[0], *points.last().unwrap());
-    let chord = distance_to_segment((100.5, 180.5), (a.0 * 1000.0, a.1 * 1000.0), (b.0 * 1000.0, b.1 * 1000.0));
-    assert!(chord > 70.0, "{chord}");
-}
-
-#[test]
-fn a_stroke_covers_a_blob_and_a_lone_pixel_holds_the_brushs_least() {
-    let blob: Vec<(u32, u32, u32)> = (50..70).map(|row| (row, 50, 70)).collect();
-    let (points, radius) = stroke(&pixels_of(&blob), 100, 100);
-    // Corner to corner: the far corners stand 14.1 off the diagonal.
-    assert!((radius - (HALO + 14.14)).abs() < 1.0, "{radius}");
-    assert!(points.iter().all(|p| (0.5..0.7).contains(&p.0) && (0.5..0.7).contains(&p.1)), "{points:?}");
-    let (points, radius) = stroke(&pixels_of(&[(10, 20, 21)]), 100, 100);
-    assert_eq!(points.len(), 2, "two points, as a hand's stroke holds");
-    assert_ne!(points[0], points[1], "twin: one point twice paints nothing in a path");
-    assert_eq!(radius, Correction::RADIUS_RANGE.0.max(HALO));
+fn a_hairs_fainter_stretch_stays_in_its_ring_and_under_its_strokes() {
+    // The ends rise 1.18 over the ground, the middle 0.48: under half the peak's rise, over a quarter of it.
+    let pixels = wavering_hair(0.05);
+    assert_eq!(shapes(&pixels, 200).iter().map(|s| s.area).collect::<Vec<_>>(), vec![240], "the veil shows the hair whole");
+    let reading = read(&pixels, 200, &limits(), SIDE);
+    let ringed: Vec<(u32, [u32; 4])> = reading.at(0.0).iter().map(|s| (s.area, s.bounds)).collect();
+    assert_eq!(ringed, vec![(240, [100, 40, 102, 160])]);
+    let parts = strokes(reading.at(0.0)[0], 200, 200);
+    assert!(parts.len() > 3 && parts.windows(2).all(|w| w[0].0.last() == w[1].0.first()), "one walk from end to end: {parts:?}");
+    // Twin: a middle rising 0.22, under a quarter of the peak's rise, is the ground's own, and the hair two pieces.
+    let reading = read(&wavering_hair(0.09), 200, &limits(), SIDE);
+    let ringed: Vec<u32> = reading.at(0.0).iter().map(|s| s.area).collect();
+    assert_eq!(ringed, vec![160]);
+    assert!(strokes(reading.at(0.0)[0], 200, 200).windows(2).any(|w| w[0].0.last() != w[1].0.first()), "two walks");
 }

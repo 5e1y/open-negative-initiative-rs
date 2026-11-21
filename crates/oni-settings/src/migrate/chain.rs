@@ -53,6 +53,9 @@ pub const ROLL_LENS_VERSION: i64 = 34;
 /// The version a digital photo came to print in black and white, absent read as colour, and its Auto White
 /// Balance to keep the white it found: a build before it would drop either as it rewrites the file.
 pub const DIGITAL_BLACK_AND_WHITE_VERSION: i64 = 35;
+/// The version a dust correction came to name the gesture that laid it, absent read as laid alone: a build before
+/// it would drop the gesture it rewrites.
+pub const GESTURE_VERSION: i64 = 36;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

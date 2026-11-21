@@ -117,7 +117,8 @@ impl Scan {
 
     /// The corrections `found` stands for, kept on the scan, as REMOVE writes them.
     pub fn corrections(&self, found: &[Found]) -> Vec<Correction> {
-        found.iter().map(|f| Correction { id: Id::new(), stroke: f.stroke.iter().map(|&(x, y)| self.placing.on_scan(Point { x, y })).collect(), radius: f.radius }).collect()
+        let gesture = (found.len() > 1).then(Id::new);
+        found.iter().map(|f| Correction { id: Id::new(), stroke: f.stroke.iter().map(|&(x, y)| self.placing.on_scan(Point { x, y })).collect(), radius: f.radius, gesture }).collect()
     }
 
     /// The app's heal on `s`, each patch made in its order; `landed` hears each correction's index once
@@ -149,8 +150,8 @@ impl Drop for Scan {
     }
 }
 
-/// A speck the reading found, on the framed frame: its box in pixels and the stroke REMOVE writes for it,
-/// in fractions of the frame, with its radius in pixels.
+/// A correction REMOVE writes for a speck the reading found, on the framed frame: the speck's box in pixels and
+/// the stroke, in fractions of the frame, with its radius in pixels; a hair holds several.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Found {
     pub bounds: [u32; 4],
@@ -159,9 +160,8 @@ pub struct Found {
 }
 
 impl Found {
-    pub fn of(s: &Speck, size: (u32, u32)) -> Found {
-        let (stroke, radius) = dust::stroke(s, size.0 as usize, size.1 as usize);
-        Found { bounds: s.bounds, stroke, radius }
+    pub fn of(s: &Speck, size: (u32, u32)) -> Vec<Found> {
+        dust::strokes(s, size.0 as usize, size.1 as usize).into_iter().map(|(stroke, radius)| Found { bounds: s.bounds, stroke, radius }).collect()
     }
 
     /// The correction's mark box, `bounding` in the app: the stroke's extent padded by its radius, in pixels.
@@ -176,7 +176,7 @@ impl Found {
 /// The dust the reading shows at `sensitivity`, as the canvas rings it.
 pub fn found(reading: &dust::Reading, sensitivity: f32) -> Vec<Found> {
     let size = (reading.width as u32, reading.height as u32);
-    reading.at(sensitivity).into_iter().map(|s| Found::of(s, size)).collect()
+    reading.at(sensitivity).into_iter().flat_map(|s| Found::of(s, size)).collect()
 }
 
 /// `picture` reduced `by` times to `width` × `height` from its top left, each pixel the mean of the

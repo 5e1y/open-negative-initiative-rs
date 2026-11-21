@@ -101,6 +101,12 @@ pub fn placed(c: &Correction, size: (u32, u32), framed: Rect, scale: f64) -> (Re
     (Rect::new(x0 as i32, (y1 - f64::from(h)) as i32, w, h), shift)
 }
 
+/// The other corrections of `list` laid by the gesture that laid `c`, a long stroke's parts or a reading's specks:
+/// those whose dust its search leaves out while they await their patch. None for a correction laid alone.
+pub fn laid_with<'a>(list: &'a [Correction], c: &'a Correction) -> impl Iterator<Item = &'a Correction> {
+    list.iter().filter(move |other| c.gesture.is_some() && other.gesture == c.gesture && other.id != c.id)
+}
+
 /// The stroke's points on the scan `framed`, in its pixels, as the stroke mask's input row.
 pub fn stroke_points(c: &Correction, framed: Rect) -> Vec<[f32; 4]> {
     let extent = [f64::from(framed.x), f64::from(framed.y), f64::from(framed.w), f64::from(framed.h)];
@@ -162,6 +168,26 @@ mod tests {
             assert!(shift.0 == 0.0 || off.abs() > 1e-3, "{off}");
         }
         assert!(worst < 1e-6, "{worst}");
+    }
+
+    #[test]
+    fn a_long_strokes_parts_are_laid_with_each_other_and_a_stroke_painted_since_with_none() {
+        let long = Correction { radius: 10.0, ..Correction::new(vec![Point::new(0.1, 0.5), Point::new(0.13, 0.5)]) }.split((4000.0, 3000.0));
+        assert_eq!(long.len(), 6);
+        let dot = |x: f64| Correction::new(vec![Point::new(x, 0.5), Point::new(x + 1e-4, 0.5)]);
+        // A dot before, the stroke, a dot painted on its end and another gesture's two parts.
+        let other = Correction { radius: 10.0, ..dot(0.6) }.split((400_000.0, 3000.0));
+        let mut list = vec![dot(0.05)];
+        list.extend(long.iter().cloned());
+        list.push(dot(0.13));
+        list.extend(other.iter().cloned());
+        for part in &long {
+            let with: Vec<_> = laid_with(&list, part).map(|c| c.id).collect();
+            assert_eq!(with, long.iter().filter(|c| c.id != part.id).map(|c| c.id).collect::<Vec<_>>());
+        }
+        // Twin: a stroke laid alone has none, wherever it lies, and another gesture's parts have their own alone.
+        assert_eq!(laid_with(&list, &list[0]).count() + laid_with(&list, &list[7]).count(), 0);
+        assert_eq!(laid_with(&list, &other[0]).map(|c| c.id).collect::<Vec<_>>(), other[1..].iter().map(|c| c.id).collect::<Vec<_>>());
     }
 
     #[test]

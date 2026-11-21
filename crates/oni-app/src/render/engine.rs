@@ -339,8 +339,8 @@ impl Engine {
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
 
-    /// `Pipeline.correctionSource` read back where a search for `c` looks: the decoded scan at full
-    /// resolution with every other correction healed, never a gain, and the scan's size.
+    /// `Pipeline.correctionSource` read back where a search for `c` looks: the decoded scan at full resolution with
+    /// every other correction healed, those of its own gesture awaiting their patch marked, never a gain, and the scan's size.
     pub fn search_region(&mut self, full: &Source, settings: &PipelineSettings, c: &oni_settings::frame::Correction) -> Result<(crate::heal::Region, (f64, f64)), String> {
         let mut others = settings.clone();
         others.corrections.retain(|other| other.id != c.id);
@@ -352,8 +352,8 @@ impl Engine {
         let win = crate::heal::search_window(c, size.0, size.1);
         let region = Rect::new(e.x + win[0] as i32, e.y + win[1] as i32, win[2] as u32, win[3] as u32);
         let pixels = self.graph.render(&healed, region, None).map_err(|e| e.to_string())?;
-        let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_width: size.0, frame_height: size.1 };
-        Ok((r, size))
+        let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_width: size.0, frame_height: size.1, awaited: vec![] };
+        Ok((r.awaiting(oni_pipeline::corrections::laid_with(&settings.corrections, c).filter(|other| !inputs.patches.contains_key(&other.id))), size))
     }
 
     /// `Pipeline.framed` read back whole at full resolution, the patches already made laid: what auto

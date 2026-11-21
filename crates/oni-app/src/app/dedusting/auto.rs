@@ -1,5 +1,5 @@
 //! Auto De-dust: on a click the frame under a veil but for its pixels past its window's dense end, the dust among
-//! them ringed; on another, one correction on each speck ringed. Neither runs unasked, and the second writes what the first shows.
+//! them ringed; on another, a correction on each speck ringed, several along a hair. Neither runs unasked, and the second writes what the first shows.
 
 use super::*;
 use oni_measure::dust;
@@ -102,13 +102,12 @@ fn rings(dust: &[&dust::Speck], width: usize, height: usize) -> Vec<[f64; 4]> {
     dust.iter().map(|s| [f64::from(s.bounds[0]) / fw, f64::from(s.bounds[1]) / fh, f64::from(s.bounds[2] - s.bounds[0]) / fw, f64::from(s.bounds[3] - s.bounds[1]) / fh]).collect()
 }
 
+/// The corrections the specks stand for, one gesture's when more than one, so no patch is copied from a speck still there.
 fn corrections(dust: &[&dust::Speck], width: usize, height: usize, placing: &Placing) -> Vec<Correction> {
-    dust.iter()
-        .map(|s| {
-            let (points, radius) = dust::stroke(s, width, height);
-            Correction { id: Id::new(), stroke: points.into_iter().map(|(x, y)| placing.on_scan(oni_settings::cg::Point { x, y })).collect(), radius }
-        })
-        .collect()
+    let strokes: Vec<_> = dust.iter().flat_map(|s| dust::strokes(s, width, height)).collect();
+    let gesture = (strokes.len() > 1).then(Id::new);
+    let on_scan = |points: Vec<(f64, f64)>| points.into_iter().map(|(x, y)| placing.on_scan(oni_settings::cg::Point { x, y })).collect();
+    strokes.into_iter().map(|(points, radius)| Correction { id: Id::new(), stroke: on_scan(points), radius, gesture }).collect()
 }
 
 impl Ctl {
@@ -344,6 +343,26 @@ mod tests {
         assert!(on_scan[0].stroke.iter().all(|p| (0.1..0.111).contains(&p.y) && (0.85..0.95).contains(&p.x)), "{:?}", on_scan[0].stroke);
         // Twin: no dust writes nothing.
         assert!(corrections(&[], 1000, 500, &whole).is_empty());
+    }
+
+    #[test]
+    fn a_reading_writes_a_hair_as_corrections_end_to_end_each_short_enough_for_one_patch() {
+        // A hair 200 long and 2 wide, one ring.
+        let runs: Vec<Run> = (100..300).map(|row| Run { row, start: 400, end: 402 }).collect();
+        let hair = Speck { area: 400, runs, bounds: [400, 100, 402, 300] };
+        let whole = Geometry::default().placing((1000.0, 500.0));
+        let written = corrections(&[&hair], 1000, 500, &whole);
+        assert_eq!(rings(&[&hair], 1000, 500).len(), 1);
+        assert!((8..=12).contains(&written.len()), "{}", written.len());
+        assert!(written.windows(2).all(|w| w[0].stroke.last() == w[1].stroke.first()), "each from the last's end");
+        assert!(written[0].gesture.is_some() && written.iter().all(|c| c.gesture == written[0].gesture), "one gesture's");
+        let tall = |c: &Correction| (c.stroke.last().unwrap().y - c.stroke[0].y).abs() * 500.0;
+        assert!(written.iter().all(|c| tall(c) <= Correction::SPAN * c.radius * 1.25 && c.radius <= 12.0), "{:?}", written.iter().map(tall).collect::<Vec<_>>());
+        assert!((written[0].stroke[0].y * 500.0 - 100.5).abs() < 1e-9 && (written.last().unwrap().stroke.last().unwrap().y * 500.0 - 299.5).abs() < 1e-9);
+        // Twin: a speck 10 long is one correction, as a blob is.
+        let speck = Speck { area: 20, runs: (100..110).map(|row| Run { row, start: 400, end: 402 }).collect(), bounds: [400, 100, 402, 110] };
+        let alone = corrections(&[&speck], 1000, 500, &whole);
+        assert_eq!((alone.len(), alone[0].gesture), (1, None));
     }
 
     #[test]

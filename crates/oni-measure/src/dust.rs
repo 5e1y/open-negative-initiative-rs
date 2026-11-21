@@ -31,7 +31,7 @@ const NOTCHES: f32 = 254.0;
 mod speck;
 mod stroke;
 pub use speck::speck;
-pub use stroke::stroke;
+pub use stroke::strokes;
 
 /// The slider's position as a notch: a texel shows at its own notch and every one above.
 pub fn notch(sensitivity: f32) -> u32 {
@@ -331,3 +331,5 @@ impl Reading {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod stroke_tests;

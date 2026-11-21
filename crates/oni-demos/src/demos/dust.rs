@@ -155,7 +155,7 @@ impl Demo for Dust {
         self.stroke.dedup_by(|a, b| a.1 == b.1);
         let fraction = |(x, y): (f32, f32)| placing.on_scan(Point { x: (x0 + f64::from(x) / points) / f64::from(fw), y: (y0 + f64::from(y) / points) / f64::from(fh) });
         let id = Id::parse(ID).ok_or("the correction's id")?;
-        let correction = Correction { id, stroke: self.stroke.iter().map(|(_, p)| fraction(*p)).collect(), radius: RADIUS };
+        let correction = Correction { id, stroke: self.stroke.iter().map(|(_, p)| fraction(*p)).collect(), radius: RADIUS, gesture: None };
         let mut healed = self.settings.clone();
         healed.corrections.push(correction.clone());
         let caches = std::env::temp_dir().join(format!("oni-demos-dust-{}", std::process::id()));

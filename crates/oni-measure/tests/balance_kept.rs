@@ -43,7 +43,7 @@ const INPUTS: [Change; 26] = [
         s.flat_field.mask = FlatFieldMask::ValoiEasy35V1;
         s.flat_field.amount = 1.0;
     }),
-    ("corrections", |s| s.corrections.push(Correction { id: Id::new(), stroke: vec![Point::new(0.2, 0.5), Point::new(0.45, 0.5)], radius: 6.0 })),
+    ("corrections", |s| s.corrections.push(Correction { id: Id::new(), stroke: vec![Point::new(0.2, 0.5), Point::new(0.45, 0.5)], radius: 6.0, gesture: None })),
     ("levels", |s| s.levels.red.white -= 0.2),
     ("chroma_decompression", |s| s.chroma_decompression = 0.3),
     ("chroma_decompression_by_hand", |s| s.chroma_decompression_by_hand = !s.chroma_decompression_by_hand),
