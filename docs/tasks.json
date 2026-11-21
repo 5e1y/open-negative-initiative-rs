@@ -11547,5 +11547,13 @@
     "title": "examples/film_compare renders a digital photo headless, plain and on its virtual Portra 800, with the scene the film reads and its scan",
     "status": "done",
     "detail": "crates/oni-app/examples/film_compare.rs: `film_compare <raw> <out> [side]` reads the photo's sidecar, renders it as the editor does (Engine::render on the preview, at a long side of 1600 by default) plain (A) and on the stock's own reference (B), each at the RAW's As Shot white, the sidecar's own white and the film's D55, and writes beside them the chain's own steps up to the film: the framed scene after Digital's white, then the virtual negative's scan, each as `w h` and f32 RGB in linear Rec. 2020. It lets the virtual film be compared with spektrafilm's own pipeline fed the same scene; it writes no sidecar."
+  },
+  {
+    "id": 2550,
+    "type": "research",
+    "title": "Where ONI's print of the virtual Portra 800 departs from spektrafilm's paper print, measured stage by stage",
+    "status": "done",
+    "detail": "crates/oni-app/examples/colour_trace.rs prints scenes or scans through the CPU references of the virtual negative and stage 4-7 at a sidecar's settings (within 1 % of the GPU render on the photo's patches), or prints a real frame's stage 4-7 arguments; docs/research/colour-diagnosis/*.py rebuild B and C on the ColorChecker, the photo's patches and a grey ramp, and swap each stage (reading, tone, output) for spektrafilm's.",
+    "outcome": "On spektrafilm's own negative, ONI's print is 6.1 dE00 from the paper print on the chart and 10.3 on the photo. Three causes: the tone (linear windows and a 2.2 power instead of the paper's curve: 10.3 to 4.4 on the photo), greys balanced at two points only (yellow-green shadows, magenta highlights), and the reading (the colorimetric scan reads the magenta dye into red, 2.23 stops per unit against the paper's 0.40). A printing-density matrix then the paper's curves and dyes reaches 0.81 (chart) and 0.61 (photo); grey balance on the whole ramp, the paper's tone and one 3x3 in density space reach 2.77 and 1.67. ONI's dye separation moves 0.2 to 1.0 closer, the chroma decompression 0.6 to 0.8 away. A camera scan (Nikon D5100, Sigma, measured sensitivities) shows the same gap: the step is missing for real negatives too."
   }
 ]
