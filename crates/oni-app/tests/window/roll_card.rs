@@ -169,13 +169,13 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert_eq!(lib.get_info_title().as_str(), "Portra Trip");
     assert!(scans.join("Portra Trip").symlink_metadata().is_err(), "the folder keeps its name");
 
-    // Portra picked: its measured dyes on its three frames in one step with the marker, undone as one.
+    // Portra 400 picked: its measured dyes on its three frames in one step with the marker, undone as one.
     lib.invoke_select_roll_type();
     rig.pump();
     assert!(stocks.get_shown());
-    stocks.invoke_chosen(stock("kodak-portra"));
+    stocks.invoke_chosen(stock("kodak-portra400"));
     rig.landed(&ctl);
-    assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra".to_string()));
+    assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra400".to_string()));
     assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "Portra writes its dyes on every frame");
     assert_eq!(family(&other.join("D.tif")), DyeSet::GenericC41, "twin: a frame outside the roll keeps its own");
     rig.until("the card reads Portra's dyes off the frames", Duration::from_secs(10), || {
@@ -207,7 +207,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     b.roll_reference = Some(oni_settings::frame::RollReference { id: oni_settings::Id::new(), stops: [0.0; 3], black: [0.1; 3], white: [0.6; 3], base: None, median: None });
     sidecar::write(&b, &measured, WriteOptions::default()).unwrap();
     lib.invoke_select_roll_type();
-    stocks.invoke_chosen(stock("kodak-gold"));
+    stocks.invoke_chosen(stock("kodak-gold200"));
     rig.landed(&ctl);
     rig.until("the measured roll's banner gone", Duration::from_secs(10), || {
         rig.pump();
@@ -226,7 +226,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     rig.pump();
     pick(&["A.tif"]);
     lib.invoke_select_roll_type();
-    stocks.invoke_chosen(stock("fujifilm-superia"));
+    stocks.invoke_chosen(stock("fujifilm-superia-xtra400"));
     rig.landed(&ctl);
     assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
     let (panel, g) = (w.global::<oni_app::PanelState>(), w.global::<oni_app::Store>());

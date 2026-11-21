@@ -10,16 +10,26 @@ pub enum DyeSet {
     #[default]
     #[serde(rename = "generic-c41")]
     GenericC41,
+    #[serde(rename = "kodak-portra-160")]
+    KodakPortra160,
     #[serde(rename = "kodak-portra-400")]
     KodakPortra400,
     #[serde(rename = "kodak-portra-800")]
     KodakPortra800,
+    #[serde(rename = "kodak-ektar-100")]
+    KodakEktar100,
     #[serde(rename = "kodak-gold-200")]
     KodakGold200,
     #[serde(rename = "kodak-ultramax-400")]
     KodakUltraMax400,
+    #[serde(rename = "kodak-verita-200d")]
+    KodakVerita200D,
     #[serde(rename = "kodak-vision3-50d")]
     KodakVision3_50D,
+    #[serde(rename = "kodak-vision3-200t")]
+    KodakVision3_200T,
+    #[serde(rename = "kodak-vision3-250d")]
+    KodakVision3_250D,
     #[serde(rename = "kodak-vision3-500t")]
     KodakVision3_500T,
     #[serde(rename = "fujifilm-c200")]
@@ -31,13 +41,18 @@ pub enum DyeSet {
 }
 
 impl DyeSet {
-    pub const ALL: [DyeSet; 10] = [
+    pub const ALL: [DyeSet; 15] = [
         DyeSet::GenericC41,
+        DyeSet::KodakPortra160,
         DyeSet::KodakPortra400,
         DyeSet::KodakPortra800,
+        DyeSet::KodakEktar100,
         DyeSet::KodakGold200,
         DyeSet::KodakUltraMax400,
+        DyeSet::KodakVerita200D,
         DyeSet::KodakVision3_50D,
+        DyeSet::KodakVision3_200T,
+        DyeSet::KodakVision3_250D,
         DyeSet::KodakVision3_500T,
         DyeSet::FujifilmC200,
         DyeSet::FujifilmPro400H,
@@ -48,11 +63,16 @@ impl DyeSet {
     pub fn stock_name(self) -> Option<&'static str> {
         Some(match self {
             DyeSet::GenericC41 => return None,
+            DyeSet::KodakPortra160 => "Kodak Portra 160",
             DyeSet::KodakPortra400 => "Kodak Portra 400",
             DyeSet::KodakPortra800 => "Kodak Portra 800",
+            DyeSet::KodakEktar100 => "Kodak Ektar 100",
             DyeSet::KodakGold200 => "Kodak Gold 200",
             DyeSet::KodakUltraMax400 => "Kodak UltraMax 400",
+            DyeSet::KodakVerita200D => "Kodak Verita 200D",
             DyeSet::KodakVision3_50D => "Kodak Vision3 50D",
+            DyeSet::KodakVision3_200T => "Kodak Vision3 200T",
+            DyeSet::KodakVision3_250D => "Kodak Vision3 250D",
             DyeSet::KodakVision3_500T => "Kodak Vision3 500T",
             DyeSet::FujifilmC200 => "Fujifilm C200",
             DyeSet::FujifilmPro400H => "Fujifilm Pro 400H",
@@ -64,11 +84,16 @@ impl DyeSet {
     pub fn profile(self) -> Option<&'static str> {
         Some(match self {
             DyeSet::GenericC41 => return None,
+            DyeSet::KodakPortra160 => "kodak_portra_160",
             DyeSet::KodakPortra400 => "kodak_portra_400",
             DyeSet::KodakPortra800 => "kodak_portra_800",
+            DyeSet::KodakEktar100 => "kodak_ektar_100",
             DyeSet::KodakGold200 => "kodak_gold_200",
             DyeSet::KodakUltraMax400 => "kodak_ultramax_400",
+            DyeSet::KodakVerita200D => "kodak_verita_200d",
             DyeSet::KodakVision3_50D => "kodak_vision3_50d",
+            DyeSet::KodakVision3_200T => "kodak_vision3_200t",
+            DyeSet::KodakVision3_250D => "kodak_vision3_250d",
             DyeSet::KodakVision3_500T => "kodak_vision3_500t",
             DyeSet::FujifilmC200 => "fujifilm_c200",
             DyeSet::FujifilmPro400H => "fujifilm_pro_400h",
@@ -84,6 +109,7 @@ impl DyeSet {
 
 /// Each stock's measured dyes, which picking it writes on the roll's frames: its own profile's where ONI ships
 /// one, the generic set for a colour negative none measures; none in black and white or on a slide, never unmixed.
+/// A line keeps the one profile it stood for, so a roll set on it renders as it did.
 pub const STOCK_DYE_SETS: [(&str, Option<DyeSet>); FILM_STOCKS.len()] = {
     use DyeSet::*;
     [
@@ -101,10 +127,13 @@ pub const STOCK_DYE_SETS: [(&str, Option<DyeSet>); FILM_STOCKS.len()] = {
         ("foma-fomapan400", None),
         ("foma-fomapan401", None),
         ("fujifilm-acros", None),
+        ("fujifilm-c200", Some(FujifilmC200)),
         ("fujifilm-fujicolor", Some(FujifilmC200)),
         ("fujifilm-fujicolor-pro", Some(FujifilmPro400H)),
+        ("fujifilm-pro400h", Some(FujifilmPro400H)),
         ("fujifilm-provia100", None),
         ("fujifilm-superia", Some(FujifilmXtra400)),
+        ("fujifilm-superia-xtra400", Some(FujifilmXtra400)),
         ("fujifilm-velvia100", None),
         ("fujifilm-velvia50", None),
         ("harman-phoenix", Some(GenericC41)),
@@ -122,9 +151,20 @@ pub const STOCK_DYE_SETS: [(&str, Option<DyeSet>); FILM_STOCKS.len()] = {
         ("kodak-400tx", None),
         ("kodak-colorplus", Some(GenericC41)),
         ("kodak-ektachrome", None),
+        ("kodak-ektar100", Some(KodakEktar100)),
         ("kodak-gold", Some(KodakGold200)),
+        ("kodak-gold200", Some(KodakGold200)),
         ("kodak-portra", Some(KodakPortra400)),
+        ("kodak-portra160", Some(KodakPortra160)),
+        ("kodak-portra400", Some(KodakPortra400)),
+        ("kodak-portra800", Some(KodakPortra800)),
         ("kodak-ultramax", Some(KodakUltraMax400)),
+        ("kodak-ultramax400", Some(KodakUltraMax400)),
+        ("kodak-verita200d", Some(KodakVerita200D)),
+        ("kodak-vision3-50d", Some(KodakVision3_50D)),
+        ("kodak-vision3-200t", Some(KodakVision3_200T)),
+        ("kodak-vision3-250d", Some(KodakVision3_250D)),
+        ("kodak-vision3-500t", Some(KodakVision3_500T)),
         ("lomography-lomo-turquoise", Some(GenericC41)),
         ("lucky-color200", Some(GenericC41)),
         ("mira-color400", Some(GenericC41)),
@@ -161,6 +201,36 @@ mod tests {
         assert_eq!(dye_set("fujifilm-velvia50"), None, "a slide's dyes are never unmixed");
         // Twin: a key the catalogue lacks names no set.
         assert_eq!(dye_set("kodak-portra-900"), None);
+    }
+
+    /// Each precise stock separates on the profile of its own name, each profile reaches a stock the picker lists,
+    /// and a line keeps the one profile it stood for.
+    #[test]
+    fn a_stock_separates_on_its_own_profile_and_a_line_on_the_one_it_stood_for() {
+        for kind in FILM_STOCKS.iter().filter(|k| k.offered && !k.id.starts_with("cinestill")) {
+            if let Some(set) = dye_set(kind.id).filter(|s| !s.is_generic()) {
+                assert_eq!(set.stock_name(), Some(kind.display_name), "{}", kind.id);
+            }
+        }
+        for set in DyeSet::ALL.into_iter().filter(|s| !s.is_generic()) {
+            let named = FILM_STOCKS.iter().filter(|k| k.offered && !k.line && dye_set(k.id) == Some(set)).count();
+            assert!(named >= 1, "{set:?}: no stock the picker lists separates on it");
+        }
+        let lines = [
+            ("kodak-portra", DyeSet::KodakPortra400),
+            ("kodak-gold", DyeSet::KodakGold200),
+            ("kodak-ultramax", DyeSet::KodakUltraMax400),
+            ("fujifilm-fujicolor", DyeSet::FujifilmC200),
+            ("fujifilm-fujicolor-pro", DyeSet::FujifilmPro400H),
+            ("fujifilm-superia", DyeSet::FujifilmXtra400),
+        ];
+        for (id, set) in lines {
+            assert_eq!(dye_set(id), Some(set), "{id} renders as it did");
+            assert!(crate::film::film_stock(Some(id)).is_some_and(|k| k.line && !k.offered), "{id} is a line, no longer listed");
+        }
+        assert_eq!(FILM_STOCKS.iter().filter(|k| k.line).count(), lines.len(), "every line is held to the set it stood for");
+        // Twin: two speeds of one line separate on two profiles.
+        assert_ne!(dye_set("kodak-portra160"), dye_set("kodak-portra800"));
     }
 
     #[test]

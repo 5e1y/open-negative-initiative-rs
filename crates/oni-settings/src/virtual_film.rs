@@ -61,7 +61,7 @@ impl VirtualStock {
     /// The stock in the film catalogue, which names its dyes and the roll's icon.
     pub fn catalogue_id(self) -> &'static str {
         match self {
-            VirtualStock::KodakPortra800 => "kodak-portra",
+            VirtualStock::KodakPortra800 => "kodak-portra800",
         }
     }
 
@@ -103,6 +103,10 @@ mod tests {
         assert_eq!(levels.green.black, graduation::value(r.black[1], ConversionMode::Negative));
         assert!(levels.windows().iter().all(|w| w.white > w.black), "{levels:?}");
         assert_eq!(VirtualStock::KodakPortra800.dye_set(), crate::DyeSet::KodakPortra800);
+        // Its place in the catalogue is its own stock, naming the same dyes and the same name.
+        let kind = crate::film::film_stock(Some(VirtualStock::KodakPortra800.catalogue_id())).expect("in the catalogue");
+        assert_eq!((kind.display_name, crate::dyes::dye_set(kind.id)), (VirtualStock::KodakPortra800.name(), Some(crate::DyeSet::KodakPortra800)));
+        assert!(!kind.line, "a precise stock, never its line");
         // Twin: read on a slide's axis the same shares land elsewhere.
         assert_ne!(levels.green.black, graduation::value(r.black[1], ConversionMode::Positive));
     }

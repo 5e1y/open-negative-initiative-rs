@@ -1,5 +1,6 @@
 //! `StockPickerSheet` in the window: Select Film Stock for a roll, and the export's film field for one
-//! frame, the stocks grouped by brand; a click picks and closes, and Done leaves things as they were.
+//! frame, the stocks grouped by brand, a roll's line shown among its stocks; a click picks and closes, and Done
+//! leaves things as they were.
 
 use super::Ctl;
 use crate::{Exporting, StockBrand, StockCell, StockRow, Stocks};
@@ -29,7 +30,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let g = w.global::<Stocks>();
         let columns = g.get_columns().max(1) as usize;
-        let brands: Vec<StockBrand> = crate::stocks::by_brand()
+        let brands: Vec<StockBrand> = crate::stocks::by_brand(current)
             .into_iter()
             .map(|(brand, kinds)| {
                 let cells: Vec<StockCell> = kinds
@@ -40,6 +41,7 @@ impl Ctl {
                         StockCell {
                             index: i as i32,
                             name: kind.display_name.into(),
+                            note: crate::stocks::unspecified(kind).into(),
                             has_artwork: artwork.is_some(),
                             artwork: artwork.unwrap_or_default(),
                             picked: current == Some(kind.id),
