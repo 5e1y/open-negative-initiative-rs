@@ -25,6 +25,7 @@ pub use kernel::stage47::{Stage47, Packed};
 pub use kernel::stroke_mask::StrokeMask;
 pub use kernel::texture::{TextureCoeff, Texture};
 pub use kernel::vignette::{VIGNETTE_MIDPOINT, Vignette};
+pub use kernel::virtual_negative::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative};
 pub use prelude::{LUMA, uniform};
 
 /// An image as Core Image holds one: rows top first, `origin` its extent's lower-left corner in

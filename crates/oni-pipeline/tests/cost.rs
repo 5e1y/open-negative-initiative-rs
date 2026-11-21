@@ -1,6 +1,7 @@
 //! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
 //! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
-//! photo's film effects at rest and on a notch; without the variable it returns at once.
+//! photo's film effects at rest and on a notch, and a virtual negative on a full-screen region; without the
+//! variable it returns at once.
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_pipeline::{finishing, stages};
@@ -216,4 +217,34 @@ fn a_digital_photo_s_film_effects_at_rest_and_on_a_notch() {
         let line: Vec<String> = notched.iter().zip(times).map(|((name, _), t)| format!("{name} {:.2}", median(t))).collect();
         println!("digital {w}x{h}, exposure notch in ms: {}", line.join(", "));
     }
+}
+
+/// The virtual negative's pass on the region a full-screen window shows at full resolution on a 16" Retina
+/// display, 3456 × 2234 pixels, against one plain per-pixel pass on it.
+#[test]
+fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
+    if std::env::var_os("ONI_BENCH_COST").is_none() {
+        return;
+    }
+    let Ok(mut g) = Graph::new() else { return };
+    let (w, h) = (3456u32, 2234u32);
+    let pixels: Vec<[f32; 4]> = (0..w * h)
+        .map(|i| {
+            let x = (i % w) as f32 / w as f32;
+            let y = (i / w) as f32 / h as f32;
+            [0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0]
+        })
+        .collect();
+    let source = g.upload(w, h, &pixels).unwrap();
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let (tw, th) = stock.kernel.table_size();
+    let table = g.upload(tw as u32, th as u32, &stock.table).unwrap();
+    let film = Image::new(&source).then_reading(stages::virtual_negative(&stock.kernel_at(0.3)), &[Image::new(&table)]);
+    let plain = Image::new(&source).then(stages::luma_only());
+    let (mut a, mut b) = (Vec::new(), Vec::new());
+    for _ in 0..RUNS {
+        a.push(ms(&mut g, &film));
+        b.push(ms(&mut g, &plain));
+    }
+    println!("virtual negative on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
 }

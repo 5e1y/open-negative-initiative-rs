@@ -63,6 +63,16 @@ impl Field {
             Field::RedContrast => "red-contrast",
             Field::GreenContrast => "green-contrast",
             Field::BlueContrast => "blue-contrast",
+            Field::FilmExposure => "film-exposure",
+            Field::FilmRed => "film-red",
+            Field::FilmGreen => "film-green",
+            Field::FilmBlue => "film-blue",
+            Field::FilmRedBlack => "film-red-black",
+            Field::FilmGreenBlack => "film-green-black",
+            Field::FilmBlueBlack => "film-blue-black",
+            Field::FilmRedWhite => "film-red-white",
+            Field::FilmGreenWhite => "film-green-white",
+            Field::FilmBlueWhite => "film-blue-white",
         }
     }
 }

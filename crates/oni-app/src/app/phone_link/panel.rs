@@ -268,14 +268,16 @@ mod tests {
         let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p, &negative)).collect();
         assert_eq!(fields.len(), Param::ALL.len());
         // Twin: on a negative the phone has no slider for the crop's angle, a slide's gains temperature and tint,
-        // a channel's own points, a digital photo's white, the film effects, the lens corrections nor a channel's own tone.
+        // a channel's own points, a digital photo's white, the film effects, the lens corrections, a channel's own tone
+        // nor a virtual film's values.
         let missing: Vec<Field> = Field::ALL.into_iter().filter(|f| !fields.contains(f)).collect();
         let points = [Field::RedWhitePoint, Field::GreenWhitePoint, Field::BlueWhitePoint, Field::RedBlackPoint, Field::GreenBlackPoint, Field::BlueBlackPoint];
         let white = [Field::WhiteKelvin, Field::WhiteTint];
         let effects = [Field::GrainAmount, Field::GrainSize, Field::HalationAmount, Field::HalationSize];
         let lens = [Field::Distortion, Field::FringeRed, Field::FringeBlue, Field::LensVignetting];
         let tone = [Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
-        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite]].concat();
+        let film = Field::ALL.into_iter().filter(|f| f.block() == Some(crate::fields::Block::Film)).collect::<Vec<_>>();
+        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite], &film].concat();
         assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &white, &effects, &lens, &later[..]].concat());
         // A digital photo's Temperature and Tint are its white's, and its Roll tab no film's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);

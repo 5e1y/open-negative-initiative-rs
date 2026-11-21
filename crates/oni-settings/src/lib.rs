@@ -26,6 +26,7 @@ pub mod sidecar;
 pub mod spectrogram;
 pub mod tolerant;
 pub mod tone;
+pub mod virtual_film;
 pub mod white;
 
 pub use document::{AutoBalance, Document, Failure};
@@ -35,4 +36,5 @@ pub use id::Id;
 pub use modes::{ConversionMode, Face, Medal, ScannerMachine, SourceEncoding};
 pub use reading::Reading;
 pub use settings::PipelineSettings;
+pub use virtual_film::{VirtualFilm, VirtualStock};
 pub use sidecar::{ExifLine, ExifMetadata, LensSpecification, Loaded};

@@ -7,6 +7,7 @@ use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white;
+use oni_settings::VirtualFilm;
 use crate::track::Bend;
 
 mod knob;
@@ -75,6 +76,16 @@ pub enum Field {
     BlueContrast,
     GrainColourBlack,
     GrainColourWhite,
+    FilmExposure,
+    FilmRed,
+    FilmGreen,
+    FilmBlue,
+    FilmRedBlack,
+    FilmGreenBlack,
+    FilmBlueBlack,
+    FilmRedWhite,
+    FilmGreenWhite,
+    FilmBlueWhite,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -94,10 +105,11 @@ pub enum Block {
     ChannelPoints,
     FilmEffects,
     LensCorrections,
+    Film,
 }
 
 impl Block {
-    pub const ALL: [Block; 14] = [
+    pub const ALL: [Block; 15] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -112,6 +124,7 @@ impl Block {
         Block::ChannelPoints,
         Block::FilmEffects,
         Block::LensCorrections,
+        Block::Film,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -148,6 +161,18 @@ impl Block {
             ],
             Block::FilmEffects => &[GrainAmount, GrainSize, GrainColourBlack, GrainColourWhite, HalationAmount, HalationSize, HalationSensitivity],
             Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
+            Block::Film => &[
+                FilmExposure,
+                FilmRed,
+                FilmGreen,
+                FilmBlue,
+                FilmRedBlack,
+                FilmGreenBlack,
+                FilmBlueBlack,
+                FilmRedWhite,
+                FilmGreenWhite,
+                FilmBlueWhite,
+            ],
         }
     }
 }
@@ -166,7 +191,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 57] = [
+    pub const ALL: [Field; 67] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -224,6 +249,16 @@ impl Field {
         Field::BlueContrast,
         Field::GrainColourBlack,
         Field::GrainColourWhite,
+        Field::FilmExposure,
+        Field::FilmRed,
+        Field::FilmGreen,
+        Field::FilmBlue,
+        Field::FilmRedBlack,
+        Field::FilmGreenBlack,
+        Field::FilmBlueBlack,
+        Field::FilmRedWhite,
+        Field::FilmGreenWhite,
+        Field::FilmBlueWhite,
     ];
 
     pub fn index(self) -> i32 {
@@ -246,6 +281,7 @@ impl Field {
             Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => !mode.is_film(),
             Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
+            f if f.block() == Some(Block::Film) => !mode.is_film(),
             Field::Temperature | Field::Tint => mode.is_film(),
             _ => true,
         }
@@ -330,6 +366,17 @@ impl Field {
             Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::FringeBlue => s("Blue fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
+            // A virtual film's exposure, its negative's gains, and each channel's ends as shares of the window.
+            Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
+            Field::FilmRed => s("Red ↔ Cyan", Gains::RANGE, Readout::Stops),
+            Field::FilmGreen => s("Green ↔ Magenta", Gains::RANGE, Readout::Stops),
+            Field::FilmBlue => s("Blue ↔ Yellow", Gains::RANGE, Readout::Stops),
+            Field::FilmRedBlack => s("Red black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmGreenBlack => s("Green black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmBlueBlack => s("Blue black", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmRedWhite => s("Red white", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmGreenWhite => s("Green white", VirtualFilm::SHARE_RANGE, Readout::Percent),
+            Field::FilmBlueWhite => s("Blue white", VirtualFilm::SHARE_RANGE, Readout::Percent),
         }
     }
 
@@ -343,6 +390,11 @@ impl Field {
             // `restingGains`: a measured roll rests on its window's stops; a slide, on its own measure's.
             rest = settings.clone();
             rest.gains.stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
+        }
+        if self.block() == Some(Block::Film) {
+            // A virtual film rests on its stock's own reference, at the film's speed.
+            rest = settings.clone();
+            rest.virtual_film = settings.virtual_film.as_ref().map(|f| oni_pipeline::film::stock(f.stock).reference.clone());
         }
         self.knob().get(&rest)
     }

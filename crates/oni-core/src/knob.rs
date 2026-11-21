@@ -10,7 +10,7 @@ use oni_settings::levels::{Levels, LevelsChannel};
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
 use oni_settings::white::{self, White};
-use oni_settings::PipelineSettings;
+use oni_settings::{PipelineSettings, VirtualFilm};
 
 /// Chroma denoise's Amount slider.
 pub const CHROMA_FORCE_RANGE: (f32, f32) = (0.0, 1.0);
@@ -104,7 +104,15 @@ pub enum Knob {
     LensRed,
     LensBlue,
     LensVignetting,
+    /// A digital photo's virtual film: its exposure, then its negative's gains and each channel's ends.
+    FilmExposure,
+    FilmGain(Channel),
+    FilmBlack(Channel),
+    FilmWhite(Channel),
 }
+
+/// The narrowest share of the window a virtual negative's ends may leave between them.
+pub const FILM_MINIMUM_SPAN: f32 = 0.02;
 
 impl Knob {
     /// The field a write of this knob moves.
@@ -141,6 +149,7 @@ impl Knob {
             Knob::GrainAmount | Knob::GrainSize | Knob::GrainColourBlack | Knob::GrainColourWhite => Field::Grain,
             Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => Field::VirtualFilm,
         }
     }
 
@@ -197,6 +206,9 @@ impl Knob {
             Knob::HalationSize => Halation::SIZE_RANGE,
             Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
+            Knob::FilmExposure => VirtualFilm::EXPOSURE_RANGE,
+            Knob::FilmGain(_) => Gains::RANGE,
+            Knob::FilmBlack(_) | Knob::FilmWhite(_) => VirtualFilm::SHARE_RANGE,
         })
     }
 
@@ -250,6 +262,10 @@ impl Knob {
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
             Knob::LensVignetting => s.lens_correction.vignetting,
+            Knob::FilmExposure => s.virtual_film.as_ref().map_or(0.0, |f| f.exposure),
+            Knob::FilmGain(c) => s.virtual_film.as_ref().map_or(0.0, |f| f.stops[c.index()]),
+            Knob::FilmBlack(c) => s.virtual_film.as_ref().map_or(0.0, |f| f.black[c.index()]),
+            Knob::FilmWhite(c) => s.virtual_film.as_ref().map_or(1.0, |f| f.white[c.index()]),
         }
     }
 
@@ -321,6 +337,17 @@ impl Knob {
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,
             Knob::LensVignetting => out.lens_correction.vignetting = v,
+            // A photo on no film has none of these to move; its ends keep the black under the white.
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => {
+                if let Some(f) = out.virtual_film.as_mut() {
+                    match self {
+                        Knob::FilmGain(c) => f.stops[c.index()] = v,
+                        Knob::FilmBlack(c) => f.black[c.index()] = v.min(f.white[c.index()] - FILM_MINIMUM_SPAN),
+                        Knob::FilmWhite(c) => f.white[c.index()] = v.max(f.black[c.index()] + FILM_MINIMUM_SPAN),
+                        _ => f.exposure = v,
+                    }
+                }
+            }
         }
         out
     }

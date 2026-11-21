@@ -313,6 +313,7 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
         (Block::ChannelPoints, "channel-points"),
         (Block::FilmEffects, "film-effects"),
         (Block::LensCorrections, "lens-corrections"),
+        (Block::Film, "film"),
     ];
     let of = |name: &str| named.iter().find(|(_, n)| *n == name).map(|(b, _)| *b);
     let laid = reset_indices(&panel_source());

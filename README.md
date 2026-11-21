@@ -175,3 +175,8 @@ GPL-3.0-or-later, see [`LICENSE`](LICENSE). Under their own licences, each kept 
 femtovg renderer (GPL-3.0-only or Slint's own licences, `vendor/i-slint-renderer-femtovg`), wgpu-hal (MIT or
 Apache-2.0, `vendor/wgpu-hal`), notify (CC0-1.0, `vendor/notify`), and the Inter and Enriqueta fonts (OFL,
 `crates/oni-ui/fonts`).
+
+The virtual films are made from the film profiles of [spektrafilm](https://github.com/andreavolpato/spektrafilm) by
+Andrea Volpato (CC BY-SA 4.0, `crates/oni-pipeline/resources/film`, its changes in `CHANGELOG.txt` there) and the
+spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling from [vkdt](https://github.com/hanatos/vkdt)
+(BSD-2-Clause, `SPECTRA_LICENCE.txt` there). Both ship unchanged; what ONI derives from the profiles stays CC BY-SA 4.0.

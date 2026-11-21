@@ -4,6 +4,7 @@
 mod chain;
 pub mod conversion;
 pub mod corrections;
+pub mod film;
 pub mod finishing;
 pub mod flat_field;
 pub mod frontier_table;
@@ -74,6 +75,8 @@ pub struct Pipeline {
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
     luts: Vec<(Tables, Source, Source)>,
+    /// Each virtual film's table, uploaded once per graph.
+    films: HashMap<oni_settings::VirtualStock, Source>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
@@ -146,6 +149,22 @@ impl Pipeline {
             out = out.then(stages::exposure(-s.capture_stops));
         }
         self.flat_field(graph, out, s, inputs)
+    }
+
+    /// A digital photo shot on a virtual film: its scene exposed, developed and scanned as that negative.
+    pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
+        let Some(f) = s.filmed() else { return Ok(image) };
+        let stock = film::stock(f.stock);
+        let source = match self.films.get(&f.stock) {
+            Some(source) => source.clone(),
+            None => {
+                let (w, h) = stock.kernel.table_size();
+                let source = graph.upload(w as u32, h as u32, &stock.table)?;
+                self.films.insert(f.stock, source.clone());
+                source
+            }
+        };
+        Ok(image.then_reading(stages::virtual_negative(&stock.kernel_at(f.exposure)), &[Image::new(&source)]))
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {

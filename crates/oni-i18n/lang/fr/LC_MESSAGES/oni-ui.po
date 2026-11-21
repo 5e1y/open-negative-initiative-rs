@@ -69,7 +69,7 @@ msgstr "Émulateur de scanner"
 msgid "Labels"
 msgstr "Étiquettes"
 
-#: crates/oni-ui/ui/app.slint
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "None"
 msgstr "Aucune"
 
@@ -1970,6 +1970,66 @@ msgid "Black and White"
 msgstr "Noir et blanc"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Film"
+msgstr "Pellicule"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shoots the photo on a film: its light exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is. None gives the photo back as it was.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the negative's gains and each channel's black and white, which the film's own data sets as Prepare the Roll sets a roll's: the black on the bare film, the white where the photo's middle grey prints as it does without the film. Double-click a slider to bring it back there."
+msgstr "Prend la photo sur une pellicule : sa lumière expose les trois couches de la pellicule, se développe sur leurs courbes, et le négatif est scanné sur une table lumineuse, puis lu comme tout négatif. Aucune rend la photo telle qu’elle était.\n\nExposition de la pellicule donne à la pellicule plus ou moins de lumière, comme le ferait l’exposition de l’appareil : plus emplit les ombres de détail et arrondit les hautes lumières.\n\nLa touche de réglages montre les gains du négatif et le noir et le blanc de chaque canal, que les données de la pellicule placent comme Préparer la pellicule place ceux d’une pellicule : le noir sur le film vierge, le blanc là où le gris moyen de la photo s’imprime comme sans la pellicule. Double-cliquez sur un curseur pour l’y ramener."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Show the negative's gains and ends"
+msgstr "Afficher les gains et les extrémités du négatif"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Hide the negative's gains and ends"
+msgstr "Masquer les gains et les extrémités du négatif"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Portra 800"
+msgstr "Portra 800"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Film exposure"
+msgstr "Exposition de la pellicule"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rouge ↔ Cyan"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Green ↔ Magenta"
+msgstr "Vert ↔ Magenta"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Blue ↔ Yellow"
+msgstr "Bleu ↔ Jaune"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red black"
+msgstr "Noir rouge"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red white"
+msgstr "Blanc rouge"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green black"
+msgstr "Noir vert"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green white"
+msgstr "Blanc vert"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue black"
+msgstr "Noir bleu"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue white"
+msgstr "Blanc bleu"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Machine"
 
@@ -2686,24 +2746,12 @@ msgid "Blue ↔ Amber"
 msgstr "Bleu ↔ Ambre"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Green ↔ Magenta"
-msgstr "Vert ↔ Magenta"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Magenta ↔ Green"
 msgstr "Magenta ↔ Vert"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Red ↔ Cyan"
-msgstr "Rouge ↔ Cyan"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Cyan ↔ Red"
 msgstr "Cyan ↔ Rouge"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Blue ↔ Yellow"
-msgstr "Bleu ↔ Jaune"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Yellow ↔ Blue"
@@ -3088,6 +3136,22 @@ msgstr "Rechercher les mises à jour"
 #: crates/oni-ui/ui/settings.slint
 msgid "What's New"
 msgstr "Nouveautés"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Credits"
+msgstr "Crédits"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "The virtual films are made from the film profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops and scans its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
+msgstr "Les pellicules virtuelles sont faites des profils de pellicule de spektrafilm par Andrea Volpato, sous CC BY-SA 4.0, qu’ONI développe et scanne à sa façon, et des spectres du suréchantillonnage spectral de Wenzel Jakob et Johannes Hanika, sous la licence BSD à 2 clauses. Les deux sont livrés inchangés avec leurs licences."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "spektrafilm"
+msgstr "spektrafilm"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "vkdt"
+msgstr "vkdt"
 
 #: crates/oni-ui/ui/settings.slint
 msgid "Welcome"

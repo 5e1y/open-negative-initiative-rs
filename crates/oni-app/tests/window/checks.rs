@@ -206,6 +206,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("channel_points::more_color_settings_move_each_its_own_channel", channel_points::more_color_settings_move_each_its_own_channel),
     ("film_effects::a_press_on_grains_rail_lays_the_grain_and_renders_it", film_effects::a_press_on_grains_rail_lays_the_grain_and_renders_it),
     ("film_effects::a_press_on_halations_rail_makes_a_highlight_glow_red", film_effects::a_press_on_halations_rail_makes_a_highlight_glow_red),
+    ("virtual_film::a_digital_photo_is_shot_on_portra_and_back", virtual_film::a_digital_photo_is_shot_on_portra_and_back),
     ("grain_colour::the_grains_colour_line_leaves_the_panel", grain_colour::the_grains_colour_line_leaves_the_panel),
     ("lens::each_lens_slider_lays_its_correction_and_moves_the_canvas", lens::each_lens_slider_lays_its_correction_and_moves_the_canvas),
     ("lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand", lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand),

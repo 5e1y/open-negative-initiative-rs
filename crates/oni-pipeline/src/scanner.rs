@@ -198,7 +198,7 @@ pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
 
 /// A density offset of the machine's as stops of gain, more density less light.
 pub fn stops_of(offset: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
-    let sign = if s.mode.invert_flag() > 0.5 { -1.0 } else { 1.0 };
+    let sign = if s.read_as().invert_flag() > 0.5 { -1.0 } else { 1.0 };
     offset.map(|o| sign * o / 2f32.log10())
 }
 

@@ -21,6 +21,7 @@ settings: PipelineSettings {
     mode: Negative,
     inverted_source: false,
     black_and_white: false,
+    virtual_film: None,
     film: None,
     manual_order: None,
     sheet: None,
