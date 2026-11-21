@@ -179,7 +179,8 @@ fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
     pixels.extend(noise(23, 17, 6, 0.0, 1.0));
     let off = |s: PipelineSettings| PipelineSettings { print_paper: None, ..s };
     let mut lit = off(prepared_negative());
-    (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.highlights) = (2.0, 0.2, 0.1, -0.1);
+    // Exposure 1.75 and a half stop either way: on the curve, 2 and a stop as before its gear.
+    (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.highlights) = (1.75, 0.2, 0.1, -0.1);
     lit.print.set_filters([0.2, -0.1, 0.0]);
     (lit.print.black_point, lit.print.white_point, lit.print.channel_contrast, lit.print.channel_mid) = (0.03, 0.05, [0.1, 0.0, -0.1], [0.0, 0.1, 0.0]);
     lit.density = 0.3;
@@ -189,7 +190,7 @@ fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
         t.print.contrast = travel;
         settings.push(t);
     }
-    for stops in [-1.0, 1.0] {
+    for stops in [-0.5, 0.5] {
         let mut t = off(prepared_negative());
         t.print.exposure += stops;
         settings.push(t);

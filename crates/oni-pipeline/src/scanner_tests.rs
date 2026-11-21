@@ -82,7 +82,8 @@ fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     s.scanner = ScannerClicks::new(2, 0, 0, 0, 0);
     s.scanner_finish.contrast = 0.2;
     let oni = on_oni_machine(&s).unwrap();
-    assert_eq!((oni.print.exposure, oni.print.contrast, oni.density), (0.0, 0.2, 0.0));
+    assert_eq!((oni.print.exposure, oni.print.contrast, oni.density), (look_entry_exposure(s.mode), 0.2, 0.0));
+    assert_eq!(crate::conversion::stage47(&oni).print_stops, 0.0, "the look's curve takes no exposure");
     assert!(oni.gains.stops[0] < 0.0, "more density is less light on a negative");
     // The Frontier takes the same conversion, its print bypassed for its own look.
     s.scanner_machine = ScannerMachine::Frontier;

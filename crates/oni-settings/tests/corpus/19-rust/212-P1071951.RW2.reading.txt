@@ -5242,7 +5242,7 @@ settings: PipelineSettings {
     balance_filters: None,
     balance_strength: 0.67,
     print: Print {
-        exposure: 1.9070692,
+        exposure: 1.7035346,
         contrast: 0.0,
         shadows: 0.0,
         highlights: 0.0,

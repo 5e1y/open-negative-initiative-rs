@@ -213,9 +213,10 @@ pub fn frontier_rest() -> [f32; 3] {
 }
 
 /// The Lighting exposure a render enters the look at: the looks lend about a stop for a negative's 1.5 of
-/// rest left out, so a slide, resting at 0, enters as far under its own rest.
+/// rest left out of the curve, so a slide, resting at 0, enters its curve as far under its own rest.
 pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
-    Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
+    let rest = Print::resting_exposure(mode);
+    Print::exposure_at(rest - Print::RESTING_EXPOSURE, rest)
 }
 
 /// `onOniMachine`: Pro's conversion with Lighting, Color Density and Auto White Balance at rest, but for

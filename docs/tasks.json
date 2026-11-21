@@ -11756,5 +11756,29 @@
     "status": "done",
     "detail": "film_compare adds Temperature half its track either way on the paper (B-paper-cool, B-paper-warm). DSC_6438, DSC_6452 (test copy) and P1073076 rendered before and after #2970.",
     "outcome": "ONI's print identical to the bit on the three files; the paper at rest identical where Lighting rests (DSC_6452, P1073076), DSC_6438 (Exposure 2.01) 0.03 at most from Hunt. Temperature half either way: the darkest 1 % before up to 0.0046 off black in one channel, after 0.001 at most; highlights tinted far less, the warmth reading weaker than the enlarger's at the same travel. Exposure +1: colour density lowered by Hunt, up to 0.09 in a channel."
+  },
+  {
+    "id": 2980,
+    "type": "research",
+    "title": "A stronger Exposure on the print: the odds gain at k times the slider's stops, against the same gain on the display code, on roll #8 and P1073076",
+    "status": "done",
+    "detail": "Today's Exposure is an odds gain on the print's linear light, v' = g v / (1 + (g - 1) v), g = 2^stops, black and white held: analytic, monotone and C-infinity for any g. A prototype rendered strips at -2 to +2 slider stops through the app's engine, Hunt reading each curve, on ONI's print for DSC_6438, DSC_6452 (test copy) and P1073076 and on the paper for DSC_6452: the gain at k = 1, 1.5, 2 and 2.5 times the slider's stops, and the same gain on the display code at k = 2.25, where the grey moves a stop at +1. A tapered pure-gain zone was dropped at the owner's call for one analytic curve.",
+    "outcome": "The grey (0.398) at -4/-2/-1/+1/+2/+4: k = 1 -3.33/-1.49/-0.68/+0.52/+0.87/+1.20; k = 2 -7.27/-3.33/-1.49/+0.87/+1.20/+1.32; k = 2.5 -9.27/-4.30/-1.93/+0.99/+1.26/+1.33; the grey cannot pass +1.33 (white). The gear k is today's curve with its slider geared: k = 2 at +1 renders to the bit as k = 1 at +2. On the display code the push lands in the shadows (+3.7 stops at 0.01 of light for +1, the frames black at -2): refused. The owner chose k = 2, the track kept at -4 to +4 (#2981)."
+  },
+  {
+    "id": 2981,
+    "type": "change",
+    "title": "Exposure takes its distance from the rest twice on the print's curve; sidecar format 42 halves every earlier document's distance, its render kept",
+    "status": "done",
+    "detail": "Print::EXPOSURE_GEAR (2): the curve's stops are rest + 2 (Exposure - rest) on ONI's print and 2 (Exposure - rest) on a paper, Print::on_curve laying them, the Hunt base's alike, in conversion::stage47 and in the Pro face's curve drawing; the kernel and its WGSL twin unchanged. Values that meant the curve's own stops follow: the Scanner face's entry exposure (Print::exposure_at, the look's curve still at none), Auto White Balance's unlit press (its curve at none), the Lighting demo's move halved. migrate::exposure (format 42) writes rest + (exposure - rest) / 2 on the frame's Exposure and its Hunt base on every older sidecar, preset, paste and share code; the newer-file corpus moves to version 43; the goldens' exposures follow.",
+    "outcome": "exposure_gear: the grey moves -7.272/-3.326/-1.489/+0.866/+1.199/+1.321 stops at -4/-2/-1/+1/+2/+4 (twin: the ungeared curve, the k = 1 table); every mode at rest reaches the kernel to the bit (twin: a hundredth's notch reaches it twice); an older document on ONI's print, on the paper and in black and white renders within 5.3e-6 of its former kernel arguments (twin: unmigrated, 0.22 to 0.45 apart). GPU against the CPU reference at Exposure +2 3.1e-6 and -2 1.1e-5 (twins 6.2e-3, 4.4e-2). ONI's print hash on the paper's settings unchanged, its exposures halved. scripts/check green but the two exFAT false failures (swift_checks presets, sweep_pass)."
+  },
+  {
+    "id": 2982,
+    "type": "change",
+    "title": "The help card's window check reads Lighting's help as #2970 wrote it",
+    "status": "done",
+    "detail": "help_card's LIGHTING constant still held the paper's former Temperature and Tint sentence; it now matches color_tab.slint and help_demo_color.",
+    "outcome": "window help_card passes."
   }
 ]

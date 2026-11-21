@@ -22,7 +22,7 @@ fn a_document_from_before_the_channels_points_reads_them_at_zero_and_a_current_o
     assert_eq!(migrate::standing(&older), migrate::Standing::Older(chain::CHANNEL_POINTS_VERSION - 1));
     let read = migrate::document(&older).unwrap().document.settings;
     assert_eq!((read.print.channel_white, read.print.channel_black), ([0.0; 3], [0.0; 3]));
-    assert_eq!(read, s, "the older document reads whole");
+    assert_eq!(read, migrate::exposure::caught_up(chain::CHANNEL_POINTS_VERSION - 1, s.clone()), "the older document reads whole");
     // Twin: a document of this format keeps a channel's own points to the bit.
     s.print.channel_black = [0.0, 0.0625, 0.0];
     s.print.channel_white = [-0.1373, 0.0, 0.0];

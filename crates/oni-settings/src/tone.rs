@@ -201,8 +201,28 @@ impl Print {
     pub const FOLLOW: f32 = 0.0;
     pub const CONTRAST_STEP: f32 = 0.05;
 
+    /// The print's odds gain takes Exposure's distance from its rest twice: near the rest the grey moves about
+    /// a stop per stop, and the curve alone tapers the ends.
+    pub const EXPOSURE_GEAR: f32 = 2.0;
+
     pub fn resting_exposure(mode: crate::modes::ConversionMode) -> f32 {
         if mode.reads_positive() { 0.0 } else { Self::RESTING_EXPOSURE }
+    }
+
+    /// The stops the print's curve takes for Exposure `exposure` resting at `rest`.
+    pub fn curve_stops(exposure: f32, rest: f32) -> f32 {
+        rest + Self::EXPOSURE_GEAR * (exposure - rest)
+    }
+
+    /// The Exposure whose curve takes `stops`, resting at `rest`: `curve_stops` undone.
+    pub fn exposure_at(stops: f32, rest: f32) -> f32 {
+        rest + (stops - rest) / Self::EXPOSURE_GEAR
+    }
+
+    /// This print with its Exposure, and its Hunt base's, in the curve's stops, as the kernel and its replicas read them.
+    pub fn on_curve(&self, rest: f32) -> Print {
+        let base = self.hunt_base.map(|b| Tone { exposure: Self::curve_stops(b.exposure, rest), ..b });
+        Print { exposure: Self::curve_stops(self.exposure, rest), hunt_base: base, ..*self }
     }
 
     pub fn filters(&self) -> V3 {
@@ -303,7 +323,8 @@ impl Print {
         libm::expf(-(self.master().shaped(g, self.exposure) - g))
     }
 
-    /// What the kernel prints for output `n`, as linear light; `bent` off leaves the RGB curve out.
+    /// What the kernel prints for output `n`, as linear light, its Exposure in the curve's stops (`on_curve`); `bent`
+    /// off leaves the RGB curve out.
     pub fn output(&self, n: f32, channel: LevelsChannel, bent: bool) -> f32 {
         self.printed(n, channel, bent, true)
     }

@@ -60,8 +60,15 @@ fn occupied_codes(rgb: &[V3]) -> usize {
     rgb.iter().map(|v| (v[1].clamp(0.0, 1.0) * 255.0).round() as u8).collect::<std::collections::HashSet<_>>().len()
 }
 
+/// The settings' defaults, the print's curve taking no exposure.
+fn bare() -> PipelineSettings {
+    let mut s = PipelineSettings::default();
+    s.print.exposure = oni_settings::tone::Print::exposure_at(0.0, oni_settings::tone::Print::RESTING_EXPOSURE);
+    s
+}
+
 fn edited() -> PipelineSettings {
-    let mut s = PipelineSettings { chroma_decompression: 1.0, ..PipelineSettings::default() };
+    let mut s = PipelineSettings { chroma_decompression: 1.0, ..bare() };
     s.gains.stops = [2.2, 0.4, -0.6];
     s.print.shadows = -0.4;
     s
@@ -72,7 +79,7 @@ fn criteria(engine: &mut Engine, decoded: Decoded) -> [bool; 4] {
     let against = samples(&decoded.linear);
     let prepared = engine.prepare(decoded).expect("the negative uploads");
     let mut thumb = |s: &PipelineSettings| engine.render(&prepared, &s.per_pixel_only(), Some(SIDE)).expect("the thumbnail renders");
-    let (neutral, adjusted) = (thumb(&PipelineSettings::default()), thumb(&edited()));
+    let (neutral, adjusted) = (thumb(&bare()), thumb(&edited()));
     let bounded = neutral.width.max(neutral.height) <= SIDE + 1;
     let (neutral, adjusted) = (samples(&neutral), samples(&adjusted));
     assert_eq!(neutral.len(), against.len(), "the thumbnail overlays its negative");

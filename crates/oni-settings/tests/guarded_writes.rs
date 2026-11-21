@@ -112,7 +112,7 @@ fn a_written_sidecar_holds_the_documents_keys_alone_and_an_unknown_one_is_gone_a
     stored["settings"]["grainLater"] = json!(0.3);
     std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
     let read = sidecar::read(&photo, true).unwrap();
-    assert_eq!(read.settings, edited());
+    assert_eq!(read.settings, oni_settings::migrate::exposure::caught_up(21, edited()));
     assert!(matches!(oni_settings::migrate::file(&photo, Some(true)), Ok(oni_settings::migrate::Outcome::Migrated { from: 21 })));
     let migrated = document(&url_for(&photo));
     assert!(migrated.get("swiftLater").is_none() && migrated["settings"].get("grainLater").is_none(), "{migrated}");
