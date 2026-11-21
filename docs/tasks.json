@@ -11526,5 +11526,19 @@
     "title": "docs/pipeline-map.md: the whole application in sixteen Mermaid diagrams",
     "status": "done",
     "detail": "Files on disk to the canvas and the export; the render chain in the order the code runs it, a table of which stage runs in which mode (Negative, Positive, Monochrome, Digital, Digital on a virtual film) and where a slider notch restarts; the Pro and Scanner faces and their machines; Prepare the Roll, Auto White Balance, Auto De-dust and the flat-field; the archive, the gallery filter, the Kit and export, presets, paste and roll gestures, the phone link; every WGSL kernel with its CPU reference, the texture formats and the render slot; a glossary. Each box names the file that implements it, as of 8cf90530. Its findings: no dark pick in Prepare the Roll, Auto levels called by tests alone, the live Frontier never reading the measured table, slides decoded at 5500 K, comments still naming Swift."
+  },
+  {
+    "id": 2324,
+    "type": "fix",
+    "title": "A filmed digital photo keeps its grain in the shadows",
+    "status": "done",
+    "detail": "The grain reads its share and colour off the tone each light of the scene shows, through stage 4-7 at unit gains. On a digital photo shot on the virtual film, stage 4-7 reads the virtual negative, not the scene the grain lies on: the scene read as if it were the scan turned the tones over, the grain fullest in the highlights and gone in the shadows. grain::scene_tones now passes each node's light through the stock's virtual negative (its CPU reference, at the film's exposure) and stage 4-7 at the film's own gains, so the tone is the one the photo shows. Measured at rest: the share 0.967 at a shadow light 0.03, 0.037 at 0.9. Check grain::a_filmed_photo_keeps_its_grain_in_the_shadows (twin: the scene read as the scan turns the shares over)."
+  },
+  {
+    "id": 2325,
+    "type": "change",
+    "title": "A filmed digital photo's scene stands at its film's daylight; its colour is balanced at the print, as a negative's",
+    "status": "done",
+    "detail": "The owner's call: a film sees the scene in its own light. VirtualStock::daylight names the stock's reference (Portra 800: D55, x 0.33242 y 0.34743, the 5500 K Kodak balances it for); PipelineSettings::scene_white renders a filmed photo's scene at it, the As Shot or hand white kept unrendered, so a tungsten scene reaches the film warm and a blue shade blue. The colour is then balanced at the print: on a filmed photo the print's filters (Temperature and Tint, the film's fields) are laid in stage 4-7 with the negative (unlit_print keeps them, own_stops renders them), Lighting never lays them twice; Auto White Balance reads it as a negative's (filters at Balance strength, no white), and the Colour block shows the film's Temperature, Tint and Auto White Balance Strength with a note that the scene stands at the film's daylight. Checks: virtual_film::the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back (a daylight grey prints neutral and as the photo prints it; the hand's white waits, twin: off it renders; the filters move a filmed photo, twin: a digital photo's wait), filter_balance (a filmed photo's key gives filters, never a white)."
   }
 ]

@@ -276,7 +276,7 @@ fn balance_strength_stands_behind_its_keys_settings_alone_in_the_panel() {
     assert_eq!(Field::BalanceStrength.block(), None);
     assert_eq!(Field::Temperature.block(), Some(Block::Color));
     // Twin: the dose at the surface, right under the key, is caught, and so is a second one.
-    let surface = panel.replace("if root.balance-settings && !PanelState.digital: StoreSlider { field: 11;", "StoreSlider { field: 11;");
+    let surface = panel.replace("if root.balance-settings && !root.white-led: StoreSlider { field: 11;", "StoreSlider { field: 11;");
     assert_eq!(behind_the_settings_key(&surface, "Colour"), [] as [i32; 0]);
     assert_eq!(wired(&format!("{panel}StoreSlider {{ field: 11; label: @tr(\"Strength\"); }}")), 2);
 }

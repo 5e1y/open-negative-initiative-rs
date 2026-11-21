@@ -54,10 +54,10 @@ pub fn placed_levels(s: &PipelineSettings) -> LevelsSet {
     }
 }
 
-/// A digital photo's balance on its chosen white, relative to the white its decode stands on; none
+/// A digital photo's balance on its scene's white, relative to the white its decode stands on; none
 /// at that white, on a film or with no white chosen, so those renders hold no stage for it.
 pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
-    let chosen = s.white.filter(|_| !s.mode.is_film())?;
+    let chosen = s.scene_white().filter(|_| !s.mode.is_film())?;
     let anchor = oni_settings::white::anchor(s.decoded_from_mosaic);
     // Compared as the sliders read it, so a white reset to the anchor's own lays no stage.
     if chosen == oni_settings::white::of_uv(anchor) {
@@ -80,7 +80,11 @@ pub fn lighting(s: &PipelineSettings) -> Option<Stage47> {
     if s.mode.is_film() || s.print.bypassed {
         return None;
     }
-    let lit = fused(s, &s.print, s.density);
+    let mut lit = fused(s, &s.print, s.density);
+    // A filmed photo's filters are laid with its negative, in stage 4-7: Lighting never lays them twice.
+    if s.filmed().is_some() {
+        lit.own_stops = [0.0; 3];
+    }
     if lit == stage47(s) {
         return None;
     }
@@ -136,7 +140,7 @@ fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
         print_stops: print.exposure,
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
-        own_stops: if film { print.filters() } else { [0.0; 3] },
+        own_stops: if film || s.filmed().is_some() { print.filters() } else { [0.0; 3] },
         own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },

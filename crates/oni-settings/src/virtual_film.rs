@@ -16,6 +16,15 @@ pub enum VirtualStock {
 impl VirtualStock {
     pub const ALL: [VirtualStock; 1] = [VirtualStock::KodakPortra800];
 
+    /// The light the stock is balanced for, its profile's reference: the scene is exposed at it, as the
+    /// film sees a scene, and the print balances what it leaves.
+    pub fn daylight(self) -> crate::white::White {
+        match self {
+            // D55, the daylight Kodak balances Portra 800 for (5500 K).
+            VirtualStock::KodakPortra800 => crate::white::of_uv(crate::white::uv_of_xy(0.33242, 0.34743)),
+        }
+    }
+
     pub fn name(self) -> &'static str {
         match self {
             VirtualStock::KodakPortra800 => "Kodak Portra 800",

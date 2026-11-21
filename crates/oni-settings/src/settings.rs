@@ -243,6 +243,12 @@ impl PipelineSettings {
         self.virtual_film.as_ref().filter(|_| self.mode == ConversionMode::Digital)
     }
 
+    /// The white the scene is rendered at: a filmed digital photo's is its film's daylight, locked, as the
+    /// film sees the scene and the print balances it; else the white chosen.
+    pub fn scene_white(&self) -> Option<crate::white::White> {
+        self.filmed().map(|f| f.stock.daylight()).or(self.white)
+    }
+
     /// The axis stage 4 reads the image on: a filmed digital photo's virtual negative is a negative's.
     pub fn read_as(&self) -> ConversionMode {
         if self.filmed().is_some() { ConversionMode::Negative } else { self.mode }
@@ -250,7 +256,12 @@ impl PipelineSettings {
 
     /// The print with Lighting and each channel's own tone at rest, bypassed where this one is.
     pub fn unlit_print(&self) -> Print {
-        Print { exposure: Print::resting_exposure(self.mode), bypassed: self.print.bypassed, ..Print::default() }
+        let rest = Print { exposure: Print::resting_exposure(self.mode), bypassed: self.print.bypassed, ..Print::default() };
+        // A filmed photo's filters are its negative's print filtration, laid with the negative as a film's are.
+        match self.filmed() {
+            Some(_) => Print { red: self.print.red, green: self.print.green, blue: self.print.blue, ..rest },
+            None => rest,
+        }
     }
 
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.

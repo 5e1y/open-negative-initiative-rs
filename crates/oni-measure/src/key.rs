@@ -83,7 +83,8 @@ pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f3
 /// `FilterBalance.outcome`: a negative on no roll is first measured as a roll of one; a slide is
 /// read as it stands, never given a roll (owner's call).
 pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
-    if s.mode == ConversionMode::Digital {
+    // A filmed photo's scene stands at its film's daylight: its balance is the print's, as a negative's.
+    if s.mode == ConversionMode::Digital && s.filmed().is_none() {
         return Some(Outcome { reference: None, filters: [0.0; 3], white: Some(digital_white(r, copy, s)?) });
     }
     let (reference, referenced) = match &s.roll_reference {

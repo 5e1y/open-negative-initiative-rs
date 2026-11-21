@@ -175,4 +175,8 @@ fn a_digital_photo_s_key_finds_the_white_that_prints_it_grey() {
     assert!(parted(means(&mut r, None)) > 0.1, "twin: its own white leaves the cast");
     let pressed = applied_outcome(&Outcome { reference: None, filters: [0.0; 3], white: Some(white) }, &s);
     assert_eq!((pressed.white, &pressed.print), (Some(white), &s.print), "the white laid whole, the print untouched");
+    // Shot on a film, the scene stands at the film's daylight: the key balances the print, as a negative's.
+    let filmed = PipelineSettings { virtual_film: Some(oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800).reference.clone()), ..s.clone() };
+    let found = key::balance_outcome(&mut r, copy, "filmed", &filmed).expect("the filmed photo reads");
+    assert!(found.white.is_none() && found.filters != [0.0; 3], "filters, never a white, on a filmed photo: {found:?}");
 }

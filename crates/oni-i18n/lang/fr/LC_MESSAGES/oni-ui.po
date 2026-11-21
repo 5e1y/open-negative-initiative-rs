@@ -2102,6 +2102,10 @@ msgid "Shared by the {} photos of this roll."
 msgstr "Partagée par les {} photos de cette pellicule."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The scene stands at the film's daylight, 5500 K, as the film sees it: Temperature and Tint balance the print."
+msgstr "La scène est à la lumière du jour du film, 5500 K, comme le film la voit : Température et Teinte équilibrent le tirage."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "More Color Settings"
 msgstr "Plus de réglages de couleur"
 

@@ -1,7 +1,7 @@
 //! The grain's arguments: a texture in stops laid on the scene before the print, anchored on the
 //! scan's full-resolution grid so a pan, a zoom, a crop or a turn leaves it on the photo.
 
-use crate::{conversion, geometry, stages};
+use crate::{conversion, film, geometry, stages};
 use oni_graph::{Image, Rect};
 use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
@@ -29,8 +29,7 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     if s.grain.amount == 0.0 {
         return None;
     }
-    // A Scanner face's keys are its print, in the picture's gains: they leave the tones, so the grain's pass.
-    let tones = tones(&Stage47 { gain: [1.0; 3], ..conversion::stage47(s) });
+    let tones = scene_tones(s);
     let share = shares(&s.grain.curve, &tones);
     if share.iter().all(|&v| v == 0.0) {
         return None;
@@ -63,6 +62,23 @@ pub fn tones(picture: &Stage47) -> [f32; GRAIN_NODES] {
     std::array::from_fn(|i| {
         let y = grain_node_light(i);
         let shown = cpu::stage47([y, y, y, 1.0], picture);
+        let luma = shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2];
+        luma.max(0.0).powf(1.0 / Print::DISPLAY_GAMMA)
+    })
+}
+
+/// The tone each node's light of the scene shows: a filmed digital photo's light crosses its virtual negative
+/// first, as its grain lies on the scene before the film, so its shadows keep their grain.
+fn scene_tones(s: &PipelineSettings) -> [f32; GRAIN_NODES] {
+    // A Scanner face's keys are its print, in the picture's gains: they leave the tones, so the grain's pass.
+    let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(s) };
+    let Some(f) = s.filmed() else { return tones(&picture) };
+    let stock = film::stock(f.stock);
+    let kernel = stock.kernel_at(f.exposure);
+    let developed = Stage47 { gain: f.stops.map(f32::exp2), ..picture };
+    std::array::from_fn(|i| {
+        let y = grain_node_light(i);
+        let shown = cpu::stage47(cpu::virtual_negative([y, y, y, 1.0], &kernel, &stock.table), &developed);
         let luma = shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2];
         luma.max(0.0).powf(1.0 / Print::DISPLAY_GAMMA)
     })

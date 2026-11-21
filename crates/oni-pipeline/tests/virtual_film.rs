@@ -233,9 +233,9 @@ fn filmed() -> PipelineSettings {
     s
 }
 
-/// The stock's own reference prints a scene grey where the digital photo prints it, and neutral, every
-/// channel on its bare film's black; the film off renders the digital photo to the bit. Twins: the film a
-/// stop over prints that grey lighter, and the film on renders another picture.
+/// The stock's own reference prints a scene grey where the digital photo prints it at the film's daylight, and
+/// neutral, every channel on its bare film's black; the film off renders the digital photo to the bit. Twins:
+/// the film a stop over prints that grey lighter, and the film on renders another picture.
 #[test]
 fn the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back() {
     let Some(mut g) = graph("the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back") else { return };
@@ -245,12 +245,18 @@ fn the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back() {
         let v = GREY * 2f32.powf(8.0 * x - 5.0);
         if i / w < 4 { [v, v, v, 1.0] } else { [v, v * 0.6, v * 0.3, 1.0] }
     }).collect();
+    // A grey under the film's daylight: the decode's pixel its white maps onto equal channels.
+    let daylight = VirtualStock::KodakPortra800.daylight();
+    let to_daylight = oni_settings::white::relative(oni_settings::white::uv(daylight), oni_settings::white::anchor(true));
+    let back = oni_settings::white::inverse(&to_daylight.map(|r| r.map(f64::from)));
+    let lit = oni_settings::white::apply(&back, [f64::from(GREY); 3]).map(|v| v as f32);
     let mut probe = scene.clone();
-    probe[0] = [GREY, GREY, GREY, 1.0];
+    probe[0] = [lit[0], lit[1], lit[2], 1.0];
     let source = g.upload(w, h, &probe).unwrap();
     let mut pipeline = Pipeline::new();
     let mut render = |s: &PipelineSettings| pipeline.render(&mut g, &source, s, &Request::default(), &Default::default(), None).unwrap().1;
-    let digital = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    let mut digital = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    digital.white = Some(daylight);
     let (photo, on) = (render(&digital), render(&filmed()));
     let grey = (photo[0], on[0]);
     println!("a scene grey: the photo {:?}, the film {:?}", grey.0, grey.1);
@@ -262,7 +268,22 @@ fn the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back() {
     assert!(render(&over)[0][1] > grey.1[1] + 0.02);
     let mut off = filmed();
     off.virtual_film = None;
+    off.white = digital.white;
     assert_eq!(render(&off), photo);
+    // The film locks the scene at its daylight: a white the hand set waits, unrendered; twin: off, it renders.
+    let mut tungsten = filmed();
+    tungsten.white = Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 });
+    assert_eq!(render(&tungsten), on, "the scene stays at the film's daylight");
+    tungsten.virtual_film = None;
+    assert_ne!(render(&tungsten), photo, "twin: without the film the hand's white renders");
+    // Its colour is balanced at the print: the filters move the filmed photo, as a negative's; twin: a digital
+    // photo's own colour is its white, its filters unrendered.
+    let mut warmed = filmed();
+    warmed.print.set_filters([0.2, 0.0, -0.2]);
+    assert_ne!(render(&warmed), on, "the print's filters reach the filmed photo");
+    let mut unfilmed = digital.clone();
+    unfilmed.print.set_filters([0.2, 0.0, -0.2]);
+    assert_eq!(render(&unfilmed), photo, "twin: a digital photo's filters wait");
     assert_ne!(on, photo);
     assert!(on.iter().all(|p| p.iter().all(|v| v.is_finite())));
 }
