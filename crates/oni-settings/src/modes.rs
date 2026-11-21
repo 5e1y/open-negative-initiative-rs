@@ -11,7 +11,7 @@ pub enum ConversionMode {
     Negative,
     Positive,
     Monochrome,
-    /// A digital photo: a positive with no film between the light and the sensor.
+    /// A digital photo: its scene shot on a virtual film, whose negative is read as a scanned one is.
     Digital,
 }
 
@@ -40,14 +40,21 @@ impl ConversionMode {
         !self.reads_positive()
     }
 
-    /// Read on the positive axis, never inverted: a slide and a digital photo.
+    /// Read on the positive axis, never inverted: a slide.
     pub fn reads_positive(self) -> bool {
-        matches!(self, Self::Positive | Self::Digital)
+        self == Self::Positive
     }
 
-    /// A film stands between the light and the sensor: its roll, base, dyes and filtration are rendered.
-    pub fn is_film(self) -> bool {
-        self != Self::Digital
+    /// A camera's own photo: its lens and its film's grain and halation are its own, and no copy stand
+    /// lit it, so it takes neither a flat-field nor a roll's capture exposure.
+    pub fn is_digital(self) -> bool {
+        self == Self::Digital
+    }
+
+    /// Prepare the Roll measures its reference: a slide is balanced on a click instead, and a digital
+    /// photo stands on its film's own reference, so either roll is its folder.
+    pub fn is_measured(self) -> bool {
+        matches!(self, Self::Negative | Self::Monochrome)
     }
 
     /// A slide: its RAW decoded at 5500 K and its roll prepared on a white it clicks.
@@ -160,12 +167,12 @@ mod tests {
     }
 
     #[test]
-    fn a_digital_photo_reads_as_a_positive_with_no_film() {
+    fn a_digital_photos_virtual_negative_is_read_as_a_negative_is() {
         let d = ConversionMode::Digital;
-        assert!(d.reads_positive() && !d.is_film() && !d.is_slide() && d.invert_flag() == 0.0);
-        // Twin: a slide is a film read on the positive axis, a negative neither.
-        assert!(ConversionMode::Positive.is_film() && ConversionMode::Positive.is_slide());
-        assert!(!ConversionMode::Negative.reads_positive() && ConversionMode::Negative.inverts_gain_sense());
+        assert!(!d.reads_positive() && d.is_digital() && !d.is_measured() && d.invert_flag() == 1.0 && d.inverts_gain_sense());
+        // Twin: a slide is read on the positive axis, never measured; a negative is measured.
+        assert!(ConversionMode::Positive.reads_positive() && !ConversionMode::Positive.is_measured() && ConversionMode::Positive.invert_flag() == 0.0);
+        assert!(ConversionMode::Negative.is_measured() && !ConversionMode::Negative.is_digital());
     }
 
     #[test]

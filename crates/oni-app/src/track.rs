@@ -29,8 +29,6 @@ pub enum Bend {
     Even,
     /// Piecewise even either side of this value, which stands at the middle of the travel.
     Centre(f32),
-    /// Even in mired, a million over the value: a white's kelvin moves as the eye sees it, not as it counts.
-    Mired,
 }
 
 /// `DSSlider.position(of:in:centre:)`: where `value` stands on the track, from 0 to 1.
@@ -43,7 +41,6 @@ pub fn position(value: f32, range: &RangeInclusive<f32>, bend: Bend) -> f32 {
         Bend::Centre(c) if c > low && c < high => {
             if value <= c { 0.5 * (value - low) / (c - low) } else { 0.5 + 0.5 * (value - c) / (high - c) }
         }
-        Bend::Mired if low > 0.0 => (1.0 / low - 1.0 / value) / (1.0 / low - 1.0 / high),
         _ => (value - low) / (high - low),
     }
 }
@@ -55,7 +52,6 @@ pub fn value(position: f32, range: &RangeInclusive<f32>, bend: Bend) -> f32 {
         Bend::Centre(c) if c > low && c < high => {
             if position <= 0.5 { low + 2.0 * position * (c - low) } else { c + 2.0 * (position - 0.5) * (high - c) }
         }
-        Bend::Mired if low > 0.0 && high > low => 1.0 / (1.0 / low - position * (1.0 / low - 1.0 / high)),
         _ => low + position * (high - low),
     }
 }
@@ -137,26 +133,6 @@ mod tests {
         // Twin: a straight inverse over a bent track drifts.
         let drifted = position(-4.0 + 0.3 * 8.0, &range, Bend::Centre(1.0));
         assert!((drifted - 0.3).abs() > 0.05);
-    }
-
-    /// Equal travel moves a white by equal mired the whole way, so no end of the track is coarser to the eye.
-    #[test]
-    fn a_mired_track_is_even_to_the_eye_and_its_own_inverse() {
-        let range = 2000.0..=25000.0;
-        let mireds = |bend: Bend| (0..=100).map(|k| 1e6 / value(k as f32 / 100.0, &range, bend)).collect::<Vec<f32>>();
-        let spread = |m: &[f32]| {
-            let steps: Vec<f32> = m.windows(2).map(|w| w[0] - w[1]).collect();
-            steps.iter().cloned().fold(0.0, f32::max) / steps.iter().cloned().fold(f32::MAX, f32::min)
-        };
-        assert!(spread(&mireds(Bend::Mired)) < 1.001, "{}", spread(&mireds(Bend::Mired)));
-        for k in 0..=100 {
-            let p = k as f32 / 100.0;
-            assert!((position(value(p, &range, Bend::Mired), &range, Bend::Mired) - p).abs() < 1e-5, "at {p}");
-        }
-        // Daylight sits past the middle, as the eye sees as much change from 2000 K to 3700 K as from 3700 K up.
-        assert!((position(5000.0, &range, Bend::Mired) - 300.0 / 460.0).abs() < 1e-5);
-        // Twin: a track even in kelvin, bent about 5000 K, moves dozens of times more mired a step at its warm end.
-        assert!(spread(&mireds(Bend::Centre(5000.0))) > 20.0, "{}", spread(&mireds(Bend::Centre(5000.0))));
     }
 
     #[test]

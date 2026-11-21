@@ -17,7 +17,7 @@ fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
 
 #[test]
 fn a_document_from_before_the_grain_curve_reads_it_at_rest_and_a_current_one_keeps_it() {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.grain.amount = 0.4;
     let older = stored(&s, chain::GRAIN_CURVE_VERSION - 1);
     assert!(!String::from_utf8_lossy(&older).contains("\"curve\""));
@@ -36,7 +36,7 @@ fn a_document_from_before_the_grain_curve_reads_it_at_rest_and_a_current_one_kee
 
 #[test]
 fn a_frame_at_rest_writes_no_grain_curve() {
-    let mut rest = PipelineSettings::rest(ConversionMode::Digital, true);
+    let mut rest = PipelineSettings::rest(ConversionMode::Negative, true);
     rest.grain.amount = 0.7;
     let text = oni_settings::document::encode_settings(&rest).unwrap();
     assert!(text.contains("\"grain\"") && !text.contains("\"curve\""));

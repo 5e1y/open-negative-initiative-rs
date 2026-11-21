@@ -9,47 +9,18 @@ fn unit(readout: Readout) -> f32 {
     match readout {
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
-        Readout::Kelvin | Readout::SignedWhole => 1.0,
+        Readout::SignedWhole => 1.0,
         Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
         Readout::SignedPercent | Readout::Percent => 0.01,
     }
 }
 
-/// A white's notch in mired, even as its track: 50 K a press near daylight, 10 K near a candle.
-const MIRED_NOTCH: f32 = 2.0;
-
-/// An arrow's step: `by` units of the readout's last digit, or `by` notches on a kelvin's track, each
-/// press showing the next number, held on the track.
+/// An arrow's step, or a number typed over the readout: `by` units of its last digit from the figure shown,
+/// laid on that digit's grid, held on the track.
 pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f32 {
-    match f.spec().readout {
-        Readout::Kelvin => notched(stored, by, track),
-        _ => typed(f, stored, by, track),
-    }
-}
-
-/// A number typed over the readout: `by` units of its last digit from the figure shown, laid on that
-/// digit's grid, held on the track.
-pub fn typed(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f32 {
     let unit = unit(f.spec().readout);
     let shown = ((f.shown(stored) / unit).round() + by as f32) * unit;
     f.shown(shown.clamp(*track.start(), *track.end()))
-}
-
-/// `kelvin` moved `by` notches even in mired, landed on a round figure as fine as one notch there.
-fn notched(kelvin: f32, by: i32, track: &RangeInclusive<f32>) -> f32 {
-    let (low, high) = (*track.start(), *track.end());
-    if by == 0 || low <= 0.0 {
-        return kelvin;
-    }
-    let aimed = 1e6 / (1e6 / kelvin - by as f32 * MIRED_NOTCH).max(1e6 / high);
-    let figure = round_figure(((aimed - kelvin) / by as f32).abs());
-    ((aimed / figure).round() * figure).clamp(low, high)
-}
-
-/// The largest of 1, 2 and 5 times a power of ten within `size`, one at least.
-fn round_figure(size: f32) -> f32 {
-    let decade = 10f32.powf(size.max(1.0).log10().floor());
-    [5.0, 2.0, 1.0].into_iter().map(|m| m * decade).find(|figure| *figure <= size).unwrap_or(decade)
 }
 
 /// A number as a readout or a hand writes it, and its places after the point: `+`, `-` or U+2212
@@ -172,28 +143,6 @@ mod tests {
         let lifted = stepped(Field::BlackPoint, 0.0, 1, &black);
         assert!(lifted < 0.0 && Field::BlackPoint.readout(lifted) == "+1%", "{}", Field::BlackPoint.readout(lifted));
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track_range(Field::Exposure))), "+0.51 EV");
-    }
-
-    #[test]
-    fn a_kelvin_notch_is_even_in_mired_and_reads_a_round_figure() {
-        let (f, track) = (Field::WhiteKelvin, track_range(Field::WhiteKelvin));
-        // Near daylight a press reads 50 K more, and back; near a candle 10 K; up high, hundreds.
-        assert_eq!((stepped(f, 5000.0, 1, &track), stepped(f, 5050.0, -1, &track)), (5050.0, 5000.0));
-        assert_eq!(stepped(f, 6504.0, 1, &track), 6600.0, "a file's D65 lands on the figures");
-        assert_eq!((stepped(f, 2000.0, 1, &track), stepped(f, 20000.0, 1, &track)), (2010.0, 21000.0));
-        // Every press moves the white about one notch of mired, from one end of the track to the other.
-        let mut at = *track.start();
-        while at < *track.end() {
-            let next = stepped(f, at, 1, &track);
-            let mired = 1e6 / at - 1e6 / next;
-            assert!(next > at && (mired > 0.5 * MIRED_NOTCH || next == *track.end()) && mired < 2.0 * MIRED_NOTCH, "{at} K to {next} K: {mired} mired");
-            at = next;
-        }
-        assert_eq!((stepped(f, *track.end(), 1, &track), stepped(f, *track.start(), -10, &track)), (*track.end(), *track.start()));
-        // A number typed lands on itself, never on a notch: 5000 K to 5617 K.
-        assert_eq!(typed(f, 5000.0, typed_steps("5000 K", "5617", 0.0), &track), 5617.0);
-        // Twin: a step of the readout's last digit, one kelvin, is a fiftieth of a mired near daylight.
-        assert!(1e6 / 5000.0 - 1e6 / typed(f, 5000.0, 1, &track) < 0.05);
     }
 
     #[test]

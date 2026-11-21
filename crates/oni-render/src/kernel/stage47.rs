@@ -182,15 +182,6 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     [e[0], e[1], e[2], s[3]]
 }
 
-/// Lighting on a picture already windowed and printed at rest: its display value back on the print's
-/// scale, each channel's points as a window on it, then the print. The window lanes hold their reach.
-pub fn print(s: [f32; 4], k: &Stage47) -> [f32; 4] {
-    let lv = [k.red, k.green, k.blue];
-    let n = map([s[0], s[1], s[2]], |_, x| x.max(0.0).powf(1.0 / DISPLAY_GAMMA));
-    let e = printed3(map(n, |c, x| apply_window(x, lv[c], k.low_points[c], k.high_points[c])), k);
-    [e[0], e[1], e[2], s[3]]
-}
-
 /// Stages 4 and 5: the film's density, its windows, the chroma decompression and the dye separation.
 fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);

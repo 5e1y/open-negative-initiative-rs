@@ -12,7 +12,6 @@ pub enum Unit {
     Degrees,
     Times,
     Pixels,
-    Kelvin,
 }
 
 impl Unit {
@@ -24,7 +23,6 @@ impl Unit {
             Unit::Degrees => "°",
             Unit::Times => "×",
             Unit::Pixels => " px",
-            Unit::Kelvin => " K",
         }
     }
 }
@@ -90,8 +88,6 @@ pub enum Readout {
     SignedTimes,
     /// Pixels, one place.
     Pixels,
-    /// Kelvin, whole.
-    Kelvin,
     /// Signed and whole: DNG's tint, a lens correction's share.
     SignedWhole,
 }
@@ -131,7 +127,6 @@ impl Readout {
             Readout::Times => (2, false, Unit::Times),
             Readout::SignedTimes => (2, true, Unit::Times),
             Readout::Pixels => (1, false, Unit::Pixels),
-            Readout::Kelvin => (0, false, Unit::Kelvin),
             Readout::SignedWhole => (0, true, Unit::Bare),
         }
     }

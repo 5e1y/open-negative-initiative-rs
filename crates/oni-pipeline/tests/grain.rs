@@ -231,7 +231,9 @@ fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
         let image = flat(&mut g, w, h, [grey, grey, grey, 1.0]);
         let whole_grain = spread(&stops(&whole(&mut g, &grain::grained(image.clone(), &k, 0.0)), grey));
         let curved = spread(&stops(&whole(&mut g, &grain::grained(image, &by_tone, 0.0)), grey));
-        let shown = cpu::stage47([grey, grey, grey, 1.0], &picture);
+        // A digital photo's light crosses its film before its tone is read.
+        let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+        let shown = cpu::stage47(cpu::virtual_negative([grey, grey, grey, 1.0], &stock.kernel_at(0.0), &stock.table), &picture);
         let tone = (shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2]).powf(1.0 / 2.2);
         let want = strength.at(f64::from(tone)) as f32;
         println!("{grey}: tone {tone:.3}, share {want:.3}, spread {curved:.4} against {whole_grain:.4}");
@@ -370,9 +372,10 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     // Twins: with no cache the notch writes more; a grain notch reruns the grain's pass as well as the print's.
     assert!(notches(&mut g, &grained, false, &exposure).1 > with_grain.1, "the cache keeps nothing");
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount += d;
-    assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 1, "a grain notch skips its own pass");
+    // A grain notch reruns its own pass and the film's that reads it.
+    assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 2, "a grain notch skips its own pass");
     let colour = |t: &mut PipelineSettings, d: f32| t.grain.colour.black += d;
-    assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 1, "a colour notch skips the grain's pass");
+    assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 2, "a colour notch skips the grain's pass");
     // A Scanner face's key is a gain the grain's tone never reads.
     let key = |t: &mut PipelineSettings, d: f32| t.scanner = ScannerClicks::new((d * 200.0) as i64, 0, 0, 0, 0);
     assert_eq!(notches(&mut g, &keyed, true, &key), notches(&mut g, &scanner, true, &key), "a key notch reruns the grain");
@@ -385,7 +388,6 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
 fn a_filmed_photo_keeps_its_grain_in_the_shadows() {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
     s.grain.amount = 0.5;
-    s.virtual_film = Some(oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800).reference.clone());
     let k = grain::grain(&s, Rect::new(0, 0, 6000, 4000), 1.0).expect("a grain");
     let node = |y: f32| (0..GRAIN_NODES).min_by(|a, b| (oni_render::grain_node_light(*a).log2() - y.log2()).abs().total_cmp(&(oni_render::grain_node_light(*b).log2() - y.log2()).abs())).unwrap();
     let (shadow, highlight) = (k.share[node(0.03)], k.share[node(0.9)]);

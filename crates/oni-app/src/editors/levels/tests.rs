@@ -1,6 +1,6 @@
 use super::*;
 use oni_settings::axis::{graduation, pipeline};
-use oni_settings::migrate::density::apply_levels;
+use oni_settings::migrate::density::{apply_levels, apply_window};
 
 const MODES: [ConversionMode; 3] = [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome];
 
@@ -134,7 +134,7 @@ fn the_inner_points_follow_their_neighbours_and_never_cross() {
 fn the_inner_handles_sit_where_their_quarter_renders() {
     for mid in [0.15, 0.3, 0.5, 0.62, 0.85] {
         let l = Levels { black: 0.1, white: 0.9, mid, ..Levels::default() };
-        let rendered = |v: f32| l.transfer(f64::from(v));
+        let rendered = |v: f32| f64::from(apply_window(v, &l));
         for (v, quarter) in [(l.display_shadows(), 0.25), (l.display_mid(), 0.5), (l.display_highlights(), 0.75)] {
             assert!((rendered(v) - quarter).abs() < 1e-6, "mid {mid}: {v} renders {}", rendered(v));
         }
@@ -172,97 +172,44 @@ fn a_press_catches_the_front_handle_and_a_scroll_the_nearest() {
 #[test]
 fn the_readouts_are_densities_to_three_decimals() {
     let l = Levels::with_ends(-0.243, 2.5);
-    let r = readouts(&l, LevelsChannel::Red, ConversionMode::Negative);
+    let r = readouts(&l);
     assert_eq!(r[0], ("Black", "\u{2212}0.243".to_string()));
     assert_eq!(r.iter().map(|(n, _)| *n).collect::<Vec<_>>(), vec!["Black", "Shadows", "Mid", "Highs", "White"]);
     // Each readout reads where its handle is drawn, the midpoint off its rest included.
     let bent = Levels { mid: 0.31, shadows: 0.2, highlights: 0.8, ..l };
     let (red, negative) = (LevelsChannel::Red, ConversionMode::Negative);
-    let drawn: Vec<String> = Grip::READING.iter().map(|g| readout(red, negative, red.value_at_position(place(*g, &bent, red, negative), negative))).collect();
-    assert_eq!(readouts(&bent, red, negative).into_iter().map(|(_, v)| v).collect::<Vec<_>>(), drawn);
-    // Twin: a global set would read a share of its output, and a digital photo's red alike.
-    assert_eq!(readout(LevelsChannel::Linked, ConversionMode::Negative, 0.5), "50.0%");
-    assert_eq!(readout(LevelsChannel::Red, ConversionMode::Digital, 0.5), "50.0%");
+    let drawn: Vec<String> = Grip::READING.iter().map(|g| readout(red.value_at_position(place(*g, &bent, red, negative), negative))).collect();
+    assert_eq!(readouts(&bent).into_iter().map(|(_, v)| v).collect::<Vec<_>>(), drawn);
+    // Twin: the shares of the output a picture's window would read are no densities.
+    assert_ne!(readout(0.5), "50.0%");
 }
 
+/// A digital photo's editor moves its negative's three density windows, which rest on its film's reference:
+/// at rest no tab is lit, a handle moved lights its own, the block's reset lands back on the film's windows.
 #[test]
-fn a_digital_photo_shows_five_windows_on_the_picture_and_writes_its_own() {
-    let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-    let windows = Windows::of(&digital);
-    assert_eq!(windows.channels(), &LevelsChannel::PICTURE);
-    assert_eq!((windows.channel(0), windows.channel(9)), (LevelsChannel::Linked, LevelsChannel::Blue), "a tab past the last is held");
-    // Every handle lies on the picture: the red's white at the track's end, its black at its start.
-    let red = windows.get(LevelsChannel::Red);
-    assert_eq!((place(Grip::Black, &red, LevelsChannel::Red, digital.mode), place(Grip::White, &red, LevelsChannel::Red, digital.mode)), (0.0, 1.0));
-    let mut moved = windows;
-    moved.set(LevelsChannel::Red, moved_white(&red));
-    assert_eq!(steps(&digital, &moved), vec![Command::Step { knob: Knob::Picture(LevelsChannel::Red, Handle::White), by: -0.25 }]);
-    assert_eq!(marked(&PipelineSettings { picture_levels: match moved { Windows::Picture(p) => p, _ => unreachable!() }, ..digital.clone() }), vec![false, false, true, false, false]);
-    // Twin: a film frame's editor writes its density windows, three tabs.
-    let negative = PipelineSettings::rest(ConversionMode::Negative, true);
-    let film = Windows::of(&negative);
-    assert_eq!(film.channels().len(), 3);
-    let mut film_moved = film;
-    film_moved.set(LevelsChannel::Red, moved_white(&film.get(LevelsChannel::Red)));
-    assert!(matches!(steps(&negative, &film_moved).as_slice(), [Command::Step { knob: Knob::Level(Channel::Red, Handle::White), .. }]));
+fn a_digital_photos_windows_rest_on_its_films_reference() {
+    use super::super::{Gestures, Reset};
+    let (mut store, dir) = crate::store::tests::fresh("editors-digital-levels");
+    store.apply(Command::Write(Box::new(store.settings().carried(ConversionMode::Digital))));
+    let digital = store.settings().clone();
+    let reference = oni_settings::VirtualStock::KodakPortra800.reference().levels();
+    assert_eq!(digital.levels, reference);
+    assert_eq!(marked(&digital), vec![false; 3]);
+    let mut moved = Windows::of(&digital);
+    moved.set(LevelsChannel::Red, moved_white(&digital.levels.red));
+    assert_eq!(steps(&digital, &moved), vec![Command::Step { knob: Knob::Level(Channel::Red, Handle::White), by: -0.25 }]);
+    let mut at = digital.clone();
+    moved.lay(&mut at);
+    assert_eq!(marked(&at), vec![true, false, false]);
+    store.apply(Command::Write(Box::new(at)));
+    Gestures::default().reset(&mut store, Reset::Levels);
+    assert_eq!(store.settings().levels, reference);
+    // Twin: a negative on no roll rests on the bare axis, so the film's windows are lit there.
+    let negative = PipelineSettings { mode: ConversionMode::Negative, ..digital };
+    assert_eq!(marked(&negative), vec![true; 3]);
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 fn moved_white(l: &Levels) -> Levels {
     Levels { white: l.white - 0.25, ..*l }
-}
-
-/// A digital photo's Levels editor on a real store: a drag writes its own window on the picture and
-/// leaves the film's, a double click rests the handle, the block's reset rests all five.
-#[test]
-fn a_digital_photos_handle_writes_its_picture_window_and_the_reset_rests_all_five() {
-    use super::super::{Gestures, Plot, Reset};
-    use super::super::geometry::Size;
-    use crate::track;
-    use std::time::{Duration, Instant};
-    let (mut store, dir) = crate::store::tests::fresh("editors-picture-levels");
-    store.apply(Command::Write(Box::new(store.settings().carried(ConversionMode::Digital))));
-    let film = store.settings().levels;
-    let track_size = Size::new(308.0, 34.0);
-    let mut g = Gestures::default();
-    g.sizes[Plot::Levels as usize] = track_size;
-    let mode = store.settings().mode;
-    // The fourth tab is G on the picture: a film's three tabs end at B.
-    g.pick(1, 3);
-    let channel = channel(mode, g.levels_channel);
-    assert_eq!(channel, LevelsChannel::Green);
-    let window = store.settings().picture_levels.get(channel);
-    let white = knob_x(Grip::White, &window, channel, mode, track_size.w);
-    assert_eq!(white, track_size.w, "the white rests at the track's end");
-    let t0 = Instant::now();
-    g.press(&mut store, Plot::Levels, (white - 2.0, 17.0), t0);
-    g.drag(&mut store, Plot::Levels, (white - 62.0, 17.0), false, t0 + Duration::from_millis(40));
-    g.release(&mut store);
-    let asked = track::clamped(1.0 - 60.0 / track_size.w as f32);
-    let got = store.settings().picture_levels;
-    assert_eq!(got.green, moved(Grip::White, &window, asked, channel, mode));
-    assert!(got.green.white < 0.85 && got.red == Levels::default() && got.luma == Levels::default());
-    assert_eq!(store.settings().levels, film, "the film's windows stay");
-    // A double click on the white puts it back on the picture's end.
-    let x = knob_x(Grip::White, &got.green, channel, mode, track_size.w);
-    let later = t0 + Duration::from_secs(2);
-    g.press(&mut store, Plot::Levels, (x, 17.0), later);
-    g.release(&mut store);
-    g.press(&mut store, Plot::Levels, (x, 17.0), later + Duration::from_millis(100));
-    g.release(&mut store);
-    assert_eq!(store.settings().picture_levels.green.white, 1.0);
-    // The block's reset rests every window of the picture.
-    let mut five = store.settings().clone();
-    for c in LevelsChannel::PICTURE {
-        five.picture_levels.get_mut(c).set_black(0.1);
-    }
-    store.apply(Command::Write(Box::new(five)));
-    g.reset(&mut store, Reset::Levels);
-    assert!(store.settings().picture_levels.is_neutral());
-    // Twin: on the film's windows the same reset leaves a stored picture window alone.
-    let mut negative = store.settings().carried(ConversionMode::Negative);
-    negative.picture_levels.red.set_black(0.1);
-    store.apply(Command::Write(Box::new(negative)));
-    g.reset(&mut store, Reset::Levels);
-    assert_eq!(store.settings().picture_levels.red.black, 0.1);
-    let _ = std::fs::remove_dir_all(&dir);
 }

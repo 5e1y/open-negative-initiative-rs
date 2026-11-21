@@ -27,10 +27,9 @@ impl Field {
     ];
 }
 
-pub const FIELD_NAMES: [&str; 15] = [
+pub const FIELD_NAMES: [&str; 14] = [
     "mode",
     "invertedSource",
-    "blackAndWhite",
     "virtualFilm",
     "sourceEncoding",
     "flatField",
@@ -50,8 +49,7 @@ pub fn changed(before: &PipelineSettings, after: &PipelineSettings) -> BTreeSet<
         .into_iter()
         .filter(|field| match field {
             Field::Mode => {
-                (before.mode, before.inverted_source, before.black_and_white) != (after.mode, after.inverted_source, after.black_and_white)
-                    || before.virtual_film != after.virtual_film
+                (before.mode, before.inverted_source, before.virtual_film) != (after.mode, after.inverted_source, after.virtual_film)
             }
             Field::SourceEncoding => before.source_encoding != after.source_encoding,
             Field::FlatField => before.flat_field != after.flat_field,
@@ -97,8 +95,7 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
             Field::Mode => {
                 out = out.carried(donor.mode);
                 out.inverted_source = donor.inverted_source;
-                out.black_and_white = donor.black_and_white;
-                out.virtual_film = donor.virtual_film.clone();
+                out.virtual_film = donor.virtual_film;
             }
             Field::SourceEncoding => out.source_encoding = donor.source_encoding,
             Field::FlatField => out.flat_field = donor.flat_field.clone(),

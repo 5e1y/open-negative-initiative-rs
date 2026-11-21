@@ -1,11 +1,11 @@
 //! `LevelsView`: five handles on one track under the histogram, the two sharing `dsHandleInset`;
-//! one write path for drag and scroll, a double click resetting the handle alone. A film shows its
-//! three windows on the density axis, a digital photo its five on the picture.
+//! one write path for drag and scroll, a double click resetting the handle alone: the three windows on the
+//! density axis, a digital photo's on its virtual negative's.
 
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds};
 use oni_i18n::tr;
 use oni_core::{Channel, Command, Handle, Knob};
-use oni_settings::levels::{Levels, LevelsChannel, LevelsSet, PictureLevels};
+use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 /// The handles in drawing order: the ends are drawn last, so they sit in front.
@@ -59,31 +59,24 @@ impl Grip {
 /// The per-channel block's tabs.
 pub const CHANNELS: [LevelsChannel; 3] = LevelsChannel::PER_CHANNEL;
 
-/// The channel of tab `tab` among those a frame of `mode` shows.
-pub fn channel(mode: ConversionMode, tab: usize) -> LevelsChannel {
-    let shown: &[LevelsChannel] = if mode.is_film() { &CHANNELS } else { &LevelsChannel::PICTURE };
-    shown[tab.min(shown.len() - 1)]
+/// The channel of tab `tab`.
+pub fn channel(tab: usize) -> LevelsChannel {
+    CHANNELS[tab.min(CHANNELS.len() - 1)]
 }
 
-/// The windows the editor moves: a film's on the density axis, a digital photo's on the picture.
+/// The windows the editor moves, on the density axis.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Windows {
-    Film(LevelsSet),
-    Picture(PictureLevels),
-}
+pub struct Windows(pub LevelsSet);
 
 impl Windows {
-    /// The frame's own windows, as its mode renders them.
+    /// The frame's own windows.
     pub fn of(s: &PipelineSettings) -> Windows {
-        if s.mode.is_film() { Windows::Film(s.levels) } else { Windows::Picture(s.picture_levels) }
+        Windows(s.levels)
     }
 
     /// The tabs, in the order the editor shows them.
     pub fn channels(&self) -> &'static [LevelsChannel] {
-        match self {
-            Windows::Film(_) => &CHANNELS,
-            Windows::Picture(_) => &LevelsChannel::PICTURE,
-        }
+        &CHANNELS
     }
 
     /// The channel of tab `tab`, held to the tabs shown.
@@ -93,25 +86,16 @@ impl Windows {
     }
 
     pub fn get(&self, channel: LevelsChannel) -> Levels {
-        match self {
-            Windows::Film(set) => set.get(channel),
-            Windows::Picture(p) => p.get(channel),
-        }
+        self.0.get(channel)
     }
 
     pub fn set(&mut self, channel: LevelsChannel, levels: Levels) {
-        match self {
-            Windows::Film(set) => set.set(channel, levels),
-            Windows::Picture(p) => p.set(channel, levels),
-        }
+        self.0.set(channel, levels);
     }
 
     /// `s` with these windows in their own field.
     pub fn lay(&self, s: &mut PipelineSettings) {
-        match self {
-            Windows::Film(set) => s.levels = *set,
-            Windows::Picture(p) => s.picture_levels = *p,
-        }
+        s.levels = self.0;
     }
 }
 
@@ -133,7 +117,7 @@ fn value(grip: Grip, levels: &Levels) -> f32 {
 }
 
 pub fn resting(channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> Levels {
-    if mode.is_film() { LevelsSet::resting(channel, mode, ceiling) } else { Levels::default() }
+    LevelsSet::resting(channel, mode, ceiling)
 }
 
 /// The single write path: a drag and a scroll both land here, on the channel's own domain.
@@ -165,8 +149,8 @@ pub fn reset(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Conversi
     out
 }
 
-/// The store's knob for `grip` on `windows`' `channel`.
-fn knob(grip: Grip, channel: LevelsChannel, windows: &Windows) -> Knob {
+/// The store's knob for `grip` on `channel`.
+fn knob(grip: Grip, channel: LevelsChannel) -> Knob {
     let h = match grip {
         Grip::Black => Handle::Black,
         Grip::Shadows => Handle::Shadows,
@@ -179,17 +163,14 @@ fn knob(grip: Grip, channel: LevelsChannel, windows: &Windows) -> Knob {
         LevelsChannel::Blue => Channel::Blue,
         _ => Channel::Red,
     };
-    match windows {
-        Windows::Film(_) => Knob::Level(c, h),
-        Windows::Picture(_) => Knob::Picture(channel, h),
-    }
+    Knob::Level(c, h)
 }
 
 /// Each handle `windows` moved off `settings`' own as one step of its knob.
 pub fn steps(settings: &PipelineSettings, windows: &Windows) -> Vec<Command> {
     let mut next = settings.clone();
     windows.lay(&mut next);
-    let knobs = windows.channels().iter().flat_map(|c| Grip::ALL.map(|g| knob(g, *c, windows)));
+    let knobs = windows.channels().iter().flat_map(|c| Grip::ALL.map(|g| knob(g, *c)));
     knobs.filter_map(|knob| Some(knob.get(&next) - knob.get(settings)).filter(|by| *by != 0.0).map(|by| Command::Step { knob, by })).collect()
 }
 
@@ -199,7 +180,7 @@ pub fn rested(grip: Grip, channel: LevelsChannel, view: &PipelineSettings) -> Co
     windows.set(channel, reset(grip, &windows.get(channel), channel, view.mode, view.density_ceiling));
     let mut at = view.clone();
     windows.lay(&mut at);
-    let knob = knob(grip, channel, &windows);
+    let knob = knob(grip, channel);
     Command::Set { knob, value: knob.get(&at) }
 }
 
@@ -235,14 +216,13 @@ pub fn knob_x(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: Convers
 }
 
 /// The value each handle sits on, where it is drawn, in reading order.
-pub fn readouts(levels: &Levels, channel: LevelsChannel, mode: ConversionMode) -> Vec<(&'static str, String)> {
-    Grip::READING.iter().map(|g| (g.readout_name(), readout(channel, mode, value(*g, levels)))).collect()
+pub fn readouts(levels: &Levels) -> Vec<(&'static str, String)> {
+    Grip::READING.iter().map(|g| (g.readout_name(), readout(value(*g, levels)))).collect()
 }
 
-/// Three decimals of density where values are densities, a share of the output otherwise.
-pub fn readout(channel: LevelsChannel, mode: ConversionMode, value: f32) -> String {
-    use crate::fields::{Unit, number};
-    if channel.is_density(mode) { number(f64::from(value), 3, false, Unit::Bare) } else { number(f64::from(value) * 100.0, 1, false, Unit::Percent) }
+/// Three decimals of density.
+pub fn readout(value: f32) -> String {
+    crate::fields::number(f64::from(value), 3, false, crate::fields::Unit::Bare)
 }
 
 /// The handles' own places marked on the histogram, dashed.
@@ -257,14 +237,10 @@ pub fn markers(levels: &Levels, channel: LevelsChannel, mode: ConversionMode, si
     Drawing { lines, dots: Vec::new() }
 }
 
-/// Tabs lit for a window off its rest.
+/// Tabs lit for a window off its rest, the rest its block's reset lands on.
 pub fn marked(view: &PipelineSettings) -> Vec<bool> {
-    let windows = Windows::of(view);
-    let touched = match windows {
-        Windows::Film(set) => set.touched(view.mode, view.density_ceiling),
-        Windows::Picture(p) => p.touched(),
-    };
-    windows.channels().iter().map(|c| touched.contains(c)).collect()
+    let rest = super::stored::resting_levels(view);
+    CHANNELS.iter().map(|c| view.levels.get(*c) != rest.get(*c)).collect()
 }
 
 #[cfg(test)]

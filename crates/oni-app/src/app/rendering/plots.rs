@@ -168,18 +168,13 @@ impl Ctl {
         [readout, tab == crate::PanelTab::Color && !editors.get_monochrome() && !editors.get_saturation_folded()]
     }
 
-    /// The levels' and the curves' plots on screen, as the panel lays them: film's levels open on Roll, a
-    /// digital photo's on either face's Colour tab, the curves open on Colour.
+    /// The levels' and the curves' plots on screen, as the panel lays them: the levels open on Roll, the
+    /// curves open on Colour.
     pub(super) fn input_plots(&self) -> [bool; 2] {
         let Some(w) = self.window() else { return [false; 2] };
         let (panel, editors) = (w.global::<PanelState>(), w.global::<crate::Editors>());
-        let (tab, colour) = (panel.get_tab(), panel.get_tab() == crate::PanelTab::Color);
-        let levels = if panel.get_digital() {
-            colour && !editors.get_picture_levels_folded()
-        } else {
-            tab == crate::PanelTab::Roll && !editors.get_levels_folded()
-        };
-        [levels, colour && !editors.get_curves_folded()]
+        let tab = panel.get_tab();
+        [tab == crate::PanelTab::Roll && !editors.get_levels_folded(), tab == crate::PanelTab::Color && !editors.get_curves_folded()]
     }
 
     /// The plots as the panel shows them, which the next render reads for: a picture plot shown again is traced
@@ -215,9 +210,8 @@ impl Ctl {
     pub(crate) fn publish_inputs(&self) {
         let Some(w) = self.window() else { return };
         let focus = {
-            let mode = self.state.borrow().store().settings().mode;
             let g = self.editors.gestures.borrow();
-            (crate::editors::levels::channel(mode, g.levels_channel).histogram_channel(), g.curve_channel().histogram_channel())
+            (crate::editors::levels::channel(g.levels_channel).histogram_channel(), g.curve_channel().histogram_channel())
         };
         let inputs = {
             let mut s = self.state.borrow_mut();

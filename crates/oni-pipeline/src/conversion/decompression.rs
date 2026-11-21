@@ -3,9 +3,9 @@
 use super::*;
 
 /// `RollReference.colourFactor`: the spans each channel's points reach over the roll's, on their
-/// geometric mean; a digital photo stands on no roll's windows.
+/// geometric mean; 1 on no roll.
 pub fn colour_factor(s: &PipelineSettings) -> f32 {
-    let Some(reference) = s.roll_reference.as_ref().filter(|_| s.mode.is_film()) else { return 1.0 };
+    let Some(reference) = s.roll_reference.as_ref() else { return 1.0 };
     let own = s.levels.windows().map(|w| (w.white - w.black).abs());
     let roll: [f32; 3] = std::array::from_fn(|c| {
         (graduation::value(reference.white[c], s.mode) - graduation::value(reference.black[c], s.mode)).abs()
@@ -16,13 +16,15 @@ pub fn colour_factor(s: &PipelineSettings) -> f32 {
     product.powf(1.0 / 3.0).clamp(oni_settings::frame::RollReference::FACTOR_RANGE.0, oni_settings::frame::RollReference::FACTOR_RANGE.1)
 }
 
-/// `ChromaDecompression.weights`: the windows' colour and the film's own the kernel carries.
+/// `ChromaDecompression.weights`: the windows' colour and the film's own the kernel carries; a colour
+/// negative on no measured roll, a digital photo's included, takes its dose.
 pub fn decompression_weights(s: &PipelineSettings) -> (f32, f32) {
     let factor = colour_factor(s);
-    if s.roll_reference.is_some() || !s.mode.is_film() {
+    if s.roll_reference.is_some() {
         return (factor, 0.0);
     }
-    let dose = if s.mode == ConversionMode::Negative { s.chroma_decompression.clamp(0.0, 1.0) } else { 1.0 };
+    let colour_negative = s.mode.invert_flag() > 0.5 && !s.mode.is_monochrome();
+    let dose = if colour_negative { s.chroma_decompression.clamp(0.0, 1.0) } else { 1.0 };
     (dose * factor, 1.0 - dose)
 }
 

@@ -293,7 +293,7 @@ fn a_retired_colour_curve_renders_as_its_two_passes_did() {
     let back = oni_settings::migrate::document(serde_json::to_string(&object).unwrap().as_bytes()).unwrap().document.settings;
     let display = |v: V3| v.map(|x| x.max(0.0).powf(1.0 / 2.2));
     let measured = windows_only(&mut g, &hand, true);
-    let k = finishing::curves(&colour, None).expect("the colour curves bake a table");
+    let k = finishing::curves(&colour).expect("the colour curves bake a table");
     let after = cpu::curves([measured[0], measured[1], measured[2], 1.0], &k);
     let former = display([after[0], after[1], after[2]]);
     let now = display(windows_only(&mut g, &back, true));

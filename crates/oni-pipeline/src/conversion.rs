@@ -5,7 +5,6 @@ use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::levels::{Levels, LevelsSet};
-use oni_settings::modes::Face;
 use oni_settings::tone::{Print, Tone, color_density};
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::ops::RangeInclusive;
@@ -34,100 +33,39 @@ fn vector(w: &Levels) -> [f32; 3] {
 
 /// The ceiling the render reads: a positive's rests on the axis' base, a plain RAW's (owner's call).
 pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
-    if s.filmed().is_some() {
-        crate::film::CEILING
-    } else if s.mode.reads_positive() {
-        density_axis::base()
-    } else {
-        s.density_ceiling
-    }
+    if s.mode.reads_positive() { density_axis::base() } else { s.density_ceiling }
 }
 
-/// The windows the kernel reads before the points reach them: a digital photo has no film to place
-/// them on, so its stored ones wait, unrendered, for the film mode they were placed in.
-/// A filmed one's virtual negative is read on its film's own windows.
-pub fn placed_levels(s: &PipelineSettings) -> LevelsSet {
-    match s.filmed() {
-        Some(f) => f.levels(),
-        None if s.mode.is_film() => s.levels,
-        None => LevelsSet::neutral(s.mode, density_axis::base()),
-    }
-}
-
-/// A digital photo's balance on its scene's white, relative to the white its decode stands on; none
-/// at that white, on a film or with no white chosen, so those renders hold no stage for it.
-pub fn white(s: &PipelineSettings) -> Option<ColorMatrix> {
-    let chosen = s.scene_white().filter(|_| !s.mode.is_film())?;
+/// A digital photo's scene lit at its film's own white, relative to the white its decode stands on, as the
+/// film sees a scene and its print balances what it leaves; none on a film mode.
+pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
+    let film = s.film()?;
     let anchor = oni_settings::white::anchor(s.decoded_from_mosaic);
-    // Compared as the sliders read it, so a white reset to the anchor's own lays no stage.
-    if chosen == oni_settings::white::of_uv(anchor) {
-        return None;
-    }
-    let m = oni_settings::white::relative(oni_settings::white::uv(chosen), anchor);
+    let m = oni_settings::white::relative(oni_settings::white::uv(film.stock.white()), anchor);
     let row = |r: [f32; 3]| [r[0], r[1], r[2], 0.0];
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order: a digital photo has no window, dyes or filter,
-/// rests Lighting for its levels and curves; a black and white print, no channel's own tone.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
+/// black and white print, no channel's own tone.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
-    if s.mode.is_film() { fused(s, &s.print, s.density) } else { fused(s, &s.unlit_print(), color_density::BASE) }
-}
-
-/// Lighting on a digital photo's levels and curves: the print, each window lane its points' reach on the
-/// picture's 0 to 1. None on a film, a bypassed print, or with Lighting, channel tone and Saturation at rest.
-pub fn lighting(s: &PipelineSettings) -> Option<Stage47> {
-    if s.mode.is_film() || s.print.bypassed {
-        return None;
-    }
-    let mut lit = fused(s, &s.print, s.density);
-    // A filmed photo's filters are laid with its negative, in stage 4-7: Lighting never lays them twice.
-    if s.filmed().is_some() {
-        lit.own_stops = [0.0; 3];
-    }
-    if lit == stage47(s) {
-        return None;
-    }
-    let unit = LevelsSet { red: Levels::default(), green: Levels::default(), blue: Levels::default() };
-    let reach = reaching(&s.print, &unit, None, false);
-    Some(Stage47 { red: vector(&reach.red), green: vector(&reach.green), blue: vector(&reach.blue), ..lit })
-}
-
-/// The gains the kernel renders, in stops: a film's own, or the machine's keys on a digital photo's Scanner
-/// face, on its virtual negative's own; a digital photo's stored gains wait, unrendered, for the film mode
-/// they were placed in.
-pub fn rendered_gains(s: &PipelineSettings) -> [f32; 3] {
-    let film = s.filmed().map_or([0.0; 3], |f| f.stops);
-    if s.mode.is_film() {
-        s.gains.stops
-    } else if s.face == Face::Scanner {
-        let keys = crate::scanner::gain_stops(s);
-        std::array::from_fn(|c| film[c] + keys[c])
-    } else {
-        film
-    }
-}
-
-/// The kernel's arguments with `print` and the colour density's `density` in the frame's own place.
-fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
+    let print = &s.print;
     let mono = s.mode.is_monochrome();
-    let film = s.mode.is_film();
-    let levels = placed_levels(s);
-    let lv = reaching(print, &levels, mono.then(|| graduation::window(s.mode)), mono);
+    let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
     let sep = separation_rows(s.separation_family, separation_dose(s), s.mode);
     let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
     let windows = lv.windows();
-    let unreached = levels.windows();
+    let unreached = s.levels.windows();
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     Stage47 {
-        gain: rendered_gains(s).map(f32::exp2),
+        gain: s.gains.stops.map(f32::exp2),
         red: vector(&lv.red),
         green: vector(&lv.green),
         blue: vector(&lv.blue),
-        invert: s.read_as().invert_flag(),
-        density: if mono { 1.0 } else { color_density::factor(density) },
+        invert: s.mode.invert_flag(),
+        density: if mono { 1.0 } else { color_density::factor(s.density) },
         pedestal,
         log_guard: density_axis::log_guard(ceiling),
         window: pipeline::DMAX,
@@ -140,7 +78,7 @@ fn fused(s: &PipelineSettings, print: &Print, density: f32) -> Stage47 {
         print_stops: print.exposure,
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
-        own_stops: if film || s.filmed().is_some() { print.filters() } else { [0.0; 3] },
+        own_stops: print.filters(),
         own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },

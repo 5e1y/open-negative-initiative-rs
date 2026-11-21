@@ -362,7 +362,7 @@ impl Gestures {
     pub fn pick(&mut self, which: i32, tab: usize) -> Then {
         match which {
             0 => self.curve_channel = tab.min(curve::CHANNELS.len() - 1),
-            1 => self.levels_channel = tab.min(LevelsChannel::PICTURE.len() - 1),
+            1 => self.levels_channel = tab.min(levels::CHANNELS.len() - 1),
             _ => self.selected.band = Band::ALL[tab.min(Band::ALL.len() - 1)],
         }
         Then::Draw

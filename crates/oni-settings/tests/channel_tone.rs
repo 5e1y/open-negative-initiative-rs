@@ -16,7 +16,7 @@ fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
 
 #[test]
 fn a_document_from_before_the_channels_tone_reads_it_at_rest_and_a_current_one_keeps_it() {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.print.channel_white = [0.0, 0.0625, 0.0];
     s.halation.amount = 0.5;
     let mut older: serde_json::Value = serde_json::from_slice(&stored(&s, chain::CHANNEL_TONE_VERSION - 1)).unwrap();

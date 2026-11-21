@@ -1,8 +1,8 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign, Toggle } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
-import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
+import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
@@ -10,10 +10,6 @@ import { FilmBlock } from "film_block.slint";
 
 export component ColorPane inherits Pane {
     property <bool> balance-settings;
-    // A digital photo shot on a film: its scene stands at the film's daylight, its colour balanced at the print,
-    // as a negative's is; any other digital photo's colour is its white.
-    property <bool> filmed: PanelState.digital && PanelState.virtual-film > 0;
-    property <bool> white-led: PanelState.digital && !root.filmed;
     // The channel More Color Settings shows, red first.
     property <int> channel-tab;
     // What the face holds, in the words of the switch's tooltip, so its name needs no hover to read.
@@ -26,19 +22,13 @@ export component ColorPane inherits Pane {
             role: TextRole.note;
             text: Lab.shown ? @tr("Scanner: a minilab's density and colour, in steps") : @tr("Pro: every setting by hand, the place to start");
         }
-        // On either face, as it decides what both print.
-        if PanelState.digital: Toggle {
-            label: @tr("Black and White");
-            on: PanelState.black-and-white;
-            toggled(on) => { PanelState.black-and-white-toggled(on); }
-        }
     }
     // A digital photo's film on either face, as it decides what both print.
     if PanelState.digital: FilmBlock {}
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");
-        help: PanelState.digital ? @tr("The machine the Scanner face prints with: ONI, the photo at its As Shot white under ONI's own look, or the Frontier, the same photo under the minilab's look. The keypad and the effects act on either.\n\nThe photo's levels, film effects and lens act on both faces; Pro's Temperature, Tint, Lighting, Colour and Effects stay Pro's own.") : @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.");
+        help: PanelState.digital ? @tr("The machine the Scanner face prints with: ONI, the photo's negative under ONI's own look, or the Frontier, the same negative under the minilab's look. The keypad and the effects act on either.\n\nThe Source tab, the film and its effects act on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.") : @tr("The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own.");
         separated: false;
         news: News.machine;
         news-note: News.machine-note;
@@ -81,10 +71,9 @@ export component ColorPane inherits Pane {
         separated: false;
         block: 0;
         modified: Store.color-modified;
-        demo: PanelState.digital ? "" : "white-balance";
-        help: PanelState.digital ? @tr("Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint to the white that turns it grey.\n\nTemperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
-        // A digital photo's balance is its white alone, set by hand; a filmed one's is its print's.
-        if !root.white-led: SettingsRow {
+        demo: "white-balance";
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
+        SettingsRow {
             open <=> root.balance-settings;
             show-help: @tr("Show Auto White Balance Strength");
             hide-help: @tr("Hide Auto White Balance Strength");
@@ -112,44 +101,22 @@ export component ColorPane inherits Pane {
                 }
             }
         }
-        // A digital photo's key sets its white whole: it stands on no roll whose share would dose it.
-        if root.white-led: ButtonGroup { plate: true;
-            Button {
-                text: @tr("AUTO WHITE BALANCE");
-                keycap: true;
-                help: @tr("The photo's light toward grey with Temperature and Tint");
-                enabled: !PanelState.balancing;
-                clicked => { PanelState.auto-balance(); }
-            }
-        }
-        if !root.white-led && PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
+        if PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
         // The key's dose, behind its settings key; the roll's, so it says which photos it reaches. Its
         // reset is its own double click: the block's would rewrite every photo of the roll.
-        if root.balance-settings && !root.white-led: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+        if root.balance-settings: StoreSlider { field: 11; label: @tr("Auto White Balance Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
         if root.balance-settings && !PanelState.digital && PanelState.roll-state == RollState.prepared && PanelState.roll-measured > 1: Label {
             role: TextRole.note;
             text: @tr("Shared by the {} photos of this roll.", PanelState.roll-measured);
         }
-        if root.filmed: Label { role: TextRole.note; wrap: word-wrap; text: @tr("The scene stands at the film's daylight, 5500 K, as the film sees it: Temperature and Tint balance the print."); }
-        if !root.white-led: StoreSlider {
+        StoreSlider {
             near: colour-block.hovered;
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
-        if !root.white-led: StoreSlider {
+        StoreSlider {
             near: colour-block.hovered;
             field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
-            fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
-        }
-        // The light the photo was taken under: a higher kelvin warms it, a magenta tint answers a green light.
-        if root.white-led: StoreSlider {
-            near: colour-block.hovered;
-            field: 38; label: @tr("Temperature"); fraction: Store.white-kelvin-fraction; readout: Store.white-kelvin-readout; value-text: Store.white-kelvin-value;
-            fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
-        }
-        if root.white-led: StoreSlider {
-            near: colour-block.hovered;
-            field: 39; label: @tr("Tint"); fraction: Store.white-tint-fraction; readout: Store.white-tint-readout; value-text: Store.white-tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
@@ -180,10 +147,10 @@ export component ColorPane inherits Pane {
         }
         if root.channel-tab == 0: StoreSlider {
             near: points-block.hovered;
-            field: 49; label: @tr("Red mid"); fraction: Store.red-mid-fraction; readout: Store.red-mid-readout; value-text: Store.red-mid-value;
+            field: 47; label: @tr("Red mid"); fraction: Store.red-mid-fraction; readout: Store.red-mid-readout; value-text: Store.red-mid-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
-        if root.channel-tab == 0: StoreSlider { field: 52; label: @tr("Red contrast"); fraction: Store.red-contrast-fraction; readout: Store.red-contrast-readout; value-text: Store.red-contrast-value; }
+        if root.channel-tab == 0: StoreSlider { field: 50; label: @tr("Red contrast"); fraction: Store.red-contrast-fraction; readout: Store.red-contrast-readout; value-text: Store.red-contrast-value; }
         if root.channel-tab == 1: StoreSlider {
             near: points-block.hovered;
             field: 33; label: @tr("Green white point"); fraction: Store.green-white-point-fraction; readout: Store.green-white-point-readout; value-text: Store.green-white-point-value;
@@ -196,10 +163,10 @@ export component ColorPane inherits Pane {
         }
         if root.channel-tab == 1: StoreSlider {
             near: points-block.hovered;
-            field: 50; label: @tr("Green mid"); fraction: Store.green-mid-fraction; readout: Store.green-mid-readout; value-text: Store.green-mid-value;
+            field: 48; label: @tr("Green mid"); fraction: Store.green-mid-fraction; readout: Store.green-mid-readout; value-text: Store.green-mid-value;
             fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
         }
-        if root.channel-tab == 1: StoreSlider { field: 53; label: @tr("Green contrast"); fraction: Store.green-contrast-fraction; readout: Store.green-contrast-readout; value-text: Store.green-contrast-value; }
+        if root.channel-tab == 1: StoreSlider { field: 51; label: @tr("Green contrast"); fraction: Store.green-contrast-fraction; readout: Store.green-contrast-readout; value-text: Store.green-contrast-value; }
         if root.channel-tab == 2: StoreSlider {
             near: points-block.hovered;
             field: 34; label: @tr("Blue white point"); fraction: Store.blue-white-point-fraction; readout: Store.blue-white-point-readout; value-text: Store.blue-white-point-value;
@@ -212,10 +179,10 @@ export component ColorPane inherits Pane {
         }
         if root.channel-tab == 2: StoreSlider {
             near: points-block.hovered;
-            field: 51; label: @tr("Blue mid"); fraction: Store.blue-mid-fraction; readout: Store.blue-mid-readout; value-text: Store.blue-mid-value;
+            field: 49; label: @tr("Blue mid"); fraction: Store.blue-mid-fraction; readout: Store.blue-mid-readout; value-text: Store.blue-mid-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
-        if root.channel-tab == 2: StoreSlider { field: 54; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
+        if root.channel-tab == 2: StoreSlider { field: 52; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
     }
     if !Lab.shown: Block {
         title: @tr("Lighting");
@@ -287,11 +254,11 @@ export component ColorPane inherits Pane {
         block: 12;
         modified: Store.film-effects-modified;
         help: Lab.shown ? @tr("Grain lays a film-like texture over the scene, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film.") : @tr("Grain lays a film-like texture over the scene, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film.");
-        StoreSlider { field: 40; label: @tr("Grain"); fraction: Store.grain-amount-fraction; readout: Store.grain-amount-readout; value-text: Store.grain-amount-value; }
-        StoreSlider { field: 41; label: @tr("Grain size"); fraction: Store.grain-size-fraction; readout: Store.grain-size-readout; value-text: Store.grain-size-value; }
-        StoreSlider { field: 42; label: @tr("Halation"); fraction: Store.halation-amount-fraction; readout: Store.halation-amount-readout; value-text: Store.halation-amount-value; }
-        StoreSlider { field: 43; label: @tr("Halation size"); fraction: Store.halation-size-fraction; readout: Store.halation-size-readout; value-text: Store.halation-size-value; }
-        StoreSlider { field: 48; label: @tr("Halation sensitivity"); fraction: Store.halation-sensitivity-fraction; readout: Store.halation-sensitivity-readout; value-text: Store.halation-sensitivity-value; }
+        StoreSlider { field: 38; label: @tr("Grain"); fraction: Store.grain-amount-fraction; readout: Store.grain-amount-readout; value-text: Store.grain-amount-value; }
+        StoreSlider { field: 39; label: @tr("Grain size"); fraction: Store.grain-size-fraction; readout: Store.grain-size-readout; value-text: Store.grain-size-value; }
+        StoreSlider { field: 40; label: @tr("Halation"); fraction: Store.halation-amount-fraction; readout: Store.halation-amount-readout; value-text: Store.halation-amount-value; }
+        StoreSlider { field: 41; label: @tr("Halation size"); fraction: Store.halation-size-fraction; readout: Store.halation-size-readout; value-text: Store.halation-size-value; }
+        StoreSlider { field: 46; label: @tr("Halation sensitivity"); fraction: Store.halation-sensitivity-fraction; readout: Store.halation-sensitivity-readout; value-text: Store.halation-sensitivity-value; }
     }
     // On the Scanner face its own finishing, a press a step.
     if Lab.shown: LabBlock {
@@ -305,15 +272,6 @@ export component ColorPane inherits Pane {
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
     }
-    // A digital photo's own levels on either face: with Pro's curves in front of Lighting, or in front of the machine's print.
-    if PanelState.digital: EditorBlock {
-        title: @tr("Levels");
-        help: Lab.shown ? @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. The machine then prints what they set. Double-click a handle to bring it back alone.") : @tr("The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone.");
-        block: 1;
-        modified: Editors.levels-modified;
-        folded <=> Editors.picture-levels-folded;
-        LevelsEditor { picture: true; histogram: Plots.levels; revision: Plots.levels-revision; }
-    }
     EditorBlock {
         title: @tr("Curves");
         demo: "curves";
@@ -323,7 +281,7 @@ export component ColorPane inherits Pane {
         news-read => { News.read("curves.scanner.1.3.1"); }
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
-        help: PanelState.digital && !Lab.shown ? @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw.") : @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
+        help: @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
         CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.

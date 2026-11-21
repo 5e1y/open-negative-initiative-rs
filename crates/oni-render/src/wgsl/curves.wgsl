@@ -1,8 +1,7 @@
 // `curves`: the channels' tables, the linked table, then the luma table as one gain on all three.
 // Each table is read linearly at `v * (size - 1)`, as Core Image samples a texel row inset by half.
-// `bent.w` is the luma table's slope past 1, `ends` the four RGB tables'.
 
-struct Params { head: vec4<u32>, bent: vec4<f32>, ends: vec4<f32> }
+struct Params { head: vec4<u32>, bent: vec4<f32> }
 
 const LUMA_SCALE_MAX: f32 = 8.0;
 
@@ -21,15 +20,15 @@ fn luma_at(v: f32) -> f32 {
     return mix(curves_luma_lut(k).r, curves_luma_lut(min(k + 1u, n - 1u)).r, f - f32(k));
 }
 
-// Past 1 the curve continues as a line at its slope there instead of clipping.
+// Past 1 the curve continues as a line of slope 1 instead of clipping.
 fn curve_rgb(v: f32, c: u32) -> f32 {
     if (v <= 1.0) { return rgb_at(v)[c]; }
-    return rgb_at(1.0)[c] + (v - 1.0) * P.ends[c];
+    return rgb_at(1.0)[c] + (v - 1.0);
 }
 
 fn curve_luma(v: f32) -> f32 {
     if (v <= 1.0) { return luma_at(v); }
-    return luma_at(1.0) + (v - 1.0) * P.bent.w;
+    return luma_at(1.0) + (v - 1.0);
 }
 
 fn curves_px(s: vec4<f32>) -> vec4<f32> {

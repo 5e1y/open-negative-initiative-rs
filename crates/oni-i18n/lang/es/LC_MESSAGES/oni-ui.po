@@ -69,7 +69,7 @@ msgstr "Emulador de escáner"
 msgid "Labels"
 msgstr "Etiquetas"
 
-#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/film_block.slint
+#: crates/oni-ui/ui/app.slint
 msgid "None"
 msgstr "Ninguna"
 
@@ -865,15 +865,15 @@ msgstr "En película"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1966,16 +1966,12 @@ msgid "Pro: every setting by hand, the place to start"
 msgstr "Pro: cada ajuste a mano, por donde empezar"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Black and White"
-msgstr "Blanco y negro"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Máquina"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, the photo at its As Shot white under ONI's own look, or the Frontier, the same photo under the minilab's look. The keypad and the effects act on either.\n\nThe photo's levels, film effects and lens act on both faces; Pro's Temperature, Tint, Lighting, Colour and Effects stay Pro's own."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, la foto en el blanco de su toma con el aspecto propio de ONI, o la Frontier, la misma foto con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLos niveles, los efectos de película y el objetivo de la foto actúan en ambas caras; la Temperatura, el Matiz, la Luz, el Color y los Efectos de Pro siguen siendo solo de Pro."
+msgid "The machine the Scanner face prints with: ONI, the photo's negative under ONI's own look, or the Frontier, the same negative under the minilab's look. The keypad and the effects act on either.\n\nThe Source tab, the film and its effects act on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
+msgstr "La máquina con la que imprime la cara Escáner: ONI, el negativo de la foto con el aspecto propio de ONI, o la Frontier, el mismo negativo con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Origen, la película y sus efectos actúan en ambas caras; el Balance de blancos automático, la Luz, el Color y los Efectos de Pro siguen siendo solo de Pro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
@@ -2062,10 +2058,6 @@ msgid "Temperature +: toward warm"
 msgstr "Temperatura +: hacia cálido"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint to the white that turns it grey.\n\nTemperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once."
-msgstr "El balance de blancos automático lee la luz de la foto, con más peso en sus zonas claras, y ajusta Temperatura y Tinte al blanco que la vuelve gris.\n\nTemperatura y Matiz fijan la luz con la que se tomó la foto, en kelvin tal como la lee la cámara: un RAW se abre en el blanco de su toma, cualquier otro archivo en el suyo; un doble clic vuelve a él.\n\nSaturación hace todos los colores más intensos o más grises a la vez."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
 msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras, y la lleva hacia el gris con Temperatura y Matiz. La intensidad del balance de blancos automático es la parte de esa corrección que asumen: cada foto conserva su propia corrección, la proporción es la del rollo.\n\nTemperatura mueve el color entre el azul y el amarillo, Matiz entre el verde y el magenta; ninguno cambia la luminosidad de la fotografía.\n\nLa saturación hace todos los colores más intensos o más grises a la vez."
 
@@ -2090,20 +2082,12 @@ msgid "The frame's light toward grey with Temperature and Tint, scaled by Auto W
 msgstr "La luz del fotograma hacia el gris con Temperatura y Matiz, según la intensidad del balance de blancos automático"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The photo's light toward grey with Temperature and Tint"
-msgstr "La luz de la foto hacia el gris con Temperatura y Tinte"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance Strength"
 msgstr "Intensidad del balance de blancos automático"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Shared by the {} photos of this roll."
 msgstr "Común a las {} fotos de este rollo."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The scene stands at the film's daylight, 5500 K, as the film sees it: Temperature and Tint balance the print."
-msgstr "La escena está a la luz de día de la película, 5500 K, como la película la ve: Temperatura y Tinte equilibran la copia."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "More Color Settings"
@@ -2258,24 +2242,8 @@ msgid "Chrome +: toward more, 5% a step"
 msgstr "Chrome +: hacia más, 5 % por paso"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
-msgid "Levels"
-msgstr "Niveles"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. The machine then prints what they set. Double-click a handle to bring it back alone."
-msgstr "El rango de la foto, elegido con RGB, Luma, R, G o B: RGB mueve los tres canales juntos, Luma solo la luz, conservando los colores, y R, G y B cada canal por separado. Cada uno tiene sus extremos negro y blanco, su punto medio entre ellos, sus sombras entre el negro y el punto medio y sus luces entre el punto medio y el blanco, y cada tirador sigue a sus vecinos; más allá del blanco, las luces conservan su detalle. Luego la máquina imprime lo que fijan. Doble clic en un tirador para devolverlo solo."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The photo's range, picked by RGB, Luma, R, G or B: RGB moves the three channels together, Luma the light alone, keeping the colours, and R, G and B each channel on its own. Each has its black and white ends, its midpoint between them, its shadows between the black and the midpoint and its highlights between the midpoint and the white, each handle following those beside it; past the white, the highlights keep their detail. Lighting then acts on what they set. Double-click a handle to bring it back alone."
-msgstr "El rango de la foto, elegido con RGB, Luma, R, G o B: RGB mueve los tres canales juntos, Luma solo la luz, conservando los colores, y R, G y B cada canal por separado. Cada uno tiene sus extremos negro y blanco, su punto medio entre ellos, sus sombras entre el negro y el punto medio y sus luces entre el punto medio y el blanco, y cada tirador sigue a sus vecinos; más allá del blanco, las luces conservan su detalle. Luego la Luz actúa sobre lo que fijan. Doble clic en un tirador para devolverlo solo."
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
 msgstr "Curvas"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone. They act before Lighting, which acts on what they draw."
-msgstr "Curvas dibujadas a mano, punto a punto: la de un canal tiñe solo sus luces o solo sus sombras. Actúan antes de la Luz, que actúa sobre lo que dibujan."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone."
@@ -2498,16 +2466,16 @@ msgid "Film"
 msgstr "Película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Shoots the photo on a film: its light exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is. None gives the photo back as it was.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the negative's gains and each channel's black and white, which the film's own data sets as Prepare the Roll sets a roll's: the black on the bare film, the white where the photo's middle grey prints as it does without the film. Double-click a slider to bring it back there."
-msgstr "Toma la foto sobre una película: su luz expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo. Ninguna devuelve la foto tal como era.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nLa tecla de ajustes muestra las ganancias del negativo y el negro y el blanco de cada canal, que los datos de la película sitúan como Preparar el rollo sitúa los de un rollo: el negro sobre la película virgen, el blanco donde el gris medio de la foto se imprime como sin la película. Haz doble clic en un regulador para devolverlo ahí."
+msgid "Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the stock's own white and the reference its data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there."
+msgstr "Toma la foto sobre una película: su escena, iluminada con el blanco propio de la película, expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo, con el filtrado, los niveles y los tintes de la pestaña Origen.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nLa tecla de ajustes muestra el blanco propio de la película y la referencia que sus datos fijan para el negativo, como Preparar el rollo mide la de un rollo: las ganancias, el negro de cada canal sobre la película virgen, y su blanco donde el gris medio de la foto se imprime como en un RAW normal. El Filtrado y los Niveles por canal de la pestaña Origen descansan ahí."
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Show the negative's gains and ends"
-msgstr "Mostrar las ganancias y los extremos del negativo"
+msgid "Show the film's white and reference"
+msgstr "Mostrar el blanco y la referencia de la película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Hide the negative's gains and ends"
-msgstr "Ocultar las ganancias y los extremos del negativo"
+msgid "Hide the film's white and reference"
+msgstr "Ocultar el blanco y la referencia de la película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Portra 800"
@@ -2517,41 +2485,21 @@ msgstr "Portra 800"
 msgid "Film exposure"
 msgstr "Exposición de la película"
 
-#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Red ↔ Cyan"
-msgstr "Rojo ↔ Cian"
-
-#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Green ↔ Magenta"
-msgstr "Verde ↔ Magenta"
-
-#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Blue ↔ Yellow"
-msgstr "Azul ↔ Amarillo"
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Scene white"
+msgstr "Blanco de la escena"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Red black"
-msgstr "Negro rojo"
+msgid "Gains"
+msgstr "Ganancias"
 
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Red white"
-msgstr "Blanco rojo"
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/film_block.slint
+msgid "Black"
+msgstr "Negro"
 
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Green black"
-msgstr "Negro verde"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Green white"
-msgstr "Blanco verde"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Blue black"
-msgstr "Negro azul"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Blue white"
-msgstr "Blanco azul"
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/film_block.slint
+msgid "White"
+msgstr "Blanco"
 
 #: crates/oni-ui/ui/panel/grain_colour.slint
 msgid "Grain colour at the black point"
@@ -2618,8 +2566,8 @@ msgid "Film Type"
 msgstr "Tipo de película"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
-msgstr "Qué es la foto: un negativo en color, una diapositiva, blanco y negro o una foto digital. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara. Una foto digital no tiene película: Preparar el rollo solo marca sus fotos como digitales, sin filtración, colorantes ni niveles; su color lo fijan Temperatura y Matiz en la pestaña Color."
+msgid "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo is shot on a virtual film, the Film block on the Colour tab: its negative is read as any negative is, its filtration, levels and dyes resting on the film's own reference, and Prepare the Roll only sets its photos as digital."
+msgstr "Qué es la foto: un negativo en color, una diapositiva, blanco y negro o una foto digital. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara. Una foto digital se toma sobre una película virtual, el bloque Película de la pestaña Color: su negativo se lee como cualquier negativo, su filtrado, sus niveles y sus tintes descansan sobre la referencia propia de la película, y Preparar el rollo solo marca sus fotos como digitales."
 
 #: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -2750,12 +2698,24 @@ msgid "Blue ↔ Amber"
 msgstr "Azul ↔ Ámbar"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Green ↔ Magenta"
+msgstr "Verde ↔ Magenta"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Magenta ↔ Green"
 msgstr "Magenta ↔ Verde"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rojo ↔ Cian"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Cyan ↔ Red"
 msgstr "Cian ↔ Rojo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Blue ↔ Yellow"
+msgstr "Azul ↔ Amarillo"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Yellow ↔ Blue"
@@ -5055,6 +5015,14 @@ msgstr "Según la emulsión, {stock}"
 msgid "Not the film stock's: {stock} has {family} dyes"
 msgstr "No son los de la emulsión: {stock} tiene tintes {family}"
 
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "R {red} · G {green} · B {blue}"
+msgstr "R {red} · G {green} · B {blue}"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "{kelvin} K, the light the stock is balanced for"
+msgstr "{kelvin} K, la luz para la que está equilibrada la película"
+
 #: crates/oni-app/src/app/rolls/balance_words.rs
 msgid "Balance Each of the {count}"
 msgstr "Equilibrar cada una de las {count}"
@@ -5232,14 +5200,6 @@ msgstr "Estás intentando aplicar los ajustes de un rollo a otro: los resultados
 #: crates/oni-app/src/editors/levels.rs
 msgid "Midpoint"
 msgstr "Punto medio"
-
-#: crates/oni-app/src/editors/levels.rs
-msgid "Black"
-msgstr "Negro"
-
-#: crates/oni-app/src/editors/levels.rs
-msgid "White"
-msgstr "Blanco"
 
 #: crates/oni-app/src/editors/levels.rs
 msgid "Mid"

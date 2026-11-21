@@ -20,7 +20,6 @@ draft: 030C0F4C-874C-41FC-BDD4-5817ABF1FEE6 window Negative camera
 settings: PipelineSettings {
     mode: Negative,
     inverted_source: false,
-    black_and_white: false,
     virtual_film: None,
     film: None,
     manual_order: None,
@@ -5242,8 +5241,6 @@ settings: PipelineSettings {
     balance_method: None,
     balance_filters: None,
     balance_strength: 0.67,
-    white: None,
-    shot: None,
     print: Print {
         exposure: 1.9070692,
         contrast: 0.0,
@@ -5611,43 +5608,6 @@ settings: PipelineSettings {
         amount: 0.0,
         size: 0.5,
         sensitivity: 0.0,
-    },
-    picture_levels: PictureLevels {
-        linked: Levels {
-            black: 0.0,
-            white: 1.0,
-            mid: 0.5,
-            shadows: 0.25,
-            highlights: 0.75,
-        },
-        luma: Levels {
-            black: 0.0,
-            white: 1.0,
-            mid: 0.5,
-            shadows: 0.25,
-            highlights: 0.75,
-        },
-        red: Levels {
-            black: 0.0,
-            white: 1.0,
-            mid: 0.5,
-            shadows: 0.25,
-            highlights: 0.75,
-        },
-        green: Levels {
-            black: 0.0,
-            white: 1.0,
-            mid: 0.5,
-            shadows: 0.25,
-            highlights: 0.75,
-        },
-        blue: Levels {
-            black: 0.0,
-            white: 1.0,
-            mid: 0.5,
-            shadows: 0.25,
-            highlights: 0.75,
-        },
     },
     lens_correction: LensCorrection {
         distortion: 0.0,

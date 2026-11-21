@@ -31,10 +31,12 @@ fn patch(c: [f32; 3], light: f32) -> V4 {
     [c[0] / y * light, c[1] / y * light, c[2] / y * light, 1.0]
 }
 
-/// The light whose tone, as the strength curve's axis names it, is `tone`.
+/// The light whose tone, as the strength curve's axis names it, is `tone`: through the photo's film, then its
+/// negative printed at rest on the film's own gains.
 fn light_at(tone: f32, s: &PipelineSettings) -> f32 {
-    let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(s) };
-    let shown = |y: f32| luma(cpu::stage47([y, y, y, 1.0], &picture)).max(0.0).powf(1.0 / 2.2);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let picture = Stage47 { gain: stock.reference.stops.map(f32::exp2), ..conversion::stage47(s) };
+    let shown = |y: f32| luma(cpu::stage47(cpu::virtual_negative([y, y, y, 1.0], &stock.kernel_at(0.0), &stock.table), &picture)).max(0.0).powf(1.0 / 2.2);
     let (mut lo, mut hi) = (GRAIN_LOW_STOPS, 1.0f32);
     for _ in 0..40 {
         let mid = (lo + hi) / 2.0;

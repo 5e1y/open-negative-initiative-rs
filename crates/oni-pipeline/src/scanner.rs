@@ -198,7 +198,7 @@ pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
 
 /// A density offset of the machine's as stops of gain, more density less light.
 pub fn stops_of(offset: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
-    let sign = if s.read_as().invert_flag() > 0.5 { -1.0 } else { 1.0 };
+    let sign = if s.mode.invert_flag() > 0.5 { -1.0 } else { 1.0 };
     offset.map(|o| sign * o / 2f32.log10())
 }
 
@@ -212,7 +212,7 @@ pub fn frontier_rest() -> [f32; 3] {
 }
 
 /// The Lighting exposure a render enters the look at: the looks lend about a stop for a negative's 1.5 of
-/// rest left out, so a slide or a digital photo, resting at 0, enters as far under its own rest.
+/// rest left out, so a slide, resting at 0, enters as far under its own rest.
 pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
     Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
 }
@@ -228,13 +228,7 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     out.print = Print { contrast: s.scanner_finish.contrast, exposure: look_entry_exposure(s.mode), ..Print::default() };
     out.density = 0.0;
     let stops = gain_stops(s);
-    if s.mode.is_film() {
-        out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
-    } else {
-        // A digital photo's only gains are the keys', on its As Shot white as a roll prints on its measure.
-        out.gains.stops = stops;
-        out.white = s.shot;
-    }
+    out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
     Some(out)
 }
 

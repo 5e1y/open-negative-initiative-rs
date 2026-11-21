@@ -6,11 +6,11 @@ use super::Field;
 use oni_settings::PipelineSettings;
 use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{CurveSet, SaturationCurve};
-use oni_settings::levels::{Levels, LevelsChannel, PictureLevels};
+use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 
 /// The fields holding curves whose points keep their x order, and windows whose ends keep theirs.
 pub(super) fn bends(field: Field) -> bool {
-    matches!(field, Field::ManualCurves | Field::Saturation | Field::ScannerFinish | Field::PictureLevels | Field::Grain)
+    matches!(field, Field::ManualCurves | Field::Saturation | Field::ScannerFinish | Field::Levels | Field::Grain)
 }
 
 /// `on`'s curves after a patch from `moved`'s first to its second, each point it moved laid on `own`, the
@@ -23,7 +23,7 @@ pub(super) fn ordered(field: Field, moved: (&PipelineSettings, &PipelineSettings
             set(&own.scanner_finish.manual_curves, &mut on.scanner_finish.manual_curves);
             saturation(&own.scanner_finish.saturation, &mut on.scanner_finish.saturation);
         }
-        Field::PictureLevels => windows(&own.picture_levels, &mut on.picture_levels),
+        Field::Levels => windows(&own.levels, &mut on.levels),
         Field::Grain => on.grain.curve = grain(&moved.0.grain.curve, &moved.1.grain.curve, own.grain.curve),
         _ => {}
     }
@@ -57,8 +57,8 @@ fn grain(before: &GrainCurve, after: &GrainCurve, mut own: GrainCurve) -> GrainC
 
 /// Each window's ends as patched: a pair moved together keeps the order it came in; one end moved
 /// alone is set against the frame's own other end.
-fn windows(own: &PictureLevels, on: &mut PictureLevels) {
-    for channel in LevelsChannel::PICTURE {
+fn windows(own: &LevelsSet, on: &mut LevelsSet) {
+    for channel in LevelsChannel::PER_CHANNEL {
         let (was, patched) = (own.get(channel), on.get(channel));
         let (black, white) = (patched.black != was.black, patched.white != was.white);
         if black == white {
@@ -154,18 +154,18 @@ mod tests {
     fn a_patched_level_end_never_crosses_the_frame_s_own_other_end() {
         let was = PipelineSettings::default();
         let mut now = was.clone();
-        now.picture_levels.red.set_black(0.6);
-        now.picture_levels.green = Levels::with_ends(0.2, 0.7);
+        now.levels.red.set_black(1.6);
+        now.levels.green = Levels::with_ends(0.2, 0.7);
         let mut frame = PipelineSettings::default();
-        frame.picture_levels.red.set_white(0.4);
+        frame.levels.red.set_white(1.4);
         let mut on = frame.clone();
-        Field::PictureLevels.patch(&was, &now, &mut on);
-        let red = on.picture_levels.red;
-        assert_eq!((red.black, red.white), (0.4 - Levels::EPSILON, 0.4), "held short of its own white");
-        assert_eq!(on.picture_levels.green, Levels::with_ends(0.2, 0.7), "a pair moved together lands whole");
+        Field::Levels.patch(&was, &now, &mut on);
+        let red = on.levels.red;
+        assert_eq!((red.black, red.white), (1.4 - Levels::EPSILON, 1.4), "held short of its own white");
+        assert_eq!(on.levels.green, Levels::with_ends(0.2, 0.7), "a pair moved together lands whole");
         // Twin: the leaves laid alone put the black past that frame's white.
         let mut leaves = frame.clone();
-        Field::PictureLevels.patched_leaves(&was, &now, &mut leaves);
-        assert!(leaves.picture_levels.red.black > leaves.picture_levels.red.white);
+        Field::Levels.patched_leaves(&was, &now, &mut leaves);
+        assert!(leaves.levels.red.black > leaves.levels.red.white);
     }
 }

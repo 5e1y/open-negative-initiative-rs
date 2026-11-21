@@ -44,8 +44,6 @@ impl Field {
             Field::RedBlackPoint => "red-black-point",
             Field::GreenBlackPoint => "green-black-point",
             Field::BlueBlackPoint => "blue-black-point",
-            Field::WhiteKelvin => "white-kelvin",
-            Field::WhiteTint => "white-tint",
             Field::GrainAmount => "grain-amount",
             Field::GrainSize => "grain-size",
             Field::GrainColourBlack => "grain-colour-black",
@@ -64,15 +62,6 @@ impl Field {
             Field::GreenContrast => "green-contrast",
             Field::BlueContrast => "blue-contrast",
             Field::FilmExposure => "film-exposure",
-            Field::FilmRed => "film-red",
-            Field::FilmGreen => "film-green",
-            Field::FilmBlue => "film-blue",
-            Field::FilmRedBlack => "film-red-black",
-            Field::FilmGreenBlack => "film-green-black",
-            Field::FilmBlueBlack => "film-blue-black",
-            Field::FilmRedWhite => "film-red-white",
-            Field::FilmGreenWhite => "film-green-white",
-            Field::FilmBlueWhite => "film-blue-white",
         }
     }
 }

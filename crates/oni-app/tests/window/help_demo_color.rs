@@ -53,17 +53,10 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-const DIGITAL_COLOUR: &str = concat!(
-    "Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint ",
-    "to the white that turns it grey.\n\n",
-    "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: ",
-    "a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\n",
-    "Saturation makes every colour stronger or greyer at once."
-);
-
-/// The Colour block's card says what a digital photo shows, its white in kelvin and tint, and plays no
-/// Auto White Balance, which it hides; a card standing as the film type turns follows it. Twin: a negative's plays it.
-pub(crate) fn the_colour_card_of_a_digital_photo_plays_no_white_balance() {
+/// The Colour block's card of a digital photo is a negative's, its Auto White Balance balancing the print, and
+/// plays the white balance's demo; a card standing as the film type turns keeps it. Twin: the Film block's card
+/// beside it plays none.
+pub(crate) fn the_colour_card_of_a_digital_photo_plays_the_white_balance() {
     let Some((rig, shell, root)) = opened("help-demo-digital") else { return };
     let w = &shell.window;
     let (tip, panel) = (w.global::<Tip>(), w.global::<PanelState>());
@@ -71,24 +64,19 @@ pub(crate) fn the_colour_card_of_a_digital_photo_plays_no_white_balance() {
     panel.set_tab(PanelTab::Color);
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
-
-    // Twin: on a negative the card plays the white balance's demo.
     press_help(&rig, w, "Colour");
+    let negative = tip.get_open().to_string();
     assert_eq!(tip.get_demo(), "white-balance", "a negative's Colour card");
-    rig.until("the white balance's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
-
-    // The film type turned under the hand, the card standing: it says the digital photo's own words, no clip.
+    // The film type turned under the hand, the card standing: the same words, the same clip.
     panel.invoke_film_type_picked(3);
     rig.settle();
     assert_eq!(settings().mode, oni_settings::ConversionMode::Digital);
-    assert_eq!((tip.get_open().as_str(), tip.get_demo().as_str()), (DIGITAL_COLOUR, ""), "the card followed the film type");
-    assert!(!tip.get_has_clip(), "no demo plays");
+    assert_eq!((tip.get_open().to_string(), tip.get_demo().as_str()), (negative, "white-balance"), "the card is a negative's");
+    rig.until("the white balance's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
     rig.shot("help-colour-digital");
-
-    // Pressed again on the digital photo, the same card and no clip.
+    // Twin: another mark of the tab names its own topic, here none.
     crate::help_demo::leave_help(&rig, w);
-    assert_eq!(tip.get_open().as_str(), "", "the hand gone, the card goes");
-    press_help(&rig, w, "Colour");
-    assert_eq!((tip.get_open().as_str(), tip.get_demo().as_str(), tip.get_has_clip()), (DIGITAL_COLOUR, "", false));
+    press_help(&rig, w, "Film");
+    assert!(tip.get_open().starts_with("Shoots the photo on a film") && tip.get_demo().is_empty());
     let _ = std::fs::remove_dir_all(&root);
 }

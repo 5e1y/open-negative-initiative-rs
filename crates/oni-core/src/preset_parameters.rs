@@ -47,7 +47,6 @@ pub const BLOCKS: [Block; 4] = [
             entry("vignette", marked("Vignette"), &["vignette"]),
             entry("secretSauce", marked("Chrome"), &["secretSauce"]),
             entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
-            entry("pictureLevels", marked("Levels"), &["pictureLevels"]),
             entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),
             entry("densityCeiling", marked("Highlight Detail"), &["densityCeiling"]),
             entry("spectrogram", marked("Colour Mixer"), &["spectrogram"]),

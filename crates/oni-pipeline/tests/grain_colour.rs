@@ -27,9 +27,12 @@ fn even(y: Option<f64>) -> GrainCurve {
     GrainCurve { points: [0.0, 0.25, 0.5, 0.75, 1.0].map(|x| Point::new(x, y.unwrap_or(x))) }
 }
 
-/// The tone the strength curve's axis names for a light: its display luminance through the unlit picture.
+/// The tone the strength curve's axis names for a light: its display luminance through the photo's film, then
+/// its negative printed at rest on the film's own gains.
 fn shown(light: f32, s: &PipelineSettings) -> f32 {
-    let p = cpu::stage47([light, light, light, 1.0], &Stage47 { gain: [1.0; 3], ..conversion::stage47(s) });
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let picture = Stage47 { gain: stock.reference.stops.map(f32::exp2), ..conversion::stage47(s) };
+    let p = cpu::stage47(cpu::virtual_negative([light, light, light, 1.0], &stock.kernel_at(0.0), &stock.table), &picture);
     (p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]).max(0.0).powf(1.0 / 2.2)
 }
 
@@ -146,7 +149,8 @@ fn the_colour_follows_its_line_from_the_black_to_a_neutral_white() {
     let gap = off_line(&measured, line);
     assert!(gap < 0.08, "the colour is {gap:.3} off its line");
     let white = measured.last().unwrap();
-    assert!(white.0 > 0.95 && white.1 < 0.1, "near the white the colour reads {white:?}");
+    // The film's shoulder holds its brightest grey under the white: there the colour has fallen most of the way.
+    assert!(white.0 > 0.8 && white.1 < 0.3 * measured[0].1, "near the white the colour reads {white:?}");
     // Twin: one colour on every tone.
     let flat = colour_by_tone(&mut g, [1.0, 1.0]);
     let twin = off_line(&flat, line);

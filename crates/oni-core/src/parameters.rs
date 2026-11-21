@@ -3,7 +3,6 @@
 
 use crate::balance;
 use oni_settings::levels::Levels;
-use oni_settings::white;
 use oni_settings::PipelineSettings;
 use std::collections::BTreeSet;
 use std::sync::OnceLock;
@@ -62,11 +61,6 @@ pub fn all() -> &'static [Row] {
         let mut levels = handles("levelsPerChannel", "red", |s| &mut s.levels.red);
         levels.extend(handles("levelsPerChannel", "green", |s| &mut s.levels.green));
         levels.extend(handles("levelsPerChannel", "blue", |s| &mut s.levels.blue));
-        let mut picture = handles("pictureLevels", "linked", |s| &mut s.picture_levels.linked);
-        picture.extend(handles("pictureLevels", "luma", |s| &mut s.picture_levels.luma));
-        picture.extend(handles("pictureLevels", "red", |s| &mut s.picture_levels.red));
-        picture.extend(handles("pictureLevels", "green", |s| &mut s.picture_levels.green));
-        picture.extend(handles("pictureLevels", "blue", |s| &mut s.picture_levels.blue));
         vec![
             Row {
                 id: "gains",
@@ -120,23 +114,20 @@ pub fn all() -> &'static [Row] {
                     (to.print.red, to.print.green, to.print.blue) = filters;
                 },
             },
-            // Temperature, Tint, the balance correction and its share, under the id stored presets name; a
-            // digital photo's white with them, which a film frame keeps as its own.
+            // Temperature, Tint, the balance correction and its share, under the id stored presets name.
             Row {
                 id: "curves",
-                covers: &["balanceFilters", "balanceStrength", "white"],
+                covers: &["balanceFilters", "balanceStrength"],
                 sliders: vec![
                     slider("print.red", carry!(print.red)),
                     slider("print.green", carry!(print.green)),
                     slider("print.blue", carry!(print.blue)),
                     slider("balanceFilters", carry!(balance_filters)),
                     slider("balanceStrength", carry!(balance_strength)),
-                    slider("white", |from, to| to.white = white::carried(from.white, to)),
                 ],
                 carry: |from, to| {
                     (to.print.red, to.print.green, to.print.blue) = (from.print.red, from.print.green, from.print.blue);
                     (to.balance_filters, to.balance_strength) = (from.balance_filters, from.balance_strength);
-                    to.white = white::carried(from.white, to);
                 },
             },
             // The other curve set, a row of its own: sharing one would paste the wrong stage's tables.
@@ -158,7 +149,6 @@ pub fn all() -> &'static [Row] {
                 },
             },
             // A digital photo's own windows, a film frame keeping them unrendered.
-            Row { id: "pictureLevels", covers: &["pictureLevels"], sliders: picture, carry: carry!(picture_levels) },
             Row { id: "density", covers: &["density"], sliders: vec![], carry: carry!(density) },
             // Eight bands on two axes are one gesture, so the mixer travels whole or not at all.
             Row { id: "spectrogram", covers: &["spectrogram"], sliders: vec![], carry: carry!(spectrogram) },

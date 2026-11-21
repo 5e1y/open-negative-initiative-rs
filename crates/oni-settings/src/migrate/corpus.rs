@@ -115,7 +115,7 @@ fn first_apart(got: &str, want: &str) -> String {
 fn every_corpus_file_migrates_and_reads_back_as_its_golden() {
     let dir = scratch("goldens");
     let files = sidecars(&corpus());
-    assert_eq!(files.len(), 40, "the corpus holds forty sidecars");
+    assert_eq!(files.len(), 42, "the corpus holds forty-two sidecars");
     let mut wrong = Vec::new();
     for path in &files {
         let source = std::fs::read(path).unwrap();
@@ -151,7 +151,7 @@ fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
         let (_, outcome, _) = migrated(&dir, &path, &source, &facts(&path));
         match outcome {
             Err(Refusal::Unreadable(_)) => seen.push("unreadable"),
-            Err(Refusal::Newer(38)) => seen.push("newer"),
+            Err(Refusal::Newer(39)) => seen.push("newer"),
             Ok(Outcome::Migrated { .. }) => seen.push("migrated"),
             other => panic!("{}: {other:?}", path.display()),
         }

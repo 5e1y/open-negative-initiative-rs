@@ -6,10 +6,9 @@ use oni_settings::axis::density_axis;
 use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::lens::LensCorrection;
-use oni_settings::levels::{Levels, LevelsChannel};
+use oni_settings::levels::Levels;
 use oni_settings::settings::roll_settings;
 use oni_settings::tone::{Print, color_density};
-use oni_settings::white::{self, White};
 use oni_settings::{PipelineSettings, VirtualFilm};
 
 /// Chroma denoise's Amount slider.
@@ -58,8 +57,6 @@ pub enum Knob {
     /// Balance strength re-doses the filters a key wrote, in one write.
     BalanceStrength,
     Level(Channel, Handle),
-    /// A digital photo's own window on the picture, its ends inside 0 to 1.
-    Picture(LevelsChannel, Handle),
     Exposure,
     Contrast,
     Shadows,
@@ -74,9 +71,6 @@ pub enum Knob {
     ChannelContrast(Channel),
     Temperature,
     Tint,
-    /// A digital photo's white: the light it was taken under, in kelvin and DNG's tint.
-    WhiteKelvin,
-    WhiteTint,
     Density,
     Vignette,
     Texture,
@@ -104,11 +98,8 @@ pub enum Knob {
     LensRed,
     LensBlue,
     LensVignetting,
-    /// A digital photo's virtual film: its exposure, then its negative's gains and each channel's ends.
+    /// The stops of light a digital photo's virtual film takes over its scene's own.
     FilmExposure,
-    FilmGain(Channel),
-    FilmBlack(Channel),
-    FilmWhite(Channel),
 }
 
 impl Knob {
@@ -120,7 +111,6 @@ impl Knob {
             Knob::Separation => Field::Separation,
             Knob::BalanceStrength => Field::BalanceStrength,
             Knob::Level(..) => Field::Levels,
-            Knob::Picture(..) => Field::PictureLevels,
             Knob::Exposure
             | Knob::Contrast
             | Knob::Shadows
@@ -133,7 +123,6 @@ impl Knob {
             | Knob::ChannelContrast(_)
             | Knob::Temperature
             | Knob::Tint => Field::Print,
-            Knob::WhiteKelvin | Knob::WhiteTint => Field::White,
             Knob::Density => Field::Density,
             Knob::Vignette => Field::Vignette,
             Knob::Texture => Field::Texture,
@@ -146,7 +135,7 @@ impl Knob {
             Knob::GrainAmount | Knob::GrainSize | Knob::GrainColourBlack | Knob::GrainColourWhite => Field::Grain,
             Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
-            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => Field::VirtualFilm,
+            Knob::FilmExposure => Field::VirtualFilm,
         }
     }
 
@@ -156,7 +145,7 @@ impl Knob {
         Some(match self {
             Knob::Gain(_) | Knob::GainTemperature | Knob::GainTint => Gains::RANGE,
             Knob::DensityCeiling => {
-                let r = density_axis::range_for(s.decoded_from_mosaic);
+                let r = density_axis::range_for(s.decoded_from_mosaic, s.mode);
                 (*r.start(), *r.end())
             }
             Knob::Separation => separation::RANGE,
@@ -165,10 +154,6 @@ impl Knob {
             Knob::Level(_, Handle::Shadows) => Levels::SHADOW_RANGE,
             Knob::Level(_, Handle::Highlights) => Levels::HIGHLIGHT_RANGE,
             Knob::Level(..) => return None,
-            Knob::Picture(_, Handle::Mid) => Levels::MID_RANGE,
-            Knob::Picture(_, Handle::Shadows) => Levels::SHADOW_RANGE,
-            Knob::Picture(_, Handle::Highlights) => Levels::HIGHLIGHT_RANGE,
-            Knob::Picture(..) => (0.0, 1.0),
             Knob::Exposure => Print::EXPOSURE_RANGE,
             Knob::Contrast if mono => Print::MONOCHROME_CONTRAST_RANGE,
             Knob::Contrast => Print::CONTRAST_RANGE,
@@ -181,8 +166,6 @@ impl Knob {
             Knob::ChannelContrast(_) => Print::CONTRAST_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
-            Knob::WhiteKelvin => white::KELVIN_RANGE,
-            Knob::WhiteTint => white::TINT_RANGE,
             Knob::Density => color_density::RANGE,
             Knob::Vignette => Vignette::RANGE,
             Knob::Texture => Texture::RANGE,
@@ -204,8 +187,6 @@ impl Knob {
             Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
             Knob::FilmExposure => VirtualFilm::EXPOSURE_RANGE,
-            Knob::FilmGain(_) => Gains::RANGE,
-            Knob::FilmBlack(_) | Knob::FilmWhite(_) => VirtualFilm::SHARE_RANGE,
         })
     }
 
@@ -219,7 +200,6 @@ impl Knob {
             Knob::Separation => s.separation,
             Knob::BalanceStrength => s.balance_strength,
             Knob::Level(c, h) => handle(levels(s, c), h),
-            Knob::Picture(c, h) => handle(&s.picture_levels.get(c), h),
             Knob::Exposure => p.exposure,
             Knob::Contrast => p.contrast,
             Knob::Shadows => p.shadows,
@@ -232,8 +212,6 @@ impl Knob {
             Knob::ChannelContrast(c) => p.channel_contrast[c.index()],
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
-            Knob::WhiteKelvin => white_of(s).kelvin,
-            Knob::WhiteTint => white_of(s).tint,
             Knob::Density => s.density,
             Knob::Vignette => s.vignette.stops,
             Knob::Texture => s.texture.amount,
@@ -259,7 +237,7 @@ impl Knob {
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
             Knob::LensVignetting => s.lens_correction.vignetting,
-            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::get(self, s),
+            Knob::FilmExposure => s.film().map_or(0.0, |f| f.exposure),
         }
     }
 
@@ -284,7 +262,6 @@ impl Knob {
             }
             Knob::BalanceStrength => {}
             Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
-            Knob::Picture(c, h) => set_handle(out.picture_levels.get_mut(c), h, v),
             Knob::Exposure => out.print.exposure = v,
             Knob::Contrast => out.print.contrast = v,
             Knob::Shadows => out.print.shadows = v,
@@ -304,8 +281,6 @@ impl Knob {
                 let by = v - Knob::Tint.get(s);
                 shift_filters(&mut out.print, Print::TINT_AXIS, by);
             }
-            Knob::WhiteKelvin => out.white = Some(White { kelvin: v, ..white_of(s) }),
-            Knob::WhiteTint => out.white = Some(White { tint: v, ..white_of(s) }),
             Knob::Density => out.density = v,
             Knob::Vignette => out.vignette.stops = v,
             Knob::Texture => out.texture.amount = v,
@@ -331,15 +306,14 @@ impl Knob {
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,
             Knob::LensVignetting => out.lens_correction.vignetting = v,
-            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::set(self, &mut out, v),
+            Knob::FilmExposure => {
+                if let Some(f) = s.film() {
+                    out.virtual_film = Some(VirtualFilm { exposure: v, ..f });
+                }
+            }
         }
         out
     }
-}
-
-/// The white a digital photo renders for: its own, else the one its decode stands on.
-pub fn white_of(s: &PipelineSettings) -> White {
-    s.white.unwrap_or_else(|| white::of_uv(white::anchor(s.decoded_from_mosaic)))
 }
 
 fn shift_filters(p: &mut Print, axis: [f32; 3], by: f32) {
@@ -384,10 +358,8 @@ fn levels_mut(s: &mut PipelineSettings, c: Channel) -> &mut Levels {
     }
 }
 
-mod film;
 mod gains;
 
-pub use film::FILM_MINIMUM_SPAN;
 pub use gains::{gain_temperature, gain_tint};
 use gains::{GAIN_TEMPERATURE_AXIS, GAIN_TINT_AXIS, shift_gains};
 

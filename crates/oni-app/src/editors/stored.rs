@@ -28,11 +28,13 @@ pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineS
     if scanner { settings.storing_scanner_edit(&f) } else { f }
 }
 
-/// `restingLevels`: a measured roll's window when the frame stands on one, else the bare axis.
+/// `restingLevels`: a measured roll's window when the frame stands on one, a digital photo's film's own,
+/// else the bare axis.
 pub fn resting_levels(settings: &PipelineSettings) -> LevelsSet {
-    match &settings.roll_reference {
-        Some(reference) => oni_core::balance::written(reference, settings).levels,
-        None => LevelsSet::neutral(settings.mode, settings.density_ceiling),
+    match (&settings.roll_reference, settings.film()) {
+        (Some(reference), _) => oni_core::balance::written(reference, settings).levels,
+        (None, Some(film)) => film.stock.reference().levels(),
+        (None, None) => LevelsSet::neutral(settings.mode, settings.density_ceiling),
     }
 }
 
@@ -46,13 +48,9 @@ pub fn rested_levels(settings: &PipelineSettings) -> LevelsSet {
     out
 }
 
-/// The frame's own windows at their rest: a film's three, the linked and luma ones kept; a digital
-/// photo's five on the picture.
+/// The frame's own windows at their rest.
 pub fn rested_windows(settings: &PipelineSettings) -> Windows {
-    match Windows::of(settings) {
-        Windows::Film(_) => Windows::Film(rested_levels(settings)),
-        Windows::Picture(_) => Windows::Picture(Default::default()),
-    }
+    Windows(rested_levels(settings))
 }
 
 /// True where the frame's own windows stand off their rest.

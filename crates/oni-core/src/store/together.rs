@@ -10,7 +10,7 @@ use oni_settings::settings::roll_settings::Field as Shared;
 
 /// A frame's own fields, which a step on the open frame never lays on the others: its file, its
 /// framing, its dust, its roll.
-const OWN: [Field; 17] = [
+const OWN: [Field; 16] = [
     Field::Film,
     Field::ManualOrder,
     Field::Sheet,
@@ -23,7 +23,6 @@ const OWN: [Field; 17] = [
     Field::PassOf,
     Field::Geometry,
     Field::Corrections,
-    Field::ShotWhite,
     Field::RollReference,
     Field::RollReferenceDeclined,
     Field::MeasuredGains,

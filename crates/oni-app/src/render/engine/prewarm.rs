@@ -2,7 +2,6 @@
 //! half a second for Texture's, which a first notch would otherwise wait on.
 
 use super::*;
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Face, ScannerMachine};
 
 /// An edit with every finishing kernel on, the set a busy notch takes.
@@ -10,18 +9,15 @@ pub(crate) fn busy() -> PipelineSettings {
     busied(PipelineSettings::rest(ConversionMode::Negative, true))
 }
 
-/// A digital photo's busy edit: its white, film effects and levels on top of every finishing kernel.
+/// A digital photo's busy edit: its film's effects and its virtual negative on top of every finishing kernel.
 pub(crate) fn digital_busy() -> PipelineSettings {
     let mut busy = busied(PipelineSettings::rest(ConversionMode::Digital, true));
-    busy.white = Some(oni_settings::white::White { kelvin: 4000.0, tint: 0.0 });
     busy.grain.amount = 0.5;
     busy.halation.amount = 0.5;
-    busy.picture_levels.luma.mid = 0.3;
     busy
 }
 
-/// A digital photo's busy edit on the Scanner face: its levels before the machine's print, a Scanner
-/// curve after the look.
+/// A digital photo's busy edit on the Scanner face, a Scanner curve after the look.
 pub(crate) fn digital_scanner_busy() -> PipelineSettings {
     let mut busy = PipelineSettings { face: Face::Scanner, ..digital_busy() };
     busy.scanner.d = 2;
@@ -63,16 +59,9 @@ fn variants() -> Vec<PipelineSettings> {
     plain.secret_sauce = 0.0;
     variants.push(plain);
     variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
-    // A digital photo's Lighting rides in its picture's pass, or after its curves' tables when they bend.
-    let mut lit = PipelineSettings::rest(ConversionMode::Digital, true);
-    lit.print.exposure = 0.5;
-    variants.push(lit.clone());
-    lit.manual_curves.contrast = 0.2;
-    variants.push(lit);
-    variants.push(PipelineSettings { mode: ConversionMode::Digital, print: Print { exposure: 0.5, ..busy.print }, ..busy });
+    // A digital photo's scene on its film, then its negative as a negative's, on either face.
     variants.push(digital_busy());
     variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
-    // On the Scanner face a digital photo's print rides in its picture's pass, or after its levels' table.
     let scanned = PipelineSettings { face: Face::Scanner, ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let busy = digital_scanner_busy();
     for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {

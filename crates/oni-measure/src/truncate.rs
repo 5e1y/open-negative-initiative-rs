@@ -4,7 +4,7 @@
 use oni_settings::axis::graduation;
 use oni_settings::blocks::{ChromaDenoise, Grain, Halation, Texture, Vignette};
 use oni_settings::curves::{CurveSet, SaturationCurve};
-use oni_settings::levels::{LevelsSet, PictureLevels};
+use oni_settings::levels::LevelsSet;
 use oni_settings::modes::Face;
 use oni_settings::scanner::ScannerFinish;
 use oni_settings::spectrogram::Spectrogram;
@@ -15,8 +15,6 @@ use oni_settings::PipelineSettings;
 pub enum Stage {
     Levels,
     GlobalLevels,
-    /// A digital photo's own levels: on Pro's face where its curves are, on the Scanner's before the print.
-    PictureLevels,
     ManualCurves,
     Curves,
 }
@@ -45,19 +43,10 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
             out.print.bypassed = true;
             out.density = 0.0;
             out.manual_curves = CurveSet::default();
-            out.picture_levels = PictureLevels::default();
         }
-        // A digital photo's levels lie in the curves' tables and its Lighting acts after them, so a reading
-        // in front of them rests all three; on the Scanner face its levels lie before the machine's curves.
-        Stage::PictureLevels | Stage::ManualCurves => {
+        Stage::ManualCurves => {
             out.manual_curves = CurveSet::default();
             out.scanner_finish.manual_curves = CurveSet::default();
-            if before == Stage::PictureLevels || s.face == Face::Pro {
-                out.picture_levels = PictureLevels::default();
-            }
-            if !s.mode.is_film() {
-                out = out.unlit();
-            }
         }
         Stage::Curves => {}
     }
@@ -96,47 +85,17 @@ mod tests {
     }
 
     #[test]
-    fn in_front_of_the_curves_a_digital_photos_levels_rest_and_past_them_they_stay() {
-        let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-        s.picture_levels.red.set_white(0.7);
-        s.picture_levels.luma.mid = 0.3;
-        for stage in [Stage::Levels, Stage::GlobalLevels, Stage::PictureLevels, Stage::ManualCurves] {
-            assert!(truncated(&s, stage).picture_levels.is_neutral(), "{stage:?}");
-        }
-        // Twin: a reading past the curves reads the frame's own levels.
-        assert_eq!(truncated(&s, Stage::Curves).picture_levels, s.picture_levels);
-    }
-
-    #[test]
-    fn a_digital_photos_levels_are_read_where_its_face_lays_them() {
-        let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-        s.picture_levels.red.set_white(0.7);
-        s.scanner_finish.manual_curves.linked.points = vec![Point::new(0.0, 0.0), Point::new(0.3, 0.8), Point::new(1.0, 1.0)];
-        // On Pro the levels share the curves' tables: one reading in front of both.
-        assert_eq!(truncated(&s, Stage::PictureLevels), truncated(&s, Stage::ManualCurves));
-        // On the Scanner face the machine's curves read the levels, which are read in front of themselves.
-        s.face = Face::Scanner;
-        let curves = truncated(&s, Stage::ManualCurves);
-        assert_eq!(curves.picture_levels, s.picture_levels);
-        assert!(curves.scanner_finish.manual_curves.is_neutral());
-        // Twin: in front of the levels they rest, so the two readings differ.
-        assert!(truncated(&s, Stage::PictureLevels).picture_levels.is_neutral());
-        assert_ne!(truncated(&s, Stage::PictureLevels), curves);
-    }
-
-    #[test]
-    fn in_front_of_the_curves_a_digital_photos_lighting_rests_and_a_films_stays() {
+    fn in_front_of_the_curves_a_digital_photos_lighting_stays_as_a_negatives_does() {
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
         s.print.exposure = 0.6;
-        s.print.black_point = 0.04;
-        (s.print.channel_contrast, s.print.channel_mid) = ([0.3, 0.0, -0.2], [0.0, 0.15, 0.0]);
-        s.density = 0.3;
-        assert_eq!(truncated(&s, Stage::ManualCurves), truncated(&s.unlit(), Stage::ManualCurves));
-        assert_eq!(truncated(&s, Stage::ManualCurves).print.channel_contrast, [0.0; 3], "a channel's tone rests too");
-        // Twin: past the curves Lighting stays, and a film's Lighting comes before its curves.
-        assert_eq!((truncated(&s, Stage::Curves).print, truncated(&s, Stage::Curves).density), (s.print, 0.3));
-        let negative = PipelineSettings { print: s.print, density: 0.3, ..PipelineSettings::rest(ConversionMode::Negative, true) };
-        assert_eq!(truncated(&negative, Stage::ManualCurves).print, negative.print);
+        (s.print.channel_contrast, s.density) = ([0.3, 0.0, -0.2], 0.3);
+        s.manual_curves.linked.points = vec![Point::new(0.0, 0.0), Point::new(0.3, 0.8), Point::new(1.0, 1.0)];
+        let t = truncated(&s, Stage::ManualCurves);
+        assert_eq!((t.print, t.density), (s.print, 0.3));
+        assert!(t.manual_curves.is_neutral());
+        // Twin: in front of the levels the print is bypassed, the windows on the graduation.
+        let levels = truncated(&s, Stage::Levels);
+        assert!(levels.print.bypassed && levels.levels.red == graduation::levels(ConversionMode::Digital));
     }
 
     #[test]

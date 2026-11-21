@@ -7,8 +7,8 @@ use serde_json::Value;
 use std::collections::{BTreeSet, HashSet};
 use std::path::Path;
 
-/// What makes frames one roll: the reference a measure wrote, or for a slide, which a measure never
-/// gives one (owner's call), the folder it sits in.
+/// What makes frames one roll: the reference a measure wrote, or for a slide or a digital photo, which a
+/// measure never gives one (owner's call), the folder it sits in.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RollKey {
     Measured(Id),
@@ -32,7 +32,7 @@ impl RollKey {
 }
 
 fn slide(mode: ConversionMode, pass: bool, path: &str) -> Option<RollKey> {
-    (mode.reads_positive() && !pass).then(|| RollKey::Slides(paths::parent(path)))
+    (!mode.is_measured() && !pass).then(|| RollKey::Slides(paths::parent(path)))
 }
 
 /// `RollKey::of` read off the sidecar's own keys, the rest of it never decoded.

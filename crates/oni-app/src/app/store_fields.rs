@@ -61,8 +61,6 @@ fields! {
     RedBlackPoint => set_red_black_point_fraction, get_red_black_point_fraction, set_red_black_point_readout, set_red_black_point_value;
     GreenBlackPoint => set_green_black_point_fraction, get_green_black_point_fraction, set_green_black_point_readout, set_green_black_point_value;
     BlueBlackPoint => set_blue_black_point_fraction, get_blue_black_point_fraction, set_blue_black_point_readout, set_blue_black_point_value;
-    WhiteKelvin => set_white_kelvin_fraction, get_white_kelvin_fraction, set_white_kelvin_readout, set_white_kelvin_value;
-    WhiteTint => set_white_tint_fraction, get_white_tint_fraction, set_white_tint_readout, set_white_tint_value;
     GrainAmount => set_grain_amount_fraction, get_grain_amount_fraction, set_grain_amount_readout, set_grain_amount_value;
     GrainSize => set_grain_size_fraction, get_grain_size_fraction, set_grain_size_readout, set_grain_size_value;
     HalationAmount => set_halation_amount_fraction, get_halation_amount_fraction, set_halation_amount_readout, set_halation_amount_value;
@@ -81,15 +79,6 @@ fields! {
     GrainColourBlack => set_grain_colour_black_fraction, get_grain_colour_black_fraction, set_grain_colour_black_readout, set_grain_colour_black_value;
     GrainColourWhite => set_grain_colour_white_fraction, get_grain_colour_white_fraction, set_grain_colour_white_readout, set_grain_colour_white_value;
     FilmExposure => set_film_exposure_fraction, get_film_exposure_fraction, set_film_exposure_readout, set_film_exposure_value;
-    FilmRed => set_film_red_fraction, get_film_red_fraction, set_film_red_readout, set_film_red_value;
-    FilmGreen => set_film_green_fraction, get_film_green_fraction, set_film_green_readout, set_film_green_value;
-    FilmBlue => set_film_blue_fraction, get_film_blue_fraction, set_film_blue_readout, set_film_blue_value;
-    FilmRedBlack => set_film_red_black_fraction, get_film_red_black_fraction, set_film_red_black_readout, set_film_red_black_value;
-    FilmGreenBlack => set_film_green_black_fraction, get_film_green_black_fraction, set_film_green_black_readout, set_film_green_black_value;
-    FilmBlueBlack => set_film_blue_black_fraction, get_film_blue_black_fraction, set_film_blue_black_readout, set_film_blue_black_value;
-    FilmRedWhite => set_film_red_white_fraction, get_film_red_white_fraction, set_film_red_white_readout, set_film_red_white_value;
-    FilmGreenWhite => set_film_green_white_fraction, get_film_green_white_fraction, set_film_green_white_readout, set_film_green_white_value;
-    FilmBlueWhite => set_film_blue_white_fraction, get_film_blue_white_fraction, set_film_blue_white_readout, set_film_blue_white_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {

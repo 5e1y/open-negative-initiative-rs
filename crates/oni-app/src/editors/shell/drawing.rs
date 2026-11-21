@@ -107,7 +107,7 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     }
     if changed {
         g.set_levels_markers(lines(&levels::markers(&window, lc, view.mode, key.5)));
-        let readouts = levels::readouts(&window, lc, view.mode)
+        let readouts = levels::readouts(&window)
             .into_iter()
             .map(|(name, value)| PlotReadout { name: name.into(), value: value.into() })
             .collect();

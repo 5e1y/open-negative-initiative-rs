@@ -14,10 +14,6 @@ pub struct White {
 pub type Uv = (f64, f64);
 pub type M3 = [[f64; 3]; 3];
 
-/// The kelvin slider's travel.
-pub const KELVIN_RANGE: (f32, f32) = (2000.0, 25000.0);
-pub const TINT_RANGE: (f32, f32) = (-150.0, 150.0);
-
 /// The white every mosaic is decoded on: Robertson's node at 200 mired, 5000 K and tint 0.
 pub const MOSAIC_WHITE: Uv = (0.21142, 0.32312);
 
@@ -115,12 +111,6 @@ pub fn of_uv((u, v): Uv) -> White {
         last = (dt, du, dv);
     }
     unreachable!("the last isotherm answers")
-}
-
-/// The white a look carries onto `target`: a digital frame takes the donor's, else rests on its own
-/// As Shot; a film frame keeps its own, which it does not render.
-pub fn carried(donor: Option<White>, target: &crate::PipelineSettings) -> Option<White> {
-    if target.mode.is_film() { target.white } else { donor.or(target.shot) }
 }
 
 /// XYZ of a (u, v) white, Y = 1.
