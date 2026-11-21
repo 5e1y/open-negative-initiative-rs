@@ -13,8 +13,9 @@ use crate::panel_bindings::opened;
 const FILM_TYPE: &str = concat!(
     "What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, ",
     "its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; ",
-    "without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos ",
-    "as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab."
+    "without a click, the slides keep the camera's 5500 K. A digital photo is shot on a virtual film, the Film block on the ",
+    "Colour tab: its negative is read as any negative is, its filtration, levels and dyes resting on the film's own reference, ",
+    "and Prepare the Roll only sets its photos as digital."
 );
 const PREPARED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo prepared with the roll, each keeping its own look. A photo left out when the roll was prepared can be included, or the prepared ones moved into a roll of their own.";
 

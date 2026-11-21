@@ -56,9 +56,9 @@ impl Stage for Tabled {
 /// The curves, their RGB table the first auxiliary image and the luma table the second.
 pub fn curves(k: &Curves) -> Tabled {
     let head = [0, 0, 0, LUT_SIZE as u32];
-    let bent = [k.bent[0], k.bent[1], k.bent[2], k.luma_end];
+    let bent = [k.bent[0], k.bent[1], k.bent[2], 0.0];
     Tabled {
-        inner: PerPixel { name: "curves", kernel: &CURVES, params: uniform(head, &[bent, k.ends]) },
+        inner: PerPixel { name: "curves", kernel: &CURVES, params: uniform(head, &[bent]) },
         tables: Rect::new(0, 0, LUT_SIZE as u32, 1),
     }
 }

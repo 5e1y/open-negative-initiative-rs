@@ -56,9 +56,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
-- **Digital is a positive without its film blocks** (owner's call): its film's stages and blocks are skipped, their
-  values kept; its white is one relative Bradford on the pinned decode, from the white chosen to the decode's own
-  (5000 K for a mosaic, D65 otherwise), its rest the RAW's As Shot read once from its metadata.
+- **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, lit at the
+  stock's own white (Portra 800: D55), is exposed and developed on the stock's spektrafilm profile and scanned as a negative
+  (`virtual_negative`), then read by the negative pipeline unchanged; there is no film None. spektrafilm's full chain stays a
+  benchmark outside the app (`examples/film_compare.rs`).
 - **The Frontier is the ONI machine's render with its own baked look** (owner's call): ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
 - **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every

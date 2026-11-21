@@ -9,7 +9,7 @@ use oni_core::Command;
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::film::{FilmStockKind, dye_family};
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding, VirtualFilm, VirtualStock};
+use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding, VirtualStock};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
@@ -108,19 +108,34 @@ pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
     next
 }
 
-/// The Film block's tab for a photo: 0 on no film, else its stock's place after it.
+/// The Film block's tab for a photo: its stock's place.
 pub fn film_tab(s: &PipelineSettings) -> i32 {
-    s.virtual_film.as_ref().and_then(|f| VirtualStock::ALL.iter().position(|k| *k == f.stock)).map_or(0, |i| i as i32 + 1)
+    s.film().and_then(|f| VirtualStock::ALL.iter().position(|k| *k == f.stock)).unwrap_or(0) as i32
 }
 
-/// The film a pick of tab `i` shoots the photo on: the one it stands on kept, another stock on its own
-/// reference at the film's speed, none at 0.
-pub fn picked_film(s: &PipelineSettings, i: i32) -> Option<VirtualFilm> {
-    let stock = *VirtualStock::ALL.get(usize::try_from(i).ok()?.checked_sub(1)?)?;
-    match &s.virtual_film {
-        Some(f) if f.stock == stock => Some(f.clone()),
-        _ => Some(oni_pipeline::film::stock(stock).reference.clone()),
+/// The photo shot on the stock of tab `i`: the one it stands on kept, another placed on its own reference,
+/// as Prepare the Roll places a roll's.
+pub fn picked_film(s: &PipelineSettings, i: i32) -> PipelineSettings {
+    let Some(stock) = usize::try_from(i).ok().and_then(|i| VirtualStock::ALL.get(i)) else { return s.clone() };
+    match s.film() {
+        Some(f) if f.stock != *stock => s.on_stock(*stock),
+        _ => s.clone(),
     }
+}
+
+/// The Film block's read-only lines: the stock's own white, then the reference its negative is read on.
+pub fn film_lines(s: &PipelineSettings) -> [String; 4] {
+    let Some(film) = s.film() else { return Default::default() };
+    let r = film.stock.reference();
+    let stops = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x), 2, true, crate::fields::Unit::Stops));
+    let shares = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x) * 100.0, 1, false, crate::fields::Unit::Percent));
+    let channels = |[red, green, blue]: [String; 3]| oni_i18n::tr!("R {red} · G {green} · B {blue}", red = red, green = green, blue = blue);
+    [
+        oni_i18n::tr!("{kelvin} K, the light the stock is balanced for", kelvin = (film.stock.white().kelvin / 10.0).round() * 10.0),
+        channels(stops(r.stops)),
+        channels(shares(r.black)),
+        channels(shares(r.white)),
+    ]
 }
 
 impl Ctl {
@@ -141,9 +156,7 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
-        panel.on_black_and_white_toggled(move |on| p.write_settings(|s| s.black_and_white = on));
-        let p = me.clone();
-        panel.on_virtual_film_picked(move |i| p.write_settings(|s| s.virtual_film = picked_film(s, i)));
+        panel.on_virtual_film_picked(move |i| p.write_settings(|s| *s = picked_film(s, i)));
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
@@ -210,8 +223,12 @@ impl Ctl {
         self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
-        panel.set_black_and_white(settings.black_and_white);
         panel.set_virtual_film(film_tab(&settings));
+        let [white, gains, black, ends] = film_lines(&settings);
+        panel.set_film_white(white.into());
+        panel.set_film_gains(gains.into());
+        panel.set_film_black(black.into());
+        panel.set_film_ends(ends.into());
         panel.set_sheet(settings.sheet.is_some());
         let flat = &settings.flat_field;
         panel.set_flat_field_on(flat.mask != FlatFieldMask::None);

@@ -1,11 +1,10 @@
 //! The settings no preset row carries, each with why.
 
 /// Fields outside every row, with the reason: absent rather than unticked, so none is ticked by mistake.
-pub const EXCLUDED: [(&str, &str); 19] = [
+pub const EXCLUDED: [(&str, &str); 17] = [
     ("geometry", "depends on this frame's content: pasting one destroys hand-made cropping"),
     ("mode", "negative or positive is what the frame is, not a look one applies"),
     ("invertedSource", "a positive read as its own negative is what the frame is, as its mode"),
-    ("blackAndWhite", "a digital photo printed in black and white is what it prints, as a film's mode"),
     ("virtualFilm", "the film a digital photo is shot on is what it is, as a film's mode"),
     ("film", "which roll a frame belongs to: pasting a look would move photographs about"),
     ("manualOrder", "a frame's own hand-placed position among its siblings"),
@@ -20,5 +19,4 @@ pub const EXCLUDED: [(&str, &str); 19] = [
     ("captureStops", "how this scan's capture was exposed against its roll's"),
     ("rgbPasses", "the three files this frame is composed of"),
     ("passOf", "the frame a pass belongs to"),
-    ("shotWhite", "the light this RAW was shot under, read from its own file"),
 ];

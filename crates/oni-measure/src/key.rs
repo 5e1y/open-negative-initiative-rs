@@ -16,8 +16,7 @@ use oni_pipeline::resident::{Files, Resident};
 use oni_settings::blocks::Gains;
 use oni_settings::cg::{self, Point};
 use oni_settings::frame::Geometry;
-use oni_settings::white::{self, White};
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::PipelineSettings;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -80,16 +79,12 @@ pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f3
     filter_balance::filters(false, |f| shades(r, copy, &base, f, keeping))
 }
 
-/// `FilterBalance.outcome`: a negative on no roll is first measured as a roll of one; a slide is
-/// read as it stands, never given a roll (owner's call).
+/// `FilterBalance.outcome`: a negative on no roll is first measured as a roll of one; a slide is read as
+/// it stands, never given a roll (owner's call), and a digital photo on its film's own reference.
 pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
-    // A filmed photo's scene stands at its film's daylight: its balance is the print's, as a negative's.
-    if s.mode == ConversionMode::Digital && s.filmed().is_none() {
-        return Some(Outcome { reference: None, filters: [0.0; 3], white: Some(digital_white(r, copy, s)?) });
-    }
     let (reference, referenced) = match &s.roll_reference {
         Some(own) => (Some(own.clone()), s.clone()),
-        None if s.mode.reads_positive() => (None, s.clone()),
+        None if !s.mode.is_measured() => (None, s.clone()),
         None => {
             let frame = roll_measured(r, copy, path, s)?;
             let roll = roll::combined(&[frame], s.mode, None)?;
@@ -98,28 +93,7 @@ pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSetti
         }
     };
     let filters = filters(r, copy, &referenced, filter_balance::printable)?;
-    Some(Outcome { reference, filters, white: None })
-}
-
-/// Mireds and tint units an axis' unit moves a digital white by, so both axes step alike in Newton's probe.
-const MIRED_STEP: f32 = 100.0;
-const TINT_STEP: f32 = 10.0;
-
-/// A digital photo's white that prints its light grey: the same Shades of Gray as a film frame's filters, its
-/// two axes moving the white from its decode's own, in mireds and tint, as the print has no filters to move.
-pub fn digital_white(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<White> {
-    let own = white::of_uv(white::anchor(s.decoded_from_mosaic));
-    let at = |e: [f32; 2]| White { kelvin: 1e6 / (1e6 / own.kelvin - MIRED_STEP * e[0]), tint: own.tint + TINT_STEP * e[1] };
-    let (k, t) = (white::KELVIN_RANGE, white::TINT_RANGE);
-    let low = [(1e6 / own.kelvin - 1e6 / k.0) / MIRED_STEP, (t.0 - own.tint) / TINT_STEP];
-    let high = [(1e6 / own.kelvin - 1e6 / k.1) / MIRED_STEP, (t.1 - own.tint) / TINT_STEP];
-    let read = |e: [f32; 2]| {
-        let laid = PipelineSettings { white: Some(at(e)), ..s.clone() };
-        let pixels: Vec<[f32; 3]> = r.balance_pixels(copy, &laid)?.into_iter().filter(|p| filter_balance::printable(*p)).collect();
-        filter_balance::minkowski(&pixels)
-    };
-    let e = filter_balance::grey(read, low, high)?;
-    Some(at(e))
+    Some(Outcome { reference, filters })
 }
 
 /// The settings `outcome` reads: every field no reading of it reaches laid at rest, so a look moved
@@ -129,9 +103,6 @@ pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
     PipelineSettings {
         // `unlit` and `filtered` write the whole print the filters read; before the levels it is bypassed.
         print: rest.print,
-        // A digital photo's white is its own balance, read by no key.
-        white: rest.white,
-        shot: rest.shot,
         // `truncated` lays these at rest in front of every stage a reading takes; a balance reads Pro's face.
         manual_curves: rest.manual_curves,
         spectrogram: rest.spectrogram,

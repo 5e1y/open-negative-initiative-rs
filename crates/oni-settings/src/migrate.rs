@@ -16,6 +16,7 @@ pub mod before_1_0;
 pub mod chain;
 pub mod density;
 pub mod digital_face;
+pub mod digital_film;
 pub mod draft;
 pub mod lighting;
 pub mod look;
@@ -211,6 +212,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     if version > VERSION && !newer {
         return Err(Refusal::Newer(version));
     }
+    let raw = stored.get("settings").cloned();
     let mut converted = if document::sniffed(bytes).is_some_and(|s| s.named) && version >= chain::NAMED_VERSION {
         let document = document::typed(bytes).map_err(Refusal::Unreadable)?;
         if version >= VERSION {
@@ -239,6 +241,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         }
     };
     converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
+    converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -257,12 +260,14 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     }
     let named = stored.get("format").and_then(Value::as_str).is_some_and(|f| f.starts_with("oni-"));
     if named && version >= chain::NAMED_VERSION {
-        let settings = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
-        let settings: PipelineSettings = serde_json::from_value(settings).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
-        return Ok(Converted { document: Document::of(digital_face::caught_up(version, settings)), from: version, draft: None });
+        let raw = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
+        let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
+        let settings = digital_film::caught_up(version, digital_face::caught_up(version, settings), Some(&raw));
+        return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
     let mut converted = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
+    converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
     Ok(converted)
 }
 

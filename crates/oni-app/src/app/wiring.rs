@@ -111,7 +111,7 @@ impl Ctl {
         let p = me.clone();
         g.on_typed(move |field, by| {
             let Some(f) = Field::from_index(field).filter(|_| !p.inert()) else { return };
-            let v = { let s = p.state.borrow(); crate::slider_track::typed(f, crate::store::get(&s.store, f), by, &track_on(f, s.store.settings())) };
+            let v = { let s = p.state.borrow(); crate::slider_track::stepped(f, crate::store::get(&s.store, f), by, &track_on(f, s.store.settings())) };
             p.set(f, v);
         });
 

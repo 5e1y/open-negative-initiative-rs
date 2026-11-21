@@ -11,13 +11,12 @@ use crate::film::Film;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
 use crate::geometry::placing::Placing;
 use crate::lens::{LensCorrection, Radial};
-use crate::levels::{Levels, LevelsSet, PictureLevels};
+use crate::levels::{Levels, LevelsSet};
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
 use crate::tone::{Print, Tone};
-use crate::virtual_film::VirtualFilm;
-use crate::white::White;
+use crate::virtual_film::{VirtualFilm, VirtualStock};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -30,12 +29,8 @@ pub struct PipelineSettings {
     /// (owner's experiment); false, and unwritten, on every other frame.
     #[serde(rename = "invertedSource", skip_serializing_if = "std::ops::Not::not", default)]
     pub inverted_source: bool,
-    /// A digital photo printed as its luminance alone, its colour settings kept for when it turns back;
-    /// false, and unwritten, on every other frame.
-    #[serde(rename = "blackAndWhite", skip_serializing_if = "std::ops::Not::not", default)]
-    pub black_and_white: bool,
-    /// The virtual film a digital photo is shot on, its negative read as a scanned one; none, and
-    /// unwritten, on every other frame.
+    /// The virtual film a digital photo is shot on, its negative read as a scanned one; unwritten on a
+    /// frame that was never digital, and unrendered on any other mode.
     #[serde(rename = "virtualFilm", skip_serializing_if = "Option::is_none", default)]
     pub virtual_film: Option<VirtualFilm>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
@@ -90,12 +85,6 @@ pub struct PipelineSettings {
     pub balance_filters: Option<[f32; 3]>,
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
-    /// The light a digital photo is balanced for; `None` is the white its decode stands on.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub white: Option<White>,
-    /// A RAW's As Shot white, read from its metadata as it became digital: where its white rests.
-    #[serde(rename = "shotWhite", skip_serializing_if = "Option::is_none", default)]
-    pub shot: Option<White>,
     pub print: Print,
     pub density: f32,
     #[serde(rename = "manualCurves")]
@@ -117,9 +106,6 @@ pub struct PipelineSettings {
     pub sharpen: Sharpen,
     pub grain: Grain,
     pub halation: Halation,
-    /// A digital photo's own levels, laid in the curves' tables; a film frame keeps them unrendered.
-    #[serde(rename = "pictureLevels", skip_serializing_if = "PictureLevels::is_neutral", default)]
-    pub picture_levels: PictureLevels,
     /// A digital photo's lens, corrected by hand; a film mode keeps it unrendered.
     #[serde(rename = "lensCorrection")]
     pub lens_correction: LensCorrection,
@@ -130,7 +116,6 @@ impl Default for PipelineSettings {
         PipelineSettings {
             mode: ConversionMode::Negative,
             inverted_source: false,
-            black_and_white: false,
             virtual_film: None,
             film: None,
             manual_order: None,
@@ -160,8 +145,6 @@ impl Default for PipelineSettings {
             balance_method: None,
             balance_filters: None,
             balance_strength: filter_balance::RESTING_STRENGTH,
-            white: None,
-            shot: None,
             print: Print::default(),
             density: 0.0,
             manual_curves: CurveSet::default(),
@@ -178,20 +161,34 @@ impl Default for PipelineSettings {
             sharpen: Sharpen::default(),
             grain: Grain::default(),
             halation: Halation::default(),
-            picture_levels: PictureLevels::default(),
             lens_correction: LensCorrection::default(),
         }
     }
 }
 
 impl PipelineSettings {
-    /// `Parameters.rest`: the state a photograph is imported in.
+    /// `Parameters.rest`: the state a photograph is imported in; a digital photo on its default film.
     pub fn rest(mode: ConversionMode, mosaic: bool) -> PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };
         block.density_ceiling = density_axis::rest(mosaic, mode);
         block.levels = LevelsSet::neutral(mode, block.density_ceiling);
         block.print.exposure = Print::resting_exposure(mode);
+        if mode.is_digital() {
+            block = block.on_stock(VirtualStock::default());
+        }
         block
+    }
+
+    /// These settings shot on `stock`, its exposure kept: its negative's gains, windows and dyes placed from
+    /// the stock's reference, as Prepare the Roll places a roll's.
+    pub fn on_stock(&self, stock: VirtualStock) -> PipelineSettings {
+        let mut out = self.clone();
+        let reference = stock.reference();
+        out.virtual_film = Some(VirtualFilm { stock, exposure: self.virtual_film.map_or(0.0, |f| f.exposure) });
+        out.gains.stops = reference.stops;
+        out.levels = reference.levels();
+        out.separation_family = Some(stock.dyes());
+        out
     }
 
     /// These settings on mode `next`: each value still on its mode's rest takes the next one's, so a
@@ -203,11 +200,25 @@ impl PipelineSettings {
         moved.inverted_source &= next == ConversionMode::Negative;
         moved.density_ceiling = density_axis::carried(self.density_ceiling, self.decoded_from_mosaic, self.mode, next);
         if self.mode != next {
-            let (rest, to) = (Levels::resting_black(self.mode, self.density_ceiling), Levels::resting_black(next, moved.density_ceiling));
-            for window in [&mut moved.levels.red, &mut moved.levels.green, &mut moved.levels.blue] {
-                if window.black == rest {
-                    window.set_black(to);
+            let (from, to) = (PipelineSettings::rest(self.mode, self.decoded_from_mosaic), PipelineSettings::rest(next, self.decoded_from_mosaic));
+            let (black, to_black) = (Levels::resting_black(self.mode, self.density_ceiling), Levels::resting_black(next, moved.density_ceiling));
+            let windows = [&mut moved.levels.red, &mut moved.levels.green, &mut moved.levels.blue];
+            for ((window, rest), next_rest) in windows.into_iter().zip(from.levels.windows()).zip(to.levels.windows()) {
+                if *window == rest {
+                    *window = next_rest;
+                } else if window.black == black {
+                    window.set_black(to_black);
                 }
+            }
+            // A digital photo's film, its gains and its dyes rest on the stock's reference.
+            if self.gains == from.gains {
+                moved.gains = to.gains;
+            }
+            if self.separation_family == from.separation_family {
+                moved.separation_family = to.separation_family;
+            }
+            if self.virtual_film == from.virtual_film {
+                moved.virtual_film = to.virtual_film;
             }
         }
         if self.print.exposure == Print::resting_exposure(self.mode) {
@@ -219,12 +230,12 @@ impl PipelineSettings {
     /// The lens corrections' radial map on a scan of `size` pixels: a digital photo's alone, so a film
     /// mode renders none it hides; `None` at rest.
     pub fn lens(&self, size: (f64, f64)) -> Option<Radial> {
-        self.lens_correction.radial(size).filter(|_| !self.mode.is_film())
+        self.lens_correction.radial(size).filter(|_| self.mode.is_digital())
     }
 
     /// The optical vignetting's stops at the corner, a digital photo's alone; `None` at rest.
     pub fn optical_vignetting(&self) -> Option<f32> {
-        self.lens_correction.vignetting_stops().filter(|_| !self.mode.is_film())
+        self.lens_correction.vignetting_stops().filter(|_| self.mode.is_digital())
     }
 
     /// The map between the scan of `size` pixels and the frame stage 0 hands on, the lens included.
@@ -232,36 +243,10 @@ impl PipelineSettings {
         self.geometry.placing(size).through(self.lens(size))
     }
 
-    /// Lighting, each channel's own tone and Saturation at rest, the print on unless bypassed: a digital
-    /// photo's picture as its levels and curves receive it.
-    pub fn unlit(&self) -> PipelineSettings {
-        PipelineSettings { print: self.unlit_print(), density: crate::tone::color_density::BASE, ..self.clone() }
-    }
-
-    /// The virtual film a digital photo is shot on; none on a film mode, which keeps it unrendered.
-    pub fn filmed(&self) -> Option<&VirtualFilm> {
-        self.virtual_film.as_ref().filter(|_| self.mode == ConversionMode::Digital)
-    }
-
-    /// The white the scene is rendered at: a filmed digital photo's is its film's daylight, locked, as the
-    /// film sees the scene and the print balances it; else the white chosen.
-    pub fn scene_white(&self) -> Option<crate::white::White> {
-        self.filmed().map(|f| f.stock.daylight()).or(self.white)
-    }
-
-    /// The axis stage 4 reads the image on: a filmed digital photo's virtual negative is a negative's.
-    pub fn read_as(&self) -> ConversionMode {
-        if self.filmed().is_some() { ConversionMode::Negative } else { self.mode }
-    }
-
-    /// The print with Lighting and each channel's own tone at rest, bypassed where this one is.
-    pub fn unlit_print(&self) -> Print {
-        let rest = Print { exposure: Print::resting_exposure(self.mode), bypassed: self.print.bypassed, ..Print::default() };
-        // A filmed photo's filters are its negative's print filtration, laid with the negative as a film's are.
-        match self.filmed() {
-            Some(_) => Print { red: self.print.red, green: self.print.green, blue: self.print.blue, ..rest },
-            None => rest,
-        }
+    /// The virtual film a digital photo is shot on, its stock's default where none is stored; none on a
+    /// film mode, which keeps it unrendered.
+    pub fn film(&self) -> Option<VirtualFilm> {
+        self.mode.is_digital().then(|| self.virtual_film.unwrap_or_default())
     }
 
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.
@@ -310,9 +295,8 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 20] = [
+    pub const FIELDS: [&str; 18] = [
         "balanceFilters",
-        "white",
         "print",
         "density",
         "manualCurves",
@@ -329,12 +313,11 @@ pub mod look_settings {
         "scannerMachine",
         "grain",
         "halation",
-        "pictureLevels",
         "lensCorrection",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 17] = [
+    pub const FRAME_FIELDS: [&str; 16] = [
         "film",
         "manualOrder",
         "sheet",
@@ -351,12 +334,10 @@ pub mod look_settings {
         "rgbPasses",
         "passOf",
         "face",
-        "shotWhite",
     ];
 
     pub fn copied(donor: &PipelineSettings, target: &PipelineSettings) -> PipelineSettings {
         let mut out = target.clone();
-        out.white = crate::white::carried(donor.white, target);
         out.balance_filters = donor.balance_filters;
         out.print = donor.print;
         out.density = donor.density;
@@ -374,7 +355,6 @@ pub mod look_settings {
         out.scanner_machine = donor.scanner_machine;
         out.grain = donor.grain;
         out.halation = donor.halation;
-        out.picture_levels = donor.picture_levels;
         out.lens_correction = donor.lens_correction;
         out
     }

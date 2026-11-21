@@ -8,7 +8,8 @@ pub mod profile;
 use bake::M3;
 use oni_render::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative, cpu};
 use oni_settings::axis::{density_axis, graduation};
-use oni_settings::{ConversionMode, PipelineSettings, VirtualFilm, VirtualStock};
+use oni_settings::virtual_film::StockReference;
+use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 use profile::{Profile, Spectra};
 use std::sync::LazyLock;
 
@@ -18,11 +19,11 @@ pub const GREY: f32 = 0.184;
 /// The ceiling a virtual negative is read on, a mosaic negative's: its scan holds no veil of its own.
 pub const CEILING: f32 = density_axis::MOSAIC_REST;
 
-/// A stock's baked kernel at rest exposure, its table, and its own reference.
+/// A stock's baked kernel at rest exposure, its table, and its own reference as derived from them.
 pub struct Stock {
     pub kernel: VirtualNegative,
     pub table: Vec<[f32; 4]>,
-    pub reference: VirtualFilm,
+    pub reference: StockReference,
 }
 
 fn f32s(m: &M3) -> [[f32; 3]; 3] {
@@ -73,7 +74,7 @@ fn bake(stock: VirtualStock) -> Stock {
             table[(n + row) * w + i] = [d[0] as f32, d[1] as f32, d[2] as f32, 0.0];
         }
     }
-    let reference = derived(stock, &kernel, &table);
+    let reference = derived(&kernel, &table);
     Stock { kernel, table, reference }
 }
 
@@ -97,28 +98,66 @@ pub fn density(scan: f32, stops: f32) -> f32 {
     -((scan + density_axis::pedestal(CEILING)) * stops.exp2()).max(density_axis::log_guard(CEILING)).log10()
 }
 
-/// Where a digital photo's own render at rest windows a scene value: the share of its print it enters.
-pub fn digital_share(scene: f32) -> f32 {
-    let k = crate::conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, true));
-    let e = k.window + ((scene + k.pedestal) * k.gain[1]).max(k.log_guard).log10();
-    ((e - k.green[0]) / (k.green[1] - k.green[0]).max(1e-4)).max(0.0).powf(k.green[2])
+/// What a scene grey prints at on a plain RAW's render at rest, a slide's: where a film's reference prints it.
+pub fn plain_grey() -> f32 {
+    let k = crate::conversion::stage47(&PipelineSettings::rest(ConversionMode::Positive, true));
+    cpu::stage47([GREY, GREY, GREY, 1.0], &k)[1]
 }
 
-/// The stock's own reference: gains that make its bare film grey, each channel's black on the bare
-/// film, and its white where a scene grey enters the print where the digital photo's own render enters it.
-fn derived(stock: VirtualStock, kernel: &VirtualNegative, table: &[[f32; 4]]) -> VirtualFilm {
-    let scan = |scene: f32| {
-        let out = cpu::virtual_negative([scene, scene, scene, 1.0], kernel, table);
-        [out[0], out[1], out[2]]
-    };
+/// The negative at rest read on `reference`, as a digital photo on that stock opens.
+pub fn on_reference(reference: &StockReference) -> PipelineSettings {
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+    s.density_ceiling = CEILING;
+    s.gains.stops = reference.stops;
+    s.levels = reference.levels();
+    s
+}
+
+/// The stock's own reference: gains that make its bare film grey, each channel's black on the bare film,
+/// and its white where a scene grey, entering every window at one share, prints on the negative's print at
+/// rest as a plain RAW's render prints it.
+fn derived(kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
+    let scan = |scene: f32| cpu::virtual_negative([scene, scene, scene, 1.0], kernel, table);
     let (bare, grey) = (scan(0.0), scan(GREY));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
-    let share = digital_share(GREY);
     let fraction = |d: f32| graduation::fraction(d, ConversionMode::Negative);
     let black: [f32; 3] = std::array::from_fn(|c| fraction(density(bare[c], stops[c])));
-    let white = std::array::from_fn(|c| {
-        let d = fraction(density(grey[c], stops[c]));
-        black[c] + (d - black[c]) / share
-    });
-    VirtualFilm { stock, exposure: 0.0, stops, black, white }
+    let at = |share: f32| {
+        let white = std::array::from_fn(|c| black[c] + (fraction(density(grey[c], stops[c])) - black[c]) / share);
+        StockReference { stops, black, white }
+    };
+    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&on_reference(&at(share))))[1];
+    let target = plain_grey();
+    let (mut low, mut high) = (0.05f32, 1.0f32);
+    let rising = printed(high) > printed(low);
+    for _ in 0..60 {
+        let mid = 0.5 * (low + high);
+        if (printed(mid) < target) == rising { low = mid } else { high = mid }
+    }
+    at(0.5 * (low + high))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn close(a: [f32; 3], b: [f32; 3]) -> bool {
+        (0..3).all(|c| (a[c] - b[c]).abs() < 1e-5)
+    }
+
+    #[test]
+    fn each_stocks_reference_is_its_profiles_derivation_and_prints_a_grey_as_a_plain_raw() {
+        for kind in VirtualStock::ALL {
+            let (derived, held) = (stock(kind).reference, kind.reference());
+            println!("{kind:?}: {derived:?}");
+            assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
+            let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);
+            let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(&held)));
+            assert!((0..3).all(|c| (printed[c] - plain_grey()).abs() < 2e-3), "{printed:?} {}", plain_grey());
+            // Twin: the white placed for a print resting at no exposure prints the grey brighter.
+            let mut unlit = on_reference(&held);
+            unlit.print.exposure = 0.0;
+            assert!((cpu::stage47(grey, &crate::conversion::stage47(&unlit))[1] - plain_grey()).abs() > 0.02);
+        }
+    }
 }

@@ -97,31 +97,6 @@ fn stage47_reaches_every_branch() {
     }
 }
 
-/// A digital photo's Lighting on its picture: the print's cases, each window lane a reach of the points
-/// on 0 to 1, on light under zero, at zero, inside, at one and past it.
-#[test]
-fn print_reaches_every_branch() {
-    let Some(mut g) = graph("print_reaches_every_branch") else { return };
-    let (w, h, mut pixels) = edges();
-    pixels.extend(noise(w, h, 31, -0.1, 1.3));
-    let picture = g.upload(w, h * 2, &pixels).unwrap();
-    let reaches = [("points", [0.05, 0.9, 1.0]), ("a lifted black", [-0.1, 1.0, 1.0]), ("at rest", [0.0, 1.0, 1.0])];
-    let printed: Vec<_> = stage47_cases().into_iter().filter(|(_, k)| k.print_on > 0.5).collect();
-    assert!(printed.len() >= 3, "the print's cases");
-    for (name, k) in printed {
-        for (reach_name, reach) in reaches {
-            for quarters in [([0.25; 3], [0.75; 3]), (k.low_points, k.high_points)] {
-                let k = Stage47 { red: reach, green: [reach[0] + 0.01, reach[1] - 0.02, 1.0], blue: reach, low_points: quarters.0, high_points: quarters.1, ..k };
-                let out = whole(&mut g, &Image::new(&picture).then(stages::print(&k)));
-                // A 1 % shift of the green reach's white the reference does not see must break the tolerance.
-                let shifted = Stage47 { green: [k.green[0], k.green[1] * 1.01, 1.0], ..k };
-                let label = format!("print, {name}, {reach_name}, quarters {:?}", quarters.0[0]);
-                judge(&label, &out, &mapped(&pixels, |p| cpu::print(p, &k)), &mapped(&pixels, |p| cpu::print(p, &shifted)));
-            }
-        }
-    }
-}
-
 #[test]
 fn each_channel_s_own_tone_reaches_the_kernel() {
     let Some(mut g) = graph("each_channel_s_own_tone_reaches_the_kernel") else { return };
@@ -132,9 +107,6 @@ fn each_channel_s_own_tone_reaches_the_kernel() {
         // Twin: a kernel deaf to each channel's contrast and mids.
         let deaf = Stage47 { own_contrast: [0.0; 3], own_mid: [0.0; 3], ..k };
         judge(&format!("stage47, {name}, its tone"), &out, &mapped(&pixels, |p| cpu::stage47(p, &k)), &mapped(&pixels, |p| cpu::stage47(p, &deaf)));
-        // A digital photo's Lighting carries the same tone after its curves.
-        let out = whole(&mut g, &Image::new(&film).then(stages::print(&k)));
-        judge(&format!("print, {name}, its tone"), &out, &mapped(&pixels, |p| cpu::print(p, &k)), &mapped(&pixels, |p| cpu::print(p, &deaf)));
     }
 }
 
@@ -198,35 +170,11 @@ fn curves_bend_each_family_on_values_past_their_ends() {
     let n = LUT_SIZE as u32;
     let (rgb_table, luma_table) = (g.upload(n, 1, &rgb).unwrap(), g.upload(n, 1, &luma).unwrap());
     for bent in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 1.0, 1.0]] {
-        let k = Curves { rgb_lut: rgb.clone(), luma_lut: luma.clone(), bent, ends: [1.0; 4], luma_end: 1.0 };
-        let wrong = Curves { rgb_lut: rgb_off.clone(), luma_lut: luma_off.clone(), bent, ends: [1.0; 4], luma_end: 1.0 };
+        let k = Curves { rgb_lut: rgb.clone(), luma_lut: luma.clone(), bent };
+        let wrong = Curves { rgb_lut: rgb_off.clone(), luma_lut: luma_off.clone(), bent };
         let image = Image::new(&input).then_reading(stages::curves(&k), &[Image::new(&rgb_table), Image::new(&luma_table)]);
         judge(&format!("curves {bent:?}"), &whole(&mut g, &image), &mapped(&pixels, |p| cpu::curves(p, &k)), &mapped(&pixels, |p| cpu::curves(p, &wrong)));
     }
-}
-
-#[test]
-fn curves_with_picture_levels_go_on_past_one_at_their_slopes() {
-    use oni_settings::levels::{Levels, PictureLevels};
-    let Some(mut g) = graph("curves_with_picture_levels_go_on_past_one_at_their_slopes") else { return };
-    let (w, h, pixels) = edges();
-    let input = g.upload(w, h, &pixels).unwrap();
-    let levels = PictureLevels {
-        linked: Levels::with_ends(0.05, 0.9),
-        luma: Levels { white: 0.8, mid: 0.4, highlights: 0.7, ..Levels::default() },
-        red: Levels { white: 0.75, highlights: 0.6, ..Levels::default() },
-        blue: Levels { black: 0.1, mid: 0.6, ..Levels::default() },
-        ..PictureLevels::default()
-    };
-    let set = oni_settings::curves::CurveSet { contrast: 0.2, ..Default::default() };
-    let k = oni_pipeline::finishing::curves(&set, Some(&levels)).unwrap();
-    assert!(k.ends[1] != 1.0 && k.luma_end != 1.0 && k.bent == [1.0, 1.0, 1.0], "{:?} {} {:?}", k.ends, k.luma_end, k.bent);
-    let n = LUT_SIZE as u32;
-    let (rgb, luma) = (g.upload(n, 1, &k.rgb_lut).unwrap(), g.upload(n, 1, &k.luma_lut).unwrap());
-    let image = Image::new(&input).then_reading(oni_pipeline::stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]);
-    // Twin: the reference reading each table past 1 at slope 1, the curves' own.
-    let flat = Curves { ends: [1.0; 4], luma_end: 1.0, ..k.clone() };
-    judge("curves with levels past 1", &whole(&mut g, &image), &mapped(&pixels, |p| cpu::curves(p, &k)), &mapped(&pixels, |p| cpu::curves(p, &flat)));
 }
 
 #[test]

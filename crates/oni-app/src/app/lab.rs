@@ -274,7 +274,7 @@ impl Ctl {
         let panel = w.global::<PanelState>();
         panel.set_separation_shown(separation);
         panel.set_slide(settings.mode.is_slide());
-        panel.set_digital(!settings.mode.is_film());
+        panel.set_digital(settings.mode.is_digital());
     }
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {

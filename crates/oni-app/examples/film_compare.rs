@@ -1,10 +1,11 @@
-//! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, plain and on its
-//! virtual Portra 800, with the scene the film reads and the film's scan; each as `w h` then f32 RGB, linear Rec. 2020.
+//! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
+//! Portra 800, with the scene the film reads and the film's scan; then the same photo with its negative's dye
+//! separation, its chroma decompression or both at rest, to weigh each. Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
-use oni_pipeline::{Inputs, conversion, film, stages};
-use oni_settings::{PipelineSettings, VirtualStock, sidecar};
+use oni_pipeline::{Inputs, conversion, stages};
+use oni_settings::{PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
@@ -24,15 +25,10 @@ fn main() {
     let (raw, out) = (Path::new(&args[0]), Path::new(&args[1]));
     let side: usize = args.get(2).map_or(1600, |s| s.parse().unwrap());
     std::fs::create_dir_all(out).unwrap();
+    // Read through the migration, as the editor opens it; the original's sidecar is never written.
     let owner = sidecar::read(raw, true).expect("a sidecar").settings;
-    let shot = oni_decode::as_shot(raw);
-    println!("as shot: {shot:?}; the sidecar's white: {:?}", owner.white);
-    let mut rest = owner.clone();
-    (rest.white, rest.shot) = (shot, shot);
     std::fs::write(out.join("settings-owner.json"), serde_json::to_string_pretty(&owner).unwrap()).unwrap();
-    std::fs::write(out.join("settings-rest.json"), serde_json::to_string_pretty(&PipelineSettings::rest(owner.mode, owner.decoded_from_mosaic)).unwrap()).unwrap();
-    let reference = film::stock(VirtualStock::KodakPortra800).reference.clone();
-    println!("reference: {reference:?}");
+    println!("film {:?}, gains {:?}, separation {} {:?}, decompression {}", owner.film(), owner.gains.stops, owner.separation, owner.separation_family, owner.chroma_decompression);
 
     let device = Device::open().expect("a GPU");
     let engine = Engine::shared(&device);
@@ -41,24 +37,20 @@ fn main() {
     let (w, h) = negative.size();
     let scale = (side as f64 / f64::from(w.max(h))).min(1.0);
     println!("preview {w} x {h}, scale {scale:.4}, full width {}", negative.full_width);
-    // The film's own reference illuminant, the profile's daylight: the scene white a film locks.
-    let mut d55 = owner.clone();
-    d55.white = Some(oni_settings::white::of_uv(oni_settings::white::uv_of_xy(0.33242, 0.34743)));
-    println!("d55 white: {:?}", d55.white);
-    for (tag, plain) in [("rest", &rest), ("owner", &owner), ("d55", &d55)] {
-        let mut filmed = plain.clone();
-        filmed.virtual_film = Some(reference.clone());
-        write(out, &format!("A-{tag}"), &e.render(&negative, plain, Some(side)).unwrap());
-        write(out, &format!("B-{tag}"), &e.render(&negative, &filmed, Some(side)).unwrap());
-        // The chain's own steps up to the film: framed, Digital's white, then the virtual negative's scan.
+    let unmixed = PipelineSettings { separation: 0.0, ..owner.clone() };
+    let undecompressed = PipelineSettings { chroma_decompression: 1.0, ..owner.clone() };
+    let neither = PipelineSettings { separation: 0.0, chroma_decompression: 1.0, ..owner.clone() };
+    for (tag, s) in [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither)] {
+        write(out, &format!("B-{tag}"), &e.render(&negative, s, Some(side)).unwrap());
+        // The chain's own steps up to the film: framed, the scene lit at the film's white, then its scan.
         let (graph, pipeline) = e.parts();
         let image = Image::new(&negative.preview).lanczos(scale);
-        let framed = pipeline.framed(graph, image, &filmed, scale, &Inputs::default()).unwrap();
-        let scene = match conversion::white(&filmed) {
+        let framed = pipeline.framed(graph, image, s, scale, &Inputs::default()).unwrap();
+        let scene = match conversion::scene_white(s) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
         };
-        let scan = pipeline.filmed(graph, scene.clone(), &filmed).unwrap();
+        let scan = pipeline.filmed(graph, scene.clone(), s).unwrap();
         for (name, image) in [("scene", scene), ("scan", scan)] {
             let region = image.extent();
             let pixels = graph.render(&image, region, None).unwrap();

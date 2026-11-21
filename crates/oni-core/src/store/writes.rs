@@ -56,7 +56,6 @@ impl EditorStore {
                 }
             };
             let Some(next) = transform(path, &loaded.settings) else { continue };
-            let next = self.rested_white(path, &loaded.settings, next);
             if next != loaded.settings {
                 writes.push((path.clone(), loaded.settings, next));
             }

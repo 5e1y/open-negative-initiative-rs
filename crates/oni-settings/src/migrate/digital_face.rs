@@ -7,7 +7,7 @@ use crate::modes::Face;
 
 /// The settings on the face they rendered on when stored.
 pub fn caught_up(version: i64, mut settings: PipelineSettings) -> PipelineSettings {
-    if version < DIGITAL_SCANNER_VERSION && !settings.mode.is_film() {
+    if version < DIGITAL_SCANNER_VERSION && settings.mode.is_digital() {
         settings.face = Face::Pro;
     }
     settings

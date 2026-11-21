@@ -6,7 +6,6 @@ use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, P
 use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
-use oni_settings::white;
 use oni_settings::VirtualFilm;
 use crate::track::Bend;
 
@@ -60,8 +59,6 @@ pub enum Field {
     RedBlackPoint,
     GreenBlackPoint,
     BlueBlackPoint,
-    WhiteKelvin,
-    WhiteTint,
     GrainAmount,
     GrainSize,
     HalationAmount,
@@ -80,15 +77,6 @@ pub enum Field {
     GrainColourBlack,
     GrainColourWhite,
     FilmExposure,
-    FilmRed,
-    FilmGreen,
-    FilmBlue,
-    FilmRedBlack,
-    FilmGreenBlack,
-    FilmBlueBlack,
-    FilmRedWhite,
-    FilmGreenWhite,
-    FilmBlueWhite,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -105,7 +93,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 67] = [
+    pub const ALL: [Field; 56] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -144,8 +132,6 @@ impl Field {
         Field::RedBlackPoint,
         Field::GreenBlackPoint,
         Field::BlueBlackPoint,
-        Field::WhiteKelvin,
-        Field::WhiteTint,
         Field::GrainAmount,
         Field::GrainSize,
         Field::HalationAmount,
@@ -164,15 +150,6 @@ impl Field {
         Field::GrainColourBlack,
         Field::GrainColourWhite,
         Field::FilmExposure,
-        Field::FilmRed,
-        Field::FilmGreen,
-        Field::FilmBlue,
-        Field::FilmRedBlack,
-        Field::FilmGreenBlack,
-        Field::FilmBlueBlack,
-        Field::FilmRedWhite,
-        Field::FilmGreenWhite,
-        Field::FilmBlueWhite,
     ];
 
     pub fn index(self) -> i32 {
@@ -187,16 +164,14 @@ impl Field {
         Block::ALL.into_iter().find(|b| b.fields().contains(&self))
     }
 
-    /// Whether the panel shows this value in `mode`: a digital photo's white in place of the print's
-    /// filters, so a block's reset and its key read only what it shows.
+    /// Whether the panel shows this value in `mode`: a digital photo's film, its effects and its lens
+    /// on it alone, so a block's reset and its key read only what it shows.
     pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
         match self {
-            Field::WhiteKelvin | Field::WhiteTint => !mode.is_film(),
-            Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => !mode.is_film(),
-            Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => !mode.is_film(),
-            Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => !mode.is_film(),
-            f if f.block() == Some(Block::Film) => !mode.is_film(),
-            Field::Temperature | Field::Tint => mode.is_film(),
+            Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => mode.is_digital(),
+            Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => mode.is_digital(),
+            Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
+            Field::FilmExposure => mode.is_digital(),
             _ => true,
         }
     }
@@ -263,9 +238,6 @@ impl Field {
             Field::RedContrast => s("Red contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::GreenContrast => s("Green contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::BlueContrast => s("Blue contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
-            // A digital photo's white, in kelvin even in mired and in DNG's tint.
-            Field::WhiteKelvin => Spec { bend: Bend::Mired, ..s("Temperature", white::KELVIN_RANGE, Readout::Kelvin) },
-            Field::WhiteTint => tint(s("Tint", white::TINT_RANGE, Readout::SignedWhole)),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
             // The grain's colour line, its saturation at the picture's black and at its white.
@@ -280,35 +252,22 @@ impl Field {
             Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::FringeBlue => s("Blue fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
-            // A virtual film's exposure, its negative's gains, and each channel's ends as shares of the window.
+            // The stops of light a virtual film takes over the scene's own.
             Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
-            Field::FilmRed => s("Red ↔ Cyan", Gains::RANGE, Readout::Stops),
-            Field::FilmGreen => s("Green ↔ Magenta", Gains::RANGE, Readout::Stops),
-            Field::FilmBlue => s("Blue ↔ Yellow", Gains::RANGE, Readout::Stops),
-            Field::FilmRedBlack => s("Red black", VirtualFilm::SHARE_RANGE, Readout::Percent),
-            Field::FilmGreenBlack => s("Green black", VirtualFilm::SHARE_RANGE, Readout::Percent),
-            Field::FilmBlueBlack => s("Blue black", VirtualFilm::SHARE_RANGE, Readout::Percent),
-            Field::FilmRedWhite => s("Red white", VirtualFilm::SHARE_RANGE, Readout::Percent),
-            Field::FilmGreenWhite => s("Green white", VirtualFilm::SHARE_RANGE, Readout::Percent),
-            Field::FilmBlueWhite => s("Blue white", VirtualFilm::SHARE_RANGE, Readout::Percent),
         }
     }
 
     /// The value's one rest on this frame: where its track's tick stands, where a double click lands
-    /// and what its block's reset writes, the frame's import state in its own mode and decode; a white
-    /// rests on the frame's As Shot.
+    /// and what its block's reset writes, the frame's import state in its own mode and decode.
     pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
         let mut rest = oni_settings::PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
-        rest.white = settings.shot;
         if self.block() == Some(Block::SourceBalance) {
-            // `restingGains`: a measured roll rests on its window's stops; a slide, on its own measure's.
+            // `restingGains`: a measured roll rests on its window's stops, a slide on its own measure's, a
+            // digital photo on its film's reference.
+            let film = settings.film().map(|f| f.stock.reference().stops);
+            let stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).or(film).unwrap_or([0.0; 3]);
             rest = settings.clone();
-            rest.gains.stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
-        }
-        if self.block() == Some(Block::Film) {
-            // A virtual film rests on its stock's own reference, at the film's speed.
-            rest = settings.clone();
-            rest.virtual_film = settings.virtual_film.as_ref().map(|f| oni_pipeline::film::stock(f.stock).reference.clone());
+            rest.gains.stops = stops;
         }
         self.knob().get(&rest)
     }

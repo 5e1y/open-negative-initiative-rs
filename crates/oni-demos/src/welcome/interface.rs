@@ -2,13 +2,12 @@
 //! number and leaves; the components answer the hand themselves, the timeline answers the store as the app.
 
 use std::cell::RefCell;
-use std::ops::RangeInclusive;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use i_slint_backend_testing::{AccessibleRole, ElementHandle};
 use oni_app::fields::{Block, Field};
-use oni_app::slider_track::{number, position_on, rests, stepped, track_on, typed, typed_steps};
+use oni_app::slider_track::{number, position_on, rests, stepped, track_on, typed_steps};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -123,8 +122,9 @@ fn serve(instance: &ComponentInstance) {
     };
     instance.set_global_callback("Readouts", "number", figure).unwrap_or_else(|e| fail("Readouts.number", e));
     let settings = Rc::new(RefCell::new(opened()));
-    // A notch moves on the track as an arrow does; a typed number lands on itself, as the app's Store answers.
-    for (name, moved) in [("step", stepped as fn(Field, f32, i32, &RangeInclusive<f32>) -> f32), ("typed", typed)] {
+    // A notch and a typed number land on the readout's grid, as the app's Store answers.
+    for name in ["step", "typed"] {
+        let moved = stepped;
         let (settings, weak) = (settings.clone(), instance.as_weak());
         let answer = move |args: &[Value]| {
             let (Some(Value::Number(field)), Some(Value::Number(by))) = (args.first(), args.get(1)) else { return Value::Void };

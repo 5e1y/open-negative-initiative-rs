@@ -48,8 +48,7 @@ fn compares_before_holds_the_afters_region_under_a_crop_a_turn_and_a_look() {
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let geometry = Geometry { quarter_turns: 1, crop: oni_settings::cg::Rect::new(0.1003, 0.05, 0.8, 0.9), ..Geometry::default() };
     let print = oni_settings::tone::Print { exposure: 0.8, ..rest.print };
-    let white = Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 });
-    let live = PipelineSettings { geometry, print, white, face: oni_settings::Face::Scanner, ..rest };
+    let live = PipelineSettings { geometry, print, face: oni_settings::Face::Scanner, ..rest };
     let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
     let view = View { viewport: hundred, size: (600.0, 400.0), full: Some(full), coarse: false };
     let (after, placed) = engine.resident(&negative, &live, Some(&view)).unwrap();

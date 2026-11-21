@@ -24,16 +24,16 @@ impl EditorStore {
 }
 
 /// Whether the Scanner's screen asks the roll to be measured again: a film's reference kept no median,
-/// which the machine's window is laid on; a digital photo is printed on no roll's measure.
+/// which the machine's window is laid on; a digital photo is printed on its film's reference.
 pub fn remeasure(s: &PipelineSettings) -> bool {
-    s.mode.is_film() && s.roll_reference.as_ref().is_some_and(|r| r.median.is_none())
+    s.mode.is_measured() && s.roll_reference.as_ref().is_some_and(|r| r.median.is_none())
 }
 
 pub fn channel(mode: ConversionMode) -> Channel {
     match mode {
-        ConversionMode::Negative => Channel::Negative,
-        // The phone's three channels: a digital photo moves as a slide does.
-        ConversionMode::Positive | ConversionMode::Digital => Channel::Positive,
+        // The phone's three channels: a digital photo's negative moves as a negative does.
+        ConversionMode::Negative | ConversionMode::Digital => Channel::Negative,
+        ConversionMode::Positive => Channel::Positive,
         ConversionMode::Monochrome => Channel::Monochrome,
     }
 }

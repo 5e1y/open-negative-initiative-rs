@@ -7,8 +7,8 @@ use oni_settings::migrate::{self, Facts, Refusal, chain};
 use oni_settings::{ConversionMode, Document, PipelineSettings};
 use serde_json::{Value, json};
 
-fn digital() -> PipelineSettings {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
+fn grained() -> PipelineSettings {
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.grain.amount = 0.4;
     s
 }
@@ -29,8 +29,8 @@ fn read(bytes: &[u8]) -> PipelineSettings {
 
 #[test]
 fn a_grained_frame_from_before_reads_the_colours_rest() {
-    assert_eq!(VERSION, chain::VIRTUAL_FILM_VERSION);
-    let mut mono = digital();
+    assert_eq!(VERSION, chain::DIGITAL_ON_FILM_VERSION);
+    let mut mono = grained();
     mono.grain.colour = GrainColour { black: 0.0, white: 0.0 };
     for version in [chain::GRAIN_COLOUR_VERSION - 2, chain::GRAIN_COLOUR_VERSION - 1] {
         let s = read(&stored(&mono, version));
@@ -45,7 +45,7 @@ fn a_grained_frame_from_before_reads_the_colours_rest() {
 #[test]
 fn a_colour_of_the_random_hue_reads_its_numbers_carried() {
     assert!(chain::GRAIN_COLOUR_VERSION < chain::GRAIN_HUE_VERSION);
-    let mut moved = digital();
+    let mut moved = grained();
     moved.grain.colour = GrainColour { black: 1.5, white: 0.3 };
     let mut object = serde_json::to_value(Document::of(moved.clone())).unwrap();
     object["version"] = json!(chain::GRAIN_HUE_VERSION - 1);
@@ -58,20 +58,20 @@ fn a_colour_of_the_random_hue_reads_its_numbers_carried() {
 
 #[test]
 fn a_moved_colour_round_trips_to_the_bit_and_the_rest_writes_nothing() {
-    let mut moved = digital();
+    let mut moved = grained();
     moved.grain.colour = GrainColour { black: 2.718_281_7, white: 0.333_333_34 };
     let back = document::decode(&document::encode(&Document::of(moved.clone())).unwrap()).unwrap().settings.grain.colour;
     assert_eq!((back.black.to_bits(), back.white.to_bits()), (moved.grain.colour.black.to_bits(), moved.grain.colour.white.to_bits()));
     let text = |s: &PipelineSettings| String::from_utf8(document::encode(&Document::of(s.clone())).unwrap()).unwrap();
-    assert!(!text(&digital()).contains("\"colour\""), "the rest writes a colour");
+    assert!(!text(&grained()).contains("\"colour\""), "the rest writes a colour");
     // Twin: a moved colour is written.
     assert!(text(&moved).contains("\"colour\""));
 }
 
 #[test]
 fn a_file_past_this_format_is_refused_as_newer() {
-    let bytes = stored(&digital(), VERSION + 1);
+    let bytes = stored(&grained(), VERSION + 1);
     assert!(matches!(migrate::reading(&bytes, &Facts::bare(true), false), Err(Refusal::Newer(v)) if v == VERSION + 1));
     // Twin: this format's own file reads.
-    assert!(migrate::reading(&stored(&digital(), VERSION), &Facts::bare(true), false).is_ok());
+    assert!(migrate::reading(&stored(&grained(), VERSION), &Facts::bare(true), false).is_ok());
 }

@@ -116,9 +116,10 @@ fn a_print_notch_reruns_neither_the_grain_nor_its_blur() {
     let exposure = |t: &mut PipelineSettings, d: f32| t.print.exposure += d;
     let plain = notches(&mut g, &rest, &exposure);
     assert_eq!(notches(&mut g, &grained, &exposure), plain, "an exposure notch reruns the grain or its blur");
-    // An amount notch reruns the grain's pass alone: the blur reads only Size. Twin: a size notch blurs again.
+    // An amount notch reruns the grain's pass and the film's that reads it: the blur reads only Size. Twin: a
+    // size notch blurs again.
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount -= d;
-    assert_eq!(notches(&mut g, &grained, &amount).0, plain.0 + 1, "an amount notch blurs again");
+    assert_eq!(notches(&mut g, &grained, &amount).0, plain.0 + 2, "an amount notch blurs again");
     let size = |t: &mut PipelineSettings, d: f32| t.grain.size -= d;
-    assert_eq!(notches(&mut g, &grained, &size).0, plain.0 + 3, "the twin reruns {:?}", notches(&mut g, &grained, &size));
+    assert_eq!(notches(&mut g, &grained, &size).0, plain.0 + 4, "the twin reruns {:?}", notches(&mut g, &grained, &size));
 }

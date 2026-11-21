@@ -1,5 +1,5 @@
 // Stages 4 to 7 in one pass, operation for operation as `cpu::stage47` and the Metal kernel,
-// so a difference between them is one of precision, never of formula; `print_px` is `cpu::print`.
+// so a difference between them is one of precision, never of formula.
 
 struct Params {
     gain_invert: vec4<f32>,
@@ -184,12 +184,3 @@ fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     return vec4<f32>(stage47_printed(stage47_windowed(s)), s.a);
 }
 
-// Lighting on a picture already windowed and printed at rest: its display value back on the print's
-// scale, each channel's points as a window on it, then the print. The window lanes hold their reach.
-fn print_px(s: vec4<f32>) -> vec4<f32> {
-    let n = pow(max(s.rgb, vec3<f32>(0.0)), vec3<f32>(1.0 / DISPLAY_GAMMA));
-    let e = vec3<f32>(apply_window(n.r, P.red_density.xyz, P.low_window.x, P.high_print.x),
-                      apply_window(n.g, P.green_pedestal.xyz, P.low_window.y, P.high_print.y),
-                      apply_window(n.b, P.blue_guard.xyz, P.low_window.z, P.high_print.z));
-    return vec4<f32>(stage47_printed(e), s.a);
-}

@@ -1,5 +1,5 @@
-//! A digital roll: no film to measure, every photo of the roll made digital as one step, each white
-//! resting on its own As Shot.
+//! A digital roll: no film to measure, every photo of the roll made digital as one step, each on its
+//! film's own reference.
 
 use super::*;
 

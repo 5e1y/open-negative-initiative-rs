@@ -252,7 +252,7 @@ fn read_again(root: &Path, photo: &str, index: &LibraryIndex, twin: &LibraryInde
 #[test]
 fn a_row_read_off_an_earlier_format_is_read_again_once_a_measure_brings_it() {
     let (root, photo, index, twin) = stale_row("measure");
-    let balance = oni_settings::document::AutoBalance { fingerprint: "f".into(), filters: [0.1, 0.0, -0.1], reference: None, white: None };
+    let balance = oni_settings::document::AutoBalance { fingerprint: "f".into(), filters: [0.1, 0.0, -0.1], reference: None };
     with_the_scan_s_facts(&photo, || assert!(oni_settings::sidecar::set_auto_balance(Path::new(&photo), true, &balance).unwrap()));
     // Twin: a row recorded as of this format keeps the line it was read with, the sidecar's date unmoved.
     assert_eq!(read_again(&root, &photo, &index, &twin), (None, Some(STALE_CAMERA.into())));

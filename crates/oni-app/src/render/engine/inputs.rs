@@ -7,7 +7,6 @@ use super::*;
 use oni_measure::histogram::Histogram;
 use oni_measure::reader::{Copy, Laying, Reader};
 use oni_measure::truncate::{Stage, truncated};
-use oni_settings::modes::Face;
 
 /// One stage's last reading: the settings entering the stage, whose windows it is read through, and
 /// the recipe read, which names the copy, the mask and every patch laid.
@@ -48,15 +47,8 @@ impl Engine {
             self.read[slot] = recipe.map(|recipe| Read { entering, recipe, histogram: histogram.clone() });
             histogram
         };
-        // A digital photo's levels lie in Pro's curves' tables, before Lighting: what enters them enters the curves.
-        // On the Scanner face they lie before the machine's print, its curves after the look.
-        let (film, shared) = (settings.mode.is_film(), settings.face == Face::Pro);
-        let curves = (wanted[1] || (wanted[0] && !film && shared)).then(|| read(1, Stage::ManualCurves));
-        let levels = match (film, shared) {
-            (true, _) => wanted[0].then(|| read(0, Stage::Levels)),
-            (false, true) => curves.clone().filter(|_| wanted[0]),
-            (false, false) => wanted[0].then(|| read(0, Stage::PictureLevels)),
-        };
-        Some(InputHistograms { levels, curves: curves.filter(|_| wanted[1]) })
+        let levels = wanted[0].then(|| read(0, Stage::Levels));
+        let curves = wanted[1].then(|| read(1, Stage::ManualCurves));
+        Some(InputHistograms { levels, curves })
     }
 }

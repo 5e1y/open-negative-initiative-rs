@@ -25,7 +25,6 @@ use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
-use oni_settings::levels::PictureLevels;
 use oni_settings::tone::Print;
 use oni_settings::{PipelineSettings, ScannerMachine};
 use stages::{Before, DetailColumns, DetailRows, OnGround};
@@ -74,7 +73,7 @@ pub struct Pipeline {
     cubes: HashMap<&'static str, (Source, usize)>,
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
-    luts: Vec<(Tables, Source, Source)>,
+    luts: Vec<(CurveSet, Source, Source)>,
     /// Each virtual film's table, uploaded once per graph.
     films: HashMap<oni_settings::VirtualStock, Source>,
     /// The frames' corrections as last laid.
@@ -83,9 +82,6 @@ pub struct Pipeline {
 
 /// Tables kept per pipeline, as two curve sets alternate.
 const KEPT_LUTS: usize = 4;
-
-/// What the curves' tables are baked from: the curves and the levels laid in front of them.
-type Tables = (CurveSet, Option<PictureLevels>);
 
 type Result<T> = std::result::Result<T, oni_graph::Error>;
 
@@ -127,7 +123,7 @@ impl Pipeline {
         // The map is laid on the full-resolution scan's shape, so every scale zooms alike.
         let lens = s.lens((f64::from(e.w) / scale, f64::from(e.h) / scale));
         let out = geometry::apply(healed, &s.geometry, lens.as_ref(), scale);
-        Ok(if s.inverted_source && s.mode.is_film() { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
+        Ok(if s.inverted_source && !s.mode.is_digital() { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
     }
 
     /// The scan in its own frame, before stage 0: its corrections, then the capture's exposure evened and
@@ -136,7 +132,7 @@ impl Pipeline {
     /// optics darkened the scene.
     pub fn healed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let mut out = self.patched(graph, image, s, scale, inputs)?;
-        if !s.mode.is_film() {
+        if s.mode.is_digital() {
             return Ok(match s.optical_vignetting() {
                 Some(stops) => {
                     let extent = out.extent();
@@ -151,9 +147,9 @@ impl Pipeline {
         self.flat_field(graph, out, s, inputs)
     }
 
-    /// A digital photo shot on a virtual film: its scene exposed, developed and scanned as that negative.
+    /// A digital photo's scene on its virtual film: exposed, developed and scanned as that negative.
     pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
-        let Some(f) = s.filmed() else { return Ok(image) };
+        let Some(f) = s.film() else { return Ok(image) };
         let stock = film::stock(f.stock);
         let source = match self.films.get(&f.stock) {
             Some(source) => source.clone(),
@@ -218,14 +214,13 @@ impl Pipeline {
         Ok((code.clone().then_reading(stages::color_cube(n), &[table]), share))
     }
 
-    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look; `printing`
-    /// is what renders it, laid in the encode's pass.
-    fn oni_finish(&mut self, graph: &mut Graph, image: Image, printing: Vec<stages::PerPixel>, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
+    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
+    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
         let frontier = frame.scanner_machine == ScannerMachine::Frontier;
         let hand = frontier.then(frontier_table::current).flatten();
         // The Frontier's look stands where ONI's does, on the same render in plain display code.
         let encode = stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT });
-        let code = stages::laid(image, printing.into_iter().chain([encode]).collect());
+        let code = stages::laid(image, vec![encode]);
         let (table, n) = match hand {
             Some((generation, cube)) => {
                 if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
@@ -242,10 +237,9 @@ impl Pipeline {
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }
 
-    fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet, levels: Option<&PictureLevels>) -> Result<Image> {
-        let Some(k) = finishing::curves(set, levels) else { return Ok(image) };
-        let key: Tables = (set.clone(), levels.copied());
-        let (rgb, luma) = match self.luts.iter().find(|(s, _, _)| *s == key) {
+    fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet) -> Result<Image> {
+        let Some(k) = finishing::curves(set) else { return Ok(image) };
+        let (rgb, luma) = match self.luts.iter().find(|(s, _, _)| s == set) {
             Some((_, rgb, luma)) => (rgb.clone(), luma.clone()),
             None => {
                 let n = k.rgb_lut.len() as u32;
@@ -254,35 +248,22 @@ impl Pipeline {
                 if self.luts.len() >= KEPT_LUTS {
                     self.luts.remove(0);
                 }
-                self.luts.push((key, rgb.clone(), luma.clone()));
+                self.luts.push((set.clone(), rgb.clone(), luma.clone()));
                 (rgb, luma)
             }
         };
         Ok(image.then_reading(stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]))
     }
 
-    /// Curves to the output clip, both faces; `levels` are a digital photo's laid in the curves' tables, `lit`
-    /// its Lighting after them, `points` lays the black and white points' saturation, Pro's alone.
-    #[allow(clippy::too_many_arguments)]
-    fn finishing(
-        &mut self,
-        graph: &mut Graph,
-        toned: Image,
-        s: &PipelineSettings,
-        levels: Option<&PictureLevels>,
-        lit: Option<stages::PerPixel>,
-        points: bool,
-        scale: f64,
-        reference: f64,
-        measuring: bool,
-    ) -> Result<Image> {
+    /// Curves to the output clip, both faces.
+    fn finishing(&mut self, graph: &mut Graph, toned: Image, s: &PipelineSettings, scale: f64, reference: f64, measuring: bool) -> Result<Image> {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
-        let graded = self.curves(graph, toned, &s.manual_curves, levels)?;
-        // Lighting, the spectrogram, the points' saturation, the saturation and the vignette in one pass.
+        let graded = self.curves(graph, toned, &s.manual_curves)?;
+        // The spectrogram, the points' saturation, the saturation and the vignette in one pass.
         let extent = graded.extent();
-        let mut run: Vec<_> = lit.into_iter().chain(finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k))).collect();
-        if !mono && points {
+        let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
+        if !mono {
             run.extend(saturation(&finishing::points_curve(&s.print, s.mode)));
         }
         run.extend(saturation(&s.saturation));
@@ -297,8 +278,8 @@ impl Pipeline {
         let sharpened = if sheet || joint { textured } else { detail(textured, finishing::detail(None, Some(&s.sharpen), scale)) };
         // The sauce, the monochrome luma and the output clip in one pass.
         let mut run: Vec<_> = saturation(&finishing::sauce(s.secret_sauce.min(finishing::SAUCE_TOP))).into_iter().collect();
-        // A black and white film, or a digital photo printed in black and white, keeps its luminance alone.
-        if mono || (s.mode == oni_settings::ConversionMode::Digital && s.black_and_white) {
+        // A black and white film keeps its luminance alone.
+        if mono {
             run.push(stages::luma_only());
         }
         if measuring {
@@ -308,11 +289,6 @@ impl Pipeline {
         let clipped = stages::laid(sharpened, run);
         Ok(if sheet { clipped.then(OnGround) } else { clipped })
     }
-}
-
-/// A digital photo's own levels, in the curves' tables; a film frame keeps them unrendered.
-fn picture_levels(s: &PipelineSettings) -> Option<&PictureLevels> {
-    Some(&s.picture_levels).filter(|l| !s.mode.is_film() && !l.is_neutral())
 }
 
 fn saturation(curve: &SaturationCurve) -> Option<stages::PerPixel> {

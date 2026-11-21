@@ -97,7 +97,7 @@ fn the_press_lands_the_three_means_together_through_the_kernel_and_the_dose_writ
     let mut referenced = s.clone();
     referenced.roll_reference = Some(reference.clone());
     referenced.balance_strength = 0.5;
-    let pressed = applied_outcome(&Outcome { reference: Some(reference), filters: found, white: None }, &referenced);
+    let pressed = applied_outcome(&Outcome { reference: Some(reference), filters: found }, &referenced);
     let moved = dosed(&pressed, 0.8);
     assert!((pressed.print.red.exposure - found[0] / 2.0).abs() < 1e-6 && (pressed.print.blue.exposure - found[2] / 2.0).abs() < 1e-6);
     assert_eq!(pressed.balance_filters, Some(found));
@@ -150,10 +150,10 @@ fn the_balance_reads_pro_s_print_on_either_face_where_the_scanner_renders_its_ow
     assert!(apart > 1e-2, "the Scanner's look parts from Pro's print by {apart}");
 }
 
-/// A digital photo's key finds the white that prints its light grey, through the render, and lays it whole on
-/// the photo's white, its print untouched; twin: at its decode's own white the cast frame parts.
+/// A digital photo's key balances its print as a negative's, on its film's own reference: filters that print
+/// its light grey, no roll measured or written; twin: unfiltered, the cast frame parts.
 #[test]
-fn a_digital_photo_s_key_finds_the_white_that_prints_it_grey() {
+fn a_digital_photo_s_key_balances_its_print_on_its_films_reference() {
     let check = "filter_balance::digital";
     let Some(mut graph) = graph(check) else { return };
     let mut pipeline = Pipeline::new();
@@ -162,21 +162,16 @@ fn a_digital_photo_s_key_finds_the_white_that_prints_it_grey() {
     let copy = Copy { source: &source, full_width: None };
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
     let s = PipelineSettings::rest(ConversionMode::Digital, false);
-    let white = key::digital_white(&mut r, copy, &s).expect("the cast photo reads");
-    let means = |r: &mut Reader, w: Option<oni_settings::white::White>| {
-        let laid = PipelineSettings { white: w, ..s.clone() };
+    let found = key::balance_outcome(&mut r, copy, "digital", &s).expect("the cast photo reads");
+    assert!(found.reference.is_none() && found.filters != [0.0; 3], "filters on no roll: {found:?}");
+    let means = |r: &mut Reader, f: [f32; 3]| {
+        let mut laid = oni_measure::filter_balance::unlit(&s);
+        oni_measure::filter_balance::filtered(&mut laid, f);
         let pixels: Vec<[f32; 3]> = r.balance_pixels(copy, &laid).unwrap().into_iter().filter(|p| printable(*p)).collect();
         oni_measure::filter_balance::minkowski(&pixels).unwrap()
     };
-    let balanced = means(&mut r, Some(white));
-    println!("white {:.0} K, tint {:+.1}, the means part by {:.1e}", white.kelvin, white.tint, parted(balanced));
-    assert!(parted(balanced) < 1e-3, "{white:?} parts by {}", parted(balanced));
-    assert!(white.kelvin < 5000.0, "a warm light reads as a low kelvin: {white:?}");
-    assert!(parted(means(&mut r, None)) > 0.1, "twin: its own white leaves the cast");
-    let pressed = applied_outcome(&Outcome { reference: None, filters: [0.0; 3], white: Some(white) }, &s);
-    assert_eq!((pressed.white, &pressed.print), (Some(white), &s.print), "the white laid whole, the print untouched");
-    // Shot on a film, the scene stands at the film's daylight: the key balances the print, as a negative's.
-    let filmed = PipelineSettings { virtual_film: Some(oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800).reference.clone()), ..s.clone() };
-    let found = key::balance_outcome(&mut r, copy, "filmed", &filmed).expect("the filmed photo reads");
-    assert!(found.white.is_none() && found.filters != [0.0; 3], "filters, never a white, on a filmed photo: {found:?}");
+    assert!(parted(means(&mut r, found.filters)) < 1e-2, "{found:?} parts by {}", parted(means(&mut r, found.filters)));
+    assert!(parted(means(&mut r, [0.0; 3])) > 0.05, "twin: unfiltered the cast stays");
+    let pressed = applied_outcome(&found, &s);
+    assert_eq!((pressed.gains, pressed.levels, pressed.roll_reference.is_none()), (s.gains, s.levels, true), "the film's reference kept");
 }

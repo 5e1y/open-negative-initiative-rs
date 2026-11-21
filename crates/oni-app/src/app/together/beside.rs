@@ -38,11 +38,7 @@ impl Ctl {
         let block = |b: Block| e.together_where(b.fields()[0].knob().field(), |s| crate::store::is_modified(s, b, dyes));
         let editor = |r: Reset| match r {
             Reset::Curves => e.together_where(Field::ManualCurves, |s| !view(s).manual_curves.is_neutral()),
-            // Each frame by its own windows: a film's per channel, a digital photo's on the picture.
-            Reset::Levels => {
-                let off = |s: &PipelineSettings, film: bool| s.mode.is_film() == film && crate::editors::levels_modified(&view(s));
-                e.together_where(Field::Levels, |s| off(s, true)) || e.together_where(Field::PictureLevels, |s| off(s, false))
-            }
+            Reset::Levels => e.together_where(Field::Levels, |s| crate::editors::levels_modified(&view(s))),
             Reset::Spectrogram => e.together_where(Field::Spectrogram, |s| view(s).spectrogram != Default::default()),
             Reset::Saturation => e.together_where(Field::Saturation, |s| !view(s).saturation.is_neutral()),
             Reset::Grain => e.together_where(Field::Grain, |s| !s.grain.curve.rests()),

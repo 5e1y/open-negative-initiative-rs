@@ -1,6 +1,6 @@
-//! A digital photo shot on Portra 800 through the Color tab's Film block: the tab picks the film, which
-//! lays its stock's reference and renders the photo again as that negative; Film exposure moves the
-//! film alone; the settings key shows the negative's gains and ends; None gives the photo's settings back.
+//! A digital photo opens shot on Portra 800, the Color tab's Film block its one stock: Film exposure moves the
+//! film alone and renders the photo again; the settings key shows the stock's white and the reference its
+//! negative is read on, which no hand writes. Twin: a negative shows no Film block.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Canvas, PanelState, PanelTab, Store};
@@ -10,7 +10,7 @@ use std::time::Duration;
 use crate::common;
 use crate::film_effects::{opened, press_rail};
 
-pub(crate) fn a_digital_photo_is_shot_on_portra_and_back() {
+pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the Film block is not exercised"),
@@ -34,42 +34,26 @@ pub(crate) fn a_digital_photo_is_shot_on_portra_and_back() {
         rig.until(what, Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
         rig.settle();
     };
-    let photo = (settings(), frame());
-    assert!(shown(Role::Text, "Film") && shown(Role::Tab, "Portra 800"), "a digital photo's Film block");
-    assert!(!shown(Role::Slider, "Film exposure"), "no film, no exposure to give it");
-
-    rendered("the film rendered", &|| common::click(&rig, w, common::the(w, Role::Tab, "Portra 800").middle()));
-    let film = settings().virtual_film.expect("the tab laid a film");
-    assert_eq!(film, oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800).reference, "on its stock's own reference");
-    assert!(shown(Role::Slider, "Film exposure") && !shown(Role::Slider, "Red ↔ Cyan"), "its exposure shown, its reference behind the key");
+    let film = settings().film().expect("a digital photo is shot on its film");
+    assert_eq!((film.stock, film.exposure), (oni_settings::VirtualStock::KodakPortra800, 0.0));
+    assert!(shown(Role::Text, "Film") && shown(Role::Tab, "Portra 800") && !shown(Role::Tab, "None"), "one stock, no film None");
+    assert!(shown(Role::Slider, "Film exposure") && !w.global::<Store>().get_film_modified(), "its exposure at rest");
     let on = frame();
-    assert_ne!(on, photo.1, "the photo renders again as the negative");
-    assert!(!w.global::<Store>().get_film_modified(), "the film opens on its rest");
     println!("shot {}", rig.shot("virtual-film-on").display());
 
     rendered("the film's exposure rendered", &|| press_rail(&rig, w, "Film exposure", 0.75));
-    let exposed = settings().virtual_film.unwrap();
-    assert!((exposed.exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {exposed:?}");
-    assert_eq!((exposed.stops, exposed.black, exposed.white), (film.stops, film.black, film.white), "the exposure alone moved");
+    let exposed = settings();
+    assert!((exposed.film().unwrap().exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {:?}", exposed.film());
+    let reference = oni_settings::VirtualStock::KodakPortra800.reference();
+    assert_eq!((exposed.gains.stops, exposed.levels), (reference.stops, reference.levels()), "the exposure alone moved");
     assert!(w.global::<Store>().get_film_modified(), "the block's Reset shows");
     assert_ne!(frame(), on);
 
-    common::click(&rig, w, common::the(w, Role::Button, "Show the negative's gains and ends").middle());
+    common::click(&rig, w, common::the(w, Role::Button, "Show the film's white and reference").middle());
     rig.settle();
-    for name in ["Red ↔ Cyan", "Green ↔ Magenta", "Blue ↔ Yellow", "Red black", "Red white"] {
-        assert!(shown(Role::Slider, name), "{name} behind the settings key");
-    }
+    assert!(shown(Role::Text, "Scene white") && shown(Role::Text, "Gains"), "the reference behind the settings key");
+    assert!(panel.get_film_white().starts_with("5500 K"), "{}", panel.get_film_white());
     println!("shot {}", rig.shot("virtual-film-reference").display());
-
-    rendered("the photo back", &|| common::click(&rig, w, common::the(w, Role::Tab, "None").middle()));
-    assert_eq!(settings(), photo.0, "None gives the photo's settings back");
-    let gap = |a: &[slint::Rgba8Pixel], b: &[slint::Rgba8Pixel]| a.iter().zip(b).map(|(p, q)| [p.r.abs_diff(q.r), p.g.abs_diff(q.g), p.b.abs_diff(q.b)].into_iter().max().unwrap()).max().unwrap();
-    let back = frame();
-    let (back, film_on) = (gap(&back, &photo.1), gap(&on, &photo.1));
-    println!("the photo back against the photo: {back} codes at worst; the film on: {film_on}");
-    // The render itself is the photo's to the bit (the pipeline's check); the canvas's first landing
-    // after the open may differ by a code or two from a later one.
-    assert!(back <= 2 && film_on > 50, "{back} {film_on}");
     // Twin: a film mode shows no Film block.
     panel.invoke_film_type_picked(0);
     rig.settle();

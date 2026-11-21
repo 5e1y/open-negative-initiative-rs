@@ -226,64 +226,53 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
 }
 
-/// A digital photo on its film's own reference, its neighbourhood stages off so a pixel prints alone.
+/// A digital photo at rest, its neighbourhood stages off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
-    s.virtual_film = Some(film::stock(VirtualStock::KodakPortra800).reference.clone());
-    s
+    PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only()
 }
 
-/// The stock's own reference prints a scene grey where the digital photo prints it at the film's daylight, and
-/// neutral, every channel on its bare film's black; the film off renders the digital photo to the bit. Twins:
-/// the film a stop over prints that grey lighter, and the film on renders another picture.
+/// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, and neutral; the
+/// digital photo is its virtual negative read by a negative's pipeline, pixel for pixel. Twins: the film a stop
+/// over prints that grey lighter, and the same scan read as a slide is another picture.
 #[test]
-fn the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back() {
-    let Some(mut g) = graph("the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back") else { return };
+fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative() {
+    let Some(mut g) = graph("the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative") else { return };
     let (w, h) = (64, 8);
-    let scene: Vec<V4> = (0..w * h).map(|i| {
+    let mut scene: Vec<V4> = (0..w * h).map(|i| {
         let x = (i % w) as f32 / (w - 1) as f32;
         let v = GREY * 2f32.powf(8.0 * x - 5.0);
         if i / w < 4 { [v, v, v, 1.0] } else { [v, v * 0.6, v * 0.3, 1.0] }
     }).collect();
-    // A grey under the film's daylight: the decode's pixel its white maps onto equal channels.
-    let daylight = VirtualStock::KodakPortra800.daylight();
-    let to_daylight = oni_settings::white::relative(oni_settings::white::uv(daylight), oni_settings::white::anchor(true));
-    let back = oni_settings::white::inverse(&to_daylight.map(|r| r.map(f64::from)));
+    // A grey under the film's white: the decode's pixel its white maps onto equal channels.
+    let white = VirtualStock::KodakPortra800.white();
+    let to_white = oni_settings::white::relative(oni_settings::white::uv(white), oni_settings::white::anchor(true));
+    let back = oni_settings::white::inverse(&to_white.map(|r| r.map(f64::from)));
     let lit = oni_settings::white::apply(&back, [f64::from(GREY); 3]).map(|v| v as f32);
-    let mut probe = scene.clone();
-    probe[0] = [lit[0], lit[1], lit[2], 1.0];
-    let source = g.upload(w, h, &probe).unwrap();
+    scene[0] = [lit[0], lit[1], lit[2], 1.0];
+    let source = g.upload(w, h, &scene).unwrap();
+    let plain_grey = g.upload(1, 1, &[[GREY, GREY, GREY, 1.0]]).unwrap();
     let mut pipeline = Pipeline::new();
-    let mut render = |s: &PipelineSettings| pipeline.render(&mut g, &source, s, &Request::default(), &Default::default(), None).unwrap().1;
-    let mut digital = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
-    digital.white = Some(daylight);
-    let (photo, on) = (render(&digital), render(&filmed()));
-    let grey = (photo[0], on[0]);
-    println!("a scene grey: the photo {:?}, the film {:?}", grey.0, grey.1);
+    let digital = filmed();
+    let on = pipeline.render(&mut g, &source, &digital, &Request::default(), &Default::default(), None).unwrap().1;
+    let plain = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
+    let raw = pipeline.render(&mut g, &plain_grey, &plain, &Request::default(), &Default::default(), None).unwrap().1[0];
+    println!("a scene grey: the plain RAW {raw:?}, the film {:?}", on[0]);
     for c in 0..3 {
-        assert!((grey.1[c] - grey.0[1]).abs() < 1e-5, "channel {c}: {grey:?}");
+        assert!((on[0][c] - raw[1]).abs() < 2e-3, "channel {c}: {:?} {raw:?}", on[0]);
     }
-    let mut over = filmed();
-    over.virtual_film.as_mut().unwrap().exposure = 1.0;
-    assert!(render(&over)[0][1] > grey.1[1] + 0.02);
-    let mut off = filmed();
-    off.virtual_film = None;
-    off.white = digital.white;
-    assert_eq!(render(&off), photo);
-    // The film locks the scene at its daylight: a white the hand set waits, unrendered; twin: off, it renders.
-    let mut tungsten = filmed();
-    tungsten.white = Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 });
-    assert_eq!(render(&tungsten), on, "the scene stays at the film's daylight");
-    tungsten.virtual_film = None;
-    assert_ne!(render(&tungsten), photo, "twin: without the film the hand's white renders");
-    // Its colour is balanced at the print: the filters move the filmed photo, as a negative's; twin: a digital
-    // photo's own colour is its white, its filters unrendered.
-    let mut warmed = filmed();
-    warmed.print.set_filters([0.2, 0.0, -0.2]);
-    assert_ne!(render(&warmed), on, "the print's filters reach the filmed photo");
-    let mut unfilmed = digital.clone();
-    unfilmed.print.set_filters([0.2, 0.0, -0.2]);
-    assert_eq!(render(&unfilmed), photo, "twin: a digital photo's filters wait");
-    assert_ne!(on, photo);
+    let over = PipelineSettings { virtual_film: digital.film().map(|f| oni_settings::VirtualFilm { exposure: 1.0, ..f }), ..digital.clone() };
+    let lighter = pipeline.render(&mut g, &source, &over, &Request::default(), &Default::default(), None).unwrap().1;
+    assert!(lighter[0][1] > on[0][1] + 0.02, "twin: a stop over prints lighter");
+    // The film's scan, then that scan read by the negative's own pipeline on the photo's settings.
+    let image = Image::new(&source).then(stages::color_matrix(&oni_pipeline::conversion::scene_white(&digital).unwrap()));
+    let scanned = pipeline.filmed(&mut g, image, &digital).unwrap();
+    let read_back = whole(&mut g, &scanned);
+    let scan = g.upload(w, h, &read_back).unwrap();
+    let mut read = |mode| {
+        let s = PipelineSettings { mode, ..digital.clone() };
+        pipeline.render(&mut g, &scan, &s, &Request::default(), &Default::default(), None).unwrap().1
+    };
+    let (negative, slide) = (read(ConversionMode::Negative), read(ConversionMode::Positive));
+    judge("a digital photo read as its negative", &on, &negative, &slide);
     assert!(on.iter().all(|p| p.iter().all(|v| v.is_finite())));
 }

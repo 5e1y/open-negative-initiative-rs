@@ -437,7 +437,8 @@ fn a_mosaic_gain_shifts_for_the_decode_change_and_a_scanner_gain_never() {
     let hand = [0.6f32, -0.3, 0.9];
     let delta = before_1_0::NEUTRAL_DECODE_RATIO.map(libm::log2f);
     let expected: [f32; 3] = std::array::from_fn(|i| hand[i] - delta[i]);
-    for mode in ConversionMode::ALL {
+    // A digital photo's gains, which it never rendered then, land on its film's reference.
+    for mode in ConversionMode::ALL.into_iter().filter(|m| !m.is_digital()) {
         for stamp in [0, before_1_0::NEUTRAL_DECODE_GAINS_VERSION - 1, before_1_0::NEUTRAL_DECODE_GAINS_VERSION] {
             let mut written = PipelineSettings { mode, ..PipelineSettings::default() };
             written.gains.stops = hand;
@@ -602,15 +603,14 @@ fn every_field_lives_in_exactly_one_family() {
             margin: 0.0,
             windows: None,
         });
-        (s.manual_order, s.pass_of, s.picture_levels.luma.mid) = (Some(1.0), Some("p".into()), 0.4);
+        (s.manual_order, s.pass_of) = (Some(1.0), Some("p".into()));
         s.source_encoding = Some(oni_settings::SourceEncoding::Linear);
         s.rgb_passes = Some(RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None });
         let (stops, black, white) = ([0.0; 3], [0.0; 3], [3.0; 3]);
         s.roll_reference = Some(oni_settings::frame::RollReference { id: Id::new(), stops, black, white, base: None, median: None });
         s.balance_method = Some("classic".into());
-        (s.balance_filters, s.inverted_source, s.measured_gains, s.black_and_white) = (Some([0.0; 3]), true, Some([0.0; 3]), true);
-        (s.white, s.shot) = (Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }), Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }));
-        s.virtual_film = Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5, stops, black, white });
+        (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
+        s.virtual_film = Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5 });
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
@@ -624,7 +624,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 52);
+    assert_eq!(keys.len(), 48);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

@@ -11555,5 +11555,47 @@
     "status": "done",
     "detail": "crates/oni-app/examples/colour_trace.rs prints scenes or scans through the CPU references of the virtual negative and stage 4-7 at a sidecar's settings (within 1 % of the GPU render on the photo's patches), or prints a real frame's stage 4-7 arguments; docs/research/colour-diagnosis/*.py rebuild B and C on the ColorChecker, the photo's patches and a grey ramp, and swap each stage (reading, tone, output) for spektrafilm's.",
     "outcome": "On spektrafilm's own negative, ONI's print is 6.1 dE00 from the paper print on the chart and 10.3 on the photo. Three causes: the tone (linear windows and a 2.2 power instead of the paper's curve: 10.3 to 4.4 on the photo), greys balanced at two points only (yellow-green shadows, magenta highlights), and the reading (the colorimetric scan reads the magenta dye into red, 2.23 stops per unit against the paper's 0.40). A printing-density matrix then the paper's curves and dyes reaches 0.81 (chart) and 0.61 (photo); grey balance on the whole ramp, the paper's tone and one 3x3 in density space reach 2.77 and 1.67. ONI's dye separation moves 0.2 to 1.0 closer, the chroma decompression 0.6 to 0.8 away. A camera scan (Nikon D5100, Sigma, measured sensitivities) shows the same gap: the step is missing for real negatives too."
+  },
+  {
+    "id": 2600,
+    "type": "change",
+    "title": "A digital photo is always shot on its virtual film and its negative read by the negative's pipeline, as a scanned colour negative's",
+    "status": "done",
+    "detail": "The owner's strategy: no Digital pipeline or UX of its own, no film None. PipelineSettings::film() gives a digital photo its VirtualFilm (stock and exposure, Kodak Portra 800 by default) even where none is stored; rest(Digital) and carried() place the stock's reference in gains, levels and the dye family as Prepare the Roll places a roll's (on_stock), store::roll::digital lays it on a roll prepared as digital. The chain is one path: framed scene, lit at the stock's own white (VirtualStock::white, D55 for Portra 800) relative to the decode's anchor (conversion::scene_white), ONI's halation and grain on that scene, the virtual negative, then stage 4-7 exactly as a negative's (stage47 equal to a Negative's on the same settings): its gains, windows and ceiling (Highlight Detail, rest MOSAIC_REST whatever the file), Lighting and filters in the print, the dye separation on the stock's family (KodakC41 at separation::BASE) and the chroma decompression a colour negative on no measured roll takes (0.5 / 0.5). ConversionMode::Digital no longer reads positive; is_film gave way to is_digital (the camera's own lens, film effects, no copy stand) and is_measured (Prepare measures a negative and a black and white; a slide and a digital photo roll by folder). Print::resting_exposure is a negative's 1.5 EV. Auto White Balance reads a digital photo as it stands and writes the print's filters dosed by Balance strength, as on a negative; the Scanner face adds its keys to the photo's own gains, as on a negative, its phone channel a negative's. The Roll tab (Source) shows Filtration, Highlight Detail, Per-Channel Levels and Dye Separation, the Prepared Roll and Flat-Field blocks staying a scan's; the Colour tab's Temperature, Tint and Auto White Balance Strength are a negative's. Checks: digital_negative (stage 4-7 a negative's, twin a slide's; the stock's dyes and the 0.5/0.5 dose, twin a slide unmixes nothing; the scene at the stock's white, twin none on a negative; the Scanner keys on the photo's gains), virtual_film::the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative (GPU, judged against the scan read as a Negative, twin as a slide), filter_balance digital, store digital and modes, editors levels, window digital and virtual_film."
+  },
+  {
+    "id": 2601,
+    "type": "change",
+    "title": "The digital-only machinery leaves: kelvin white, As Shot, digital_white, picture levels, the separate Lighting kernel, Black and White, film None",
+    "status": "done",
+    "detail": "Removed with their checks: PipelineSettings.white, shotWhite and the store's As Shot reading (read_shots, rested_white, oni_decode::as_shot), white::carried, KELVIN_RANGE and TINT_RANGE, the WhiteKelvin/WhiteTint knobs and fields with the mired track (Bend::Mired) and the kelvin readout and notch; oni_measure::key::digital_white and Outcome/Kept/AutoBalance's white; PictureLevels, Knob::Picture, Stage::PictureLevels, Pipeline::picture, the curves' levels tables and the curves kernel's ends (WGSL and CPU back to slope 1 past 1), LevelsChannel::PICTURE, Levels::transfer/end_slope, the Levels editor's picture windows and its fold; conversion::lighting, unlit_print, read_as, the print_px kernel and stages::print, the chain's Digital machine branch and finishing's levels/lit/points arguments; black_and_white and its toggle; the Film block's None tab and its gain, black and white sliders (FilmGain/Black/White knobs, fields 58-66, knob/film.rs). Fields after the kelvin pair renumber by two in the Slint panes. The level-end ordering a patch kept on picture windows now keeps the per-channel windows'."
+  },
+  {
+    "id": 2602,
+    "type": "change",
+    "title": "Sidecar format 38: a digital photo of an earlier format opens on its film, every edit with an equivalent kept",
+    "status": "done",
+    "detail": "migrate::digital_film::caught_up, after the typed read of a sidecar and of any settings document: a digital photo is placed on its stock (stored or Portra 800); a format 37 film's stops, black and white, moved by hand off that format's reference (FORMER_PORTRA_800), keep the same moves on the stock's own; a photo on no film had no print filter rendered, so its filters and balance filters rest; Lighting's exposure takes +1.5 EV, the rest a negative's print stands on; the ceiling, separation and decompression a digital photo never rendered start at their rest. Curves, mixer, saturation, Chrome, vignette, grain, halation, lens, geometry, dust corrections, face and Scanner values, medal and EXIF line are kept; white, shotWhite, pictureLevels, blackAndWhite and the auto balance's white are dropped. The newer-file corpus moved to version 39; goldens lost the removed fields; two corpus-style digital sidecars (37-digital) carry their goldens. Checks: settings virtual_film (a format 37 photo edited everywhere: edits kept, the four keys gone, twin the same photo at 38 unmoved; a filmed one's hand moves kept, twin read on no film; a film frame of 37 unchanged), corpus goldens."
+  },
+  {
+    "id": 2603,
+    "type": "change",
+    "title": "A stock's reference is placed for the negative's print at rest, held by its check, and shown read-only in the Film block",
+    "status": "done",
+    "detail": "film::derived: gains that make the bare film grey, each channel's black on the bare film, and its white where a scene grey, entering every window at one share, prints on the negative's print at rest (1.5 EV) as a slide's plain RAW render prints it (bisection on the share). The numbers live in VirtualStock::reference (oni-settings: rest, migration and resets read them) and film::tests holds them to the derivation within 1e-5 (twin: the print at no exposure prints the grey off). Portra 800: stops -0.844, 0, +1.197; black 0.2667; white 0.648, 0.727, 0.763. The Film block's settings key shows the stock's white (5500 K) and its gains, blacks and whites; the Source tab's Filtration and Per-Channel Levels rest there (fields::base, editors::stored::resting_levels, levels tabs marked against that rest), the Dyes say the stock's. The ceiling's travel on a digital photo is a mosaic's (density_axis::range_for(mosaic, mode))."
+  },
+  {
+    "id": 2604,
+    "type": "tooling",
+    "title": "film_compare renders the unified digital photo and its separation and decompression at rest apart",
+    "status": "done",
+    "detail": "examples/film_compare reads the sidecar through the migration and writes B (the photo as the editor renders it), the scene its film reads and the film's scan, for its rest and with the dye separation, the chroma decompression or both at rest, to weigh each against spektrafilm's Portra 800 + Endura on the same scene."
+  },
+  {
+    "id": 2326,
+    "type": "fix",
+    "title": "The crop's warning stands over Auto White Balance's plate, and no digital photo shows it",
+    "status": "done",
+    "detail": "The warning 'Crop before using the automatic balance' was laid inside the keycap's plate, which holds keycaps alone: the socket takes its row's height as if the wrapped line were one, so a two-line warning overflowed onto the key. It now stands over the plate as a caution note. A digital photo is picture to its edges, with no film edge or holder to crop away before a measure: crop_first is false on it. examples/colour_trace.rs follows the unified pipeline (no separate Lighting, the reference the stock derives)."
   }
 ]

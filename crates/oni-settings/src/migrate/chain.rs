@@ -59,6 +59,9 @@ pub const GESTURE_VERSION: i64 = 36;
 /// The version a digital photo came to be shot on a virtual film, absent read as none: a build before it
 /// would drop the film it rewrites.
 pub const VIRTUAL_FILM_VERSION: i64 = 37;
+/// The version a digital photo came to be read by the negative's pipeline, always on its film: its white,
+/// picture levels and Black and White switch dropped, its film's reference moved into its gains and windows.
+pub const DIGITAL_ON_FILM_VERSION: i64 = 38;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

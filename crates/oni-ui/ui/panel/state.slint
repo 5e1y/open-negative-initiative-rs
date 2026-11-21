@@ -85,14 +85,16 @@ export global PanelState {
     in property <bool> separation-shown: true;
     // A positive is a plain RAW: no roll measure, dyes or ceiling, its cast in a temperature and a tint.
     in property <bool> slide;
-    // A digital photo: no film blocks, its colour a white in kelvin and tint.
+    // A digital photo: shot on its virtual film, its negative read as any negative is; no flat-field or roll.
     in property <bool> digital;
-    // A digital photo printed in black and white, by its switch at the head of the Color tab.
-    in property <bool> black-and-white;
-    callback black-and-white-toggled(bool);
-    // The virtual film a digital photo is shot on: 0 none, then each stock, by the Film block's tabs.
+    // The stock a digital photo is shot on, by the Film block's tabs.
     in-out property <int> virtual-film;
     callback virtual-film-picked(int);
+    // The stock's own white and the reference its negative is read on, written only by the stock.
+    in property <string> film-white;
+    in property <string> film-gains;
+    in property <string> film-black;
+    in property <string> film-ends;
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

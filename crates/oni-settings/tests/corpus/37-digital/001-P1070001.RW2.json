@@ -1,0 +1,458 @@
+{
+  "autoBalance": {
+    "filters": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fingerprint": "0123456789abcdef0123456789abcdef",
+    "white": {
+      "kelvin": 4800.0,
+      "tint": 6.0
+    }
+  },
+  "exifLine": {
+    "camera": "Panasonic DC-S5M2",
+    "lens": "LUMIX S 50/F1.8"
+  },
+  "format": "oni-frame",
+  "label": "silver",
+  "original": {
+    "print": "20123456-2026:09:22 17:00:00-0123456789abcdef",
+    "tail": "0123456789abcde"
+  },
+  "settings": {
+    "balanceStrength": 0.6700000166893005,
+    "blackAndWhite": true,
+    "captureStops": 0.0,
+    "chroma": {
+      "force": 0.20000000298023224,
+      "radius": 4.0
+    },
+    "chromaDecompression": 0.5,
+    "chromaDecompressionByHand": false,
+    "corrections": [
+      {
+        "id": "6C3B1A52-0E7D-4C1E-9B8A-3F2D1E0C9B8A",
+        "radius": 9.5,
+        "stroke": [
+          [
+            0.41,
+            0.37
+          ],
+          [
+            0.42,
+            0.38
+          ]
+        ]
+      }
+    ],
+    "decodedFromMosaic": true,
+    "density": 0.10000000149011612,
+    "densityCeiling": 3.5,
+    "face": "pro",
+    "flatField": {
+      "amount": 1.0,
+      "mask": "None",
+      "temperature": 0.0,
+      "tint": 0.0
+    },
+    "gains": {
+      "stops": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "geometry": {
+      "angle": -0.800000011920929,
+      "crop": [
+        [
+          0.05,
+          0.04
+        ],
+        [
+          0.9,
+          0.9
+        ]
+      ],
+      "mirrored": false,
+      "mirroredVertically": false,
+      "portrait": false,
+      "quarterTurns": 0
+    },
+    "grain": {
+      "amount": 0.3499999940395355,
+      "size": 0.5
+    },
+    "halation": {
+      "amount": 0.20000000298023224,
+      "sensitivity": 0.0,
+      "size": 0.5
+    },
+    "lensCorrected": false,
+    "lensCorrection": {
+      "blue": 0.0,
+      "distortion": 0.0,
+      "red": 0.0,
+      "vignetting": 30.0
+    },
+    "levels": {
+      "blue": {
+        "black": 0.0,
+        "highlights": 0.75,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "white": 3.0
+      },
+      "green": {
+        "black": 0.0,
+        "highlights": 0.75,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "white": 3.0
+      },
+      "red": {
+        "black": 0.0,
+        "highlights": 0.75,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "white": 3.0
+      }
+    },
+    "manualCurves": {
+      "blue": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "contrast": 0.0,
+      "green": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "linked": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.25,
+            0.3
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "luma": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "red": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      }
+    },
+    "mode": "digital",
+    "paperCorrection": {
+      "stops": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "pictureLevels": {
+      "linked": {
+        "black": 0.05,
+        "highlights": 0.75,
+        "mid": 0.45,
+        "shadows": 0.25,
+        "white": 0.95
+      }
+    },
+    "primariesConverted": false,
+    "print": {
+      "blackPoint": 0.0,
+      "blue": {
+        "blacks": 0.0,
+        "contrast": 0.0,
+        "exposure": 0.0,
+        "highlights": 0.0,
+        "mids": 0.0,
+        "shadows": 0.0,
+        "whites": 0.0
+      },
+      "contrast": 0.15000000596046448,
+      "exposure": 0.3499999940395355,
+      "green": {
+        "blacks": 0.0,
+        "contrast": 0.0,
+        "exposure": 0.0,
+        "highlights": 0.0,
+        "mids": 0.0,
+        "shadows": 0.0,
+        "whites": 0.0
+      },
+      "highlights": -0.20000000298023224,
+      "red": {
+        "blacks": 0.0,
+        "contrast": 0.0,
+        "exposure": 0.0,
+        "highlights": 0.0,
+        "mids": 0.0,
+        "shadows": 0.0,
+        "whites": 0.0
+      },
+      "shadows": 0.0,
+      "whitePoint": 0.0
+    },
+    "rollReferenceDeclined": false,
+    "saturation": {
+      "points": [
+        [
+          0.0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.6
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1.0,
+          0.5
+        ]
+      ]
+    },
+    "scanner": {
+      "c": 0,
+      "d": 0,
+      "m": 0,
+      "w": 0,
+      "y": 0
+    },
+    "scannerFinish": {
+      "contrast": 0.0,
+      "manualCurves": {
+        "blue": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "contrast": 0.0,
+        "green": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "linked": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "luma": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "red": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "saturation": {
+        "points": [
+          [
+            0.0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1.0,
+            0.5
+          ]
+        ]
+      },
+      "secretSauce": 0.0,
+      "spectrogram": {
+        "hue": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "luma": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "saturation": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vignette": {
+        "stops": 0.0
+      }
+    },
+    "scannerMachine": "oni",
+    "secretSauce": 0.4000000059604645,
+    "separation": 0.6000000238418579,
+    "separationByHand": false,
+    "sharpen": {
+      "amount": 1.0,
+      "halo": 0.5,
+      "radius": 2.0920000076293945
+    },
+    "shotWhite": {
+      "kelvin": 5210.0,
+      "tint": 12.9
+    },
+    "spectrogram": {
+      "hue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "luma": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "saturation": [
+        0.0,
+        0.20000000298023224,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "texture": {
+      "amount": 0.0
+    },
+    "vignette": {
+      "stops": 0.30000001192092896
+    },
+    "white": {
+      "kelvin": 4800.0,
+      "tint": 6.0
+    }
+  },
+  "version": 37
+}

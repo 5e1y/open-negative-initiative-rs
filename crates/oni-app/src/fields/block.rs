@@ -48,7 +48,7 @@ impl Block {
     pub fn fields(self) -> &'static [Field] {
         use Field::*;
         match self {
-            Block::Color => &[Temperature, Tint, ColorDensity, WhiteKelvin, WhiteTint],
+            Block::Color => &[Temperature, Tint, ColorDensity],
             Block::Lighting => &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
             Block::Effects => &[Vignette, Chrome],
             Block::DensityCeiling => &[DensityCeiling],
@@ -75,18 +75,7 @@ impl Block {
             ],
             Block::FilmEffects => &[GrainAmount, GrainSize, GrainColourBlack, GrainColourWhite, HalationAmount, HalationSize, HalationSensitivity],
             Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
-            Block::Film => &[
-                FilmExposure,
-                FilmRed,
-                FilmGreen,
-                FilmBlue,
-                FilmRedBlack,
-                FilmGreenBlack,
-                FilmBlueBlack,
-                FilmRedWhite,
-                FilmGreenWhite,
-                FilmBlueWhite,
-            ],
+            Block::Film => &[FilmExposure],
         }
     }
 }

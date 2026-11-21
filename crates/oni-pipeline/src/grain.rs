@@ -7,7 +7,7 @@ use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
 use oni_settings::PipelineSettings;
 use oni_settings::blocks::{GrainColour, GrainCurve};
-use oni_settings::tone::Print;
+use oni_settings::tone::{Print, color_density};
 
 /// The spread at full resolution of Amount's top, in stops.
 pub const GRAIN_STOPS: f32 = 0.5;
@@ -67,15 +67,17 @@ pub fn tones(picture: &Stage47) -> [f32; GRAIN_NODES] {
     })
 }
 
-/// The tone each node's light of the scene shows: a filmed digital photo's light crosses its virtual negative
-/// first, as its grain lies on the scene before the film, so its shadows keep their grain.
+/// The tone each node's light of the scene shows: a digital photo's light crosses its virtual negative first,
+/// as its grain lies on the scene before the film, so its shadows keep their grain.
 fn scene_tones(s: &PipelineSettings) -> [f32; GRAIN_NODES] {
-    // A Scanner face's keys are its print, in the picture's gains: they leave the tones, so the grain's pass.
-    let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(s) };
-    let Some(f) = s.filmed() else { return tones(&picture) };
+    // Read on the print at rest and the film's own gains: no print slider, filtration or Scanner key reaches the
+    // tones, so a notch on one keeps the grain's pass.
+    let rest = PipelineSettings { print: Print { exposure: Print::resting_exposure(s.mode), ..Print::default() }, density: color_density::BASE, ..s.clone() };
+    let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(&rest) };
+    let Some(f) = s.film() else { return tones(&picture) };
     let stock = film::stock(f.stock);
     let kernel = stock.kernel_at(f.exposure);
-    let developed = Stage47 { gain: f.stops.map(f32::exp2), ..picture };
+    let developed = Stage47 { gain: f.stock.reference().stops.map(f32::exp2), ..picture };
     std::array::from_fn(|i| {
         let y = grain_node_light(i);
         let shown = cpu::stage47(cpu::virtual_negative([y, y, y, 1.0], &kernel, &stock.table), &developed);

@@ -7,7 +7,7 @@ import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint"
 
 export component RollPane inherits Pane {
     property <bool> flat-settings;
-    // A digital photo has no film: its Roll tab holds the film type alone, and a plain file's profile.
+    // A digital photo stands on its film's own reference: no roll to prepare, no copy stand to flat-field.
     if !PanelState.digital: Block {
         title: @tr("Prepared Roll");
         demo: "measured-roll";
@@ -46,7 +46,7 @@ export component RollPane inherits Pane {
         title: @tr("Film Type");
         separated: !PanelState.digital;
         demo: "film-type";
-        help: @tr("What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo has no film: Prepare the Roll only sets its photos as digital, with no filtration, dyes or levels, its colour set by Temperature and Tint on the Colour tab.");
+        help: @tr("What the photo is: a colour negative, a slide, black and white, or a digital photo. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K. A digital photo is shot on a virtual film, the Film block on the Colour tab: its negative is read as any negative is, its filtration, levels and dyes resting on the film's own reference, and Prepare the Roll only sets its photos as digital.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W"), @tr("Digital")];
             marked: [false, false, false, false];
@@ -132,20 +132,20 @@ export component RollPane inherits Pane {
         help: @tr("Corrects what the lens did to the photo. Distortion straightens the lines a barrel lens bows outward, to the right, or a pincushion lens bows inward, to the left. Red fringe and Blue fringe scale those colours against green, taking off the coloured edges lateral chromatic aberration lays toward the corners. Vignetting lightens the corners the lens darkened.\n\nThe photo always fills its frame: a correction that would leave its edges empty enlarges it just enough; a barrel lens's never needs to.");
         block: 13;
         modified: Store.lens-corrections-modified;
-        StoreSlider { field: 44; label: @tr("Distortion"); fraction: Store.distortion-fraction; readout: Store.distortion-readout; value-text: Store.distortion-value; }
+        StoreSlider { field: 42; label: @tr("Distortion"); fraction: Store.distortion-fraction; readout: Store.distortion-readout; value-text: Store.distortion-value; }
         StoreSlider {
             near: lens-block.hovered;
-            field: 45; label: @tr("Red fringe"); fraction: Store.fringe-red-fraction; readout: Store.fringe-red-readout; value-text: Store.fringe-red-value;
+            field: 43; label: @tr("Red fringe"); fraction: Store.fringe-red-fraction; readout: Store.fringe-red-readout; value-text: Store.fringe-red-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         StoreSlider {
             near: lens-block.hovered;
-            field: 46; label: @tr("Blue fringe"); fraction: Store.fringe-blue-fraction; readout: Store.fringe-blue-readout; value-text: Store.fringe-blue-value;
+            field: 44; label: @tr("Blue fringe"); fraction: Store.fringe-blue-fraction; readout: Store.fringe-blue-readout; value-text: Store.fringe-blue-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
-        StoreSlider { field: 47; label: @tr("Vignetting"); fraction: Store.lens-vignetting-fraction; readout: Store.lens-vignetting-readout; value-text: Store.lens-vignetting-value; }
+        StoreSlider { field: 45; label: @tr("Vignetting"); fraction: Store.lens-vignetting-fraction; readout: Store.lens-vignetting-readout; value-text: Store.lens-vignetting-value; }
     }
-    if !PanelState.digital: filtration-block := Block {
+    filtration-block := Block {
         title: @tr("Filtration");
         help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");
         block: 9;
@@ -180,7 +180,7 @@ export component RollPane inherits Pane {
         }
     }
     // Between the filtration that feeds it and the windows placed on it, where it acts.
-    if !PanelState.slide && !PanelState.digital: Block {
+    if !PanelState.slide: Block {
         title: @tr("Highlight Detail");
         demo: "density-ceiling";
         help: @tr("Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there.");
@@ -189,7 +189,7 @@ export component RollPane inherits Pane {
         folded-by-default: true;
         StoreSlider { field: 12; label: @tr("Ceiling"); fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
-    if !PanelState.digital: EditorBlock {
+    EditorBlock {
         title: @tr("Per-Channel Levels");
         help: @tr("Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, its midpoint between them, and its shadows and highlights on either side of the midpoint, each handle following those beside it. Double-click a handle to bring it back alone.");
         block: 1;
@@ -202,7 +202,7 @@ export component RollPane inherits Pane {
         }
     }
     // After the per-channel windows: a balanced grey is its fixed point. Monochrome and RGB passes run none.
-    if PanelState.separation-shown && !PanelState.slide && !PanelState.digital: Block {
+    if PanelState.separation-shown && !PanelState.slide: Block {
         title: @tr("Dye Separation");
         demo: "dye-separation";
         help: @tr("Subtracts each dye's spill into the other two channels, so colours separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");

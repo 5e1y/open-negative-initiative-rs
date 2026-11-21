@@ -63,10 +63,10 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
-/// A digital photo's Lighting acts after its levels and curves: an exposure step keeps the reading in
-/// front of them, a white step reads again.
+/// A digital photo's Lighting acts in its negative's print, as a negative's: an exposure step keeps the
+/// reading in front of the levels and moves the one in front of the curves.
 #[test]
-fn a_digital_photos_curves_reading_holds_while_lighting_moves() {
+fn a_digital_photos_levels_reading_holds_while_lighting_moves() {
     let Ok(device) = Device::open() else {
         eprintln!("no adapter: a digital photo's curves reading is not exercised");
         return;
@@ -80,10 +80,9 @@ fn a_digital_photos_curves_reading_holds_while_lighting_moves() {
     let before = read(&rest, &mut engine);
     let exposed = PipelineSettings { print: oni_settings::tone::Print { exposure: 0.8, ..rest.print }, ..rest.clone() };
     let after = read(&exposed, &mut engine);
-    assert_eq!((&after.levels, &after.curves), (&before.levels, &before.curves), "an exposure step moves no reading");
-    // Twin: a tungsten white enters the curves, so their reading moves.
-    let warm = PipelineSettings { white: Some(oni_settings::white::White { kelvin: 3200.0, tint: 0.0 }), ..rest.clone() };
-    assert_ne!(read(&warm, &mut engine).curves, before.curves);
+    assert_eq!(after.levels, before.levels, "an exposure step moves no levels reading");
+    // Twin: the print lies in front of the curves, so their reading moves.
+    assert_ne!(after.curves, before.curves);
 }
 
 /// On the Scanner face the curves' plot reads what enters its curves, the look and the keypad laid;
@@ -309,9 +308,9 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     assert_eq!((read.levels, read.curves), (first.levels, first.curves));
     s.grain.colour.black = 1.2;
     assert_eq!(passes(&mut engine, &s).0, 0, "a grain colour notch read the distributions again");
-    // Twin: a white notch moves what enters the curves, so it is read again.
-    s.white = Some(oni_settings::white::White { kelvin: 3500.0, tint: 20.0 });
-    assert!(passes(&mut engine, &s).0 > 0, "a white notch kept a stale reading");
+    // Twin: a film exposure notch moves the negative both readings read, so it is read again.
+    s.virtual_film = s.film().map(|f| oni_settings::VirtualFilm { exposure: 1.0, ..f });
+    assert!(passes(&mut engine, &s).0 > 0, "a film exposure notch kept a stale reading");
 }
 
 /// The engine reads the stages wanted alone: the curves' without the levels', both when both are wanted;
@@ -332,6 +331,8 @@ fn the_engine_reads_the_wanted_distributions_alone() {
     let digital = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let levels = engine.inputs(&negative, &digital, false, [true, false]).expect("readings");
     let all = engine.inputs(&negative, &digital, false, [true; 2]).expect("readings");
-    assert!(levels.curves.is_none() && levels.levels.is_some() && levels.levels == all.curves, "a digital photo's levels read the curves' stage");
+    assert!(levels.curves.is_none() && levels.levels.is_some() && levels.levels == all.levels, "a digital photo's levels read alone, as a negative's");
+    // Twin: its levels read in front of its negative's windows, never the curves' stage.
+    assert_ne!(levels.levels, all.curves);
     assert_eq!(engine.inputs(&negative, &digital, false, [false; 2]).expect("readings"), InputHistograms::default(), "nothing wanted, nothing read");
 }

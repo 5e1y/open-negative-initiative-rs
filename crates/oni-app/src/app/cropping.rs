@@ -85,12 +85,13 @@ impl Ctl {
         if orphaned && self.end_frame_gesture() {
             self.publish_bar();
         }
-        let (g, board, window_board) = {
+        let (g, board, window_board, digital) = {
             let s = self.state.borrow();
             let board = s.store.board.framing.is_some();
-            (s.store.settings().geometry, board, s.window_board)
+            (s.store.settings().geometry, board, s.window_board, s.store.settings().mode.is_digital())
         };
-        w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());
+        // A scan holds the film's edge and its holder until it is cropped; a digital photo is picture to its edges.
+        w.global::<PanelState>().set_crop_first(!digital && g.crop == Fraction::UNIT && g.measure_window.is_none());
         let f = w.global::<crate::Framing>();
         let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
         f.set_ratio(g.ratio.and_then(|r| ratios.iter().position(|x| *x == r)).map_or(0, |i| i as i32 + 1));

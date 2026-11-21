@@ -20,11 +20,16 @@ fn haloed(amount: f32, size: f32) -> PipelineSettings {
 
 /// A dark frame `side` square with a light source of `radius` at its centre.
 fn lamp(g: &mut Graph, side: u32, radius: f32) -> Source {
+    lamp_of(g, side, radius, 4.0)
+}
+
+/// `lamp` with its source of `light`.
+fn lamp_of(g: &mut Graph, side: u32, radius: f32, light: f32) -> Source {
     let c = side as f32 / 2.0;
     let pixels: Vec<V4> = (0..side * side)
         .map(|i| {
             let (x, y) = ((i % side) as f32 + 0.5 - c, (i / side) as f32 + 0.5 - c);
-            if x * x + y * y < radius * radius { [4.0, 4.0, 4.0, 1.0] } else { [0.02, 0.02, 0.02, 1.0] }
+            if x * x + y * y < radius * radius { [light, light, light, 1.0] } else { [0.02, 0.02, 0.02, 1.0] }
         })
         .collect();
     g.upload(side, side, &pixels).unwrap()
@@ -198,7 +203,8 @@ fn at_rest_or_measured_the_chain_holds_no_halation() {
 fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
     let Some(mut g) = graph("the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow") else { return };
     let side = 1200;
-    let source = lamp(&mut g, side, 100.0);
+    // A lamp the film's shoulder still prints past white at the print's rest.
+    let source = lamp_of(&mut g, side, 100.0, 16.0);
     let mut pipeline = Pipeline::new();
     let s = haloed(1.0, 1.0);
     let halo = ring(side, 102.0, 120.0);
@@ -215,11 +221,13 @@ fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
         let (with, without) = (render(1.0), render(0.0));
         halo.iter().map(|i| with[*i][0] - without[*i][0]).sum::<f32>() / halo.len() as f32
     };
-    let under = glow(false, 2.0) / glow(false, 0.0);
+    // From the print's rest, where the lamp prints past white, two stops up.
+    let rest = oni_settings::tone::Print::resting_exposure(s.mode);
+    let under = glow(false, rest + 2.0) / glow(false, rest);
     println!("two stops of print exposure raise the glow {under:.3} times");
     assert!(under > 1.1, "the print's exposure leaves the glow at {under:.3}");
     // Twin: a halation laid on the print, its lamp clipped at white whatever the exposure.
-    let over = glow(true, 2.0) / glow(true, 0.0);
+    let over = glow(true, rest + 2.0) / glow(true, rest);
     println!("the twin's glow rises {over:.3} times");
     assert!(over < 1.1, "the twin's glow rises {over:.3} times, so the check sees nothing");
 }

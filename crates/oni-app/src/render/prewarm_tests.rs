@@ -49,10 +49,10 @@ fn a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch() {
     notch(&mut engine, &engine::prewarm::digital_busy());
     assert_eq!(engine.compiled(), compiled, "a pipeline compiled on a digital photo's first notch");
     drop(engine);
-    // Twin: warmed on the film modes alone, the white, halation and grain wait for the first notch.
+    // Twin: warmed on the film modes alone, the virtual film, halation and grain wait for the first notch.
     let film = Engine::shared(&Device::open().unwrap());
     let mut engine = film.lock().unwrap();
-    engine.prewarm_where(&|s| s.mode.is_film());
+    engine.prewarm_where(&|s| !s.mode.is_digital());
     let compiled = engine.compiled();
     notch(&mut engine, &engine::prewarm::digital_busy());
     assert!(engine.compiled() > compiled, "the film modes alone warm the digital chain");
@@ -71,11 +71,11 @@ fn a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch_on_
     notch(&mut engine, &engine::prewarm::digital_scanner_busy());
     assert_eq!(engine.compiled(), compiled, "a pipeline compiled on a digital photo's first notch on the Scanner");
     drop(engine);
-    // Twin: warmed on Pro's digital chain and the film's machine alone, the digital machine's passes wait.
+    // Twin: warmed on the film modes alone, the digital machine's film passes wait.
     let pro = Engine::shared(&Device::open().unwrap());
     let mut engine = pro.lock().unwrap();
-    engine.prewarm_where(&|s| s.mode.is_film() || s.face == oni_settings::Face::Pro);
+    engine.prewarm_where(&|s| !s.mode.is_digital());
     let compiled = engine.compiled();
     notch(&mut engine, &engine::prewarm::digital_scanner_busy());
-    assert!(engine.compiled() > compiled, "Pro's digital chain warms the machine's");
+    assert!(engine.compiled() > compiled, "the film modes alone warm the digital machine's");
 }

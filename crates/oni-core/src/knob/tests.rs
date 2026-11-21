@@ -60,19 +60,6 @@ fn temperature_and_tint_move_on_axes_that_leave_each_other_alone() {
 }
 
 #[test]
-fn a_digital_white_rests_on_its_decode_and_moves_its_kelvin_and_tint_apart() {
-    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    assert_eq!((Knob::WhiteKelvin.get(&s), Knob::WhiteTint.get(&s)), (5000.0, 0.0));
-    let warm = Knob::WhiteKelvin.set(&Knob::WhiteTint.set(&s, 12.0), 3200.0);
-    assert_eq!(warm.white, Some(White { kelvin: 3200.0, tint: 12.0 }));
-    assert_eq!(FieldSet::between(&s, &warm).iter().collect::<Vec<_>>(), vec![Field::White]);
-    assert_eq!(Knob::WhiteKelvin.get(&Knob::WhiteKelvin.set(&s, 90000.0)), white::KELVIN_RANGE.1);
-    // Twin: a plain file rests on D65, not on the mosaic's 5000 K.
-    let plain = PipelineSettings::rest(oni_settings::ConversionMode::Digital, false);
-    assert!((Knob::WhiteKelvin.get(&plain) - 6504.0).abs() < 2.0);
-}
-
-#[test]
 fn the_gains_temperature_and_tint_move_apart_and_hold_the_gains_mean() {
     let mut s = PipelineSettings::default();
     s.gains.stops = [0.3, -0.1, -0.5];
@@ -103,24 +90,6 @@ fn a_dose_by_hand_and_a_strength_redose_as_the_panes_do() {
 }
 
 #[test]
-fn a_picture_window_keeps_its_ends_on_the_picture_and_in_order() {
-    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    let black = Knob::Picture(LevelsChannel::Red, Handle::Black);
-    let floored = black.set(&s, -0.3);
-    assert_eq!(black.get(&floored), 0.0, "a black under the picture lands on 0");
-    assert_eq!(FieldSet::between(&s, &floored).iter().collect::<Vec<_>>(), Vec::<Field>::new(), "0 is its rest");
-    let lifted = black.set(&s, 0.2);
-    assert_eq!((lifted.picture_levels.red.black, lifted.levels), (0.2, s.levels), "the picture's window alone");
-    assert_eq!(FieldSet::between(&s, &lifted).iter().collect::<Vec<_>>(), vec![Field::PictureLevels]);
-    let white = Knob::Picture(LevelsChannel::Red, Handle::White);
-    assert_eq!(white.get(&white.set(&lifted, 0.1)), 0.2 + Levels::EPSILON, "the white never crosses the black");
-    assert_eq!(white.get(&white.set(&s, 1.7)), 1.0);
-    // Twin: a film window's black reaches under zero, where its track begins.
-    let film = Knob::Level(Channel::Red, Handle::Black);
-    assert!(film.get(&film.set(&s, -0.3)) < 0.0);
-}
-
-#[test]
 fn the_grains_colour_ends_write_the_grain_alone_and_hold_their_range() {
     let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let black = Knob::GrainColourBlack.set(&s, 9.0);
@@ -130,4 +99,15 @@ fn the_grains_colour_ends_write_the_grain_alone_and_hold_their_range() {
     assert_eq!((Knob::GrainColourWhite.get(&white), Knob::GrainColourBlack.get(&white)), (0.6, GrainColour::REST.black));
     // Twin: the black end is not the white's, and stays where it was.
     assert_ne!(Knob::GrainColourWhite.get(&black), GrainColour::RANGE.1);
+}
+
+#[test]
+fn the_film_exposure_moves_a_digital_photos_film_alone() {
+    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let over = Knob::FilmExposure.set(&s, 9.0);
+    assert_eq!((Knob::FilmExposure.get(&over), over.film().map(|f| f.stock)), (VirtualFilm::EXPOSURE_RANGE.1, s.film().map(|f| f.stock)));
+    assert_eq!(FieldSet::between(&s, &over).iter().collect::<Vec<_>>(), vec![Field::VirtualFilm]);
+    // Twin: a negative shot on no film keeps its settings whole.
+    let negative = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+    assert_eq!(Knob::FilmExposure.set(&negative, 1.0), negative);
 }

@@ -1,5 +1,4 @@
-//! The per-channel windows, each on the density axis, five handles each; and a digital photo's own
-//! five windows on the picture, laid in the curves' tables.
+//! The per-channel windows, each on the density axis, five handles each.
 
 use crate::axis::{density_axis, graduation, pipeline};
 use crate::modes::ConversionMode;
@@ -28,13 +27,9 @@ impl LevelsChannel {
         }
     }
 
-    /// The Levels editor's tabs on a digital photo, in the Curves' order.
-    pub const PICTURE: [LevelsChannel; 5] = [Self::Linked, Self::Luma, Self::Red, Self::Green, Self::Blue];
-
-    /// True where the handles carry a density: a film's three per-channel windows. A digital photo has
-    /// no density, so its windows lie on the picture, 0 to 1.
-    pub fn is_density(self, mode: ConversionMode) -> bool {
-        mode.is_film() && Self::PER_CHANNEL.contains(&self)
+    /// True where the handles carry a density: the three per-channel windows.
+    pub fn is_density(self) -> bool {
+        Self::PER_CHANNEL.contains(&self)
     }
 
     pub fn histogram_channel(self) -> Option<usize> {
@@ -48,7 +43,7 @@ impl LevelsChannel {
 
     /// The domain the track expresses: on a density, the graduation window, which begins under zero.
     pub fn domain(self, mode: ConversionMode) -> (f32, f32) {
-        if self.is_density(mode) {
+        if self.is_density() {
             let w = graduation::window(mode);
             (*w.start(), *w.end())
         } else {
@@ -183,89 +178,6 @@ impl Levels {
 
     pub fn set_white(&mut self, v: f32) {
         self.white = v.max(self.black + Self::EPSILON);
-    }
-
-    /// The window on a value of the picture: nothing under the black, the film window's `B(t^γ)` up to
-    /// the white, then a line at the slope it reached, so highlights past the white keep their gradation.
-    pub fn transfer(&self, x: f64) -> f64 {
-        if *self == Self::default() {
-            return x;
-        }
-        let (black, white) = (f64::from(self.black), f64::from(self.white));
-        if x <= black {
-            return x.min(0.0);
-        }
-        if x > white {
-            return 1.0 + self.end_slope() * (x - white);
-        }
-        let t = libm::pow((x - black) / (white - black).max(1e-4), self.gamma_f64());
-        if self.is_window_neutral() {
-            return t;
-        }
-        let (c1, c3) = (f64::from(self.shadow_ordinate()), f64::from(self.highlight_ordinate()));
-        let v = 1.0 - t;
-        c1 * 4.0 * t * v * v * v + 0.5 * 6.0 * t * t * v * v + c3 * 4.0 * t * t * t * v + t * t * t * t
-    }
-
-    /// The slope the window reaches at its white, `γ / (w − b) · 4(1 − c3)`: 1 at rest.
-    pub fn end_slope(&self) -> f64 {
-        if *self == Self::default() {
-            return 1.0;
-        }
-        let span = f64::from(self.white - self.black).max(1e-4);
-        let bend = if self.is_window_neutral() { 1.0 } else { 4.0 * (1.0 - f64::from(self.highlight_ordinate())) };
-        self.gamma_f64() / span * bend
-    }
-
-    fn gamma_f64(&self) -> f64 {
-        libm::log(0.5) / libm::log(f64::from(self.mid.clamp(Self::MID_RANGE.0, Self::MID_RANGE.1)))
-    }
-}
-
-/// A digital photo's own windows on the picture, each resting at `Levels::default()`: RGB on all three
-/// channels, Luma as one gain on the three, R, G and B each on its own.
-#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
-#[serde(default)]
-pub struct PictureLevels {
-    pub linked: Levels,
-    pub luma: Levels,
-    pub red: Levels,
-    pub green: Levels,
-    pub blue: Levels,
-}
-
-impl PictureLevels {
-    pub fn get(&self, channel: LevelsChannel) -> Levels {
-        match channel {
-            LevelsChannel::Linked => self.linked,
-            LevelsChannel::Luma => self.luma,
-            LevelsChannel::Red => self.red,
-            LevelsChannel::Green => self.green,
-            LevelsChannel::Blue => self.blue,
-        }
-    }
-
-    pub fn get_mut(&mut self, channel: LevelsChannel) -> &mut Levels {
-        match channel {
-            LevelsChannel::Linked => &mut self.linked,
-            LevelsChannel::Luma => &mut self.luma,
-            LevelsChannel::Red => &mut self.red,
-            LevelsChannel::Green => &mut self.green,
-            LevelsChannel::Blue => &mut self.blue,
-        }
-    }
-
-    pub fn set(&mut self, channel: LevelsChannel, levels: Levels) {
-        *self.get_mut(channel) = levels;
-    }
-
-    pub fn is_neutral(&self) -> bool {
-        *self == Self::default()
-    }
-
-    /// The windows a hand moved off their rest.
-    pub fn touched(&self) -> Vec<LevelsChannel> {
-        LevelsChannel::PICTURE.into_iter().filter(|c| self.get(*c) != Levels::default()).collect()
     }
 }
 

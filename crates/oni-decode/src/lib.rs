@@ -11,7 +11,6 @@ mod source;
 mod neutral;
 mod m3;
 mod size;
-mod shot;
 #[cfg(test)]
 mod stamp;
 // Links LibRaw's archive; that crate holds no Rust to name.
@@ -19,7 +18,6 @@ use oni_libraw as _;
 pub use size::full_size;
 use m3::{apply, inverse, mul};
 pub use neutral::{Neutral, SLIDE_KELVIN};
-pub use shot::as_shot;
 
 use source::{Route, Source};
 use std::os::raw::{c_char, c_float, c_int, c_ushort, c_void};

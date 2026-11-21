@@ -247,7 +247,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     // Short of room, the form scrolls under a footer that stays; the evaluator's window holds it whole.
     let done = common::the(w, AccessibleRole::Button, "Done");
     assert!(done.y + done.height <= 800.0, "the footer stays in the window: {done:?}");
-    assert!(common::placed(w, AccessibleRole::Checkbox, "Saturation Curve").is_empty(), "twin: the form's foot scrolled out of sight");
+    assert!(common::placed(w, AccessibleRole::Checkbox, "Halation").is_empty(), "twin: the form's foot scrolled out of sight");
     rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
     rig.settle();
     fits(w, "Done");
