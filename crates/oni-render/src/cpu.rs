@@ -16,6 +16,7 @@ pub use crate::kernel::halation::{halation, halation_source};
 pub use crate::kernel::grid::Grid;
 pub use crate::kernel::orient::orient;
 pub use crate::kernel::output_clip::output_clip;
+pub use crate::kernel::paper::paper;
 pub use crate::kernel::saturation_curve::saturation_curve;
 pub use crate::kernel::scanner::{scanner_density, scanner_output, scanner_encode};
 pub use crate::kernel::spectrogram::spectrogram;

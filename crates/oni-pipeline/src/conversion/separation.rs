@@ -19,9 +19,14 @@ pub fn stock_dyes(s: &PipelineSettings) -> Option<&'static Dyes> {
 /// The kernel's arguments for the frame's measured dyes: above the bare film its windows open on, at its dose,
 /// each dye toned onto the grey its windows print neutral.
 pub fn stock_separation(s: &PipelineSettings) -> Option<DyeSeparation> {
-    let (low, high) = oni_settings::blocks::separation::RANGE;
     let guard = oni_settings::axis::density_axis::log_guard(rendered_ceiling(s));
-    stock_dyes(s).map(|d| toned(d.separation(s.levels.windows().map(|w| w.black), s.separation.clamp(low, high)), &s.levels, guard))
+    stock_amounts(s).map(|d| toned(d, &s.levels, guard))
+}
+
+/// The frame's measured dyes at its dose, their amounts read as they are: what a paper prints.
+pub fn stock_amounts(s: &PipelineSettings) -> Option<DyeSeparation> {
+    let (low, high) = oni_settings::blocks::separation::RANGE;
+    stock_dyes(s).map(|d| d.separation(s.levels.windows().map(|w| w.black), s.separation.clamp(low, high)))
 }
 
 /// The lightest density a tone is drawn from, ten times a clear film's light: past it a scan holds no picture.

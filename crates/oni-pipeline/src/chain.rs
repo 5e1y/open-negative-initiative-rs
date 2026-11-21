@@ -62,7 +62,12 @@ impl Pipeline {
         // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is.
         let negative = self.filmed(graph, grained, s)?;
         let printed = stages::converted(negative, &conversion::stage47(s));
-        let looked = if machine.is_some() { self.oni_finish(graph, printed, s, frame)? } else { printed };
+        // On a paper the machine prints on it, its look the paper's own: no look cube is laid over the paper's print.
+        let looked = match machine {
+            Some(_) if s.paper().is_some() => self.warmed_paper(graph, printed, s)?,
+            Some(_) => self.oni_finish(graph, printed, s, frame)?,
+            None => printed,
+        };
         self.finishing(graph, looked, s, scale, reference, measuring)
     }
 }

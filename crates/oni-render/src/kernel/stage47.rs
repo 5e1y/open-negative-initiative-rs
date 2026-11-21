@@ -1,5 +1,5 @@
 //! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
-//! and the print alone, a digital photo's Lighting after its levels and curves.
+//! or the dye separation then the paper's print, read on the display gamma for Lighting's zones and points.
 
 use super::*;
 
@@ -36,6 +36,8 @@ pub struct Stage47 {
     pub follow: f32,
     /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
     pub dyes: Option<super::dye_separation::DyeSeparation>,
+    /// The negative printed on a paper in place of the windows and the print curve, laid with them in one GPU pass.
+    pub paper: Option<super::paper::Paper>,
 }
 
 impl Stage47 {
@@ -70,6 +72,7 @@ impl Stage47 {
             film_share: 0.0,
             follow: 1.0,
             dyes: None,
+            paper: None,
         }
     }
 
@@ -91,7 +94,7 @@ impl Stage47 {
                 v3(self.blue, self.log_guard),
                 v3(self.low_points, self.window),
                 v3(self.high_points, self.print_on),
-                [self.print_stops, self.print_contrast, self.hunt, 0.0],
+                [self.print_stops, self.print_contrast, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }],
                 v3(self.own_stops, self.base_stops),
                 v3(self.balance_low, self.base_contrast),
                 v3(self.balance_span, self.decompression),
@@ -179,21 +182,32 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_con
     midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them.
+/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them, then its paper.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     let (s, k) = match &k.dyes {
         Some(d) => (super::dye_separation::dye_separation(s, k, d), k.after_dyes()),
         None => (s, *k),
     };
+    let s = match &k.paper {
+        Some(p) => super::paper::paper(s, p),
+        None => s,
+    };
     let e = printed3(windowed(s, &k), &k);
     [e[0], e[1], e[2], s[3]]
 }
 
-/// Stages 4 and 5: the film's density, its windows and the chroma decompression.
+/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print on the display
+/// gamma, its windows Lighting's points.
 fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
-    let mut e = if k.invert > 0.5 { d } else { map(d, |_, x| k.window - x) };
+    let mut e = if k.paper.is_some() {
+        map(rgb(s), |_, x| x.max(0.0).powf(1.0 / DISPLAY_GAMMA))
+    } else if k.invert > 0.5 {
+        d
+    } else {
+        map(d, |_, x| k.window - x)
+    };
     let lv = [k.red, k.green, k.blue];
 
     let film = e;

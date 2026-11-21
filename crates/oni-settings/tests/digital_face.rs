@@ -33,7 +33,8 @@ fn a_digital_photo_stored_on_the_scanner_before_the_machine_opens_on_pro() {
     let mut then = on_scanner(ConversionMode::Digital);
     then.print.exposure = 0.0;
     let (read, _) = migrate::reading(&stored(&then, before), &Facts::bare(true), false).unwrap();
-    assert_eq!(read.document.settings, PipelineSettings::rest(ConversionMode::Digital, true));
+    // An earlier photo stays on ONI's print.
+    assert_eq!(read.document.settings, PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) });
 }
 
 #[test]

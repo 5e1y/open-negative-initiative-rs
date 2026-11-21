@@ -207,7 +207,9 @@ mod tests {
     #[test]
     fn the_bare_film_holds_no_dye_and_a_singular_slope_falls_back_on_the_matrix() {
         let d = narrow();
-        assert_eq!(d.separated([0.0; 3]), [0.0; 3]);
+        // Zero to the round trip of the bare film's light through its density, a float's.
+        assert!(d.separated([0.0; 3]).iter().all(|v| v.abs() < 1e-6), "{:?}", d.separated([0.0; 3]));
+        assert!(d.separated([0.1, 0.0, 0.0])[0] > 0.05, "twin: a density above the bare film holds a dye");
         assert_eq!(solved(&[[1.0, 2.0, 3.0], [2.0, 4.0, 6.0], [0.0, 0.0, 1.0]], [1.0, 1.0, 1.0]), None);
         // Twin: an invertible matrix solves.
         assert_eq!(solved(&[[2.0, 0.0, 0.0], [0.0, 4.0, 0.0], [0.0, 0.0, 1.0]], [1.0, 1.0, 1.0]), Some([0.5, 0.25, 1.0]));

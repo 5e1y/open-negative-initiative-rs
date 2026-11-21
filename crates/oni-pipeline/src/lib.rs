@@ -14,6 +14,7 @@ pub mod halation;
 mod healing;
 pub mod look_lab;
 pub mod oni_look;
+pub mod paper;
 pub mod frontier_look;
 pub mod resident;
 pub mod scanner;
@@ -235,6 +236,17 @@ impl Pipeline {
         let looked = code.then_reading(stages::color_cube(n), &[table]);
         let (warmth, share) = self.warmed(graph, &looked, s.scanner.w)?;
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
+    }
+
+    /// The Scanner face's TEMP on a paper's print, its warmth look laid on the print's plain display code; the
+    /// print as it is at no count.
+    fn warmed_paper(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
+        if s.scanner.w == 0 {
+            return Ok(image);
+        }
+        let code = stages::laid(image, vec![stages::scanner_encode(1.0)]);
+        let (warmth, share) = self.warmed(graph, &code, s.scanner.w)?;
+        Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }
 
     fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet) -> Result<Image> {

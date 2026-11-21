@@ -65,6 +65,8 @@ pub const DIGITAL_ON_FILM_VERSION: i64 = 38;
 /// The version the dye separation came to unmix the stock's measured dyes, the family's rows gone: a dose still on
 /// their rest takes the whole unmix, a hand's stays.
 pub const STOCK_DYES_VERSION: i64 = 39;
+/// The version a negative came to print on a colour paper: every photo of an earlier one stays on ONI's own print.
+pub const PAPER_VERSION: i64 = 41;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

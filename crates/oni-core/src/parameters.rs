@@ -92,10 +92,11 @@ pub fn all() -> &'static [Row] {
                     to.balance_method = from.balance_method.clone();
                 },
             },
-            // Lighting, under the id stored presets name; the channels' exposures travel with Color.
+            // Lighting, under the id stored presets name; the channels' exposures travel with Color, the paper its
+            // sliders print on with them, as it gives them their meaning.
             Row {
                 id: "levelsGlobal",
-                covers: &["print"],
+                covers: &["print", "printPaper"],
                 sliders: vec![
                     slider("print.exposure", carry!(print.exposure)),
                     slider("print.contrast", carry!(print.contrast)),
@@ -111,6 +112,7 @@ pub fn all() -> &'static [Row] {
                 carry: |from, to| {
                     let filters = (to.print.red, to.print.green, to.print.blue);
                     to.print = from.print;
+                    to.print_paper = from.print_paper;
                     (to.print.red, to.print.green, to.print.blue) = filters;
                 },
             },

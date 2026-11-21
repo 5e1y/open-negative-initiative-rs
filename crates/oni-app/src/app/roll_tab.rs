@@ -7,13 +7,19 @@ use crate::{MenuLine, PanelState};
 use oni_i18n::tr;
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, DyeSet, PipelineSettings, SourceEncoding, VirtualStock};
-use slint::{ComponentHandle, ModelRc, VecModel};
+use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings, SourceEncoding, VirtualStock};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
 
 /// The name a measured dye set goes by: its stock's, the generic set's own.
 pub(super) fn dye_set_name(set: DyeSet) -> String {
     set.stock_name().map_or_else(|| tr("Generic C-41").to_string(), str::to_string)
+}
+
+/// The enlarger's filtration the paper prints through, in CC, as the Colour tab says it.
+pub(super) fn filtration_line(cc: [f32; 3]) -> String {
+    let [c, m, y] = cc.map(|v| format!("{:.0}", v.max(0.0)));
+    oni_i18n::tr!("Enlarger filtration: C {c}, M {m}, Y {y}", c = c, m = m, y = y)
 }
 
 /// The name the Film Type tabs give a mode, wherever a sentence names it.
@@ -133,6 +139,14 @@ impl Ctl {
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
+        panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(PaperStock::default)));
+        let p = me.clone();
+        panel.on_paper_chosen(move |i| {
+            if let Some(&paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)) {
+                p.write_settings(|s| s.print_paper = Some(paper));
+            }
+        });
+        let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));
         let p = me.clone();
         panel.on_flat_apply_selection(move || {
@@ -179,6 +193,20 @@ impl Ctl {
         if stale {
             self.publish_info();
         }
+    }
+
+    /// The Colour tab's paper: shown where one can print the photo, its name, and the filtration it prints through.
+    pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
+        panel.set_paper_shown(settings.takes_paper());
+        panel.set_paper_on(settings.paper().is_some());
+        let chosen = settings.print_paper.unwrap_or_default();
+        panel.set_paper_title(chosen.name().into());
+        if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
+            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
+            panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
+        }
+        let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
+        panel.set_paper_filtration(line.into());
     }
 
     /// The Roll tab's settings blocks, from the open frame's settings and decode.

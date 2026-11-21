@@ -48,15 +48,31 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 }
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
-/// black and white print, no channel's own tone.
+/// black and white print, no channel's own tone; the frame's paper in place of the windows and print curve.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
+    let k = unprinted(s);
+    match crate::paper::printing(s, &k, k.dyes.as_ref()) {
+        Some(p) => printed_on(k, s, p.paper),
+        None => k,
+    }
+}
+
+/// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on ONI's own print.
+pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
+    let k = unprinted(s);
+    crate::paper::printing(s, &k, k.dyes.as_ref())
+}
+
+/// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
+fn unprinted(s: &PipelineSettings) -> Stage47 {
     let print = &s.print;
     let mono = s.mode.is_monochrome();
     let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
-    let dyes = stock_separation(s);
+    let on_paper = s.paper().is_some() && !print.bypassed;
+    let dyes = if on_paper { stock_amounts(s) } else { stock_separation(s) };
     let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
     let unreached = s.levels.windows();
     let windows = lv.windows();
@@ -89,6 +105,30 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         film_share,
         follow: if mono { 1.0 } else { Print::FOLLOW },
         dyes,
+        paper: None,
+    }
+}
+
+/// Stage 4-7 printing on `paper` in place of the windows and the print curve: the paper's print read on the display
+/// gamma, Lighting's points as its windows, its zones, each channel's contrast and mids and the colour density after.
+fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Stage47 {
+    let points = s.print.channel_points(s.mode.is_monochrome());
+    let window = |c: usize| [points[c].0, 1.0 - points[c].1, 1.0];
+    Stage47 {
+        red: window(0),
+        green: window(1),
+        blue: window(2),
+        low_points: [0.25; 3],
+        high_points: [0.75; 3],
+        print_stops: 0.0,
+        print_contrast: 0.0,
+        own_stops: [0.0; 3],
+        hunt: 0.0,
+        follow: 1.0,
+        decompression: 1.0,
+        film_share: 0.0,
+        paper: Some(paper),
+        ..k
     }
 }
 

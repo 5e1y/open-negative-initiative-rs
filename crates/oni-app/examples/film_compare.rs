@@ -1,7 +1,8 @@
 //! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
 //! Portra 800, with the scene the film reads and the film's scan; then the same photo with its negative's dye
 //! separation, its chroma decompression or both at rest, to weigh each; then on its stock's measured dyes, at each dose
-//! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock. Each as `w h` then f32 RGB, linear Rec. 2020.
+//! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock; then printed on
+//! the default paper (`paper`) and on ONI's own print (`oni`). Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
@@ -48,7 +49,10 @@ fn main() {
     let doses = std::env::var("ONI_COMPARE_DOSES").unwrap_or_else(|_| owner.separation.to_string());
     let on_dyes: Vec<(String, PipelineSettings)> =
         doses.split(',').map(|d| (format!("dyes-{d}"), PipelineSettings { separation: d.parse().unwrap(), ..dyed.clone() })).collect();
-    let plain = [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither)].map(|(t, s)| (t.to_string(), s.clone()));
+    let papered = PipelineSettings { print_paper: Some(Default::default()), ..owner.clone() };
+    let onis = PipelineSettings { print_paper: None, ..owner.clone() };
+    let plain = [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither), ("paper", &papered), ("oni", &onis)]
+        .map(|(t, s)| (t.to_string(), s.clone()));
     for (tag, s) in plain.iter().chain(&on_dyes) {
         let (tag, s) = (tag.as_str(), s);
         write(out, &format!("B-{tag}"), &e.render(&negative, s, Some(side)).unwrap());

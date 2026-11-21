@@ -75,9 +75,11 @@ pub fn levelled(balance: &Balance, settings: &PipelineSettings) -> PipelineSetti
     out
 }
 
-/// A frame standing on its roll's reference; no key named, so a paste inside the roll carries every handle raw.
+/// A frame standing on its roll's reference, printed on its paper (the default one where it has none, owner's call);
+/// no key named, so a paste inside the roll carries every handle raw.
 pub fn written(reference: &RollReference, settings: &PipelineSettings) -> PipelineSettings {
     let mut out = applied(&Balance::of(reference), settings);
+    out.print_paper = Some(settings.print_paper.unwrap_or_default());
     out.balance_method = None;
     out.roll_reference = Some(reference.clone());
     out.roll_reference_declined = false;
