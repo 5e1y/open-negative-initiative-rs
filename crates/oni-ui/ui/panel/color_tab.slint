@@ -6,14 +6,12 @@ import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEdito
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
+import { FilmBlock } from "film_block.slint";
 
 export component ColorPane inherits Pane {
     property <bool> balance-settings;
     // The channel More Color Settings shows, red first.
     property <int> channel-tab;
-    // The virtual negative's reference, behind the Film block's settings key, and the channel it shows.
-    property <bool> film-settings;
-    property <int> film-channel;
     // What the face holds, in the words of the switch's tooltip, so its name needs no hover to read.
     VerticalLayout {
         padding-left: SectionStyle.inset;
@@ -31,77 +29,8 @@ export component ColorPane inherits Pane {
             toggled(on) => { PanelState.black-and-white-toggled(on); }
         }
     }
-    // A digital photo's film on either face, as it decides what both print: the stock its scene is shot
-    // on, the film's exposure, then the reference its negative is read on, one disclosure deeper.
-    if PanelState.digital: film-block := Block {
-        title: @tr("Film");
-        block: 14;
-        modified: Store.film-modified;
-        help: @tr("Shoots the photo on a film: its light exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is. None gives the photo back as it was.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the negative's gains and each channel's black and white, which the film's own data sets as Prepare the Roll sets a roll's: the black on the bare film, the white where the photo's middle grey prints as it does without the film. Double-click a slider to bring it back there.");
-        SettingsRow {
-            open <=> root.film-settings;
-            show-help: @tr("Show the negative's gains and ends");
-            hide-help: @tr("Hide the negative's gains and ends");
-            Tabs {
-                tabs: [@tr("None"), @tr("Portra 800")];
-                marked: [false, false];
-                selected: PanelState.virtual-film;
-                picked(i) => { PanelState.virtual-film = i; PanelState.virtual-film-picked(i); }
-            }
-        }
-        if PanelState.virtual-film > 0: StoreSlider { field: 57; label: @tr("Film exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
-        if PanelState.virtual-film > 0 && root.film-settings: StoreSlider {
-            near: film-block.hovered;
-            field: 58; label: @tr("Red ↔ Cyan"); fraction: Store.film-red-fraction; readout: Store.film-red-readout; value-text: Store.film-red-value;
-            fill: SliderFill.bipolar; low: Colour.channel-red; high: Colour.channel-cyan;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings: StoreSlider {
-            near: film-block.hovered;
-            field: 59; label: @tr("Green ↔ Magenta"); fraction: Store.film-green-fraction; readout: Store.film-green-readout; value-text: Store.film-green-value;
-            fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings: StoreSlider {
-            near: film-block.hovered;
-            field: 60; label: @tr("Blue ↔ Yellow"); fraction: Store.film-blue-fraction; readout: Store.film-blue-readout; value-text: Store.film-blue-value;
-            fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings: Tabs {
-            tabs: [@tr("R"), @tr("G"), @tr("B")];
-            marked: [false, false, false];
-            selected: root.film-channel;
-            picked(i) => { root.film-channel = i; }
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 0: StoreSlider {
-            near: film-block.hovered;
-            field: 61; label: @tr("Red black"); fraction: Store.film-red-black-fraction; readout: Store.film-red-black-readout; value-text: Store.film-red-black-value;
-            fill: SliderFill.ramp; tint: Colour.channel-red;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 0: StoreSlider {
-            near: film-block.hovered;
-            field: 64; label: @tr("Red white"); fraction: Store.film-red-white-fraction; readout: Store.film-red-white-readout; value-text: Store.film-red-white-value;
-            fill: SliderFill.ramp; tint: Colour.channel-red;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 1: StoreSlider {
-            near: film-block.hovered;
-            field: 62; label: @tr("Green black"); fraction: Store.film-green-black-fraction; readout: Store.film-green-black-readout; value-text: Store.film-green-black-value;
-            fill: SliderFill.ramp; tint: Colour.channel-green;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 1: StoreSlider {
-            near: film-block.hovered;
-            field: 65; label: @tr("Green white"); fraction: Store.film-green-white-fraction; readout: Store.film-green-white-readout; value-text: Store.film-green-white-value;
-            fill: SliderFill.ramp; tint: Colour.channel-green;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 2: StoreSlider {
-            near: film-block.hovered;
-            field: 63; label: @tr("Blue black"); fraction: Store.film-blue-black-fraction; readout: Store.film-blue-black-readout; value-text: Store.film-blue-black-value;
-            fill: SliderFill.ramp; tint: Colour.channel-blue;
-        }
-        if PanelState.virtual-film > 0 && root.film-settings && root.film-channel == 2: StoreSlider {
-            near: film-block.hovered;
-            field: 66; label: @tr("Blue white"); fraction: Store.film-blue-white-fraction; readout: Store.film-blue-white-readout; value-text: Store.film-blue-white-value;
-            fill: SliderFill.ramp; tint: Colour.channel-blue;
-        }
-    }
+    // A digital photo's film on either face, as it decides what both print.
+    if PanelState.digital: FilmBlock {}
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
         title: @tr("Machine");

@@ -605,19 +605,12 @@ fn every_field_lives_in_exactly_one_family() {
         (s.manual_order, s.pass_of, s.picture_levels.luma.mid) = (Some(1.0), Some("p".into()), 0.4);
         s.source_encoding = Some(oni_settings::SourceEncoding::Linear);
         s.rgb_passes = Some(RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None });
-        s.roll_reference = Some(oni_settings::frame::RollReference {
-            id: Id::new(),
-            stops: [0.0; 3],
-            black: [0.0; 3],
-            white: [3.0; 3],
-            base: None,
-            median: None,
-        });
+        let (stops, black, white) = ([0.0; 3], [0.0; 3], [3.0; 3]);
+        s.roll_reference = Some(oni_settings::frame::RollReference { id: Id::new(), stops, black, white, base: None, median: None });
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains, s.black_and_white) = (Some([0.0; 3]), true, Some([0.0; 3]), true);
         (s.white, s.shot) = (Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }), Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }));
-        let stock = oni_settings::VirtualStock::KodakPortra800;
-        s.virtual_film = Some(oni_settings::VirtualFilm { stock, exposure: 0.5, stops: [0.0; 3], black: [0.2; 3], white: [0.6; 3] });
+        s.virtual_film = Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5, stops, black, white });
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {

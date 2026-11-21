@@ -69,7 +69,7 @@ msgstr "Emulador de escáner"
 msgid "Labels"
 msgstr "Etiquetas"
 
-#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/panel/film_block.slint
 msgid "None"
 msgstr "Ninguna"
 
@@ -865,15 +865,15 @@ msgstr "En película"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1970,66 +1970,6 @@ msgid "Black and White"
 msgstr "Blanco y negro"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Film"
-msgstr "Película"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Shoots the photo on a film: its light exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is. None gives the photo back as it was.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the negative's gains and each channel's black and white, which the film's own data sets as Prepare the Roll sets a roll's: the black on the bare film, the white where the photo's middle grey prints as it does without the film. Double-click a slider to bring it back there."
-msgstr "Toma la foto sobre una película: su luz expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo. Ninguna devuelve la foto tal como era.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nLa tecla de ajustes muestra las ganancias del negativo y el negro y el blanco de cada canal, que los datos de la película sitúan como Preparar el rollo sitúa los de un rollo: el negro sobre la película virgen, el blanco donde el gris medio de la foto se imprime como sin la película. Haz doble clic en un regulador para devolverlo ahí."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Show the negative's gains and ends"
-msgstr "Mostrar las ganancias y los extremos del negativo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Hide the negative's gains and ends"
-msgstr "Ocultar las ganancias y los extremos del negativo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Portra 800"
-msgstr "Portra 800"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Film exposure"
-msgstr "Exposición de la película"
-
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Red ↔ Cyan"
-msgstr "Rojo ↔ Cian"
-
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Green ↔ Magenta"
-msgstr "Verde ↔ Magenta"
-
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Blue ↔ Yellow"
-msgstr "Azul ↔ Amarillo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Red black"
-msgstr "Negro rojo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Red white"
-msgstr "Blanco rojo"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Green black"
-msgstr "Negro verde"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Green white"
-msgstr "Blanco verde"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Blue black"
-msgstr "Negro azul"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Blue white"
-msgstr "Blanco azul"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Máquina"
 
@@ -2548,6 +2488,66 @@ msgstr "Textura"
 #: crates/oni-ui/ui/panel/details_tab.slint
 msgid "Contrast at the scale of hair and fabric — leaves grain and overall tone alone."
 msgstr "Contraste a la escala del cabello y los tejidos: no toca el grano ni el tono general."
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Film"
+msgstr "Película"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Shoots the photo on a film: its light exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is. None gives the photo back as it was.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the negative's gains and each channel's black and white, which the film's own data sets as Prepare the Roll sets a roll's: the black on the bare film, the white where the photo's middle grey prints as it does without the film. Double-click a slider to bring it back there."
+msgstr "Toma la foto sobre una película: su luz expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo. Ninguna devuelve la foto tal como era.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nLa tecla de ajustes muestra las ganancias del negativo y el negro y el blanco de cada canal, que los datos de la película sitúan como Preparar el rollo sitúa los de un rollo: el negro sobre la película virgen, el blanco donde el gris medio de la foto se imprime como sin la película. Haz doble clic en un regulador para devolverlo ahí."
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Show the negative's gains and ends"
+msgstr "Mostrar las ganancias y los extremos del negativo"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Hide the negative's gains and ends"
+msgstr "Ocultar las ganancias y los extremos del negativo"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Portra 800"
+msgstr "Portra 800"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Film exposure"
+msgstr "Exposición de la película"
+
+#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rojo ↔ Cian"
+
+#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Green ↔ Magenta"
+msgstr "Verde ↔ Magenta"
+
+#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Blue ↔ Yellow"
+msgstr "Azul ↔ Amarillo"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Red black"
+msgstr "Negro rojo"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Red white"
+msgstr "Blanco rojo"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Green black"
+msgstr "Negro verde"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Green white"
+msgstr "Blanco verde"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Blue black"
+msgstr "Negro azul"
+
+#: crates/oni-ui/ui/panel/film_block.slint
+msgid "Blue white"
+msgstr "Blanco azul"
 
 #: crates/oni-ui/ui/panel/grain_colour.slint
 msgid "Grain colour at the black point"

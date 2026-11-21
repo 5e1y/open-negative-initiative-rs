@@ -111,9 +111,6 @@ pub enum Knob {
     FilmWhite(Channel),
 }
 
-/// The narrowest share of the window a virtual negative's ends may leave between them.
-pub const FILM_MINIMUM_SPAN: f32 = 0.02;
-
 impl Knob {
     /// The field a write of this knob moves.
     pub fn field(self) -> Field {
@@ -262,10 +259,7 @@ impl Knob {
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
             Knob::LensVignetting => s.lens_correction.vignetting,
-            Knob::FilmExposure => s.virtual_film.as_ref().map_or(0.0, |f| f.exposure),
-            Knob::FilmGain(c) => s.virtual_film.as_ref().map_or(0.0, |f| f.stops[c.index()]),
-            Knob::FilmBlack(c) => s.virtual_film.as_ref().map_or(0.0, |f| f.black[c.index()]),
-            Knob::FilmWhite(c) => s.virtual_film.as_ref().map_or(1.0, |f| f.white[c.index()]),
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::get(self, s),
         }
     }
 
@@ -337,17 +331,7 @@ impl Knob {
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,
             Knob::LensVignetting => out.lens_correction.vignetting = v,
-            // A photo on no film has none of these to move; its ends keep the black under the white.
-            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => {
-                if let Some(f) = out.virtual_film.as_mut() {
-                    match self {
-                        Knob::FilmGain(c) => f.stops[c.index()] = v,
-                        Knob::FilmBlack(c) => f.black[c.index()] = v.min(f.white[c.index()] - FILM_MINIMUM_SPAN),
-                        Knob::FilmWhite(c) => f.white[c.index()] = v.max(f.black[c.index()] + FILM_MINIMUM_SPAN),
-                        _ => f.exposure = v,
-                    }
-                }
-            }
+            Knob::FilmExposure | Knob::FilmGain(_) | Knob::FilmBlack(_) | Knob::FilmWhite(_) => film::set(self, &mut out, v),
         }
         out
     }
@@ -356,24 +340,6 @@ impl Knob {
 /// The white a digital photo renders for: its own, else the one its decode stands on.
 pub fn white_of(s: &PipelineSettings) -> White {
     s.white.unwrap_or_else(|| white::of_uv(white::anchor(s.decoded_from_mosaic)))
-}
-
-/// Unit moves of the gains' temperature and tint, each leaving the other and the mean where they are.
-const GAIN_TEMPERATURE_AXIS: [f32; 3] = [1.0, 0.0, -1.0];
-const GAIN_TINT_AXIS: [f32; 3] = [-1.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0];
-
-pub fn gain_temperature(g: [f32; 3]) -> f32 {
-    (g[0] - g[2]) / 2.0
-}
-
-pub fn gain_tint(g: [f32; 3]) -> f32 {
-    g[1] - (g[0] + g[2]) / 2.0
-}
-
-fn shift_gains(g: &mut Gains, axis: [f32; 3], by: f32) {
-    for (stop, a) in g.stops.iter_mut().zip(axis) {
-        *stop = (*stop + by * a).clamp(Gains::RANGE.0, Gains::RANGE.1);
-    }
 }
 
 fn shift_filters(p: &mut Print, axis: [f32; 3], by: f32) {
@@ -417,6 +383,13 @@ fn levels_mut(s: &mut PipelineSettings, c: Channel) -> &mut Levels {
         Channel::Blue => &mut s.levels.blue,
     }
 }
+
+mod film;
+mod gains;
+
+pub use film::FILM_MINIMUM_SPAN;
+pub use gains::{gain_temperature, gain_tint};
+use gains::{GAIN_TEMPERATURE_AXIS, GAIN_TINT_AXIS, shift_gains};
 
 #[cfg(test)]
 mod tests;
