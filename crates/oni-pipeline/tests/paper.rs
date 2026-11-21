@@ -1,17 +1,20 @@
 //! The paper: spektrafilm's print of Portra 800's dyes on each paper; each frame's black, white and grey printed neutral
-//! through ONI's window, Lighting's curve inside it, Temperature and Tint on the enlarger; slides never printed; the GPU
-//! on every branch. Each verdict has a twin.
+//! through ONI's window, Exposure and Contrast on ONI's curve inside it; slides never printed; the GPU on every branch.
+//! Each verdict has a twin.
 
 mod common;
+#[path = "paper/frames.rs"]
+mod frames;
 
 use common::{V4, graph, judge, mapped, noise, whole};
+use frames::*;
 use oni_graph::Image;
 use oni_pipeline::film::{self, GREY};
 use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
 use oni_render::{Paper, Stage47, cpu};
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, DyeSet, Face, PaperStock, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, Face, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -85,44 +88,6 @@ fn every_paper_prints_portra_800s_dye_amounts_as_spektrafilm_does() {
     }
 }
 
-fn digital() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true)
-}
-
-fn prepared_negative() -> PipelineSettings {
-    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.gains.stops = [-0.8, 0.0, 1.2];
-    let windows = [(0.55, 1.6, 0.45), (0.54, 1.75, 0.5), (0.52, 1.9, 0.58)];
-    for (w, (black, white, mid)) in [&mut s.levels.red, &mut s.levels.green, &mut s.levels.blue].into_iter().zip(windows) {
-        (w.black, w.white, w.mid) = (black, white, mid);
-    }
-    s.dye_set = DyeSet::KodakPortra400;
-    s.print_paper = Some(PaperStock::default());
-    s
-}
-
-/// The scan pixel holding densities `d`, through the frame's gains and pedestal.
-fn scan_at(s: &PipelineSettings, d: [f32; 3]) -> V4 {
-    let k = conversion::stage47(s);
-    let light: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-d[c]) / k.gain[c] - k.pedestal);
-    [light[0], light[1], light[2], 1.0]
-}
-
-/// The scan pixel holding the frame's reference grey.
-fn grey_scan(s: &PipelineSettings) -> V4 {
-    scan_at(s, paper::reference_grey(s))
-}
-
-/// The scan pixels of the frame's three anchors: its windows' black and white, and its reference grey.
-fn anchor_scans(s: &PipelineSettings) -> [V4; 3] {
-    let w = s.levels.windows();
-    [scan_at(s, w.map(|l| l.black)), scan_at(s, w.map(|l| l.white)), grey_scan(s)]
-}
-
-fn mono() -> PipelineSettings {
-    PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Monochrome, true) }
-}
-
 /// The paper's print without its window, as it printed before the window laid its anchors.
 fn unwindowed(k: &Stage47) -> Stage47 {
     Stage47 { paper: k.paper.map(|p| Paper { window_black: [0.0; 3], window_white: [1.0; 3], window_luma: false, ..p }), ..*k }
@@ -183,14 +148,6 @@ fn the_enlarger_rests_where_the_window_lays_the_grey_on_a_plain_raws() {
         println!("{label}: set on the bare print, the windowed grey {lifted:?}, {:+.3} stop of exposure apart", (bare.scale / p.scale).log2());
         assert!(lifted.iter().all(|g| *g > *GREY_PRINT + 0.05), "{label}: {lifted:?}");
     }
-}
-
-/// `s` moved by `f`, its anchors printed.
-fn lit(s: &PipelineSettings, f: impl Fn(&mut PipelineSettings)) -> [V4; 3] {
-    let mut t = s.clone();
-    f(&mut t);
-    let k = conversion::stage47(&t);
-    anchor_scans(s).map(|q| cpu::stage47(q, &k))
 }
 
 #[test]
@@ -258,37 +215,6 @@ fn at_rest_the_print_is_the_windowed_paper() {
         let stacked = worst(&Stage47 { print_stops: Print::RESTING_EXPOSURE, ..k });
         assert!(stacked > 1e-2, "{label}: {stacked}");
     }
-}
-
-#[test]
-fn temperature_warms_the_grey_through_the_enlarger_and_the_whites_stay_white() {
-    let s = prepared_negative();
-    let [_, _, rest] = lit(&s, |_| {});
-    // Temperature at half its travel: a stop between the red and blue filters.
-    let warmer = |t: &mut PipelineSettings| t.print.set_filters(Print::TEMPERATURE_AXIS);
-    let [black, white, grey] = lit(&s, warmer);
-    println!("a warmer print: black {black:?}, white {white:?}, grey {grey:?} from {rest:?}");
-    // Warmer: red brightens, blue darkens, through the cyan and yellow filters, the grey's luma held.
-    assert!(grey[0] > rest[0] * 1.05 && grey[2] < rest[2] * 0.95, "{grey:?}");
-    let luma = |v: V4| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
-    assert!((luma(grey) - luma(rest)).abs() < 1e-4, "{} {}", luma(grey), luma(rest));
-    let off_white = (0..3).map(|c| (white[c] - 1.0).abs()).fold(0.0f32, f32::max);
-    let off_black = (0..3).map(|c| black[c].abs()).fold(0.0f32, f32::max);
-    println!("the whites within {off_white:.4} of white, the blacks within {off_black:.4} of black");
-    // Measured: the whites within 0.034 of white, the blacks within 0.0075 of black, a stop of warmth on Portra Endura.
-    assert!(off_white < 0.04 && off_black < 0.01, "{white:?} {black:?}");
-    let filtration = |t: &PipelineSettings| conversion::printing(t).unwrap().filtration;
-    let mut warmed = s.clone();
-    warmer(&mut warmed);
-    let (was, now) = (filtration(&s), filtration(&warmed));
-    println!("filtration at rest {was:?}, warmer {now:?}");
-    // More cyan against magenta, less yellow: the least filter stays at none.
-    assert!(was[0] == 0.0 && now[1] - now[0] < was[1] - was[0] - 5.0 && now[2] - now[1] < was[2] - was[1] - 5.0, "{was:?} {now:?}");
-    // Twin: the same warmth as a gain on the print's channels, half a stop on red and blue, takes the whites off white.
-    let k = conversion::stage47(&s);
-    let gained = Stage47 { paper: k.paper.map(|p| Paper { window_white: [p.window_white[0] * 0.5f32.sqrt(), p.window_white[1], p.window_white[2] * 2f32.sqrt()], ..p }), ..k };
-    let white = cpu::stage47(anchor_scans(&s)[1], &gained);
-    assert!((white[0] - 1.0).abs() > 0.3, "{white:?}");
 }
 
 #[test]

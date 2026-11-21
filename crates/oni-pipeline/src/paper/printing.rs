@@ -36,10 +36,6 @@ fn luma(v: V3) -> f32 {
     oni_render::LUMA.iter().zip(v).map(|(w, x)| w * x).sum()
 }
 
-fn ln_luma(v: V3) -> f32 {
-    luma(v).max(1e-12).ln()
-}
-
 /// The scan densities, through the frame's gains, its windows print as a plain RAW's grey on ONI's print at rest:
 /// where every window reads the one share that grey prints at.
 pub fn reference_grey(s: &PipelineSettings) -> V3 {
@@ -126,12 +122,6 @@ fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
     x
 }
 
-/// The enlarger's light, from `scale` in its log, that holds the luma `read` prints the grey at on a plain RAW's.
-fn luma_held(paper: &Paper, scale: f32, read: impl Fn(&Paper) -> V3) -> f32 {
-    let target = ln_luma([*GREY_PRINT; 3]);
-    root(scale, |x| ln_luma(read(&Paper { scale: x.exp(), ..*paper })) - target)
-}
-
 /// The exposure and the magenta and yellow filtration, from `x`, where every channel's `miss` is zero.
 fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
     for _ in 0..ITERATIONS {
@@ -156,7 +146,7 @@ fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
 }
 
 /// The frame's paper, its enlarger set where its window prints the reference grey at a plain RAW's grey, neutral, frozen
-/// there; Lighting's filters move its filtration, the windowed grey's luma held. None on ONI's print.
+/// there whatever Lighting moves, Temperature and Tint included. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
@@ -196,16 +186,5 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
     let raw = paper.exposed(grey);
     let start = -(raw.iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
     let x = if mono { [root(start, |e| miss([e, 0.0, 0.0])[0]), 0.0, 0.0] } else { neutral_on(miss, [start, START_CC[0], START_CC[1]]) };
-    // The paper at its rest, its window frozen whatever Lighting moves; Lighting's filters move the neutral filtration.
-    let rest = anchored(at(x), &anchors, mono);
-    let neutral = [0.0, x[1], x[2]];
-    let filtration = |moved: V3| {
-        let cc: V3 = std::array::from_fn(|c| neutral[c] + CC_PER_STOP * moved[c]);
-        let least = cc.iter().copied().fold(f32::INFINITY, f32::min);
-        cc.map(|v| v - least)
-    };
-    let cc = filtration(s.print.filters());
-    let moved = Paper { filters: filters(cc), ..rest };
-    let scale = luma_held(&moved, x[0], |p| p.windowed(p.printed(grey)));
-    Some(Printing { paper: Paper { scale: scale.exp(), ..moved }, filtration: cc })
+    Some(Printing { paper: anchored(at(x), &anchors, mono), filtration: [0.0, x[1], x[2]] })
 }

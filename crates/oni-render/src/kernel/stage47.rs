@@ -26,6 +26,8 @@ pub struct Stage47 {
     pub own_contrast: [f32; 3],
     pub own_mid: [f32; 3],
     pub hunt: f32,
+    /// The share of Contrast Hunt reads: whole on ONI's print, none on a paper, whose Contrast keeps its colour density.
+    pub hunt_contrast: f32,
     pub base_stops: f32,
     pub base_contrast: f32,
     pub base_zones: [f32; 2],
@@ -63,6 +65,7 @@ impl Stage47 {
             own_contrast: [0.0; 3],
             own_mid: [0.0; 3],
             hunt: 0.0,
+            hunt_contrast: 1.0,
             base_stops: 0.0,
             base_contrast: 0.0,
             base_zones: [0.0; 2],
@@ -99,7 +102,7 @@ impl Stage47 {
                 v3(self.balance_low, self.base_contrast),
                 v3(self.balance_span, self.decompression),
                 v22(self.print_zones, self.base_zones),
-                [self.film_share, self.follow, 0.0, 0.0],
+                [self.film_share, self.follow, self.hunt_contrast, 0.0],
                 v3(self.own_contrast, 0.0),
                 v3(self.own_mid, 0.0),
             ],
@@ -244,7 +247,7 @@ fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
         let bent = ps != k.base_stops || pc != k.base_contrast || pz != k.base_zones;
         if k.hunt > 0.0 {
             let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;
-            density *= (-k.hunt * (shaped(g, ps, pc, pz) - g)).exp();
+            density *= (-k.hunt * (shaped(g, ps, pc * k.hunt_contrast, pz) - g)).exp();
         }
         if k.follow < 1.0 && bent {
             let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;

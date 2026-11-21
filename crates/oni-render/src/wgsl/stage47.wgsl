@@ -13,7 +13,7 @@ struct Params {
     balance_low_base_contrast: vec4<f32>,
     balance_span_decompression: vec4<f32>,
     print_zones_base_zones: vec4<f32>,
-    film_follow: vec4<f32>,
+    film_follow_hunt: vec4<f32>,
     own_contrast: vec4<f32>,
     own_mid: vec4<f32>,
     count: vec4<u32>,
@@ -94,7 +94,7 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let balance_low = P.balance_low_base_contrast.xyz;
     let balance_span = P.balance_span_decompression.xyz;
     let decompression = P.balance_span_decompression.w;
-    let film_share = P.film_follow.x;
+    let film_share = P.film_follow_hunt.x;
 
     let t = (s.rgb + pedestal) * gain;
     let d = -log(max(t, vec3<f32>(log_guard))) * LOG10_E;
@@ -133,7 +133,8 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
     let base_contrast = P.balance_low_base_contrast.w;
     let print_zones = P.print_zones_base_zones.xy;
     let base_zones = P.print_zones_base_zones.zw;
-    let follow = P.film_follow.y;
+    let follow = P.film_follow_hunt.y;
+    let hunt_contrast = P.film_follow_hunt.z;
     var e = windowed_in;
     if (print_on > 0.5) {
         let windowed = e;
@@ -151,7 +152,7 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
                    || any(print_zones != base_zones);
         if (hunt > 0.0) {
             let g = (windowed.r + windowed.g + windowed.b) / 3.0;
-            density = density * exp(-hunt * (shaped(g, print_stops, print_contrast, print_zones) - g));
+            density = density * exp(-hunt * (shaped(g, print_stops, print_contrast * hunt_contrast, print_zones) - g));
         }
         if (follow < 1.0 && bent) {
             let g = (windowed.r + windowed.g + windowed.b) / 3.0;

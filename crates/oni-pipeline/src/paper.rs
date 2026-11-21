@@ -21,9 +21,6 @@ pub const LAMP_KELVIN: f64 = 3400.0;
 /// Kodak CC units: 100 is a density of 1 where the filter absorbs.
 pub const CC_PER_DENSITY: f32 = 100.0;
 
-/// A stop of filtration halves the light its filter absorbs, 30.1 CC: Temperature and Tint in the enlarger's units.
-pub const CC_PER_STOP: f32 = CC_PER_DENSITY * std::f32::consts::LOG10_2;
-
 #[derive(Deserialize)]
 struct File {
     data: Data,

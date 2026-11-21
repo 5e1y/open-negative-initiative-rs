@@ -3,12 +3,13 @@
 //! separation, its chroma decompression or both at rest, to weigh each; then on its stock's measured dyes, at each dose
 //! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock; then printed on
 //! the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
-//! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`). Each as `w h` then f32
-//! RGB, linear Rec. 2020.
+//! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`), and Temperature half its
+//! track either way (`paper-cool`, `paper-warm`). Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
 use oni_pipeline::{Inputs, conversion, stages};
+use oni_settings::tone::Print;
 use oni_settings::{Face, PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
@@ -77,6 +78,12 @@ fn main() {
     for (tag, stops) in [("paper-under", -1.0), ("paper-pro", 0.0), ("paper-over", 1.0)] {
         let mut lit = pro.clone();
         lit.print.exposure += stops;
+        write(out, &format!("B-{tag}"), &e.render(&negative, &lit, Some(side)).unwrap());
+    }
+    for (tag, travel) in [("paper-cool", -1.0), ("paper-warm", 1.0)] {
+        let mut lit = pro.clone();
+        let f = lit.print.filters();
+        lit.print.set_filters(std::array::from_fn(|c| f[c] + travel * Print::TEMPERATURE_AXIS[c]));
         write(out, &format!("B-{tag}"), &e.render(&negative, &lit, Some(side)).unwrap());
     }
 }

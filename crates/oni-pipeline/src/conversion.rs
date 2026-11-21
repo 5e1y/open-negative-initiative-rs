@@ -96,6 +96,7 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },
+        hunt_contrast: 1.0,
         base_stops: base.exposure,
         base_contrast: base.contrast,
         base_zones: [base.shadows, base.highlights],
@@ -110,7 +111,8 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
 }
 
 /// Stage 4-7 printing on `paper`, windowed on its anchors, in place of the scan's windows: its print read on the display
-/// gamma, Lighting's points moving its ends, then ONI's print curve from its mode's rest, which is none, and the colour density.
+/// gamma, Lighting's points moving its ends, then ONI's print curve from its mode's rest, which is none, its filters, Hunt
+/// blind to Contrast, and the colour density.
 fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Stage47 {
     let points = s.print.channel_points(s.mode.is_monochrome());
     let window = |c: usize| [points[c].0, 1.0 - points[c].1, 1.0];
@@ -121,8 +123,7 @@ fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Sta
         low_points: [0.25; 3],
         high_points: [0.75; 3],
         print_stops: s.print.exposure - Print::resting_exposure(s.mode),
-        own_stops: [0.0; 3],
-        hunt: 0.0,
+        hunt_contrast: 0.0,
         follow: 1.0,
         decompression: 1.0,
         film_share: 0.0,
