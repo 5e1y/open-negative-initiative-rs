@@ -272,11 +272,11 @@ impl Pipeline {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
         let graded = self.curves(graph, toned, &s.manual_curves)?;
-        // The spectrogram, the points' saturation, the saturation and the vignette in one pass.
+        // The spectrogram, the points' and Contrast's saturation, the hand's and the vignette in one pass.
         let extent = graded.extent();
         let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
-        if !mono {
-            run.extend(saturation(&finishing::points_curve(&s.print, s.mode)));
+        for curve in finishing::print_saturation(s) {
+            run.extend(saturation(&curve));
         }
         run.extend(saturation(&s.saturation));
         if s.vignette.stops != 0.0 {

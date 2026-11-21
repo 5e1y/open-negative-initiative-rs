@@ -1,5 +1,5 @@
 //! `PrintCurve`: what Lighting prints, drawn over the output histogram on the Color tab: each
-//! filtered channel's curve, the RGB curve, and its mirror, the saturation compensation's inverse.
+//! filtered channel's curve, the RGB curve, and its mirror, the curve's exact inverse.
 
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds, polyline};
 use super::curve::tint;
@@ -25,7 +25,7 @@ pub fn drawing(print: &Print, monochrome: bool, size: Size) -> Drawing {
         let trace: Vec<(f64, f64)> = (0..=CHANNEL_STEPS)
             .map(|i| {
                 let n = i as f32 / CHANNEL_STEPS as f32;
-                at(n, print.output(n, channel, true).clamp(0.0, 1.0), size)
+                at(n, print.output(n, channel).clamp(0.0, 1.0), size)
             })
             .collect();
         lines.push(Line::new(polyline(&trace), tint(channel), ds::STROKE_LINE));
@@ -42,7 +42,7 @@ pub fn traces(print: &Print, size: Size) -> (Vec<(f64, f64)>, Vec<(f64, f64)>) {
         .map(|i| {
             let n = i as f32 / LINKED_STEPS as f32;
             let x = f64::from(n.powf(Print::DISPLAY_GAMMA));
-            let y = f64::from(print.output(n, LevelsChannel::Linked, true).clamp(0.0, 1.0));
+            let y = f64::from(print.output(n, LevelsChannel::Linked).clamp(0.0, 1.0));
             ((x * size.w, (1.0 - y) * size.h), (y * size.w, (1.0 - x) * size.h))
         })
         .unzip()
@@ -78,7 +78,7 @@ mod tests {
         assert_eq!(d.lines[0].ink, Ink::Blue);
         // Twin: the RGB curve drawn in its place, as a plot deaf to the channel's contrast would.
         let n = |i: usize| i as f32 / CHANNEL_STEPS as f32;
-        let plain: Vec<(f64, f64)> = (0..=CHANNEL_STEPS).map(|i| at(n(i), p.output(n(i), LevelsChannel::Linked, true).clamp(0.0, 1.0), BAND)).collect();
+        let plain: Vec<(f64, f64)> = (0..=CHANNEL_STEPS).map(|i| at(n(i), p.output(n(i), LevelsChannel::Linked).clamp(0.0, 1.0), BAND)).collect();
         assert_ne!(d.lines[0].commands, Line::new(polyline(&plain), Ink::Blue, ds::STROKE_LINE).commands);
         // Twin: a monochrome print draws none.
         assert_eq!(drawing(&p, true, BAND).lines.len(), 2);

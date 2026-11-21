@@ -9,17 +9,14 @@ struct Params {
     low_window: vec4<f32>,
     high_print: vec4<f32>,
     print_contrast_hunt: vec4<f32>,
-    own_base_stops: vec4<f32>,
-    balance_low_base_contrast: vec4<f32>,
+    own_film: vec4<f32>,
+    balance_low_hunt_contrast: vec4<f32>,
     balance_span_decompression: vec4<f32>,
-    print_zones_base_zones: vec4<f32>,
-    film_follow_hunt: vec4<f32>,
+    print_zones: vec4<f32>,
     own_contrast: vec4<f32>,
     own_mid: vec4<f32>,
     count: vec4<u32>,
 }
-
-const CONTRAST_STEP: f32 = 0.05;
 
 fn apply_levels(e: f32, lv: vec3<f32>) -> f32 {
     let n = max((e - lv.x) / max(lv.y - lv.x, 1e-4), 0.0);
@@ -63,10 +60,6 @@ fn shaped(p_in: f32, stops: f32, contrast: f32, zones: vec2<f32>) -> f32 {
     return p;
 }
 
-fn printed_rgb(n: f32, stops: f32, contrast: f32, zones: vec2<f32>) -> f32 {
-    return pow(max(shaped(n, stops, contrast, zones), 0.0), DISPLAY_GAMMA);
-}
-
 fn midded(p: f32, mids: f32) -> f32 {
     if (mids == 0.0 || p < 0.0 || p > 1.0) { return p; }
     return p + mids * 16.0 * p * p * (1.0 - p) * (1.0 - p);
@@ -91,10 +84,10 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let low_points = P.low_window.xyz;
     let window = P.low_window.w;
     let high_points = P.high_print.xyz;
-    let balance_low = P.balance_low_base_contrast.xyz;
+    let balance_low = P.balance_low_hunt_contrast.xyz;
     let balance_span = P.balance_span_decompression.xyz;
     let decompression = P.balance_span_decompression.w;
-    let film_share = P.film_follow_hunt.x;
+    let film_share = P.own_film.w;
 
     let t = (s.rgb + pedestal) * gain;
     let d = -log(max(t, vec3<f32>(log_guard))) * LOG10_E;
@@ -126,15 +119,11 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
     let print_stops = P.print_contrast_hunt.x;
     let print_contrast = P.print_contrast_hunt.y;
     let hunt = P.print_contrast_hunt.z;
-    let own = P.own_base_stops.xyz;
+    let own = P.own_film.xyz;
     let own_contrast = P.own_contrast.xyz;
     let own_mid = P.own_mid.xyz;
-    let base_stops = P.own_base_stops.w;
-    let base_contrast = P.balance_low_base_contrast.w;
-    let print_zones = P.print_zones_base_zones.xy;
-    let base_zones = P.print_zones_base_zones.zw;
-    let follow = P.film_follow_hunt.y;
-    let hunt_contrast = P.film_follow_hunt.z;
+    let print_zones = P.print_zones.xy;
+    let hunt_contrast = P.balance_low_hunt_contrast.w;
     var e = windowed_in;
     if (print_on > 0.5) {
         let windowed = e;
@@ -148,27 +137,9 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
             let filtered = dot(e, LUMA);
             if (filtered > 1e-6) { e = e * (dot(plain, LUMA) / filtered); }
         }
-        let bent = print_stops != base_stops || print_contrast != base_contrast
-                   || any(print_zones != base_zones);
         if (hunt > 0.0) {
             let g = (windowed.r + windowed.g + windowed.b) / 3.0;
             density = density * exp(-hunt * (shaped(g, print_stops, print_contrast * hunt_contrast, print_zones) - g));
-        }
-        if (follow < 1.0 && bent) {
-            let g = (windowed.r + windowed.g + windowed.b) / 3.0;
-            if (g > 1e-3) {
-                let up = g * (1.0 + CONTRAST_STEP);
-                let down = g * (1.0 - CONTRAST_STEP);
-                let curve = log(pow(max(shaped(up, print_stops, print_contrast, print_zones), 1e-6), DISPLAY_GAMMA)
-                              / pow(max(shaped(down, print_stops, print_contrast, print_zones), 1e-6), DISPLAY_GAMMA));
-                let base = log(pow(max(shaped(up, base_stops, base_contrast, base_zones), 1e-6), DISPLAY_GAMMA)
-                             / pow(max(shaped(down, base_stops, base_contrast, base_zones), 1e-6), DISPLAY_GAMMA));
-                let k = select(1.0, clamp(curve / base, 0.25, 4.0), abs(base) > 1e-6);
-                let grey = vec3<f32>(printed_rgb(g, print_stops, print_contrast, print_zones));
-                let held = max(grey + (e - grey) * min(pow(k, follow - 1.0), 1.0), vec3<f32>(0.0));
-                let lit = dot(held, LUMA);
-                if (lit > 1e-6) { e = held * (dot(e, LUMA) / lit); }
-            }
         }
     }
 

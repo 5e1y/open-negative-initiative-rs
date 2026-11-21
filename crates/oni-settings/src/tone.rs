@@ -124,9 +124,6 @@ pub struct Print {
     pub red: Tone,
     pub green: Tone,
     pub blue: Tone,
-    /// The RGB curve the chroma compensation reads a change of light from.
-    #[serde(rename = "huntBase", skip_serializing_if = "Option::is_none")]
-    pub hunt_base: Option<Tone>,
     #[serde(rename = "blackPoint")]
     pub black_point: f32,
     #[serde(rename = "whitePoint")]
@@ -158,7 +155,6 @@ impl Default for Print {
             red: Tone::NEUTRAL,
             green: Tone::NEUTRAL,
             blue: Tone::NEUTRAL,
-            hunt_base: None,
             black_point: Print::RESTING_BLACK_POINT,
             white_point: 0.0,
             channel_white: [0.0; 3],
@@ -198,8 +194,6 @@ impl Print {
     /// A negative's exposure at rest: the roll's window holds its brightest frame. A slide rests at 0.
     pub const RESTING_EXPOSURE: f32 = 1.5;
     pub const HUNT_EXPONENT: f32 = 0.19;
-    pub const FOLLOW: f32 = 0.0;
-    pub const CONTRAST_STEP: f32 = 0.05;
 
     pub fn resting_exposure(mode: crate::modes::ConversionMode) -> f32 {
         if mode.reads_positive() { 0.0 } else { Self::RESTING_EXPOSURE }
@@ -303,18 +297,14 @@ impl Print {
         libm::expf(-(self.master().shaped(g, self.exposure) - g))
     }
 
-    /// What the kernel prints for output `n`, as linear light; `bent` off leaves the RGB curve out.
-    pub fn output(&self, n: f32, channel: LevelsChannel, bent: bool) -> f32 {
-        self.printed(n, channel, bent, true)
+    /// What the kernel prints for output `n`, as linear light.
+    pub fn output(&self, n: f32, channel: LevelsChannel) -> f32 {
+        self.printed(n, channel, true)
     }
 
     /// `output` with or without the channel's filter, which the luma is held against.
-    fn printed(&self, n: f32, channel: LevelsChannel, bent: bool, filtered: bool) -> f32 {
-        let mut p = if bent {
-            self.master().shaped(n, self.exposure)
-        } else {
-            self.hunt_base.map_or(n, |b| b.shaped(n, b.exposure))
-        };
+    fn printed(&self, n: f32, channel: LevelsChannel, filtered: bool) -> f32 {
+        let mut p = self.master().shaped(n, self.exposure);
         if channel != LevelsChannel::Linked && channel != LevelsChannel::Luma {
             let own = self.channel_tone(channel);
             p = own.shaped(p, if filtered { own.exposure } else { 0.0 });
@@ -324,42 +314,17 @@ impl Print {
 
     /// The kernel's block on one pixel's window outputs.
     pub fn rendered(&self, n: V3, travel: f32) -> V3 {
-        let follow = Self::FOLLOW;
-        let lit = |bent: bool| {
-            [
-                self.output(n[0], LevelsChannel::Red, bent),
-                self.output(n[1], LevelsChannel::Green, bent),
-                self.output(n[2], LevelsChannel::Blue, bent),
-            ]
-        };
-        let mut after = lit(true);
+        let mut after: V3 = std::array::from_fn(|c| self.output(n[c], LevelsChannel::PER_CHANNEL[c]));
         if self.filters() != [0.0; 3] {
-            let plain: V3 = std::array::from_fn(|c| self.printed(n[c], LevelsChannel::PER_CHANNEL[c], true, false));
+            let plain: V3 = std::array::from_fn(|c| self.printed(n[c], LevelsChannel::PER_CHANNEL[c], false));
             let filtered = pipeline::luma(after);
             if filtered > 1e-6 {
                 let k = pipeline::luma(plain) / filtered;
                 after = after.map(|c| c * k);
             }
         }
-        let base = self.hunt_base.unwrap_or(Tone::NEUTRAL);
         let g = (n[0] + n[1] + n[2]) / 3.0;
         let power = color_density::factor(travel) * self.hunt_factor(g);
-        if follow < 1.0 && self.master() != base && g > 1e-3 {
-            let local = |tone: Tone| {
-                let shown = |v: f32| libm::powf(tone.shaped(v, tone.exposure).max(1e-6), Self::DISPLAY_GAMMA);
-                libm::logf(shown(g * (1.0 + Self::CONTRAST_STEP)) / shown(g * (1.0 - Self::CONTRAST_STEP)))
-            };
-            let reference = local(base);
-            let k = if reference.abs() > 1e-6 { (local(self.master()) / reference).clamp(0.25, 4.0) } else { 1.0 };
-            let grey = [self.output(g, LevelsChannel::Linked, true); 3];
-            let share = libm::powf(k, follow - 1.0).min(1.0);
-            let held: V3 = std::array::from_fn(|i| (grey[i] + (after[i] - grey[i]) * share).max(0.0));
-            let lit = pipeline::luma(held);
-            if lit > 1e-6 {
-                let scale = pipeline::luma(after) / lit;
-                after = held.map(|c| c * scale);
-            }
-        }
         color_density::rendered(after, libm::log2f(power) / libm::log2f(color_density::FULL_POWER))
     }
 }

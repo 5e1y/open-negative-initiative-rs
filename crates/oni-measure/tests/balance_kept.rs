@@ -57,7 +57,7 @@ const MOVING: [&str; 13] =
     ["mode", "capture_stops", "crop", "measure_window", "angle", "gains", "density_ceiling", "separation", "flat_field", "corrections", "levels", "roll_reference", "density"];
 
 /// Every look the reading leaves at rest, each moved.
-const LOOKS: [Change; 35] = [
+const LOOKS: [Change; 34] = [
     ("print.exposure", |s| s.print.exposure = 0.8),
     ("print.contrast", |s| s.print.contrast = 0.5),
     ("print.shadows", |s| s.print.shadows = -0.4),
@@ -70,7 +70,6 @@ const LOOKS: [Change; 35] = [
     ("print.channel_contrast", |s| s.print.channel_contrast = [0.3, 0.0, 0.0]),
     ("print.red", |s| s.print.red = Tone::exposure(0.3)),
     ("print.blue", |s| s.print.blue = Tone::exposure(-0.3)),
-    ("print.hunt_base", |s| s.print.hunt_base = Some(Tone::exposure(0.2))),
     ("manual_curves", |s| s.manual_curves.contrast = 0.4),
     ("spectrogram", |s| s.spectrogram.hue[2] = 10.0),
     ("saturation", |s| s.saturation.points = vec![Point::new(0.0, 0.2), Point::new(1.0, 0.9)]),

@@ -51,8 +51,6 @@ fn conversion(sidecar: &Value) -> Stage47 {
         print_on: 1.0,
         print_stops: exposure,
         print_contrast: f(&s["print"]["contrast"]),
-        base_stops: exposure,
-        base_contrast: f(&s["print"]["contrast"]),
         ..Stage47::rest()
     }
 }

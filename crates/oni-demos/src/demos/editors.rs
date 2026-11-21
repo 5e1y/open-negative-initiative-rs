@@ -119,7 +119,7 @@ impl Editor for Saturation {
         if !held {
             presses.release();
         }
-        let drawing = saturation::drawing(&out.saturation, presses.dragged, size);
+        let drawing = saturation::drawing(&out.saturation, &oni_pipeline::finishing::print_saturation(&out), presses.dragged, size);
         (out, drawing)
     }
 }

@@ -4,7 +4,7 @@
 use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::levels::{Levels, LevelsSet};
-use oni_settings::tone::{Print, Tone, color_density};
+use oni_settings::tone::{Print, color_density};
 use oni_settings::PipelineSettings;
 #[cfg(test)]
 use oni_settings::ConversionMode;
@@ -63,11 +63,16 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     crate::paper::printing(s, &k, k.dyes.as_ref())
 }
 
+/// The stops ONI's print curve takes: Exposure, or on a paper its distance from its mode's rest.
+pub fn print_stops(s: &PipelineSettings) -> f32 {
+    let on_paper = s.paper().is_some() && !s.print.bypassed;
+    if on_paper { s.print.exposure - Print::resting_exposure(s.mode) } else { s.print.exposure }
+}
+
 /// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
 fn unprinted(s: &PipelineSettings) -> Stage47 {
     let print = &s.print;
     let mono = s.mode.is_monochrome();
-    let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
@@ -97,14 +102,10 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono { 0.0 } else { 1.0 },
         hunt_contrast: 1.0,
-        base_stops: base.exposure,
-        base_contrast: base.contrast,
-        base_zones: [base.shadows, base.highlights],
         decompression,
         balance_low: unreached.map(|w| w.black),
         balance_span: unreached.map(|w| signed_span(&w)),
         film_share,
-        follow: if mono { 1.0 } else { Print::FOLLOW },
         dyes,
         paper: None,
     }
@@ -123,9 +124,8 @@ fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Sta
         blue: window(2),
         low_points: [0.25; 3],
         high_points: [0.75; 3],
-        print_stops: s.print.exposure - Print::resting_exposure(s.mode),
+        print_stops: print_stops(s),
         hunt_contrast: 0.0,
-        follow: 1.0,
         decompression,
         balance_low: [0.0; 3],
         balance_span: [1.0; 3],
@@ -143,7 +143,7 @@ mod tests {
     fn a_monochrome_frame_carries_no_hunt_density_or_unmix() {
         let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
         let k = stage47(&s);
-        assert_eq!((k.hunt, k.density, k.follow, k.dyes), (0.0, 1.0, 1.0, None));
+        assert_eq!((k.hunt, k.density, k.dyes), (0.0, 1.0, None));
         // Twin: a colour negative at rest carries Hunt and its measured dyes, wholly unmixed.
         let n = stage47(&PipelineSettings::rest(ConversionMode::Negative, true));
         assert_eq!(n.hunt, 1.0);

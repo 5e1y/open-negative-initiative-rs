@@ -2270,8 +2270,8 @@ msgid "Saturation Curve"
 msgstr "Courbe de saturation"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral."
-msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre."
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'."
+msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre.\n\nLa ligne pointillée est la saturation que le tirage pose de lui-même : celle du Contraste, qui garde la couleur de chaque ton quand le Contraste le raidit ou l'adoucit, et celle des points noir et blanc."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Kept"
