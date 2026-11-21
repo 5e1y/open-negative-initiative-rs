@@ -11540,5 +11540,12 @@
     "title": "A filmed digital photo's scene stands at its film's daylight; its colour is balanced at the print, as a negative's",
     "status": "done",
     "detail": "The owner's call: a film sees the scene in its own light. VirtualStock::daylight names the stock's reference (Portra 800: D55, x 0.33242 y 0.34743, the 5500 K Kodak balances it for); PipelineSettings::scene_white renders a filmed photo's scene at it, the As Shot or hand white kept unrendered, so a tungsten scene reaches the film warm and a blue shade blue. The colour is then balanced at the print: on a filmed photo the print's filters (Temperature and Tint, the film's fields) are laid in stage 4-7 with the negative (unlit_print keeps them, own_stops renders them), Lighting never lays them twice; Auto White Balance reads it as a negative's (filters at Balance strength, no white), and the Colour block shows the film's Temperature, Tint and Auto White Balance Strength with a note that the scene stands at the film's daylight. Checks: virtual_film::the_film_keeps_the_photo_s_grey_and_off_gives_the_photo_back (a daylight grey prints neutral and as the photo prints it; the hand's white waits, twin: off it renders; the filters move a filmed photo, twin: a digital photo's wait), filter_balance (a filmed photo's key gives filters, never a white)."
+  },
+  {
+    "id": 2520,
+    "type": "tooling",
+    "title": "examples/film_compare renders a digital photo headless, plain and on its virtual Portra 800, with the scene the film reads and its scan",
+    "status": "done",
+    "detail": "crates/oni-app/examples/film_compare.rs: `film_compare <raw> <out> [side]` reads the photo's sidecar, renders it as the editor does (Engine::render on the preview, at a long side of 1600 by default) plain (A) and on the stock's own reference (B), each at the RAW's As Shot white, the sidecar's own white and the film's D55, and writes beside them the chain's own steps up to the film: the framed scene after Digital's white, then the virtual negative's scan, each as `w h` and f32 RGB in linear Rec. 2020. It lets the virtual film be compared with spektrafilm's own pipeline fed the same scene; it writes no sidecar."
   }
 ]
