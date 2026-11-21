@@ -20,6 +20,7 @@ draft: 030C0F4C-874C-41FC-BDD4-5817ABF1FEE6 window Negative camera
 settings: PipelineSettings {
     mode: Negative,
     inverted_source: false,
+    black_and_white: false,
     film: None,
     manual_order: None,
     sheet: None,

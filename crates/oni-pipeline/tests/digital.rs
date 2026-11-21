@@ -161,3 +161,18 @@ fn render_on(pipeline: &mut Pipeline, g: &mut Graph, scan: &Source, s: &Pipeline
     let image = pipeline.image(g, scan, s, &Request::default(), &Inputs::default()).expect("the recipe builds");
     whole(g, &image)
 }
+
+/// Black and white, a digital photo prints its luminance alone, every pixel grey; the switch off, its colour.
+#[test]
+fn a_digital_photo_in_black_and_white_prints_grey() {
+    let check = "a_digital_photo_in_black_and_white_prints_grey";
+    let Some(mut g) = graph(check) else { return };
+    let scan = source(&mut g);
+    let grey = |px: &[[f32; 4]]| px.iter().all(|p| (p[0] - p[1]).abs() < 1e-5 && (p[1] - p[2]).abs() < 1e-5);
+    let toned = render(&mut g, &scan, &PipelineSettings { black_and_white: true, ..digital(true) });
+    assert!(grey(&toned), "every pixel grey");
+    assert!(!grey(&render(&mut g, &scan, &digital(true))), "twin: the switch off keeps the colour");
+    // A film frame ignores it: the switch is a digital photo's own.
+    let slide = PipelineSettings::rest(ConversionMode::Positive, true);
+    assert_eq!(render(&mut g, &scan, &PipelineSettings { black_and_white: true, ..slide.clone() }), render(&mut g, &scan, &slide));
+}

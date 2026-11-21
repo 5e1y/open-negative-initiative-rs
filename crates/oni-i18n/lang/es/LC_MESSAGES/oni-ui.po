@@ -1966,6 +1966,10 @@ msgid "Pro: every setting by hand, the place to start"
 msgstr "Pro: cada ajuste a mano, por donde empezar"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Black and White"
+msgstr "Blanco y negro"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Machine"
 msgstr "Máquina"
 
@@ -2058,8 +2062,8 @@ msgid "Temperature +: toward warm"
 msgstr "Temperatura +: hacia cálido"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once."
-msgstr "Temperatura y Matiz fijan la luz con la que se tomó la foto, en kelvin tal como la lee la cámara: un RAW se abre en el blanco de su toma, cualquier otro archivo en el suyo; un doble clic vuelve a él.\n\nSaturación hace todos los colores más intensos o más grises a la vez."
+msgid "Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint to the white that turns it grey.\n\nTemperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "El balance de blancos automático lee la luz de la foto, con más peso en sus zonas claras, y ajusta Temperatura y Tinte al blanco que la vuelve gris.\n\nTemperatura y Matiz fijan la luz con la que se tomó la foto, en kelvin tal como la lee la cámara: un RAW se abre en el blanco de su toma, cualquier otro archivo en el suyo; un doble clic vuelve a él.\n\nSaturación hace todos los colores más intensos o más grises a la vez."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -2084,6 +2088,10 @@ msgstr "BALANCE DE BLANCOS AUTOMÁTICO"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The frame's light toward grey with Temperature and Tint, scaled by Auto White Balance Strength"
 msgstr "La luz del fotograma hacia el gris con Temperatura y Matiz, según la intensidad del balance de blancos automático"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The photo's light toward grey with Temperature and Tint"
+msgstr "La luz de la foto hacia el gris con Temperatura y Tinte"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance Strength"

@@ -25,7 +25,7 @@ fn edited() -> PipelineSettings {
 }
 
 fn balance(fingerprint: &str, filters: [f32; 3]) -> AutoBalance {
-    AutoBalance { fingerprint: fingerprint.into(), filters, reference: None }
+    AutoBalance { fingerprint: fingerprint.into(), filters, reference: None, white: None }
 }
 
 fn modified(original: &Path) -> std::time::SystemTime {

@@ -7,6 +7,7 @@ use oni_settings::frame::RollReference;
 use oni_settings::geometry::proposal;
 use oni_settings::levels::{Levels, LevelsChannel};
 use oni_settings::settings::roll_settings;
+use oni_settings::white::{self, White};
 use oni_settings::{AutoBalance, ConversionMode, PipelineSettings};
 
 /// A channel's handles as fractions of the graduation window, not the densities the handles store.
@@ -115,6 +116,8 @@ pub struct Outcome {
     pub reference: Option<RollReference>,
     /// Each channel's exposure on the print that would print the frame's light grey.
     pub filters: [f32; 3],
+    /// A digital photo's: the white that prints its light grey, its print having no filters to move.
+    pub white: Option<White>,
 }
 
 /// An outcome kept with the fingerprint of everything it was read from, as a session holds it.
@@ -124,31 +127,36 @@ pub struct Kept {
     /// The roll the frame was read on; none for a slide, read as it stands.
     pub reference: Option<RollReference>,
     pub filters: [f32; 3],
+    pub white: Option<White>,
 }
 
 impl Kept {
     pub fn new(fingerprint: String, outcome: &Outcome) -> Kept {
-        Kept { fingerprint, reference: outcome.reference.clone(), filters: outcome.filters }
+        Kept { fingerprint, reference: outcome.reference.clone(), filters: outcome.filters, white: outcome.white }
     }
 
     /// The outcome when kept for `fingerprint`, never one read from anything else.
     pub fn outcome_for(&self, fingerprint: &str) -> Option<Outcome> {
-        (self.fingerprint == fingerprint).then(|| Outcome { reference: self.reference.clone(), filters: self.filters })
+        (self.fingerprint == fingerprint).then(|| Outcome { reference: self.reference.clone(), filters: self.filters, white: self.white })
     }
 
     /// As the sidecar keeps it.
     pub fn stored(&self) -> AutoBalance {
-        AutoBalance { fingerprint: self.fingerprint.clone(), filters: self.filters, reference: self.reference.clone() }
+        AutoBalance { fingerprint: self.fingerprint.clone(), filters: self.filters, reference: self.reference.clone(), white: self.white }
     }
 
     /// From the sidecar's.
     pub fn of(stored: &AutoBalance) -> Kept {
-        Kept { fingerprint: stored.fingerprint.clone(), reference: stored.reference.clone(), filters: stored.filters }
+        Kept { fingerprint: stored.fingerprint.clone(), reference: stored.reference.clone(), filters: stored.filters, white: stored.white }
     }
 }
 
-/// The outcome laid on a frame, dosed by its Balance strength.
+/// The outcome laid on a frame, dosed by its Balance strength; a digital photo takes the white it found whole,
+/// its white being its one balance.
 pub fn applied_outcome(outcome: &Outcome, settings: &PipelineSettings) -> PipelineSettings {
+    if let Some(white) = outcome.white {
+        return PipelineSettings { white: Some(white), ..settings.clone() };
+    }
     let mut out = match (&settings.roll_reference, &outcome.reference) {
         (None, Some(reference)) => written(reference, settings),
         _ => settings.clone(),
@@ -169,7 +177,13 @@ pub fn averaged(outcomes: &[Outcome]) -> Vec<Outcome> {
         }
     }
     let mean = mean.map(|v| v / count);
-    outcomes.iter().map(|o| Outcome { reference: o.reference.clone(), filters: mean }).collect()
+    // Whites averaged where they are seen alike: on (u, v), back on the scale.
+    let uvs: Vec<_> = outcomes.iter().filter_map(|o| o.white.map(white::uv)).collect();
+    let white = (uvs.len() == outcomes.len() && !uvs.is_empty()).then(|| {
+        let n = uvs.len() as f64;
+        white::of_uv((uvs.iter().map(|w| w.0).sum::<f64>() / n, uvs.iter().map(|w| w.1).sum::<f64>() / n))
+    });
+    outcomes.iter().map(|o| Outcome { reference: o.reference.clone(), filters: mean, white }).collect()
 }
 
 /// Reads one frame through the host's renderer: the store itself holds no pixels.
@@ -234,7 +248,7 @@ mod tests {
 
     #[test]
     fn a_kept_outcome_reads_back_whole_for_its_fingerprint_alone() {
-        let outcome = Outcome { reference: Some(RollReference { median: Some([0.4, 0.5, 0.6]), ..reference() }), filters: [0.31, 0.06, -0.37] };
+        let outcome = Outcome { reference: Some(RollReference { median: Some([0.4, 0.5, 0.6]), ..reference() }), filters: [0.31, 0.06, -0.37], white: None };
         let kept = Kept::new("a1".into(), &outcome);
         let back = Kept::of(&kept.stored());
         assert_eq!(back.outcome_for("a1"), Some(outcome));
@@ -256,7 +270,7 @@ mod tests {
 
     #[test]
     fn the_outcome_is_dosed_by_balance_strength() {
-        let outcome = Outcome { reference: Some(reference()), filters: [0.4, 0.0, -0.4] };
+        let outcome = Outcome { reference: Some(reference()), filters: [0.4, 0.0, -0.4], white: None };
         let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
         s.balance_strength = 0.5;
         let out = applied_outcome(&outcome, &s);
@@ -273,7 +287,7 @@ mod tests {
         let frames: Vec<(String, PipelineSettings)> =
             ["a", "b"].iter().map(|p| (p.to_string(), PipelineSettings::default())).collect();
         let measure = |path: &str, _: &PipelineSettings| {
-            Some(Outcome { reference: Some(r.clone()), filters: if path == "a" { [0.2, 0.0, 0.0] } else { [0.4, 0.0, 0.0] } })
+            Some(Outcome { reference: Some(r.clone()), filters: if path == "a" { [0.2, 0.0, 0.0] } else { [0.4, 0.0, 0.0] }, white: None })
         };
         let each = run(&frames, Strategy::Each, &measure).0;
         let mean = run(&frames, Strategy::Average, &measure).0;

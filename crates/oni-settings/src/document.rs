@@ -16,7 +16,7 @@ use std::fmt;
 /// What a sidecar names itself, so a walk tells one from another program's JSON.
 pub const FORMAT: &str = "oni-frame";
 /// Moved at every change of the document's shape, an added field included, or of what a field keeps.
-pub const VERSION: i64 = 34;
+pub const VERSION: i64 = 35;
 
 /// Long side the fraction scale was calibrated on, hence what a stored fraction meant.
 pub const RADIUS_REFERENCE_SIDE: f64 = 8368.0;
@@ -86,6 +86,9 @@ pub struct AutoBalance {
     /// The roll the frame was read on; none for a slide, read as it stands.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub reference: Option<RollReference>,
+    /// A digital photo's white that prints its light grey, its filters then none.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub white: Option<crate::white::White>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

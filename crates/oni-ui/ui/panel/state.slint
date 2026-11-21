@@ -87,6 +87,9 @@ export global PanelState {
     in property <bool> slide;
     // A digital photo: no film blocks, its colour a white in kelvin and tint.
     in property <bool> digital;
+    // A digital photo printed in black and white, by its switch at the head of the Color tab.
+    in property <bool> black-and-white;
+    callback black-and-white-toggled(bool);
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

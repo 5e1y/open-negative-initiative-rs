@@ -20,6 +20,7 @@ draft: 938D6748-8C34-440E-B2A2-A9364E9EBD0F flags Negative camera
 settings: PipelineSettings {
     mode: Negative,
     inverted_source: false,
+    black_and_white: false,
     film: None,
     manual_order: None,
     sheet: None,

@@ -27,9 +27,10 @@ impl Field {
     ];
 }
 
-pub const FIELD_NAMES: [&str; 13] = [
+pub const FIELD_NAMES: [&str; 14] = [
     "mode",
     "invertedSource",
+    "blackAndWhite",
     "sourceEncoding",
     "flatField",
     "gains",
@@ -47,7 +48,9 @@ pub fn changed(before: &PipelineSettings, after: &PipelineSettings) -> BTreeSet<
     Field::ALL
         .into_iter()
         .filter(|field| match field {
-            Field::Mode => before.mode != after.mode || before.inverted_source != after.inverted_source,
+            Field::Mode => {
+                (before.mode, before.inverted_source, before.black_and_white) != (after.mode, after.inverted_source, after.black_and_white)
+            }
             Field::SourceEncoding => before.source_encoding != after.source_encoding,
             Field::FlatField => before.flat_field != after.flat_field,
             Field::Gains => before.gains != after.gains,
@@ -92,6 +95,7 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
             Field::Mode => {
                 out = out.carried(donor.mode);
                 out.inverted_source = donor.inverted_source;
+                out.black_and_white = donor.black_and_white;
             }
             Field::SourceEncoding => out.source_encoding = donor.source_encoding,
             Field::FlatField => out.flat_field = donor.flat_field.clone(),

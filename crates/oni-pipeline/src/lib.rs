@@ -278,7 +278,8 @@ impl Pipeline {
         let sharpened = if sheet || joint { textured } else { detail(textured, finishing::detail(None, Some(&s.sharpen), scale)) };
         // The sauce, the monochrome luma and the output clip in one pass.
         let mut run: Vec<_> = saturation(&finishing::sauce(s.secret_sauce.min(finishing::SAUCE_TOP))).into_iter().collect();
-        if mono {
+        // A black and white film, or a digital photo printed in black and white, keeps its luminance alone.
+        if mono || (s.mode == oni_settings::ConversionMode::Digital && s.black_and_white) {
             run.push(stages::luma_only());
         }
         if measuring {

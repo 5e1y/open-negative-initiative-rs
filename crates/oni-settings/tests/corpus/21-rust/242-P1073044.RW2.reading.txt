@@ -15,6 +15,7 @@ draft: none
 settings: PipelineSettings {
     mode: Monochrome,
     inverted_source: false,
+    black_and_white: false,
     film: Some(
         Film {
             id: 4798BA5B-57D3-42F9-AACD-F085E4021EDE,

@@ -54,6 +54,8 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
 }
 
 const DIGITAL_COLOUR: &str = concat!(
+    "Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint ",
+    "to the white that turns it grey.\n\n",
     "Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: ",
     "a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\n",
     "Saturation makes every colour stronger or greyer at once."

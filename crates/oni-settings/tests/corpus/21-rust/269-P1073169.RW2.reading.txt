@@ -20,6 +20,7 @@ draft: 74ABB1F1-CD52-4E0E-8261-89F5A929113A window Positive camera
 settings: PipelineSettings {
     mode: Positive,
     inverted_source: false,
+    black_and_white: false,
     film: None,
     manual_order: None,
     sheet: None,

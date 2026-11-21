@@ -614,7 +614,7 @@ fn every_field_lives_in_exactly_one_family() {
             median: None,
         });
         s.balance_method = Some("classic".into());
-        (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
+        (s.balance_filters, s.inverted_source, s.measured_gains, s.black_and_white) = (Some([0.0; 3]), true, Some([0.0; 3]), true);
         (s.white, s.shot) = (Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }), Some(oni_settings::white::White { kelvin: 5600.0, tint: 3.0 }));
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
@@ -629,7 +629,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 50);
+    assert_eq!(keys.len(), 51);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

@@ -72,13 +72,20 @@ pub fn filters(monochrome: bool, mut read: impl FnMut([f32; 3]) -> Option<[f32; 
     if monochrome {
         return Some([0.0; 3]);
     }
+    let low = [Print::TEMPERATURE_RANGE.0, Print::TINT_RANGE.0];
+    let high = [Print::TEMPERATURE_RANGE.1, Print::TINT_RANGE.1];
+    let e = grey(|e| read(axes_to_filters(e[0], e[1])), low, high)?;
+    Some(axes_to_filters(e[0], e[1]))
+}
+
+/// The two axes, held to `low`…`high`, that bring red's and blue's means read through `read` onto green's:
+/// Newton from zero on the frame as it renders.
+pub fn grey(mut read: impl FnMut([f32; 2]) -> Option<[f32; 3]>, low: [f32; 2], high: [f32; 2]) -> Option<[f32; 2]> {
     let mut error = |e: [f32; 2]| -> Option<[f32; 2]> {
-        let means = read(axes_to_filters(e[0], e[1]))?;
+        let means = read(e)?;
         let green = means[1].max(1e-6);
         Some([(means[0].max(1e-6) / green).ln(), (means[2].max(1e-6) / green).ln()])
     };
-    let low = [Print::TEMPERATURE_RANGE.0, Print::TINT_RANGE.0];
-    let high = [Print::TEMPERATURE_RANGE.1, Print::TINT_RANGE.1];
     let mut e = [0.0f32; 2];
     for _ in 0..ITERATIONS {
         let here = error(e)?;
@@ -97,7 +104,7 @@ pub fn filters(monochrome: bool, mut read: impl FnMut([f32; 3]) -> Option<[f32; 
         // Held at the track's stop, never refused: a cast past it still moves as far as it can.
         e = [(e[0] + delta[0]).max(low[0]).min(high[0]), (e[1] + delta[1]).max(low[1]).min(high[1])];
     }
-    Some(axes_to_filters(e[0], e[1]))
+    Some(e)
 }
 
 #[cfg(test)]

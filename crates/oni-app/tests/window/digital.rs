@@ -61,7 +61,8 @@ pub(crate) fn digital_shows_its_white_and_none_of_the_films_blocks() {
 
     // A TIFF names no As Shot: its white rests on its own D65.
     tab(PanelTab::Color);
-    assert!(!shown(Role::Button, "AUTO WHITE BALANCE"), "no balance key in Digital");
+    assert!(shown(Role::Button, "AUTO WHITE BALANCE"), "the balance key on a digital photo too, its white its balance");
+    assert!(!shown(Role::Button, "Show Auto White Balance Strength"), "no roll's share to dose it");
     assert_eq!((value("Temperature"), value("Tint")), ("6504 K".to_string(), "Magenta +10".to_string()));
     slider("Temperature").invoke_accessible_increment_action();
     rig.settle();

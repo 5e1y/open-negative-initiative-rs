@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -16,9 +16,16 @@ export component ColorPane inherits Pane {
         padding-left: SectionStyle.inset;
         padding-right: SectionStyle.inset;
         padding-top: SectionStyle.before;
+        spacing: Space.s;
         Label {
             role: TextRole.note;
             text: Lab.shown ? @tr("Scanner: a minilab's density and colour, in steps") : @tr("Pro: every setting by hand, the place to start");
+        }
+        // On either face, as it decides what both print.
+        if PanelState.digital: Toggle {
+            label: @tr("Black and White");
+            on: PanelState.black-and-white;
+            toggled(on) => { PanelState.black-and-white-toggled(on); }
         }
     }
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
@@ -68,7 +75,7 @@ export component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         demo: PanelState.digital ? "" : "white-balance";
-        help: PanelState.digital ? @tr("Temperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
+        help: PanelState.digital ? @tr("Auto White Balance reads the photo's light, its bright areas weighing most, and sets Temperature and Tint to the white that turns it grey.\n\nTemperature and Tint set the light the photo was taken under, in kelvin as the camera reads it: a RAW opens at its As Shot white, any other file at its own; double-click returns there.\n\nSaturation makes every colour stronger or greyer at once.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once.");
         // A digital photo's balance is its white alone, set by hand.
         if !PanelState.digital: SettingsRow {
             open <=> root.balance-settings;
@@ -96,6 +103,16 @@ export component ColorPane inherits Pane {
                         clicked => { PanelState.auto-balance(); }
                     }
                 }
+            }
+        }
+        // A digital photo's key sets its white whole: it stands on no roll whose share would dose it.
+        if PanelState.digital: ButtonGroup { plate: true;
+            Button {
+                text: @tr("AUTO WHITE BALANCE");
+                keycap: true;
+                help: @tr("The photo's light toward grey with Temperature and Tint");
+                enabled: !PanelState.balancing;
+                clicked => { PanelState.auto-balance(); }
             }
         }
         if !PanelState.digital && PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
@@ -128,71 +145,69 @@ export component ColorPane inherits Pane {
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
-        // Each channel's own ends and tone, folded under the colour until the hand opens them, one
-        // channel a tab: its white and black points, then its mids and contrast, as Lighting lays them.
-        points-block := Block {
-            title: @tr("More Color Settings");
-            separated: false;
-            inset: 0;
-            folded-by-default: true;
-            block: 11;
-            modified: Store.channel-points-modified;
-            help: @tr("Each channel's own white point, black point, mids and contrast, laid on top of Lighting's, one channel a tab: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, its mids lift or lower its middle tones and its contrast steepens or softens it about a middle grey, so the channel takes a colour of its own. A dot marks a tab whose channel moved; Reset returns the three channels.");
-            Tabs {
-                tabs: [@tr("R"), @tr("G"), @tr("B")];
-                marked: Store.channel-marked;
-                selected: root.channel-tab;
-                picked(i) => { root.channel-tab = i; }
-            }
-            if root.channel-tab == 0: StoreSlider {
-                near: points-block.hovered;
-                field: 32; label: @tr("Red white point"); fraction: Store.red-white-point-fraction; readout: Store.red-white-point-readout; value-text: Store.red-white-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-red;
-            }
-            if root.channel-tab == 0: StoreSlider {
-                near: points-block.hovered;
-                field: 35; label: @tr("Red black point"); fraction: Store.red-black-point-fraction; readout: Store.red-black-point-readout; value-text: Store.red-black-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-red;
-            }
-            if root.channel-tab == 0: StoreSlider {
-                near: points-block.hovered;
-                field: 49; label: @tr("Red mid"); fraction: Store.red-mid-fraction; readout: Store.red-mid-readout; value-text: Store.red-mid-value;
-                fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
-            }
-            if root.channel-tab == 0: StoreSlider { field: 52; label: @tr("Red contrast"); fraction: Store.red-contrast-fraction; readout: Store.red-contrast-readout; value-text: Store.red-contrast-value; }
-            if root.channel-tab == 1: StoreSlider {
-                near: points-block.hovered;
-                field: 33; label: @tr("Green white point"); fraction: Store.green-white-point-fraction; readout: Store.green-white-point-readout; value-text: Store.green-white-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-green;
-            }
-            if root.channel-tab == 1: StoreSlider {
-                near: points-block.hovered;
-                field: 36; label: @tr("Green black point"); fraction: Store.green-black-point-fraction; readout: Store.green-black-point-readout; value-text: Store.green-black-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-green;
-            }
-            if root.channel-tab == 1: StoreSlider {
-                near: points-block.hovered;
-                field: 50; label: @tr("Green mid"); fraction: Store.green-mid-fraction; readout: Store.green-mid-readout; value-text: Store.green-mid-value;
-                fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
-            }
-            if root.channel-tab == 1: StoreSlider { field: 53; label: @tr("Green contrast"); fraction: Store.green-contrast-fraction; readout: Store.green-contrast-readout; value-text: Store.green-contrast-value; }
-            if root.channel-tab == 2: StoreSlider {
-                near: points-block.hovered;
-                field: 34; label: @tr("Blue white point"); fraction: Store.blue-white-point-fraction; readout: Store.blue-white-point-readout; value-text: Store.blue-white-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-blue;
-            }
-            if root.channel-tab == 2: StoreSlider {
-                near: points-block.hovered;
-                field: 37; label: @tr("Blue black point"); fraction: Store.blue-black-point-fraction; readout: Store.blue-black-point-readout; value-text: Store.blue-black-point-value;
-                fill: SliderFill.ramp; tint: Colour.channel-blue;
-            }
-            if root.channel-tab == 2: StoreSlider {
-                near: points-block.hovered;
-                field: 51; label: @tr("Blue mid"); fraction: Store.blue-mid-fraction; readout: Store.blue-mid-readout; value-text: Store.blue-mid-value;
-                fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
-            }
-            if root.channel-tab == 2: StoreSlider { field: 54; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
+    }
+    // Each channel's own ends and tone, a block of their own folded until the hand opens it, one channel
+    // a tab: its white and black points, then its mids and contrast, as Lighting lays them.
+    if !Lab.shown && !PanelState.monochrome: points-block := Block {
+        title: @tr("More Color Settings");
+        folded-by-default: true;
+        block: 11;
+        modified: Store.channel-points-modified;
+        help: @tr("Each channel's own white point, black point, mids and contrast, laid on top of Lighting's, one channel a tab: a channel's white point brightens it in the highlights, its black point darkens it in the shadows, its mids lift or lower its middle tones and its contrast steepens or softens it about a middle grey, so the channel takes a colour of its own. A dot marks a tab whose channel moved; Reset returns the three channels.");
+        Tabs {
+            tabs: [@tr("R"), @tr("G"), @tr("B")];
+            marked: Store.channel-marked;
+            selected: root.channel-tab;
+            picked(i) => { root.channel-tab = i; }
         }
+        if root.channel-tab == 0: StoreSlider {
+            near: points-block.hovered;
+            field: 32; label: @tr("Red white point"); fraction: Store.red-white-point-fraction; readout: Store.red-white-point-readout; value-text: Store.red-white-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-red;
+        }
+        if root.channel-tab == 0: StoreSlider {
+            near: points-block.hovered;
+            field: 35; label: @tr("Red black point"); fraction: Store.red-black-point-fraction; readout: Store.red-black-point-readout; value-text: Store.red-black-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-red;
+        }
+        if root.channel-tab == 0: StoreSlider {
+            near: points-block.hovered;
+            field: 49; label: @tr("Red mid"); fraction: Store.red-mid-fraction; readout: Store.red-mid-readout; value-text: Store.red-mid-value;
+            fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
+        }
+        if root.channel-tab == 0: StoreSlider { field: 52; label: @tr("Red contrast"); fraction: Store.red-contrast-fraction; readout: Store.red-contrast-readout; value-text: Store.red-contrast-value; }
+        if root.channel-tab == 1: StoreSlider {
+            near: points-block.hovered;
+            field: 33; label: @tr("Green white point"); fraction: Store.green-white-point-fraction; readout: Store.green-white-point-readout; value-text: Store.green-white-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-green;
+        }
+        if root.channel-tab == 1: StoreSlider {
+            near: points-block.hovered;
+            field: 36; label: @tr("Green black point"); fraction: Store.green-black-point-fraction; readout: Store.green-black-point-readout; value-text: Store.green-black-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-green;
+        }
+        if root.channel-tab == 1: StoreSlider {
+            near: points-block.hovered;
+            field: 50; label: @tr("Green mid"); fraction: Store.green-mid-fraction; readout: Store.green-mid-readout; value-text: Store.green-mid-value;
+            fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
+        }
+        if root.channel-tab == 1: StoreSlider { field: 53; label: @tr("Green contrast"); fraction: Store.green-contrast-fraction; readout: Store.green-contrast-readout; value-text: Store.green-contrast-value; }
+        if root.channel-tab == 2: StoreSlider {
+            near: points-block.hovered;
+            field: 34; label: @tr("Blue white point"); fraction: Store.blue-white-point-fraction; readout: Store.blue-white-point-readout; value-text: Store.blue-white-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-blue;
+        }
+        if root.channel-tab == 2: StoreSlider {
+            near: points-block.hovered;
+            field: 37; label: @tr("Blue black point"); fraction: Store.blue-black-point-fraction; readout: Store.blue-black-point-readout; value-text: Store.blue-black-point-value;
+            fill: SliderFill.ramp; tint: Colour.channel-blue;
+        }
+        if root.channel-tab == 2: StoreSlider {
+            near: points-block.hovered;
+            field: 51; label: @tr("Blue mid"); fraction: Store.blue-mid-fraction; readout: Store.blue-mid-readout; value-text: Store.blue-mid-value;
+            fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
+        }
+        if root.channel-tab == 2: StoreSlider { field: 54; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
     }
     if !Lab.shown: Block {
         title: @tr("Lighting");

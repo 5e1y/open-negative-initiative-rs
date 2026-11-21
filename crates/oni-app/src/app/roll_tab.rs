@@ -126,6 +126,8 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
+        panel.on_black_and_white_toggled(move |on| p.write_settings(|s| s.black_and_white = on));
+        let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));
@@ -191,6 +193,7 @@ impl Ctl {
         self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
+        panel.set_black_and_white(settings.black_and_white);
         panel.set_sheet(settings.sheet.is_some());
         let flat = &settings.flat_field;
         panel.set_flat_field_on(flat.mask != FlatFieldMask::None);

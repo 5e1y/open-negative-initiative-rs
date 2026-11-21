@@ -26,10 +26,11 @@ pub struct Row {
 }
 
 /// Fields outside every row, with the reason: absent rather than unticked, so none is ticked by mistake.
-pub const EXCLUDED: [(&str, &str); 17] = [
+pub const EXCLUDED: [(&str, &str); 18] = [
     ("geometry", "depends on this frame's content: pasting one destroys hand-made cropping"),
     ("mode", "negative or positive is what the frame is, not a look one applies"),
     ("invertedSource", "a positive read as its own negative is what the frame is, as its mode"),
+    ("blackAndWhite", "a digital photo printed in black and white is what it prints, as a film's mode"),
     ("film", "which roll a frame belongs to: pasting a look would move photographs about"),
     ("manualOrder", "a frame's own hand-placed position among its siblings"),
     ("sheet", "a contact sheet's own grid, what this scan is"),

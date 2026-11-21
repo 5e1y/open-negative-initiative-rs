@@ -182,7 +182,7 @@ fn measurer(check: &str, decode: Box<key::Decode>) -> Option<Measurer> {
 /// Two outcomes alike bit for bit; a roll of one is measured under a new id each time.
 fn alike(a: &Outcome, b: &Outcome) -> bool {
     let id = a.reference.as_ref().map(|r| r.id);
-    let bare = |o: &Outcome| Outcome { reference: o.reference.clone().map(|r| RollReference { id: id.unwrap_or(r.id), ..r }), filters: o.filters };
+    let bare = |o: &Outcome| Outcome { reference: o.reference.clone().map(|r| RollReference { id: id.unwrap_or(r.id), ..r }), filters: o.filters, white: o.white };
     bare(a) == bare(b)
 }
 

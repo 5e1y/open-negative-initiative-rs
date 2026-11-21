@@ -29,6 +29,10 @@ pub struct PipelineSettings {
     /// (owner's experiment); false, and unwritten, on every other frame.
     #[serde(rename = "invertedSource", skip_serializing_if = "std::ops::Not::not", default)]
     pub inverted_source: bool,
+    /// A digital photo printed as its luminance alone, its colour settings kept for when it turns back;
+    /// false, and unwritten, on every other frame.
+    #[serde(rename = "blackAndWhite", skip_serializing_if = "std::ops::Not::not", default)]
+    pub black_and_white: bool,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub film: Option<Film>,
     #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
@@ -121,6 +125,7 @@ impl Default for PipelineSettings {
         PipelineSettings {
             mode: ConversionMode::Negative,
             inverted_source: false,
+            black_and_white: false,
             film: None,
             manual_order: None,
             sheet: None,
