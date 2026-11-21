@@ -34,6 +34,11 @@ impl Ctl {
             }
         });
         let c = me.clone();
+        p.on_choose_stock(move || {
+            let current = c.state.borrow().prepare.stock_or_default();
+            c.open_stock_picker(crate::app::StockTarget::Prepare, current.as_deref());
+        });
+        let c = me.clone();
         p.on_capture_picked(move |i| {
             if let Some(capture) = usize::try_from(i).ok().and_then(|i| Capture::ALL.get(i).copied()) {
                 c.capture_picked(capture);

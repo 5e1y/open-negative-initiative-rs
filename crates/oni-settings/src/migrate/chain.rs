@@ -62,6 +62,9 @@ pub const VIRTUAL_FILM_VERSION: i64 = 37;
 /// The version a digital photo came to be read by the negative's pipeline, always on its film: its white,
 /// picture levels and Black and White switch dropped, its film's reference moved into its gains and windows.
 pub const DIGITAL_ON_FILM_VERSION: i64 = 38;
+/// The version the dye separation came to unmix the stock's measured dyes, the family's rows gone: a dose still on
+/// their rest takes the whole unmix, a hand's stays.
+pub const STOCK_DYES_VERSION: i64 = 39;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
@@ -172,7 +175,7 @@ fn off_previous_separation_rest(document: Object) -> Object {
         if tolerant::number_f32(s.get("separation")) == Some(separation::PREVIOUS_BASE)
             && !is_true(s.get("separationByHand"))
         {
-            s.insert("separation".into(), number(separation::BASE));
+            s.insert("separation".into(), number(separation::FAMILY_REST));
         }
     })
 }

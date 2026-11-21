@@ -6,6 +6,8 @@ pub const PRELUDE: &str = include_str!("wgsl/prelude.wgsl");
 /// The detail stage's Gaussian taps, which the blur built-in shares.
 pub const DETAIL_TAPS: &str = include_str!("wgsl/detail_taps.wgsl");
 
+/// `dye_separation_px(s)`.
+pub const DYE_SEPARATION: &str = include_str!("wgsl/dye_separation.wgsl");
 /// `stage47_px(s)`.
 pub const STAGE47: &str = include_str!("wgsl/stage47.wgsl");
 /// `output_clip_px(s)`.

@@ -49,6 +49,7 @@ impl Roll {
             self.draft_id = Some(d.id);
             self.step = Step::named(&d.step).unwrap_or(self.step);
             self.set_film(d.film);
+            self.stock = d.stock.clone().or(self.stock.take());
             self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());
             self.base = None;
             self.window = d.window.unwrap_or(self.window);

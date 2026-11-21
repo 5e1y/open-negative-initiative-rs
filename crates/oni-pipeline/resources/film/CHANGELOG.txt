@@ -8,6 +8,9 @@ commit 3bb2c2d (2026-06-07). Licence: SPEKTRAFILM_LICENSE.txt (CC BY-SA 4.0), ke
 
 - kodak_portra_800.json: shipped unchanged.
 - irradiance_xy_tc.npy: shipped unchanged (Jakob and Hanika's spectra, see SPECTRA_LICENCE.txt).
+- kodak_portra_160.json, kodak_portra_400.json, kodak_ektar_100.json, kodak_gold_200.json,
+  kodak_ultramax_400.json, kodak_vision3_50d.json, kodak_vision3_500t.json, fujifilm_c200.json,
+  fujifilm_pro_400h.json, fujifilm_xtra_400.json: shipped unchanged, for the dye separation.
 
 Derivatives Open Negative Initiative computes from them at run time, never written to a file
 (crates/oni-pipeline/src/film/bake.rs):
@@ -20,5 +23,10 @@ Derivatives Open Negative Initiative computes from them at run time, never writt
   (spektrafilm's colour-negative coupler matrix), so a developed grey lands on the profile's curves.
 - The scan: the dyes' and the base's densities on 405 to 695 nm, where the profile measures both,
   read under D50 by the CIE 1931 observer, adapted to D65 by Bradford, in linear Rec. 2020.
+- The dye separation's dyes (crates/oni-pipeline/src/film/dyes.rs): each profile's dye and base densities on
+  the wavelengths it measures both, read by the 1931 observer under D50 (the virtual negative's scan) and by
+  that scan's Rec. 2020 matrix; the matrix of each stock's dye amounts at a unit of every dye; and a generic
+  colour-negative set, the mean of the nine C-41 profiles above (Portra 160, 400 and 800, Ektar 100, Gold 200,
+  UltraMax 400, C200, Pro 400H, Superia X-TRA 400) at each wavelength more than half of them measure.
 
-Everything derived from the profile stays under CC BY-SA 4.0.
+Everything derived from the profiles stays under CC BY-SA 4.0.

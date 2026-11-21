@@ -109,8 +109,9 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let bottom = 60 + (767 - 683) / 2 + 683;
     let numbered = count(60..260, bottom..bottom + 60, &amber);
     assert!(numbered > 100, "the first number is amber under its picture: {numbered} pixels");
-    // Under the row's numbers the margin alone, black, and above the row.
-    assert_eq!(count(0..3252, 892..948, &|p| !black(p)) + count(0..3252, 0..56, &|p| !black(p)), 0, "the margins under the numbers and above the row");
+    // Under the row's numbers the margin alone, black, and above the row, past the JPEG's 16-pixel blocks the row
+    // shares, where a saturated picture's colour bleeds a level or two.
+    assert_eq!(count(0..3252, 896..948, &|p| !black(p)) + count(0..3252, 0..48, &|p| !black(p)), 0, "the margins under the numbers and above the row");
 
     // The same three as positives: the same black, the numbers amber.
     *file.borrow_mut() = out.join("Positives.jpg");

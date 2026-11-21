@@ -128,6 +128,7 @@ fn folder_draft(id: Id, capture: &str, frames: &[(&str, bool, bool)]) -> Draft {
         id,
         step: "flags".into(),
         film: ConversionMode::Negative,
+        stock: None,
         capture: capture.into(),
         pass_order: (capture == "rgbPasses").then_some(PassOrder::Rgb),
         pass_offset: (capture == "rgbPasses").then_some(0),

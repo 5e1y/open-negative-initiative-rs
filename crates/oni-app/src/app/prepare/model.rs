@@ -219,6 +219,7 @@ impl Roll {
                 id,
                 step: self.step.name().into(),
                 film: self.film,
+                stock: self.stock.clone(),
                 capture: self.capture.raw().into(),
                 pass_order: Some(self.pass_order),
                 pass_offset: Some(self.pass_offset),

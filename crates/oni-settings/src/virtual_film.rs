@@ -2,7 +2,6 @@
 //! reference each stock brings, which its negative is read on as a roll's measure is.
 
 use crate::axis::graduation;
-use crate::blocks::SeparationFamily;
 use crate::levels::{Levels, LevelsSet};
 use crate::modes::ConversionMode;
 use crate::white::{self, White};
@@ -66,9 +65,11 @@ impl VirtualStock {
         }
     }
 
-    /// The dye set its separation unmixes, its catalogue stock's.
-    pub fn dyes(self) -> SeparationFamily {
-        crate::film::dye_family(self.catalogue_id()).unwrap_or(SeparationFamily::GenericC41)
+    /// The dyes its profile measures, which its negative's separation unmixes.
+    pub fn dye_set(self) -> crate::dyes::DyeSet {
+        match self {
+            VirtualStock::KodakPortra800 => crate::dyes::DyeSet::KodakPortra800,
+        }
     }
 
     pub fn name(self) -> &'static str {
@@ -101,7 +102,7 @@ mod tests {
         let levels = r.levels();
         assert_eq!(levels.green.black, graduation::value(r.black[1], ConversionMode::Negative));
         assert!(levels.windows().iter().all(|w| w.white > w.black), "{levels:?}");
-        assert_eq!(VirtualStock::KodakPortra800.dyes(), SeparationFamily::KodakC41);
+        assert_eq!(VirtualStock::KodakPortra800.dye_set(), crate::DyeSet::KodakPortra800);
         // Twin: read on a slide's axis the same shares land elsewhere.
         assert_ne!(levels.green.black, graduation::value(r.black[1], ConversionMode::Positive));
     }

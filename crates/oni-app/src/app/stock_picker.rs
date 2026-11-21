@@ -14,6 +14,8 @@ pub(crate) enum StockTarget {
     Roll,
     /// The export row whose film field opened it: this frame alone.
     Export,
+    /// Prepare the Roll's Film step: the roll it prepares, written with its measure.
+    Prepare,
 }
 
 impl Ctl {
@@ -63,6 +65,11 @@ impl Ctl {
         match (target, kind) {
             (Some(StockTarget::Roll), Some(kind)) => self.set_roll_stock(kind.id),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
+            (Some(StockTarget::Prepare), Some(kind)) => {
+                self.state.borrow_mut().prepare.stock = Some(kind.id.to_string());
+                self.save_draft();
+                self.publish_prepare();
+            }
             _ => {}
         }
     }

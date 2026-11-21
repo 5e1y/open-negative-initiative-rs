@@ -165,15 +165,15 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
 }
 
 #[test]
-fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_one_step() {
-    use oni_settings::blocks::SeparationFamily;
+fn a_roll_made_with_its_stock_writes_the_marker_and_the_measured_dyes_and_undoes_as_one_step() {
+    use oni_settings::DyeSet;
     let dir = std::env::temp_dir().join(format!("oni-core-store-dyes-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let roll = dir.join("Roll");
     std::fs::create_dir_all(&roll).unwrap();
     let frames: Vec<String> = ["a.tif", "b.tif", "c.tif"].iter().map(|n| roll.join(n).to_string_lossy().into_owned()).collect();
     let outside = dir.join("d.tif").to_string_lossy().into_owned();
-    let fuji = PipelineSettings { separation_family: Some(SeparationFamily::FujiC41), ..PipelineSettings::default() };
+    let fuji = PipelineSettings { dye_set: DyeSet::FujifilmXtra400, ..PipelineSettings::default() };
     for p in frames.iter().chain([&outside]) {
         std::fs::write(p, b"").unwrap();
         sidecar::write(&fuji, Path::new(p), WriteOptions::default()).unwrap();
@@ -181,34 +181,34 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_o
     let mut all = frames.clone();
     all.push(outside.clone());
     let mut store = EditorStore::new(Archive::new(all, |_: &Path| false));
-    let family = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings.separation_family;
+    let family = |p: &str| sidecar::read(Path::new(p), false).unwrap().settings.dye_set;
     let folder = roll.to_string_lossy().into_owned();
     let mut film = oni_settings::Film::new("2026-09-14");
     film.stock = Some("kodak-portra".into());
     let marker = Marker { folder: folder.clone(), before: None, after: Some(film.clone()) };
-    let dyes = oni_settings::film::dye_family("kodak-portra");
-    let laid = store.lay_roll(&frames, Some(marker), |s| s.separation_family = dyes.or(s.separation_family), "Make a Roll");
+    let dyes = oni_settings::dyes::dye_set("kodak-portra");
+    let laid = store.lay_roll(&frames, Some(marker), |s| s.dye_set = dyes.unwrap_or(s.dye_set), "Make a Roll");
     assert_eq!(laid, 3);
-    assert!(frames.iter().all(|p| family(p) == Some(SeparationFamily::KodakC41)), "Portra writes Kodak on every frame");
-    assert_eq!(family(&outside), Some(SeparationFamily::FujiC41), "twin: a frame outside the roll keeps its family");
+    assert!(frames.iter().all(|p| family(p) == DyeSet::KodakPortra400), "Portra writes its dyes on every frame");
+    assert_eq!(family(&outside), DyeSet::FujifilmXtra400, "twin: a frame outside the roll keeps its own");
     assert_eq!(oni_library::folders::roll(&folder), Some(film.clone()));
     assert_eq!(store.marked.take(), Some((folder.clone(), Some(film.clone()))));
     assert_eq!(store.history().undo_label(), Some("Make a Roll"));
     store.undo();
-    assert!(frames.iter().all(|p| family(p) == Some(SeparationFamily::FujiC41)), "one undo gives every family back");
+    assert!(frames.iter().all(|p| family(p) == DyeSet::FujifilmXtra400), "one undo gives every set back");
     assert_eq!(oni_library::folders::roll(&folder), None, "and takes the marker away");
     assert_eq!(store.marked.take(), Some((folder.clone(), None)));
     assert!(!store.history().can_undo(), "one step");
     store.redo();
     assert_eq!(oni_library::folders::roll(&folder), Some(film.clone()));
 
-    // A black-and-white stock writes the marker alone, every family kept.
+    // A black-and-white stock writes the marker alone, every set kept.
     let mut hp5 = film.clone();
     hp5.stock = Some("ilford-hp5".into());
-    let dyes = oni_settings::film::dye_family("ilford-hp5");
+    let dyes = oni_settings::dyes::dye_set("ilford-hp5");
     let marker = Marker { folder: folder.clone(), before: Some(film.clone()), after: Some(hp5.clone()) };
-    assert_eq!(store.lay_roll(&frames, Some(marker), |s| s.separation_family = dyes.or(s.separation_family), "Set Film Stock"), 0);
-    assert!(frames.iter().all(|p| family(p) == Some(SeparationFamily::KodakC41)));
+    assert_eq!(store.lay_roll(&frames, Some(marker), |s| s.dye_set = dyes.unwrap_or(s.dye_set), "Set Film Stock"), 0);
+    assert!(frames.iter().all(|p| family(p) == DyeSet::KodakPortra400));
     assert_eq!(oni_library::folders::roll(&folder), Some(hp5));
     store.undo();
     assert_eq!(oni_library::folders::roll(&folder), Some(film), "the marker alone is a step too");

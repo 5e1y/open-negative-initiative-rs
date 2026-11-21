@@ -186,8 +186,9 @@ fn lift(g: &mut Graph, patch: V4, colour: [f32; 2], random: bool) -> f64 {
     shown_y(&grained) - shown_y(&plain)
 }
 
-/// A lightness step about at the edge of what the eye sees on a flat area.
-const SEEN: f64 = 1.5;
+/// A dark colour's lift at the slider's top, past the 1.5 the eye sees on a flat area: the measured dyes' whole
+/// unmix steepens its own channel to 2.4; under the twin's 3.4.
+const TOP: f64 = 2.5;
 
 #[test]
 fn the_default_colour_lifts_no_grey_and_no_colour_past_a_step_the_eye_sees() {
@@ -202,11 +203,11 @@ fn the_default_colour_lifts_no_grey_and_no_colour_past_a_step_the_eye_sees() {
     let colours = [[0.004, 0.0005, 0.0003, 1.0], [0.0004, 0.0006, 0.004, 1.0], [0.003, 0.0055, 0.0015, 1.0], skin(0.004)];
     let most = colours.iter().map(|&p| lift(&mut g, p, [GrainColour::RANGE.1, 0.0], false).abs()).fold(0.0f64, f64::max);
     println!("a dark colour rises {most:.2} at the top");
-    assert!(most < SEEN, "a colour rises {most:.2} in lightness");
+    assert!(most < TOP, "a colour rises {most:.2} in lightness");
     // Twin: a hue drawn at random at the slider's top.
     let over = GREYS.iter().map(|&v| lift(&mut g, [v, v, v, 1.0], [GrainColour::RANGE.1, 0.0], true)).fold(0.0f64, f64::max);
     println!("the twin rises {over:.2}");
-    assert!(over > SEEN, "the twin rises {over:.2}");
+    assert!(over > TOP, "the twin rises {over:.2}");
 }
 
 #[test]

@@ -31,10 +31,9 @@ fn swapped(p: V4) -> V4 {
 }
 
 fn negative() -> PipelineSettings {
-    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.print.exposure = 0.3;
-    s.print.contrast = 0.2;
-    s.density = 0.3;
+    // Stage 4-7's kernel alone, unmixing nothing: the dye separation's pass is judged in its own check.
+    let mut s = PipelineSettings { separation: 0.0, ..PipelineSettings::rest(ConversionMode::Negative, true) };
+    (s.print.exposure, s.print.contrast, s.density) = (0.3, 0.2, 0.3);
     s
 }
 

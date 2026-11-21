@@ -1,6 +1,5 @@
 //! A roll, its film stock catalogue, and the marker a folder made a roll carries beside its photos.
 
-use crate::blocks::SeparationFamily;
 use crate::date::{self, Date};
 use crate::id::Id;
 use crate::modes::ConversionMode;
@@ -106,60 +105,6 @@ pub fn film_stock(id: Option<&str>) -> Option<&'static FilmStockKind> {
 /// The stocks the picker lists, each with its place in `FILM_STOCKS`, which a pick names.
 pub fn offered_stocks() -> impl Iterator<Item = (usize, &'static FilmStockKind)> {
     FILM_STOCKS.iter().enumerate().filter(|(_, k)| k.offered)
-}
-
-/// Each stock's dye set, which picking it writes on the roll's frames; black and white has none.
-/// As long as the catalogue, so a stock added there cannot go without its family.
-pub const STOCK_DYES: [(&str, Option<SeparationFamily>); FILM_STOCKS.len()] = {
-    use SeparationFamily::*;
-    [
-        ("generic-azure", Some(GenericC41)),
-        ("generic-black-and-white", None),
-        ("generic-color-negative", Some(GenericC41)),
-        ("generic-color-positive", Some(E6)),
-        ("generic-redscale", Some(GenericC41)),
-        ("agfaphoto-apx", None),
-        ("cinestill-400d", Some(Ecn2)),
-        ("cinestill-50d", Some(Ecn2)),
-        ("cinestill-800t", Some(Ecn2)),
-        ("foma-fomapan200", None),
-        ("foma-fomapan400", None),
-        ("foma-fomapan401", None),
-        ("fujifilm-acros", None),
-        ("fujifilm-fujicolor", Some(FujiC41)),
-        ("fujifilm-fujicolor-pro", Some(FujiC41)),
-        ("fujifilm-provia100", Some(E6)),
-        ("fujifilm-superia", Some(FujiC41)),
-        ("fujifilm-velvia100", Some(E6)),
-        ("fujifilm-velvia50", Some(E6)),
-        ("harman-phoenix", Some(GenericC41)),
-        ("harman-phoenixII", Some(GenericC41)),
-        ("harman-red", Some(GenericC41)),
-        ("ilford-delta100", None),
-        ("ilford-delta3200", None),
-        ("ilford-delta400", None),
-        ("ilford-fp4", None),
-        ("ilford-hp5", None),
-        ("ilford-ortho", None),
-        ("ilford-panf", None),
-        ("ilford-sfx", None),
-        ("ilford-xp2", None),
-        ("kodak-400tx", None),
-        ("kodak-colorplus", Some(KodakC41)),
-        ("kodak-ektachrome", Some(E6)),
-        ("kodak-gold", Some(KodakC41)),
-        ("kodak-portra", Some(KodakC41)),
-        ("kodak-ultramax", Some(KodakC41)),
-        ("lomography-lomo-turquoise", Some(GenericC41)),
-        ("lucky-color200", Some(GenericC41)),
-        ("mira-color400", Some(GenericC41)),
-        ("mira-color800", Some(GenericC41)),
-    ]
-};
-
-/// The dye family `stock_id` writes on its roll's frames: none for black and white or an unknown key.
-pub fn dye_family(stock_id: &str) -> Option<SeparationFamily> {
-    STOCK_DYES.iter().find(|(id, _)| *id == stock_id).and_then(|(_, family)| *family)
 }
 
 /// A roll's generic stock while nobody picked one, read off the mode a hand already set; a digital
@@ -303,20 +248,6 @@ mod tests {
         // Twin: a stock still offered is listed, so the filter is the withdrawn flag's alone.
         assert!(film_stock(Some("foma-fomapan400")).is_some_and(|k| k.offered));
         assert!(!kept.offered);
-    }
-
-    #[test]
-    fn every_stock_names_its_dyes() {
-        for kind in &FILM_STOCKS {
-            assert!(STOCK_DYES.iter().any(|(id, _)| *id == kind.id), "{} has no dye family", kind.id);
-        }
-        assert_eq!(dye_family("kodak-portra"), Some(SeparationFamily::KodakC41));
-        assert_eq!(dye_family("fujifilm-velvia50"), Some(SeparationFamily::E6));
-        assert_eq!(dye_family("cinestill-800t"), Some(SeparationFamily::Ecn2));
-        assert_eq!(dye_family("ilford-hp5"), None, "black and white unmixes nothing");
-        // Twin: a key the catalogue lacks names no family.
-        assert_eq!(dye_family("kodak-portra-900"), None);
-        assert!(!STOCK_DYES.iter().any(|(id, _)| *id == "kodak-portra-900"));
     }
 
     #[test]

@@ -8,9 +8,7 @@ struct Params {
     blue_guard: vec4<f32>,
     low_window: vec4<f32>,
     high_print: vec4<f32>,
-    sep_r_stops: vec4<f32>,
-    sep_g_contrast: vec4<f32>,
-    sep_b_hunt: vec4<f32>,
+    print_contrast_hunt: vec4<f32>,
     own_base_stops: vec4<f32>,
     balance_low_base_contrast: vec4<f32>,
     balance_span_decompression: vec4<f32>,
@@ -80,7 +78,7 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_co
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-// Stages 4 and 5: the film's density, its windows, the chroma decompression and the dye separation.
+// Stages 4 and 5: the film's density, its windows and the chroma decompression.
 fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
@@ -92,9 +90,6 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let low_points = P.low_window.xyz;
     let window = P.low_window.w;
     let high_points = P.high_print.xyz;
-    let sep_r = P.sep_r_stops.xyz;
-    let sep_g = P.sep_g_contrast.xyz;
-    let sep_b = P.sep_b_hunt.xyz;
     let balance_low = P.balance_low_base_contrast.xyz;
     let balance_span = P.balance_span_decompression.xyz;
     let decompression = P.balance_span_decompression.w;
@@ -117,16 +112,16 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
         let held = toned + decompression * (e - toned) + film_share * (film - neutral);
         e = held + (dot(e, LUMA) - dot(held, LUMA));
     }
-    return vec3<f32>(dot(sep_r, e), dot(sep_g, e), dot(sep_b, e));
+    return e;
 }
 
 // Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.
 fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
     var density = P.red_density.w;
     let print_on = P.high_print.w;
-    let print_stops = P.sep_r_stops.w;
-    let print_contrast = P.sep_g_contrast.w;
-    let hunt = P.sep_b_hunt.w;
+    let print_stops = P.print_contrast_hunt.x;
+    let print_contrast = P.print_contrast_hunt.y;
+    let hunt = P.print_contrast_hunt.z;
     let own = P.own_base_stops.xyz;
     let own_contrast = P.own_contrast.xyz;
     let own_mid = P.own_mid.xyz;

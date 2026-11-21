@@ -129,6 +129,7 @@ pub fn gathered<'a>(folder: &str, frames: impl IntoIterator<Item = (&'a str, &'a
             id: d.id,
             step: d.step.clone(),
             film: d.film,
+            stock: None,
             capture: d.capture.clone(),
             pass_order: d.pass_order,
             pass_offset: d.pass_offset,

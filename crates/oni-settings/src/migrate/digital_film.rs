@@ -65,7 +65,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings, stored: Option<&Value
     out.print.exposure += Print::RESTING_EXPOSURE;
     // The negative's own values, which a digital photo never rendered, start at their rest.
     out.density_ceiling = density_axis::rest(out.decoded_from_mosaic, out.mode);
-    (out.separation, out.separation_by_hand) = (separation::BASE, false);
+    (out.separation, out.separation_by_hand) = (separation::FAMILY_REST, false);
     (out.chroma_decompression, out.chroma_decompression_by_hand) = (chroma_decompression::BASE, false);
     out
 }

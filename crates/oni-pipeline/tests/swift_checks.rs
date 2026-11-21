@@ -285,7 +285,7 @@ fn a_retired_colour_curve_renders_as_its_two_passes_did() {
         luma: curve(&[(0.0, 0.0), (0.5, 0.44), (1.0, 1.0)]),
         ..CurveSet::default()
     };
-    let mut hand = PipelineSettings::default();
+    let mut hand = PipelineSettings::default(); // format 21's own separation
     hand.manual_curves.linked = curve(&[(0.0, 0.0), (0.2, 0.26), (1.0, 1.0)]);
     hand.manual_curves.contrast = 0.2;
     let mut object = oni_settings::migrate::reshape::as_stored(&oni_settings::Document::of(hand.clone()), 21);

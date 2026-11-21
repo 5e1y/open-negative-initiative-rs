@@ -1,8 +1,8 @@
 //! A digital photo's virtual negative read by the negative's own pipeline: its stage 4-7 a colour negative's,
-//! its dyes unmixed on its stock's family, its scene lit at its stock's white, its Scanner face a negative's.
+//! its stock's measured dyes unmixed, its scene lit at its stock's white, its Scanner face a negative's.
 
 use oni_pipeline::{conversion, scanner};
-use oni_settings::blocks::{SeparationFamily, separation};
+use oni_settings::blocks::separation;
 use oni_settings::{ConversionMode, Face, PipelineSettings, VirtualStock};
 
 fn digital() -> PipelineSettings {
@@ -28,14 +28,14 @@ fn a_digital_photos_stage_4_to_7_is_a_colour_negatives_on_the_same_settings() {
 fn a_digital_photo_unmixes_its_stocks_dyes_and_decompresses_as_an_unprepared_negative() {
     let s = PipelineSettings::rest(ConversionMode::Digital, true);
     let k = conversion::stage47(&s);
-    assert_eq!(s.separation_family, Some(VirtualStock::KodakPortra800.dyes()));
-    let rows = conversion::separation_rows(Some(SeparationFamily::KodakC41), separation::BASE, ConversionMode::Negative);
-    assert_eq!([k.sep_r, k.sep_g, k.sep_b], rows);
+    assert_eq!(s.dye_set, VirtualStock::KodakPortra800.dye_set());
+    let d = k.dyes.expect("its stock's measured dyes");
+    assert_eq!((d.matrix, d.dose), (oni_pipeline::film::dyes::dyes(s.dye_set).matrix, separation::BASE));
     assert_eq!((k.decompression, k.film_share), (0.5, 0.5));
     assert_eq!((k.invert, k.own_stops), (1.0, s.print.filters()));
     // Twin: a slide on the same settings unmixes nothing and keeps its film's colour.
     let slide = conversion::stage47(&PipelineSettings { mode: ConversionMode::Positive, ..s.clone() });
-    assert_eq!([slide.sep_r, slide.sep_g, slide.sep_b], conversion::IDENTITY);
+    assert!(slide.dyes.is_none());
     assert_eq!((slide.decompression, slide.film_share), (1.0, 0.0));
 }
 

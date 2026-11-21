@@ -43,21 +43,20 @@ fn lighting_leaves_the_filters_and_color_carries_them() {
 }
 
 #[test]
-fn the_reset_keeps_the_framing_flat_field_and_dye_family() {
-    use oni_settings::blocks::SeparationFamily;
+fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.geometry.angle = 2.5;
     s.geometry.crop = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
     s.geometry.measure_window = Some(oni_settings::cg::Rect::new(0.2, 0.2, 0.5, 0.5));
     s.flat_field.amount = 0.4;
-    s.separation_family = Some(SeparationFamily::FujiC41);
+    s.dye_set = oni_settings::DyeSet::FujifilmC200;
     s.separation = 1.3;
     s.print.exposure = 0.2;
     s.sharpen.amount = 2.5;
     let blank = reset_blank(&s, false);
     assert_eq!(blank.geometry, s.geometry, "the crop, the straightening and the window kept");
     assert_eq!(blank.flat_field.amount, 0.4);
-    assert_eq!(blank.separation_family, s.separation_family);
+    assert_eq!(blank.dye_set, s.dye_set);
     // Twin: the look goes back to rest, so the check sees a reset that kept too much.
     let rest = PipelineSettings::rest(ConversionMode::Negative, true);
     assert_eq!((blank.separation, blank.print.exposure, blank.sharpen), (rest.separation, rest.print.exposure, rest.sharpen));

@@ -77,6 +77,8 @@ pub(crate) struct Roll {
     aspect: f64,
     flat: FlatField,
     film: ConversionMode,
+    /// The roll's film stock by its catalogue key, its marker's until a hand picks another: its dyes.
+    pub(in crate::app) stock: Option<String>,
     capture: Capture,
     pass_order: PassOrder,
     base: Option<BasePick>,
@@ -152,6 +154,7 @@ impl Default for Roll {
             aspect: 1.5,
             flat: FlatField::default(),
             film: ConversionMode::Negative,
+            stock: None,
             capture: Capture::Camera,
             pass_order: PassOrder::Bgr,
             base: None,
@@ -200,6 +203,11 @@ impl Default for Roll {
 impl Roll {
     pub(super) fn new(require: bool) -> Roll {
         Roll { require, ..Roll::default() }
+    }
+
+    /// The stock the roll is prepared on: the one picked or its marker's, else its film type's generic one.
+    pub(super) fn stock_or_default(&self) -> Option<String> {
+        self.stock.clone().or_else(|| oni_settings::film::default_stock_id(self.film).map(str::to_string))
     }
 
     /// The frames whose preview has landed, which a check waits for before reading one.

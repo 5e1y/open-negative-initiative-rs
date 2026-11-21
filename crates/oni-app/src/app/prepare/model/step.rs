@@ -38,7 +38,7 @@ impl Step {
             Step::Film if film == ConversionMode::Digital => {
                 tr("A digital photo has no film to measure: PREPARE ROLL sets every photo of the roll as digital, its colour then set by Temperature and Tint.")
             }
-            Step::Film => tr("Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."),
+            Step::Film => tr("Choose the film type, the film stock and what the roll was digitised with. The wrong film type converts every frame of the roll wrong, and the stock matters as much: its measured dyes separate the colours of every frame."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
             Step::Flags => tr("Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."),

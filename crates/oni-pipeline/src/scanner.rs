@@ -1,10 +1,9 @@
 //! The Scanner face: the measured Frontier's table from density to display sRGB with its warmth looks,
 //! and the ONI machine, Pro's conversion on a resting Lighting moved by the Frontier's measured clicks.
 
-use crate::conversion::{M3, IDENTITY, separation_matrix};
+use crate::conversion::{M3, IDENTITY};
 use oni_render::{ColorCube, ScannerDensity, ScannerOutput, cpu};
 use oni_settings::axis::{density_axis, graduation, pipeline};
-use oni_settings::blocks::SeparationFamily;
 use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::tone::Print;
@@ -150,13 +149,15 @@ pub static ENDS: LazyLock<(f32, f32)> = LazyLock::new(|| {
     (black, white)
 });
 
-/// The family's plain matrix at the frame's own Dye Separation, no chroma kept: a negative with no
-/// crosstalk is read unmixed at zero, where the Swift machine always unmixed at 0.6.
+/// The Swift machine's unmix the Look Lab's sets were fitted through: its generic rows, each normalised to
+/// sum to one, dosed at 0.6; none on RGB passes, whose capture separated the dyes.
 pub fn separation(s: &PipelineSettings) -> M3 {
-    match (s.rgb_passes.is_none(), s.separation_family.or(SeparationFamily::resting(s.mode))) {
-        (true, Some(family)) => separation_matrix(family, s.separation),
-        _ => IDENTITY,
+    const ROWS: M3 = [[1.0000, -0.2706, -0.0076], [-0.0517, 1.0000, -0.0137], [-0.0228, -0.0723, 1.0000]];
+    if s.rgb_passes.is_some() {
+        return IDENTITY;
     }
+    let full = ROWS.map(|r| r.map(|x| x / (r[0] + r[1] + r[2])));
+    std::array::from_fn(|i| std::array::from_fn(|j| IDENTITY[i][j] + 0.6 * (full[i][j] - IDENTITY[i][j])))
 }
 
 /// The coordinates the Look Lab's sets were fitted in, the Swift machine's: one stretch of 1.3 over the

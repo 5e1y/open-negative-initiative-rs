@@ -14,6 +14,7 @@ fn folder_draft(base: &str, frames: &[&str]) -> Draft {
         id: Id::new(),
         step: "flags".into(),
         film: ConversionMode::Negative,
+        stock: None,
         capture: "camera".into(),
         pass_order: None,
         pass_offset: None,

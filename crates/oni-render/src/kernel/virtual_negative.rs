@@ -81,6 +81,17 @@ fn curve(e: f32, c: usize, row: usize, k: &VirtualNegative, table: &[V4]) -> f32
 
 /// One scene pixel to the light the camera reads through its negative; alpha kept.
 pub fn virtual_negative(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
+    let density = virtual_dyes(s, k, table);
+    let mut out = [0.0f32; 3];
+    for (dye, weight) in k.dyes.iter().zip(&k.weights) {
+        let t = 10f32.powf(-(density[0] * dye[0] + density[1] * dye[1] + density[2] * dye[2] + dye[3]));
+        out = map(out, |c, v| v + t * weight[c]);
+    }
+    with_alpha(out, s[3])
+}
+
+/// The dye amounts one scene pixel develops on the negative, which its scan reads through the dyes.
+pub fn virtual_dyes(s: V4, k: &VirtualNegative, table: &[V4]) -> V3 {
     let xyz = k.to_film.map(|row| dot(row, rgb(s)));
     let b = xyz[0] + xyz[1] + xyz[2];
     let safe = b.max(1e-10);
@@ -88,11 +99,5 @@ pub fn virtual_negative(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
     let log = map(raw, |_, v| (v.max(0.0) + 1e-10).log10());
     let first = map(log, |c, e| curve(e, c, 0, k, table));
     let inhibited = map(log, |m, e| e - (0..3).map(|d| first[d] * k.couplers[d][m]).sum::<f32>());
-    let density = map(inhibited, |c, e| curve(e, c, 1, k, table));
-    let mut out = [0.0f32; 3];
-    for (dye, weight) in k.dyes.iter().zip(&k.weights) {
-        let t = 10f32.powf(-(density[0] * dye[0] + density[1] * dye[1] + density[2] * dye[2] + dye[3]));
-        out = map(out, |c, v| v + t * weight[c]);
-    }
-    with_alpha(out, s[3])
+    map(inhibited, |c, e| curve(e, c, 1, k, table))
 }

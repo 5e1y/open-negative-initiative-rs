@@ -2,8 +2,7 @@
 //! or sidecar film, and the ringed project.
 
 use super::*;
-use oni_settings::blocks::SeparationFamily;
-use oni_settings::film::{FilmStockKind, dye_family};
+use oni_settings::film::FilmStockKind;
 
 impl Roll {
     /// The roll as the sidebar keys its fields: its folder, else its film, as a folder's film is
@@ -34,9 +33,12 @@ impl State {
         film_stock(marker.or(self.store.settings().film.as_ref())?.stock.as_deref())
     }
 
-    /// The dyes the open photo's roll stock names, which its Dye Separation rests on.
-    pub(in crate::app) fn open_dyes(&self) -> Option<SeparationFamily> {
-        self.open_stock().and_then(|k| dye_family(k.id))
+    /// The measured dyes the open photo's stock names, which its Dye Separation rests on: a digital photo its film's.
+    pub(in crate::app) fn open_dyes(&self) -> Option<oni_settings::DyeSet> {
+        if let Some(film) = self.store.settings().film() {
+            return Some(film.stock.dye_set());
+        }
+        self.open_stock().and_then(|k| oni_settings::dyes::dye_set(k.id))
     }
 
     /// The archive's band the gallery stands on: the folder of the anchor shown, else the opened
@@ -57,6 +59,11 @@ impl State {
     }
 
     /// The roll of `path`'s folder in the archive, as `roll` reads the gallery's.
+    /// The stock of the roll `path` lies in.
+    pub(in crate::app) fn roll_stock_at(&self, path: &str) -> Option<String> {
+        self.roll_at(path).and_then(|r| r.film.stock)
+    }
+
     pub(super) fn roll_at(&self, path: &str) -> Option<Roll> {
         Self::roll_of(self.archive.as_ref()?.band(&oni_library::paths::parent(path))?)
     }

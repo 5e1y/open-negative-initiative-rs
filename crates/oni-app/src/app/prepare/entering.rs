@@ -134,6 +134,8 @@ impl Ctl {
     pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, draft: Option<oni_settings::prepare::Draft>, first: bool, aspect: Option<f64>) {
         // Only the first frame and a draft group the roll's files.
         let known = if first || draft.is_some() { self.known() } else { passes::Known::new() };
+        // The roll's stock as its folder's marker names it, else as the first frame's sidecar does.
+        let stock = if first { self.state.borrow().roll_stock_at(path).or(read.film.as_ref().and_then(|f| f.stock.clone())) } else { None };
         let (waited, grouped) = {
             let kept = self.remembered_flat_field();
             let mut s = self.state.borrow_mut();
@@ -170,6 +172,7 @@ impl Ctl {
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
                 // A slide once read as its own negative comes back as the positive it is.
                 r.film = if read.inverted_source { ConversionMode::Positive } else { read.mode };
+                r.stock = stock.clone();
                 let capture = if read.rgb_passes.is_some() {
                     Capture::RgbPasses
                 } else if read.decoded_from_mosaic {

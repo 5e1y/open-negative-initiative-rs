@@ -60,8 +60,8 @@ fields! {
     Gains => "gains", gains;
     DensityCeiling => "densityCeiling", density_ceiling;
     Separation => "separation", separation;
-    SeparationFamily => "separationFamily", separation_family;
     SeparationByHand => "separationByHand", separation_by_hand;
+    DyeSet => "dyeSet", dye_set;
     FlatField => "flatField", flat_field;
     Corrections => "corrections", corrections;
     Levels => "levels", levels;

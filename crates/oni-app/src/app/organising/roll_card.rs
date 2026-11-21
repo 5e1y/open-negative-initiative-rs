@@ -1,19 +1,18 @@
 //! The info sidebar's roll card, beyond Swift: a folder of photos is a roll, its stock writes the
-//! dye family it names on every frame, the card reads the dyes its frames unmix, and an unmeasured
+//! measured dyes it names on every frame, the card reads the dyes its frames unmix, and an unmeasured
 //! roll says so.
 
 use super::*;
-use crate::app::roll_tab::{FAMILIES, family_name};
-use oni_settings::blocks::SeparationFamily;
-use oni_settings::film::dye_family;
-use oni_settings::PipelineSettings;
+use crate::app::roll_tab::dye_set_name;
+use oni_settings::dyes::dye_set;
+use oni_settings::{DyeSet, PipelineSettings};
 
-/// What the roll card reads off its frames: whether one is measured, and the dyes they unmix in
-/// the Dyes tabs' order.
+/// What the roll card reads off its frames: whether one is measured, and the measured dyes they unmix in the
+/// sets' order.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(in crate::app) struct Frames {
     pub measured: bool,
-    pub dyes: Vec<SeparationFamily>,
+    pub sets: Vec<DyeSet>,
 }
 
 impl Frames {
@@ -21,22 +20,19 @@ impl Frames {
         let mut out = Frames::default();
         for s in settings {
             out.measured |= measured_or_slide(&s);
-            if let Some(family) = unmixed(&s).filter(|f| !out.dyes.contains(f)) {
-                out.dyes.push(family);
+            if let Some(set) = unmixed(&s).filter(|set| !out.sets.contains(set)) {
+                out.sets.push(set);
             }
         }
-        out.dyes.sort_by_key(|f| FAMILIES.iter().position(|g| g == f));
+        out.sets.sort_by_key(|s| DyeSet::ALL.iter().position(|t| t == s));
         out
     }
 }
 
-/// The family a frame's render unmixes, as the pipeline runs it: none in black and white, on a
-/// slide, on RGB passes or at a dose of zero.
-fn unmixed(s: &PipelineSettings) -> Option<SeparationFamily> {
-    if s.mode.is_monochrome() || oni_pipeline::conversion::separation_dose(s) <= 0.0 {
-        return None;
-    }
-    s.separation_family.or(SeparationFamily::resting(s.mode))
+/// The measured dyes a frame's render unmixes, as the pipeline runs it: none in black and white, on a slide,
+/// on RGB passes or at a dose of zero.
+fn unmixed(s: &PipelineSettings) -> Option<DyeSet> {
+    oni_pipeline::conversion::stock_dyes(s).map(|_| s.dye_set)
 }
 
 impl State {
@@ -44,7 +40,7 @@ impl State {
     /// A hand moving them moves its roll's with them.
     pub(in crate::app) fn open_bearing(&self) -> String {
         let s = self.store.settings();
-        format!("{:?}", self.open_path().map(|p| (p, s.separation_family, unmixed(s), measured_or_slide(s))))
+        format!("{:?}", self.open_path().map(|p| (p, s.dye_set, unmixed(s), measured_or_slide(s))))
     }
 
     /// The photos a folder's marker gathers: every frame lying in it, passes and trashed photos aside.
@@ -57,58 +53,59 @@ impl State {
     }
 }
 
-/// The family a stock names written on a frame; a black-and-white stock leaves it alone.
-pub(super) fn dyed(settings: &mut PipelineSettings, family: Option<SeparationFamily>) {
-    if let Some(family) = family {
-        settings.separation_family = Some(family);
+/// The measured dyes a stock names written on a frame; a black-and-white stock or a slide's leaves them alone.
+pub(in crate::app) fn dyed(settings: &mut PipelineSettings, stock: Option<&str>) {
+    if let Some(set) = stock.and_then(dye_set) {
+        settings.dye_set = set;
     }
 }
 
 /// The card's words under a roll's stock, then its fix key's: the dyes the frames unmix, else a warning
 /// and the stock's dyes offered when they differ; both empty while the frames read or none unmixes.
-pub(super) fn dyes_note(stock: Option<&str>, held: Option<&[SeparationFamily]>) -> (String, String) {
-    let Some(held) = held.filter(|h| !h.is_empty()) else { return Default::default() };
-    match stock.and_then(dye_family) {
-        Some(named) if held != [named] => (
-            tr!("Frames set to {family} dyes, but this film stock has {named} dyes", family = names(held.iter().filter(|f| **f != named)), named = family_name(named)),
-            tr!("Use {named} Dyes", named = family_name(named)),
+pub(super) fn dyes_note(stock: Option<&str>, held: Option<&Frames>) -> (String, String) {
+    let Some(held) = held.filter(|h| !h.sets.is_empty()) else { return Default::default() };
+    let names = |sets: &mut dyn Iterator<Item = &DyeSet>| sets.map(|s| dye_set_name(*s)).collect::<Vec<_>>().join(", ");
+    match stock.and_then(dye_set) {
+        Some(named) if held.sets != [named] => (
+            tr!("Frames set to {family} dyes, but this film stock has {named} dyes", family = names(&mut held.sets.iter().filter(|s| **s != named)), named = dye_set_name(named)),
+            tr!("Use {named} Dyes", named = dye_set_name(named)),
         ),
-        _ => (tr!("Dyes: {family}", family = names(held.iter())), String::new()),
+        _ => (tr!("Measured dyes: {dyes}", dyes = names(&mut held.sets.iter())), String::new()),
     }
 }
 
-fn names<'a>(families: impl Iterator<Item = &'a SeparationFamily>) -> String {
-    families.map(|f| family_name(*f)).collect::<Vec<_>>().join(", ")
-}
-
 impl Ctl {
-    /// `setFilmStock`, and beyond Swift the dye family it names on every frame of the roll: one
-    /// gallery step with the marker, a family picked by hand overwritten, the dose kept.
+    /// `setFilmStock`, and beyond Swift the measured dyes it names on every frame of the roll: one gallery
+    /// step with the marker, the dose kept.
     pub(in crate::app) fn set_roll_stock(self: &Rc<Self>, id: &str) {
         self.update_roll(tr("Set Film Stock"), |f| f.stock = Some(id.to_string()));
     }
 
     /// The stock of a roll New Roll just made writes its dyes on the frames moved in.
     pub(in crate::app) fn dyes_follow(self: &Rc<Self>, folder: &str, stock: &str) {
-        let Some(family) = dye_family(stock) else { return };
+        if dye_set(stock).is_none() {
+            return;
+        }
         let members = self.state.borrow().folder_frames(folder);
-        self.lay_dyes(&members, family, tr("Set Film Stock"));
+        self.lay_dyes(&members, stock, tr("Set Film Stock"));
     }
 
     /// The card's fix: the dyes the roll's stock names written again on every frame of the roll.
     pub(in crate::app) fn stock_dyes_laid(self: &Rc<Self>) {
         let Some(roll) = self.state.borrow().roll() else { return };
-        let Some(family) = roll.film.stock.as_deref().and_then(dye_family) else { return };
+        let Some(stock) = roll.film.stock.clone() else { return };
+        let Some(set) = dye_set(&stock) else { return };
+        let named = dye_set_name(set);
         let members = match &roll.marker {
             Some(folder) => self.state.borrow().folder_frames(folder),
             None => roll.paths,
         };
-        self.lay_dyes(&members, family, &tr!("Use {named} Dyes", named = family_name(family)));
+        self.lay_dyes(&members, &stock, &tr!("Use {named} Dyes", named = named));
     }
 
-    /// `family` written on `members` as one gallery step, a family picked by hand overwritten, the dose kept.
-    fn lay_dyes(self: &Rc<Self>, members: &[String], family: SeparationFamily, label: &str) {
-        self.gesture_as(label, members, |store| store.lay_roll(members, None, |s| dyed(s, Some(family)), label));
+    /// The dyes `stock` names written on `members` as one gallery step, the dose kept.
+    fn lay_dyes(self: &Rc<Self>, members: &[String], stock: &str, label: &str) {
+        self.gesture_as(label, members, |store| store.lay_roll(members, None, |s| dyed(s, Some(stock)), label));
     }
 
     /// A roll marker a gesture, an undo or a redo wrote: the folder's roll in the gallery and the navigator.
@@ -197,37 +194,50 @@ pub(in crate::app) fn unprepared(folder: &std::path::Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{Frames, dyes_note, measured_or_slide};
-    use oni_settings::blocks::SeparationFamily::{self, FujiC41, GenericC41, KodakC41};
-    use oni_settings::{ConversionMode, PipelineSettings};
+    use oni_settings::{ConversionMode, DyeSet, PipelineSettings};
 
-    fn negative(family: Option<SeparationFamily>) -> PipelineSettings {
-        PipelineSettings { separation_family: family, ..PipelineSettings::rest(ConversionMode::Negative, true) }
+    fn negative(set: DyeSet) -> PipelineSettings {
+        PipelineSettings { dye_set: set, ..PipelineSettings::rest(ConversionMode::Negative, true) }
     }
 
     #[test]
-    fn the_card_reads_the_dyes_the_frames_unmix_in_the_tabs_order() {
-        let slide = PipelineSettings { separation_family: Some(SeparationFamily::E6), ..PipelineSettings::rest(ConversionMode::Positive, true) };
-        let grey = PipelineSettings { separation_family: Some(FujiC41), ..PipelineSettings::rest(ConversionMode::Monochrome, true) };
-        let read = Frames::read([negative(None), negative(Some(KodakC41)), negative(Some(KodakC41)), slide, grey].into_iter());
-        assert_eq!(read.dyes, [KodakC41, GenericC41], "a frame naming none unmixes its mode's; a slide and a grey none");
+    fn the_card_reads_the_dyes_the_frames_unmix_in_the_sets_order() {
+        let slide = PipelineSettings::rest(ConversionMode::Positive, true);
+        let grey = PipelineSettings { dye_set: DyeSet::FujifilmC200, ..PipelineSettings::rest(ConversionMode::Monochrome, true) };
+        let read = Frames::read([negative(DyeSet::KodakGold200), negative(DyeSet::GenericC41), negative(DyeSet::GenericC41), slide, grey].into_iter());
+        assert_eq!(read.sets, [DyeSet::GenericC41, DyeSet::KodakGold200], "a slide and a grey unmix none");
         assert!(read.measured, "a slide asks for no measure");
         // Twin: a frame dosed at zero by hand unmixes nothing, and no slide leaves the roll unmeasured.
-        let zero = PipelineSettings { separation: 0.0, separation_by_hand: true, ..negative(Some(FujiC41)) };
-        assert_eq!(Frames::read([zero, negative(Some(KodakC41))].into_iter()), Frames { measured: false, dyes: vec![KodakC41] });
+        let zero = PipelineSettings { separation: 0.0, separation_by_hand: true, ..negative(DyeSet::FujifilmC200) };
+        assert_eq!(Frames::read([zero, negative(DyeSet::KodakGold200)].into_iter()), Frames { measured: false, sets: vec![DyeSet::KodakGold200] });
     }
 
     #[test]
     fn the_card_warns_of_dyes_off_the_stocks_and_offers_the_stocks() {
         let fujicolor = Some("fujifilm-fujicolor");
         let quiet = |text: &str| (text.to_string(), String::new());
-        assert_eq!(dyes_note(fujicolor, Some(&[FujiC41])), quiet("Dyes: Fuji"));
-        // Twin: frames on Kodak under a Fuji stock warn, naming both, and offer the stock's.
-        let warned = ("Frames set to Kodak dyes, but this film stock has Fuji dyes".to_string(), "Use Fuji Dyes".to_string());
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41])), warned);
-        assert_eq!(dyes_note(fujicolor, Some(&[KodakC41, FujiC41])), warned, "only the frames off the stock's are named");
-        assert_eq!(dyes_note(None, Some(&[GenericC41])), quiet("Dyes: Generic"));
+        let on = |sets: &[DyeSet]| Frames { sets: sets.to_vec(), ..Frames::default() };
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::FujifilmC200]))), quiet("Measured dyes: Fujifilm C200"));
+        // Twin: frames on Gold under a Fujicolor stock warn, naming both, and offer the stock's.
+        let warned = ("Frames set to Kodak Gold 200 dyes, but this film stock has Fujifilm C200 dyes".to_string(), "Use Fujifilm C200 Dyes".to_string());
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200]))), warned);
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200, DyeSet::FujifilmC200]))), warned, "only the frames off the stock's are named");
+        assert_eq!(dyes_note(None, Some(&on(&[DyeSet::GenericC41]))), quiet("Measured dyes: Generic C-41"));
         assert_eq!(dyes_note(fujicolor, None), quiet(""), "nothing is said while the frames read");
-        assert_eq!(dyes_note(fujicolor, Some(&[])), quiet(""), "nor when no frame unmixes");
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[]))), quiet(""), "nor when no frame unmixes");
+    }
+
+    #[test]
+    fn a_stock_writes_its_measured_dyes_and_black_and_white_none() {
+        let mut s = negative(DyeSet::KodakGold200);
+        super::dyed(&mut s, Some("fujifilm-superia"));
+        assert_eq!(s.dye_set, DyeSet::FujifilmXtra400);
+        super::dyed(&mut s, Some("lucky-color200"));
+        assert_eq!(s.dye_set, DyeSet::GenericC41, "a stock no profile measures lays the generic set");
+        // Twin: a black-and-white stock leaves the set as it was.
+        let before = s.clone();
+        super::dyed(&mut s, Some("ilford-hp5"));
+        assert_eq!(s, before);
     }
 
     #[test]
