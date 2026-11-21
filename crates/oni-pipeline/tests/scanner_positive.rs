@@ -5,6 +5,7 @@ use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{Inputs, Pipeline, scanner};
 use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::scanner::ScannerClicks;
+use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const W: u32 = 128;
@@ -26,7 +27,7 @@ fn scene() -> Vec<[f32; 4]> {
 /// The machine's settings as the Scanner face built them before slides entered the look under their rest.
 fn former(frame: &PipelineSettings) -> PipelineSettings {
     let mut out = scanner::on_oni_machine(frame).expect("the Scanner face");
-    out.print.exposure = 0.0;
+    out.print.exposure = Print::exposure_at(0.0, Print::resting_exposure(frame.mode));
     out
 }
 

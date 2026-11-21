@@ -36,10 +36,12 @@ pub fn finite(p: [f32; 3]) -> bool {
     !p.iter().any(|v| v.is_nan()) && p[0].min(p[1]).min(p[2]).is_finite()
 }
 
-/// The settings a press reads: Lighting at rest but for its filters, so a press does not move with the light dialled.
+/// The settings a press reads: Lighting's curve taking no exposure and nothing but its filters, so a press does not move
+/// with the light dialled.
 pub fn unlit(s: &PipelineSettings) -> PipelineSettings {
     let mut out = s.clone();
-    out.print = Print { red: s.print.red, green: s.print.green, blue: s.print.blue, ..Print::default() };
+    let exposure = Print::exposure_at(0.0, Print::resting_exposure(s.mode));
+    out.print = Print { exposure, red: s.print.red, green: s.print.green, blue: s.print.blue, ..Print::default() };
     out
 }
 

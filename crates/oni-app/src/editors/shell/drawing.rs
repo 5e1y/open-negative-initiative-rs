@@ -187,7 +187,7 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
     g.set_saturation_modified(!view.saturation.is_neutral() || beside[3]);
     g.set_grain_modified(!view.grain.curve.rests() || beside[4]);
 
-    let key = (view.print, monochrome, sizes[Plot::Print as usize]);
+    let key = (view.print.on_curve(oni_settings::tone::Print::resting_exposure(view.mode)), monochrome, sizes[Plot::Print as usize]);
     if drawn.print.as_ref() != Some(&key) {
         g.set_print_lines(lines(&print::drawing(&key.0, monochrome, key.2)));
         drawn.print = Some(key);

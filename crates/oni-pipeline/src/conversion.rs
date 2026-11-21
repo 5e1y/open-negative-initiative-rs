@@ -65,7 +65,7 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
 
 /// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
 fn unprinted(s: &PipelineSettings) -> Stage47 {
-    let print = &s.print;
+    let print = &s.print.on_curve(Print::resting_exposure(s.mode));
     let mono = s.mode.is_monochrome();
     let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
@@ -123,7 +123,7 @@ fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Sta
         blue: window(2),
         low_points: [0.25; 3],
         high_points: [0.75; 3],
-        print_stops: s.print.exposure - Print::resting_exposure(s.mode),
+        print_stops: k.print_stops - Print::resting_exposure(s.mode),
         hunt_contrast: 0.0,
         follow: 1.0,
         decompression,

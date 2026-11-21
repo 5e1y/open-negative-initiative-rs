@@ -47,7 +47,7 @@ fn plain_37() -> Value {
 
 #[test]
 fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_dropped() {
-    assert_eq!(VERSION, chain::PAPER_VERSION);
+    assert!(VERSION >= chain::PAPER_VERSION);
     let stored = plain_37();
     let before: PipelineSettings = serde_json::from_value(stored["settings"].clone()).unwrap();
     let doc = read(&stored);
@@ -55,7 +55,8 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     let reference = VirtualStock::KodakPortra800.reference();
     assert_eq!((s.mode, s.virtual_film.map(|f| (f.stock, f.exposure))), (ConversionMode::Digital, Some((VirtualStock::KodakPortra800, 0.0))));
     assert_eq!((s.gains.stops, s.levels, s.dye_set, s.separation), (reference.stops, reference.levels(), VirtualStock::KodakPortra800.dye_set(), 1.0));
-    assert_eq!(s.print.exposure, 0.4 + Print::RESTING_EXPOSURE, "Lighting's move kept on the negative's rest");
+    let rest = Print::RESTING_EXPOSURE;
+    assert_eq!(s.print.exposure, Print::exposure_at(0.4 + rest, rest), "Lighting's move kept on the negative's rest, on its curve");
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
     assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, before.grain, before.halation));
     assert_eq!((s.lens_correction, s.geometry, &s.corrections), (before.lens_correction, before.geometry, &before.corrections));
@@ -105,7 +106,7 @@ fn a_film_frame_of_format_37_opens_as_it_was() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     (s.print.exposure, s.gains.stops) = (0.9, [0.2, 0.0, -0.1]);
     let read_back = read(&at(&s, 37)).settings;
-    assert_eq!(read_back, s);
+    assert_eq!(read_back, migrate::exposure::caught_up(37, s.clone()));
     // Twin: the same frame as a digital photo moves onto its film.
     let digital = PipelineSettings { mode: ConversionMode::Digital, ..s };
     assert_ne!(read(&at(&digital, 37)).settings.gains, digital.gains);

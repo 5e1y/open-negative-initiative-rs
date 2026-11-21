@@ -70,6 +70,8 @@ pub const STOCK_DYES_VERSION: i64 = 39;
 pub const STOCK_SPLIT_VERSION: i64 = 40;
 /// The version a negative came to print on a colour paper: every photo of an earlier one stays on ONI's own print.
 pub const PAPER_VERSION: i64 = 41;
+/// The version the print's curve came to take Exposure's distance from its rest twice: each value's distance halved.
+pub const EXPOSURE_GEAR_VERSION: i64 = 42;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

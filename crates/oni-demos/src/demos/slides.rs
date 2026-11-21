@@ -44,7 +44,7 @@ pub struct Slides {
 
 /// Lighting: Exposure, then Shadows, each to the right, the photograph brightening.
 pub fn lighting() -> Slides {
-    let moves = [Move { field: Field::Exposure, by: 0.22 }, Move { field: Field::Shadows, by: 0.3 }];
+    let moves = [Move { field: Field::Exposure, by: 0.11 }, Move { field: Field::Shadows, by: 0.3 }];
     // Both brighten every pixel: fewer colours and a wider tolerance pay for the redrawn photograph.
     Slides::new("lighting", moves, Tuning { tolerance: 22, colours: 88 })
 }

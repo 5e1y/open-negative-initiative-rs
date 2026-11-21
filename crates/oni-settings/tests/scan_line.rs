@@ -73,7 +73,8 @@ fn a_line_of_format_22_and_one_kept_under_exif_release_the_scan_s_facts() {
         answering(&|| Some(z_f()), |f| assert_eq!(migrate::file_with(&photo, f), Ok(Outcome::Migrated { from: version })));
         let read = sidecar::read(&photo, true).unwrap();
         assert_eq!(read.exif, released(), "format {version}: the lens differing from the scan's and every clear stay");
-        assert_eq!((read.settings.print.exposure, read.writable), (0.3, true), "format {version}");
+        let exposure = migrate::exposure::caught_up(version, edited().settings).print.exposure;
+        assert_eq!((read.settings.print.exposure, read.writable), (exposure, true), "format {version}");
         // Twin: a scan of another camera releases nothing of the camera.
         let other = laid(&dir.join("other"), &stored_at(&edited(), version));
         let leica = ExifMetadata { camera: "LEICA CAMERA AG LEICA Q3".into(), ..z_f() };
@@ -137,7 +138,7 @@ fn a_settings_document_of_format_22_reads_its_settings_as_they_stand() {
     let mut d = edited();
     d.settings.scanner = oni_settings::scanner::ScannerClicks::new(3, -1, 0, 0, 0);
     let read = migrate::document(&stored_at(&d, chain::NAMED_VERSION)).unwrap();
-    assert_eq!(read.document.settings, d.settings);
+    assert_eq!(read.document.settings, migrate::exposure::caught_up(chain::NAMED_VERSION, d.settings.clone()));
     // Twin: read as a format 21 document, its keypad's steps would be taken for whole units.
     let unnamed = serde_json::to_vec(&reshape::as_stored(&Document { version: chain::NAMED_VERSION, ..d.clone() }, chain::STROKES_ON_SCAN_VERSION)).unwrap();
     let mut misread: serde_json::Value = serde_json::from_slice(&unnamed).unwrap();
