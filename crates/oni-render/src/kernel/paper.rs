@@ -1,5 +1,5 @@
 //! The paper: an enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
-//! curves; the print's dyes are read under D50, then ONI's window lays its black on 0, its white on 1, its grey placed.
+//! curves; the print's dyes are read under D50, then ONI's window lays its black on 0 and its white on 1.
 
 use super::*;
 
@@ -42,10 +42,9 @@ pub struct Paper {
     pub print: &'static [V4],
     /// Per wavelength the print reflects: D50 read by the 1931 observer, adapted to D65, in Rec. 2020.
     pub view: &'static [V3],
-    /// Each channel's window on the print's light: the light printing black, the one printing white, its gamma.
+    /// Each channel's window on the print's light: the light printing black and the one printing white.
     pub window_black: V3,
     pub window_white: V3,
-    pub window_gamma: V3,
     /// A black and white print reads its window on its luma, one window for its three channels.
     pub window_luma: bool,
 }
@@ -64,7 +63,6 @@ impl Paper {
             [self.curve_low, self.curve_step, 0.0, 0.0],
             v3(self.window_black, if self.window_luma { 1.0 } else { 0.0 }),
             v3(self.window_white, 0.0),
-            v3(self.window_gamma, 0.0),
         ];
         let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
         rows.extend(self.negative.iter().copied().chain(pad(self.negative.len())));
@@ -112,11 +110,11 @@ impl Paper {
         out
     }
 
-    /// The print's light through its window, still linear: a scale of the paper's light, its black's offset felt in the
-    /// deep shadows alone, where on the display code the same offset steepens every shadow (2.5 against 1.75 at 0.02).
+    /// The print's light through its window, still linear: a scale of the paper's light keeps its slope, its black's
+    /// offset felt in the deepest shadows alone, where on the display code the same offset would steepen every shadow.
     pub fn windowed(&self, light: V3) -> V3 {
         let read = if self.window_luma { [dot(light, LUMA); 3] } else { light };
-        map(read, |c, v| ((v - self.window_black[c]) / (self.window_white[c] - self.window_black[c])).max(0.0).powf(self.window_gamma[c]))
+        map(read, |c, v| ((v - self.window_black[c]) / (self.window_white[c] - self.window_black[c])).max(0.0))
     }
 
     /// The print's light, before its window.
@@ -161,7 +159,6 @@ mod tests {
             view: &VIEW,
             window_black: [0.0; 3],
             window_white: [1.0; 3],
-            window_gamma: [1.0; 3],
             window_luma: false,
         }
     }
@@ -193,17 +190,17 @@ mod tests {
     }
 
     #[test]
-    fn the_window_lays_each_channels_black_on_zero_its_white_on_one_and_its_grey_by_its_gamma() {
-        let k = Paper { window_black: [0.01, 0.02, 0.03], window_white: [0.8, 0.85, 0.9], window_gamma: [1.1, 1.0, 0.9], ..narrow() };
+    fn the_window_lays_each_channels_black_on_zero_and_its_white_on_one() {
+        let k = Paper { window_black: [0.01, 0.02, 0.03], window_white: [0.8, 0.85, 0.9], ..narrow() };
         assert_eq!(k.windowed([0.01, 0.02, 0.03]), [0.0; 3]);
         let white = k.windowed([0.8, 0.85, 0.9]);
         assert!(white.iter().all(|v| (v - 1.0).abs() < 1e-6), "{white:?}");
         let grey = k.windowed([0.2; 3]);
-        let expected = [0.19 / 0.79, 0.18 / 0.83, 0.17 / 0.87].iter().zip([1.1, 1.0, 0.9]).map(|(u, g): (&f32, f32)| u.powf(g)).collect::<Vec<_>>();
-        assert!((0..3).all(|c| (grey[c] - expected[c]).abs() < 1e-6), "{grey:?}");
+        let expected = [0.19 / 0.79, 0.18 / 0.83, 0.17 / 0.87];
+        assert!((0..3).all(|c| (grey[c] - expected[c]).abs() < 1e-6), "a straight line between: {grey:?}");
         assert_eq!(k.windowed([0.0; 3]), [0.0; 3], "under the black held at black");
         // One window on the luma: a coloured light reads its luma on every channel.
-        let luma = Paper { window_luma: true, window_black: [0.0; 3], window_white: [1.0; 3], window_gamma: [1.0; 3], ..narrow() };
+        let luma = Paper { window_luma: true, ..narrow() };
         let read = luma.windowed([0.5, 0.2, 0.1]);
         assert!(read.iter().all(|v| (v - dot([0.5, 0.2, 0.1], LUMA)).abs() < 1e-7), "{read:?}");
         // Twin: the channels' own windows keep the colour.

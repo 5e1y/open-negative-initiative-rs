@@ -9,7 +9,6 @@ struct Params {
     curve_axis: vec4<f32>,
     window_black_luma: vec4<f32>,
     window_white: vec4<f32>,
-    window_gamma: vec4<f32>,
     negative: array<vec4<f32>, 81>,
     exposure: array<vec4<f32>, 81>,
     dichroic: array<vec4<f32>, 81>,
@@ -48,6 +47,6 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
     }
     let black = P.window_black_luma.xyz;
     let read = select(out, vec3<f32>(dot(out, LUMA)), P.window_black_luma.w > 0.5);
-    let windowed = pow(max((read - black) / (P.window_white.xyz - black), vec3<f32>(0.0)), P.window_gamma.xyz);
+    let windowed = max((read - black) / (P.window_white.xyz - black), vec3<f32>(0.0));
     return vec4<f32>(windowed, s.a);
 }

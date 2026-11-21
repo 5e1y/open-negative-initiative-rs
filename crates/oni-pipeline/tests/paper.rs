@@ -125,7 +125,7 @@ fn mono() -> PipelineSettings {
 
 /// The paper's print without its window, as it printed before the window laid its anchors.
 fn unwindowed(k: &Stage47) -> Stage47 {
-    Stage47 { paper: k.paper.map(|p| Paper { window_black: [0.0; 3], window_white: [1.0; 3], window_gamma: [1.0; 3], window_luma: false, ..p }), ..*k }
+    Stage47 { paper: k.paper.map(|p| Paper { window_black: [0.0; 3], window_white: [1.0; 3], window_luma: false, ..p }), ..*k }
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn the_anchors_print_black_white_and_the_grey_neutral() {
     for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", dose_zero)] {
         let k = conversion::stage47(&s);
         let p = k.paper.expect(label);
-        println!("{label}: window black {:?}, white {:?}, gamma {:?}", p.window_black, p.window_white, p.window_gamma);
+        println!("{label}: window black {:?}, white {:?}", p.window_black, p.window_white);
         let [black, white, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
         println!("{label}: black {black:?}, white {white:?}, grey {grey:?} (ONI's print {:.5})", *GREY_PRINT);
         assert!((0..3).all(|c| black[c].abs() < 1e-4), "{label}: the black prints black: {black:?}");
@@ -157,6 +157,32 @@ fn the_anchors_print_black_white_and_the_grey_neutral() {
     let scan = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock.kernel, &stock.table);
     let printed = cpu::stage47(scan, &conversion::stage47(&s));
     assert!((0..3).all(|c| (printed[c] - *GREY_PRINT).abs() < 2e-3), "{printed:?}");
+}
+
+#[test]
+fn the_enlarger_rests_where_the_window_lays_the_grey_on_a_plain_raws() {
+    let dose_zero = PipelineSettings { separation: 0.0, ..prepared_negative() };
+    for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", dose_zero)] {
+        let k = conversion::stage47(&s);
+        let p = k.paper.expect(label);
+        let anchors = paper::anchors(&s, k.dyes.as_ref());
+        let grey = p.windowed(p.printed(anchors[2]));
+        let off = grey.iter().map(|g| (g - *GREY_PRINT).abs()).fold(0.0f32, f32::max);
+        println!("{label}: the windowed grey {grey:?}, within {off:.1e} of {:.5}; filtration {:?}", *GREY_PRINT, conversion::printing(&s).unwrap().filtration);
+        // Measured within 4e-7: the solve's tolerance in log light.
+        assert!(off < 2e-6, "{label}: {grey:?}");
+        // Twin: the enlarger set where the bare print's grey is a plain RAW's leaves the window's grey near 0.49.
+        let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
+        let (mut low, mut high) = (p.scale.ln() - 10.0, p.scale.ln() + 10.0);
+        for _ in 0..80 {
+            let mid = 0.5 * (low + high);
+            if luma(Paper { scale: mid.exp(), ..p }.printed(anchors[2])) > *GREY_PRINT { low = mid } else { high = mid }
+        }
+        let bare = paper::anchored(Paper { scale: (0.5 * (low + high)).exp(), ..p }, &anchors, s.mode == ConversionMode::Monochrome);
+        let lifted = bare.windowed(bare.printed(anchors[2]));
+        println!("{label}: set on the bare print, the windowed grey {lifted:?}, {:+.3} stop of exposure apart", (bare.scale / p.scale).log2());
+        assert!(lifted.iter().all(|g| *g > *GREY_PRINT + 0.05), "{label}: {lifted:?}");
+    }
 }
 
 /// `s` moved by `f`, its anchors printed.
@@ -249,8 +275,8 @@ fn temperature_warms_the_grey_through_the_enlarger_and_the_whites_stay_white() {
     let off_white = (0..3).map(|c| (white[c] - 1.0).abs()).fold(0.0f32, f32::max);
     let off_black = (0..3).map(|c| black[c].abs()).fold(0.0f32, f32::max);
     println!("the whites within {off_white:.4} of white, the blacks within {off_black:.4} of black");
-    // Measured: the whites within 0.027 of white, the blacks within 0.0035 of black, a stop of warmth on Portra Endura.
-    assert!(off_white < 0.03 && off_black < 0.005, "{white:?} {black:?}");
+    // Measured: the whites within 0.034 of white, the blacks within 0.0075 of black, a stop of warmth on Portra Endura.
+    assert!(off_white < 0.04 && off_black < 0.01, "{white:?} {black:?}");
     let filtration = |t: &PipelineSettings| conversion::printing(t).unwrap().filtration;
     let mut warmed = s.clone();
     warmer(&mut warmed);
@@ -258,13 +284,11 @@ fn temperature_warms_the_grey_through_the_enlarger_and_the_whites_stay_white() {
     println!("filtration at rest {was:?}, warmer {now:?}");
     // More cyan against magenta, less yellow: the least filter stays at none.
     assert!(was[0] == 0.0 && now[1] - now[0] < was[1] - was[0] - 5.0 && now[2] - now[1] < was[2] - was[1] - 5.0, "{was:?} {now:?}");
-    // Twin: the window laid again on the moved filtration neutralises the warmth on the grey.
-    let k = conversion::stage47(&warmed);
-    let moved = k.paper.unwrap();
-    let anchors = paper::anchors(&warmed, k.dyes.as_ref());
-    let rewindowed = Stage47 { paper: Some(paper::anchored(moved, &anchors, false)), ..k };
-    let neutralised = cpu::stage47(grey_scan(&s), &rewindowed);
-    assert!((neutralised[0] - neutralised[2]).abs() < 1e-3, "{neutralised:?}");
+    // Twin: the same warmth as a gain on the print's channels, half a stop on red and blue, takes the whites off white.
+    let k = conversion::stage47(&s);
+    let gained = Stage47 { paper: k.paper.map(|p| Paper { window_white: [p.window_white[0] * 0.5f32.sqrt(), p.window_white[1], p.window_white[2] * 2f32.sqrt()], ..p }), ..k };
+    let white = cpu::stage47(anchor_scans(&s)[1], &gained);
+    assert!((white[0] - 1.0).abs() > 0.3, "{white:?}");
 }
 
 #[test]
@@ -329,6 +353,6 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let k = conversion::stage47(&digital());
     let p = k.paper.unwrap();
     let alone = whole(&mut g, &Image::new(&source).then(stages::paper(&p)));
-    let steeper = p.window_gamma.map(|g| g * 1.05);
-    judge("paper alone", &alone, &mapped(&pixels, |q| cpu::paper(q, &p)), &mapped(&pixels, |q| cpu::paper(q, &Paper { window_gamma: steeper, ..p })));
+    let wider = p.window_white.map(|w| w * 1.05);
+    judge("paper alone", &alone, &mapped(&pixels, |q| cpu::paper(q, &p)), &mapped(&pixels, |q| cpu::paper(q, &Paper { window_white: wider, ..p })));
 }

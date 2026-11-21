@@ -90,39 +90,73 @@ pub fn anchors(s: &PipelineSettings, separation: Option<&DyeSeparation>) -> [V3;
     above.map(|a| separation.map_or(a, |d| d.separated(a)))
 }
 
-/// `p` laid through the window its anchors print on it: each channel's black on 0, its white on 1, its gamma putting
-/// the grey on a plain RAW's; a black and white print reads one window on its luma.
+/// Each channel's black, white and grey as `p` prints its anchors.
+fn printed_anchors(p: &Paper, anchors: &[V3; 3]) -> [V3; 3] {
+    [&anchors[0], &anchors[1], &anchors[2]].map(|a| p.printed(*a))
+}
+
+/// `p` laid through the window its anchors print on it: each channel's black on 0, its white on 1; a black and white
+/// print reads one window on its luma.
 pub fn anchored(p: Paper, anchors: &[V3; 3], mono: bool) -> Paper {
-    let read = |a: &V3| {
-        let light = p.printed(*a);
-        if mono { [luma(light); 3] } else { light }
-    };
-    let [black, white, grey] = [&anchors[0], &anchors[1], &anchors[2]].map(read);
-    let gamma = std::array::from_fn(|c| GREY_PRINT.ln() / ((grey[c] - black[c]) / (white[c] - black[c])).ln());
-    Paper { window_black: black, window_white: white, window_gamma: gamma, window_luma: mono, ..p }
+    let [black, white, _] = printed_anchors(&p, anchors).map(|light| if mono { [luma(light); 3] } else { light });
+    Paper { window_black: black, window_white: white, window_luma: mono, ..p }
+}
+
+/// Where each channel's window puts the grey `p` prints, in log: the grey's share of its black-to-white span, a black
+/// and white print's on its luma.
+fn grey_shares(p: &Paper, anchors: &[V3; 3], mono: bool) -> V3 {
+    let [black, white, grey] = printed_anchors(p, anchors).map(|light| if mono { [luma(light); 3] } else { light });
+    std::array::from_fn(|c| ((grey[c] - black[c]) / (white[c] - black[c])).max(1e-12).ln())
+}
+
+/// The `x` from `start` where `f` crosses zero, by Newton's steps in the enlarger's log exposure.
+fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
+    let mut x = start;
+    for _ in 0..ITERATIONS {
+        let here = f(x);
+        if here.abs() < TOLERANCE {
+            break;
+        }
+        let slope = (f(x + PROBE[0]) - here) / PROBE[0];
+        if slope.is_nan() || slope.abs() <= 1e-6 {
+            break;
+        }
+        x -= (here / slope).clamp(-STEP_BOUND[0], STEP_BOUND[0]);
+    }
+    x
 }
 
 /// The enlarger's light, from `scale` in its log, that holds the luma `read` prints the grey at on a plain RAW's.
 fn luma_held(paper: &Paper, scale: f32, read: impl Fn(&Paper) -> V3) -> f32 {
     let target = ln_luma([*GREY_PRINT; 3]);
-    let at = |x: f32| ln_luma(read(&Paper { scale: x.exp(), ..*paper }));
-    let mut scale = scale;
-    for _ in 0..ITERATIONS {
-        let here = at(scale);
-        if (here - target).abs() < TOLERANCE {
-            break;
-        }
-        let slope = (at(scale + PROBE[0]) - here) / PROBE[0];
-        if slope.is_nan() || slope.abs() <= 1e-6 {
-            break;
-        }
-        scale -= ((here - target) / slope).clamp(-STEP_BOUND[0], STEP_BOUND[0]);
-    }
-    scale
+    root(scale, |x| ln_luma(read(&Paper { scale: x.exp(), ..*paper })) - target)
 }
 
-/// The frame's paper, its enlarger set where the reference grey prints a plain RAW's grey, neutral, frozen there under
-/// its anchors' window; Lighting's filters move its filtration, the windowed grey's luma held. None on ONI's print.
+/// The exposure and the magenta and yellow filtration, from `x`, where every channel's `miss` is zero.
+fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
+    for _ in 0..ITERATIONS {
+        let r = miss(x);
+        if r.iter().all(|v| v.abs() < TOLERANCE) {
+            break;
+        }
+        let columns: [V3; 3] = std::array::from_fn(|j| {
+            let mut moved = x;
+            moved[j] += PROBE[j];
+            let m = miss(moved);
+            std::array::from_fn(|c| (m[c] - r[c]) / PROBE[j])
+        });
+        let jacobian: M3 = std::array::from_fn(|c| std::array::from_fn(|j| f64::from(columns[j][c])));
+        let step = bake::apply(&bake::inverse(&jacobian), r.map(f64::from));
+        if !step.iter().all(|v| v.is_finite()) {
+            break;
+        }
+        x = std::array::from_fn(|j| x[j] - (step[j] as f32).clamp(-STEP_BOUND[j], STEP_BOUND[j]));
+    }
+    x
+}
+
+/// The frame's paper, its enlarger set where its window prints the reference grey at a plain RAW's grey, neutral, frozen
+/// there; Lighting's filters move its filtration, the windowed grey's luma held. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
@@ -150,49 +184,28 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         view: &sheet.view,
         window_black: [0.0; 3],
         window_white: [1.0; 3],
-        window_gamma: [1.0; 3],
         window_luma: false,
     };
     let anchors = anchors(s, separation);
     let grey = anchors[2];
     let target = GREY_PRINT.ln();
-    // The neutral filtration and exposure, cyan at none: Newton on each channel's log light.
+    // The grey solved on the windowed print, where the paper's white is laid on 1: solved on the bare print, its white at
+    // 0.81, the window would lift it to 0.49. Black and white sets the exposure alone, on its luma, through no filter.
     let at = |x: V3| Paper { scale: x[0].exp(), filters: filters([0.0, x[1], x[2]]), ..paper };
-    let miss = |x: V3| at(x).printed(grey).map(|v| v.max(1e-12).ln() - target);
+    let miss = |x: V3| grey_shares(&at(x), &anchors, mono).map(|v| v - target);
     let raw = paper.exposed(grey);
-    let mut x = [-(raw.iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10, START_CC[0], START_CC[1]];
-    for _ in 0..ITERATIONS {
-        let r = miss(x);
-        if r.iter().all(|v| v.abs() < TOLERANCE) {
-            break;
-        }
-        let columns: [V3; 3] = std::array::from_fn(|j| {
-            let mut moved = x;
-            moved[j] += PROBE[j];
-            let m = miss(moved);
-            std::array::from_fn(|c| (m[c] - r[c]) / PROBE[j])
-        });
-        let jacobian: M3 = std::array::from_fn(|c| std::array::from_fn(|j| f64::from(columns[j][c])));
-        let step = bake::apply(&bake::inverse(&jacobian), r.map(f64::from));
-        if !step.iter().all(|v| v.is_finite()) {
-            break;
-        }
-        x = std::array::from_fn(|j| x[j] - (step[j] as f32).clamp(-STEP_BOUND[j], STEP_BOUND[j]));
-    }
-    // Lighting's filters move the neutral one, the least filter at none.
+    let start = -(raw.iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
+    let x = if mono { [root(start, |e| miss([e, 0.0, 0.0])[0]), 0.0, 0.0] } else { neutral_on(miss, [start, START_CC[0], START_CC[1]]) };
+    // The paper at its rest, its window frozen whatever Lighting moves; Lighting's filters move the neutral filtration.
+    let rest = anchored(at(x), &anchors, mono);
     let neutral = [0.0, x[1], x[2]];
     let filtration = |moved: V3| {
         let cc: V3 = std::array::from_fn(|c| neutral[c] + CC_PER_STOP * moved[c]);
         let least = cc.iter().copied().fold(f32::INFINITY, f32::min);
         cc.map(|v| v - least)
     };
-    // The paper at its rest, its filters at Lighting's rest: the window its anchors print there stays whatever moves.
-    let rest_cc = filtration([0.0; 3]);
-    let unwindowed = Paper { filters: filters(rest_cc), ..paper };
-    let rest_scale = luma_held(&unwindowed, x[0], |p| p.printed(grey));
-    let rest = anchored(Paper { scale: rest_scale.exp(), ..unwindowed }, &anchors, mono);
     let cc = filtration(s.print.filters());
     let moved = Paper { filters: filters(cc), ..rest };
-    let scale = luma_held(&moved, rest_scale, |p| p.windowed(p.printed(grey)));
+    let scale = luma_held(&moved, x[0], |p| p.windowed(p.printed(grey)));
     Some(Printing { paper: Paper { scale: scale.exp(), ..moved }, filtration: cc })
 }
