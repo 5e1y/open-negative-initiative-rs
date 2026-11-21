@@ -11526,5 +11526,12 @@
     "title": "docs/pipeline-map.md: the whole application in sixteen Mermaid diagrams",
     "status": "done",
     "detail": "Files on disk to the canvas and the export; the render chain in the order the code runs it, a table of which stage runs in which mode (Negative, Positive, Monochrome, Digital, Digital on a virtual film) and where a slider notch restarts; the Pro and Scanner faces and their machines; Prepare the Roll, Auto White Balance, Auto De-dust and the flat-field; the archive, the gallery filter, the Kit and export, presets, paste and roll gestures, the phone link; every WGSL kernel with its CPU reference, the texture formats and the render slot; a glossary. Each box names the file that implements it, as of 8cf90530. Its findings: no dark pick in Prepare the Roll, Auto levels called by tests alone, the live Frontier never reading the measured table, slides decoded at 5500 K, comments still naming Swift."
+  },
+  {
+    "id": 2520,
+    "type": "tooling",
+    "title": "examples/film_compare renders a digital photo headless, plain and on its virtual Portra 800, with the scene the film reads and its scan",
+    "status": "done",
+    "detail": "crates/oni-app/examples/film_compare.rs: `film_compare <raw> <out> [side]` reads the photo's sidecar, renders it as the editor does (Engine::render on the preview, at a long side of 1600 by default) plain (A) and on the stock's own reference (B), each at the RAW's As Shot white, the sidecar's own white and the film's D55, and writes beside them the chain's own steps up to the film: the framed scene after Digital's white, then the virtual negative's scan, each as `w h` and f32 RGB in linear Rec. 2020. It lets the virtual film be compared with spektrafilm's own pipeline fed the same scene; it writes no sidecar."
   }
 ]
