@@ -68,6 +68,8 @@ pub const STOCK_DYES_VERSION: i64 = 39;
 /// The version a frame's measured dyes came to name each stock of a line, a key a build before it cannot read: no
 /// step, as nothing a document of 39 holds moves.
 pub const STOCK_SPLIT_VERSION: i64 = 40;
+/// The version a negative came to print on a colour paper: every photo of an earlier one stays on ONI's own print.
+pub const PAPER_VERSION: i64 = 41;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

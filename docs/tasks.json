@@ -11661,5 +11661,55 @@
     "title": "Sidecar format 40: a frame's dyes may name a split stock's set, which a build of 39 cannot read",
     "status": "done",
     "detail": "No step: a document of 39 reads its dye set and dose unmoved (crates/oni-settings/tests/stock_split.rs, every set by its own key, twin: a key a build of 39 lacks fails its typed read). A build of 39 takes a file of 40 for a newer one and leaves it as it is, where a set it cannot read, under its own format, would read as a broken file. The newer-file corpus moves to version-41. resources/film gains kodak_vision3_200t, kodak_vision3_250d and kodak_verita_200d from spektrafilm 3bb2c2d, unchanged, under CC BY-SA 4.0, named in its CHANGELOG; the README credits the measured dyes beside the virtual films."
+  },
+  {
+    "id": 2900,
+    "type": "change",
+    "title": "A colour paper prints the negative in place of ONI's print: the enlarger's light through the dye amounts, the paper's layers, its curves, its dyes seen under D50",
+    "status": "done",
+    "detail": "New kernel paper (WGSL beside its scalar reference, oni-render kernel/paper.rs): each pixel read as dye amounts above the bare film (the dye separation's untoned amounts, dosed; or, with no unmix, the scan's densities through the frame's gains above its Levels black), the lamp's light (spektrafilm's TH-KG3: 3400 K behind a Schott KG3, its published curve read by scipy's Akima, shipped unchanged) through the dichroic C, M and Y filters and the negative's dyes and base on every wavelength the stock measures (a black and white's silver neutral on every wavelength, its density the mean of the three readings) summed onto the paper's three layer sensitivities, its log exposure turned by the contrast about a pivot, the paper's curves (spektrafilm's fitted model, sums of normal integrals, evaluated on its 256 nodes), then the print's dyes and base under D50 read by the 1931 observer, CAT02-adapted to D65, in linear Rec. 2020. It runs laid with the rest of stage 4-7 in one pass, after the dye separation's pass the cache keeps; stage 4-7 then reads the paper's print on the display gamma, Lighting's points as its windows, its zones, each channel's contrast and mids and the colour density after, ONI's windows, print curve, Hunt, follow and chroma decompression left out (never stacked). The paper replaces the print only where one can print the photo (negative, black and white, digital; never a slide or a positive read as its own negative, PipelineSettings::takes_paper) and the print is not bypassed (a measure upstream). Per frame (oni_pipeline::paper::printing, on the CPU): the reference grey is the scan density each window prints as a plain RAW's grey on ONI's print at rest; the enlarger's exposure and magenta and yellow filtration (cyan at none) are solved by Newton so that grey prints there, neutral; Lighting's filters move the filtration by 30.1 CC a stop (Temperature and Tint: a stop of filter halves its band's light), the least filter at none, the grey's luma held; Contrast turns the paper about the grey's exposure, its slope times 4^Contrast (the track a paper grade either way); Exposure is the enlarger's light, a stop up a stop less. The Scanner face's D, C, M and Y keys move the frame's gains, which the paper reads as density laid on the negative, as filtration. Five papers bake their tables once at first use: Kodak Portra Endura (default), Supra Endura, Ultra Endura, Endura Premier and Fujifilm Crystal Archive Type II, their profiles shipped unchanged (CC BY-SA 4.0, CHANGELOG). Checks (crates/oni-pipeline/tests/paper.rs): the lamp within 1.4e-9 of spektrafilm's and its dichroics within 1e-6, twin the bare blackbody; every paper prints Portra 800's dye amounts as spektrafilm's printing stage does (log exposure 4e-7, density 1e-6, light 1.6e-6), twin five CC more magenta; the reference grey prints neutral where ONI's print puts it on a digital photo, a prepared negative, black and white and no unmix, twin the paper with no filtration; Lighting's exposure, filters (luma held) and contrast (the grey kept), twin the plain contrast; a slide, an inverted positive and a measure never printed, ONI's print to the bit when off; the GPU within 1.4e-6 of the reference on a digital photo, a lit negative (exposure, contrast, zones, filters, points, channel contrast and mids, colour density), black and white on Supra and no unmix on Crystal Archive, and the paper's pass alone, each twin 4e-2 off; the kernel's unit checks."
+  },
+  {
+    "id": 2901,
+    "type": "change",
+    "title": "The paper's switch and choice on the Colour tab, on both faces, its filtration shown",
+    "status": "done",
+    "detail": "Wherever a paper can print the photo, at the end of Lighting on Pro and under the keys on the Scanner face (so no block above moves): Print on paper, the paper picked among five (Picker) and the enlarger's filtration in CC (Enlarger filtration: C, M, Y) while it prints; Lighting's help says what its sliders mean on a paper. A paste and the Lighting preset entry carry the paper with Lighting, whose sliders it gives their meaning (printPaper in the Color tab's family, carried by Lighting's own preset row, so a preset proposing Lighting proposes its paper). The spektrafilm credit in About names the papers. Texts in French and Spanish. Window check paper::the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_slide (a negative at rest offered the switch, off; on prints on Portra Endura, shows its filtration and renders again; the five names listed, Crystal Archive picked; hidden on a slide with the choice kept; twin, off takes the paper away)."
+  },
+  {
+    "id": 2902,
+    "type": "change",
+    "title": "Sidecar format 41: every photo edited before stays on ONI's print, a new Prepare the Roll and a digital photo print on Portra Endura",
+    "status": "done",
+    "detail": "PipelineSettings.print_paper (printPaper, the paper's key, unwritten when none). migrate::paper::caught_up writes it off on every document before format 41 (sidecars, presets, share codes), so their render stays to the bit (owner's rule). PipelineSettings::rest(Digital) prints on the default paper, as balance::written (Prepare the Roll's landing) and store::roll::digital (a roll prepared as digital) do, a paper picked before kept; a negative at rest stays on ONI's print until its roll is prepared. A mode change moves the paper as its other rests. Format 41 follows the stock split's 40, so a format 40 file prints on ONI's print too. The newer-file corpus moved to version-42. Check: migrate::paper (an older digital photo and a negative on another paper both off, nothing else moved; twin a format 41 file keeps its paper)."
+  },
+  {
+    "id": 2903,
+    "type": "research",
+    "title": "The paper against spektrafilm's C on the ColorChecker chain, P1073076 and roll #8; its cost on a full-screen region",
+    "status": "done",
+    "detail": "colour_trace prints the chart chain (24 patches, P1073076's eleven, a grey ramp) on the virtual Portra 800 through the CPU references, rest:1.0 on the paper or :oni on ONI's print; docs/research/colour-diagnosis/paper_de.py weighs each against spektrafilm's Portra 800 + Portra Endura at the print exposure that prints a grey as ONI's print does, with and without spektrafilm's output gamut compression; film_compare renders P1073076 (the owner's settings) and roll #8 (DSC_6438, 6444, 6452, 6456, the test copy) on the paper and on ONI's print, photo_de weighing the photo's patches against the shipped LUT; cost.rs times the paper on 3456 x 2234.",
+    "outcome": "Chart chain (chart / P1073076's patches / greys, dE2000 to spektrafilm's full chain C): ONI's print 7.81 / 13.14 / 10.09, the paper 0.71 / 1.42 / 1.25 (max 2.5 on the chart); to C without its output gamut compression (a display choice, its chroma knee from the centre and its lightness roll-off from 0.7 of white) 0.30 / 1.49 / 0.33. With no unmix the paper reads the colorimetric scan's densities as dye amounts: 5.41 / 5.41 / 4.96, so the separation's exact amounts carry most of the gain. Against spektrafilm's own exposure (print exposure 1) every chain sits 9 to 14 away: the paper rests where ONI's print puts a grey, not at spektrafilm's mid-grey normalisation. Other papers against C on Portra Endura: Supra 1.77, Crystal Archive 3.05, Endura Premier 5.07, Ultra Endura 7.75 on the chart (their own looks). P1073076 with the owner's settings, eleven patches against the shipped LUT: 14.16 on ONI's print, 1.90 on the paper (cheek 13.2 to 2.6, grass 22.3 to 2.3, trees 22.8 to 1.5, sky 2.7 to 1.8, wing white 0.8 to 1.2). Roll #8 (DSC_6438, 6444, 6452, 6456, Fujifilm C200's dyes, the Scanner face's ONI machine): first rendered with the machine's look cube and look exposure laid over the paper, two stops dark, which led to the machine printing on the paper at its rest with no cube (#2905); then a print's look: deeper blacks, the paper's white at 0.81 of linear, Endura's orange-red and olive greens, the grey balanced at one point. Cost on 3456 x 2234 (release, M2 Max): the paper laid with stage 4-7, 10.3 ms against 2.8 ms for ONI's print alone, past the dye separation's 14.4 ms pass the cache keeps on a print notch."
+  },
+  {
+    "id": 2904,
+    "type": "tooling",
+    "title": "colour_trace prints on any paper or ONI's print; film_compare renders paper and oni; the spektrafilm fixture's script",
+    "status": "done",
+    "detail": "colour_trace rest:<dose>[:oni|:<paper key>]; film_compare adds B-paper and B-oni; docs/research/colour-diagnosis/paper_fixture.py writes crates/oni-pipeline/tests/paper/spektrafilm.json (spektrafilm's lamp, dichroics and the printing stage's log exposure, densities and light on each paper for twenty Portra 800 dye mixtures); paper_de.py measures the chart chain."
+  },
+  {
+    "id": 2905,
+    "type": "change",
+    "title": "On the Scanner face a paper is the machine's print and look: its rest the paper's, no look cube laid over it, TEMP warming its print",
+    "status": "done",
+    "detail": "scanner::on_oni_machine rests the machine's print at the paper's rest (a negative's 1.5) where the frame prints on a paper, its look entry exposure on ONI's print; the chain lays neither the ONI nor the Frontier cube on a paper's print (never stacked): the D, C, M and Y keys move the gains the paper reads as the negative's density, TEMP's warmth look is laid on the print's display code, nothing at no count. Check: paper::the_scanner_face_prints_on_the_paper_at_its_rest_and_its_keys_move_the_enlarger (the grey at rest neutral, a cyan key prints cyaner; twin on ONI's print the look entry exposure)."
+  },
+  {
+    "id": 2906,
+    "type": "fix",
+    "title": "The dye separation's bare-film check reads zero to a float's round trip, not to the bit",
+    "status": "done",
+    "detail": "kernel::dye_separation's narrow set read its bare film back through exp2 and ln, 2e-8 off zero, so the check held to the bit failed on the merged tree; it holds 1e-6 now, its twin a density of 0.1 above the bare film holding a dye."
   }
 ]

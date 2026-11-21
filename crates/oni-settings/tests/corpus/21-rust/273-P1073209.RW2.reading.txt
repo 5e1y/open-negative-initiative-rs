@@ -432,6 +432,7 @@ settings: PipelineSettings {
         ],
         bypassed: false,
     },
+    print_paper: None,
     density: 0.40069318,
     manual_curves: CurveSet {
         contrast: 0.0,

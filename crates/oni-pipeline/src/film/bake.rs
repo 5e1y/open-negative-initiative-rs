@@ -49,6 +49,8 @@ fn adaptation(m: &M3, from: [f64; 3], to: [f64; 3]) -> M3 {
 /// CAT16's cone space (Li et al. 2017), the adaptation spektrafilm exposes its films through.
 const CAT16: M3 = [[0.401288, 0.650173, -0.051461], [-0.250268, 1.204414, 0.045854], [-0.002079, 0.048952, 0.953127]];
 const BRADFORD: M3 = [[0.8951, 0.2664, -0.1614], [-0.7502, 1.7135, 0.0367], [0.0389, -0.0685, 1.0296]];
+/// CAT02's cone space (CIECAM02), the adaptation spektrafilm views its prints through.
+const CAT02: M3 = [[0.7328, 0.4296, -0.1624], [-0.7036, 1.6975, 0.0061], [0.0030, 0.0136, 0.9834]];
 
 /// The D65 white the working space's encoding stands on.
 pub const D65_XY: [f64; 2] = [0.3127, 0.3290];
@@ -88,8 +90,13 @@ pub fn scan_matrix(light: &[f64; WAVELENGTHS]) -> M3 {
     mul(&inverse(&rec2020_to_xyz()), &adaptation(&BRADFORD, white_of(light), xyz_of_xy(D65_XY)))
 }
 
+/// A print seen under `light`: XYZ, the light's white CAT02-adapted to the working D65, in Rec. 2020.
+pub fn view_matrix(light: &[f64; WAVELENGTHS]) -> M3 {
+    mul(&inverse(&rec2020_to_xyz()), &adaptation(&CAT02, white_of(light), xyz_of_xy(D65_XY)))
+}
+
 /// Abramowitz and Stegun's 7.1.26, within 1.5e-7 of the error function.
-fn erf(x: f64) -> f64 {
+pub fn erf(x: f64) -> f64 {
     let t = 1.0 / (1.0 + 0.327_591_1 * x.abs());
     let poly = t * (0.254_829_592 + t * (-0.284_496_736 + t * (1.421_413_741 + t * (-1.453_152_027 + t * 1.061_405_429))));
     (1.0 - poly * (-x * x).exp()).copysign(x)

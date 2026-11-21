@@ -12,7 +12,8 @@ use oni_settings::cg::Point;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 fn digital() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true)
+    // On ONI's print, the tones this file's bounds were drawn on.
+    PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) }
 }
 
 fn coloured(colour: [f32; 2]) -> PipelineSettings {

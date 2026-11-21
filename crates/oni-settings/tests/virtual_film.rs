@@ -47,7 +47,7 @@ fn plain_37() -> Value {
 
 #[test]
 fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_dropped() {
-    assert_eq!(VERSION, chain::STOCK_SPLIT_VERSION);
+    assert_eq!(VERSION, chain::PAPER_VERSION);
     let stored = plain_37();
     let before: PipelineSettings = serde_json::from_value(stored["settings"].clone()).unwrap();
     let doc = read(&stored);

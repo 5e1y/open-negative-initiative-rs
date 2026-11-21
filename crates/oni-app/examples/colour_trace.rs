@@ -1,6 +1,7 @@
 //! `colour_trace <settings.json> <in.f32> <out> <scene|scan> [rederive]` prints a virtual Portra 800 negative on the CPU
 //! references, each stage as `w h` then f32 RGB; `rederive` reads the film's windows off the first two pixels (bare, grey).
-//! In place of a file, `rest:<dose>` is a digital photo at rest, its stock's measured dyes unmixed at that dose.
+//! In place of a file, `rest:<dose>` is a digital photo at rest, its stock's measured dyes unmixed at that dose, printed on
+//! its paper; `rest:<dose>:oni` the same on ONI's own print, `rest:<dose>:<paper key>` on another paper.
 
 use oni_pipeline::{conversion, film};
 use oni_render::cpu;
@@ -41,7 +42,16 @@ fn main() {
     }
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let mut s: PipelineSettings = match args[0].strip_prefix("rest:") {
-        Some(dose) => PipelineSettings { separation: dose.parse().unwrap(), ..rest },
+        Some(spec) => {
+            let mut parts = spec.split(':');
+            let dose = parts.next().unwrap().parse().unwrap();
+            let print_paper = match parts.next() {
+                None => rest.print_paper,
+                Some("oni") => None,
+                Some(key) => Some(serde_json::from_str(&format!("\"{key}\"")).expect("a paper's key")),
+            };
+            PipelineSettings { separation: dose, print_paper, ..rest }
+        }
         None => serde_json::from_str(&std::fs::read_to_string(&args[0]).unwrap()).unwrap(),
     };
     let (w, h, input) = read(Path::new(&args[1]));

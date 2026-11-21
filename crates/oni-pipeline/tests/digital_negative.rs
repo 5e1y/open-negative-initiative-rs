@@ -26,7 +26,8 @@ fn a_digital_photos_stage_4_to_7_is_a_colour_negatives_on_the_same_settings() {
 
 #[test]
 fn a_digital_photo_unmixes_its_stocks_dyes_and_decompresses_as_an_unprepared_negative() {
-    let s = PipelineSettings::rest(ConversionMode::Digital, true);
+    // On ONI's print, where the decompression acts: a paper owns the print's colour.
+    let s = PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let k = conversion::stage47(&s);
     assert_eq!(s.dye_set, VirtualStock::KodakPortra800.dye_set());
     let d = k.dyes.expect("its stock's measured dyes");

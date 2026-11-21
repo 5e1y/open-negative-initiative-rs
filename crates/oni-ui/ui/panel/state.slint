@@ -85,6 +85,15 @@ export global PanelState {
     in property <bool> slide;
     // A digital photo: shot on its virtual film, its negative read as any negative is; no flat-field or roll.
     in property <bool> digital;
+    // The colour paper a negative prints on in place of ONI's print: offered where one can print the photo, never on a
+    // slide; its name among the papers, and the enlarger's filtration it prints through.
+    in property <bool> paper-shown;
+    in property <bool> paper-on;
+    in property <string> paper-title;
+    in property <[MenuLine]> paper-lines;
+    in property <string> paper-filtration;
+    callback paper-toggled(bool);
+    callback paper-chosen(int);
     // The stock a digital photo is shot on, by the Film block's tabs.
     in-out property <int> virtual-film;
     callback virtual-film-picked(int);

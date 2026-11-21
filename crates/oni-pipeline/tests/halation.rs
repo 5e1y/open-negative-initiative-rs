@@ -206,7 +206,8 @@ fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
     // A lamp the film's shoulder still prints past white at the print's rest.
     let source = lamp_of(&mut g, side, 100.0, 16.0);
     let mut pipeline = Pipeline::new();
-    let s = haloed(1.0, 1.0);
+    // On ONI's print, which lets the lamp past white: a paper's white holds every exposure's lamp.
+    let s = PipelineSettings { print_paper: None, ..haloed(1.0, 1.0) };
     let halo = ring(side, 102.0, 120.0);
     // The glow's red in the print, at a print exposure: the lamp's surround with it less without it.
     let mut glow = |after: bool, exposure: f32| -> f32 {

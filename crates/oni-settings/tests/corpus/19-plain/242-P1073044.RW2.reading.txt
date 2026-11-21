@@ -205,6 +205,7 @@ settings: PipelineSettings {
         ],
         bypassed: false,
     },
+    print_paper: None,
     density: 0.0,
     manual_curves: CurveSet {
         contrast: 0.0,

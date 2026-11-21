@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 #[test]
 fn a_frame_of_39_reads_its_dyes_unmoved_and_a_split_stocks_set_is_of_40() {
     use oni_settings::DyeSet;
-    assert_eq!(VERSION, chain::STOCK_SPLIT_VERSION);
+    assert!(VERSION >= chain::STOCK_SPLIT_VERSION);
     let stamped = |set: DyeSet, version: i64| {
         let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
         (s.dye_set, s.separation) = (set, 0.8);

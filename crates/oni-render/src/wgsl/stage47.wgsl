@@ -78,7 +78,8 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_co
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-// Stages 4 and 5: the film's density, its windows and the chroma decompression.
+// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print on the display
+// gamma, its windows Lighting's points.
 fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
@@ -98,6 +99,9 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let t = (s.rgb + pedestal) * gain;
     let d = -log(max(t, vec3<f32>(log_guard))) * LOG10_E;
     var e = select(window - d, d, invert > 0.5);
+    if (P.print_contrast_hunt.w > 0.5) {
+        e = pow(max(s.rgb, vec3<f32>(0.0)), vec3<f32>(1.0 / DISPLAY_GAMMA));
+    }
 
     let film = e;
     e = vec3<f32>(apply_window(e.r, red, low_points.r, high_points.r),

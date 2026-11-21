@@ -22,6 +22,7 @@ pub(crate) mod grain;
 pub(crate) mod halation;
 pub(crate) mod grid;
 pub(crate) mod orient;
+pub(crate) mod paper;
 pub(crate) mod output_clip;
 pub(crate) mod saturation_curve;
 pub(crate) mod scanner;

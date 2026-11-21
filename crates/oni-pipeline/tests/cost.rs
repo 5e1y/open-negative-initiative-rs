@@ -1,6 +1,6 @@
 //! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
 //! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
-//! photo's film effects at rest and on a notch, a virtual negative and the dye separation on a full-screen region; without the
+//! photo's film effects at rest and on a notch, a virtual negative, the dye separation and the paper on a full-screen region; without the
 //! variable it returns at once.
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
@@ -274,4 +274,37 @@ fn the_dye_separation_s_gpu_time_on_a_full_screen_region() {
         b.push(ms(&mut g, &plain));
     }
     println!("dye separation on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
+}
+
+/// A print notch on the same full-screen region, past the dye separation the cache keeps: the paper laid with the rest
+/// of stage 4-7 in one pass, against ONI's own print in its pass.
+#[test]
+fn the_paper_s_gpu_time_on_a_full_screen_region() {
+    if std::env::var_os("ONI_BENCH_COST").is_none() {
+        return;
+    }
+    let Ok(mut g) = Graph::new() else { return };
+    let (w, h) = (3456u32, 2234u32);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let paper = PipelineSettings::rest(ConversionMode::Digital, true);
+    let separated = oni_pipeline::conversion::stage47(&paper);
+    let d = separated.dyes.expect("a digital photo's dyes");
+    let pixels: Vec<[f32; 4]> = (0..w * h)
+        .map(|i| {
+            let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
+            let scan = oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table);
+            oni_render::cpu::dye_separation(scan, &separated, &d)
+        })
+        .collect();
+    let source = g.upload(w, h, &pixels).unwrap();
+    let after = separated.after_dyes();
+    let printed = stages::laid(Image::new(&source), vec![stages::paper(&separated.paper.expect("a digital photo's paper")), stages::stage47(&after)]);
+    let onis = oni_pipeline::conversion::stage47(&PipelineSettings { print_paper: None, ..paper });
+    let plain = Image::new(&source).then(stages::stage47(&onis.after_dyes()));
+    let (mut a, mut b) = (Vec::new(), Vec::new());
+    for _ in 0..RUNS {
+        a.push(ms(&mut g, &printed));
+        b.push(ms(&mut g, &plain));
+    }
+    println!("paper and stage 4-7 on {w}x{h}: {:.2} ms; ONI's print alone {:.2} ms", median(a), median(b));
 }

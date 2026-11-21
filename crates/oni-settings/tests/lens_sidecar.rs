@@ -24,8 +24,8 @@ fn stored(settings: &PipelineSettings, version: i64, bare: bool) -> Vec<u8> {
 
 #[test]
 fn a_sidecar_from_before_the_lens_reads_none_and_a_corrected_one_keeps_its_four_values() {
-    let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-    // Its print rested then at no exposure, which today's rest stands on.
+    // An earlier photo stays on ONI's print; its print rested then at no exposure, which today's rest stands on.
+    let digital = PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let then = PipelineSettings { print: oni_settings::tone::Print { exposure: 0.0, ..digital.print }, ..digital.clone() };
     let before = migrate::document(&stored(&then, chain::LENS_CORRECTION_VERSION - 2, true)).unwrap();
     assert_eq!(before.document.settings.lens_correction, LensCorrection::default());

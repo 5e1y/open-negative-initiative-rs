@@ -1957,6 +1957,14 @@ msgstr "Oublier les téléphones"
 msgid "Every paired phone is cut and pairs again from a new code."
 msgstr "Chaque téléphone jumelé est déconnecté et doit se jumeler à nouveau avec un nouveau code."
 
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Print on paper"
+msgstr "Tirer sur papier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Paper"
+msgstr "Papier"
+
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Scanner: a minilab's density and colour, in steps"
 msgstr "Scanner : densité et couleur d’un minilab, par crans"
@@ -2146,8 +2154,8 @@ msgid "Blue contrast"
 msgstr "Contraste bleu"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself."
-msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper, Exposure is the enlarger's, Contrast the paper's grade, Temperature and Tint its filters, 30 CC a stop."
+msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même.\n\nSur papier, Exposition est celle de l’agrandisseur, Contraste la gradation du papier, Température et Teinte ses filtres, 30 CC par diaph."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"
@@ -3090,8 +3098,8 @@ msgid "Credits"
 msgstr "Crédits"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "The virtual films and the measured dyes of the dye separation are made from the film profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans and unmixes its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
-msgstr "Les pellicules virtuelles et les colorants mesurés de la séparation des colorants sont faits des profils de pellicule de spektrafilm par Andrea Volpato, sous CC BY-SA 4.0, qu’ONI développe, scanne et sépare à sa façon, et des spectres du suréchantillonnage spectral de Wenzel Jakob et Johannes Hanika, sous la licence BSD à 2 clauses. Les deux sont livrés inchangés avec leurs licences."
+msgid "The virtual films, the measured dyes of the dye separation and the papers are made from the film and paper profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans, unmixes and prints its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
+msgstr "Les pellicules virtuelles, les colorants mesurés de la séparation des colorants et les papiers sont faits des profils de pellicule et de papier de spektrafilm par Andrea Volpato, sous CC BY-SA 4.0, qu’ONI développe, scanne, sépare et tire à sa façon, et des spectres du suréchantillonnage spectral de Wenzel Jakob et Johannes Hanika, sous la licence BSD à 2 clauses. Les deux sont livrés inchangés avec leurs licences."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "spektrafilm"
@@ -4998,6 +5006,10 @@ msgstr "C-41 générique"
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
 msgstr "Masque manquant"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "Enlarger filtration: C {c}, M {m}, Y {y}"
+msgstr "Filtrage de l’agrandisseur : C {c}, M {m}, J {y}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "R {red} · G {green} · B {blue}"

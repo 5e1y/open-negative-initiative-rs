@@ -275,6 +275,7 @@ impl Ctl {
         panel.set_separation_shown(separation);
         panel.set_slide(settings.mode.is_slide());
         panel.set_digital(settings.mode.is_digital());
+        self.publish_paper(&panel, &settings);
     }
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {

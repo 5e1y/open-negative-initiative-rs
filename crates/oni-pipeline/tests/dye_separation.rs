@@ -177,8 +177,9 @@ fn each_split_stock_separates_on_its_own_profiles_dyes() {
 }
 
 /// A digital photo at rest, its neighbourhood stages off so a pixel prints alone.
+/// A digital photo on ONI's print, whose windows read the dyes' tones.
 fn filmed() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only()
+    PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only() }
 }
 
 #[test]

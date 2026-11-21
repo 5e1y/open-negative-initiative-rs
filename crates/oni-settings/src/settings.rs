@@ -14,6 +14,7 @@ use crate::geometry::placing::Placing;
 use crate::lens::{LensCorrection, Radial};
 use crate::levels::{Levels, LevelsSet};
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
+use crate::paper::PaperStock;
 use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
 use crate::tone::{Print, Tone};
@@ -89,6 +90,9 @@ pub struct PipelineSettings {
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
     pub print: Print,
+    /// The colour paper the negative is printed on in place of ONI's own print; none prints on ONI's.
+    #[serde(rename = "printPaper", skip_serializing_if = "Option::is_none", default)]
+    pub print_paper: Option<PaperStock>,
     pub density: f32,
     #[serde(rename = "manualCurves")]
     pub manual_curves: CurveSet,
@@ -149,6 +153,7 @@ impl Default for PipelineSettings {
             balance_filters: None,
             balance_strength: filter_balance::RESTING_STRENGTH,
             print: Print::default(),
+            print_paper: None,
             density: 0.0,
             manual_curves: CurveSet::default(),
             spectrogram: Spectrogram::default(),
@@ -170,7 +175,8 @@ impl Default for PipelineSettings {
 }
 
 impl PipelineSettings {
-    /// `Parameters.rest`: the state a photograph is imported in; a digital photo on its default film.
+    /// `Parameters.rest`: the state a photograph is imported in; a digital photo on its default film, printed on
+    /// the default paper (owner's call: a scan takes its paper at Prepare the Roll).
     pub fn rest(mode: ConversionMode, mosaic: bool) -> PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };
         block.density_ceiling = density_axis::rest(mosaic, mode);
@@ -178,8 +184,20 @@ impl PipelineSettings {
         block.print.exposure = Print::resting_exposure(mode);
         if mode.is_digital() {
             block = block.on_stock(VirtualStock::default());
+            block.print_paper = Some(PaperStock::default());
         }
         block
+    }
+
+    /// Whether a paper can print this frame: a negative's, a black and white's or a digital photo's, never a
+    /// positive's, which a negative paper would invert.
+    pub fn takes_paper(&self) -> bool {
+        !self.mode.reads_positive() && !self.inverted_source
+    }
+
+    /// The paper the render prints on: the chosen one where the frame takes a paper.
+    pub fn paper(&self) -> Option<PaperStock> {
+        self.print_paper.filter(|_| self.takes_paper())
     }
 
     /// These settings shot on `stock`, its exposure kept: its negative's gains, windows and dyes placed from
@@ -222,6 +240,9 @@ impl PipelineSettings {
             }
             if self.virtual_film == from.virtual_film {
                 moved.virtual_film = to.virtual_film;
+            }
+            if self.print_paper == from.print_paper {
+                moved.print_paper = to.print_paper;
             }
         }
         if self.print.exposure == Print::resting_exposure(self.mode) {
@@ -298,9 +319,10 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 18] = [
+    pub const FIELDS: [&str; 19] = [
         "balanceFilters",
         "print",
+        "printPaper",
         "density",
         "manualCurves",
         "spectrogram",
@@ -343,6 +365,7 @@ pub mod look_settings {
         let mut out = target.clone();
         out.balance_filters = donor.balance_filters;
         out.print = donor.print;
+        out.print_paper = donor.print_paper;
         out.density = donor.density;
         out.manual_curves = donor.manual_curves.clone();
         out.spectrogram = donor.spectrogram;
