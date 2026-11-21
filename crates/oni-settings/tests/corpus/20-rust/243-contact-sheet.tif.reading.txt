@@ -728,7 +728,7 @@ settings: PipelineSettings {
             ],
         },
         colour: GrainColour {
-            black: 2.0,
+            black: 1.5,
             white: 0.0,
         },
     },

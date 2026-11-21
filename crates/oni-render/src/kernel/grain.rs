@@ -1,6 +1,7 @@
 //! Film grain: a texture in stops on a lattice anchored on the scan's full-resolution grid, each output
 //! pixel the field's mean over its own footprint; its share read off the pixel's light, its colour the pixel's own.
-//! Inside a clump the scene gives way to its blur under a grain, so detail finer than a grain follows it.
+//! Inside a clump the scene gives way to its blur under a grain, so detail finer than a grain follows it;
+//! between clumps it takes a haze of that blur, so no detail finer than a grain reads sharp through it.
 
 use super::*;
 
@@ -43,6 +44,8 @@ pub struct Grain {
     pub seed: [u32; 2],
     /// The share of the blurred scene a clump takes at the whole share, from 0 to 1.
     pub dissolve: f32,
+    /// The share of `dissolve` laid between clumps too, from 0 to 1.
+    pub haze: f32,
 }
 
 impl Grain {
@@ -53,7 +56,7 @@ impl Grain {
         let here = full / scale;
         let kept = here.min(GRAIN_FOOTPRINT_CAP);
         let stops = spread * mean_spread(here) / (mean_spread(full) * mean_spread(kept));
-        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share, colour: [0.0; GRAIN_NODES], seed: [0, 0], dissolve: 0.0 }
+        Grain { scan, per_cell: 1.0 / cell, reach: kept / 2.0, stops, share, colour: [0.0; GRAIN_NODES], seed: [0, 0], dissolve: 0.0, haze: 0.0 }
     }
 
     /// This grain coloured by `colour` at each node's light.
@@ -71,6 +74,11 @@ impl Grain {
         Grain { dissolve, ..self }
     }
 
+    /// This grain laying `haze` of its dissolve between its clumps too.
+    pub fn hazed(self, haze: f32) -> Self {
+        Grain { haze, ..self }
+    }
+
     /// The uniform's head: the seed.
     pub fn head(&self) -> [u32; 4] {
         [self.seed[0], self.seed[1], 0, 0]
@@ -81,7 +89,7 @@ impl Grain {
     pub fn rows(&self) -> Vec<V4> {
         let [x, y] = self.scan;
         let dose = [self.stops, GRAIN_LOW_STOPS, nodes_per_stop(), 0.0];
-        let mix = [self.dissolve, 1.0 / mean_spread(self.per_cell), 0.0, 0.0];
+        let mix = [self.dissolve, 1.0 / mean_spread(self.per_cell), self.haze, 0.0];
         let mut rows = vec![[x[0], x[1], x[2], self.per_cell], [y[0], y[1], y[2], self.reach], dose, mix];
         let next = |i: usize| (i + 1).min(GRAIN_NODES - 1);
         rows.extend((0..GRAIN_NODES).map(|i| [self.share[i], self.share[next(i)], self.colour[i], self.colour[next(i)]]));
@@ -199,10 +207,11 @@ pub(crate) fn laid(s: V4, a: f32, colour: f32) -> V4 {
     with_alpha(map(p, |_, v| v * (k * y / q)), s[3])
 }
 
-/// How much of the blurred scene the pixel of `part` takes where the field is `f`: none under half the
-/// field's spread at full resolution, `dissolve × part` past one and a half.
+/// How much of the blurred scene the pixel of `part` takes where the field is `f`: `haze` of `dissolve × part`
+/// under half the field's spread at full resolution, the whole of it past one and a half, light or dark alike.
 pub(crate) fn mixed(f: f32, part: f32, k: &Grain) -> f32 {
-    k.dissolve * part * smoothstep(0.5, 1.5, f.abs() * (1.0 / mean_spread(k.per_cell)))
+    let clump = smoothstep(0.5, 1.5, f.abs() * (1.0 / mean_spread(k.per_cell)));
+    k.dissolve * part * (k.haze + (1.0 - k.haze) * clump)
 }
 
 /// The grain at the pixel whose centre is `at`, in the graph's pixels, over `b`, the scene blurred under

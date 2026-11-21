@@ -70,3 +70,27 @@ fn between_clumps_the_pixel_stays_sharp_and_inside_one_it_takes_the_blur_at_its_
     assert!(between > 500 && inside > 100, "{between} between clumps, {inside} inside");
     assert!(linear > between / 2, "the twin softens {linear} of {between}");
 }
+
+/// Hazed, a pixel between clumps takes `haze` of the dose, one inside a clump the whole of it, light or dark
+/// alike; twin: the haze left out keeps the pixel between clumps sharp.
+#[test]
+fn a_haze_lays_its_share_of_the_dose_between_clumps_and_the_whole_inside_them() {
+    let k = Grain { share: [0.6; GRAIN_NODES], ..dissolving().dissolving(0.8).hazed(0.5) };
+    let spread = mean_spread(k.per_cell);
+    let (mut between, mut light, mut dark) = (0usize, 0usize, 0usize);
+    for at in centres() {
+        let f = field(at, &k);
+        let reach = f.abs() / spread;
+        let w = mixed(f, 0.6, &k);
+        if reach < 0.5 {
+            between += 1;
+            assert!((w - 0.8 * 0.6 * 0.5).abs() < 1e-6, "at {at:?}: {w} between clumps");
+            assert_ne!(grain(SHARP, BLURRED, at, &k), grain(SHARP, BLURRED, at, &k.hazed(0.0)), "twin: the haze moves it");
+            assert_eq!(grain(SHARP, BLURRED, at, &k.hazed(0.0)), grain(SHARP, SHARP, at, &k.hazed(0.0)));
+        } else if reach > 1.5 {
+            assert!((w - 0.8 * 0.6).abs() < 1e-6, "at {at:?}: {w} inside a clump");
+            if f > 0.0 { light += 1 } else { dark += 1 }
+        }
+    }
+    assert!(between > 100 && light > 50 && dark > 50, "{between} between, {light} light, {dark} dark");
+}

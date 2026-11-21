@@ -19,6 +19,9 @@ pub const GRAIN_COARSEST: f64 = 4.0;
 /// The blur a clump takes in, as a share of how much its cell outgrows the finest: none at the finest
 /// grain, so a fine grain blurs nothing, and half a cell's side less a pixel at a coarse one.
 pub const GRAIN_DISSOLVE: f64 = 0.5;
+/// The share of that blur laid between the clumps too, so a coarse grain lets no detail finer than itself
+/// read sharp through it; its blur growing with Size, none at the finest grain.
+pub const GRAIN_HAZE: f32 = 0.9;
 
 /// The grain of `s` on a scan of extent `scan` at `scale`; `None` at rest or with no share anywhere, so
 /// the chain holds no grain stage.
@@ -35,7 +38,9 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     let cell = f64::from(scan.w) / scale * GRAIN_FINEST * GRAIN_COARSEST.powf(f64::from(s.grain.size));
     let m = geometry::scan_from(&s.geometry, scan, scale).map(|r| r.map(|v| v as f32));
     let laid = Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount, share).coloured(colours(&s.grain.colour, &tones));
-    Some(laid.dissolving(s.grain.amount))
+    // Its clumps take in the scene whole at any Amount, so a faint grain is still grains, never a texture laid
+    // over the photo: Amount moves their contrast alone (owner's call).
+    Some(laid.dissolving(1.0).hazed(GRAIN_HAZE))
 }
 
 /// The deviation of the blur a clump of `s` takes in, in this render's pixels on a scan of extent `scan`:

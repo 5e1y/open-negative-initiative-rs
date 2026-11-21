@@ -69,13 +69,14 @@ fn detail(g: &mut Graph, s: &PipelineSettings, sigma: f64) -> (f64, f64) {
 }
 
 #[test]
-fn a_coarse_grain_takes_in_the_detail_inside_its_clumps_and_keeps_it_between_them() {
-    let Some(mut g) = graph("a_coarse_grain_takes_in_the_detail_inside_its_clumps_and_keeps_it_between_them") else { return };
+fn a_coarse_grain_takes_in_the_detail_inside_its_clumps_and_a_haze_of_it_between_them() {
+    let Some(mut g) = graph("a_coarse_grain_takes_in_the_detail_inside_its_clumps_and_a_haze_of_it_between_them") else { return };
     let s = grainy(0.8, 1.0);
     let sigma = grain::dissolve(&s, scan(1.0));
     let (inside, between) = detail(&mut g, &s, sigma);
     println!("size 1, amount 0.8, blur {sigma:.2} px: detail {inside:.3} inside the clumps, {between:.3} between them");
-    assert!(inside <= 0.25 && between >= 0.95, "{inside} inside, {between} between");
+    // Energies: the haze's nine tenths of the blur leave a few hundredths of the detail's between the clumps.
+    assert!(inside <= 0.25 && (0.003..=0.1).contains(&between), "{inside} inside, {between} between");
     // Twin: the grain as it was, laying its texture over every detail.
     let (unblurred, _) = detail(&mut g, &s, 0.0);
     assert!(unblurred > 0.25, "the twin keeps {unblurred} inside the clumps");
@@ -100,12 +101,12 @@ fn a_fine_grain_blurs_nothing() {
     let kept = all(grain::dissolve(&s, scan(1.0)), &mut g);
     // The blur is integrated over each pixel, so even its floor's deviation softens one-pixel lines a little.
     println!("size 0.25: detail {kept:.4}");
-    assert!(kept >= 0.97, "size 0.25 keeps {kept}");
+    assert!(kept >= 0.9, "size 0.25 keeps {kept}");
     // Twin: a blur of half a cell, which softens the finest grain too.
     let half_cell = 0.5 * f64::from(SCAN.0) * grain::GRAIN_FINEST * grain::GRAIN_COARSEST.powf(0.25);
     let soft = all(half_cell, &mut g);
     println!("size 0.25, the twin: detail {soft:.4}");
-    assert!(soft < 0.97, "the twin keeps {soft}");
+    assert!(soft < 0.9, "the twin keeps {soft}");
 }
 
 /// A photo's soft detail: value noise at periods of 2 to 16 pixels, each interpolated and as strong as
@@ -191,7 +192,7 @@ fn the_seeded_dissolving_grain_matches_its_reference_on_every_branch() {
     let mut share = [1.0; GRAIN_NODES];
     share.iter_mut().enumerate().for_each(|(i, v)| *v = (i as f32 * 0.29).sin().abs());
     // Cells of a pixel and a half, so the gate is shut, opening and open over the region.
-    let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.5, 1.0, 0.4, share).coloured([1.5; GRAIN_NODES]).dissolving(0.8).seeded([0x2545_f491, 0x9e37_79b9]);
+    let k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.5, 1.0, 0.4, share).coloured([1.5; GRAIN_NODES]).dissolving(0.8).hazed(0.3).seeded([0x2545_f491, 0x9e37_79b9]);
     let out = whole(&mut g, &Image::new(&input).then_reading(stages::grain(&k), &[Image::new(&aux)]));
     let reference: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, blurred[i], centre(i), &k)).collect();
     // Twins: the seed ignored, and the blur ignored.
@@ -199,5 +200,19 @@ fn the_seeded_dissolving_grain_matches_its_reference_on_every_branch() {
     judge("seeded grain", &out, &reference, &unseeded);
     let sharp: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, *p, centre(i), &k)).collect();
     judge("dissolving grain", &out, &reference, &sharp);
+    // Twin: the haze between the clumps ignored.
+    let clear: Vec<V4> = pixels.iter().enumerate().map(|(i, p)| cpu::grain(*p, blurred[i], centre(i), &k.hazed(0.0))).collect();
+    judge("hazed grain", &out, &reference, &clear);
 }
 
+
+/// From the faintest Amount the clumps take in the scene whole, so a faint grain is grains, not a texture
+/// over the photo: Amount moves the grain's contrast alone.
+#[test]
+fn any_amount_dissolves_whole_and_moves_the_contrast_alone() {
+    let k = |amount: f32| grain::grain(&grainy(amount, 1.0), scan(1.0), 1.0);
+    let (faint, full) = (k(0.01).expect("a faint grain"), k(1.0).expect("a whole grain"));
+    assert_eq!((faint.dissolve, full.dissolve), (1.0, 1.0), "the clumps whole at 1 % as at 100 %");
+    assert!((faint.stops / full.stops - 0.01).abs() < 1e-6, "the contrast follows Amount: {} {}", faint.stops, full.stops);
+    assert!(k(0.0).is_none(), "twin: no Amount, no grain");
+}

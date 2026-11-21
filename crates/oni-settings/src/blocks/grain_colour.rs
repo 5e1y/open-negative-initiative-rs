@@ -14,8 +14,8 @@ pub struct GrainColour {
 
 impl GrainColour {
     pub const RANGE: (f32, f32) = (0.0, 3.0);
-    /// Skin's chroma in the shadows about 1.25 times its own at Amount's top, and monochrome at the white.
-    pub const REST: GrainColour = GrainColour { black: 2.0, white: 0.0 };
+    /// The shadows' hue deepened a step under the former 2 (owner's eye), monochrome at the white.
+    pub const REST: GrainColour = GrainColour { black: 1.5, white: 0.0 };
 
     pub fn rests(&self) -> bool {
         *self == Self::REST
@@ -70,6 +70,6 @@ mod tests {
     fn only_a_moved_colour_rests_off() {
         assert!(GrainColour::default().rests());
         // Twin: either end moved.
-        assert!(!GrainColour { black: 1.5, ..GrainColour::REST }.rests() && !GrainColour { white: 0.5, ..GrainColour::REST }.rests());
+        assert!(!GrainColour { black: 1.0, ..GrainColour::REST }.rests() && !GrainColour { white: 0.5, ..GrainColour::REST }.rests());
     }
 }

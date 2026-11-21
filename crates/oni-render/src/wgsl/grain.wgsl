@@ -11,7 +11,7 @@ struct Params {
     // x: the stops a unit of the mean moves the light by; y, z: the table's first stop and its nodes a stop.
     dose: vec4<f32>,
     // x: the share of the blurred scene a clump takes at the whole share; y: one over the field's spread
-    // at full resolution, which a clump's edge is measured in.
+    // at full resolution, which a clump's edge is measured in; z: the share of it laid between clumps.
     mix: vec4<f32>,
     // A node's share, the next node's, its colour and the next one's, `GRAIN_NODES` of them: one row
     // read a pixel, no lane indexed.
@@ -96,8 +96,9 @@ fn grain_px(s: vec4<f32>, b: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         }
         field += wy[r] * row;
     }
-    // Inside a clump the scene gives way to its blur, so detail finer than a grain follows the grain.
-    let w = P.mix.x * node.x * smoothstep(0.5, 1.5, abs(field) * P.mix.y);
+    // Inside a clump the scene gives way to its blur, so detail finer than a grain follows the grain; a haze of it between.
+    let clump = smoothstep(0.5, 1.5, abs(field) * P.mix.y);
+    let w = P.mix.x * node.x * (P.mix.z + (1.0 - P.mix.z) * clump);
     let base = s.rgb + w * (b.rgb - s.rgb);
     return vec4<f32>(grain_laid(base, P.dose.x * node.x * field, node.y), s.a);
 }
