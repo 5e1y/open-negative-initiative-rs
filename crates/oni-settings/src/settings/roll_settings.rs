@@ -39,8 +39,8 @@ pub const FIELD_NAMES: [&str; 14] = [
     "chromaDecompression",
     "chromaDecompressionByHand",
     "separation",
-    "separationFamily",
     "separationByHand",
+    "dyeSet",
     "balanceStrength",
 ];
 
@@ -63,7 +63,7 @@ pub fn changed(before: &PipelineSettings, after: &PipelineSettings) -> BTreeSet<
             Field::Separation => {
                 before.separation != after.separation
                     || before.separation_by_hand != after.separation_by_hand
-                    || before.separation_family != after.separation_family
+                    || before.dye_set != after.dye_set
             }
             Field::BalanceStrength => before.balance_strength != after.balance_strength,
         })
@@ -109,7 +109,7 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
             Field::Separation => {
                 out.separation = donor.separation;
                 out.separation_by_hand = donor.separation_by_hand;
-                out.separation_family = donor.separation_family;
+                out.dye_set = donor.dye_set;
             }
             Field::BalanceStrength => out = dosed(&out, donor.balance_strength),
         }

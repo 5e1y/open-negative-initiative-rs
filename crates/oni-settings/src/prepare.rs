@@ -29,6 +29,9 @@ pub struct Draft {
     /// The step reached, by its name, so a step added later moves no stored one.
     pub step: String,
     pub film: ConversionMode,
+    /// The film stock picked, by its catalogue key; none until a hand picks one.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub stock: Option<String>,
     pub capture: String,
     #[serde(rename = "passOrder", skip_serializing_if = "Option::is_none", default)]
     pub pass_order: Option<PassOrder>,
@@ -201,6 +204,7 @@ mod tests {
             id: Id::new(),
             step: "base".into(),
             film: ConversionMode::Negative,
+            stock: None,
             capture: "camera".into(),
             pass_order: Some(PassOrder::Bgr),
             pass_offset: Some(0),

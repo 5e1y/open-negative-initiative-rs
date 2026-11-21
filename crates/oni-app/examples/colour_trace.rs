@@ -1,5 +1,6 @@
 //! `colour_trace <settings.json> <in.f32> <out> <scene|scan> [rederive]` prints a virtual Portra 800 negative on the CPU
 //! references, each stage as `w h` then f32 RGB; `rederive` reads the film's windows off the first two pixels (bare, grey).
+//! In place of a file, `rest:<dose>` is a digital photo at rest, its stock's measured dyes unmixed at that dose.
 
 use oni_pipeline::{conversion, film};
 use oni_render::cpu;
@@ -38,7 +39,11 @@ fn main() {
         println!("mode {:?}\nstage47: {:?}", s.mode, conversion::stage47(&s));
         return;
     }
-    let mut s: PipelineSettings = serde_json::from_str(&std::fs::read_to_string(&args[0]).unwrap()).unwrap();
+    let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let mut s: PipelineSettings = match args[0].strip_prefix("rest:") {
+        Some(dose) => PipelineSettings { separation: dose.parse().unwrap(), ..rest },
+        None => serde_json::from_str(&std::fs::read_to_string(&args[0]).unwrap()).unwrap(),
+    };
     let (w, h, input) = read(Path::new(&args[1]));
     let out = Path::new(&args[2]);
     std::fs::create_dir_all(out).unwrap();

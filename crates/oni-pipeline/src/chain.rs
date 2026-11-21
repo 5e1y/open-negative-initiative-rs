@@ -61,7 +61,7 @@ impl Pipeline {
         };
         // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is.
         let negative = self.filmed(graph, grained, s)?;
-        let printed = stages::laid(negative, vec![stages::stage47(&conversion::stage47(s))]);
+        let printed = stages::converted(negative, &conversion::stage47(s));
         let looked = if machine.is_some() { self.oni_finish(graph, printed, s, frame)? } else { printed };
         self.finishing(graph, looked, s, scale, reference, measuring)
     }

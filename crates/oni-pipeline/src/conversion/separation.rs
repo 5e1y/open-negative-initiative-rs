@@ -1,61 +1,81 @@
-//! The dye separation: the family's rows dosed from the identity, the chroma kept, off for passes.
+//! The dye separation: the stock's measured dyes unmixed on the scan's densities before the windows; off for passes,
+//! a positive and black and white.
 
 use super::*;
-
-/// `Separation.Family.dyeRows`, output channel per row.
-pub fn dye_rows(family: SeparationFamily) -> M3 {
-    match family {
-        SeparationFamily::KodakC41 => [[1.0000, -0.2379, -0.0092], [-0.0346, 1.0000, -0.0136], [-0.0327, -0.0790, 1.0000]],
-        SeparationFamily::FujiC41 => [[1.0000, -0.3034, -0.0059], [-0.0688, 1.0000, -0.0138], [-0.0129, -0.0655, 1.0000]],
-        SeparationFamily::GenericC41 => [[1.0000, -0.2706, -0.0076], [-0.0517, 1.0000, -0.0137], [-0.0228, -0.0723, 1.0000]],
-        SeparationFamily::Ecn2 => [[1.0000, -0.2706, -0.0082], [-0.0995, 1.0000, -0.0252], [0.0260, -0.1023, 1.0000]],
-        SeparationFamily::E6 => [[1.0000, -0.3584, 0.0067], [-0.3109, 1.0000, -0.0588], [-0.0269, -0.2385, 1.0000]],
-    }
-}
-
-fn mul(m: &M3, v: [f32; 3]) -> [f32; 3] {
-    std::array::from_fn(|i| m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2])
-}
-
-fn dot(a: [f32; 3], b: [f32; 3]) -> f32 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-}
-
-/// `Separation.matrix`: the identity at zero, the family's rows normalised to sum to one at one.
-pub fn separation_matrix(family: SeparationFamily, strength: f32) -> M3 {
-    let s = strength.clamp(oni_settings::blocks::separation::RANGE.0, oni_settings::blocks::separation::RANGE.1);
-    let full = dye_rows(family).map(|r| {
-        let sum = r[0] + r[1] + r[2];
-        r.map(|x| x / sum)
-    });
-    std::array::from_fn(|i| std::array::from_fn(|j| IDENTITY[i][j] + s * (full[i][j] - IDENTITY[i][j])))
-}
-
-/// `Separation.chromaKept`: `m` divided on the plane of colours by its gain there, the square root of
-/// its determinant on that plane, so a dose turns hues and keeps their mean saturation.
-pub fn chroma_kept(m: M3) -> M3 {
-    let u = [1.0 / 2f32.sqrt(), -1.0 / 2f32.sqrt(), 0.0];
-    let v = [1.0 / 6f32.sqrt(), 1.0 / 6f32.sqrt(), -2.0 / 6f32.sqrt()];
-    let (a, b, c, d) = (dot(u, mul(&m, u)), dot(u, mul(&m, v)), dot(v, mul(&m, u)), dot(v, mul(&m, v)));
-    let gain = (a * d - b * c).abs().sqrt();
-    if m == IDENTITY || gain <= 1e-6 {
-        return m;
-    }
-    m.map(|r| r.map(|x| x * (1.0 / gain) + (1.0 / 3.0) * (1.0 - 1.0 / gain)))
-}
-
-/// `Separation.rows`: the named family, else the mode's resting one; monochrome has nothing to unmix.
-pub fn separation_rows(family: Option<SeparationFamily>, strength: f32, mode: ConversionMode) -> M3 {
-    match family.or(SeparationFamily::resting(mode)) {
-        Some(f) if !mode.is_monochrome() => chroma_kept(separation_matrix(f, strength)),
-        _ => IDENTITY,
-    }
-}
+use crate::film::dyes::{self, Dyes};
+use oni_render::DyeSeparation;
 
 /// `Separation.dose`: narrowband passes separated the dyes in the capture, and a positive renders as
 /// a plain RAW, its dyes never unmixed (owner's call); a digital photo's negative is unmixed as any is.
 pub fn separation_dose(s: &PipelineSettings) -> f32 {
     if s.rgb_passes.is_none() && !s.mode.reads_positive() && !s.inverted_source { s.separation } else { 0.0 }
+}
+
+/// The measured dyes a frame unmixes: its stock's, where the separation runs at all.
+pub fn stock_dyes(s: &PipelineSettings) -> Option<&'static Dyes> {
+    (!s.mode.is_monochrome() && separation_dose(s) > 0.0).then(|| dyes::dyes(s.dye_set))
+}
+
+/// The kernel's arguments for the frame's measured dyes: above the bare film its windows open on, at its dose,
+/// each dye toned onto the grey its windows print neutral.
+pub fn stock_separation(s: &PipelineSettings) -> Option<DyeSeparation> {
+    let (low, high) = oni_settings::blocks::separation::RANGE;
+    let guard = oni_settings::axis::density_axis::log_guard(rendered_ceiling(s));
+    stock_dyes(s).map(|d| toned(d.separation(s.levels.windows().map(|w| w.black), s.separation.clamp(low, high)), &s.levels, guard))
+}
+
+/// The lightest density a tone is drawn from, ten times a clear film's light: past it a scan holds no picture.
+const TONE_LIGHTEST: f32 = -1.0;
+const TONE_SAMPLES: usize = 512;
+
+/// `d` toned on `levels`: each neutral grey they print, from the lightest density to the guard's, is unmixed, and
+/// each dye's amount there reads that grey's own density, so a grey prints as on the scan's densities, a colour
+/// on its dyes. At no dose each tone is the identity.
+pub fn toned(d: DyeSeparation, levels: &LevelsSet, log_guard: f32) -> DyeSeparation {
+    let w = levels.windows();
+    let densest = -log_guard.log10();
+    // The levels whose greys reach both ends on every channel, a share under the black read straight on.
+    let share = |c: usize, density: f32| (density - w[c].black) / (w[c].white - w[c].black);
+    let level_of = |c: usize, s: f32| if s > 0.0 { s.powf(w[c].gamma()) } else { s };
+    let ends = |density: f32| (0..3).map(move |c| level_of(c, share(c, density))).filter(|v| v.is_finite());
+    let from = ends(TONE_LIGHTEST).chain(ends(densest)).fold(0.0, f32::min);
+    let to = ends(TONE_LIGHTEST).chain(ends(densest)).fold(1.0, f32::max);
+    let greys: Vec<([f32; 3], [f32; 3])> = (0..TONE_SAMPLES)
+        .map(|i| {
+            let level = from + (to - from) * i as f32 / (TONE_SAMPLES - 1) as f32;
+            // The share of each window that prints `level` neutral, through its own gamma inside it.
+            let density: [f32; 3] = std::array::from_fn(|c| {
+                let share = if level > 0.0 { level.powf(1.0 / w[c].gamma()) } else { level };
+                w[c].black + share * (w[c].white - w[c].black)
+            });
+            (d.separated(std::array::from_fn(|c| density[c] - d.black[c])), density)
+        })
+        .collect();
+    let mut out = d;
+    for c in 0..3 {
+        // Each dye along the greys, its amount rising: a step that would not rise is passed over.
+        let mut rising: Vec<(f32, f32)> = Vec::with_capacity(greys.len());
+        for (amounts, density) in &greys {
+            if rising.last().is_none_or(|(a, _)| amounts[c] > *a) {
+                rising.push((amounts[c], density[c]));
+            }
+        }
+        // Windows a hand closed or crossed print no grey along a rising dye: each amount then reads as its density.
+        if rising.len() < 2 {
+            rising = vec![(-1.0, d.black[c] - 1.0), (5.0, d.black[c] + 5.0)];
+        }
+        let (first, last) = (rising[0].0, rising[rising.len() - 1].0);
+        let step = (last - first) / (oni_render::DYE_TONE_NODES - 1) as f32;
+        out.tone_low[c] = first;
+        out.tone_step[c] = step;
+        for (j, node) in out.tone.iter_mut().enumerate() {
+            let at = first + step * j as f32;
+            let hi = rising.partition_point(|(a, _)| *a <= at).clamp(1, rising.len() - 1);
+            let ((a0, d0), (a1, d1)) = (rising[hi - 1], rising[hi]);
+            node[c] = d0 + (at - a0) / (a1 - a0) * (d1 - d0);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -73,33 +93,42 @@ mod tests {
     }
 
     #[test]
-    fn the_separation_keeps_greys_and_the_mean_saturation() {
-        let rows = separation_rows(Some(SeparationFamily::KodakC41), 0.6, ConversionMode::Negative);
-        for r in rows {
-            assert!((r[0] + r[1] + r[2] - 1.0).abs() < 1e-6, "a grey is a fixed point: {r:?}");
+    fn closed_or_crossed_windows_tone_each_dye_as_its_density_and_render_finite() {
+        let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+        s.levels.red.white = s.levels.red.black;
+        s.levels.green = Levels { black: 1.2, white: 0.3, ..s.levels.green };
+        let k = stage47(&s);
+        let d = k.dyes.expect("a colour negative's dyes");
+        for x in [[0.5, 0.2, 0.1, 1.0], [0.001, 0.3, 0.9, 1.0], [2.0, 2.0, 2.0, 1.0]] {
+            assert!(oni_render::cpu::stage47(x, &k).iter().all(|v| v.is_finite()), "{x:?}");
         }
-        assert_eq!(separation_rows(Some(SeparationFamily::KodakC41), 0.0, ConversionMode::Negative), IDENTITY);
-        assert_eq!(separation_rows(None, 0.6, ConversionMode::Monochrome), IDENTITY);
-        // Twin: the bare dose, without `chromaKept`, multiplies the chroma and differs.
-        let bare = separation_matrix(SeparationFamily::KodakC41, 0.6);
-        assert!((0..3).any(|i| (0..3).any(|j| (bare[i][j] - rows[i][j]).abs() > 1e-3)));
+        // Every window closed: no grey rises along any dye, each amount reads as its density.
+        let mut closed = s.clone();
+        for w in [&mut closed.levels.red, &mut closed.levels.green, &mut closed.levels.blue] {
+            w.white = w.black;
+        }
+        let shut = stage47(&closed).dyes.unwrap();
+        assert!((0..3).all(|c| (shut.toned([0.4; 3])[c] - (0.4 + shut.black[c])).abs() < 1e-5), "{:?}", shut.toned([0.4; 3]));
+        assert!(d.toned([0.4; 3]).iter().all(|v| v.is_finite()));
+        // Twin: open windows tone the amount onto their grey, another density.
+        let open = stage47(&PipelineSettings::rest(ConversionMode::Negative, true)).dyes.unwrap();
+        assert!((open.toned([0.4; 3])[0] - (0.4 + open.black[0])).abs() > 1e-2);
     }
 
     #[test]
     fn a_positive_never_unmixes_its_dyes_and_rests_on_the_base_ceiling() {
         let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
         s.separation = 0.6;
-        s.separation_family = Some(SeparationFamily::E6);
         s.density_ceiling = 2.4;
         let k = stage47(&s);
         assert_eq!(separation_dose(&s), 0.0);
-        assert_eq!([k.sep_r, k.sep_g, k.sep_b], IDENTITY, "an old sidecar's dose unmixes nothing");
+        assert!(k.dyes.is_none(), "an old sidecar's dose unmixes nothing");
         assert_eq!(k.pedestal, oni_settings::axis::density_axis::pedestal(oni_settings::axis::density_axis::base()));
         // Twin: a negative keeps its dose and its own ceiling.
         s.mode = ConversionMode::Negative;
         let k = stage47(&s);
         assert_eq!(separation_dose(&s), 0.6);
-        assert_ne!([k.sep_r, k.sep_g, k.sep_b], IDENTITY);
+        assert_eq!(k.dyes.map(|d| d.dose), Some(0.6));
         assert_eq!(k.pedestal, oni_settings::axis::density_axis::pedestal(2.4));
     }
 }

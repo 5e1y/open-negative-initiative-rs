@@ -11597,5 +11597,48 @@
     "title": "The crop's warning stands over Auto White Balance's plate, and no digital photo shows it",
     "status": "done",
     "detail": "The warning 'Crop before using the automatic balance' was laid inside the keycap's plate, which holds keycaps alone: the socket takes its row's height as if the wrapped line were one, so a two-line warning overflowed onto the key. It now stands over the plate as a caution note. A digital photo is picture to its edges, with no film edge or holder to crop away before a measure: crop_first is false on it. examples/colour_trace.rs follows the unified pipeline (no separate Lighting, the reference the stock derives)."
+  },
+  {
+    "id": 2700,
+    "type": "change",
+    "title": "The dye separation unmixes each stock's measured dyes on every photo: a scan's densities solved exactly for the negative's dye amounts, the family's hand-tuned rows gone",
+    "status": "done",
+    "detail": "oni_pipeline::film::dyes reads each stock's channel_density and base_density from its spektrafilm profile (shipped unchanged, CC BY-SA 4.0) on the wavelengths it measures both, and a camera: the 1931 observer under the light table's D50, the virtual negative's own scan, its Rec. 2020 matrix inverted so the solve runs on the camera's own channels, never negative (on Rec. 2020's lobes dense mixtures read below zero and have no solution). No measured camera set was found under a clear licence (the NPL D5100 and Sigma data name none), so the colorimetric observer stands for a camera whose matrix makes it colorimetric. Per pixel (new kernel dye_separation, WGSL beside its scalar reference, a pass of its own so a print notch starts past it; cpu::stage47 composes both): density through the frame's gains and pedestal, above the bare film (its Levels black), to camera light by the stock's own bare film, then three Newton steps from the matrix (the inverse of the camera's response at a unit of each dye), each bounded at 0.5, a singular slope falling back on the matrix; dosed by Dye separation between the scan's densities and the dye amounts, resting on the whole unmix (1.0). Each dye's amount is then toned onto the density a neutral grey holding it reads on the frame's own windows (128 nodes through 512 greys, from ten times a clear film's light to the guard's density; closed windows read each amount as its density), so every grey the windows print neutral prints as before and the colours alone are unmixed. Removed: SeparationFamily, its hand-tuned rows, chroma_kept, the family tabs and dye source, separation_family, STOCK_DYES and dye_family, stage 4-7's matrix rows (its uniform two rows shorter). The Look Lab keeps the Swift machine's generic rows at 0.6 as the coordinates its sets were fitted in, its neutral set refitted to Pro on the measured dyes (median dE 0.55, the chain having no unmix of its own; its check bound 0.6). For a paper to come: the untoned dye amounts above the bare film (DyeSeparation::separated) and the stock's dye and base spectra (film::dyes::measured). Checks: dye_separation (the virtual Portra 800's scan of the chart at eight exposures and a grey ramp separates into the dye amounts it developed within 1.4e-6, twins its scan's own densities 0.58 off and Gold 200's dyes 0.11 off; every set converges within 5e-6 where the matrix alone misses by 0.05 to 0.16; the generic set is the mean, no profile's; a digital photo unmixes its stock's dyes from its bare film; only a colour negative at a dose unmixes; the tones keep every neutral grey and spread a colour; GPU within 1e-6, twin a dose 10 % off), branches (stage 4-7 after a separation), the kernel's unit checks, the closed-window tone."
+  },
+  {
+    "id": 2701,
+    "type": "change",
+    "title": "Each film stock names its measured dyes: its own profile's where one exists, else a generic C-41 set flagged as approximate",
+    "status": "done",
+    "detail": "oni_settings::dyes::STOCK_DYE_SETS beside the catalogue: Kodak Portra (Portra 400), Gold (Gold 200), UltraMax (UltraMax 400), Fujifilm Fujicolor (C200), Fujicolor Pro (Pro 400H), Superia (Superia X-TRA 400), CineStill 50D and 800T (Vision3 50D and 500T, their remjet removed); every other colour negative (generic, azure, redscale, CineStill 400D, ColorPlus, Harman Phoenix, Phoenix II and Red, LomoChrome Turquoise, Lucky, Mira) the generic C-41 set, the mean of the nine C-41 profiles shipped (Portra 160, 400, 800, Ektar 100, Gold 200, UltraMax 400, C200, Pro 400H, Superia X-TRA 400) at each wavelength more than half measure; black and white and slides none. A digital photo's virtual film uses its own stock's (Portra 800). resources/film gains ten profiles, unchanged, its CHANGELOG naming them and the derivation; About credits the measured dyes."
+  },
+  {
+    "id": 2702,
+    "type": "change",
+    "title": "Prepare the Roll's Film step picks the stock with the roll column's picker; a stock picked later relays the measured dyes in one step; the Dye Separation block names the dyes",
+    "status": "done",
+    "detail": "The Film step shows the roll's stock (its marker's, else its film type's generic one) with Select Film Stock opening the same StockPickerSheet (StockTarget::Prepare), its words saying the stock matters as much as the film type, and a note on its dyes (measured, or the generic set's warning). The draft keeps the stock picked. PREPARE ROLL lays the stock's measured dyes on every frame it measures (the measure itself reads at no unmix, before the windows) and writes the stock on the roll's marker when it is another. Set Film Stock in the roll column writes the stock's measured set on every frame of the roll, one gallery step, the open photo's block with it; the roll card reads the sets its frames unmix and warns, with its fix, on a set off the stock's. Source tab, Dye Separation: the dyes by their stock's name (the generic set flagged as approximate) and the dose slider, nothing else; its reset brings back the whole unmix on the stock's dyes. Texts in French and Spanish."
+  },
+  {
+    "id": 2703,
+    "type": "change",
+    "title": "Sidecar format 39: every photo moves onto its stock's measured dyes, a dose still on the family's rest to the whole unmix, a hand's kept",
+    "status": "done",
+    "detail": "migrate::measured_dyes, on every document before format 39 (sidecars, presets, share codes): the dose still at the family's rest (0.6) becomes 1.0, any other kept as the hand set it; the dye set from a digital photo's film, else the stock its sidecar's roll names, else, read beside its original, its folder's roll marker; separationFamily is dropped. Older steps that wrote the family's rest now name it (separation::FAMILY_REST). The newer-file corpus moves to version-40; the goldens print the measured set and the dose."
+  },
+  {
+    "id": 2704,
+    "type": "research",
+    "title": "The measured dyes against spektrafilm's C, before and after, on the ColorChecker chain, P1073076 and roll #8",
+    "status": "done",
+    "detail": "colour_trace on the virtual Portra 800's chart, the photo's patches and a grey ramp, dE2000 to spektrafilm's Portra 800 + Endura (docs/research/colour-diagnosis, C at the grey's exposure); film_compare on P1073076 with the owner's settings, dE2000 to C through the shipped LUT on eleven patches; roll #8 frames 6438, 6444, 6452 and 6456 on Fujicolor's C200 dyes, against the owner's reference (the measured dyes at 0.6 on DSC_6444, judged superb).",
+    "outcome": "Chain (chart / photo patches / greys): family 7.22 / 13.14 / 8.39; measured dyes 0.6: 7.16 / 13.04 / 9.51; 1.0: 7.81 / 13.14 / 10.09. P1073076 (mean of eleven patches): family 14.12, measured dyes at 1.0 14.22; cheek 15.6 to 13.3, forearm 14.8 to 11.2, cap 14.8 to 12.4, sky 5.3 to 2.7, fuselage red 7.7 to 13.7, tee 15.5 to 17.4, greens 1.5 worse. Roll #8 at 1.0 sits 1.4 to 1.8 dE00 (mean) from the 0.6 reference, the family 2.4 to 3.1 from it. As the diagnosis predicted, the unmix alone moves little on today's print: it fixes the colorimetric reading's crosstalk, but the windows balance greys at three points only, so the film's own greys off that line (its shadows) are unmixed too, +1.7 dE on the ramp at 1.0; the paper to come reads the dye amounts and owns the grey balance. A dark saturated colour's coloured grain lifts 2.4 L at the slider's top (1.0 on the family's rows): its check bound is 2.5, under the twin's 3.4."
+  },
+  {
+    "id": 2705,
+    "type": "tooling",
+    "title": "colour_trace prints a digital photo at rest at any dose; film_compare renders the measured dyes at chosen doses, a scan on its roll's stock",
+    "status": "done",
+    "detail": "colour_trace takes rest:<dose> in place of a settings file; film_compare adds B-dyes-<dose> for each dose ONI_COMPARE_DOSES lists, the measured set a digital photo's film's, else its roll marker's stock's; cost.rs times the dye separation's pass on a full-screen region."
   }
 ]

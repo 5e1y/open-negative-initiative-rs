@@ -9,7 +9,7 @@ use oni_app::app::{Options, Shell};
 use oni_app::{Library, Menus, Stocks};
 use oni_core::{Archive, EditorStore};
 use oni_library::paths;
-use oni_settings::blocks::SeparationFamily;
+use oni_settings::DyeSet;
 use oni_settings::film::FILM_STOCKS;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::PipelineSettings;
@@ -29,8 +29,8 @@ fn listed(folder: &Path) -> Vec<String> {
     names
 }
 
-fn family(path: &Path) -> Option<SeparationFamily> {
-    sidecar::read(path, false).unwrap().settings.separation_family
+fn family(path: &Path) -> DyeSet {
+    sidecar::read(path, false).unwrap().settings.dye_set
 }
 
 fn stock(id: &str) -> i32 {
@@ -50,7 +50,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     let root = PathBuf::from(paths::canonical(&root));
     let scans = root.join("Scans");
     let other = scans.join("Other");
-    let slide = PipelineSettings { separation_family: Some(SeparationFamily::E6), ..PipelineSettings::default() };
+    let slide = PipelineSettings { mode: oni_settings::ConversionMode::Positive, ..PipelineSettings::default() };
     sidecar::write(&slide, &other.join("D.tif"), WriteOptions::default()).unwrap();
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     let rig = common::rig(shots);
@@ -169,37 +169,37 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert_eq!(lib.get_info_title().as_str(), "Portra Trip");
     assert!(scans.join("Portra Trip").symlink_metadata().is_err(), "the folder keeps its name");
 
-    // Portra picked: Kodak's dyes on its three frames in one step with the marker, undone as one.
+    // Portra picked: its measured dyes on its three frames in one step with the marker, undone as one.
     lib.invoke_select_roll_type();
     rig.pump();
     assert!(stocks.get_shown());
     stocks.invoke_chosen(stock("kodak-portra"));
     rig.landed(&ctl);
     assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra".to_string()));
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "Portra writes Kodak's dyes on every frame");
-    assert_eq!(family(&other.join("D.tif")), Some(SeparationFamily::E6), "twin: a frame outside the roll keeps its family");
-    rig.until("the card reads Kodak's dyes off the frames", Duration::from_secs(10), || {
+    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "Portra writes its dyes on every frame");
+    assert_eq!(family(&other.join("D.tif")), DyeSet::GenericC41, "twin: a frame outside the roll keeps its own");
+    rig.until("the card reads Portra's dyes off the frames", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Dyes: Kodak"
+        lib.get_stock_dyes().as_str() == "Measured dyes: Kodak Portra 400"
     });
     rig.settle();
     println!("shot {}", rig.shot("roll-card-made").display());
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
-    assert_eq!(families(), vec![None; 3], "one undo gives the families back");
+    assert_eq!(families(), vec![DyeSet::GenericC41; 3], "one undo gives the dyes back");
     assert_eq!(marker().map(|f| (f.name, f.stock)), Some(("Portra Trip".to_string(), None)), "and the stock");
     ctl.act(oni_app::Act::Redo);
     rig.landed(&ctl);
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3]);
+    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3]);
 
-    // A black-and-white stock leaves every family alone, and the card says the dyes the frames
+    // A black-and-white stock leaves every frame's dyes alone, and the card says the dyes the frames
     // still unmix under a stock naming none.
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("ilford-hp5"));
     rig.landed(&ctl);
-    assert_eq!(families(), vec![Some(SeparationFamily::KodakC41); 3], "black and white writes no dyes");
+    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "black and white writes no dyes");
     rig.pump();
-    assert_eq!(lib.get_stock_dyes().as_str(), "Dyes: Kodak");
+    assert_eq!(lib.get_stock_dyes().as_str(), "Measured dyes: Kodak Portra 400");
 
     // A measured frame takes the banner away once the roll's frames are read again.
     let measured = frames[1].clone();
@@ -228,56 +228,25 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("fujifilm-superia"));
     rig.landed(&ctl);
-    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
     let (panel, g) = (w.global::<oni_app::PanelState>(), w.global::<oni_app::Store>());
-    assert_eq!(panel.get_dye_family(), 1, "the Dyes tabs read Fuji");
-    assert_eq!(panel.get_dye_source().as_str(), "From the film stock, Fujifilm Superia");
+    assert_eq!((panel.get_dye_set().as_str(), panel.get_dye_set_generic()), ("Fujifilm Superia X-TRA 400", false), "the block reads the stock's dyes");
     assert!(!g.get_dye_separation_modified(), "the stock's dyes are the block's rest: no reset key");
-    rig.until("the card reads Fuji's dyes", Duration::from_secs(10), || {
+    rig.until("the card reads Superia's dyes", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Dyes: Fuji"
+        lib.get_stock_dyes().as_str() == "Measured dyes: Fujifilm Superia X-TRA 400"
     });
-
-    // Kodak picked on the photo open: the block flags it against the stock, the card warns with the
-    // stock's dyes offered, and the block's reset lands back on the stock's dyes.
-    panel.invoke_dye_family_picked(0);
-    rig.pump();
-    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41));
-    assert_eq!(panel.get_dye_source().as_str(), "Not the film stock's: Fujifilm Superia has Fuji dyes");
-    assert!(g.get_dye_separation_modified(), "twin: off the stock's dyes, the reset key shows");
-    let warned = || (lib.get_stock_dyes().to_string(), lib.get_stock_dyes_fix().to_string());
-    let warning = ("Frames set to Kodak dyes, but this film stock has Fuji dyes".to_string(), "Use Fuji Dyes".to_string());
-    rig.until("the card warns of the frame's Kodak under the stock's Fuji", Duration::from_secs(10), || {
-        rig.pump();
-        warned() == warning
-    });
-    rig.settle();
-    println!("shot {}", rig.shot("roll-card-dyes-warned").display());
-
-    // The warning's key, clicked: the stock's dyes on every frame as one step, the open photo's with them.
-    common::click(&rig, w, common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Use Fuji Dyes").middle());
+    // A stock no profile measures: the generic set, flagged in the block.
+    lib.invoke_select_roll_type();
+    stocks.invoke_chosen(stock("lucky-color200"));
     rig.landed(&ctl);
-    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
-    rig.until("the card quiet on Fuji, its key gone", Duration::from_secs(10), || {
-        rig.pump();
-        warned() == ("Dyes: Fuji".to_string(), String::new())
-    });
+    rig.pump();
+    assert_eq!((panel.get_dye_set().as_str(), panel.get_dye_set_generic()), ("Generic C-41", true));
+    // Twin: one undo gives the open photo Superia's dyes back, unflagged.
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
-    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::KodakC41), "twin: one undo gives the hand's Kodak back");
-    rig.until("the card warning again", Duration::from_secs(10), || {
-        rig.pump();
-        warned() == warning
-    });
-    g.invoke_reset(4);
     rig.pump();
-    assert_eq!(ctl.state.borrow().store().settings().separation_family, Some(SeparationFamily::FujiC41));
-    assert_eq!((panel.get_dye_family(), g.get_dye_separation_modified()), (1, false));
-    assert_eq!(panel.get_dye_source().as_str(), "From the film stock, Fujifilm Superia");
-    rig.until("the card back on Fuji alone", Duration::from_secs(10), || {
-        rig.pump();
-        lib.get_stock_dyes().as_str() == "Dyes: Fuji"
-    });
+    assert_eq!((ctl.state.borrow().store().settings().dye_set, panel.get_dye_set_generic()), (DyeSet::FujifilmXtra400, false));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

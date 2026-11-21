@@ -1137,7 +1137,7 @@ msgstr "Aún no hay objetivos"
 msgid "A lens typed here joins your kit"
 msgstr "Un objetivo escrito aquí se suma a tu kit"
 
-#: crates/oni-ui/ui/export_fields.slint
+#: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/prepare.slint
 msgid "Film stock"
 msgstr "Emulsión"
 
@@ -1537,7 +1537,7 @@ msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige u
 msgid "Sets every frame of this roll to the film stock's dyes, leaving each frame's Dye separation amount as it is."
 msgstr "Ajusta todos los fotogramas de este rollo a los tintes de la emulsión, sin tocar la Separación de tintes de cada uno."
 
-#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/stocks.slint
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/stocks.slint
 msgid "Select Film Stock"
 msgstr "Seleccionar emulsión"
 
@@ -2750,32 +2750,16 @@ msgid "Dye Separation"
 msgstr "Separación de tintes"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Subtracts each dye's spill into the other two channels, so colours separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with."
-msgstr "Resta lo que cada tinte filtra a los otros dos canales, para que los colores se separen mientras los grises no se mueven. La familia indica el juego de tintes de la película; la dosis depende de la luz y del sensor con que se capturó."
+msgid "Turns the scan's colours back into the amounts of the film's three dyes, from the spectra its stock's profile measures, so each dye's spill into the other channels leaves while greys stay put. The stock picked for the roll names the dyes."
+msgstr "Devuelve los colores del escaneo a las cantidades de los tres tintes de la película, según los espectros que mide el perfil de su emulsión: el derrame de cada tinte en los otros canales desaparece y los grises se quedan en su sitio. La emulsión elegida para el rollo designa los tintes."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Dyes"
 msgstr "Tintes"
 
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Kodak"
-msgstr "Kodak"
-
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Fuji"
-msgstr "Fuji"
-
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Generic"
-msgstr "Genérico"
-
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "ECN-2"
-msgstr "ECN-2"
-
-#: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "E-6"
-msgstr "E-6"
+#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate."
+msgstr "Ningún perfil mide los tintes de esta emulsión: los sustituye un juego genérico de negativo en color, la media de los medidos, así que sus colores son aproximados."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Dye separation"
@@ -3106,8 +3090,8 @@ msgid "Credits"
 msgstr "Créditos"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "The virtual films are made from the film profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops and scans its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
-msgstr "Las películas virtuales se hacen con los perfiles de película de spektrafilm de Andrea Volpato, bajo CC BY-SA 4.0, que ONI revela y escanea a su manera, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas. Ambos se distribuyen sin cambios con sus licencias."
+msgid "The virtual films and the measured dyes of the dye separation are made from the film profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans and unmixes its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
+msgstr "Las películas virtuales y los tintes medidos de la separación de tintes se hacen con los perfiles de película de spektrafilm de Andrea Volpato, bajo CC BY-SA 4.0, que ONI revela, escanea y separa a su manera, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas. Ambos se distribuyen sin cambios con sus licencias."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "spektrafilm"
@@ -4393,6 +4377,10 @@ msgstr "Papelera de ONI"
 msgid "No film stock set"
 msgstr "Sin emulsión definida"
 
+#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/roll_card.rs
+msgid "Set Film Stock"
+msgstr "Definir emulsión"
+
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Rename Roll"
 msgstr "Renombrar rollo"
@@ -4632,10 +4620,6 @@ msgstr[0] "{n} original no encontrado"
 msgstr[1] "{n} originales no encontrados"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Set Film Stock"
-msgstr "Definir emulsión"
-
-#: crates/oni-app/src/app/organising/roll_card.rs
 msgid "Frames set to {family} dyes, but this film stock has {named} dyes"
 msgstr "Fotogramas con tintes {family}, pero esta emulsión tiene tintes {named}"
 
@@ -4644,8 +4628,8 @@ msgid "Use {named} Dyes"
 msgstr "Usar tintes {named}"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Dyes: {family}"
-msgstr "Tintes: {family}"
+msgid "Measured dyes: {dyes}"
+msgstr "Tintes medidos: {dyes}"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -4772,8 +4756,8 @@ msgid "A digital photo has no film to measure: PREPARE ROLL sets every photo of 
 msgstr "Una foto digital no tiene película que medir: PREPARAR ROLLO marca cada foto del rollo como digital; su color lo fijan después Temperatura y Matiz."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Choose the film type and what the roll was digitised with. The wrong film type converts every frame of the roll wrong."
-msgstr "Elige el tipo de película y con qué se digitalizó el rollo. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
+msgid "Choose the film type, the film stock and what the roll was digitised with. The wrong film type converts every frame of the roll wrong, and the stock matters as much: its measured dyes separate the colours of every frame."
+msgstr "Elija el tipo de película, la emulsión y con qué se digitalizó el rollo. Un tipo de película equivocado convierte mal todos los fotogramas del rollo, y la emulsión importa igual: sus tintes medidos separan los colores de cada fotograma."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."
@@ -4860,6 +4844,10 @@ msgstr "{count} fotogramas, agrupados en la última preparación del rollo."
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "Its colours are separated on {stock}'s measured dyes."
+msgstr "Sus colores se separan sobre los tintes medidos de {stock}."
 
 #: crates/oni-app/src/app/prepare/trace.rs
 msgid "Reading the first frame…"
@@ -5000,20 +4988,12 @@ msgid "Not rendered: {e}"
 msgstr "No se pudo mostrar: {e}"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "Not from a film stock"
-msgstr "No vienen de una emulsión"
+msgid "Generic C-41"
+msgstr "C-41 genérico"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
 msgstr "Falta la máscara"
-
-#: crates/oni-app/src/app/roll_tab.rs
-msgid "From the film stock, {stock}"
-msgstr "Según la emulsión, {stock}"
-
-#: crates/oni-app/src/app/roll_tab.rs
-msgid "Not the film stock's: {stock} has {family} dyes"
-msgstr "No son los de la emulsión: {stock} tiene tintes {family}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "R {red} · G {green} · B {blue}"

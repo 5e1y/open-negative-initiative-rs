@@ -1,6 +1,7 @@
 //! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
 //! Portra 800, with the scene the film reads and the film's scan; then the same photo with its negative's dye
-//! separation, its chroma decompression or both at rest, to weigh each. Each as `w h` then f32 RGB, linear Rec. 2020.
+//! separation, its chroma decompression or both at rest, to weigh each; then on its stock's measured dyes, at each dose
+//! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock. Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
@@ -28,7 +29,7 @@ fn main() {
     // Read through the migration, as the editor opens it; the original's sidecar is never written.
     let owner = sidecar::read(raw, true).expect("a sidecar").settings;
     std::fs::write(out.join("settings-owner.json"), serde_json::to_string_pretty(&owner).unwrap()).unwrap();
-    println!("film {:?}, gains {:?}, separation {} {:?}, decompression {}", owner.film(), owner.gains.stops, owner.separation, owner.separation_family, owner.chroma_decompression);
+    println!("film {:?}, gains {:?}, separation {} {:?}, decompression {}", owner.film(), owner.gains.stops, owner.separation, owner.dye_set, owner.chroma_decompression);
 
     let device = Device::open().expect("a GPU");
     let engine = Engine::shared(&device);
@@ -40,7 +41,16 @@ fn main() {
     let unmixed = PipelineSettings { separation: 0.0, ..owner.clone() };
     let undecompressed = PipelineSettings { chroma_decompression: 1.0, ..owner.clone() };
     let neither = PipelineSettings { separation: 0.0, chroma_decompression: 1.0, ..owner.clone() };
-    for (tag, s) in [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither)] {
+    // The measured dyes a switch lays: a digital photo's film's, else its roll marker's stock's.
+    let marked = raw.parent().and_then(oni_settings::roll_folder::roll).and_then(|r| r.stock).and_then(|k| oni_settings::dyes::dye_set(&k));
+    let dyed = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
+    println!("measured dyes {:?}", dyed.dye_set);
+    let doses = std::env::var("ONI_COMPARE_DOSES").unwrap_or_else(|_| owner.separation.to_string());
+    let on_dyes: Vec<(String, PipelineSettings)> =
+        doses.split(',').map(|d| (format!("dyes-{d}"), PipelineSettings { separation: d.parse().unwrap(), ..dyed.clone() })).collect();
+    let plain = [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither)].map(|(t, s)| (t.to_string(), s.clone()));
+    for (tag, s) in plain.iter().chain(&on_dyes) {
+        let (tag, s) = (tag.as_str(), s);
         write(out, &format!("B-{tag}"), &e.render(&negative, s, Some(side)).unwrap());
         // The chain's own steps up to the film: framed, the scene lit at the film's white, then its scan.
         let (graph, pipeline) = e.parts();

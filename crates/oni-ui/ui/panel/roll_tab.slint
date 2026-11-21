@@ -201,22 +201,19 @@ export component RollPane inherits Pane {
             Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }
         }
     }
-    // After the per-channel windows: a balanced grey is its fixed point. Monochrome and RGB passes run none.
+    // On the stock's measured dyes, before the windows: a grey the windows print neutral is its fixed point.
+    // Monochrome and RGB passes run none.
     if PanelState.separation-shown && !PanelState.slide: Block {
         title: @tr("Dye Separation");
         demo: "dye-separation";
-        help: @tr("Subtracts each dye's spill into the other two channels, so colours separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");
+        help: @tr("Turns the scan's colours back into the amounts of the film's three dyes, from the spectra its stock's profile measures, so each dye's spill into the other channels leaves while greys stay put. The stock picked for the roll names the dyes.");
         block: 4;
         modified: Store.dye-separation-modified;
         folded-by-default: true;
         Field {
             label: @tr("Dyes");
-            Tabs {
-                tabs: [@tr("Kodak"), @tr("Fuji"), @tr("Generic"), @tr("ECN-2"), @tr("E-6")];
-                selected: PanelState.dye-family;
-                picked(i) => { PanelState.dye-family = i; PanelState.dye-family-picked(i); }
-            }
-            Label { text: PanelState.dye-source; role: TextRole.note; }
+            Label { text: PanelState.dye-set; }
+            if PanelState.dye-set-generic: Label { text: @tr("No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate."); role: TextRole.note; }
         }
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }

@@ -26,6 +26,7 @@ impl Ctl {
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.film, r.stop.clone(), r.session);
+            let stock = r.stock_or_default();
             let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
@@ -52,6 +53,8 @@ impl Ctl {
                     };
                     let mut start = roll::start(&before, film, window, mask.as_ref(), stops(path));
                     start.inverted_source = false;
+                    // A roll prepared now unmixes its stock's measured dyes.
+                    crate::app::organising::roll_card::dyed(&mut start, stock.as_deref());
                     if let Some(passes) = rgb_passes::named_by(path) {
                         let passes = registrar.registered(path, passes);
                         rgb_passes::hold_one(path, passes.clone());
@@ -131,6 +134,7 @@ impl Ctl {
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
     /// gallery step, the editor on the roll's first frame alone, what was left out named.
     pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
+        let picked = self.state.borrow().prepare.stock.clone();
         let Some(prepared) = self.prepare_ended(session) else { return };
         let Some(written) = written.filter(|w| !w.is_empty()) else {
             self.state.borrow_mut().store.forget_measured();
@@ -156,6 +160,10 @@ impl Ctl {
             .flat_map(|(lead, p)| rgb_passes::paths_beside(p, lead).into_iter().filter(move |f| f != lead))
             .collect();
         let touched: Vec<String> = frames.iter().chain(&passes).cloned().collect();
+        // The stock picked becomes the roll's, its dyes already on every frame the measure wrote.
+        if let (Some(first), Some(stock)) = (frames.first(), picked.as_deref()) {
+            self.set_stock_of_roll_at(first, stock);
+        }
         self.land_prepared(&frames, &touched, prepared, message, move |c| c.index_passes(&written, &passes));
     }
 

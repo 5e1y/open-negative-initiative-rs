@@ -1,6 +1,8 @@
 //! Kernels that read their input, and any auxiliary image, at the pixel they write.
 
 use super::*;
+use oni_graph::Image;
+use oni_render::DyeSeparation;
 
 /// A kernel's composed shader; for one reading only its input, its source and its call on `v`, the
 /// input at `p`, so `laid` may run several in one pass.
@@ -31,6 +33,7 @@ impl Stage for PerPixel {
 }
 
 kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
+kernel!(DYE_SEPARATION, [wgsl::DYE_SEPARATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return dye_separation_px(load(p)); }");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
@@ -48,9 +51,23 @@ kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
 kernel!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(load(p), load1(p), vec2<f32>(p) + 0.5); }");
 kernel!(HALATION, [wgsl::HALATION_SOURCE, wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
-/// The fused stages 4 to 7.
+/// The fused stages 4 to 7 past the dye separation's pass, which `converted` lays before them.
 pub fn stage47(k: &Stage47) -> PerPixel {
-    PerPixel { name: "stage47", kernel: &STAGE47, params: bytemuck::bytes_of(&k.packed(0)).to_vec() }
+    PerPixel { name: "stage47", kernel: &STAGE47, params: bytemuck::bytes_of(&k.after_dyes().packed(0)).to_vec() }
+}
+
+/// The stock's dyes unmixed on the scan, a pass of its own: a print notch starts past it, from the cache.
+pub fn dye_separation(k: &Stage47, d: &DyeSeparation) -> PerPixel {
+    PerPixel { name: "dye-separation", kernel: &DYE_SEPARATION, params: uniform(d.head(), &d.rows(k.gain, k.pedestal, k.log_guard)) }
+}
+
+/// Stages 4 to 7 on `image` as `cpu::stage47` runs them: the dye separation's pass first where `k` names it.
+pub fn converted(image: Image, k: &Stage47) -> Image {
+    let image = match &k.dyes {
+        Some(d) => image.then(dye_separation(k, d)),
+        None => image,
+    };
+    image.then(stage47(k))
 }
 
 /// `CIExposureAdjust` by `ev` stops.

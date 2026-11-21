@@ -28,7 +28,7 @@ fn read(p: &str) -> PipelineSettings {
 /// What a frame on the stock's reference holds.
 fn on_film(s: &PipelineSettings) -> bool {
     let r = VirtualStock::KodakPortra800.reference();
-    s.virtual_film.is_some() && s.gains.stops == r.stops && s.levels == r.levels() && s.separation_family == Some(VirtualStock::KodakPortra800.dyes())
+    s.virtual_film.is_some() && s.gains.stops == r.stops && s.levels == r.levels() && s.dye_set == VirtualStock::KodakPortra800.dye_set()
 }
 
 #[test]

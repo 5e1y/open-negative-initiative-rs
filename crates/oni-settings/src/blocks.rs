@@ -1,4 +1,4 @@
-//! The small blocks of the chain: gains, the dye separation's family and doses, chroma
+//! The small blocks of the chain: gains, the dye separation's doses, chroma
 //! decompression's doses, the vignette, the grain, the halation, texture, sharpening, chroma denoise, the paper's gains.
 
 use crate::axis::pipeline;
@@ -25,49 +25,16 @@ impl Gains {
 /// The dye separation's doses; the dose itself is a field of the settings.
 pub mod separation {
     pub const RANGE: (f32, f32) = (0.0, 2.0);
-    /// The literature's dose, the one the measured scanner separates at.
-    pub const BASE: f32 = 0.6;
+    /// The whole unmix: the stock's dye amounts as its measured dyes make them.
+    pub const BASE: f32 = 1.0;
+    /// The rest the family's separation stood on before the measured dyes, recognised on the way in.
+    pub const FAMILY_REST: f32 = 0.6;
     /// The rest a frame written before the literature's dose carries.
     pub const PREVIOUS_BASE: f32 = 0.18;
     /// The rest a frame written before the dose was the hand's keeps until a key balances it.
     pub const FORMER_REST: f32 = 0.67;
     /// The rest before `FORMER_REST`, recognised on the way in.
     pub const FORMER_BASE: f32 = 1.0;
-}
-
-/// A dye set: which colorant spills into which channel. The process names it, never the picture.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum SeparationFamily {
-    #[serde(rename = "kodakC41")]
-    KodakC41,
-    #[serde(rename = "fujiC41")]
-    FujiC41,
-    #[serde(rename = "genericC41")]
-    GenericC41,
-    #[serde(rename = "ecn2")]
-    Ecn2,
-    #[serde(rename = "e6")]
-    E6,
-}
-
-impl SeparationFamily {
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::KodakC41 => "Kodak",
-            Self::FujiC41 => "Fuji",
-            Self::GenericC41 => "Generic",
-            Self::Ecn2 => "ECN-2",
-            Self::E6 => "E-6",
-        }
-    }
-
-    /// The family a mode rests on when the hand named none; monochrome has nothing to unmix.
-    pub fn resting(mode: crate::modes::ConversionMode) -> Option<Self> {
-        if mode.is_monochrome() {
-            return None;
-        }
-        Some(if mode.invert_flag() > 0.5 { Self::GenericC41 } else { Self::E6 })
-    }
 }
 
 /// How much colour the windows decompress with the tones.

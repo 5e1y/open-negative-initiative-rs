@@ -1,4 +1,4 @@
-//! The fused conversion kernel (`pipeline.metal`): inversion, levels, the dye separation, the print curve;
+//! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
 //! and the print alone, a digital photo's Lighting after its levels and curves.
 
 use super::*;
@@ -17,9 +17,6 @@ pub struct Stage47 {
     pub window: f32,
     pub low_points: [f32; 3],
     pub high_points: [f32; 3],
-    pub sep_r: [f32; 3],
-    pub sep_g: [f32; 3],
-    pub sep_b: [f32; 3],
     pub print_on: f32,
     pub print_stops: f32,
     pub print_contrast: f32,
@@ -37,6 +34,8 @@ pub struct Stage47 {
     pub balance_span: [f32; 3],
     pub film_share: f32,
     pub follow: f32,
+    /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
+    pub dyes: Option<super::dye_separation::DyeSeparation>,
 }
 
 impl Stage47 {
@@ -54,9 +53,6 @@ impl Stage47 {
             window: 3.0,
             low_points: [0.25; 3],
             high_points: [0.75; 3],
-            sep_r: [1.0, 0.0, 0.0],
-            sep_g: [0.0, 1.0, 0.0],
-            sep_b: [0.0, 0.0, 1.0],
             print_on: 0.0,
             print_stops: 0.0,
             print_contrast: 0.0,
@@ -73,6 +69,15 @@ impl Stage47 {
             balance_span: [1.0; 3],
             film_share: 0.0,
             follow: 1.0,
+            dyes: None,
+        }
+    }
+
+    /// What stage 4 reads past the dye separation's pass: its dye amounts as light, at unit gain and no pedestal.
+    pub fn after_dyes(&self) -> Self {
+        match self.dyes {
+            Some(_) => Self { gain: [1.0; 3], pedestal: 0.0, dyes: None, ..*self },
+            None => *self,
         }
     }
 
@@ -86,9 +91,7 @@ impl Stage47 {
                 v3(self.blue, self.log_guard),
                 v3(self.low_points, self.window),
                 v3(self.high_points, self.print_on),
-                v3(self.sep_r, self.print_stops),
-                v3(self.sep_g, self.print_contrast),
-                v3(self.sep_b, self.hunt),
+                [self.print_stops, self.print_contrast, self.hunt, 0.0],
                 v3(self.own_stops, self.base_stops),
                 v3(self.balance_low, self.base_contrast),
                 v3(self.balance_span, self.decompression),
@@ -105,7 +108,7 @@ impl Stage47 {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Packed {
-    rows: [[f32; 4]; 16],
+    rows: [[f32; 4]; 14],
     count: [u32; 4],
 }
 
@@ -176,13 +179,17 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_con
     midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-/// Stages 4 to 7 on one pixel.
+/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
-    let e = printed3(windowed(s, k), k);
+    let (s, k) = match &k.dyes {
+        Some(d) => (super::dye_separation::dye_separation(s, k, d), k.after_dyes()),
+        None => (s, *k),
+    };
+    let e = printed3(windowed(s, &k), &k);
     [e[0], e[1], e[2], s[3]]
 }
 
-/// Stages 4 and 5: the film's density, its windows, the chroma decompression and the dye separation.
+/// Stages 4 and 5: the film's density, its windows and the chroma decompression.
 fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
@@ -200,7 +207,7 @@ fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
         let shift = dot(e, LUMA) - dot(held, LUMA);
         e = map(held, |_, x| x + shift);
     }
-    [dot(k.sep_r, e), dot(k.sep_g, e), dot(k.sep_b, e)]
+    e
 }
 
 /// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.

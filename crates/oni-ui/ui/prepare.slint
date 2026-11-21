@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, beside the floor that shows a frame, the flags'
 // sheet or the base's scan. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Label, TextRole, Tone, Button, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, RollStyle, TileView, TileMarks, PassReorder, Picker, SheetFooter, WarningBand } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Label, TextRole, Tone, Button, Pager, Icons, Engraved, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, RollStyle, TileView, TileMarks, PassReorder, Picker, SheetFooter, WarningBand, StockIcon, StockStyle } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 export { RollFloor } from "prepare_floor.slint";
@@ -121,6 +121,16 @@ export component RollPanel inherits Surface {
                             selected: Preparing.film;
                             picked(i) => { Preparing.film = i; Preparing.film-picked(i); }
                         }
+                    }
+                    if !Preparing.digital: Field {
+                        label: @tr("Film stock");
+                        HorizontalLayout {
+                            spacing: Space.s;
+                            StockIcon { artwork: Preparing.stock-artwork; has-artwork: Preparing.stock-has-artwork; side: StockStyle.row; }
+                            Label { text: Preparing.stock; horizontal-stretch: 1; vertical-alignment: center; }
+                            Button { text: @tr("Select Film Stock"); enabled: !Preparing.measuring; clicked => { Preparing.choose-stock(); } }
+                        }
+                        if Preparing.stock-note != "": Label { role: TextRole.note; text: Preparing.stock-note; }
                     }
                     if !Preparing.digital: Field {
                         label: @tr("Digitised with");

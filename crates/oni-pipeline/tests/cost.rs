@@ -1,6 +1,6 @@
 //! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
 //! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
-//! photo's film effects at rest and on a notch, and a virtual negative on a full-screen region; without the
+//! photo's film effects at rest and on a notch, a virtual negative and the dye separation on a full-screen region; without the
 //! variable it returns at once.
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
@@ -247,4 +247,31 @@ fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
         b.push(ms(&mut g, &plain));
     }
     println!("virtual negative on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
+}
+
+/// The dye separation's pass on the same full-screen region, a negative's scan, against one plain per-pixel pass.
+#[test]
+fn the_dye_separation_s_gpu_time_on_a_full_screen_region() {
+    if std::env::var_os("ONI_BENCH_COST").is_none() {
+        return;
+    }
+    let Ok(mut g) = Graph::new() else { return };
+    let (w, h) = (3456u32, 2234u32);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let pixels: Vec<[f32; 4]> = (0..w * h)
+        .map(|i| {
+            let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
+            oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table)
+        })
+        .collect();
+    let source = g.upload(w, h, &pixels).unwrap();
+    let k = oni_pipeline::conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, true));
+    let unmixed = Image::new(&source).then(stages::dye_separation(&k, &k.dyes.expect("a digital photo's dyes")));
+    let plain = Image::new(&source).then(stages::luma_only());
+    let (mut a, mut b) = (Vec::new(), Vec::new());
+    for _ in 0..RUNS {
+        a.push(ms(&mut g, &unmixed));
+        b.push(ms(&mut g, &plain));
+    }
+    println!("dye separation on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
 }

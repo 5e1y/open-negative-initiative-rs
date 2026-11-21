@@ -57,7 +57,8 @@ pub(crate) fn file_through(original: &Path, facts: &Facts, rename: &dyn Fn(&Path
     let scan = |s: &crate::PipelineSettings| ours().and_then(|()| (facts.scan)(s));
     let exif = || ours().ok().and_then(|()| (facts.exif)());
     let guarded = Facts { mosaic: Mosaic::Asked(&mosaic), matrix: &matrix, scan: &scan, exif: &exif };
-    let converted = converted(&old, &guarded)?;
+    let mut converted = converted(&old, &guarded)?;
+    converted.document.settings = super::measured_dyes::marked(converted.from, std::mem::take(&mut converted.document.settings), original);
     if let (Some(stored), Some(folder), Some(name)) = (&converted.draft, path.parent(), original.file_name().and_then(|n| n.to_str())) {
         ours()?;
         // A draft a newer build keeps is its own: this frame's, transient, is left to it.

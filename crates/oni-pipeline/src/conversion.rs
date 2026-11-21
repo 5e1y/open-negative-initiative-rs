@@ -3,10 +3,11 @@
 
 use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
-use oni_settings::blocks::SeparationFamily;
 use oni_settings::levels::{Levels, LevelsSet};
 use oni_settings::tone::{Print, Tone, color_density};
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::PipelineSettings;
+#[cfg(test)]
+use oni_settings::ConversionMode;
 use std::ops::RangeInclusive;
 
 pub type M3 = [[f32; 3]; 3];
@@ -51,14 +52,14 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let print = &s.print;
     let mono = s.mode.is_monochrome();
-    let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
-    let sep = separation_rows(s.separation_family, separation_dose(s), s.mode);
     let base = print.hunt_base.unwrap_or(Tone::NEUTRAL);
     let (decompression, film_share) = decompression_weights(s);
-    let windows = lv.windows();
-    let unreached = s.levels.windows();
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
+    let dyes = stock_separation(s);
+    let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
+    let unreached = s.levels.windows();
+    let windows = lv.windows();
     Stage47 {
         gain: s.gains.stops.map(f32::exp2),
         red: vector(&lv.red),
@@ -71,9 +72,6 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         window: pipeline::DMAX,
         low_points: windows.map(|w| w.shadow_ordinate()),
         high_points: windows.map(|w| w.highlight_ordinate()),
-        sep_r: sep[0],
-        sep_g: sep[1],
-        sep_b: sep[2],
         print_on: if print.bypassed { 0.0 } else { 1.0 },
         print_stops: print.exposure,
         print_contrast: print.contrast,
@@ -90,6 +88,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         balance_span: unreached.map(|w| signed_span(&w)),
         film_share,
         follow: if mono { 1.0 } else { Print::FOLLOW },
+        dyes,
     }
 }
 
@@ -101,11 +100,11 @@ mod tests {
     fn a_monochrome_frame_carries_no_hunt_density_or_unmix() {
         let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
         let k = stage47(&s);
-        assert_eq!((k.hunt, k.density, k.follow, k.sep_r), (0.0, 1.0, 1.0, [1.0, 0.0, 0.0]));
-        // Twin: a colour negative at rest carries Hunt and the resting C-41 unmix.
+        assert_eq!((k.hunt, k.density, k.follow, k.dyes), (0.0, 1.0, 1.0, None));
+        // Twin: a colour negative at rest carries Hunt and its measured dyes, wholly unmixed.
         let n = stage47(&PipelineSettings::rest(ConversionMode::Negative, true));
         assert_eq!(n.hunt, 1.0);
-        assert_ne!(n.sep_r, [1.0, 0.0, 0.0]);
+        assert_eq!(n.dyes.map(|d| d.dose), Some(1.0));
         assert_eq!((n.decompression, n.film_share), (0.5, 0.5));
     }
 }

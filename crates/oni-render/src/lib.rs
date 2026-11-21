@@ -11,6 +11,7 @@ pub use kernel::color_cube::ColorCube;
 pub use kernel::color_matrix::ColorMatrix;
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};
+pub use kernel::dye_separation::{DYE_STEP_BOUND, DYE_STEPS, DYE_TONE_NODES, DyeSeparation};
 pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;

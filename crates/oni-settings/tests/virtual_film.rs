@@ -47,14 +47,14 @@ fn plain_37() -> Value {
 
 #[test]
 fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_dropped() {
-    assert_eq!(VERSION, chain::DIGITAL_ON_FILM_VERSION);
+    assert_eq!(VERSION, chain::STOCK_DYES_VERSION);
     let stored = plain_37();
     let before: PipelineSettings = serde_json::from_value(stored["settings"].clone()).unwrap();
     let doc = read(&stored);
     let s = &doc.settings;
     let reference = VirtualStock::KodakPortra800.reference();
     assert_eq!((s.mode, s.virtual_film.map(|f| (f.stock, f.exposure))), (ConversionMode::Digital, Some((VirtualStock::KodakPortra800, 0.0))));
-    assert_eq!((s.gains.stops, s.levels, s.separation_family), (reference.stops, reference.levels(), Some(VirtualStock::KodakPortra800.dyes())));
+    assert_eq!((s.gains.stops, s.levels, s.dye_set, s.separation), (reference.stops, reference.levels(), VirtualStock::KodakPortra800.dye_set(), 1.0));
     assert_eq!(s.print.exposure, 0.4 + Print::RESTING_EXPOSURE, "Lighting's move kept on the negative's rest");
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
     assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, before.grain, before.halation));

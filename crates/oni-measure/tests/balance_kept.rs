@@ -7,7 +7,6 @@ use oni_graph::Graph;
 use oni_measure::key::{self, Decoded, Measurer};
 use oni_pipeline::flat_field::Mask;
 use oni_pipeline::resident::Files;
-use oni_settings::blocks::SeparationFamily;
 use oni_settings::cg::{Point, Rect, Size};
 use oni_settings::frame::{ContactSheetGrid, Correction, FlatFieldMask, RgbPasses, RollReference};
 use oni_settings::modes::{Face, SourceEncoding};
@@ -37,7 +36,7 @@ const INPUTS: [Change; 26] = [
     ("gains", |s| s.gains.stops[0] += 0.4),
     ("density_ceiling", |s| s.density_ceiling += 0.3),
     ("separation", |s| s.separation = 0.9),
-    ("separation_family", |s| s.separation_family = Some(SeparationFamily::FujiC41)),
+    ("dye_set", |s| s.dye_set = oni_settings::DyeSet::FujifilmC200),
     ("separation_by_hand", |s| s.separation_by_hand = !s.separation_by_hand),
     ("flat_field", |s| {
         s.flat_field.mask = FlatFieldMask::ValoiEasy35V1;

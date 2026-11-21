@@ -102,6 +102,7 @@ impl Ctl {
         let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
         let done: Vec<bool> = Step::ALL.iter().map(|s| done(*s, step, r.capture, walked, &r.flat, r.base.is_some())).collect();
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
+        let stock = oni_settings::film::film_stock(r.stock_or_default().as_deref());
         let ends = walk_ends(step, capture, film);
         let show_card = shown_path != r.shown_path;
         let base_path = (step == Step::Base).then(|| r.base_shown().map(|f| f.path.clone())).flatten();
@@ -137,6 +138,11 @@ impl Ctl {
         p.set_left_out(left_out_text(left_out).into());
         p.set_film(ConversionMode::ALL.iter().position(|f| *f == film).unwrap_or(0) as i32);
         p.set_digital(film == ConversionMode::Digital);
+        let artwork = stock.and_then(|k| crate::stocks::icon(k.icon_name));
+        p.set_stock(stock.map_or(SharedString::new(), |k| k.display_name.into()));
+        p.set_stock_has_artwork(artwork.is_some());
+        p.set_stock_artwork(artwork.unwrap_or_default());
+        p.set_stock_note(stock_note(stock).into());
         p.set_capture(Capture::ALL.iter().position(|c| *c == capture).unwrap_or(1) as i32);
         p.set_passes_note(passes_note.into());
         p.set_flat_on(flat.mask != oni_settings::frame::FlatFieldMask::None);
@@ -289,4 +295,16 @@ fn sentence(why: &str) -> String {
     let first = chars.next().map(|c| c.to_uppercase().collect::<String>()).unwrap_or_default();
     let end = if why.ends_with(['.', '?', '!']) { "" } else { "." };
     format!("{first}{}{end}", chars.as_str())
+}
+
+/// What the Film step says of a stock's dyes: measured on its own profile, a generic set standing in, or none to
+/// unmix in black and white or on a slide.
+pub(super) fn stock_note(stock: Option<&oni_settings::film::FilmStockKind>) -> String {
+    match stock.and_then(|k| oni_settings::dyes::dye_set(k.id)) {
+        Some(set) if set.is_generic() => {
+            tr("No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate.").to_string()
+        }
+        Some(set) => tr!("Its colours are separated on {stock}'s measured dyes.", stock = crate::app::roll_tab::dye_set_name(set)),
+        None => String::new(),
+    }
 }

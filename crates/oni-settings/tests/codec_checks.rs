@@ -2,7 +2,7 @@
 //! before it, each with a twin that fails when the migration reaches too far or not at all.
 
 use oni_settings::axis::{density_axis, pipeline};
-use oni_settings::blocks::{ChromaDenoise, Gains, SeparationFamily, Sharpen, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Sharpen, Vignette, separation};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, chain};
@@ -63,7 +63,7 @@ fn full() -> PipelineSettings {
     // Off the resting ceiling and any round value, so a dropped key cannot round trip by luck.
     s.density_ceiling = 2.3137;
     s.separation = 0.37;
-    s.separation_family = Some(SeparationFamily::FujiC41);
+    s.dye_set = oni_settings::DyeSet::FujifilmC200;
     s.levels.red.black = 0.1373;
     s.levels.red.white = 2.4477;
     s.levels.blue.mid = 0.375;

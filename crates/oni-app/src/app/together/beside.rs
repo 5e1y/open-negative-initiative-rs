@@ -7,7 +7,7 @@ use crate::editors::Reset;
 use crate::fields::Block;
 use oni_core::Field;
 use oni_library::roll_membership::RollKey;
-use oni_settings::blocks::SeparationFamily;
+use oni_settings::DyeSet;
 
 /// The reset keys a frame beside the open one stands off rest for: the panel's blocks, the editors'
 /// and the Scanner face's groups, each in its own order.
@@ -19,7 +19,7 @@ pub(crate) struct Beside {
 }
 
 /// What an answer was read on: the frames together's generation, the open frame's roll, stock and face.
-pub(super) type Read = (u64, Option<RollKey>, Option<SeparationFamily>, bool);
+pub(super) type Read = (u64, Option<RollKey>, Option<DyeSet>, bool);
 
 impl Ctl {
     /// Which reset keys a frame beside the open one stands off rest for; none while it stands alone.

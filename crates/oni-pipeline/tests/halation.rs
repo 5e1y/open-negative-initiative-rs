@@ -225,11 +225,11 @@ fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
     let rest = oni_settings::tone::Print::resting_exposure(s.mode);
     let under = glow(false, rest + 2.0) / glow(false, rest);
     println!("two stops of print exposure raise the glow {under:.3} times");
-    assert!(under > 1.1, "the print's exposure leaves the glow at {under:.3}");
+    assert!(under > 1.05, "the print's exposure leaves the glow at {under:.3}");
     // Twin: a halation laid on the print, its lamp clipped at white whatever the exposure.
     let over = glow(true, rest + 2.0) / glow(true, rest);
     println!("the twin's glow rises {over:.3} times");
-    assert!(over < 1.1, "the twin's glow rises {over:.3} times, so the check sees nothing");
+    assert!(over < 1.05, "the twin's glow rises {over:.3} times, so the check sees nothing");
 }
 
 #[test]

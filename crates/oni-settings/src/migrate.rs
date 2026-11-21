@@ -24,6 +24,7 @@ pub mod matrices;
 mod on_disk;
 pub mod reshape;
 pub mod scan_line;
+pub mod measured_dyes;
 pub mod strokes;
 
 #[cfg(test)]
@@ -242,6 +243,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     };
     converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
+    converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -262,12 +264,13 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     if named && version >= chain::NAMED_VERSION {
         let raw = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
-        let settings = digital_film::caught_up(version, digital_face::caught_up(version, settings), Some(&raw));
+        let settings = measured_dyes::caught_up(version, digital_film::caught_up(version, digital_face::caught_up(version, settings), Some(&raw)));
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
     let mut converted = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
+    converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     Ok(converted)
 }
 

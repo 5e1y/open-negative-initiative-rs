@@ -3,7 +3,7 @@
 
 use super::*;
 use oni_library::history::Marker;
-use oni_settings::film::dye_family;
+use oni_settings::dyes::dye_set;
 
 impl Ctl {
     pub(in crate::app) fn publish_info(&self) {
@@ -106,7 +106,7 @@ impl Ctl {
         drop(s);
         let read = self.roll_frames(&frames_key, &roll.paths);
         lib.set_roll_unmeasured(read.as_ref().is_some_and(|r| !r.measured));
-        let (dyes, fix) = roll_card::dyes_note(roll.film.stock.as_deref(), read.as_ref().map(|r| r.dyes.as_slice()));
+        let (dyes, fix) = roll_card::dyes_note(roll.film.stock.as_deref(), read.as_ref());
         lib.set_stock_dyes(dyes.into());
         lib.set_stock_dyes_fix(fix.into());
     }
@@ -118,22 +118,31 @@ impl Ctl {
         self.update_roll_of(roll, label, mutate);
     }
 
+    /// `stock` made the stock of the roll `path` lies in, the dyes it names on its frames, where it is another.
+    pub(in crate::app) fn set_stock_of_roll_at(self: &Rc<Self>, path: &str, stock: &str) {
+        let roll = self.state.borrow().roll_at(path).filter(|r| r.film.stock.as_deref() != Some(stock));
+        if let Some(roll) = roll {
+            self.update_roll_of(roll, tr("Set Film Stock"), |f| f.stock = Some(stock.to_string()));
+        }
+    }
+
     pub(super) fn update_roll_of(self: &Rc<Self>, roll: Roll, label: &str, mutate: impl FnOnce(&mut Film)) {
         let mut film = roll.film.clone();
         mutate(&mut film);
         if film != roll.film {
-            let family = film.stock.as_deref().filter(|_| film.stock != roll.film.stock).and_then(dye_family);
+            // A stock picked writes the measured dyes it names on every frame: one step with the marker.
+            let named = film.stock.clone().filter(|k| film.stock != roll.film.stock && dye_set(k).is_some());
             match roll.marker {
                 Some(folder) => {
-                    let members = if family.is_some() { self.state.borrow().folder_frames(&folder) } else { Vec::new() };
+                    let members = if named.is_some() { self.state.borrow().folder_frames(&folder) } else { Vec::new() };
                     let marker = Marker { before: oni_library::folders::roll(&folder), folder, after: Some(film) };
-                    self.gesture_as(label, &members, |store| store.lay_roll(&members, Some(marker), |s| roll_card::dyed(s, family), label));
+                    self.gesture_as(label, &members, |store| store.lay_roll(&members, Some(marker), |s| roll_card::dyed(s, named.as_deref()), label));
                 }
                 None => {
                     let frames = roll.paths;
                     let lay = |s: &mut oni_settings::PipelineSettings| {
                         s.film = Some(film.clone());
-                        roll_card::dyed(s, family);
+                        roll_card::dyed(s, named.as_deref());
                     };
                     self.gesture_as(label, &frames, |store| store.lay_roll(&frames, None, lay, label));
                 }

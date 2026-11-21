@@ -3,10 +3,11 @@
 
 use crate::axis::density_axis;
 use crate::blocks::{
-    ChromaDenoise, Gains, Grain, Halation, PaperCorrection, SeparationFamily, Sharpen, Texture, Vignette, chroma_decompression,
+    ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, chroma_decompression,
     filter_balance, separation,
 };
 use crate::curves::{CurveSet, SaturationCurve};
+use crate::dyes::DyeSet;
 use crate::film::Film;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
 use crate::geometry::placing::Placing;
@@ -58,11 +59,13 @@ pub struct PipelineSettings {
     pub gains: Gains,
     #[serde(rename = "densityCeiling")]
     pub density_ceiling: f32,
+    /// The dye separation's dose: the stock's measured dyes unmixed on the scan's densities, before the windows.
     pub separation: f32,
-    #[serde(rename = "separationFamily", skip_serializing_if = "Option::is_none", default)]
-    pub separation_family: Option<SeparationFamily>,
     #[serde(rename = "separationByHand")]
     pub separation_by_hand: bool,
+    /// The measured dyes the stock names, which picking a stock writes on its roll's frames.
+    #[serde(rename = "dyeSet")]
+    pub dye_set: DyeSet,
     #[serde(rename = "flatField")]
     pub flat_field: FlatField,
     pub corrections: Vec<Correction>,
@@ -132,8 +135,8 @@ impl Default for PipelineSettings {
             gains: Gains::default(),
             density_ceiling: density_axis::base(),
             separation: separation::BASE,
-            separation_family: None,
             separation_by_hand: false,
+            dye_set: DyeSet::default(),
             flat_field: FlatField::default(),
             corrections: Vec::new(),
             levels: LevelsSet::default(),
@@ -187,7 +190,7 @@ impl PipelineSettings {
         out.virtual_film = Some(VirtualFilm { stock, exposure: self.virtual_film.map_or(0.0, |f| f.exposure) });
         out.gains.stops = reference.stops;
         out.levels = reference.levels();
-        out.separation_family = Some(stock.dyes());
+        out.dye_set = stock.dye_set();
         out
     }
 
@@ -214,8 +217,8 @@ impl PipelineSettings {
             if self.gains == from.gains {
                 moved.gains = to.gains;
             }
-            if self.separation_family == from.separation_family {
-                moved.separation_family = to.separation_family;
+            if self.dye_set == from.dye_set {
+                moved.dye_set = to.dye_set;
             }
             if self.virtual_film == from.virtual_film {
                 moved.virtual_film = to.virtual_film;

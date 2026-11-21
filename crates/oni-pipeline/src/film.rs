@@ -3,6 +3,7 @@
 
 pub mod bake;
 pub mod cie;
+pub mod dyes;
 pub mod profile;
 
 use bake::M3;
@@ -74,7 +75,7 @@ fn bake(stock: VirtualStock) -> Stock {
             table[(n + row) * w + i] = [d[0] as f32, d[1] as f32, d[2] as f32, 0.0];
         }
     }
-    let reference = derived(&kernel, &table);
+    let reference = derived(stock, &kernel, &table);
     Stock { kernel, table, reference }
 }
 
@@ -104,19 +105,20 @@ pub fn plain_grey() -> f32 {
     cpu::stage47([GREY, GREY, GREY, 1.0], &k)[1]
 }
 
-/// The negative at rest read on `reference`, as a digital photo on that stock opens.
-pub fn on_reference(reference: &StockReference) -> PipelineSettings {
+/// The negative at rest read on `reference`, its stock's dyes unmixed, as a digital photo on that stock opens.
+pub fn on_reference(stock: VirtualStock, reference: &StockReference) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.density_ceiling = CEILING;
     s.gains.stops = reference.stops;
     s.levels = reference.levels();
+    s.dye_set = stock.dye_set();
     s
 }
 
 /// The stock's own reference: gains that make its bare film grey, each channel's black on the bare film,
 /// and its white where a scene grey, entering every window at one share, prints on the negative's print at
 /// rest as a plain RAW's render prints it.
-fn derived(kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
+fn derived(stock: VirtualStock, kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
     let scan = |scene: f32| cpu::virtual_negative([scene, scene, scene, 1.0], kernel, table);
     let (bare, grey) = (scan(0.0), scan(GREY));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
@@ -126,7 +128,8 @@ fn derived(kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
         let white = std::array::from_fn(|c| black[c] + (fraction(density(grey[c], stops[c])) - black[c]) / share);
         StockReference { stops, black, white }
     };
-    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&on_reference(&at(share))))[1];
+    // Placed with no unmix, as Prepare the Roll measures a roll: the dyes' tones keep its greys.
+    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&PipelineSettings { separation: 0.0, ..on_reference(stock, &at(share)) }))[1];
     let target = plain_grey();
     let (mut low, mut high) = (0.05f32, 1.0f32);
     let rising = printed(high) > printed(low);
@@ -152,10 +155,10 @@ mod tests {
             println!("{kind:?}: {derived:?}");
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
             let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);
-            let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(&held)));
+            let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(kind, &held)));
             assert!((0..3).all(|c| (printed[c] - plain_grey()).abs() < 2e-3), "{printed:?} {}", plain_grey());
             // Twin: the white placed for a print resting at no exposure prints the grey brighter.
-            let mut unlit = on_reference(&held);
+            let mut unlit = on_reference(kind, &held);
             unlit.print.exposure = 0.0;
             assert!((cpu::stage47(grey, &crate::conversion::stage47(&unlit))[1] - plain_grey()).abs() > 0.02);
         }

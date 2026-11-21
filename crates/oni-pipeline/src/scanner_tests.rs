@@ -19,14 +19,14 @@ fn a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off() {
 }
 
 #[test]
-fn the_machine_unmixes_at_the_frame_s_own_dye_separation() {
+fn the_look_lab_s_coordinates_unmix_as_the_swift_machine_did() {
     let roll = check_roll();
-    assert_eq!(roll.separation, 0.6, "a frame at rest unmixes as the Swift machine did");
-    let family = roll.separation_family.or(SeparationFamily::resting(roll.mode)).unwrap();
-    assert_eq!(separation(&roll), separation_matrix(family, 0.6));
-    assert_eq!(separation(&PipelineSettings { separation: 0.0, ..roll.clone() }), IDENTITY);
-    // Twin: a dose that moved changes the rows, so the slider is not ignored.
-    assert_ne!(separation(&PipelineSettings { separation: 1.0, ..roll.clone() }), separation(&roll));
+    let m = separation(&roll);
+    assert!(m.iter().all(|r| (r[0] + r[1] + r[2] - 1.0).abs() < 1e-6), "a grey is a fixed point: {m:?}");
+    assert!((m[0][1] - 0.6 * (-0.2706 / (1.0 - 0.2706 - 0.0076))).abs() < 1e-6, "{m:?}");
+    // Twin: on RGB passes the coordinates unmix nothing.
+    let passes = oni_settings::frame::RgbPasses { red: "r".into(), green: "g".into(), blue: "b".into(), registration: None };
+    assert_eq!(separation(&PipelineSettings { rgb_passes: Some(passes), ..roll.clone() }), IDENTITY);
 }
 
 #[test]

@@ -75,12 +75,12 @@ pub fn all() -> &'static [Row] {
             Row { id: "densityCeiling", covers: &["densityCeiling"], sliders: vec![], carry: carry!(density_ceiling) },
             Row {
                 id: "separation",
-                covers: &["separation", "separationFamily", "separationByHand"],
+                covers: &["separation", "separationByHand", "dyeSet"],
                 sliders: vec![],
                 carry: |from, to| {
                     to.separation = from.separation;
-                    to.separation_family = from.separation_family;
                     to.separation_by_hand = from.separation_by_hand;
+                    to.dye_set = from.dye_set;
                 },
             },
             Row {
@@ -325,8 +325,8 @@ pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
     block.capture_stops = settings.capture_stops;
     block.rgb_passes = settings.rgb_passes.clone();
     block.pass_of = settings.pass_of.clone();
-    // The dye family names the stock; the dose is a look and returns to rest.
-    block.separation_family = settings.separation_family;
+    // The measured dyes name the stock; the dose is a look and returns to rest.
+    block.dye_set = settings.dye_set;
     block.roll_reference_declined = settings.roll_reference_declined;
     // A slide measured on its gains alone stands on them, as a negative stands on its roll.
     if settings.roll_reference.is_none()

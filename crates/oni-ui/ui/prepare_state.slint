@@ -24,6 +24,11 @@ export global Preparing {
     in property <string> differ;
     in property <string> left-out;
     in-out property <int> film;
+    // The roll's film stock, its artwork and what its dyes are: measured, generic, or none to unmix.
+    in property <string> stock;
+    in property <image> stock-artwork;
+    in property <bool> stock-has-artwork;
+    in property <string> stock-note;
     // A digital roll walks the film step alone and is digitised with nothing to choose.
     in property <bool> digital;
     in-out property <int> capture: 1;
@@ -131,6 +136,7 @@ export global Preparing {
     callback roll-trace-resized(length, length);
     callback step-picked(int);
     callback film-picked(int);
+    callback choose-stock();
     callback capture-picked(int);
     callback pass-moved(int, int);
     callback shift-grouping();

@@ -1,31 +1,19 @@
 //! The Roll tab's settings blocks (`SettingsPane`): the flat-field's toggle, mask and sliders, the
-//! Scan Profile a file naming no profile is read by, Source Balance's named ends, and the dye family
+//! Scan Profile a file naming no profile is read by, Source Balance's named ends, and the measured dyes
 //! the separation runs.
 
 use super::Ctl;
 use crate::{MenuLine, PanelState};
 use oni_i18n::tr;
 use oni_core::Command;
-use oni_settings::blocks::SeparationFamily;
-use oni_settings::film::{FilmStockKind, dye_family};
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, PipelineSettings, SourceEncoding, VirtualStock};
+use oni_settings::{ConversionMode, DyeSet, PipelineSettings, SourceEncoding, VirtualStock};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
-/// `Separation.Family.allCases`, in the bar's order.
-pub(super) const FAMILIES: [SeparationFamily; 5] =
-    [SeparationFamily::KodakC41, SeparationFamily::FujiC41, SeparationFamily::GenericC41, SeparationFamily::Ecn2, SeparationFamily::E6];
-
-/// The name the Dyes tabs give a family.
-pub(super) fn family_name(family: SeparationFamily) -> &'static str {
-    match family {
-        SeparationFamily::KodakC41 => tr("Kodak"),
-        SeparationFamily::FujiC41 => tr("Fuji"),
-        SeparationFamily::GenericC41 => tr("Generic"),
-        SeparationFamily::Ecn2 => tr("ECN-2"),
-        SeparationFamily::E6 => tr("E-6"),
-    }
+/// The name a measured dye set goes by: its stock's, the generic set's own.
+pub(super) fn dye_set_name(set: DyeSet) -> String {
+    set.stock_name().map_or_else(|| tr("Generic C-41").to_string(), str::to_string)
 }
 
 /// The name the Film Type tabs give a mode, wherever a sentence names it.
@@ -35,15 +23,6 @@ pub(super) fn mode_name(mode: ConversionMode) -> &'static str {
         ConversionMode::Positive => tr("Positive"),
         ConversionMode::Monochrome => tr("B&W"),
         ConversionMode::Digital => tr("Digital"),
-    }
-}
-
-/// Where the Dyes tabs' family comes from: the roll's stock, or another than the stock's own.
-pub(super) fn dye_source(family: SeparationFamily, stock: Option<&FilmStockKind>) -> String {
-    match stock.and_then(|k| dye_family(k.id).map(|named| (k, named))) {
-        Some((k, named)) if named == family => tr!("From the film stock, {stock}", stock = k.display_name),
-        Some((k, named)) => tr!("Not the film stock's: {stock} has {family} dyes", stock = k.display_name, family = family_name(named)),
-        None => tr("Not from a film stock").to_string(),
     }
 }
 
@@ -142,12 +121,6 @@ impl Ctl {
     pub(super) fn wire_roll_tab(me: &Rc<Ctl>, window: &crate::MainWindow) {
         let panel = window.global::<PanelState>();
         let p = me.clone();
-        panel.on_dye_family_picked(move |i| {
-            if let Some(family) = usize::try_from(i).ok().and_then(|i| FAMILIES.get(i)) {
-                p.write_settings(|s| s.separation_family = Some(*family));
-            }
-        });
-        let p = me.clone();
         panel.on_encoding_picked(move |i| {
             if let Some(&encoding) = usize::try_from(i).ok().and_then(|i| ENCODINGS.get(i)) {
                 p.write_settings(|s| s.source_encoding = (encoding != SourceEncoding::Srgb).then_some(encoding));
@@ -191,20 +164,18 @@ impl Ctl {
         self.write_settings(|s| s.flat_field = chose(&s.flat_field, line));
     }
 
-    /// The Dyes tabs on the family the open frame unmixes, and where that family comes from.
+    /// The Dye Separation block on the measured dyes the open frame unmixes.
     pub(super) fn publish_dyes(&self) {
         let Some(w) = self.window() else { return };
-        let (family, stock, stale) = {
+        let (set, stale) = {
             let s = self.state.borrow();
-            let settings = s.store.settings();
-            let family = settings.separation_family.or_else(|| SeparationFamily::resting(settings.mode)).unwrap_or(SeparationFamily::GenericC41);
             // The roll card read its frames on another state of the open photo: it reads them again.
             let stale = s.org.frames.as_ref().is_some_and(|((_, bearing), _)| *bearing != s.open_bearing());
-            (family, s.open_stock(), stale)
+            (s.store.settings().dye_set, stale)
         };
         let panel = w.global::<PanelState>();
-        panel.set_dye_family(FAMILIES.iter().position(|f| *f == family).unwrap_or(2) as i32);
-        panel.set_dye_source(dye_source(family, stock).into());
+        panel.set_dye_set(dye_set_name(set).into());
+        panel.set_dye_set_generic(set.is_generic());
         if stale {
             self.publish_info();
         }
@@ -254,14 +225,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_dyes_say_whether_they_are_the_film_stocks() {
-        let fujicolor = oni_settings::film::film_stock(Some("fujifilm-fujicolor"));
-        assert_eq!(dye_source(SeparationFamily::FujiC41, fujicolor), "From the film stock, Fujifilm Fujicolor");
-        // Twin: another family than the stock's is flagged with the stock's own.
-        assert_eq!(dye_source(SeparationFamily::KodakC41, fujicolor), "Not the film stock's: Fujifilm Fujicolor has Fuji dyes");
-        assert_eq!(dye_source(SeparationFamily::GenericC41, None), "Not from a film stock");
-        let hp5 = oni_settings::film::film_stock(Some("ilford-hp5"));
-        assert_eq!(dye_source(SeparationFamily::KodakC41, hp5), "Not from a film stock", "black and white has no dyes");
+    fn a_dye_set_goes_by_its_stocks_name_and_the_generic_set_by_its_own() {
+        assert_eq!(dye_set_name(DyeSet::KodakPortra400), "Kodak Portra 400");
+        // Twin: the generic set names no stock.
+        assert_eq!(dye_set_name(DyeSet::GenericC41), "Generic C-41");
     }
 
     #[test]
