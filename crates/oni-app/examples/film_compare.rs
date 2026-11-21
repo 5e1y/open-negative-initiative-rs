@@ -2,12 +2,14 @@
 //! Portra 800, with the scene the film reads and the film's scan; then the same photo with its negative's dye
 //! separation, its chroma decompression or both at rest, to weigh each; then on its stock's measured dyes, at each dose
 //! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock; then printed on
-//! the default paper (`paper`) and on ONI's own print (`oni`). Each as `w h` then f32 RGB, linear Rec. 2020.
+//! the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
+//! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`). Each as `w h` then f32
+//! RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
 use oni_pipeline::{Inputs, conversion, stages};
-use oni_settings::{PipelineSettings, sidecar};
+use oni_settings::{Face, PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
@@ -70,5 +72,11 @@ fn main() {
             let pixels = graph.render(&image, region, None).unwrap();
             write(out, &format!("{name}-{tag}"), &Linear { width: region.w as usize, height: region.h as usize, pixels });
         }
+    }
+    let pro = PipelineSettings { face: Face::Pro, ..papered };
+    for (tag, stops) in [("paper-under", -1.0), ("paper-pro", 0.0), ("paper-over", 1.0)] {
+        let mut lit = pro.clone();
+        lit.print.exposure += stops;
+        write(out, &format!("B-{tag}"), &e.render(&negative, &lit, Some(side)).unwrap());
     }
 }
