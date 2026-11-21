@@ -280,7 +280,7 @@ fn a_dust_patch_from_the_cache_heals_its_stroke() {
     let plain = engine.render(&negative, &settings, None).unwrap();
     let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
     let point = |x: f64, y: f64| oni_settings::cg::Point { x, y };
-    settings.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0 }];
+    settings.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0, gesture: None }];
     let missing = engine.render(&negative, &settings, None).unwrap();
     assert!(missing.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6), "no patch, no change");
     // A bright patch the size of the tile: the frame is 64 × 48, so the tile is the whole frame.

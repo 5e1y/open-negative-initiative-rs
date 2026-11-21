@@ -56,7 +56,7 @@ fn a_stroke_is_one_step_and_never_travels_with_a_look() {
         let mut current = PipelineSettings::default();
         for count in 1..=3 {
             let mut next = current.clone();
-            next.corrections = vec![Correction { id, stroke: stroke.iter().cycle().take(count).copied().collect(), radius: 9.5 }];
+            next.corrections = vec![Correction { id, stroke: stroke.iter().cycle().take(count).copied().collect(), radius: 9.5, gesture: None }];
             let one = |s: &PipelineSettings| BTreeMap::from([("/a".to_string(), s.clone())]);
             history.record_edit("/a", one(&current), one(&next), 1000.0 + count as f64 * gap);
             current = next;

@@ -153,6 +153,7 @@ settings: PipelineSettings {
                 },
             ],
             radius: 12.0,
+            gesture: None,
         },
         Correction {
             id: 019B5C4B-7EF1-4C9D-8B3D-0B06D82C09A2,
@@ -227,6 +228,7 @@ settings: PipelineSettings {
                 },
             ],
             radius: 12.0,
+            gesture: None,
         },
         Correction {
             id: 3C5D0172-5710-4B8F-AF58-DB852C0B3A2D,
@@ -301,6 +303,7 @@ settings: PipelineSettings {
                 },
             ],
             radius: 12.0,
+            gesture: None,
         },
     ],
     levels: LevelsSet {

@@ -49,7 +49,7 @@ fn decoded() -> Decoded {
 fn stroked() -> PipelineSettings {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
-    s.corrections = vec![Correction { id, stroke: vec![Point { x: 0.5, y: 0.5 }, Point { x: 0.5 + 1e-4, y: 0.5 }], radius: 6.0 }];
+    s.corrections = vec![Correction { id, stroke: vec![Point { x: 0.5, y: 0.5 }, Point { x: 0.5 + 1e-4, y: 0.5 }], radius: 6.0, gesture: None }];
     s
 }
 

@@ -306,7 +306,7 @@ mod tests {
         let id = oni_settings::id::Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
         let mut healed = rest.clone();
         let point = |x: f64, y: f64| oni_settings::cg::Point { x, y };
-        healed.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0 }];
+        healed.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0, gesture: None }];
         tiff(&crate::patches::file(root.join("caches").as_path(), oni_pipeline::corrections::PatchKey::of(&healed, &healed.corrections[0])), &vec![0.9f32; w * h * 4]);
         let patched = render_full(&mut engine, decoded(), &healed).unwrap();
         assert!((at(&patched, w / 2, h / 2) - at(&plain, w / 2, h / 2)).abs() > 1e-2, "the patch reaches the export");

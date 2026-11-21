@@ -23,7 +23,7 @@ fn with_corrections(path: &Path, n: usize) {
     s.corrections = (0..n)
         .map(|k| {
             let x = 0.3 + 0.2 * k as f64;
-            Correction { id: Id::new(), stroke: vec![Point { x, y: 0.5 }, Point { x: x + 0.05, y: 0.5 }], radius: 3.0 }
+            Correction { id: Id::new(), stroke: vec![Point { x, y: 0.5 }, Point { x: x + 0.05, y: 0.5 }], radius: 3.0, gesture: None }
         })
         .collect();
     sidecar::write(&s, path, WriteOptions::default()).unwrap();

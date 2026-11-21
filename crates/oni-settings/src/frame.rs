@@ -128,6 +128,8 @@ impl FlatField {
     }
 }
 
+mod parts;
+
 /// A painted dust or scratch stroke, in fractions of the scan before stage 0 (no turn, mirror, angle
 /// or crop), origin top-left, so it stays on its speck whatever the framing.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -136,6 +138,10 @@ pub struct Correction {
     pub stroke: Vec<Point>,
     /// The brush width at the time of the stroke, in full-resolution pixels.
     pub radius: f64,
+    /// The gesture that laid it with others, a long stroke or a reading's removal: each one's patch is searched
+    /// with the others' dust left out. None when laid alone.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gesture: Option<Id>,
 }
 
 impl Correction {
@@ -143,11 +149,11 @@ impl Correction {
     pub const RADIUS_RANGE: (f64, f64) = (4.0, 120.0);
 
     pub fn new(stroke: Vec<Point>) -> Self {
-        Correction { id: Id::new(), stroke, radius: Self::DEFAULT_RADIUS }
+        Correction { id: Id::new(), stroke, radius: Self::DEFAULT_RADIUS, gesture: None }
     }
 }
 
-/// Every key may be absent: a missing id is a fresh one, a missing radius the default brush.
+/// Every key may be absent: a missing id is a fresh one, a missing radius the default brush, a missing gesture none.
 impl<'de> Deserialize<'de> for Correction {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let map = tolerant::object(Value::deserialize(d)?, "Correction")?;
@@ -155,6 +161,7 @@ impl<'de> Deserialize<'de> for Correction {
             id: tolerant::opt::<Id, D::Error>(&map, "id")?.unwrap_or_default(),
             stroke: tolerant::opt::<Vec<Point>, D::Error>(&map, "stroke")?.unwrap_or_default(),
             radius: tolerant::opt::<f64, D::Error>(&map, "radius")?.unwrap_or(Self::DEFAULT_RADIUS),
+            gesture: tolerant::opt::<Id, D::Error>(&map, "gesture")?,
         })
     }
 }
@@ -318,7 +325,7 @@ mod tests {
 
     #[test]
     fn a_correction_missing_its_radius_reads_the_default_brush() {
-        let full = Correction { id: Id::new(), stroke: vec![Point::new(0.12, 0.34), Point::new(0.56, 0.78)], radius: 9.5 };
+        let full = Correction { id: Id::new(), stroke: vec![Point::new(0.12, 0.34), Point::new(0.56, 0.78)], radius: 9.5, gesture: Some(Id::new()) };
         let mut value = serde_json::to_value(&full).unwrap();
         assert_eq!(serde_json::from_value::<Correction>(value.clone()).unwrap(), full);
         value.as_object_mut().unwrap().remove("radius");

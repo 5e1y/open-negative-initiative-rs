@@ -1,5 +1,6 @@
 //! The search and the tone match on synthetic frames whose answers are known.
 
+use super::awaited::distance;
 use super::*;
 use oni_settings::cg::Point;
 use oni_settings::id::Id;
@@ -50,8 +51,8 @@ fn the_search_finds_the_place_the_surroundings_were_copied_from() {
             pixels[y * w + x] = [0.02, 0.02, 0.02, 1.0];
         }
     }
-    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
-    let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0 };
+    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() };
+    let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0, gesture: None };
     let (dx, dy) = best_offset(&src, &c, w as f64, h as f64);
     // The offset is y up: a block lower on the frame (y down + 168) is 168 under, −168 up.
     assert_eq!((dx, dy), (known.0 as f64, -known.1 as f64), "found {dx}, {dy}");
@@ -69,7 +70,7 @@ fn a_bias_lifts_the_copy_to_its_surroundings_tone() {
     // The right half a step brighter: a copy taken from the left half is lifted by the base.
     let (w, h) = (400usize, 300usize);
     let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| { let v = if i % w >= 200 { 0.5 } else { 0.4 }; [v, v, v, 1.0] }).collect();
-    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
+    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() };
     let destination = Rect { x: 250.0, y: 100.0, w: 60.0, h: 60.0 };
     let source = Rect { x: 50.0, ..destination };
     let field = tone_field(&src, destination, source, Rect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 });
@@ -126,9 +127,9 @@ fn a_search_reads_its_window_alone_and_a_narrower_one_misses() {
     let cut = |a: Area| {
         let (x0, y0, cw, ch) = (a[0] as usize, a[1] as usize, a[2] as usize, a[3] as usize);
         let kept = (y0..y0 + ch).flat_map(|y| pixels[y * w + x0..y * w + x0 + cw].iter().copied()).collect();
-        Region { x: x0 as i64, y: y0 as i64, width: cw, height: ch, pixels: kept, frame_width: w as f64, frame_height: h as f64 }
+        Region { x: x0 as i64, y: y0 as i64, width: cw, height: ch, pixels: kept, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() }
     };
-    let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0 };
+    let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0, gesture: None };
     let whole = generate(&cut([0.0, 0.0, w as f64, h as f64]), &c, w as f64, h as f64);
     assert_eq!(((whole.offset.0 * w as f64).round(), (whole.offset.1 * h as f64).round()), (known.0 as f64, known.1 as f64), "the copy is found");
     let window = search_window(&c, w as f64, h as f64);
@@ -146,7 +147,7 @@ fn a_search_reads_its_window_alone_and_a_narrower_one_misses() {
 fn the_unclamped_taps_read_what_the_clamped_ones_do() {
     let (rw, rh) = (40usize, 30usize);
     let pixels: Vec<[f32; 4]> = (0..rw * rh).map(|i| [i as f32, (i * 7 % 13) as f32, (i % rw) as f32, 1.0]).collect();
-    let src = Region { x: 5, y: 7, width: rw, height: rh, pixels, frame_width: 60.0, frame_height: 50.0 };
+    let src = Region { x: 5, y: 7, width: rw, height: rh, pixels, frame_width: 60.0, frame_height: 50.0, awaited: Vec::new() };
     let reference = |x: f64, y: f64, swapped: bool| -> [f32; 3] {
         let (u, v) = (x - 0.5, y - 0.5);
         let (x0, y0) = (u.floor(), v.floor());
@@ -167,7 +168,7 @@ fn the_unclamped_taps_read_what_the_clamped_ones_do() {
 
 /// Dots of radius 12 at fractions of a 6000 × 4000 frame, whose search windows reach about 1 450 px.
 fn dots(at: &[(f64, f64)]) -> Vec<Correction> {
-    at.iter().map(|&(x, y)| Correction { id: Id::new(), stroke: vec![Point { x, y }, Point { x: x + 0.001, y }], radius: 12.0 }).collect()
+    at.iter().map(|&(x, y)| Correction { id: Id::new(), stroke: vec![Point { x, y }, Point { x: x + 0.001, y }], radius: 12.0, gesture: None }).collect()
 }
 
 const FRAME: (f64, f64) = (6000.0, 4000.0);
@@ -262,9 +263,9 @@ fn a_patch_scales_with_its_scan() {
     }
     let region = |f: &dyn Fn(f32) -> f32| {
         let pixels = pixels.iter().map(|p| [f(p[0]), f(p[1]), f(p[2]), 1.0]).collect();
-        Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 }
+        Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() }
     };
-    let c = Correction { id: Id::new(), stroke: vec![Point { x: 0.5, y: 0.5 }, Point { x: 0.5001, y: 0.5 }], radius: 8.0 };
+    let c = Correction { id: Id::new(), stroke: vec![Point { x: 0.5, y: 0.5 }, Point { x: 0.5001, y: 0.5 }], radius: 8.0, gesture: None };
     let whole = generate(&region(&|v| v), &c, w as f64, h as f64);
     let half = generate(&region(&|v| v * 0.5), &c, w as f64, h as f64);
     assert_eq!(half.offset, whole.offset, "a gain moved the place the patch is copied from");
@@ -273,4 +274,60 @@ fn a_patch_scales_with_its_scan() {
     // Twin: a curve on the scan, not a gain, moves the patch off a scaled copy.
     let curved = generate(&region(&|v| v.powf(0.45)), &c, w as f64, h as f64);
     assert!(curved.offset != whole.offset || off(&whole, &curved, 0.5) > 1e-2, "a curve passed for a gain");
+}
+
+/// A textured frame crossed corner to corner by a hair 8 wide, and the strokes along it: one 56 long at its
+/// middle, the rest of it either side.
+fn crossed() -> (Region, Correction, [Correction; 2]) {
+    let (w, h) = (1200usize, 900usize);
+    let mut pixels = textured(w, h, 6);
+    for y in 0..h {
+        for x in 0..w {
+            if (x as i64 - y as i64 - 150).abs() <= 6 {
+                pixels[y * w + x] = [0.02, 0.02, 0.02, 1.0];
+            }
+        }
+    }
+    let on = |x: f64| Point { x: x / w as f64, y: (x - 150.0) / h as f64 };
+    let along = |from: f64, to: f64| Correction { id: Id::new(), stroke: vec![on(from), on(to)], radius: 12.0, gesture: None };
+    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() };
+    (src, along(580.0, 620.0), [along(150.0, 580.0), along(620.0, 1050.0)])
+}
+
+/// The darkest pixel the patch lays under its stroke's brush.
+fn darkest_under(patch: &Patch, c: &Correction, (w, h): (f64, f64)) -> f32 {
+    let (a, b) = ((c.stroke[0].x * w, c.stroke[0].y * h), (c.stroke[1].x * w, c.stroke[1].y * h));
+    let mut darkest = f32::MAX;
+    for row in 0..patch.height {
+        for col in 0..patch.width {
+            let (x, y) = (patch.rect[0] + col as f64 + 0.5, patch.rect[1] + row as f64 + 0.5);
+            if distance(x, y, a, b) <= c.radius {
+                darkest = darkest.min(patch.pixels[row * patch.width + col][0]);
+            }
+        }
+    }
+    darkest
+}
+
+#[test]
+fn a_part_of_a_long_stroke_neither_matches_nor_copies_the_parts_awaiting_their_patch() {
+    let (src, part, rest) = crossed();
+    let size = (src.frame_width, src.frame_height);
+    let src = src.awaiting(rest.iter());
+    // The brush along each stroke, 24 wide and 608 long, less the corner the frame's edge cuts off each.
+    let awaited = src.awaited.iter().filter(|a| **a).count();
+    assert!((2 * 24 * 590..2 * 24 * 608).contains(&awaited), "{awaited}");
+    let patch = generate(&src, &part, size.0, size.1);
+    assert!(!patch.fallback);
+    assert!(darkest_under(&patch, &part, size) > 0.12, "the copy holds the hair: {}", darkest_under(&patch, &part, size));
+    // The tone is matched on the image about the stroke, never on the hair still lying there.
+    let ring = Rect { x: 504.0, y: 354.0, w: 192.0, h: 192.0 };
+    let hole = Rect { x: 568.0, y: 418.0, w: 64.0, h: 64.0 };
+    let lit = masked_mean(&src, ring, hole).unwrap()[0];
+    assert!((lit - 0.4).abs() < 0.02, "{lit}");
+    // Twin: with nothing awaited, the hair either side is the best match there is, and the copy is the hair.
+    let (bare, part, _) = crossed();
+    let copied = generate(&bare, &part, size.0, size.1);
+    assert!(darkest_under(&copied, &part, size) < 0.05, "{} from {:?}", darkest_under(&copied, &part, size), copied.offset);
+    assert!(masked_mean(&bare, ring, hole).unwrap()[0] < lit - 0.01, "and its dark weighs on the tone");
 }

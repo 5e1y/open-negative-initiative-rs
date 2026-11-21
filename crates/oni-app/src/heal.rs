@@ -5,9 +5,11 @@
 use oni_pipeline::corrections::{self, Area};
 use oni_settings::frame::Correction;
 
+mod awaited;
 mod cost;
 mod ensure;
 pub use ensure::{Made, ensure, pending};
+use awaited::lowest;
 use cost::{Candidate, Costs};
 
 /// A region of the framed frame read back to the CPU: its rectangle in the frame, y down, and its pixels.
@@ -20,6 +22,9 @@ pub struct Region {
     /// The framed frame's own size; its height turns a row down into Core Image's y up.
     pub frame_width: f64,
     pub frame_height: f64,
+    /// The pixels under the strokes of the search's own gesture still awaiting their patch, dust like its own: never
+    /// matched on, measured or copied. Empty while none awaits.
+    pub awaited: Vec<bool>,
 }
 
 impl Region {
@@ -53,8 +58,8 @@ impl Region {
         std::array::from_fn(|k| (a[k] * (1.0 - fx) + b[k] * fx) * (1.0 - fy) + (c[k] * (1.0 - fx) + d[k] * fx) * fy)
     }
 
-    /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it and inside the
-    /// frame, so a ring past the edge reads the frame's part alone; zeros there moved a patch by 0.017.
+    /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it and inside the frame, none
+    /// awaiting a patch, so a ring past the edge reads the frame's part alone; zeros there moved a patch by 0.017.
     fn mean(&self, r: Rect) -> Option<[f32; 3]> {
         let r = r.intersection(Rect { x: 0.0, y: 0.0, w: self.frame_width, h: self.frame_height });
         let (x0, x1) = ((r.x - 0.5).ceil() as i64, (r.x + r.w - 0.5).floor() as i64);
@@ -62,17 +67,20 @@ impl Region {
         if x1 < x0 || y1 < y0 {
             return None;
         }
-        let mut sum = [0.0f64; 3];
+        let (mut sum, mut n) = ([0.0f64; 3], 0.0f64);
         for row in y0..=y1 {
             for col in x0..=x1 {
+                if self.awaits(col, row) {
+                    continue;
+                }
                 let p = self.texel(col, row);
                 for k in 0..3 {
                     sum[k] += f64::from(p[k]);
                 }
+                n += 1.0;
             }
         }
-        let n = ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
-        Some(sum.map(|s| (s / n) as f32))
+        (n > 0.0).then(|| sum.map(|s| (s / n) as f32))
     }
 }
 
@@ -135,10 +143,6 @@ fn context_ring(centre: (f64, f64), hole: Rect, e: Rect) -> Rect {
     Rect { x: centre.0 - side / 2.0, y: centre.1 - side / 2.0, w: side, h: side }
 }
 
-fn lowest(c: &[Candidate]) -> Option<usize> {
-    (0..c.len()).filter(|&i| c[i].cost.is_finite()).min_by(|&a, &b| c[a].cost.total_cmp(&c[b].cost))
-}
-
 /// `bestSourceRect`'s offset from the tile: a coarse pass over a wide window, then a fine pass at
 /// a pixel's step about its best, refined on the parabola and rounded to whole pixels; y up.
 pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f64, f64) {
@@ -194,12 +198,12 @@ fn search(src: &Region, c: &Correction, width: f64, height: f64) -> ((f64, f64),
     let Plan { half, min_radius, coarse_radius, coarse_size, fine_half, fine_n, fine_radius, fine_size } = Plan::of(&f);
     let costs = Costs::of(src);
     let coarse = costs.map(&f, half, (-coarse_radius, -coarse_radius), COARSE_STEP, COARSE_N, coarse_size, min_radius);
-    let Some(best_coarse) = lowest(&coarse).map(|i| coarse[i]) else { return (fallback(&f), true) };
+    let Some(best_coarse) = lowest(&coarse, src, c).map(|i| coarse[i]) else { return (fallback(&f), true) };
 
     let fine_min = fine_half.0.max(fine_half.1) * 1.2;
     let origin = (best_coarse.offset.0 - fine_radius, best_coarse.offset.1 - fine_radius);
     let fine = costs.map(&f, fine_half, origin, 1.0, fine_n, fine_size, fine_min);
-    let Some(at) = lowest(&fine) else { return ((best_coarse.offset.0.round(), best_coarse.offset.1.round()), false) };
+    let Some(at) = lowest(&fine, src, c) else { return ((best_coarse.offset.0.round(), best_coarse.offset.1.round()), false) };
 
     let mut best = fine[at].offset;
     let (row, col) = (at / fine_size, at % fine_size);

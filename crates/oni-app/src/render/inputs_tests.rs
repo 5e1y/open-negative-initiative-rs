@@ -51,7 +51,7 @@ fn the_input_histograms_lay_the_frames_mask_and_patches() {
 
     let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
     let mut dusted = rest.clone();
-    dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
+    dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0, gesture: None }];
     // Twin: a patch not generated yet lays nothing.
     let missing = engine.inputs(&negative, &dusted, false, [true; 2]).expect("readings");
     assert_eq!((&missing.levels, &missing.curves), (&bare.levels, &bare.curves));
@@ -228,7 +228,7 @@ fn a_patch_landing_under_the_same_settings_counts_and_reads_again() {
     let negative = engine.lock().unwrap().prepare(decoded).unwrap();
     let id = Id::parse("1A2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
     let mut dusted = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
-    dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
+    dusted.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0, gesture: None }];
     let key = PatchKey::of(&dusted, &dusted.corrections[0]);
     let mut ask = asking(&engine, negative, dusted);
     let first = ask();
@@ -259,7 +259,7 @@ fn a_patch_follows_the_exposure_and_flat_field_it_sits_under() {
     let (w, h) = (64usize, 48usize);
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let mut made = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
-    made.corrections = vec![oni_settings::frame::Correction { id: Id::new(), stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0 }];
+    made.corrections = vec![oni_settings::frame::Correction { id: Id::new(), stroke: vec![oni_settings::cg::Point::new(0.5, 0.5)], radius: 6.0, gesture: None }];
     let c = made.corrections[0].clone();
     crate::patches::write(&caches, PatchKey::of(&made, &c), w as u32, h as u32, &vec![[0.9, 0.9, 0.9, 1.0]; w * h]).unwrap();
     // The centre of what the canvas shows, with the patch and without any correction.
