@@ -9,7 +9,7 @@ mod curve;
 mod patches;
 
 use curve::Curve;
-use oni_app::render::{Decoded, Device, Engine, Linear, Reading};
+use oni_app::render::{Decoded, Device, Engine, Reading};
 use patches::*;
 use oni_pipeline::{conversion, film, paper};
 use oni_render::{PAPER_CURVE_NODES, Paper, cpu};
@@ -92,7 +92,10 @@ fn measures(st: &[f32], l: &[f32], y: &[f32]) -> String {
             "L*0 {:.1} | slope@0 {:.2} sh(-3..-1) {:.2} hl(+1..+3) {:.2} L*/stop | L*-3 {:.1} L*-2 {:.1} L*+2 {:.1} | ",
             "black {:.1} @{toe:+.2} white {lmax:.1} clip@{clip:+.2} | gamma@0 {:.2} sh {:.2} hl {:.2}"
         ),
-        at(0.0).0, slope(-0.5, 0.5), slope(-3.0, -1.0), slope(1.0, 3.0), at(-3.0).0, at(-2.0).0, at(2.0).0, l[0], gamma(-0.5, 0.5), gamma(-3.0, -1.0), gamma(1.0, 3.0)
+        at(0.0).0, slope(-0.5, 0.5), slope(-3.0, -1.0), slope(1.0, 3.0), at(-3.0).0, at(-2.0).0, at(2.0).0, l[0], gamma(-0.5, 0.5), gamma(-3.0, -1.0), gamma(1.0, 3.0),
+        toe = toe,
+        lmax = lmax,
+        clip = clip
     )
 }
 
@@ -117,7 +120,7 @@ fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
 
 fn rest_lighting(s: &PipelineSettings) -> PipelineSettings {
     let mut s = s.clone();
-    s.print = Print { exposure: Print::resting_exposure(s.mode), paper_blacks: std::env::var("BLACKS").is_ok(), ..Print::default() };
+    s.print = Print { paper_blacks: std::env::var("BLACKS").is_ok(), ..Print::default() };
     s
 }
 
@@ -230,7 +233,8 @@ impl Run<'_> {
                         "slope>0.1 {:+.3}..{:+.3} | ramp lands: -4st {:+.3}, grey {:+.3}, +4st {:+.3} -> span(-4..+4) {:.3} logH ",
                         "(scene 2.408), paper-in gamma {:.3}"
                     ),
-                    f[c][0], f[c][1], f[c][2], f[c][2] - f[c][1], f[c][3], f[c][4], f[c][5], m4[c], z[c], p4[c], m4[c] - p4[c], (m4[c] - p4[c]) / 2.408
+                    f[c][0], f[c][1], f[c][2], f[c][2] - f[c][1], f[c][3], f[c][4], f[c][5], m4[c], z[c], p4[c], m4[c] - p4[c], (m4[c] - p4[c]) / 2.408,
+                    ch = ch
                 ));
             }
         }

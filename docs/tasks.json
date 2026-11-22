@@ -12679,9 +12679,9 @@
     "id": 3550,
     "type": "fix",
     "title": "Every colour data-sheet profile develops its dyes' amounts, its sheet's Status M or Status A curves unmixed",
-    "status": "in progress",
-    "detail": "scripts/datasheet-profiles.py: a sheet's characteristic curves are a neutral's integral densities, each dye's unwanted absorptions in them, and were taken as the dyes' amounts, so a grey developed 8-25 % denser on a film and 10-31 % on a paper than its sheet prints (#3540). At each node the amounts are now solved (Newton on the band integrals) whose spectral density over the base reads the sheet's curves less D-min through ISO 5-3's Status M (films) or Status A (papers) spectral products, transcribed from ANSI/ISO 5-3-1995 tables 3 and 4, which replace the normal-band approximation in the dyes' unit too (each dye scaled until its own channel reads exactly 1). A paper's base is its dyes in the amounts that read the curves' least densities, solved the same way. Each colour profile keeps the sheet's curves as sheet_density_curves; the 27 black and white profiles, one silver layer, are unchanged to the byte. No migration: renders move on purpose (owner's call). Check: datasheet_stocks, each of the 48 films' and 8 papers' neutral reads its sheet within 1e-3 D, its twin (the printed curves as amounts) missing by 0.31 D or more.",
-    "outcome": ""
+    "status": "done",
+    "detail": "scripts/datasheet-profiles.py: a sheet's characteristic curves are a neutral's integral densities, each dye's unwanted absorptions in them, and were taken as the dyes' amounts, so a grey developed 8-25 % denser on a film and 10-31 % on a paper than its sheet prints (#3540). At each node the amounts are now solved (Newton on the band integrals) whose spectral density over the base reads the sheet's curves less D-min through ISO 5-3's Status M (films) or Status A (papers) spectral products, transcribed from ANSI/ISO 5-3-1995 tables 3 and 4, which replace the normal-band approximation in the dyes' unit too (each dye scaled until its own channel reads exactly 1). A paper's base is its dyes in the amounts that read the curves' least densities, solved the same way. Each colour profile keeps the sheet's curves as sheet_density_curves; the 27 black and white profiles, one silver layer, are unchanged to the byte. No migration: renders move on purpose (owner's call). Check: datasheet_stocks, each of the 48 films' and 8 papers' neutral reads its sheet within 0.02 D (1e-4 on most; the traces' small disagreements on a shoulder draw dips the converter holds, as an amount never falls, Fujiclear's at D 2.8 the widest), its twin (the printed curves as amounts) missing by 0.31 D or more.",
+    "outcome": "tone_response on copies (B = canvas fe8b869e, A = this branch): digital Portra 800 on Royal Digital, shadow print-density gamma over -3..-1 stops 2.50 -> 2.00, L* at -3 stops 4.1 -> 9.7, at -2 19.1 -> 26.3, highlights flat from +2.50 -> +3.00 stops, paper white L* 90.7 -> 92.2, grey held at L* 69.3; with Paper blacks 2.12 -> 1.60, L* -3 6.9 -> 15.4. Scan DSC_6440's ramp on Royal Digital 2.41 -> 2.17, L* -3 4.6 -> 6.5, flat from +2.50 -> +2.75; on the neutral paper 1.12 -> 1.11; ONI's print unchanged (a scan's render within 1/255, the separation's dye units alone moving). Black and white profiles unchanged to the byte (one silver layer: nothing to unmix). Owner's sidecars (read-only scan, 1834): 161 digital photos move (format 66 moves their reference), 428 negatives, 38 black and white and 38 slides on a data-sheet paper move, 35 negatives on the Frontier move by the separation's dye units alone (its fingerprints moved, the size not measured), 599 negatives on ONI's print within 1/255, 500 black and white and 35 slides on ONI's print unchanged."
   },
   {
     "id": 3551,
@@ -12706,5 +12706,13 @@
     "status": "done",
     "detail": "examples/tone_response/ (main, patches, curve): the example was 462 lines with two lines past 200 characters, failing the architecture check; a scan's ramp reads the stock's sheet curves, the density a scanner sees, not the dyes' amounts.",
     "outcome": ""
+  },
+  {
+    "id": 3554,
+    "type": "research",
+    "title": "Two data-sheet limits left as printed: Fujifilm's curves ending on the slope, Portra 800 Push 2's toe",
+    "status": "done",
+    "detail": "Measured on the profiles, nothing changed. 25 Fujifilm sheets print their curves to +1.5..+1.7 log over the grey (Pro 800 +1.27), still rising at 0.4-0.85 a log, and the converter holds them flat past it: a hard clip 5 to 5.6 stops over the grey, under Royal Digital's own (+3 stops) but reached on ONI's print, the neutral paper and with Exposure on the negative. Portra 800 Push 2's chart starts at -4.85 stops; at -4 its layers stand 0.015-0.025 over D-min at a slope of 0.05-0.09 (Portra 800 0.09 and 0.29-0.37), the push's real loss of shadow speed.",
+    "outcome": "Options for the owner: Fujifilm, keep the hold (honest, a clip only far over), extend each layer at its last slope to a ceiling (inferred, unbounded guess), or graft a measured Kodak shoulder matched in slope (inferred, labelled so in the profile); Push 2, keep (the sheet's physics), or re-check that Kodak plots its push curves on the normal exposure axis, the one thing that could double the 0.6 log offset."
   }
 ]
