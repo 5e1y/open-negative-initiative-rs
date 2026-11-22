@@ -2,7 +2,7 @@
 //! half a second for Texture's, which a first notch would otherwise wait on.
 
 use super::*;
-use oni_settings::{ConversionMode, Face, ScannerMachine};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint};
 
 /// An edit with every finishing kernel on, the set a busy notch takes.
 pub(crate) fn busy() -> PipelineSettings {
@@ -17,12 +17,9 @@ pub(crate) fn digital_busy() -> PipelineSettings {
     busy
 }
 
-/// A digital photo's busy edit on the Scanner face, a Scanner curve after the look.
-pub(crate) fn digital_scanner_busy() -> PipelineSettings {
-    let mut busy = PipelineSettings { face: Face::Scanner, ..digital_busy() };
-    busy.scanner.d = 2;
-    busy.scanner_finish.manual_curves.contrast = 0.2;
-    busy
+/// A digital photo's busy edit on a legacy print: its keys and TEMP's warmth over its paper's print.
+pub(crate) fn digital_legacy_busy() -> PipelineSettings {
+    PipelineSettings { legacy_print: Some(LegacyPrint { d: 2, w: 1, ..LegacyPrint::default() }), ..digital_busy() }
 }
 
 fn busied(mut busy: PipelineSettings) -> PipelineSettings {
@@ -42,14 +39,16 @@ fn busied(mut busy: PipelineSettings) -> PipelineSettings {
 /// 750 px side, at both its blurs' reaches.
 const SIZES: [(usize, usize); 3] = [(64, 64), (768, 8), (6048, 8)];
 
-/// The face, film and finishing branches the editor can reach, each a set of kernels compiled once.
+/// The film, print and finishing branches the editor can reach, each a set of kernels compiled once.
 fn variants() -> Vec<PipelineSettings> {
     let busy = busy();
     let mut variants = vec![busy.clone()];
     variants.push(PipelineSettings { texture: Default::default(), ..busy.clone() });
     variants.push(PipelineSettings { mode: ConversionMode::Monochrome, ..busy.clone() });
-    variants.push(PipelineSettings { face: Face::Scanner, ..busy.clone() });
-    variants.push(PipelineSettings { face: Face::Scanner, scanner_machine: ScannerMachine::Frontier, ..busy.clone() });
+    // A legacy print's looks over ONI's print, its TEMP's warmth on one.
+    let legacy = |machine, w| Some(LegacyPrint { machine, d: 2, w, ..LegacyPrint::default() });
+    variants.push(PipelineSettings { legacy_print: legacy(LegacyMachine::Oni, 0), ..busy.clone() });
+    variants.push(PipelineSettings { legacy_print: legacy(LegacyMachine::Frontier, 2), ..busy.clone() });
     // The finishing's fused passes are one shader per set of kernels on: the usual sets too.
     let mut plain = busy.clone();
     plain.vignette.stops = 0.0;
@@ -59,15 +58,10 @@ fn variants() -> Vec<PipelineSettings> {
     plain.secret_sauce = 0.0;
     variants.push(plain);
     variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
-    // A digital photo's scene on its film, then its negative as a negative's, on either face.
+    // A digital photo's scene on its film, then its negative as a negative's, on its paper and with a legacy TEMP.
     variants.push(digital_busy());
     variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
-    let scanned = PipelineSettings { face: Face::Scanner, ..PipelineSettings::rest(ConversionMode::Digital, true) };
-    let busy = digital_scanner_busy();
-    for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
-        variants.push(PipelineSettings { scanner_machine: machine, ..scanned.clone() });
-        variants.push(PipelineSettings { scanner_machine: machine, ..busy.clone() });
-    }
+    variants.push(digital_legacy_busy());
     variants
 }
 

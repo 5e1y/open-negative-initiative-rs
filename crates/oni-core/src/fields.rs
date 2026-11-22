@@ -75,6 +75,7 @@ fields! {
     BalanceStrength => "balanceStrength", balance_strength;
     Print => "print", print;
     PrintPaper => "printPaper", print_paper;
+    LegacyPrint => "legacyPrint", legacy_print;
     Density => "density", density;
     ManualCurves => "manualCurves", manual_curves;
     Spectrogram => "spectrogram", spectrogram;
@@ -82,10 +83,6 @@ fields! {
     Vignette => "vignette", vignette;
     SecretSauce => "secretSauce", secret_sauce;
     PaperCorrection => "paperCorrection", paper_correction;
-    Face => "face", face;
-    Scanner => "scanner", scanner;
-    ScannerMachine => "scannerMachine", scanner_machine;
-    ScannerFinish => "scannerFinish", scanner_finish;
     Texture => "texture", texture;
     Sharpen => "sharpen", sharpen;
     Grain => "grain", grain;
@@ -305,7 +302,7 @@ mod tests {
     #[test]
     fn every_field_is_the_rolls_the_looks_or_the_frames_and_one_only() {
         let names = declared_names();
-        assert_eq!(names.len(), 49, "{names:?}");
+        assert_eq!(names.len(), 46, "{names:?}");
         assert_eq!(placement_faults(names, FAMILIES), Vec::<String>::new());
         // Twin: a field the families leave out, and one in two of them, are both refused.
         let mut grown = names.to_vec();

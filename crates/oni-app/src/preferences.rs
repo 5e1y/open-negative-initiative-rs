@@ -21,14 +21,14 @@ pub const DUST_SENSITIVITY: &str = "autoDustSensitivity";
 pub const FULL_DECODE: &str = "fullDecode";
 /// The zoom kept from one photo to the next, a choice this build adds; each opens fitted without it.
 pub const KEEP_ZOOM: &str = "keepZoom";
-/// The `.cube` the hand's Frontier look is read from, a choice this build adds.
-pub const FRONTIER_LOOK: &str = "frontierLook";
 /// The language the app speaks, `en`, `fr` or `es`, a choice this build adds; the system's without it.
 pub const LANGUAGE: &str = "language";
 /// The look's rows the last Copy Settings carried, which the next one opens on; the look whole without it.
 pub const COPY_CARRIES: &str = "copyCarries";
 /// Prepare the Roll ends on every frame together, a choice this build adds; without it, on the roll's first frame alone.
 pub const WHOLE_ROLL_AFTER_PREPARE: &str = "wholeRollAfterPrepare";
+/// Colour's filters read as an enlarger's C, M and Y, a choice this build adds; Temperature and Tint without it.
+pub const FILTRATION_CMY: &str = "filtrationCmy";
 
 enum Read {
     Absent,
@@ -82,6 +82,11 @@ impl Preferences {
 
     pub fn int(&self, key: &str) -> Option<i64> {
         self.values.get(key)?.as_i64()
+    }
+
+    /// Whether Colour shows its filters as C, M and Y; Temperature and Tint in a file written without the key.
+    pub fn filtration_cmy(&self) -> bool {
+        self.bool(FILTRATION_CMY).unwrap_or(false)
     }
 
     /// Whether Prepare the Roll ends on the whole roll together; off in a file written without the key.

@@ -1,10 +1,10 @@
 //! The phone's tabs end to end, headless, through `oni-link-ffi`: it reads each tab's sliders as the
-//! panel writes them, steps one into the sidecar as one undo step, switches the face both ways, and
-//! drags one as the panel's drag, one undo step for the whole drag.
+//! panel writes them, steps one into the sidecar as one undo step, finds no face to switch, and drags
+//! one as the panel's drag, one undo step for the whole drag.
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Engine, Shared};
-use oni_app::{App, Bar, Lab, Pairing, Store};
+use oni_app::{App, Pairing, Store};
 use oni_core::{Archive, EditorStore};
 use oni_link_ffi::{Command, DisplayState, Face, PanelTab, Param, RemoteSession, generate_identity};
 use slint::ComponentHandle;
@@ -54,7 +54,7 @@ fn value(d: &DisplayState, param: Param) -> Option<String> {
     d.panel.rows.iter().find(|r| r.param == param).map(|r| r.value.clone())
 }
 
-pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
+pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_on_the_one_face() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the window is not exercised"),
@@ -104,26 +104,12 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     assert_eq!(ctl.state.borrow().store().settings().print.exposure, start);
     assert_eq!(value(&undone, Param::Exposure), value(&first, Param::Exposure));
 
-    // The Scanner face from the phone: the bar and the Lab follow, the face is kept, Color is the keypad's.
+    // The phone's Scanner key finds no face to turn: the panel stays Pro's, every tab as it was.
     session.press(Command::SetFace { face: Face::Scanner });
-    let scanner = until_shown(&rig, &session, "the Scanner face", |d| d.state.applied == 3);
-    rig.pump();
-    assert_eq!(scanner.panel.face, Face::Scanner);
-    assert_eq!((shell.window.global::<Bar>().get_face(), shell.window.global::<Lab>().get_shown()), (1, true));
-    assert_eq!(std::fs::read_to_string(root.join("Support").join("lastFaceScanner")).unwrap(), "1");
-    assert!(!tab(&scanner, PanelTab::Color).contains(&Param::Exposure));
-    assert_eq!(tab(&scanner, PanelTab::Details), tab(&first, PanelTab::Details));
-    // Twin: a slider the Scanner face hides does not move from the phone.
-    session.press(Command::StepParam { param: Param::Exposure, by: 5 });
-    until_shown(&rig, &session, "the hidden step", |d| d.state.applied == 4);
-    assert_eq!(ctl.state.borrow().store().settings().print.exposure, start);
-    rig.settle();
-    println!("shot {}", rig.shot("phone-scanner-face").display());
-
-    // The bar's switch back to Pro reaches the phone, as any hand's change does.
-    shell.window.global::<Bar>().invoke_act(oni_app::Act::FacePro);
-    let pro = until_shown(&rig, &session, "Pro from the desktop", |d| d.panel.face == Face::Pro);
-    assert!(tab(&pro, PanelTab::Color).contains(&Param::Exposure));
+    let pro = until_shown(&rig, &session, "the face key", |d| d.state.applied == 3);
+    assert_eq!(pro.panel.face, Face::Pro);
+    assert_eq!(tab(&pro, PanelTab::Color), tab(&first, PanelTab::Color));
+    assert_eq!(ctl.state.borrow().store().settings().print.exposure, start, "nothing moved");
 
     // A drag from the phone: every place lands as the panel's drag puts it, the whole drag one undo
     // step though it outlasts the history's coalescing, and the phone reads the panel's readout.

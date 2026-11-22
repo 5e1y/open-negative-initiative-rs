@@ -78,6 +78,10 @@ pub enum Field {
     GrainColourWhite,
     FilmExposure,
     Brightness,
+    /// Temperature and Tint read as an enlarger's C, M and Y, a choice of Settings.
+    Cyan,
+    Magenta,
+    Yellow,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -94,7 +98,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 57] = [
+    pub const ALL: [Field; 60] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -152,6 +156,9 @@ impl Field {
         Field::GrainColourWhite,
         Field::FilmExposure,
         Field::Brightness,
+        Field::Cyan,
+        Field::Magenta,
+        Field::Yellow,
     ];
 
     pub fn index(self) -> i32 {
@@ -260,6 +267,10 @@ impl Field {
             Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
             // A paper's print brightened between its own Dmax and white, in the stops of ONI's Exposure.
             Field::Brightness => s("Brightness", Print::BRIGHTNESS_RANGE, Readout::Stops),
+            // The print's filters as an enlarger's, in CC from none.
+            Field::Cyan => s("C", Print::FILTRATION_RANGE, Readout::Cc),
+            Field::Magenta => s("M", Print::FILTRATION_RANGE, Readout::Cc),
+            Field::Yellow => s("Y", Print::FILTRATION_RANGE, Readout::Cc),
         }
     }
 

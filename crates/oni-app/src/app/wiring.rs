@@ -132,10 +132,7 @@ impl Ctl {
             // Slint already hands ⌘ over as `control` on a Mac, and the Control key as `meta`.
             p.key(&text, control, shift, option, !(control || meta || shift || option), repeat)
         });
-        Ctl::wire_lab(me, window);
         Ctl::wire_settings(me, window);
-        me.adopt_remembered_face();
-        me.adopt_frontier_look();
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act(crate::Act::ClosePairing));
         let p = me.clone();

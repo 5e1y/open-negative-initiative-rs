@@ -13,7 +13,6 @@ base64 = "0.22"
 flate2 = "1"
 oni-settings.workspace = true
 oni-library = { path = "../oni-library" }
-oni-keys = { path = "../oni-keys" }
 oni-i18n = { path = "../oni-i18n" }
 serde.workspace = true
 serde_json = { workspace = true, features = ["float_roundtrip"] }

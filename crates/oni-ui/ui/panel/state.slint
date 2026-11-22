@@ -1,6 +1,6 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
 import { Act } from "../act.slint";
-import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
+import { PlotStyle, ShellStyle, MenuLine } from "../ds/ds.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -79,7 +79,7 @@ export global PanelState {
     callback flat-apply-selection();
     // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
     in property <bool> crop-first;
-    // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
+    // `SettingsPane`: no Dye Separation in black and white or on RGB passes.
     in property <bool> separation-shown: true;
     // A positive is a plain RAW: no roll measure, dyes or ceiling, its cast in a temperature and a tint.
     in property <bool> slide;
@@ -100,6 +100,14 @@ export global PanelState {
     // Lighting's colour compensation: Hunt, the points' and Contrast's saturation and the points' colour hold.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);
+    // A photo edited on the former Scanner face: its legacy print's name, empty on every other photo, whether it is
+    // laid and its keys as the keypad's screen read them.
+    in property <string> legacy-title;
+    in property <bool> legacy-laid;
+    in property <string> legacy-keys;
+    callback legacy-toggled(bool);
+    // Colour's filters read as an enlarger's C, M and Y in place of Temperature and Tint, a choice of Settings.
+    in property <bool> filtration-cmy;
     // The stock a digital photo is shot on, by the Film block's tabs.
     in-out property <int> virtual-film;
     callback virtual-film-picked(int);
@@ -122,37 +130,6 @@ export global PanelState {
     in property <float> balance-fraction;
     in property <string> balance-progress;
     in property <string> balance-note;
-}
-
-// The Scanner face: its screen, its keypad's state, and the keys' presses for Rust.
-export global Lab {
-    in property <bool> shown;
-    in-out property <int> machine;
-    in property <bool> monochrome;
-    in property <string> frame: @tr("FRAME --/--");
-    in property <string> machine-line;
-    in property <bool> remeasure;
-    in property <[LabCell]> cells;
-    // The widest count any letter reaches, which sets the size the screen shows every count at.
-    in property <string> widest;
-    // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
-    in property <[bool]> modified: [false, false, false, false];
-    // The sliders, letters (D, C, M, Y, TEMP) then effects (Contrast, Vignette, Chrome): each one's
-    // value and range in steps, a letter's half the unit the screen counts, and its readout.
-    in property <[int]> steps: [0, 0, 0, 0, 0, 0, 0, 0];
-    in property <[int]> lows: [-48, -48, -48, -48, -20, -10, -20, 0];
-    in property <[int]> highs: [48, 48, 48, 48, 20, 10, 20, 30];
-    in property <[string]> readouts;
-    // What one step of each reads, in its readout's unit.
-    in property <[float]> step-reads;
-    // A letter by its index in `Letter::ALL`, an effect in `Effect`'s order.
-    callback press(int, int);
-    callback hold(bool);
-    callback clear(int);
-    callback step-effect(int, int);
-    callback clear-effect(int);
-    callback machine-picked(int);
-    callback reset-group(int);
 }
 
 // The Crop tab's model, `FramePane` and `GeometryPanel`: Rust holds the geometry and answers each key.

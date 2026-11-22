@@ -11,7 +11,7 @@ pub mod preset_parameters;
 pub mod presets;
 pub mod store;
 
-pub use command::{Command, Each, Scan};
+pub use command::{Command, Each};
 pub use fields::{Family, Field, FieldSet};
 pub use knob::{Channel, Handle, Knob};
 pub use store::{Applied, Archive, EditorStore, PasteCheck};

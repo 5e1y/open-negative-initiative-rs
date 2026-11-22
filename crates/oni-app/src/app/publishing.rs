@@ -116,7 +116,7 @@ impl Ctl {
         bar.set_targets(targets as i32);
         bar.set_editing(!gallery);
         bar.set_archive(archive);
-        self.publish_lab();
+        self.publish_mode();
     }
 
     pub(super) fn place(&self, f: Field, at: f32) {

@@ -27,7 +27,7 @@ use std::time::Instant;
 
 pub use bands::{BAND_FIELDS, band_range, band_readout, band_value};
 pub use shell::{Shell, let_go, origin, pressed_anywhere, publish, size, wire, writes};
-pub use stored::{RESETS, face, lay, levels_modified, rest_of, rested_levels, rested_windows, resting_levels};
+pub use stored::{RESETS, lay, levels_modified, rest_of, rested_levels, rested_windows, resting_levels};
 
 /// The plots, as the interface numbers them in every callback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -124,10 +124,9 @@ pub enum Then {
 }
 
 impl Gestures {
-    /// The face's settings with the hand's edit laid on: what the editors draw.
+    /// The settings with the hand's edit laid on: what the editors draw.
     pub fn view(&self, store: &mut EditorStore) -> PipelineSettings {
-        let scanner = store.scanner_face;
-        let mut f = face(store.settings(), scanner);
+        let mut f = store.settings().clone();
         match &self.live {
             Some(Edit::Curves(c)) => f.manual_curves = c.clone(),
             Some(Edit::Levels(l)) => l.lay(&mut f),
@@ -165,14 +164,13 @@ impl Gestures {
     }
 
     fn write(&mut self, store: &mut EditorStore, edit: &Edit) {
-        let scanner = store.scanner_face;
         match edit {
             // Each handle is a knob, which frames together move by its distance from their own window.
             Edit::Levels(set) => levels::steps(store.settings(), set).into_iter().for_each(|c| {
                 store.apply(c);
             }),
             _ => {
-                store.apply(Command::Write(Box::new(lay(store.settings(), scanner, edit))));
+                store.apply(Command::Write(Box::new(lay(store.settings(), edit))));
             }
         }
         self.writes += 1;
@@ -370,9 +368,8 @@ impl Gestures {
 
     /// A reset key: the block at each frame's own rest, every frame shown with the open one.
     pub fn reset(&mut self, store: &mut EditorStore, block: Reset) -> Then {
-        let scanner = store.scanner_face;
         store.defer();
-        store.apply(Command::Each(rest_of(block, scanner)));
+        store.apply(Command::Each(rest_of(block)));
         self.writes += 1;
         Then::Publish
     }

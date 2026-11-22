@@ -243,9 +243,9 @@ impl State {
         self.building_full.as_ref().map(|_| LoadBar::busy(tr("Loading full resolution")))
     }
 
-    /// `labFrames`: the open frame's group, which the arrows walk: its project on the Projects tab,
+    /// the walk group: the open frame's group, which the arrows walk: its project on the Projects tab,
     /// read off its rolls' bands laid, else its roll or day.
-    pub(super) fn lab_frames(&self) -> std::borrow::Cow<'_, [oni_library::Entry]> {
+    pub(super) fn walk_frames(&self) -> std::borrow::Cow<'_, [oni_library::Entry]> {
         let Some(open) = self.open_path() else { return Default::default() };
         let project = self.org.editing_project.filter(|_| self.org.projects_surface).map(|id| id.to_string());
         let bands = self.org.bands.iter().filter(|b| project.as_ref() == Some(&b.key));
@@ -259,15 +259,15 @@ impl State {
 
     /// The frame the editor goes on to once `leaving` goes to the ONI Trash with the open one.
     pub(super) fn after_trash(&self, leaving: &[String]) -> Option<String> {
-        let frames = self.lab_frames();
+        let frames = self.walk_frames();
         let paths: Vec<&str> = frames.iter().map(|e| e.path.as_str()).collect();
         after_trash(&paths, self.open_path()?, leaving)
     }
 
     /// The open frame's place in its group, one-based, and the group's count.
-    pub(super) fn place(&self) -> Option<(usize, usize)> {
+    pub fn place(&self) -> Option<(usize, usize)> {
         let open = self.open_path()?;
-        let frames = self.lab_frames();
+        let frames = self.walk_frames();
         let at = frames.iter().position(|e| e.path == open)?;
         Some((at + 1, frames.len()))
     }

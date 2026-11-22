@@ -151,7 +151,7 @@ fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
         let (_, outcome, _) = migrated(&dir, &path, &source, &facts(&path));
         match outcome {
             Err(Refusal::Unreadable(_)) => seen.push("unreadable"),
-            Err(Refusal::Newer(46)) => seen.push("newer"),
+            Err(Refusal::Newer(47)) => seen.push("newer"),
             Ok(Outcome::Migrated { .. }) => seen.push("migrated"),
             other => panic!("{}: {other:?}", path.display()),
         }
@@ -161,10 +161,11 @@ fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// Each Scanner-face frame of the corpus with its keypad as stored.
+/// Each frame of the corpus the Scanner face rendered, with its keypad as stored: on Pro the keypad never rendered.
 fn keypads() -> Vec<(PathBuf, Value)> {
     let read = |p: &PathBuf| serde_json::from_slice::<Value>(&std::fs::read(p).unwrap()).ok();
-    let moved = |d: &Value| d["settings"]["scanner"].as_object().is_some_and(|s| s.values().any(|v| v.as_i64().is_some_and(|n| n != 0)));
+    let keyed = |d: &Value| d["settings"]["scanner"].as_object().is_some_and(|s| s.values().any(|v| v.as_i64().is_some_and(|n| n != 0)));
+    let moved = |d: &Value| d["settings"]["face"] == "scanner" && keyed(d);
     let files = sidecars(&corpus()).into_iter().filter(|p| !p.starts_with(corpus().join("broken")));
     files.filter_map(|p| Some((p.clone(), read(&p)?))).filter(|(_, d)| moved(d)).collect()
 }
@@ -173,7 +174,7 @@ fn keypads() -> Vec<(PathBuf, Value)> {
 fn twin_a_reshape_that_drops_the_half_steps_or_swaps_two_letters_is_caught() {
     let dir = scratch("twin-keypad");
     let halved: Vec<(PathBuf, Value)> = keypads().into_iter().filter(|(_, d)| d["settings"]["scanner"].get("halves").is_some()).collect();
-    assert!(halved.len() >= 5, "the five sidecars with half steps, and their copies at 21");
+    assert!(halved.len() >= 3, "the three Scanner sidecars with half steps, one a copy at 21");
     for (path, mut document) in halved {
         document["settings"]["scanner"].as_object_mut().unwrap().remove("halves");
         let (_, _, got) = migrated(&dir, &path, &serde_json::to_vec(&document).unwrap(), &facts(&path));

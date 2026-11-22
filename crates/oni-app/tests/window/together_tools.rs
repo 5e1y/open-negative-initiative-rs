@@ -1,12 +1,11 @@
 //! The editor's tools on frames shown together: Compare Before/After splits the whole sheet, the
-//! before drawn on each frame's own before; the face and the proof redraw every tile; the crop, the
+//! before drawn on each frame's own before; the proof redraws every tile; the crop, the
 //! measuring window and De-dust, each frame's own, cannot be opened.
 
 use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Bar, Canvas, Exporting, Library, Menus, PanelState, Store};
-use oni_settings::{Face, sidecar};
 use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Model};
 use slint::platform::WindowEvent;
@@ -16,7 +15,6 @@ use std::time::Duration;
 use crate::common;
 
 pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
-    let face = |p: &std::path::Path| sidecar::read(p, false).map(|l| l.settings.face).ok();
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: Edit Together's tools are not exercised"),
@@ -83,8 +81,6 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
         let p = b.as_slice()[y * b.width() as usize + x];
         [p.r, p.g, p.b]
     };
-    // Beyond the dither's step, which each encode draws anew.
-    let apart = |a: [u8; 3], b: [u8; 3]| a.iter().zip(&b).any(|(a, b)| a.abs_diff(*b) > 4);
     let (after_px, before_px) = (centre(canvas.get_frame()), centre(canvas.get_before()));
     assert_ne!(after_px, before_px, "the before is drawn on the frame's own before, not its after");
     assert!(before_px.iter().any(|c| *c > 8), "twin: a picture, not the sheet's black: {before_px:?}");
@@ -92,13 +88,6 @@ pub(crate) fn compare_splits_the_sheet_and_the_crop_waits_for_one_frame() {
     rig.pump();
     assert!(canvas.get_split() < 0.0 && canvas.get_before().size().width == 0, "Compare off lets the before go");
 
-    // The Scanner face reaches every frame: A's tile is drawn again on it.
-    rig.settle();
-    let a = centre(canvas.get_frame());
-    ctl.act(oni_app::Act::FaceScanner);
-    rig.until("A on the Scanner face", Duration::from_secs(60), || face(&folder.join("A.tif")) == Some(Face::Scanner) && apart(centre(canvas.get_frame()), a));
-    ctl.act(oni_app::Act::FacePro);
-    rig.until("A back on Pro", Duration::from_secs(60), || face(&folder.join("A.tif")) == Some(Face::Pro));
     // A new proof draws the sheet again though no setting moved.
     rig.settle();
     let drawn = canvas.get_frame_revision();

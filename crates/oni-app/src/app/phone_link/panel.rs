@@ -1,5 +1,5 @@
-//! The panel's sliders for the phone: the rows the Roll, Color and Details tabs show on the open
-//! face, written by the panel's own specs, and a step or reset landing as the panel's own command.
+//! The panel's sliders for the phone: the rows the Roll, Color and Details tabs show, written by the panel's own
+//! specs, and a step or reset landing as the panel's own command.
 
 use crate::fields::Field;
 use crate::slider_track::{position_on, stored_on, track_on};
@@ -8,7 +8,7 @@ use crate::link::{Move, Sliders};
 use oni_core::{Command, EditorStore};
 use oni_link::{Param, Row, Tab};
 use oni_settings::frame::FlatFieldMask;
-use oni_settings::{Face, PipelineSettings};
+use oni_settings::PipelineSettings;
 
 /// What the panel shows beyond the settings: whether the export proofs on a paper.
 pub struct PhoneSliders {
@@ -51,27 +51,26 @@ pub fn field(param: Param) -> Field {
 }
 
 /// The panel's blocks of sliders in its order, each with the tab and title it stands under, as the
-/// Slint panes lay them on this face; a contact sheet's grain blocks are out of reach there.
-pub fn rows(s: &PipelineSettings, face: Face, on_paper: bool) -> Vec<Row> {
+/// Slint panes lay them; a contact sheet's grain blocks are out of reach there.
+pub fn rows(s: &PipelineSettings, on_paper: bool) -> Vec<Row> {
     use Param::*;
     let mono = s.mode.is_monochrome();
-    let pro = face == Face::Pro;
     let flat = &s.flat_field;
     // `FlatFieldBlock`: the sliders act once a mask is chosen.
     let masked = flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none());
     // A digital photo's scene lay under no copy stand's light.
     let scanned = !s.mode.is_digital();
-    let separation = !mono && s.rgb_passes.is_none() && pro;
+    let separation = !mono && s.rgb_passes.is_none();
     let sheet = s.sheet.is_some();
     let blocks: [(Tab, &str, bool, &[Param]); 11] = [
         (Tab::Roll, "Flat-Field", masked && scanned, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
         (Tab::Roll, "Filtration", true, &[GainRed, GainGreen, GainBlue]),
         (Tab::Roll, "Highlight Detail", true, &[DensityCeiling]),
         (Tab::Roll, "Dye Separation", separation, &[DyeSeparation]),
-        (Tab::Color, "Color", pro && !mono, &[BalanceStrength, Temperature, Tint, ColorDensity]),
-        (Tab::Color, "Lighting", pro, &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint]),
+        (Tab::Color, "Color", !mono, &[BalanceStrength, Temperature, Tint, ColorDensity]),
+        (Tab::Color, "Lighting", true, &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint]),
         (Tab::Color, "Paper Correction", on_paper, &[PaperRed, PaperGreen, PaperBlue]),
-        (Tab::Color, "Effects", pro, if mono { &[Vignette] } else { &[Vignette, Chrome] }),
+        (Tab::Color, "Effects", true, if mono { &[Vignette] } else { &[Vignette, Chrome] }),
         (Tab::Details, "Sharpening", !sheet, &[SharpenAmount, SharpenRadius, SharpenHalo]),
         (Tab::Details, "Chroma Denoise", !sheet && !mono, &[ChromaAmount, ChromaRadius]),
         (Tab::Details, "Texture", true, &[Texture]),
@@ -110,7 +109,7 @@ fn label(f: Field, inverted: bool) -> String {
     (if inverted { ends.1 } else { ends.0 }).to_string()
 }
 
-/// On the open face's view `s`: a step moves a hundredth of the track rightward per click, the shown
+/// On the open frame's settings `s`: a step moves a hundredth of the track rightward per click, the shown
 /// sense, a place on the track is the panel's drag, both moves; a reset is the double click's.
 pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
     let f = field(param);
@@ -131,13 +130,13 @@ impl Sliders for PhoneSliders {
         if store.path().is_none() {
             return Vec::new();
         }
-        rows(store.settings(), store.face(), self.on_paper)
+        rows(store.settings(), self.on_paper)
     }
 
     /// Only a slider the panel shows now moves, as a hand finds only those.
     fn command(&self, store: &EditorStore, param: Param, by: Move) -> Option<Command> {
         let shown = self.rows(store).iter().any(|r| r.param == param);
-        shown.then(|| command(&store.face_view(), param, by))
+        shown.then(|| command(store.settings(), param, by))
     }
 }
 
@@ -151,9 +150,9 @@ mod tests {
     }
 
     #[test]
-    fn each_face_lists_the_sliders_its_tabs_show() {
+    fn the_panel_lists_the_sliders_its_tabs_show() {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
-        let pro = rows(&s, Face::Pro, false);
+        let pro = rows(&s, false);
         use Param::*;
         assert_eq!(params(&pro, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling, DyeSeparation]);
         assert_eq!(params(&pro, Tab::Color), [BalanceStrength, Temperature, Tint, ColorDensity, Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint, Vignette, Chrome]);
@@ -162,17 +161,16 @@ mod tests {
         assert_eq!((exposure.block.as_str(), exposure.label.as_str()), ("Lighting", "Exposure"));
         assert_eq!(exposure.value, Field::Exposure.readout(s.print.exposure));
         assert_eq!(pro[0].label, "Red ↔ Cyan", "a negative's gains read inverted");
-        // Twin: the Scanner face leaves Color to its keypad, and the roll's dye blocks out.
-        let scanner = rows(&s, Face::Scanner, true);
-        assert_eq!(params(&scanner, Tab::Color), [PaperRed, PaperGreen, PaperBlue]);
-        assert_eq!(params(&scanner, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling]);
-        assert_eq!(params(&scanner, Tab::Details), params(&pro, Tab::Details));
+        // Twin: proofed on a paper, its correction joins Colour between Lighting and Effects.
+        let papered = rows(&s, true);
+        assert_eq!(params(&papered, Tab::Color)[10..13], [PaperRed, PaperGreen, PaperBlue]);
+        assert_eq!(params(&papered, Tab::Roll), params(&pro, Tab::Roll));
     }
 
     #[test]
     fn black_and_white_drops_the_colour_sliders() {
         let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
-        let rows = rows(&s, Face::Pro, false);
+        let rows = rows(&s, false);
         for gone in [Param::Temperature, Param::Chrome, Param::ChromaAmount, Param::DyeSeparation] {
             assert!(!rows.iter().any(|r| r.param == gone), "{gone:?}");
         }
@@ -265,28 +263,18 @@ mod tests {
         let lens = [Field::Distortion, Field::FringeRed, Field::FringeBlue, Field::LensVignetting];
         let tone = [Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
         let film = Field::ALL.into_iter().filter(|f| f.block() == Some(crate::fields::Block::Film)).collect::<Vec<_>>();
-        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite], &film, &[Field::Brightness]].concat();
+        let filtration = [Field::Cyan, Field::Magenta, Field::Yellow];
+        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite], &film, &[Field::Brightness], &filtration].concat();
         assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &effects, &lens, &later[..]].concat());
         // A digital photo's Roll tab is a negative's but for the flat-field, its colour a negative's print's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-        let roll: Vec<_> = rows(&digital, Face::Pro, false).into_iter().filter(|r| r.tab == Tab::Roll).map(|r| r.block).collect();
+        let roll: Vec<_> = rows(&digital, false).into_iter().filter(|r| r.tab == Tab::Roll).map(|r| r.block).collect();
         assert!(roll.contains(&"Filtration".to_string()) && roll.contains(&"Dye Separation".to_string()), "{roll:?}");
-        assert!(rows(&digital, Face::Pro, false).iter().any(|r| r.param == Param::BalanceStrength));
+        assert!(rows(&digital, false).iter().any(|r| r.param == Param::BalanceStrength));
         // Twin: a masked flat-field shows on a negative and never on a digital photo.
         let mut masked = PipelineSettings::rest(ConversionMode::Negative, true);
         masked.flat_field.mask = FlatFieldMask::ValoiEasy35V1;
-        let flat = |s: &PipelineSettings| rows(s, Face::Pro, false).iter().any(|r| r.block == "Flat-Field");
+        let flat = |s: &PipelineSettings| rows(s, false).iter().any(|r| r.block == "Flat-Field");
         assert!(flat(&masked) && !flat(&PipelineSettings { mode: ConversionMode::Digital, ..masked.clone() }));
-    }
-
-    #[test]
-    fn a_digital_photos_scanner_face_shows_the_phone_no_colour_lighting_or_effects() {
-        let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-        let blocks = |face| rows(&digital, face, false).into_iter().map(|r| r.block).collect::<Vec<_>>();
-        let scanner = blocks(Face::Scanner);
-        assert!(!scanner.is_empty() && scanner.iter().all(|b| !["Color", "Lighting", "Effects"].contains(&b.as_str())), "{scanner:?}");
-        // Twin: Pro's face shows all three.
-        let pro = blocks(Face::Pro);
-        assert!(["Color", "Lighting", "Effects"].iter().all(|b| pro.iter().any(|p| p == b)), "{pro:?}");
     }
 }

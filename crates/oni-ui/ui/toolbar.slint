@@ -1,7 +1,7 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, ScannerStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -56,8 +56,6 @@ export global Bar {
     in property <bool> updating;
     in property <string> undo-title: @tr("Undo");
     in property <string> redo-title: @tr("Redo");
-    // The face the open photo is edited on: 0 Pro, 1 Scanner.
-    in-out property <int> face;
     // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
     in property <length> traffic-lights;
     // The bar's height, which the traffic lights are centred in.
@@ -165,14 +163,12 @@ component Centre inherits HorizontalLayout {
     Divider { vertical: true; height: ButtonStyle.height; }
     ButtonGroup {
         joined: true;
-        // It resets the face the photos are edited on, Pro's settings or the Scanner's, the other's kept;
-        // its help says which.
         Key {
             compact: root.compact;
             action: Act.reset;
             word: @tr("Reset");
             icon: Icons.reset;
-            help: Bar.face == 1 ? @tr("Reset the Scanner settings ({})", KeyWords.command-shift + "R") : @tr("Reset the Pro settings ({})", KeyWords.command-shift + "R");
+            help: @tr("Reset the settings ({})", KeyWords.command-shift + "R");
             enabled: Bar.can-reset;
         }
         if root.trash: Key {
@@ -190,8 +186,8 @@ component Centre inherits HorizontalLayout {
 
 component EditorKeys inherits Centre {
     trash: false;
-    // `centreKeys` by job: the canvas's views and tools, each with its ring on the card while it holds, the
-    // faces, then the settings carried from photo to photo.
+    // `centreKeys` by job: the canvas's views and tools, each with its ring on the card while it holds, then the
+    // settings carried from photo to photo.
     ButtonGroup {
         joined: true;
         SelectAll { compact: root.compact; publishes: !root.measuring; }
@@ -218,17 +214,6 @@ component EditorKeys inherits Centre {
             enabled: Bar.has-photo && Bar.single;
         }
         Key { compact: root.compact; action: Act.compare; word: @tr("Compare"); icon: Icons.compare; help: Menus.titles.compare; on: Canvas.split >= 0; tool: CanvasTool.compare; publishes: !root.measuring; enabled: Bar.has-photo; }
-    }
-    // `faceBinding`: the faces, present only while a photograph is worked, are the first to give room.
-    Tabs {
-        preferred-width: ScannerStyle.face-bar;
-        max-width: ScannerStyle.face-bar;
-        tabs: [@tr("Pro"), @tr("Scanner")];
-        helps: [@tr("Pro: every setting by hand, the place to start"), @tr("Scanner: a minilab's density and colour, in steps")];
-        marked: [false, false];
-        disabled: Keyboard.covered ? [true, true] : [false, false];
-        selected: Bar.face;
-        picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup {
         joined: true;

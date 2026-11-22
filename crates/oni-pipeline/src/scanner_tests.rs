@@ -5,16 +5,18 @@ use super::*;
 fn a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off() {
     let roll = check_roll();
     let mid = CHECK_GREY.map(|d| 10f32.powf(-d));
-    let rendered = |clicks: ScannerClicks| replica(mid, &PipelineSettings { scanner: clicks, ..roll.clone() }).unwrap();
-    let rest = rendered(ScannerClicks::default());
-    let (lighter, darker) = (rendered(ScannerClicks::new(2, 0, 0, 0, 0)), rendered(ScannerClicks::new(-2, 0, 0, 0, 0)));
-    let (cooler, redder) = (rendered(ScannerClicks::new(0, 2, 0, 0, 0)), rendered(ScannerClicks::new(0, -2, 0, 0, 0)));
+    let keyed = |d: i64, c: i64, w: i64| LegacyPrint { machine: LegacyMachine::Frontier, d, c, w, ..LegacyPrint::default() };
+    let rendered = |l: LegacyPrint| replica(mid, &PipelineSettings { legacy_print: Some(l), ..roll.clone() }).unwrap();
+    let rest = rendered(keyed(0, 0, 0));
+    let (lighter, darker) = (rendered(keyed(2, 0, 0)), rendered(keyed(-2, 0, 0)));
+    let (cooler, redder) = (rendered(keyed(0, 2, 0)), rendered(keyed(0, -2, 0)));
     assert!(lighter[1] > rest[1] && darker[1] < rest[1], "D + lightens: green {} against {}", lighter[1], rest[1]);
     assert!(cooler[0] < rest[0] && redder[0] > rest[0], "C + takes red off: {} against {}", cooler[0], rest[0]);
-    // Twin: off the Frontier no table is read, so a check through it cannot pass by default.
-    assert!(replica(mid, &PipelineSettings { scanner_machine: ScannerMachine::Oni, ..roll.clone() }).is_none());
+    // Twin: off the Frontier no table is read, so a check through it cannot pass by default; nor with it not laid.
+    assert!(replica(mid, &PipelineSettings { legacy_print: Some(LegacyPrint { machine: LegacyMachine::Oni, ..keyed(0, 0, 0) }), ..roll.clone() }).is_none());
+    assert!(replica(mid, &PipelineSettings { legacy_print: Some(LegacyPrint { laid: false, ..keyed(0, 0, 0) }), ..roll.clone() }).is_none());
     // And TEMP + warms the grey: more red than blue than at rest.
-    let warm = rendered(ScannerClicks::new(0, 0, 0, 0, 4));
+    let warm = rendered(keyed(0, 0, 4));
     assert!(warm[0] - warm[2] > rest[0] - rest[2], "{warm:?} against {rest:?}");
 }
 
@@ -33,11 +35,11 @@ fn the_look_lab_s_coordinates_unmix_as_the_swift_machine_did() {
 fn the_table_reads_and_an_odd_count_sits_between_its_neighbours() {
     let m = &*MACHINE;
     assert_eq!((m.render.cube_dimension, m.warmth_plus.cube_dimension), (27, 17));
-    assert_eq!(m.offset(&ScannerClicks::default()), [0.0; 3]);
-    let one = m.offset(&ScannerClicks::new(1, 0, 0, 0, 0));
-    let two = m.offset(&ScannerClicks::new(2, 0, 0, 0, 0));
+    assert_eq!(m.offset([0; 4]), [0.0; 3]);
+    let one = m.offset([1, 0, 0, 0]);
+    let two = m.offset([2, 0, 0, 0]);
     assert!((one[0] - two[0] / 2.0).abs() < 1e-6 && two[0] > 0.0, "{one:?} {two:?}");
-    let minus = m.offset(&ScannerClicks::new(-3, 0, 0, 0, 0));
+    let minus = m.offset([-3, 0, 0, 0]);
     assert!(minus[0] < 0.0);
     // The lift is on every node of a look, never on the render.
     assert!(m.warmth_plus.cube_data.iter().all(|n| n[0] > -LIFT));
@@ -56,9 +58,9 @@ fn a_whole_unit_renders_as_a_count_did_and_a_half_step_lies_between() {
         let (a, b) = (table(count.div_euclid(2)), table(count.div_euclid(2) + count.rem_euclid(2)));
         std::array::from_fn(|c| (a[c] + b[c]) / 2.0)
     };
-    let at = |steps: i64| m.offset(&ScannerClicks::new(0, 0, 0, steps, 0));
+    let at = |steps: i64| m.offset([0, 0, 0, steps]);
     for count in -24..=24 {
-        let (got, want) = (at(count * ScannerClicks::PER_UNIT), former(count));
+        let (got, want) = (at(count * LegacyPrint::PER_POINT), former(count));
         assert!((0..3).all(|c| (got[c] - want[c]).abs() < 1e-6), "{count}: {got:?} against {want:?}");
     }
     for steps in [-47, -3, 1, 5, 47] {
@@ -74,43 +76,21 @@ fn a_whole_unit_renders_as_a_count_did_and_a_half_step_lies_between() {
 }
 
 #[test]
-fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
+fn a_legacy_print_moves_the_gains_by_its_keys_and_the_frontier_s_rest_off_a_paper() {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    s.face = Face::Scanner;
-    s.print.exposure = 0.7;
-    s.density = 0.4;
-    s.scanner = ScannerClicks::new(2, 0, 0, 0, 0);
-    s.scanner_finish.contrast = 0.2;
-    let oni = on_oni_machine(&s).unwrap();
-    assert_eq!((oni.print.exposure, oni.print.contrast, oni.density), (look_entry_exposure(s.mode), 0.2, 0.0));
-    assert_eq!(crate::conversion::stage47(&oni).print_stops, 0.0, "the look's curve takes no exposure");
+    s.legacy_print = Some(LegacyPrint { d: 2, ..LegacyPrint::default() });
+    let oni = on_legacy_print(&s).unwrap();
     assert!(oni.gains.stops[0] < 0.0, "more density is less light on a negative");
-    // The Frontier takes the same conversion, its print bypassed for its own look.
-    s.scanner_machine = ScannerMachine::Frontier;
-    let frontier = on_oni_machine(&s).unwrap();
-    // The ONI machine's conversion whole, its gains moved by the Frontier's rest.
+    assert_eq!(PipelineSettings { gains: s.gains, ..oni.clone() }, s, "the gains alone move");
+    // The Frontier's look takes its rest in the gains with the keys; on a paper, the keys alone.
+    s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 2, ..LegacyPrint::default() });
+    let frontier = on_legacy_print(&s).unwrap();
     let rest = stops_of(frontier_rest(), &s);
-    assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, gains: frontier.gains, ..oni.clone() });
     assert!((0..3).all(|c| (frontier.gains.stops[c] - oni.gains.stops[c] - rest[c]).abs() < 1e-6), "{:?} {:?}", frontier.gains, oni.gains);
     assert!(rest.iter().any(|r| r.abs() > 0.01), "the rest moves the gains");
-    // Twin: Pro leaves the settings alone.
-    assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
-}
-
-#[test]
-fn the_scanner_face_prints_without_pros_auto_white_balance() {
-    // The face prints what its keys show: Auto White Balance's correction, Pro's, leaves its print alone.
-    let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    s.face = Face::Scanner;
-    s.balance_filters = Some([0.4, -0.2, -0.4]);
-    s.balance_strength = 1.0;
-    let bare = on_oni_machine(&PipelineSettings { balance_filters: None, ..s.clone() }).unwrap();
-    for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
-        let corrected = on_oni_machine(&PipelineSettings { scanner_machine: machine, ..s.clone() }).unwrap();
-        assert!(corrected.print == bare.print, "{machine:?}: {:?} {:?}", corrected.print, bare.print);
-    }
-    // Twin: the correction laid on the print moves it, so a face that took it would be seen.
-    let mut laid = bare.print;
-    laid.set_filters([0.4, -0.2, -0.4]);
-    assert!(laid != bare.print);
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..s.clone() };
+    assert_eq!(on_legacy_print(&papered).unwrap().gains, oni.gains);
+    // Twin: no legacy print, or one not laid, leaves the settings to themselves.
+    assert!(on_legacy_print(&PipelineSettings { legacy_print: None, ..s.clone() }).is_none());
+    assert!(on_legacy_print(&PipelineSettings { legacy_print: Some(LegacyPrint { laid: false, ..s.legacy_print.unwrap() }), ..s }).is_none());
 }

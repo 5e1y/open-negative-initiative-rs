@@ -13,9 +13,9 @@ use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses,
 use crate::geometry::placing::Placing;
 use crate::lens::{LensCorrection, Radial};
 use crate::levels::{Levels, LevelsSet};
-use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
+use crate::legacy_print::LegacyPrint;
+use crate::modes::{ConversionMode, SourceEncoding};
 use crate::paper::PaperStock;
-use crate::scanner::{ScannerClicks, ScannerFinish};
 use crate::spectrogram::Spectrogram;
 use crate::tone::{Print, Tone};
 use crate::virtual_film::{VirtualFilm, VirtualStock};
@@ -93,6 +93,9 @@ pub struct PipelineSettings {
     /// The colour paper the negative is printed on in place of ONI's own print; none prints on ONI's.
     #[serde(rename = "printPaper", skip_serializing_if = "Option::is_none", default)]
     pub print_paper: Option<PaperStock>,
+    /// The former Scanner face's print a photo edited there keeps; none on every other photo.
+    #[serde(rename = "legacyPrint", skip_serializing_if = "Option::is_none", default)]
+    pub legacy_print: Option<LegacyPrint>,
     pub density: f32,
     #[serde(rename = "manualCurves")]
     pub manual_curves: CurveSet,
@@ -103,12 +106,6 @@ pub struct PipelineSettings {
     pub secret_sauce: f32,
     #[serde(rename = "paperCorrection")]
     pub paper_correction: PaperCorrection,
-    pub face: Face,
-    pub scanner: ScannerClicks,
-    #[serde(rename = "scannerMachine")]
-    pub scanner_machine: ScannerMachine,
-    #[serde(rename = "scannerFinish")]
-    pub scanner_finish: ScannerFinish,
     pub texture: Texture,
     pub sharpen: Sharpen,
     pub grain: Grain,
@@ -154,6 +151,7 @@ impl Default for PipelineSettings {
             balance_strength: filter_balance::RESTING_STRENGTH,
             print: Print::default(),
             print_paper: None,
+            legacy_print: None,
             density: 0.0,
             manual_curves: CurveSet::default(),
             spectrogram: Spectrogram::default(),
@@ -161,10 +159,6 @@ impl Default for PipelineSettings {
             vignette: Vignette::default(),
             secret_sauce: 0.0,
             paper_correction: PaperCorrection::default(),
-            face: Face::Pro,
-            scanner: ScannerClicks::default(),
-            scanner_machine: ScannerMachine::Oni,
-            scanner_finish: ScannerFinish::default(),
             texture: Texture::default(),
             sharpen: Sharpen::default(),
             grain: Grain::default(),
@@ -198,6 +192,11 @@ impl PipelineSettings {
     /// The paper the render prints on: the chosen one where the frame takes a paper.
     pub fn paper(&self) -> Option<PaperStock> {
         self.print_paper.filter(|_| self.takes_paper())
+    }
+
+    /// The former Scanner face's print the render lays, while it is laid.
+    pub fn legacy(&self) -> Option<LegacyPrint> {
+        self.legacy_print.filter(|l| l.laid)
     }
 
     /// These settings shot on `stock`, its exposure kept: its negative's gains, windows and dyes placed from
@@ -281,48 +280,17 @@ impl PipelineSettings {
         out.texture = Texture::default();
         out
     }
-
-    /// These settings as the Scanner face edits and renders them: its own finishing in Pro's fields.
-    pub fn as_scanner(&self) -> PipelineSettings {
-        let mut out = self.clone();
-        out.print.contrast = self.scanner_finish.contrast;
-        out.manual_curves = self.scanner_finish.manual_curves.clone();
-        out.spectrogram = self.scanner_finish.spectrogram;
-        out.saturation = self.scanner_finish.saturation.clone();
-        out.vignette = self.scanner_finish.vignette;
-        out.secret_sauce = self.scanner_finish.secret_sauce;
-        out
-    }
-
-    /// An edit made on the Scanner face, its finishing stored apart and Pro's own kept.
-    pub fn storing_scanner_edit(&self, edited: &PipelineSettings) -> PipelineSettings {
-        let mut out = edited.clone();
-        out.scanner_finish = ScannerFinish {
-            contrast: edited.print.contrast,
-            manual_curves: edited.manual_curves.clone(),
-            spectrogram: edited.spectrogram,
-            saturation: edited.saturation.clone(),
-            vignette: edited.vignette,
-            secret_sauce: edited.secret_sauce,
-        };
-        out.print.contrast = self.print.contrast;
-        out.manual_curves = self.manual_curves.clone();
-        out.spectrogram = self.spectrogram;
-        out.saturation = self.saturation.clone();
-        out.vignette = self.vignette;
-        out.secret_sauce = self.secret_sauce;
-        out
-    }
 }
 
 /// What a settings paste and Apply Settings to Roll carry: the Color and Details tabs, whole.
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 19] = [
+    pub const FIELDS: [&str; 17] = [
         "balanceFilters",
         "print",
         "printPaper",
+        "legacyPrint",
         "density",
         "manualCurves",
         "spectrogram",
@@ -333,16 +301,13 @@ pub mod look_settings {
         "chroma",
         "texture",
         "sharpen",
-        "scanner",
-        "scannerFinish",
-        "scannerMachine",
         "grain",
         "halation",
         "lensCorrection",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 16] = [
+    pub const FRAME_FIELDS: [&str; 15] = [
         "film",
         "manualOrder",
         "sheet",
@@ -358,7 +323,6 @@ pub mod look_settings {
         "captureStops",
         "rgbPasses",
         "passOf",
-        "face",
     ];
 
     pub fn copied(donor: &PipelineSettings, target: &PipelineSettings) -> PipelineSettings {
@@ -366,6 +330,7 @@ pub mod look_settings {
         out.balance_filters = donor.balance_filters;
         out.print = donor.print;
         out.print_paper = donor.print_paper;
+        out.legacy_print = donor.legacy_print;
         out.density = donor.density;
         out.manual_curves = donor.manual_curves.clone();
         out.spectrogram = donor.spectrogram;
@@ -376,9 +341,6 @@ pub mod look_settings {
         out.chroma = donor.chroma;
         out.texture = donor.texture;
         out.sharpen = donor.sharpen;
-        out.scanner = donor.scanner;
-        out.scanner_finish = donor.scanner_finish.clone();
-        out.scanner_machine = donor.scanner_machine;
         out.grain = donor.grain;
         out.halation = donor.halation;
         out.lens_correction = donor.lens_correction;

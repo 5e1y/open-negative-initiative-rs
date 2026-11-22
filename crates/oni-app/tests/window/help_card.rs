@@ -4,7 +4,7 @@
 
 use oni_app::PanelTab;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
-use oni_app::{Act, App, Bar, Canvas, Exporting, PanelState, Tip};
+use oni_app::{Act, App, Canvas, Exporting, PanelState, Tip};
 use slint::ComponentHandle;
 
 use crate::common::{self, Placed};
@@ -133,7 +133,7 @@ fn lighting_card(rig: &common::Rig, w: &oni_app::MainWindow) -> Placed {
 pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     let Some((rig, shell, root)) = opened("help-card-close") else { return };
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    let (tip, app, bar) = (w.global::<Tip>(), w.global::<App>(), w.global::<Bar>());
+    let (tip, app) = (w.global::<Tip>(), w.global::<App>());
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
@@ -163,18 +163,13 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     assert_eq!(doubles.get(), 1, "the canvas lies under that spot");
     rig.settle();
 
-    // Whatever takes its mark away takes the card: the pane, the face, the panel hidden, a sheet, the gallery.
+    // Whatever takes its mark away takes the card: the pane, the panel hidden, a sheet, the gallery.
     lighting_card(&rig, w);
     w.global::<PanelState>().set_tab(PanelTab::Details);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Details);
     closed("another pane");
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
-    rig.settle();
-    lighting_card(&rig, w);
-    bar.invoke_act(Act::FaceScanner);
-    closed("the other face");
-    bar.invoke_act(Act::FacePro);
     rig.settle();
     lighting_card(&rig, w);
     ctl.act(Act::HidePanel);

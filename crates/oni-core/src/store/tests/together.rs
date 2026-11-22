@@ -14,7 +14,6 @@ fn a_step_sets_the_same_value_on_the_frames_together_keeps_their_own_and_undoes_
     let mut theirs = PipelineSettings::default();
     theirs.vignette.stops = -0.7;
     theirs.manual_order = Some(4.0);
-    theirs.face = oni_settings::Face::Scanner;
     for p in [&b, &c] {
         std::fs::write(p, b"").unwrap();
         sidecar::write(&theirs, Path::new(p), WriteOptions::default()).unwrap();
@@ -30,9 +29,7 @@ fn a_step_sets_the_same_value_on_the_frames_together_keeps_their_own_and_undoes_
     assert_eq!(store.together_live()[0].1.vignette.stops, 0.5, "shown as written");
     assert_eq!(read(&b).vignette.stops, 0.5, "the value set, not the difference");
     assert_eq!(read(&b).manual_order, Some(4.0), "a frame's own field stays its own");
-    assert_eq!(read(&b).face, store.settings().face, "on the face the step was taken on, or it would show none of it");
     assert_eq!(read(&c).vignette.stops, -0.7, "twin: a frame left out keeps its value");
-    assert_eq!(read(&c).face, oni_settings::Face::Scanner, "and its face");
     store.undo();
     assert_eq!(read(&b).vignette.stops, -0.7, "one undo takes the others back");
     assert_eq!(store.together_live()[0].1.vignette.stops, -0.7, "and shows them back");
@@ -94,56 +91,6 @@ fn a_roll_field_moved_together_stays_on_the_frames_of_that_roll() {
     // Twin: a frame of the same roll takes the window moved.
     assert_eq!(read(&c).levels.red.black, 0.2);
     assert_eq!(live[1], 0.2);
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-/// The face turned reaches every frame together, as a view and no step: the undos reach past it, and
-/// the one of a step taken on Pro turns the view back there, every frame together with it.
-#[test]
-fn the_face_turned_reaches_every_frame_together_and_is_no_step() {
-    use oni_settings::Face::{Pro, Scanner};
-    let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
-    let (r1, r2) = (Id::new(), Id::new());
-    let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
-    let (mut store, dir, [_, b, c]) = three("together-face", on(r2), on(r1));
-    let next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
-    store.apply_at(Command::Write(Box::new(next)), 0.0);
-    store.set_together(vec![b.clone(), c.clone()]);
-    store.apply_at(Command::Face(Scanner), 5.0);
-    let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
-    assert_eq!([read(&b).face, read(&c).face], [Scanner; 2], "another roll's frame takes the face too");
-    assert_eq!(live, [Scanner; 2], "and shows it");
-    // A roll field moved on the Scanner face reaches the roll's frame alone.
-    let mut next = store.settings().clone();
-    next.levels.red.black = 0.2;
-    store.apply_at(Command::Write(Box::new(next)), 10.0);
-    assert_eq!((read(&b).levels.red.black, read(&c).levels.red.black), (0.0, 0.2));
-    store.undo();
-    assert_eq!((read(&c).levels.red.black, store.face()), (0.0, Scanner), "the step taken on the Scanner face undone there");
-    store.undo();
-    assert_eq!(store.settings().roll_reference, None, "the second undo reaches the write made before the turn");
-    assert_eq!([store.face(), read(&b).face, read(&c).face], [Pro; 3], "on Pro, where it was made, the frames together with it");
-    // Twin: the turn as a step would be the second undo's, the write before it still to take.
-    assert!(!store.can_undo());
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-/// A group formed with frames left on the other face takes the open frame's face, as a view and no
-/// step: the frames together are edited on one face, never each on its own.
-#[test]
-fn frames_together_take_the_open_frames_face_when_the_group_forms() {
-    use oni_settings::Face::{Pro, Scanner};
-    let scanner = PipelineSettings { face: Scanner, ..PipelineSettings::default() };
-    let (mut store, dir, [_, b, c]) = three("together-one-face", scanner.clone(), PipelineSettings::default());
-    assert_eq!((read(&b).face, store.face()), (Scanner, Pro), "b was left on the Scanner face");
-    store.set_together(vec![b.clone(), c.clone()]);
-    let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
-    assert_eq!([read(&b).face, read(&c).face], [Pro; 2], "every frame together on the open frame's face");
-    assert_eq!(live, [Pro; 2], "and shown on it");
-    assert!(!store.can_undo(), "a view, no step");
-    // Twin: the open frame turned, the group follows it whole.
-    store.apply_at(Command::Face(Scanner), 1.0);
-    assert_eq!([read(&b).face, read(&c).face], [Scanner; 2]);
     let _ = std::fs::remove_dir_all(&dir);
 }
 
@@ -225,17 +172,17 @@ fn a_written_edit_lays_the_values_it_moved_and_no_other() {
 }
 
 #[test]
-fn a_scanner_key_presses_each_frame_s_own_counts() {
+fn a_filter_moved_as_c_m_or_y_moves_each_frame_together_by_its_distance() {
     let mut own = PipelineSettings::default();
-    own.scanner.c = 3;
-    own.scanner.y = -2;
-    let (mut store, dir, [_, b, _]) = three("together-scan", own.clone(), own);
+    own.print.set_filters([0.0, 0.0, 0.2]);
+    let (mut store, dir, [_, b, _]) = three("together-filtration", own.clone(), own);
     store.set_together(vec![b.clone()]);
-    store.apply_at(Command::Scan(Scan::Step { letter: Letter::C, by: 1 }), 0.0);
-    let s = read(&b).scanner;
-    assert_eq!((s.c, s.y), (4, -2), "one click on its own three, its yellow untouched");
-    // Twin: the open frame's own count is another.
-    assert_ne!(store.settings().scanner.c, s.c);
+    let knob = Knob::Filtration(crate::knob::Channel::Blue);
+    let (open, theirs) = (knob.get(store.settings()), knob.get(&read(&b)));
+    store.apply_at(Command::Step { knob, by: 6.0 }, 0.0);
+    assert!((knob.get(&read(&b)) - theirs - 6.0).abs() < 1e-4, "six CC more Y on its own {theirs}");
+    // Twin: the open frame's own Y is another, which a value laid whole would have copied.
+    assert!((knob.get(store.settings()) - open - 6.0).abs() < 1e-4 && (open - theirs).abs() > 1.0);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

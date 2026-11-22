@@ -12,7 +12,6 @@ impl Ctl {
         self.detection_due();
         self.ask_originals();
         self.publish_histogram();
-        self.watch_frontier_look();
         let loading = self.state.borrow().load_bar();
         let lib = w.global::<Library>();
         lib.set_loading(loading.as_ref().map(|b| b.title.clone()).unwrap_or_default().into());

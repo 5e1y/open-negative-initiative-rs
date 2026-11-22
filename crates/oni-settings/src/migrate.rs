@@ -15,7 +15,6 @@ use std::sync::{Arc, RwLock};
 pub mod before_1_0;
 pub mod chain;
 pub mod density;
-pub mod digital_face;
 pub mod digital_film;
 pub mod draft;
 pub mod exposure;
@@ -26,6 +25,7 @@ mod on_disk;
 pub mod reshape;
 pub mod scan_line;
 pub mod measured_dyes;
+pub mod one_face;
 pub mod paper;
 pub mod strokes;
 
@@ -216,12 +216,13 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         return Err(Refusal::Newer(version));
     }
     let raw = stored.get("settings").cloned();
-    let mut converted = if document::sniffed(bytes).is_some_and(|s| s.named) && version >= chain::NAMED_VERSION {
+    let (mut converted, scanner) = if document::sniffed(bytes).is_some_and(|s| s.named) && version >= chain::NAMED_VERSION {
         let document = document::typed(bytes).map_err(Refusal::Unreadable)?;
         if version >= VERSION {
             return Ok((Converted { document, from: version, draft: None }, None));
         }
-        Converted { document: Document { version: VERSION, ..document }, from: version, draft: None }
+        let scanner = one_face::Scanner::read(raw.as_ref()).map_err(Refusal::Unreadable)?;
+        (Converted { document: Document { version: VERSION, ..document }, from: version, draft: None }, scanner)
     } else {
         // Only the oldest formats ask how the file decodes, as asking reads the original.
         let mosaic = if version < chain::PRIMARIES_HELD_VERSION { Some(facts.mosaic.get()?) } else { None };
@@ -243,10 +244,10 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
             settings
         }
     };
-    converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
+    converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -267,15 +268,16 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     if named && version >= chain::NAMED_VERSION {
         let raw = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
-        let settings = measured_dyes::caught_up(version, digital_film::caught_up(version, digital_face::caught_up(version, settings), Some(&raw)));
-        let settings = exposure::caught_up(version, paper::caught_up(version, settings));
+        let scanner = one_face::Scanner::read(Some(&raw)).map_err(Refusal::Unreadable)?;
+        let settings = measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw)));
+        let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
-    let mut converted = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
-    converted.document.settings = digital_face::caught_up(version, std::mem::take(&mut converted.document.settings));
+    let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
     converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
+    converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     Ok(converted)
 }
 
@@ -286,13 +288,13 @@ fn stored(bytes: &[u8]) -> Result<Object, Refusal> {
     }
 }
 
-/// The frozen chain, on the raw document then on its typed settings, before any fact is asked;
-/// `mosaic` is `None` for a document of no file, and for a format that never asks it.
-fn earlier(stored: Object, version: i64, mosaic: Option<bool>) -> Result<Converted, Failure> {
+/// The frozen chain, on the raw document then on its typed settings, before any fact is asked, with the Scanner face's
+/// fields it kept; `mosaic` is `None` for a document of no file, and for a format that never asks it.
+fn earlier(stored: Object, version: i64, mosaic: Option<bool>) -> Result<(Converted, one_face::Scanner), Failure> {
     // The unit changes run on the keys the document really carries, before the defaults are laid in.
     let aged = Value::Object(chain::aged(stored, version, mosaic));
     let completed = chain::merged(&aged, chain::neutral_document());
-    let (mut document, draft) = reshape::reshaped(completed)?;
+    let (mut document, draft, mut scanner) = reshape::reshaped(completed)?;
     let mut settings = std::mem::take(&mut document.settings);
     let raw = aged.get("settings").filter(|v| v.is_object());
     let colour = CurveSet::retired(raw, "curves");
@@ -305,8 +307,8 @@ fn earlier(stored: Object, version: i64, mosaic: Option<bool>) -> Result<Convert
     if let Some(colour) = &colour {
         settings.manual_curves = settings.manual_curves.folding(colour);
     }
-    if let Some(scanner) = CurveSet::retired(raw.and_then(|r| r.get("scannerFinish")), "curves") {
-        settings.scanner_finish.manual_curves = settings.scanner_finish.manual_curves.folding(&scanner);
+    if let Some(retired) = CurveSet::retired(raw.and_then(|r| r.get("scannerFinish")), "curves") {
+        scanner.finish.manual_curves = scanner.finish.manual_curves.folding(&retired);
     }
     if version < chain::LOOK_FOLDED_VERSION
         && let Some(look) = look::ScannerLook::stored(raw)
@@ -314,5 +316,5 @@ fn earlier(stored: Object, version: i64, mosaic: Option<bool>) -> Result<Convert
         settings = look.folded(&settings);
     }
     document.settings = settings;
-    Ok(Converted { document, from: version, draft })
+    Ok((Converted { document, from: version, draft }, scanner))
 }

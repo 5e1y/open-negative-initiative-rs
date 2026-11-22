@@ -1,5 +1,4 @@
-//! The editors' edits on the stored settings: on the face edited, and a block's reset at each frame's
-//! own rest.
+//! The editors' edits on the stored settings, and a block's reset at each frame's own rest.
 
 use super::levels::Windows;
 use super::{Edit, Reset};
@@ -10,14 +9,9 @@ use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::{LevelsChannel, LevelsSet};
 use oni_settings::spectrogram::Spectrogram;
 
-/// The settings as the open face edits them: the Scanner face reads its own finishing.
-pub fn face(settings: &PipelineSettings, scanner: bool) -> PipelineSettings {
-    if scanner { settings.as_scanner() } else { settings.clone() }
-}
-
-/// The stored settings with `edit` laid on the face, the other face's finishing kept.
-pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineSettings {
-    let mut f = face(settings, scanner);
+/// The stored settings with `edit` laid on.
+pub fn lay(settings: &PipelineSettings, edit: &Edit) -> PipelineSettings {
+    let mut f = settings.clone();
     match edit {
         Edit::Curves(c) => f.manual_curves = c.clone(),
         Edit::Levels(l) => l.lay(&mut f),
@@ -25,7 +19,7 @@ pub fn lay(settings: &PipelineSettings, scanner: bool, edit: &Edit) -> PipelineS
         Edit::Saturation(s) => f.saturation = s.clone(),
         Edit::Grain(c) => f.grain.curve = *c,
     }
-    if scanner { settings.storing_scanner_edit(&f) } else { f }
+    f
 }
 
 /// `restingLevels`: a measured roll's window when the frame stands on one, a digital photo's film's own,
@@ -61,17 +55,17 @@ pub fn levels_modified(settings: &PipelineSettings) -> bool {
 /// The editors' reset keys, in the interface's order.
 pub const RESETS: [Reset; 5] = [Reset::Curves, Reset::Levels, Reset::Spectrogram, Reset::Saturation, Reset::Grain];
 
-/// The block's reset on the face edited, read off each frame it lands on.
-pub fn rest_of(block: Reset, scanner: bool) -> Each {
+/// The block's reset, read off each frame it lands on.
+pub fn rest_of(block: Reset) -> Each {
     Each::new(move |s| {
         let edit = match block {
             Reset::Curves => Edit::Curves(CurveSet::default()),
-            Reset::Levels => Edit::Levels(rested_windows(&face(s, scanner))),
+            Reset::Levels => Edit::Levels(rested_windows(s)),
             Reset::Spectrogram => Edit::Spectrogram(Spectrogram::default()),
             Reset::Saturation => Edit::Saturation(SaturationCurve::default()),
             Reset::Grain => Edit::Grain(GrainCurve::REST),
         };
-        lay(s, scanner, &edit)
+        lay(s, &edit)
     })
 }
 

@@ -30,11 +30,12 @@ fn mirror(roll: &Path) -> PathBuf {
             std::fs::hard_link(&from, &to).unwrap();
         }
     }
-    // The state the check reads, whatever the roll was left in: no medal, one frame on the Scanner face.
+    // The state the check reads, whatever the roll was left in: no medal, one frame on a legacy print.
     for frame in frames(&dir) {
         oni_settings::sidecar::set_label(oni_settings::Medal::None, &frame, true).unwrap();
     }
-    let scanner = |s: &oni_settings::PipelineSettings| oni_settings::PipelineSettings { face: oni_settings::Face::Scanner, ..s.clone() };
+    let legacy = Some(oni_settings::LegacyPrint { machine: oni_settings::LegacyMachine::Frontier, ..oni_settings::LegacyPrint::default() });
+    let scanner = |s: &oni_settings::PipelineSettings| oni_settings::PipelineSettings { legacy_print: legacy, ..s.clone() };
     oni_settings::sidecar::update(&dir.join("DSC_6435.NEF"), true, scanner).unwrap();
     dir
 }
@@ -216,18 +217,18 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     if lib.get_content_height() > viewport + 2.0 * pitch {
         assert!(at_top < n, "{at_top} cells laid at the top of {n}");
     }
-    // Both faces through the pipeline: every tile drawn, the Scanner face's among them.
+    // Every tile drawn through the pipeline, a legacy print's among them.
     let mut scanner_drawn = 0;
     for t in &tiles {
         let path = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).map(|e| e.path())
             .find(|p| p.file_stem().is_some_and(|s| *s == *t.caption.as_str()) && p.extension().is_some_and(|x| x != "json"))
             .unwrap_or_else(|| panic!("no file for {}", t.caption));
-        let face = oni_settings::sidecar::read(&path, true).unwrap().settings.face;
-        assert!(t.picture.size().width > 0, "{}: {face:?} left empty", t.caption);
-        scanner_drawn += usize::from(face == oni_settings::Face::Scanner);
+        let legacy = oni_settings::sidecar::read(&path, true).unwrap().settings.legacy_print;
+        assert!(t.picture.size().width > 0, "{}: {legacy:?} left empty", t.caption);
+        scanner_drawn += usize::from(legacy.is_some());
     }
-    println!("{n} of {n} thumbnails drawn, {scanner_drawn} on the Scanner face");
-    // Twin: the roll holds Scanner-face frames, so a renderer refusing that face fails above.
+    println!("{n} of {n} thumbnails drawn, {scanner_drawn} on a legacy print");
+    // Twin: the roll holds a legacy print, so a renderer refusing it fails above.
     assert!(scanner_drawn > 0);
     w.global::<Library>().invoke_tile_clicked(3, false, false);
     rig.pump();
@@ -282,23 +283,21 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let selected: Vec<i32> = app::tiles(w).iter().filter(|t| t.selected).map(|t| t.index).collect();
     assert_eq!(selected, vec![5]);
 
-    // A Scanner-face frame opened on the Scanner face renders on the canvas, through the Frontier's table.
-    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FaceScanner);
+    // A frame on a legacy print renders on the canvas, through the Frontier's look.
     let scanner = tiles
         .iter()
-        .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true).unwrap().settings.face == oni_settings::Face::Scanner)
+        .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true).unwrap().settings.legacy_print.is_some())
         .map(|t| (t.index, t.caption.to_string()))
-        .expect("roll #8 holds a Scanner-face frame");
+        .expect("the roll holds a frame on a legacy print");
     let renders = ctl.state.borrow().renders();
     w.global::<Library>().invoke_tile_opened(scanner.0);
-    rig.until("the Scanner-face render", Duration::from_secs(300), || ctl.state.borrow().renders() > renders);
+    rig.until("the legacy print's render", Duration::from_secs(300), || ctl.state.borrow().renders() > renders);
     let status = canvas.get_status();
     assert!(status.starts_with(&scanner.1) && !status.contains("Not rendered"), "{status}");
-    assert!(canvas.get_frame().size().width > 0, "the canvas shows the Scanner-face frame");
+    assert!(canvas.get_frame().size().width > 0, "the canvas shows the legacy print's frame");
     rig.settle();
-    println!("shot {}", rig.shot("editor-scanner-face").display());
-    assert_eq!(ctl.state.borrow().store().settings().face, oni_settings::Face::Scanner);
-    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FacePro);
+    println!("shot {}", rig.shot("editor-legacy-print").display());
+    assert!(ctl.state.borrow().store().settings().legacy_print.is_some());
 
     // The bench: sixty notches scripted on Exposure, their centiles, and the drag undone.
     let before = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);

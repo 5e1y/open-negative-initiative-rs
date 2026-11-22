@@ -10,9 +10,7 @@ use oni_render::{GRAIN_NODES, Grain, LUMA, cpu};
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
 use oni_settings::frame::Geometry;
-use oni_settings::modes::Face;
-use oni_settings::scanner::ScannerClicks;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyPrint, PipelineSettings};
 
 const IDENTITY: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
 
@@ -349,8 +347,9 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
     let grained = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.5, ..rest.grain }, ..rest.clone() };
     assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is a pass of its own");
-    let (scanner, keyed) = (PipelineSettings { face: Face::Scanner, ..rest.clone() }, PipelineSettings { face: Face::Scanner, ..grained.clone() });
-    assert_eq!(image(&mut g, &keyed).stages(), image(&mut g, &scanner).stages() + 1, "the Scanner face lays the grain");
+    let legacy = Some(LegacyPrint::default());
+    let (scanner, keyed) = (PipelineSettings { legacy_print: legacy, ..rest.clone() }, PipelineSettings { legacy_print: legacy, ..grained.clone() });
+    assert_eq!(image(&mut g, &keyed).stages(), image(&mut g, &scanner).stages() + 1, "a legacy print lays the grain");
     // Each setting's notches through one frontier cache, or none: the passes and pixels the last one ran.
     let mut notches = |g: &mut Graph, s: &PipelineSettings, cached: bool, notch: &dyn Fn(&mut PipelineSettings, f32)| -> (u64, u64) {
         let mut cache = oni_graph::Cache::frontier();
@@ -376,8 +375,8 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 3, "a grain notch skips its own pass");
     let colour = |t: &mut PipelineSettings, d: f32| t.grain.colour.black += d;
     assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 3, "a colour notch skips the grain's pass");
-    // A Scanner face's key is a gain the grain's tone never reads.
-    let key = |t: &mut PipelineSettings, d: f32| t.scanner = ScannerClicks::new((d * 200.0) as i64, 0, 0, 0, 0);
+    // A legacy print's key is a gain the grain's tone never reads.
+    let key = |t: &mut PipelineSettings, d: f32| t.legacy_print = Some(LegacyPrint { d: (d * 200.0) as i64, ..LegacyPrint::default() });
     assert_eq!(notches(&mut g, &keyed, true, &key), notches(&mut g, &scanner, true, &key), "a key notch reruns the grain");
 }
 

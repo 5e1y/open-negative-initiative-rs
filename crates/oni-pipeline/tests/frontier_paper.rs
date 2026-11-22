@@ -12,9 +12,8 @@ use oni_pipeline::look_lab::measure::{self, centile, constrained, median};
 use oni_pipeline::paper::{self, GREY_PRINT, GRADE_BASE};
 use oni_pipeline::{conversion, film, scanner, stages};
 use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
-use oni_settings::modes::ScannerMachine;
 use oni_settings::tone::Print;
-use oni_settings::{Face, PaperStock, PipelineSettings, VirtualStock};
+use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
 const FRONTIER: PaperStock = PaperStock::FujifilmFrontierSp3000;
 
@@ -83,13 +82,13 @@ fn the_rest_prints_the_reference_grey_neutral_with_no_offset_of_the_machines() {
             assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2 || (unfiltered[1] - unfiltered[0]).abs() > 1e-2, "{label}: {unfiltered:?}");
         }
     }
-    // On the Scanner face's Frontier machine the print takes the keys alone: the cube's resting offset is not laid.
+    // On a Frontier legacy print the paper takes the keys alone: the cube's resting offset is not laid.
     let mut s = on_frontier(prepared_negative());
-    (s.face, s.scanner_machine) = (Face::Scanner, ScannerMachine::Frontier);
-    let machine = scanner::on_oni_machine(&s).unwrap();
-    assert_eq!(machine.gains.stops, s.gains.stops);
+    s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
+    let laid = scanner::on_legacy_print(&s).unwrap();
+    assert_eq!(laid.gains.stops, s.gains.stops);
     // Twin: on the cube's path the rest rides in the gains.
-    let cube = scanner::on_oni_machine(&PipelineSettings { print_paper: None, ..s.clone() }).unwrap();
+    let cube = scanner::on_legacy_print(&PipelineSettings { print_paper: None, ..s.clone() }).unwrap();
     assert!((0..3).any(|c| (cube.gains.stops[c] - s.gains.stops[c]).abs() > 1e-3), "{:?}", cube.gains.stops);
 }
 

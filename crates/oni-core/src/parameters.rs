@@ -92,11 +92,11 @@ pub fn all() -> &'static [Row] {
                     to.balance_method = from.balance_method.clone();
                 },
             },
-            // Lighting, under the id stored presets name; the channels' exposures travel with Color, the paper its
-            // sliders print on with them, as it gives them their meaning.
+            // Lighting, under the id stored presets name; the channels' exposures travel with Color, the paper and the
+            // legacy print its sliders print on with them, as they give them their meaning.
             Row {
                 id: "levelsGlobal",
-                covers: &["print", "printPaper"],
+                covers: &["print", "printPaper", "legacyPrint"],
                 sliders: vec![
                     slider("print.exposure", carry!(print.exposure)),
                     slider("print.contrast", carry!(print.contrast)),
@@ -112,7 +112,7 @@ pub fn all() -> &'static [Row] {
                 carry: |from, to| {
                     let filters = (to.print.red, to.print.green, to.print.blue);
                     to.print = from.print;
-                    to.print_paper = from.print_paper;
+                    (to.print_paper, to.legacy_print) = (from.print_paper, from.legacy_print);
                     (to.print.red, to.print.green, to.print.blue) = filters;
                 },
             },
@@ -195,23 +195,6 @@ pub fn all() -> &'static [Row] {
                 ],
                 carry: carry!(lens_correction),
             },
-            Row {
-                id: "scanner",
-                covers: &["scanner", "scannerFinish", "scannerMachine"],
-                sliders: vec![
-                    slider("scanner.d", carry!(scanner.d)),
-                    slider("scanner.c", carry!(scanner.c)),
-                    slider("scanner.m", carry!(scanner.m)),
-                    slider("scanner.y", carry!(scanner.y)),
-                    slider("scanner.w", carry!(scanner.w)),
-                ],
-                carry: |from, to| {
-                    to.scanner = from.scanner;
-                    (to.scanner_finish, to.scanner_machine) = (from.scanner_finish.clone(), from.scanner_machine);
-                },
-            },
-            // Travels with a preset, so one saved off the scanner opens on it.
-            Row { id: "face", covers: &["face"], sliders: vec![], carry: carry!(face) },
             Row {
                 id: "chroma",
                 covers: &["chroma"],
@@ -317,7 +300,6 @@ pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
     block.inverted_source = settings.inverted_source;
     block.sheet = settings.sheet.clone();
     block.film = settings.film.clone();
-    block.face = settings.face;
     // The framing stays, or every reset costs it again; the flat-field describes the rig.
     block.geometry = settings.geometry;
     block.flat_field = settings.flat_field.clone();
@@ -357,16 +339,9 @@ pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
 }
 
 /// The bar's reset: the look back to rest, the framing and the conversion kept, its mode and a roll's
-/// reference or a slide's measured gains (owner's call). On the Scanner face Chrome is part of the
-/// face, the clicks are the edit.
-pub fn reset_blank(settings: &PipelineSettings, scanner_face: bool) -> PipelineSettings {
-    let mut blank = imported(settings);
-    if scanner_face {
-        blank.secret_sauce = settings.secret_sauce;
-    } else {
-        blank.scanner = settings.scanner;
-    }
-    blank
+/// reference or a slide's measured gains (owner's call).
+pub fn reset_blank(settings: &PipelineSettings) -> PipelineSettings {
+    imported(settings)
 }
 
 #[cfg(test)]

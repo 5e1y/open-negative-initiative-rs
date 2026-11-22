@@ -135,15 +135,20 @@ fn a_line_written_at_this_format_keeps_what_equals_the_scan() {
 
 #[test]
 fn a_settings_document_of_format_22_reads_its_settings_as_they_stand() {
-    let mut d = edited();
-    d.settings.scanner = oni_settings::scanner::ScannerClicks::new(3, -1, 0, 0, 0);
+    let d = edited();
     let read = migrate::document(&stored_at(&d, chain::NAMED_VERSION)).unwrap();
     assert_eq!(read.document.settings, migrate::exposure::caught_up(chain::NAMED_VERSION, d.settings.clone()));
-    // Twin: read as a format 21 document, its keypad's steps would be taken for whole units.
+    // Twin: a keypad of format 22 reads its steps, the same keypad read as format 21 takes them for whole units.
+    let keyed = |bytes: Vec<u8>| {
+        let mut v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        v["settings"]["face"] = serde_json::json!("scanner");
+        v["settings"]["scanner"] = serde_json::json!({"d": 3, "c": -1, "m": 0, "y": 0, "w": 0});
+        let legacy = migrate::document(&serde_json::to_vec(&v).unwrap()).unwrap().document.settings.legacy_print.unwrap();
+        (legacy.d, legacy.c)
+    };
+    assert_eq!(keyed(stored_at(&d, chain::NAMED_VERSION)), (3, -1));
     let unnamed = serde_json::to_vec(&reshape::as_stored(&Document { version: chain::NAMED_VERSION, ..d.clone() }, chain::STROKES_ON_SCAN_VERSION)).unwrap();
-    let mut misread: serde_json::Value = serde_json::from_slice(&unnamed).unwrap();
-    misread["settings"]["scanner"] = serde_json::json!({"d": 3, "c": -1, "m": 0, "y": 0, "w": 0});
-    assert_ne!(migrate::document(&serde_json::to_vec(&misread).unwrap()).unwrap().document.settings.scanner, d.settings.scanner);
+    assert_eq!(keyed(unnamed), (6, -2));
 }
 
 /// What caches a sidecar reads its line as an export does, released in memory whether the file is

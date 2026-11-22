@@ -105,7 +105,7 @@ pub(crate) fn the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_thei
     let _ = std::fs::remove_dir_all(&o.dir);
 }
 
-pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
+pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_has() {
     let Some(o) = opened("faces") else { return };
     let (rig, w): (&common::Rig, &MainWindow) = (&o.rig, &o.shell.window);
     let g = w.global::<Editors>();
@@ -146,30 +146,5 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     assert!(g3.get_low_precision(), "an 8-bit scan carries no badge");
     assert!(editors::size(&third.ctl, Plot::Levels).w > 200.0, "the Pro face lays out Per-Channel Levels");
 
-    // The Scanner face lays out Per-Channel Levels too, as they act on its render.
-    // The face switch takes a frame opened from the archive, as a hand opens one.
-    let faces = o.dir.join("faces");
-    std::fs::create_dir_all(&faces).unwrap();
-    let raw = faces.join("frame.NEF");
-    std::fs::write(&raw, b"").unwrap();
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&o.gpu);
-    let picker: Box<dyn Fn() -> Option<PathBuf>> = Box::new(|| None);
-    let options = Options { support: o.dir.join("faces-support"), caches: o.dir.join("faces-caches"), picker, ..Options::default() };
-    let fourth = Shell::new(store, engine, options).unwrap();
-    fourth.window.show().unwrap();
-    fourth.add(&raw);
-    rig.until("the frame in the editor", Duration::from_secs(60), || {
-        !fourth.window.global::<App>().get_gallery() && fourth.ctl.state.borrow().open_path().is_some()
-    });
-    fourth.window.global::<Bar>().invoke_act(oni_app::Act::FaceScanner);
-    let g4 = fourth.window.global::<Editors>();
-    fourth.window.global::<PanelState>().set_tab(PanelTab::Roll);
-    g4.set_levels_folded(false);
-    rig.shot("editors-scanner-face");
-    rig.settle();
-    // Twin: off the Scanner face this would only repeat the Pro face's check above.
-    assert!(fourth.window.global::<oni_app::Lab>().get_shown(), "the Scanner face is on screen");
-    assert!(editors::size(&fourth.ctl, Plot::Levels).w > 200.0, "the Scanner face hides Per-Channel Levels");
     let _ = std::fs::remove_dir_all(&o.dir);
 }

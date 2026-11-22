@@ -2,8 +2,7 @@
 //! devices add up.
 
 use crate::knob::Knob;
-use oni_keys::{Effect, Letter, Machine};
-use oni_settings::{ConversionMode, Face, PipelineSettings};
+use oni_settings::{ConversionMode, PipelineSettings};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -15,16 +14,12 @@ pub enum Command {
     /// A structured edit a knob cannot carry, a curve or a crop, as the whole settings it leaves.
     Write(Box<PipelineSettings>),
     Mode(ConversionMode),
-    /// The face the frame renders by and the Color tab edits: Pro's chain or the Scanner's keypad.
-    Face(Face),
-    /// A structured edit of the Color tab made on `EditorStore::face_view`, stored by the open face.
-    Finish(Box<PipelineSettings>),
     /// One edit laid on each frame through its own settings: a reset lands on each one's own rest.
     Each(Each),
     /// The bar's reset: back to the imported state, framing, flat-field and dye family kept.
     Reset,
-    /// The scanner's keys, as the phone presses them.
-    Scan(Scan),
+    /// Walks the open frame's group by `by`; the host opens the frame, the store has no list of them.
+    Walk { by: i8 },
     Undo,
     Redo,
 }
@@ -53,16 +48,4 @@ impl std::fmt::Debug for Each {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("Each")
     }
-}
-
-/// The Scanner face's keys, the same shapes the phone link's commands carry over the wire.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Scan {
-    Step { letter: Letter, by: i8 },
-    Reset { letter: Letter },
-    StepEffect { effect: Effect, by: i8 },
-    ResetEffect { effect: Effect },
-    Machine(Machine),
-    /// Walks the open frame's group; the host opens the frame, the store has no list of them.
-    Walk { by: i8 },
 }

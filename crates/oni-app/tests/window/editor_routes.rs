@@ -1,13 +1,13 @@
 //! The editor's routes on the headless window: a frame never balanced opens with its measuring
 //! window armed, Return, the tools' keys and Escape out of each mode, every photo opening with none,
-//! De-dust leaving the Lab, the brush kept, Space, a preset's automatic balance that asks nothing, ⌘A
+//! De-dust's brush kept, Space, a preset's automatic balance that asks nothing, ⌘A
 //! beside a photo showing its folder together and a plain click on the lead showing it alone, a frame
 //! trashed there handing on to its neighbour, and the bar's select-all key.
 
 use oni_app::PanelTab;
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
-use oni_app::{App, Canvas, Choice, Framing, Lab, Library, Menus, PanelState, Presets};
+use oni_app::{App, Canvas, Choice, Framing, Library, PanelState, Presets};
 use oni_core::presets::{self, Preset, Tint};
 use oni_core::{Archive, EditorStore};
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -127,14 +127,11 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     pick(PanelTab::Color);
     rig.key("\r");
 
-    // De-dust leaves the Lab first; the brush is the size the last session left, and kept.
+    // The brush is the size the last session left, and kept.
     assert_eq!(ctl.state.borrow().brush(), 40.0, "not the default 12");
-    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
-    rig.pump();
-    assert!(w.global::<Lab>().get_shown());
     ctl.act(oni_app::Act::Correction);
     rig.pump();
-    assert!(!w.global::<Lab>().get_shown() && panel.get_tab() == PanelTab::Dedust, "De-dust on Pro's face");
+    assert_eq!(panel.get_tab(), PanelTab::Dedust);
     rig.key("]");
     assert_eq!(ctl.state.borrow().brush(), 44.0);
     let kept = Preferences::load(&support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64);
@@ -172,12 +169,9 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[0].as_str()));
     assert!(panel.get_tab() == PanelTab::Color && canvas.get_split() < 0.0, "A opens again with no mode");
 
-    // Space leaves the Lab for the gallery, the menu item lit beside a photo only.
-    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
-    rig.pump();
-    assert!(w.global::<Menus>().get_live().emulator);
+    // Space beside a photo goes to the gallery.
     rig.key(" ");
-    assert!(w.global::<App>().get_gallery() && !w.global::<Menus>().get_live().emulator);
+    assert!(w.global::<App>().get_gallery());
 
     // A preset naming the balance key balances two photos Each, asking nothing.
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));

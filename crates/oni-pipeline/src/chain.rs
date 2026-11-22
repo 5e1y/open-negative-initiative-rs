@@ -1,12 +1,12 @@
-//! `Pipeline.chain`: the frame's recipe from the scan to the output clip, on the face that renders it.
+//! `Pipeline.chain`: the frame's recipe from the scan to the output clip, on its legacy print where it lays one.
 
 use super::*;
 
 impl Pipeline {
     /// `apply` as a recipe on `source`: evaluate any region of it, materialise it, or read it whole.
     pub fn image(&mut self, graph: &mut Graph, source: &Source, settings: &PipelineSettings, request: &Request, inputs: &Inputs) -> Result<Image> {
-        let oni = scanner::on_oni_machine(settings);
-        self.drawn(graph, source, settings, oni.as_ref(), request, inputs)
+        let legacy = scanner::on_legacy_print(settings);
+        self.drawn(graph, source, settings, legacy.as_ref(), request, inputs)
     }
 
     fn drawn(
@@ -14,7 +14,7 @@ impl Pipeline {
         graph: &mut Graph,
         source: &Source,
         settings: &PipelineSettings,
-        machine: Option<&PipelineSettings>,
+        legacy: Option<&PipelineSettings>,
         request: &Request,
         inputs: &Inputs,
     ) -> Result<Image> {
@@ -27,23 +27,23 @@ impl Pipeline {
         let scale = if full_width > 0.0 { f64::from(e.w) / full_width } else { 1.0 };
         // Taken before stage 0: the band is a fraction of the picture, the dosed radii export pixels.
         let reference = f64::from(e.w.max(e.h));
-        self.chain(graph, input, settings, machine, (scale, reference), request.measuring, inputs)
+        self.chain(graph, input, settings, legacy, (scale, reference), request.measuring, inputs)
     }
 
-    /// `image` with the Scanner face's conversion given: `machine` is `on_oni_machine`'s settings for
-    /// `frame`, `None` on the Pro face; `at` is the scale and the reference length.
+    /// `image` with the legacy print's conversion given: `legacy` is `on_legacy_print`'s settings for `frame`, `None`
+    /// where it lays none; `at` is the scale and the reference length.
     #[allow(clippy::too_many_arguments)]
     pub fn chain(
         &mut self,
         graph: &mut Graph,
         input: Image,
         frame: &PipelineSettings,
-        machine: Option<&PipelineSettings>,
+        legacy: Option<&PipelineSettings>,
         at: (f64, f64),
         measuring: bool,
         inputs: &Inputs,
     ) -> Result<Image> {
-        let ((scale, reference), s) = (at, machine.unwrap_or(frame));
+        let ((scale, reference), s) = (at, legacy.unwrap_or(frame));
         let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
         // A digital photo's scene, lit at its film's white, takes its film's own light, then its grain, as the
@@ -62,10 +62,10 @@ impl Pipeline {
         // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is.
         let negative = self.filmed(graph, grained, s)?;
         let printed = stages::converted(negative, &conversion::stage47(s));
-        // On a paper the machine prints on it, its look the paper's own: no look cube is laid over the paper's print.
-        let looked = match machine {
-            Some(_) if s.paper().is_some() => self.warmed_paper(graph, printed, s)?,
-            Some(_) => self.oni_finish(graph, printed, s, frame)?,
+        // On a paper the legacy print lays its keys and TEMP alone: no look cube is laid over the paper's print.
+        let looked = match legacy.and_then(PipelineSettings::legacy) {
+            Some(l) if s.paper().is_some() => self.warmed_paper(graph, printed, &l)?,
+            Some(l) => self.oni_finish(graph, printed, &l)?,
             None => printed,
         };
         self.finishing(graph, looked, s, scale, reference, measuring)

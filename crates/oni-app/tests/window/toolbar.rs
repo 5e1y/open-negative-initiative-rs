@@ -311,19 +311,15 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let (copy, paste, to_roll) = (bar_key(w, "Copy"), bar_key(w, "Paste"), bar_key(w, "Paste All"));
     let reset = bar_key(w, "Reset");
     println!("shot {}", rig.shot("toolbar-groups-editor").display());
-    // On the Scanner face the key keeps its word and its room, its help naming the face it resets.
+    // One face: the key's help names no face, and the bar holds no face switch.
     let help = || {
         let key = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Reset").find(|e| e.accessible_role() == Some(Role::Button));
         key.and_then(|e| e.accessible_description()).map(|d| d.to_string()).unwrap_or_default()
     };
-    assert!(help().starts_with("Reset the Pro settings"), "{}", help());
-    bar.invoke_act(Act::FaceScanner);
-    rig.settle();
-    let scanner = bar_key(w, "Reset");
-    assert_eq!((scanner.x, scanner.width), (reset.x, reset.width), "Reset keeps its word and its room");
-    assert!(help().starts_with("Reset the Scanner settings"), "twin: its help names the Scanner now: {}", help());
-    bar.invoke_act(Act::FacePro);
-    rig.settle();
+    assert!(help().starts_with("Reset the settings"), "{}", help());
+    assert!(common::placed(w, Role::Tab, "Scanner").is_empty() && common::placed(w, Role::Tab, "Pro").is_empty(), "no face switch on the bar");
+    // Twin: the bar's tabs a hand does find are its mode's.
+    assert!(reset.width > 0.0);
     for (a, b) in [(select, crop), (crop, de_dust), (de_dust, compare), (copy, paste), (paste, to_roll)] {
         assert!(near(gap(a, b), 0.0), "one group, its keys touching: {a:?} {b:?}");
     }
@@ -332,8 +328,8 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste All and Reset");
     // Beside Reset, where Trash stood, bare room up to the app's keys.
     assert!(!inked(&rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
-    // Twin: the faces stand between the views and the settings, a bar's gap either side.
-    assert!(gap(compare, copy) > 2.0 * BAR_GAP + 100.0, "{compare:?} {copy:?}");
+    // Twin: the views and the settings are two groups, a bar's gap apart.
+    assert!(near(gap(compare, copy), BAR_GAP), "{compare:?} {copy:?}");
     assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
 
     // Off the bar the ONI Trash stays in reach: the menu bar's chord trashes the frame open, the editor going on.

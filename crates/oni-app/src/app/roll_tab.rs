@@ -7,7 +7,7 @@ use crate::{MenuLine, PanelState};
 use oni_i18n::tr;
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings, SourceEncoding, VirtualStock};
+use oni_settings::{ConversionMode, DyeSet, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, SourceEncoding, VirtualStock};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
 
@@ -20,6 +20,22 @@ pub(super) fn dye_set_name(set: DyeSet) -> String {
 pub(super) fn filtration_line(cc: [f32; 3]) -> String {
     let [c, m, y] = cc.map(|v| format!("{:.0}", v.max(0.0)));
     oni_i18n::tr!("Enlarger filtration: C {c}, M {m}, Y {y}", c = c, m = m, y = y)
+}
+
+/// A legacy print's name as its switch reads it: the machine's look over ONI's print, or on a paper the keys alone.
+pub(super) fn legacy_title(legacy: &LegacyPrint, on_paper: bool) -> &'static str {
+    match (on_paper, legacy.machine) {
+        (true, _) => tr("Scanner keys (legacy)"),
+        (false, LegacyMachine::Oni) => tr("Scanner ONI look (legacy)"),
+        (false, LegacyMachine::Frontier) => tr("Scanner Frontier look (legacy)"),
+    }
+}
+
+/// The keypad's steps as its screen read them, in points: a step is half a point.
+pub(super) fn legacy_keys(legacy: &LegacyPrint) -> String {
+    let point = |steps: i64| crate::fields::number(steps as f64 / LegacyPrint::PER_POINT as f64, 1, true, crate::fields::Unit::Bare);
+    let (d, c, m, y, w) = (point(legacy.d), point(legacy.c), point(legacy.m), point(legacy.y), point(legacy.w));
+    oni_i18n::tr!("D {d} · C {c} · M {m} · Y {y} · TEMP {w}", d = d, c = c, m = m, y = y, w = w)
 }
 
 /// The name the Film Type tabs give a mode, wherever a sentence names it.
@@ -145,6 +161,14 @@ impl Ctl {
         let p = me.clone();
         panel.on_true_blacks_toggled(move |on| p.write_settings(|s| s.print.true_blacks = on));
         let p = me.clone();
+        panel.on_legacy_toggled(move |on| {
+            p.write_settings(|s| {
+                if let Some(l) = s.legacy_print.as_mut() {
+                    l.laid = on;
+                }
+            })
+        });
+        let p = me.clone();
         panel.on_paper_chosen(move |i| {
             if let Some(&paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)) {
                 p.write_settings(|s| s.print_paper = Some(paper));
@@ -199,6 +223,22 @@ impl Ctl {
         }
     }
 
+    /// What the panel shows of the open frame's mode: the dye separation's block, a slide's and a digital photo's, and
+    /// the print's switches.
+    pub(super) fn publish_mode(&self) {
+        let Some(w) = self.window() else { return };
+        let (settings, cmy) = {
+            let s = self.state.borrow();
+            (s.store.settings().clone(), s.preferences.filtration_cmy())
+        };
+        let panel = w.global::<PanelState>();
+        panel.set_filtration_cmy(cmy);
+        panel.set_separation_shown(!settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source);
+        panel.set_slide(settings.mode.is_slide());
+        panel.set_digital(settings.mode.is_digital());
+        self.publish_paper(&panel, &settings);
+    }
+
     /// The Colour tab's print switches: Lighting's colour compensation, and the paper where one can print the photo, its
     /// name, the filtration it prints through and True blacks.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
@@ -214,6 +254,10 @@ impl Ctl {
         }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
+        let legacy = settings.legacy_print;
+        panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l, settings.paper().is_some())).into());
+        panel.set_legacy_laid(legacy.is_some_and(|l| l.laid));
+        panel.set_legacy_keys(legacy.as_ref().map_or_else(String::new, legacy_keys).into());
     }
 
     /// The Roll tab's settings blocks, from the open frame's settings and decode.

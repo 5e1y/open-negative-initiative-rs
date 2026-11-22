@@ -8,7 +8,6 @@ use oni_pipeline::scanner::{self, LIFT, MACHINE};
 use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_render::{ColorCube, ScannerEncode, ScannerOutput, cpu};
 use oni_settings::PipelineSettings;
-use oni_settings::modes::{Face, ScannerMachine};
 use std::path::Path;
 
 /// Each panel's longest side.
@@ -60,15 +59,14 @@ fn reduced(full: &oni_decode::Linear, side: usize) -> Picture {
 /// The frame's own sidecar on the Frontier, its neighbourhood stages left out as `--render` does.
 fn on_frontier(original: &Path) -> PipelineSettings {
     let mut s = oni_settings::sidecar::read(original, true).expect("the sidecar reads").settings.per_pixel_only();
-    s.face = Face::Scanner;
-    s.scanner_machine = ScannerMachine::Frontier;
+    s.legacy_print = Some(oni_settings::LegacyPrint { machine: oni_settings::LegacyMachine::Frontier, ..Default::default() });
     s
 }
 
 /// The Frontier's stages on the CPU through `cube`, as `Pipeline::frontier` runs them, in working space.
 fn machine(p: &Picture, s: &PipelineSettings, cube: &ColorCube) -> Vec<[f32; 4]> {
     let k = scanner::fitted_density(s);
-    let out = ScannerOutput { warmth_share: 0.0, lift: LIFT, contrast: s.scanner_finish.contrast };
+    let out = ScannerOutput { warmth_share: 0.0, lift: LIFT, contrast: s.print.contrast };
     let lift = (-s.capture_stops).exp2();
     p.px.iter()
         .map(|v| {

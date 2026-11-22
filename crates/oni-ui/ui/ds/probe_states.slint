@@ -5,7 +5,6 @@ import { DS, Colour, State, Space, Stroke, ButtonStyle, SliderStyle, SliderFill,
 import { Tabs, Button, ButtonKind, Look, TileView, Icons, Toggle, LabelSide, Slider, Medal, Section, SectionStyle, ShellStyle, ModeHeader, ButtonRows, Label } from "ds.slint";
 import { MedalStyle } from "theme.slint";
 import { Figure } from "marks.slint";
-import { LabScreen } from "keypad.slint";
 
 export component StateProbe inherits AppWindow {
     in property <string> word;
@@ -142,8 +141,8 @@ export component StateProbe inherits AppWindow {
     }
 }
 
-// Rails of hues and a grey one as the panels lay them, each between its keys: Pro's Temperature, then the
-// Scanner's C and D, and the twin of a key worn in its end's red. A check reads them off the window.
+// Rails of hues and a grey one, each between its keys: Temperature, then a stepped rail of hues and a grey one, and
+// the twin of a key worn in its end's red. A check reads them off the window.
 export component HueProbe inherits AppWindow {
     in-out property <int> c;
     // Each rail's middle row and its two ends, a key's middle beside C's and D's, the twin key's middle.
@@ -194,8 +193,8 @@ export component HueProbe inherits AppWindow {
                 highest: 48;
                 rest: 0.5;
                 fill: SliderFill.bipolar;
-                low: ScannerStyle.band-red;
-                high: ScannerStyle.band-cyan;
+                low: Colour.channel-red;
+                high: Colour.channel-cyan;
                 minus-help: "C −";
                 plus-help: "C +";
                 step(f, by) => { root.c += by; }
@@ -208,37 +207,14 @@ export component HueProbe inherits AppWindow {
                 highest: 48;
                 rest: 0.5;
                 fill: SliderFill.bipolar;
-                low: ScannerStyle.band-dark;
-                high: ScannerStyle.band-light;
+                low: Colour.black;
+                high: Colour.white;
             }
         }
         HorizontalLayout {
             alignment: start;
-            twin := Button { keycap: true; square: true; height: SliderStyle.step-key; legend-size: SliderStyle.step-legend; text: "−"; fill: ScannerStyle.band-red; }
+            twin := Button { keycap: true; square: true; height: SliderStyle.step-key; legend-size: SliderStyle.step-legend; text: "−"; fill: Colour.channel-red; }
         }
-    }
-}
-
-// The Lab screen, narrow, every count at the widest a letter reaches; its columns' edges for the check.
-export component ScreenProbe inherits AppWindow {
-    in property <string> widest: "+23.5";
-    // Every count shown, signed by its letter's place: a check makes it longer than any font fits.
-    in property <string> count: "23.5";
-    out property <length> left: screen.x + Space.m;
-    out property <length> column: (screen.width - 2 * Space.m) / 5;
-    out property <length> top: screen.y;
-    out property <length> bottom: screen.y + screen.height;
-    min-width: 0;
-    min-height: 0;
-    preferred-width: 240px;
-    preferred-height: 140px;
-    screen := LabScreen {
-        x: 16px;
-        y: 16px;
-        width: 200px;
-        height: 108px;
-        widest: root.widest;
-        cells: [{ title: "D", value: "−" + root.count }, { title: "C", value: "+" + root.count }, { title: "M", value: "−" + root.count }, { title: "Y", value: "+" + root.count }, { title: "T", value: "−" + root.count }];
     }
 }
 

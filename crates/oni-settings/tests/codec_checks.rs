@@ -11,10 +11,9 @@ use oni_settings::migrate::density;
 use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
-use oni_settings::scanner::ScannerClicks;
 use oni_settings::sidecar::ExifLine;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Date, Document, Film, Id, Medal, PipelineSettings, ScannerMachine};
+use oni_settings::{ConversionMode, Date, Document, Film, Id, LegacyMachine, Medal, PipelineSettings};
 use serde_json::{Map, Value, json};
 
 type Object = Map<String, Value>;
@@ -553,17 +552,16 @@ fn a_scan_from_before_keeps_its_converted_primaries() {
 #[test]
 fn a_scanner_edit_from_before_reads_its_counts_doubled() {
     let stamped = |version: i64| {
-        let settings = PipelineSettings { scanner: ScannerClicks::new(6, -10, 14, -24, 8), ..PipelineSettings::default() };
-        aged(&settings, version, |_| {})
+        aged(&PipelineSettings::default(), version, |inner| {
+            inner.insert("face".into(), json!("scanner"));
+            inner.insert("scanner".into(), json!({"d": 3, "c": -5, "m": 7, "y": -12, "w": 4}));
+        })
     };
-    let before = decode_from(&stamped(chain::SCANNER_HALF_STEP_VERSION - 1), None).scanner;
-    assert_eq!(before, ScannerClicks::new(12, -20, 28, -48, 8));
-    // Twin: written since, the counts read as stored.
-    let since = decode_from(&stamped(chain::SCANNER_HALF_STEP_VERSION), None).scanner;
-    assert_eq!(since, ScannerClicks::new(6, -10, 14, -24, 8));
-    let older = decode_from(&stamped(chain::ONI_MACHINE_VERSION - 1), None).scanner_machine;
-    let newer = decode_from(&stamped(chain::ONI_MACHINE_VERSION), None).scanner_machine;
-    assert_eq!((older, newer), (ScannerMachine::Frontier, ScannerMachine::Oni));
+    let keys = |version: i64| decode_from(&stamped(version), None).legacy_print.map(|l| ((l.d, l.c, l.m, l.y, l.w), l.machine));
+    assert_eq!(keys(chain::SCANNER_HALF_STEP_VERSION - 1), Some(((12, -20, 28, -48, 8), LegacyMachine::Frontier)));
+    // Twin: written since, the counts read as stored, and the ONI machine named since it came.
+    assert_eq!(keys(chain::SCANNER_HALF_STEP_VERSION), Some(((6, -10, 14, -24, 8), LegacyMachine::Frontier)));
+    assert_eq!(keys(chain::ONI_MACHINE_VERSION), Some(((6, -10, 14, -24, 8), LegacyMachine::Oni)));
 }
 
 // MARK: - The former tone chain
@@ -611,6 +609,7 @@ fn every_field_lives_in_exactly_one_family() {
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
         (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5 }), Some(Default::default()));
+        s.legacy_print = Some(Default::default());
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
@@ -624,7 +623,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 49);
+    assert_eq!(keys.len(), 46);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

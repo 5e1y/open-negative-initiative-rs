@@ -36,12 +36,9 @@ impl Ctl {
     }
 
     /// `toggleFraming()` and `toggleCorrecting()`: a tool's key, menu item or shortcut opens it, or
-    /// leaves it for the last panel; De-dust, a tool of Pro's face, leaves the Lab first.
+    /// leaves it for the last panel.
     pub(super) fn toggle_tool(self: &Rc<Self>, tool: PanelTab) {
         let Some(w) = self.window() else { return };
-        if tool == PanelTab::Dedust {
-            self.leave_lab();
-        }
         self.sync_route(w.global::<PanelState>().get_tab());
         let next = self.state.borrow().route.toggled(tool);
         self.route_to(next);
@@ -94,8 +91,8 @@ impl Ctl {
         self.leave_frame_tools()
     }
 
-    /// Escape the photos hear beside a photo: Compare left, else the crop or De-dust cancelled, else
-    /// the Lab, else the editor for the gallery; `false` in the gallery, where nothing stands open.
+    /// Escape the photos hear beside a photo: Compare left, else the crop or De-dust cancelled, else the
+    /// editor for the gallery; `false` in the gallery, where nothing stands open.
     pub(super) fn escape(self: &Rc<Self>) -> bool {
         if self.window().is_none_or(|w| w.global::<App>().get_gallery()) {
             return false;
@@ -104,19 +101,15 @@ impl Ctl {
         if compare {
             self.toggle_compare();
         } else if !self.cancel_frame_tools() {
-            if self.in_lab() {
-                self.leave_lab();
-            } else {
-                self.act(crate::Act::ToggleMode);
-            }
+            self.act(crate::Act::ToggleMode);
         }
         true
     }
 
-    /// `validate(with:)`: Return or Enter, bare and once, on Pro's editor, a tool's DONE; the Lab takes none.
+    /// `validate(with:)`: Return or Enter, bare and once, in the editor, a tool's DONE.
     pub(super) fn validate_key(self: &Rc<Self>, text: &str, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
-        if !matches!(text, "\r" | "\n" | "\u{3}") || !bare || repeat || w.global::<App>().get_gallery() || self.in_lab() {
+        if !matches!(text, "\r" | "\n" | "\u{3}") || !bare || repeat || w.global::<App>().get_gallery() {
             return false;
         }
         self.sync_route(w.global::<PanelState>().get_tab());

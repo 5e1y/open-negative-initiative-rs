@@ -86,11 +86,7 @@ impl Tail {
 }
 
 /// `WhatsNew.notes`: (id, word, note), in Swift's order; the word and note translated where shown.
-pub const NOTES: [(&str, &str, &str); 6] = [
-    ("machine.1.3.1", marked("New"), marked("Two machines: the Frontier as measured, and ONI's own, Pro's conversion with ONI's look. A photo converted before keeps the Frontier.")),
-    ("keypad.1.3.1", marked("Updated"), marked("A simpler Scanner, after your feedback: three blocks that fold, D, C, M and Y on half steps, W now TEMP. The S look and CMY CANCEL are gone.")),
-    ("effects.scanner.1.3.1", marked("Updated"), marked("Contrast, Vignette and Chrome are five keys each, read on the machine's screen.")),
-    ("curves.scanner.1.3.1", marked("Updated"), marked("Curves, the Colour Mixer and the Saturation Curve now act on the Scanner face too, after the machine's render.")),
+pub const NOTES: [(&str, &str, &str); 2] = [
     ("lighting.1.3.1", marked("Updated"), marked("Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays.")),
     ("space.1.3.1", marked("New"), marked("ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips.")),
 ];
@@ -154,18 +150,6 @@ impl Ctl {
             note.map_or_else(Default::default, |&(_, word, text)| (tr(word).into(), tr(text).into()))
         };
         let n = w.global::<News>();
-        let (word, note) = shown("machine.1.3.1");
-        n.set_machine(word);
-        n.set_machine_note(note);
-        let (word, note) = shown("keypad.1.3.1");
-        n.set_keypad(word);
-        n.set_keypad_note(note);
-        let (word, note) = shown("effects.scanner.1.3.1");
-        n.set_effects_scanner(word);
-        n.set_effects_scanner_note(note);
-        let (word, note) = shown("curves.scanner.1.3.1");
-        n.set_curves_scanner(word);
-        n.set_curves_scanner_note(note);
         let (word, note) = shown("lighting.1.3.1");
         n.set_lighting(word);
         n.set_lighting_note(note);

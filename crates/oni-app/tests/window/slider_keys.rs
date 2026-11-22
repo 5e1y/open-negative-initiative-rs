@@ -2,7 +2,7 @@
 //! steps, renders and records one undo step, and each key's tooltip names the slider, the way and the step.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle, ElementRoot};
-use oni_app::{Bar, PanelState, PanelTab};
+use oni_app::{PanelState, PanelTab};
 use oni_i18n::Language;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, LogicalPosition};
@@ -81,19 +81,18 @@ fn number(text: &str) -> (f64, u32) {
     oni_app::slider_track::read(text.rsplit('\u{2026}').next().unwrap_or(text)).unwrap_or_else(|| panic!("a number in {text:?}"))
 }
 
-/// A press on the slider so named's − or + key: the shown units its value moved, `unit` a unit, or one of
-/// its readout's last digit.
-fn pressed(rig: &common::Rig, w: &oni_app::MainWindow, name: &str, plus: bool, unit: Option<f64>) -> f64 {
+/// A press on the slider so named's − or + key: the shown units its value moved, one of its readout's last digit.
+fn pressed(rig: &common::Rig, w: &oni_app::MainWindow, name: &str, plus: bool) -> f64 {
     let before = number(&value(w, name));
     let key = common::slider_key(w, name, plus);
     common::click(rig, w, key.middle());
     rig.settle();
     let after = number(&value(w, name));
-    ((after.0 - before.0) / unit.unwrap_or(10f64.powi(-(before.1 as i32)))).round()
+    ((after.0 - before.0) / 10f64.powi(-(before.1 as i32))).round()
 }
 
 /// A press on the value editor's own +, which opens under the hand on the slider's readout.
-fn edited(rig: &common::Rig, w: &oni_app::MainWindow, name: &str, unit: Option<f64>) -> f64 {
+fn edited(rig: &common::Rig, w: &oni_app::MainWindow, name: &str) -> f64 {
     let before = number(&value(w, name));
     let s = common::the(w, Role::Slider, name);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(s.x + s.width - 50.0, s.y + 8.0) });
@@ -102,16 +101,16 @@ fn edited(rig: &common::Rig, w: &oni_app::MainWindow, name: &str, unit: Option<f
     common::click(rig, w, higher.middle());
     rig.settle();
     let after = number(&value(w, name));
-    ((after.0 - before.0) / unit.unwrap_or(10f64.powi(-(before.1 as i32)))).round()
+    ((after.0 - before.0) / 10f64.powi(-(before.1 as i32))).round()
 }
 
 /// A press three of the value editor's steps either way, and the value editor's own one: the readout's
-/// shown units, or `unit` for a Scanner letter, whose readout counts half points.
-fn steps_three(rig: &common::Rig, w: &oni_app::MainWindow, name: &str, unit: Option<f64>) {
-    assert_eq!(pressed(rig, w, name, true, unit), 3.0, "{name}'s + key moves three shown units");
-    assert_eq!(pressed(rig, w, name, false, unit), -3.0, "{name}'s − key moves three shown units back");
+/// shown units.
+fn steps_three(rig: &common::Rig, w: &oni_app::MainWindow, name: &str) {
+    assert_eq!(pressed(rig, w, name, true), 3.0, "{name}'s + key moves three shown units");
+    assert_eq!(pressed(rig, w, name, false), -3.0, "{name}'s − key moves three shown units back");
     // Twin: the value editor's own + moves one, a third of the key's press.
-    assert_eq!(edited(rig, w, name, unit), 1.0, "{name}'s value editor steps one shown unit");
+    assert_eq!(edited(rig, w, name), 1.0, "{name}'s value editor steps one shown unit");
 }
 
 /// Every block of the panel unfolded and every settings key open, so a tab lays all its sliders.
@@ -244,11 +243,11 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     // One slider of each block and tab: Lighting, Colour, Effects, Film Effects, Details, Roll, Crop's dial,
     // De-dust's brush.
     for name in ["Exposure", "Tint", "Vignette", "Grain"] {
-        steps_three(&rig, w, name, None);
+        steps_three(&rig, w, name);
     }
     for (t, name) in [(PanelTab::Details, "Texture"), (PanelTab::Roll, "Distortion"), (PanelTab::Crop, "Angle"), (PanelTab::Dedust, "Brush size")] {
         tab(&rig, w, t);
-        steps_three(&rig, w, name, None);
+        steps_three(&rig, w, name);
     }
 
     // The keys' tooltips are the catalogue's texts, so they speak the app's language: the interface read
@@ -264,14 +263,13 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     // Twin: a tooltip written outside the catalogue has no translation to show.
     assert!(oni_i18n::translated(Language::French, &english_words, None).is_none());
 
-    // The Scanner face's letters and effects: a press three half points, the value editor's one.
-    w.global::<Bar>().invoke_act(oni_app::Act::FaceScanner);
+    // Colour read as C, M and Y: a press three CC, the value editor's one.
+    ctl.act(oni_app::Act::FiltrationCmy);
     rig.settle();
     unfolded(&rig, w);
-    counts.push(("Scanner Colour", keyed(w, "Scanner Colour")));
-    steps_three(&rig, w, "D", Some(0.5));
-    assert_eq!(common::placed(w, Role::Button, "D +: toward light, by 1.5").len(), 1, "D's + key names its way and its press");
-    w.global::<Bar>().invoke_act(oni_app::Act::FacePro);
+    counts.push(("Colour as C, M and Y", keyed(w, "Colour as C, M and Y")));
+    steps_three(&rig, w, "C");
+    ctl.act(oni_app::Act::FiltrationCmy);
     rig.settle();
 
     // A negative's Roll tab, its density and dyes.
@@ -281,14 +279,14 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     tab(&rig, w, PanelTab::Roll);
     unfolded(&rig, w);
     counts.push(("Roll (negative)", keyed(w, "Roll (negative)")));
-    steps_three(&rig, w, "Ceiling", None);
+    steps_three(&rig, w, "Ceiling");
 
     // The export's Quality.
     ctl.act(oni_app::Act::Export);
     rig.settle();
     unfolded(&rig, w);
     counts.push(("Export", keyed(w, "Export")));
-    steps_three(&rig, w, "Quality", None);
+    steps_three(&rig, w, "Quality");
     println!("sliders keyed: {counts:?}");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);

@@ -1,13 +1,11 @@
-//! The Scanner face: the measured Frontier's table from density to display sRGB with its warmth looks,
-//! and the ONI machine, Pro's conversion on a resting Lighting moved by the Frontier's measured clicks.
+//! The former Scanner face's machines a legacy print renders: the measured Frontier's table from density to display sRGB
+//! with its warmth looks, its keys the Frontier's measured clicks laid in the gains of ONI's conversion.
 
 use crate::conversion::{M3, IDENTITY};
 use oni_render::{ColorCube, ScannerDensity, ScannerOutput, cpu};
 use oni_settings::axis::{density_axis, graduation, pipeline};
-use oni_settings::modes::{Face, ScannerMachine};
-use oni_settings::scanner::ScannerClicks;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -100,11 +98,12 @@ impl Machine {
         self.table.render.reached.map_or(([self.low(); 3], [self.low() + self.span(); 3]), |r| (r[0], r[1]))
     }
 
-    /// A step is a quarter of the machine's measured click, read on the line between its neighbours.
-    pub fn offset(&self, clicks: &ScannerClicks) -> [f32; 3] {
-        const PER_CLICK: i64 = 2 * ScannerClicks::PER_UNIT;
+    /// D, C, M and Y's steps as a density offset: a step is a quarter of the machine's measured click, read on the line
+    /// between its neighbours.
+    pub fn offset(&self, keys: [i64; 4]) -> [f32; 3] {
+        const PER_CLICK: i64 = 2 * LegacyPrint::PER_POINT;
         let mut sum = [0.0f32; 3];
-        for (key, steps) in [("D", clicks.d), ("C", clicks.c), ("M", clicks.m), ("Y", clicks.y)] {
+        for (key, steps) in ["D", "C", "M", "Y"].into_iter().zip(keys) {
             let measured = |n: i64| -> Option<[f32; 3]> {
                 let v = self.table.clicks.get(key)?.get(&n.to_string())?;
                 (v.len() == 3).then(|| [v[0], v[1], v[2]])
@@ -130,7 +129,7 @@ impl Machine {
         } else {
             (&self.warmth_minus, &self.table.looks["warmthMinus"])
         };
-        Some((cube, count.unsigned_abs() as f32 / (look.per_count * ScannerClicks::PER_UNIT as f32)))
+        Some((cube, count.unsigned_abs() as f32 / (look.per_count * LegacyPrint::PER_POINT as f32)))
     }
 }
 
@@ -164,7 +163,7 @@ pub fn separation(s: &PipelineSettings) -> M3 {
 /// roll's green window about its median, the machine's neutral on that median.
 pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
     let m = &*MACHINE;
-    let (offset, neutral) = (m.offset(&s.scanner), m.neutral());
+    let (offset, neutral) = (m.offset(keys(s)), m.neutral());
     let (window, g) = (graduation::window(s.mode), s.levels.green);
     let median = s.roll_reference.as_ref().and_then(|r| r.median).map_or(g.black + 0.6 * (g.white - g.black), |m| window.start() + m[1] * (window.end() - window.start()));
     let unmix = separation(s);
@@ -188,11 +187,16 @@ pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
     }
 }
 
-/// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
+/// The laid legacy print's D, C, M and Y steps, none without one.
+fn keys(s: &PipelineSettings) -> [i64; 4] {
+    s.legacy().map_or([0; 4], |l| [l.d, l.c, l.m, l.y])
+}
+
+/// The legacy print's keys as stops of gain, more density less light; where the Frontier's look's cube prints, its rest
+/// with them; none without a legacy print laid.
 pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
-    let clicks = MACHINE.offset(&s.scanner);
-    // The Frontier's look rests where the owner set its neutral; a hand's look and a paper, the look's cube left out, on zero.
-    let rests = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none() && s.paper().is_none();
+    let clicks = MACHINE.offset(keys(s));
+    let rests = s.legacy().is_some_and(|l| l.machine == LegacyMachine::Frontier) && s.paper().is_none();
     let rest = if rests { frontier_rest() } else { [0.0; 3] };
     stops_of(std::array::from_fn(|c| clicks[c] + rest[c]), s)
 }
@@ -203,61 +207,42 @@ pub fn stops_of(offset: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
     offset.map(|o| sign * o / 2f32.log10())
 }
 
-/// Where the Frontier's look rests, the owner's own neutral for it, in the gains before the conversion:
-/// D+0.5 M+2 Y-2 in the screen's units, in steps here; the screen still reads zero.
-pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 1, c: 0, m: 4, y: -4, w: 0 };
+/// Where the Frontier's look rests, the owner's own neutral for it, in the gains before the conversion: D+0.5 M+2 Y-2
+/// in the keypad's points, D, C, M and Y's steps here.
+pub const FRONTIER_REST: [i64; 4] = [1, 0, 4, -4];
 
 /// The rest as a density offset.
 pub fn frontier_rest() -> [f32; 3] {
-    MACHINE.offset(&FRONTIER_REST)
+    MACHINE.offset(FRONTIER_REST)
 }
 
-/// The Lighting exposure a render enters the look at: the looks lend about a stop for a negative's 1.5 of
-/// rest left out of the curve, so a slide, resting at 0, enters its curve as far under its own rest.
-pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
-    let rest = Print::resting_exposure(mode);
-    Print::exposure_at(rest - Print::RESTING_EXPOSURE, rest)
-}
-
-/// `onOniMachine`: Pro's conversion with Lighting, Color Density and Auto White Balance at rest, but for the face's
-/// Contrast, Lighting's colour compensation and True blacks, the gains moved by the clicks; on a paper, its print at rest is the machine's;
-/// `None` on the Pro face.
-pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's.
-    if s.face != Face::Scanner {
-        return None;
-    }
-    let mut out = s.as_scanner();
-    let exposure = if s.paper().is_some() { Print::resting_exposure(s.mode) } else { look_entry_exposure(s.mode) };
-    let print = &s.print;
-    out.print = Print { contrast: s.scanner_finish.contrast, exposure, colour_compensation: print.colour_compensation, true_blacks: print.true_blacks, ..Print::default() };
-    out.density = 0.0;
+/// The settings a photo on a laid legacy print renders by: its own, the gains moved by the keys; `None` without one.
+pub fn on_legacy_print(s: &PipelineSettings) -> Option<PipelineSettings> {
+    s.legacy()?;
+    let mut out = s.clone();
     let stops = gain_stops(s);
     out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
     Some(out)
 }
 
-/// `ScannerRender.replica`: one transmittance through the Frontier on the CPU, as the GPU renders it;
-/// `None` off the Frontier.
+/// `ScannerRender.replica`: one transmittance through the measured Frontier table on the CPU, as the GPU renders it;
+/// `None` off a Frontier legacy print.
 pub fn replica(t: [f32; 3], s: &PipelineSettings) -> Option<[f32; 3]> {
-    if s.scanner_machine != ScannerMachine::Frontier {
-        return None;
-    }
+    let legacy = s.legacy().filter(|l| l.machine == LegacyMachine::Frontier)?;
     let m = &*MACHINE;
     let code = cpu::color_cube(cpu::scanner_density([t[0], t[1], t[2], 1.0], &fitted_density(s)), &m.render);
-    let (warmth, share) = m.warmth(s.scanner.w).map_or((code, 0.0), |(cube, share)| (cpu::color_cube(code, cube), share));
-    let out = cpu::scanner_output(code, warmth, &ScannerOutput { warmth_share: share, lift: LIFT, contrast: s.scanner_finish.contrast });
+    let (warmth, share) = m.warmth(legacy.w).map_or((code, 0.0), |(cube, share)| (cpu::color_cube(code, cube), share));
+    let out = cpu::scanner_output(code, warmth, &ScannerOutput { warmth_share: share, lift: LIFT, contrast: s.print.contrast });
     Some([out[0], out[1], out[2]])
 }
 
 /// `ScannerRender.checkGrey`: a mid grey's densities on a colour negative, its orange mask included.
 pub const CHECK_GREY: [f32; 3] = [0.99, 1.37, 1.67];
 
-/// `ScannerRender.checkRoll`: a roll balanced as a measured one is, the grey on its median, on the Frontier.
+/// `ScannerRender.checkRoll`: a roll balanced as a measured one is, the grey on its median, on the Frontier's legacy print.
 pub fn check_roll() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.face = Face::Scanner;
-    s.scanner_machine = ScannerMachine::Frontier;
+    s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
     let lift = CHECK_GREY.map(|g| g - CHECK_GREY[1]);
     s.gains.stops = lift.map(|l| l / 2f32.log10());
     let base = [0.24 - lift[0], 0.62 - lift[1], 0.92 - lift[2]];

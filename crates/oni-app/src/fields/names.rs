@@ -63,6 +63,9 @@ impl Field {
             Field::BlueContrast => "blue-contrast",
             Field::FilmExposure => "film-exposure",
             Field::Brightness => "brightness",
+            Field::Cyan => "cyan",
+            Field::Magenta => "magenta",
+            Field::Yellow => "yellow",
         }
     }
 }

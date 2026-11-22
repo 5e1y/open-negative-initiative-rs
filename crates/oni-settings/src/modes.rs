@@ -1,5 +1,5 @@
-//! The serialised enumerations named by their raw value: what the source is, which face renders,
-//! the scanner machine, a file's declared encoding, a frame's label.
+//! The serialised enumerations named by their raw value: what the source is, a file's declared encoding,
+//! a frame's label.
 
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -72,40 +72,6 @@ impl<'de> Deserialize<'de> for ConversionMode {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let raw = String::deserialize(d)?;
         Ok(Self::from_raw(&raw).unwrap_or(Self::Negative))
-    }
-}
-
-/// Which edit renders the photograph: Pro's chain, or the measured scanner's keypad.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Face {
-    #[default]
-    Pro,
-    Scanner,
-}
-
-/// The table the Scanner face renders through.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ScannerMachine {
-    #[default]
-    Oni,
-    Frontier,
-}
-
-impl ScannerMachine {
-    pub fn raw_value(self) -> &'static str {
-        match self {
-            Self::Oni => "oni",
-            Self::Frontier => "frontier",
-        }
-    }
-
-    pub fn title(self) -> &'static str {
-        match self {
-            Self::Oni => "ONI",
-            Self::Frontier => "Frontier",
-        }
     }
 }
 

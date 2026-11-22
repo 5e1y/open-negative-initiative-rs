@@ -5,7 +5,6 @@ use super::*;
 use crate::command::Each;
 use crate::fields::{Field, FieldSet};
 use crate::knob::Knob;
-use super::commands::scanned;
 use oni_settings::settings::roll_settings::Field as Shared;
 
 /// A frame's own fields, which a step on the open frame never lays on the others: its file, its
@@ -29,16 +28,13 @@ const OWN: [Field; 16] = [
     Field::BalanceMethod,
 ];
 
-/// What the open frame took during a step, as each frame together takes it; a knob is read and
-/// written on the face it was moved on, the Scanner's when set.
+/// What the open frame took during a step, as each frame together takes it.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum Took {
     /// A knob the hand moved, by the open frame's distance.
-    Moved(Knob, f32, bool),
+    Moved(Knob, f32),
     /// A knob set at a value, a double click's rest.
-    Set(Knob, f32, bool),
-    /// A scanner key, pressed on each frame's own counts.
-    Scanned(crate::command::Scan),
+    Set(Knob, f32),
     /// A structured edit, from the first settings to the last: the values it moved, leaf by leaf.
     Wrote(Box<PipelineSettings>, Box<PipelineSettings>),
     /// An edit read off each frame's own settings.
@@ -79,12 +75,12 @@ impl Together {
         moved
     }
 
-    /// A command the open frame took, joined to the last of its kind on the same knob and face, so a
-    /// drag is one move however many notches it lands.
+    /// A command the open frame took, joined to the last of its kind on the same knob, so a drag is one
+    /// move however many notches it lands.
     fn took(&mut self, took: Took) {
         match (self.took.last_mut(), took) {
-            (Some(Took::Moved(k, by, f)), Took::Moved(knob, more, face)) if (*k, *f) == (knob, face) => *by += more,
-            (Some(Took::Set(k, at, f)), Took::Set(knob, value, face)) if (*k, *f) == (knob, face) => *at = value,
+            (Some(Took::Moved(k, by)), Took::Moved(knob, more)) if *k == knob => *by += more,
+            (Some(Took::Set(k, at)), Took::Set(knob, value)) if *k == knob => *at = value,
             (Some(Took::Wrote(_, last)), Took::Wrote(_, now)) => *last = now,
             (_, took) => self.took.push(took),
         }
@@ -118,11 +114,6 @@ fn rolled(fields: &BTreeSet<Shared>, key: &RollKey, after: &PipelineSettings, fr
     out
 }
 
-/// `stored` read and written on the Scanner face's view when `scanner`, as the open frame's panel did.
-fn on_face(stored: &PipelineSettings, scanner: bool, edit: &dyn Fn(&PipelineSettings) -> PipelineSettings) -> PipelineSettings {
-    if scanner { stored.storing_scanner_edit(&edit(&stored.as_scanner())) } else { edit(stored) }
-}
-
 /// The step, the open frame gone to `after` on roll `key`, as the frames together take it: `took` on
 /// what no roll shares, and the roll's `fields` by its rule on a frame of that roll.
 struct Step<'a> {
@@ -142,7 +133,7 @@ impl Step<'_> {
     fn reaches(&self, path: &str, frame: &PipelineSettings) -> impl Fn(Field) -> bool {
         let mine = self.on_roll(path, frame);
         let slide = matches!(self.key, Some(RollKey::Slides(_)));
-        move |f: Field| !OWN.contains(&f) && f != Field::Face && (f.family() != Some(Family::Roll) || (mine && slide && slide_owns(f)))
+        move |f: Field| !OWN.contains(&f) && (f.family() != Some(Family::Roll) || (mine && slide && slide_owns(f)))
     }
 
     /// The frame together with the step laid.
@@ -152,9 +143,8 @@ impl Step<'_> {
         let mut out = frame.clone();
         for t in self.took {
             match t {
-                Took::Moved(knob, by, face) if reaches(knob.field()) => out = on_face(&out, *face, &|v| knob.set(v, knob.get(v) + by)),
-                Took::Set(knob, value, face) if reaches(knob.field()) => out = on_face(&out, *face, &|v| knob.set(v, *value)),
-                Took::Scanned(scan) => out = scanned(&out, *scan),
+                Took::Moved(knob, by) if reaches(knob.field()) => out = knob.set(&out, knob.get(&out) + by),
+                Took::Set(knob, value) if reaches(knob.field()) => out = knob.set(&out, *value),
                 Took::Wrote(was, now) => FieldSet::between(was, now).iter().filter(|f| reaches(*f)).for_each(|f| f.patch(was, now, &mut out)),
                 Took::Each(each) => {
                     let next = each.on(&out);
@@ -167,10 +157,6 @@ impl Step<'_> {
         if mine && !self.fields.is_empty() {
             out = rolled(self.fields, self.key.expect("on the roll"), self.after, &out);
         }
-        // A frame left on the other face would hold the values and show none of them.
-        if out != *frame {
-            out.face = self.after.face;
-        }
         out
     }
 }
@@ -178,13 +164,8 @@ impl Step<'_> {
 impl EditorStore {
     /// The frames edited with the open one, in their order; none for the open frame alone. A step
     /// still waiting is recorded first, on the frames it was taken with; a hand still down holds on.
-    /// Every frame together takes the open frame's face, as a view and no step: one face edits them all.
     pub fn set_together(&mut self, paths: Vec<String>) {
         self.settle_under_way();
-        let face = self.face();
-        if self.open.is_some() && !self.inert() {
-            self.modify(&paths, |_, s| (s.face != face).then(|| PipelineSettings { face, ..s.clone() }));
-        }
         let held = paths
             .iter()
             .map(|p| sidecar::read(Path::new(p), self.mosaic(p)).map(|l| l.settings).unwrap_or_default())
@@ -221,12 +202,9 @@ impl EditorStore {
 
     /// What `command` did to the open frame, which stood at `was`, kept for the frames together.
     pub(super) fn take_together(&mut self, command: &Command, was: &PipelineSettings) {
-        let scanner = self.face() == Face::Scanner;
-        let view = |s: &PipelineSettings| if scanner { s.as_scanner() } else { s.clone() };
         let took = match command {
-            Command::Step { knob, .. } => Took::Moved(*knob, knob.get(&view(&self.settings)) - knob.get(&view(was)), scanner),
-            Command::Set { knob, value } => Took::Set(*knob, *value, scanner),
-            Command::Scan(scan) => Took::Scanned(*scan),
+            Command::Step { knob, .. } => Took::Moved(*knob, knob.get(&self.settings) - knob.get(was)),
+            Command::Set { knob, value } => Took::Set(*knob, *value),
             Command::Each(each) => Took::Each(each.clone()),
             Command::Mode(mode) => Took::Mode(*mode),
             _ => Took::Wrote(Box::new(was.clone()), Box::new(self.settings.clone())),

@@ -159,12 +159,12 @@ fn target(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
 }
 
 impl Ctl {
-    /// The plots over the picture's histogram on screen, as the panel lays them: the readout's where
-    /// neither the Scanner's screen nor Details' loupe stands, the saturation curve's open on Colour.
+    /// The plots over the picture's histogram on screen, as the panel lays them: the readout's where Details' loupe
+    /// does not stand, the saturation curve's open on Colour.
     pub(super) fn picture_plots(&self) -> [bool; 2] {
         let Some(w) = self.window() else { return [false; 2] };
         let (tab, editors) = (w.global::<PanelState>().get_tab(), w.global::<crate::Editors>());
-        let readout = !w.global::<crate::Lab>().get_shown() && tab != crate::PanelTab::Details;
+        let readout = tab != crate::PanelTab::Details;
         [readout, tab == crate::PanelTab::Color && !editors.get_monochrome() && !editors.get_saturation_folded()]
     }
 

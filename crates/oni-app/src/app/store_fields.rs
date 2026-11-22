@@ -80,6 +80,9 @@ fields! {
     GrainColourWhite => set_grain_colour_white_fraction, get_grain_colour_white_fraction, set_grain_colour_white_readout, set_grain_colour_white_value;
     FilmExposure => set_film_exposure_fraction, get_film_exposure_fraction, set_film_exposure_readout, set_film_exposure_value;
     Brightness => set_brightness_fraction, get_brightness_fraction, set_brightness_readout, set_brightness_value;
+    Cyan => set_cyan_fraction, get_cyan_fraction, set_cyan_readout, set_cyan_value;
+    Magenta => set_magenta_fraction, get_magenta_fraction, set_magenta_readout, set_magenta_value;
+    Yellow => set_yellow_fraction, get_yellow_fraction, set_yellow_readout, set_yellow_value;
 }
 
 pub(super) fn set_modified(g: &Store, b: Block, on: bool) {

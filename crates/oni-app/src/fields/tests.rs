@@ -229,32 +229,25 @@ fn behind_the_settings_key(panel: &str, title: &str) -> Vec<i32> {
     out
 }
 
-/// Whether the Pro face lays the colour with each channel's own points inside it, then the light, the
+/// Whether the Colour tab lays the colour with each channel's own points inside it, then the light, the
 /// paper's and the effects.
 fn colour_first(titles: &[String]) -> bool {
     titles.windows(5).any(|w| w == ["Colour", "More Color Settings", "Lighting", "Paper Correction", "Effects"])
 }
 
-/// Whether the Scanner face lays its density key, then its colour keys and its look, as a minilab's operator sets them.
-fn keypad_density_first(titles: &[String]) -> bool {
-    titles.windows(4).any(|w| w == ["Machine", "Density", "Colour", "Look"])
-}
-
 #[test]
-fn pro_lays_the_colour_first_the_scanner_its_density_contrast_with_the_light() {
+fn the_colour_tab_lays_the_colour_first_contrast_with_the_light() {
     let panel = panel_source();
     let titles = pane_titles(&panel, "ColorPane");
-    assert!(colour_first(&titles), "Pro: {titles:?}");
-    assert!(keypad_density_first(&titles), "Scanner: {titles:?}");
+    assert!(colour_first(&titles), "{titles:?}");
     // Contrast is drawn, and reset, with the light; the effects keep the rest.
     let indices = |b: Block| b.fields().iter().map(|f| f.index()).collect::<Vec<_>>();
     assert_eq!(wired_in(&panel, "Lighting"), indices(Block::Lighting));
     assert_eq!(wired_in(&panel, "Effects"), indices(Block::Effects));
     assert_eq!(Field::Contrast.block(), Some(Block::Lighting));
-    // Twin: the light ahead of Pro's colour, the density after the keypad's colour, Contrast among the
-    // effects, are each caught.
-    let swapped = ["Machine", "Colour", "Look", "Density", "Lighting", "Colour", "Paper Correction", "Effects"].map(String::from);
-    assert!(!colour_first(&swapped) && !keypad_density_first(&swapped));
+    // Twin: the light ahead of the colour, and Contrast among the effects, are each caught.
+    let swapped = ["Lighting", "Colour", "More Color Settings", "Paper Correction", "Effects"].map(String::from);
+    assert!(!colour_first(&swapped));
     let old = ": Block {\n        title: @tr(\"Effects\");\n        StoreSlider { field: 8; }\n        StoreSlider { field: 9; }\n        StoreSlider { field: 10; }\n";
     assert_ne!(wired_in(old, "Effects"), indices(Block::Effects));
 }
@@ -357,4 +350,26 @@ fn every_slider_names_one_field_twice() {
     let shifted = panel.replace("field: 3; label: @tr(\"Exposure\")", "field: 4; label: @tr(\"Exposure\")");
     assert_ne!(shifted, panel);
     assert_eq!(crossed(&shifted), [(4, "exposure".to_string())]);
+}
+
+/// On a paper C, M and Y are the enlarger's own: a filter's six CC moved with the sliders reads six CC more on its
+/// dial over the paper's rest, the least at none, Temperature and Tint carrying it.
+#[test]
+fn on_a_paper_a_filter_moved_moves_the_enlargers_dial_by_as_much() {
+    use oni_core::knob::{Channel, Knob};
+    let s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
+    let dial = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::printing(s).expect("on its paper").filtration;
+    let rest = dial(&s);
+    for (c, i) in [(Channel::Red, 0), (Channel::Green, 1), (Channel::Blue, 2)] {
+        let moved = Knob::Filtration(c).set(&s, Knob::Filtration(c).get(&s) + 6.0);
+        let mut want = rest;
+        want[i] += 6.0;
+        let least = want.iter().copied().fold(f32::INFINITY, f32::min);
+        let want = want.map(|v| v - least);
+        let got = dial(&moved);
+        assert!((0..3).all(|k| (got[k] - want[k]).abs() < 1e-3), "{c:?}: {got:?} where {want:?}");
+        // Twin: the same CC laid as Temperature alone misses the dial.
+        let warmed = Knob::Temperature.set(&s, 6.0 / oni_settings::tone::CC_PER_STOP);
+        assert!((0..3).any(|k| (dial(&warmed)[k] - want[k]).abs() > 1.0), "{c:?}");
+    }
 }

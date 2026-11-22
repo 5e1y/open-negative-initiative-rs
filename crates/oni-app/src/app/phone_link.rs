@@ -210,25 +210,18 @@ impl Ctl {
                 self.show_phones();
             }
             Some(Outward::Walk(by)) => self.walk(by),
-            Some(Outward::Face(face)) => self.phone_faced(crate::link::face_of(face)),
             None => {}
         }
     }
 
-    /// The phone turned the face on the store, as the bar's switch turns it.
-    fn phone_faced(self: &Rc<Self>, face: oni_settings::Face) {
-        self.faced(face);
-        self.publish_bar();
-    }
-
-    /// `walk(by:)`: the neighbour in `labFrames`, opened and selected; the ends stop it.
+    /// `walk(by:)`: the neighbour in the walk group, opened and selected; the ends stop it.
     pub(super) fn walk(self: &Rc<Self>, by: i8) {
         let target = {
             let s = self.state.borrow();
             let Some((at, count)) = s.place() else { return };
             let to = walked(at, count, by);
             let open = s.open_path().unwrap_or_default();
-            s.lab_frames().get(to).map(|e| e.path.clone()).filter(|p| p != open)
+            s.walk_frames().get(to).map(|e| e.path.clone()).filter(|p| p != open)
         };
         let Some(path) = target else { return };
         self.state.borrow_mut().designate(&path);

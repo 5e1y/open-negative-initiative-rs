@@ -69,11 +69,8 @@ impl EditorStore {
             None => adjust(&mut settings),
         }
         self.open = Some(Open { path: path.to_string(), writable, persisted, absent, stamp: original });
-        // The frame opens on the face in use, which is its opening and no step: an undo takes back what
-        // a hand did, never a frame being looked at.
-        let adopted = PipelineSettings { face: self.face(), ..settings };
-        self.recorded = adopted.clone();
-        self.replace(adopted);
+        self.recorded = settings.clone();
+        self.replace(settings);
         self.pending = FieldSet::all();
         self.roll_touched = false;
         self.roll_look = None;

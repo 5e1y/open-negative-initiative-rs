@@ -74,6 +74,12 @@ impl Ctl {
                 self.remember(preferences::KEEP_ZOOM, keep.into());
                 self.publish_settings();
             }
+            Act::FiltrationCmy => {
+                let cmy = !self.state.borrow().preferences.filtration_cmy();
+                self.remember(preferences::FILTRATION_CMY, cmy.into());
+                self.publish_settings();
+                self.publish_mode();
+            }
             Act::WholeRollAfterPrepare => {
                 let whole = !self.state.borrow().preferences.whole_roll_after_prepare();
                 self.remember(preferences::WHOLE_ROLL_AFTER_PREPARE, whole.into());
@@ -123,9 +129,6 @@ impl Ctl {
             Act::Wrapped => self.show_wrapped(oni_library::wrapped::today().0),
             Act::PairPhone => self.pair_phone(),
             Act::Settings => self.open_settings(),
-            Act::FrontierExport => self.export_frontier_look(),
-            Act::FrontierChoose => self.choose_frontier_look(),
-            Act::FrontierMeasured => self.measured_frontier(),
             Act::CloseSettings => self.close_settings(),
             Act::ClosePairing => self.close_pairing(),
             Act::ForgetPhones => self.forget_phones(),
@@ -133,7 +136,6 @@ impl Ctl {
             Act::MedalGold => self.label(Medal::Gold),
             Act::MedalSilver => self.label(Medal::Silver),
             Act::MedalBronze => self.label(Medal::Bronze),
-            Act::FaceScanner | Act::FacePro | Act::Emulator => self.lab_act(action),
             Act::Rotate | Act::MirrorVertically | Act::ResetCrop | Act::WindowArm | Act::WindowCopy | Act::WindowPaste | Act::WindowReset => self.framing_act(action),
             // A gesture its moment does not allow.
             Act::Compare | Act::Correction | Act::Framing | Act::NewRoll | Act::ResetToDefault => {}

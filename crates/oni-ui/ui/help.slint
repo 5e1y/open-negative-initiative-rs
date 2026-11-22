@@ -5,14 +5,6 @@ import { KeyWords } from "key_words.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
-    in property <string> machine;
-    in property <string> machine-note;
-    in property <string> keypad;
-    in property <string> keypad-note;
-    in property <string> effects-scanner;
-    in property <string> effects-scanner-note;
-    in property <string> curves-scanner;
-    in property <string> curves-scanner-note;
     in property <string> lighting;
     in property <string> lighting-note;
     in property <string> space;
@@ -262,10 +254,6 @@ export component WelcomeSheet inherits Sheet {
                     Point {
                         title: @tr("Medals on 1, 2 and 3");
                         text: @tr("Keys 1, 2 and 3 now give gold, silver and bronze.");
-                    }
-                    Point {
-                        title: @tr("The Scanner face shows its keypad");
-                        text: @tr("No more Auto White Balance under it: it shows what its keypad reads.");
                     }
                     HorizontalLayout {
                         alignment: start;

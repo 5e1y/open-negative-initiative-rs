@@ -7,12 +7,11 @@ use super::*;
 pub(crate) struct HandDown(Arc<AtomicUsize>);
 
 /// The hands raised outside a Store slider, each until its gesture ends: a scroll along a track, its
-/// hand kept until the idle window passes; a plot, while the editors' gestures hold; a Scanner slider.
+/// hand kept until the idle window passes; a plot, while the editors' gestures hold.
 #[derive(Default)]
 pub(crate) struct Down {
     pub(crate) scrolling: Option<HandDown>,
     pub(crate) plot: Option<HandDown>,
-    pub(crate) lab: Option<HandDown>,
 }
 
 impl HandDown {
@@ -91,31 +90,7 @@ impl Ctl {
             self.let_go(f);
         }
         crate::editors::let_go(self);
-        self.hold_lab(false);
         self.scroll_ended();
-    }
-
-    /// A Scanner slider's hand: the store held and the hand counted, until its own release or the button's
-    /// rising wherever the slider went.
-    pub(in crate::app) fn hold_lab(self: &Rc<Self>, on: bool) {
-        let mut s = self.state.borrow_mut();
-        if on {
-            if s.down.lab.is_none() {
-                s.down.lab = Some(HandDown::on(&s.hands));
-                s.store.hold();
-            }
-            return;
-        }
-        if s.down.lab.take().is_none() {
-            return;
-        }
-        s.store.release();
-        let written = s.last_change.is_some();
-        drop(s);
-        self.publish(false);
-        if written {
-            self.schedule_write();
-        }
     }
 
     /// The window's left button rose, whatever became of the item it pressed.

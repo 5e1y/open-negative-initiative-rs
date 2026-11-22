@@ -14,7 +14,7 @@ use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
 use oni_render::{Paper, Stage47, cpu};
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Face, PaperStock, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -158,21 +158,20 @@ fn the_print_is_the_papers_own_and_the_colour_density_alone_follows() {
 }
 
 #[test]
-fn the_scanner_face_prints_on_the_paper_at_its_rest_and_its_keys_move_the_enlarger() {
+fn a_legacy_print_on_a_paper_rests_at_its_rest_and_its_keys_move_the_enlarger() {
     let mut s = prepared_negative();
-    s.face = Face::Scanner;
-    let machine = scanner::on_oni_machine(&s).unwrap();
-    assert_eq!(machine.print.exposure, Print::resting_exposure(s.mode));
+    s.legacy_print = Some(LegacyPrint::default());
+    let laid = scanner::on_legacy_print(&s).unwrap();
     let grey = grey_scan(&s);
-    let rest = cpu::stage47(grey, &conversion::stage47(&machine));
+    let rest = cpu::stage47(grey, &conversion::stage47(&laid));
     assert!((0..3).all(|c| (rest[c] - *GREY_PRINT).abs() < 2e-4), "{rest:?}");
     // A cyan key prints cyaner, as on ONI's print: its red falls, its blue holds.
-    s.scanner.c = 4;
-    let keyed = cpu::stage47(grey, &conversion::stage47(&scanner::on_oni_machine(&s).unwrap()));
+    s.legacy_print = Some(LegacyPrint { c: 4, ..LegacyPrint::default() });
+    let keyed = cpu::stage47(grey, &conversion::stage47(&scanner::on_legacy_print(&s).unwrap()));
     assert!(keyed[0] < rest[0] * 0.9 && (keyed[2] - rest[2]).abs() < 0.01, "{keyed:?} {rest:?}");
-    // Twin: on ONI's print the machine enters at its look's exposure.
-    let onis = PipelineSettings { print_paper: None, ..s };
-    assert_eq!(scanner::on_oni_machine(&onis).unwrap().print.exposure, scanner::look_entry_exposure(ConversionMode::Negative));
+    // Twin: the keys at rest, no key moves the enlarger.
+    s.legacy_print = Some(LegacyPrint::default());
+    assert_eq!(cpu::stage47(grey, &conversion::stage47(&scanner::on_legacy_print(&s).unwrap())), rest);
 }
 
 #[test]

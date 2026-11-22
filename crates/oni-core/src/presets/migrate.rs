@@ -44,9 +44,39 @@ pub(super) fn earlier(data: &[u8], object: &Value) -> Option<Preset> {
             .flat_map(|g| legacy_rows(g).iter().map(|r| r.to_string()))
             .collect(),
     };
+    let parameters = one_face(parameters, object);
     let tint = meta.get("tint").and_then(Value::as_str).and_then(Tint::from_raw).unwrap_or_default();
     let note = meta.get("note").and_then(Value::as_str).unwrap_or_default().to_string();
     Some(Preset { id, name, parameters, tint, note, settings })
+}
+
+/// The rows a Scanner face's keypad stood for, as the one face lays its edit: Lighting with the legacy print, the
+/// filters at rest, Colour Density and the face's own finishing.
+const KEYPAD_ROWS: [&str; 12] = [
+    "levelsGlobal",
+    "print.red",
+    "print.green",
+    "print.blue",
+    "balanceFilters",
+    "density",
+    "manualCurves",
+    "manualContrast",
+    "spectrogram",
+    "saturation",
+    "vignette",
+    "secretSauce",
+];
+
+/// A preset written before the Scanner face left: its keypad's row, saved off the Scanner face, carries what that face
+/// rendered; the face's row and a keypad saved off Pro, which no photo renders now, go.
+fn one_face(parameters: BTreeSet<String>, object: &Value) -> BTreeSet<String> {
+    let scanner = object.get("settings").and_then(|s| s.get("face")).and_then(Value::as_str) == Some("scanner");
+    let keypad = parameters.contains("scanner");
+    let mut out: BTreeSet<String> = parameters.into_iter().filter(|p| p != "scanner" && p != "face").collect();
+    if keypad && scanner {
+        out.extend(KEYPAD_ROWS.iter().map(|r| r.to_string()));
+    }
+    out
 }
 
 /// Every preset file of `directory` an earlier version wrote, rewritten in this format: read back

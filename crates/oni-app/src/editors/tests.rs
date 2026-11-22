@@ -104,7 +104,7 @@ fn without_the_hold_each_curve_write_would_be_its_own_step() {
     let mut curves = store.settings().manual_curves.clone();
     for k in 1..=3 {
         curves.linked.add(Point::new(0.2 * k as f64, 0.5));
-        let next = lay(store.settings(), false, &Edit::Curves(curves.clone()));
+        let next = lay(store.settings(), &Edit::Curves(curves.clone()));
         store.apply(Command::Write(Box::new(next)));
     }
     undo(&mut store);
@@ -251,7 +251,7 @@ fn the_levels_reset_puts_back_the_three_windows_and_nothing_else() {
     set.set(LevelsChannel::Red, red);
     let mut curves = store.settings().manual_curves.clone();
     curves.linked.add(Point::new(0.5, 0.6));
-    let mut next = lay(store.settings(), false, &Edit::Levels(levels::Windows(set)));
+    let mut next = lay(store.settings(), &Edit::Levels(levels::Windows(set)));
     next.manual_curves = curves;
     store.apply(Command::Write(Box::new(next)));
     g.reset(&mut store, Reset::Levels);
@@ -319,7 +319,7 @@ fn a_double_click_on_the_wheel_resets_the_point_s_own_axes() {
     let mut g = gestures();
     let mut s = store.settings().spectrogram;
     s.set(Band::Red, 5.0, 0.4, 0.3);
-    let next = lay(store.settings(), false, &Edit::Spectrogram(s));
+    let next = lay(store.settings(), &Edit::Spectrogram(s));
     store.apply(Command::Write(Box::new(next)));
     let wheel = spectrogram::Wheel { side: WHEEL.w };
     let tip = wheel.position(spectrogram::Grip { band: Band::Red, part: spectrogram::Part::Tip }, &s);
@@ -390,21 +390,6 @@ fn a_band_slider_writes_its_axis_and_a_double_click_zeroes_it() {
     let (double, _) = g.band_press(&mut store, 1, t1 + Duration::from_millis(100));
     assert!(double);
     assert_eq!(store.settings().spectrogram.band(Band::Green), (0.0, 0.0, 0.0));
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn the_scanner_face_edits_its_own_finishing_and_keeps_pro_s() {
-    let (mut store, dir) = fresh("editors-scanner");
-    store.scanner_face = true;
-    let mut g = gestures();
-    g.press(&mut store, Plot::Curves, (150.0, 150.0), Instant::now());
-    g.release(&mut store);
-    let s = store.settings();
-    assert_eq!(s.scanner_finish.manual_curves.linked.points.len(), 3);
-    // Twin: Pro's own curves are untouched by a gesture on the other face.
-    assert!(s.manual_curves.is_neutral());
-    assert_eq!(g.view(&mut store).manual_curves.linked.points.len(), 3, "the face draws its own");
     let _ = std::fs::remove_dir_all(&dir);
 }
 

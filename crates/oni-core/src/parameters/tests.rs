@@ -65,7 +65,7 @@ fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     s.separation = 1.3;
     s.print.exposure = 0.2;
     s.sharpen.amount = 2.5;
-    let blank = reset_blank(&s, false);
+    let blank = reset_blank(&s);
     assert_eq!(blank.geometry, s.geometry, "the crop, the straightening and the window kept");
     assert_eq!(blank.flat_field.amount, 0.4);
     assert_eq!(blank.dye_set, s.dye_set);
@@ -76,7 +76,7 @@ fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     // The conversion stays: a slide read as a negative is reset as one.
     let mut slide = PipelineSettings::rest(ConversionMode::Negative, true);
     slide.inverted_source = true;
-    let back = reset_blank(&slide, false);
+    let back = reset_blank(&slide);
     assert!(back.inverted_source && back.mode == ConversionMode::Negative, "the conversion kept");
 }
 
@@ -87,14 +87,14 @@ fn the_reset_lands_a_slide_back_on_its_measured_gains() {
     slide.measured_gains = Some([-0.3, 0.0, 0.4]);
     slide.gains.stops = [-0.1, 0.0, 0.6];
     slide.print.exposure = 0.6;
-    let blank = reset_blank(&slide, false);
+    let blank = reset_blank(&slide);
     assert_eq!(blank.gains.stops, [-0.3, 0.0, 0.4], "the hand's move gone, the measure kept");
     assert_eq!(blank.print.exposure, PipelineSettings::rest(ConversionMode::Positive, true).print.exposure, "the look reset");
     assert_eq!(unconverted(&slide).gains.stops, [0.0; 3], "reset to default forgets the measure");
     // Twin: a slide never measured has no gains to land on but rest.
     let mut bare = slide.clone();
     bare.measured_gains = None;
-    assert_eq!(reset_blank(&bare, false).gains.stops, [0.0; 3]);
+    assert_eq!(reset_blank(&bare).gains.stops, [0.0; 3]);
 }
 
 #[test]

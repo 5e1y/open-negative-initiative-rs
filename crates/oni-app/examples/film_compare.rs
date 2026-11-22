@@ -12,7 +12,7 @@ use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
 use oni_pipeline::{Inputs, conversion, stages};
 use oni_settings::tone::Print;
-use oni_settings::{Face, PipelineSettings, sidecar};
+use oni_settings::{PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
@@ -76,8 +76,8 @@ fn main() {
             write(out, &format!("{name}-{tag}"), &Linear { width: region.w as usize, height: region.h as usize, pixels });
         }
     }
-    let pro = PipelineSettings { face: Face::Pro, ..papered };
-    let oni_pro = PipelineSettings { face: Face::Pro, ..onis };
+    let pro = PipelineSettings { legacy_print: None, ..papered };
+    let oni_pro = PipelineSettings { legacy_print: None, ..onis };
     for (tag, s, points) in [("paper-points", &pro, 0.05), ("oni-pro", &oni_pro, 0.0), ("oni-points", &oni_pro, 0.05)] {
         let mut lit = s.clone();
         (lit.print.black_point, lit.print.white_point) = (lit.print.black_point + points, lit.print.white_point + points);

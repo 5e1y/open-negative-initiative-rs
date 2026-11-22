@@ -230,16 +230,16 @@ fn a_print_notch_keeps_the_grain_s_shares_and_a_curve_notch_moves_them() {
 }
 
 #[test]
-fn a_key_notch_on_the_scanner_face_keeps_the_grain_s_shares() {
+fn a_key_notch_on_a_legacy_print_keeps_the_grain_s_shares() {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
     s.grain.amount = 0.5;
-    s.face = oni_settings::Face::Scanner;
+    s.legacy_print = Some(oni_settings::LegacyPrint::default());
     let scan = Rect::new(0, 0, 600, 400);
-    let machine = scanner::on_oni_machine(&s).unwrap();
+    let machine = scanner::on_legacy_print(&s).unwrap();
     let k = grain::grain(&machine, scan, 1.0).unwrap();
     let mut t = s.clone();
-    t.scanner = oni_settings::scanner::ScannerClicks::new(4, 2, -2, 6, 0);
-    let keyed = scanner::on_oni_machine(&t).unwrap();
+    t.legacy_print = Some(oni_settings::LegacyPrint { d: 4, c: 2, m: -2, y: 6, ..oni_settings::LegacyPrint::default() });
+    let keyed = scanner::on_legacy_print(&t).unwrap();
     assert_eq!(stages::grain(&grain::grain(&keyed, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a key notch moves the grain's pass");
     // Twin: the tones read through the keyed picture move the shares.
     assert_ne!(grain::shares(&machine.grain.curve, &grain::tones(&conversion::stage47(&keyed))), k.share);

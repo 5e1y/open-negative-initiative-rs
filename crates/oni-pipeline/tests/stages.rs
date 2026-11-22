@@ -15,10 +15,8 @@ use oni_render::{
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet};
 use oni_settings::frame::{FlatFieldMask, Geometry};
-use oni_settings::modes::{Face, ScannerMachine};
-use oni_settings::scanner::ScannerClicks;
 use oni_settings::spectrogram::Spectrogram;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 /// A per-pixel stage on `input` against `f`, refusing `twin`.
 fn per_pixel(g: &mut Graph, name: &str, input: &Source, pixels: &[V4], stage: impl Stage + 'static, f: impl Fn(V4) -> V4, twin: impl Fn(V4) -> V4) {
@@ -90,9 +88,7 @@ fn per_pixel_kernels_match_their_references() {
     per_pixel(&mut g, "texture coefficients", &moment_source, &moments, stages::texture_coeff(&coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.13)));
 
     let mut frontier = negative();
-    frontier.face = Face::Scanner;
-    frontier.scanner_machine = ScannerMachine::Frontier;
-    frontier.scanner = ScannerClicks::new(1, -2, 3, 0, 0);
+    frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: -2, m: 3, ..LegacyPrint::default() });
     let d = scanner::fitted_density(&frontier);
     let steeper = oni_render::ScannerDensity { scale: d.scale * 1.01, ..d };
     per_pixel(&mut g, "scanner density", &film, &transmitted, stages::scanner_density(&d), |p| cpu::scanner_density(p, &d), |p| cpu::scanner_density(p, &steeper));
@@ -323,14 +319,10 @@ fn families() -> Vec<(&'static str, PipelineSettings)> {
     let mut positive = pro.clone();
     positive.mode = ConversionMode::Positive;
     let mut frontier = pro.clone();
-    frontier.face = Face::Scanner;
-    frontier.scanner_machine = ScannerMachine::Frontier;
-    frontier.scanner = ScannerClicks::new(1, 2, -1, 0, 3);
-    frontier.scanner_finish.contrast = 0.2;
+    frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut oni = frontier.clone();
-    oni.scanner_machine = ScannerMachine::Oni;
-    oni.scanner = ScannerClicks::new(0, 1, 0, -2, -2);
-    vec![("Pro", pro), ("Pro, texture resting", joint), ("monochrome", mono), ("positive", positive), ("Frontier", frontier), ("ONI machine", oni)]
+    oni.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Oni, d: 0, c: 1, m: 0, y: -2, w: -2, laid: true });
+    vec![("Pro", pro), ("Pro, texture resting", joint), ("monochrome", mono), ("positive", positive), ("Frontier legacy print", frontier), ("ONI legacy print", oni)]
 }
 
 #[test]

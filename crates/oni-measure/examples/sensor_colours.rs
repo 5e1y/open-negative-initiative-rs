@@ -1,5 +1,5 @@
 //! `sensor_colours <roll> <out> <frame>…`: the roll measured as Prepare the Roll measures it in each of
-//! the decode's colours, then the frames named rendered on the Pro face and the Frontier, as `.f32` dumps.
+//! the decode's colours, then the frames named rendered on ONI's print and the Frontier's legacy print, as `.f32` dumps.
 
 use oni_core::balance;
 use oni_decode::Colours;
@@ -10,9 +10,8 @@ use oni_measure::{auto_levels, key, pipette, roll};
 use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::RollReference;
-use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::sidecar;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU8, Ordering};
 
@@ -171,12 +170,7 @@ fn range(d: &oni_decode::Linear) -> String {
 
 fn on_face(s: &PipelineSettings, face: &str) -> PipelineSettings {
     let mut s = s.per_pixel_only();
-    if face == "pro" {
-        s.face = Face::Pro;
-    } else {
-        s.face = Face::Scanner;
-        s.scanner_machine = ScannerMachine::Frontier;
-    }
+    s.legacy_print = (face != "pro").then_some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
     s
 }
 
