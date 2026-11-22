@@ -43,7 +43,7 @@ pub(super) fn luma(v: V3) -> f32 {
 /// The scan densities, through the frame's gains, its windows print as a plain RAW's grey on ONI's print at rest:
 /// where every window reads the one share that grey prints at.
 pub fn reference_grey(s: &PipelineSettings) -> V3 {
-    let rest = Print { exposure: Print::resting_exposure(s.mode), ..Print::default() };
+    let rest = Print { exposure: crate::conversion::resting_print_stops(s.mode), ..Print::default() };
     let shown = |t: f32| rest.output(t, LevelsChannel::Linked);
     let share = bisected(0.0, 2.0, *GREY_PRINT, shown);
     let k = windows_alone(s);

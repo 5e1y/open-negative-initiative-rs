@@ -97,7 +97,7 @@ settings: PipelineSettings {
     balance_filters: None,
     balance_strength: 0.67,
     print: Print {
-        exposure: 0.9809659,
+        exposure: -0.5190341,
         contrast: -0.24551085,
         shadows: -0.0046897,
         highlights: 0.1047156,

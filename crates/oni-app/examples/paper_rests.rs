@@ -89,7 +89,7 @@ fn main() {
         let raw = Path::new(&raw);
         let mut s: PipelineSettings = sidecar::read(raw, true).expect("a sidecar").settings;
         s.print_paper = Some(Default::default());
-        s.print = Print { exposure: Print::resting_exposure(s.mode), ..Print::default() };
+        s.print = Print::default();
         let k = conversion::stage47(&s);
         let p = conversion::printing(&s).expect("a paper").paper;
         let bare = Paper { scale: 1.0, filters: [1.0; 3], ..p };

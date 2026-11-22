@@ -199,9 +199,9 @@ mod tests {
             let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);
             let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(kind, &held)));
             assert!((0..3).all(|c| (printed[c] - plain_grey()).abs() < 2e-3), "{printed:?} {}", plain_grey());
-            // Twin: the white placed for a print resting at no exposure prints the grey brighter.
+            // Twin: the white placed for a print resting a stop and a half under prints the grey apart.
             let mut unlit = on_reference(kind, &held);
-            unlit.print.exposure = 0.0;
+            unlit.print.exposure = -1.5;
             assert!((cpu::stage47(grey, &crate::conversion::stage47(&unlit))[1] - plain_grey()).abs() > 0.02);
         }
     }

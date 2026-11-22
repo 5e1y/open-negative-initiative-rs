@@ -6,7 +6,6 @@ use oni_settings::cg::{Point, Rect};
 use oni_settings::curves::SaturationCurve;
 use oni_settings::frame::{Correction, FlatField, FlatFieldMask, RollReference};
 use oni_settings::id::Id;
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyPrint, PipelineSettings};
 
 #[test]
@@ -34,10 +33,10 @@ fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_and_crop_and
     assert!(reference.geometry == edited.geometry && reference.corrections.is_empty(), "the dust bare");
     // Twin: the after holds the patch the before leaves out.
     assert_eq!(edited.corrections.len(), 1);
-    assert!(reference.print.exposure == Print::resting_exposure(ConversionMode::Negative) && reference.legacy_print.is_none());
-    // Twin: a neutral block carrying the gains and levels alone misses the exposure and the flat-field.
+    assert!(reference.print.exposure == 0.0 && reference.legacy_print.is_none());
+    // Twin: a neutral block carrying the gains and levels alone misses the flat-field.
     let former = PipelineSettings { mode: edited.mode, geometry: edited.geometry, gains: edited.gains, levels: edited.levels, ..PipelineSettings::default() };
-    assert!(former.print.exposure != reference.print.exposure && former.flat_field != reference.flat_field);
+    assert!(former.flat_field != reference.flat_field);
 }
 
 #[test]

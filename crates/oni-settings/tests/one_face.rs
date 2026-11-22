@@ -43,8 +43,7 @@ fn a_scanner_photo_reads_its_machines_print_and_its_keys_in_a_legacy_print() {
     let s = read(&stored(&edited(ConversionMode::Negative), before, "scanner", "frontier"));
     let print = s.print;
     // The machine's entry is the legacy print's own: Lighting's Exposure rests.
-    let rest = oni_settings::tone::Print::resting_exposure(ConversionMode::Negative);
-    assert_eq!((print.exposure, print.contrast, print.highlights, print.filters()), (rest, 0.15, 0.0, [0.0; 3]));
+    assert_eq!((print.exposure, print.contrast, print.highlights, print.filters()), (0.0, 0.15, 0.0, [0.0; 3]));
     assert_eq!((s.density, s.secret_sauce), (0.0, 0.3));
     assert_eq!(s.legacy_print, Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 3, c: 0, m: -2, y: 1, w: 4, laid: true }));
     // On a paper with every key at rest it prints the paper's print alone: no legacy print.
@@ -52,7 +51,7 @@ fn a_scanner_photo_reads_its_machines_print_and_its_keys_in_a_legacy_print() {
     let mut papered = serde_json::from_slice::<Value>(&stored(&edge, before, "scanner", "oni")).unwrap();
     papered["settings"]["scanner"] = json!({});
     let on_paper = read(&serde_json::to_vec(&papered).unwrap());
-    assert_eq!((on_paper.legacy_print, on_paper.print.exposure, on_paper.print_paper), (None, oni_settings::tone::Print::RESTING_EXPOSURE, Some(PaperStock::KodakEktacolorEdge)));
+    assert_eq!((on_paper.legacy_print, on_paper.print.exposure, on_paper.print_paper), (None, 0.0, Some(PaperStock::KodakEktacolorEdge)));
 }
 
 #[test]

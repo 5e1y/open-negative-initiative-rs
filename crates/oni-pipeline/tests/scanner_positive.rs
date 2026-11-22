@@ -2,8 +2,7 @@
 //! bit for bit.
 
 use oni_graph::{Graph, Image, Rect};
-use oni_pipeline::{Inputs, Pipeline, scanner};
-use oni_settings::tone::Print;
+use oni_pipeline::{Inputs, Pipeline, conversion, scanner};
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 const W: u32 = 128;
@@ -26,7 +25,7 @@ fn scene() -> Vec<[f32; 4]> {
 /// its own film, a negative, entering at its own rest, as it is.
 fn former(frame: &PipelineSettings) -> PipelineSettings {
     let mut out = scanner::on_legacy_print(frame).expect("a legacy print");
-    out.print.exposure += Print::RESTING_EXPOSURE - Print::resting_exposure(frame.mode);
+    out.print.exposure += conversion::NEGATIVE_PRINT_STOPS - conversion::resting_print_stops(frame.mode);
     out
 }
 

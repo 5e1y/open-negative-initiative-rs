@@ -108,8 +108,8 @@ fn a_value_rests_on_the_frames_own_import_state_and_measure() {
     assert_eq!(Field::DensityCeiling.base(&negative), negative.density_ceiling);
     // Twin: the two rests differ, so a base read for the negative alone fails on the slide.
     assert_ne!(slide.density_ceiling, negative.density_ceiling);
-    // A negative's exposure rests where it came in, its window's brightest frame; a slide's at zero.
-    assert_eq!((Field::Exposure.base(&negative), Field::Exposure.base(&slide)), (1.5, 0.0));
+    // Exposure rests at zero in every mode: the departure from its pipe's rest.
+    assert_eq!((Field::Exposure.base(&negative), Field::Exposure.base(&slide)), (0.0, 0.0));
     let mut measured = negative.clone();
     let id = oni_settings::Id::new();
     measured.roll_reference = Some(oni_settings::frame::RollReference { id, stops: [0.3, 0.0, -0.2], black: [0.0; 3], white: [1.0; 3], base: None, median: None });

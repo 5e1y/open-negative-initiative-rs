@@ -108,7 +108,8 @@ fn former_document() -> (Vec<u8>, Value) {
 
 /// A grey of transmittance `t` through the kernel, windows set to `n = D / 2`, separation off, its Exposure on the curve.
 fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
-    let print = settings.print.on_curve(Print::resting_exposure(settings.mode));
+    let curve = oni_settings::migrate::departure::former_rest(settings.mode) + oni_settings::migrate::exposure::GEAR * settings.print.exposure;
+    let print = Print { exposure: curve, ..settings.print };
     let ceiling = density_axis::base();
     let k = Stage47 {
         red: [0.0, 2.0, 1.0],

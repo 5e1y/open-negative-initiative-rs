@@ -2,6 +2,8 @@
 //! fields and a legacy print; a photo Pro rendered keeps Pro's, the Scanner's fields going as they never rendered.
 
 use super::chain::{DIGITAL_SCANNER_VERSION, ONE_FACE_VERSION};
+use super::departure::{FORMER_REST, former_rest};
+use super::exposure::GEAR;
 use crate::blocks::Vignette;
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::document::Failure;
@@ -105,16 +107,10 @@ impl Scanner {
     }
 }
 
-/// The Lighting exposure the Scanner face's machine printed at: its looks lend about a stop for a negative's 1.5 of rest
-/// left out of the curve, so a slide, resting at 0, entered its curve as far under its own rest.
+/// The Lighting exposure, in format 46's units, the Scanner face's machine printed at: its looks lend about a stop for a
+/// negative's 1.5 of rest left out of the curve, so a slide, resting at 0, entered its curve as far under its own rest.
 pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
-    let rest = Print::resting_exposure(mode);
-    Print::exposure_at(look_entry_stops(mode), rest)
-}
-
-/// The stops of ONI's print curve a legacy print's look reads: the machine's entry, a negative's rest left out.
-pub fn look_entry_stops(mode: ConversionMode) -> f32 {
-    Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
+    former_rest(mode) - FORMER_REST / GEAR
 }
 
 /// `settings` of `version` on the one face: the edit of the face that rendered it, every step before this one done.
@@ -137,7 +133,7 @@ fn printed_on_the_machine(settings: PipelineSettings, scanner: &Scanner) -> Pipe
     out.saturation = f.saturation.clone();
     out.vignette = f.vignette;
     out.secret_sauce = f.secret_sauce;
-    let exposure = if out.paper().is_some() { Print::resting_exposure(out.mode) } else { look_entry_exposure(out.mode) };
+    let exposure = if out.paper().is_some() { former_rest(out.mode) } else { look_entry_exposure(out.mode) };
     let held = out.print;
     out.print = Print { contrast: f.contrast, exposure, colour_compensation: held.colour_compensation, paper_blacks: held.paper_blacks, ..Print::default() };
     out.density = 0.0;
@@ -203,7 +199,7 @@ mod tests {
         let mut bare = scanner("scanner", "oni");
         bare.clicks = Clicks::default();
         let on_paper = caught_up(older, papered.clone(), &bare);
-        assert_eq!((on_paper.print.exposure, on_paper.legacy_print), (Print::RESTING_EXPOSURE, None));
+        assert_eq!((on_paper.print.exposure, on_paper.legacy_print), (FORMER_REST, None));
         assert!(caught_up(older, papered, &scanner("scanner", "oni")).legacy_print.is_some(), "twin: its keys moved, it lays them");
     }
 

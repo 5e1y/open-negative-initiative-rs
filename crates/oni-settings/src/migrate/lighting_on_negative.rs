@@ -2,6 +2,7 @@
 //! curve read: the legacy print came to read it itself, so its Exposure moves to Lighting's rest by that entry.
 
 use super::chain::LIGHTING_ON_NEGATIVE_VERSION;
+use super::departure::former_rest;
 use super::one_face::look_entry_exposure;
 use crate::PipelineSettings;
 use crate::tone::Print;
@@ -11,7 +12,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     if version >= LIGHTING_ON_NEGATIVE_VERSION || settings.legacy().is_none() || settings.paper().is_some() {
         return settings;
     }
-    let exposure = settings.print.exposure - look_entry_exposure(settings.mode) + Print::resting_exposure(settings.mode);
+    let exposure = settings.print.exposure - look_entry_exposure(settings.mode) + former_rest(settings.mode);
     PipelineSettings { print: Print { exposure, ..settings.print }, ..settings }
 }
 
@@ -31,7 +32,7 @@ mod tests {
     fn a_legacy_prints_entry_leaves_lightings_exposure_and_a_hand_s_move_stays() {
         let older = LIGHTING_ON_NEGATIVE_VERSION - 1;
         for mode in ConversionMode::ALL {
-            let rest = Print::resting_exposure(mode);
+            let rest = former_rest(mode);
             assert_eq!(caught_up(older, on_legacy(mode)).print.exposure, rest, "{mode:?}: the machine's entry rests");
             let mut lit = on_legacy(mode);
             lit.print.exposure += 0.4;

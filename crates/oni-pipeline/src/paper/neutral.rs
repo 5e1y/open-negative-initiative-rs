@@ -5,7 +5,6 @@ use super::printing::{GREY_PRINT, bisected};
 use super::*;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
-use oni_settings::ConversionMode;
 
 /// The neutral paper's deepest black as light, a density of 5: ONI's print lays none at its black, past any a screen shows.
 pub const NEUTRAL_DEEPEST: f32 = 1e-5;
@@ -23,7 +22,7 @@ fn dye(c: usize) -> V4 {
 /// ONI's print at rest as a characteristic curve, its log exposure in units of the frame's range: the range spans the
 /// print from black to white as a window spans it, the reference grey at 0, where its share prints a plain RAW's grey.
 fn sheet_of() -> Sheet {
-    let rest = Print { exposure: Print::resting_exposure(ConversionMode::Negative), ..Print::default() };
+    let rest = Print { exposure: crate::conversion::NEGATIVE_PRINT_STOPS, ..Print::default() };
     let light = |t: f32| rest.output(t, LevelsChannel::Linked);
     let grey = bisected(0.0, 1.0, *GREY_PRINT, light);
     let last = (PAPER_CURVE_NODES - 1) as f32;
