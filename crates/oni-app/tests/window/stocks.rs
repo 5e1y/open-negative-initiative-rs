@@ -71,11 +71,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
         assert!(cells.iter().any(|c| c.name == name), "{name} listed");
     }
     assert!(!cells.iter().any(|c| c.name == "Kodak Portra" || c.name == "Fujifilm Fujicolor"), "a line its stocks replace is not offered");
-    assert!(cells.iter().all(|c| c.has_artwork && !c.picked));
-    // A data-sheet twin says its source under its name, every other stock nothing.
-    let noted = |c: &&oni_app::StockCell| c.note == "Datasheet";
-    assert_eq!(cells.iter().filter(noted).count(), oni_settings::film::FILM_STOCKS.iter().filter(|k| k.sheet_twin).count());
-    assert!(cells.iter().all(|c| noted(&c) || c.note.is_empty()));
+    assert!(cells.iter().all(|c| c.has_artwork && !c.picked && c.note.is_empty()));
     rig.settle();
     println!("shot {}", rig.shot("stock-picker").display());
 

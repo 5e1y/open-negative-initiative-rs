@@ -1,70 +1,43 @@
-//! The measured dye sets the dye separation unmixes: one per stock profile ONI ships, spektrafilm's or written
-//! from a data sheet, and a generic colour-negative set, spektrafilm's mean, for a stock no profile measures.
+//! The measured dye sets the dye separation unmixes: one per stock profile ONI ships, each written from its maker's
+//! data sheet, and a generic colour-negative set, their mean, for a stock no profile measures.
 
 use serde::{Deserialize, Serialize};
 
-/// A dye set by the key a sidecar stores: its stock's spectral dye densities and base.
+/// A dye set by the key a sidecar stores: its stock's spectral dye densities and base. A stock's data-sheet twin's key,
+/// which a document before format 60 may store, reads as the stock's own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum DyeSet {
     #[default]
     #[serde(rename = "generic-c41")]
     GenericC41,
-    #[serde(rename = "kodak-portra-160")]
+    #[serde(rename = "kodak-portra-160", alias = "kodak-portra-160-datasheet")]
     KodakPortra160,
-    #[serde(rename = "kodak-portra-400")]
+    #[serde(rename = "kodak-portra-400", alias = "kodak-portra-400-datasheet")]
     KodakPortra400,
-    #[serde(rename = "kodak-portra-800")]
+    #[serde(rename = "kodak-portra-800", alias = "kodak-portra-800-datasheet")]
     KodakPortra800,
-    #[serde(rename = "kodak-ektar-100")]
+    #[serde(rename = "kodak-ektar-100", alias = "kodak-ektar-100-datasheet")]
     KodakEktar100,
-    #[serde(rename = "kodak-gold-200")]
+    #[serde(rename = "kodak-gold-200", alias = "kodak-gold-200-datasheet")]
     KodakGold200,
-    #[serde(rename = "kodak-ultramax-400")]
+    #[serde(rename = "kodak-ultramax-400", alias = "kodak-ultramax-400-datasheet")]
     KodakUltraMax400,
-    #[serde(rename = "kodak-verita-200d")]
+    #[serde(rename = "kodak-verita-200d", alias = "kodak-verita-200d-datasheet")]
     KodakVerita200D,
-    #[serde(rename = "kodak-vision3-50d")]
+    #[serde(rename = "kodak-vision3-50d", alias = "kodak-vision3-50d-datasheet")]
     KodakVision3_50D,
-    #[serde(rename = "kodak-vision3-200t")]
+    #[serde(rename = "kodak-vision3-200t", alias = "kodak-vision3-200t-datasheet")]
     KodakVision3_200T,
-    #[serde(rename = "kodak-vision3-250d")]
+    #[serde(rename = "kodak-vision3-250d", alias = "kodak-vision3-250d-datasheet")]
     KodakVision3_250D,
-    #[serde(rename = "kodak-vision3-500t")]
+    #[serde(rename = "kodak-vision3-500t", alias = "kodak-vision3-500t-datasheet")]
     KodakVision3_500T,
-    #[serde(rename = "fujifilm-c200")]
+    #[serde(rename = "fujifilm-c200", alias = "fujifilm-c200-datasheet")]
     FujifilmC200,
-    #[serde(rename = "fujifilm-pro-400h")]
+    #[serde(rename = "fujifilm-pro-400h", alias = "fujifilm-pro-400h-datasheet")]
     FujifilmPro400H,
-    #[serde(rename = "fujifilm-xtra-400")]
+    #[serde(rename = "fujifilm-xtra-400", alias = "fujifilm-xtra-400-datasheet")]
     FujifilmXtra400,
-    #[serde(rename = "fujifilm-c200-datasheet")]
-    FujifilmC200Datasheet,
-    #[serde(rename = "fujifilm-pro-400h-datasheet")]
-    FujifilmPro400HDatasheet,
-    #[serde(rename = "fujifilm-xtra-400-datasheet")]
-    FujifilmXtra400Datasheet,
-    #[serde(rename = "kodak-ektar-100-datasheet")]
-    KodakEktar100Datasheet,
-    #[serde(rename = "kodak-gold-200-datasheet")]
-    KodakGold200Datasheet,
-    #[serde(rename = "kodak-portra-160-datasheet")]
-    KodakPortra160Datasheet,
-    #[serde(rename = "kodak-portra-400-datasheet")]
-    KodakPortra400Datasheet,
-    #[serde(rename = "kodak-portra-800-datasheet")]
-    KodakPortra800Datasheet,
-    #[serde(rename = "kodak-ultramax-400-datasheet")]
-    KodakUltraMax400Datasheet,
-    #[serde(rename = "kodak-verita-200d-datasheet")]
-    KodakVerita200DDatasheet,
-    #[serde(rename = "kodak-vision3-50d-datasheet")]
-    KodakVision3_50DDatasheet,
-    #[serde(rename = "kodak-vision3-200t-datasheet")]
-    KodakVision3_200TDatasheet,
-    #[serde(rename = "kodak-vision3-250d-datasheet")]
-    KodakVision3_250DDatasheet,
-    #[serde(rename = "kodak-vision3-500t-datasheet")]
-    KodakVision3_500TDatasheet,
     #[serde(rename = "fujifilm-160nc")]
     Fujifilm160NC,
     #[serde(rename = "fujifilm-160nl")]
@@ -132,7 +105,7 @@ pub enum DyeSet {
 }
 
 impl DyeSet {
-    pub const ALL: [DyeSet; 61] = [
+    pub const ALL: [DyeSet; 47] = [
         DyeSet::GenericC41,
         DyeSet::KodakPortra160,
         DyeSet::KodakPortra400,
@@ -148,20 +121,6 @@ impl DyeSet {
         DyeSet::FujifilmC200,
         DyeSet::FujifilmPro400H,
         DyeSet::FujifilmXtra400,
-        DyeSet::FujifilmC200Datasheet,
-        DyeSet::FujifilmPro400HDatasheet,
-        DyeSet::FujifilmXtra400Datasheet,
-        DyeSet::KodakEktar100Datasheet,
-        DyeSet::KodakGold200Datasheet,
-        DyeSet::KodakPortra160Datasheet,
-        DyeSet::KodakPortra400Datasheet,
-        DyeSet::KodakPortra800Datasheet,
-        DyeSet::KodakUltraMax400Datasheet,
-        DyeSet::KodakVerita200DDatasheet,
-        DyeSet::KodakVision3_50DDatasheet,
-        DyeSet::KodakVision3_200TDatasheet,
-        DyeSet::KodakVision3_250DDatasheet,
-        DyeSet::KodakVision3_500TDatasheet,
         DyeSet::Fujifilm160NC,
         DyeSet::Fujifilm160NL,
         DyeSet::Fujifilm160NPC,
@@ -214,20 +173,6 @@ impl DyeSet {
             DyeSet::FujifilmC200 => "Fujifilm C200",
             DyeSet::FujifilmPro400H => "Fujifilm Pro 400H",
             DyeSet::FujifilmXtra400 => "Fujifilm Superia X-TRA 400",
-            DyeSet::FujifilmC200Datasheet => "Fujifilm C200",
-            DyeSet::FujifilmPro400HDatasheet => "Fujifilm Pro 400H",
-            DyeSet::FujifilmXtra400Datasheet => "Fujifilm Superia X-TRA 400",
-            DyeSet::KodakEktar100Datasheet => "Kodak Ektar 100",
-            DyeSet::KodakGold200Datasheet => "Kodak Gold 200",
-            DyeSet::KodakPortra160Datasheet => "Kodak Portra 160",
-            DyeSet::KodakPortra400Datasheet => "Kodak Portra 400",
-            DyeSet::KodakPortra800Datasheet => "Kodak Portra 800",
-            DyeSet::KodakUltraMax400Datasheet => "Kodak UltraMax 400",
-            DyeSet::KodakVerita200DDatasheet => "Kodak Verita 200D",
-            DyeSet::KodakVision3_50DDatasheet => "Kodak Vision3 50D",
-            DyeSet::KodakVision3_200TDatasheet => "Kodak Vision3 200T",
-            DyeSet::KodakVision3_250DDatasheet => "Kodak Vision3 250D",
-            DyeSet::KodakVision3_500TDatasheet => "Kodak Vision3 500T",
             DyeSet::Fujifilm160NC => "Fujifilm 160NC",
             DyeSet::Fujifilm160NL => "Fujifilm 160NL",
             DyeSet::Fujifilm160NPC => "Fujifilm 160NPC",
@@ -263,7 +208,7 @@ impl DyeSet {
         })
     }
 
-    /// The profile's file: spektrafilm's name for it, or under `datasheet/` the one written from its data sheet.
+    /// The profile's file, written from the stock's data sheet.
     pub fn profile(self) -> Option<&'static str> {
         Some(match self {
             DyeSet::GenericC41 => return None,
@@ -272,7 +217,7 @@ impl DyeSet {
             DyeSet::KodakPortra800 => "kodak_portra_800",
             DyeSet::KodakEktar100 => "kodak_ektar_100",
             DyeSet::KodakGold200 => "kodak_gold_200",
-            DyeSet::KodakUltraMax400 => "kodak_ultramax_400",
+            DyeSet::KodakUltraMax400 => "kodak_ultra_max_400",
             DyeSet::KodakVerita200D => "kodak_verita_200d",
             DyeSet::KodakVision3_50D => "kodak_vision3_50d",
             DyeSet::KodakVision3_200T => "kodak_vision3_200t",
@@ -280,53 +225,39 @@ impl DyeSet {
             DyeSet::KodakVision3_500T => "kodak_vision3_500t",
             DyeSet::FujifilmC200 => "fujifilm_c200",
             DyeSet::FujifilmPro400H => "fujifilm_pro_400h",
-            DyeSet::FujifilmXtra400 => "fujifilm_xtra_400",
-            DyeSet::FujifilmC200Datasheet => "datasheet/fujifilm_c200",
-            DyeSet::FujifilmPro400HDatasheet => "datasheet/fujifilm_pro_400h",
-            DyeSet::FujifilmXtra400Datasheet => "datasheet/fujifilm_superia_x_tra_400",
-            DyeSet::KodakEktar100Datasheet => "datasheet/kodak_ektar_100",
-            DyeSet::KodakGold200Datasheet => "datasheet/kodak_gold_200",
-            DyeSet::KodakPortra160Datasheet => "datasheet/kodak_portra_160",
-            DyeSet::KodakPortra400Datasheet => "datasheet/kodak_portra_400",
-            DyeSet::KodakPortra800Datasheet => "datasheet/kodak_portra_800",
-            DyeSet::KodakUltraMax400Datasheet => "datasheet/kodak_ultra_max_400",
-            DyeSet::KodakVerita200DDatasheet => "datasheet/kodak_verita_200d",
-            DyeSet::KodakVision3_50DDatasheet => "datasheet/kodak_vision3_50d",
-            DyeSet::KodakVision3_200TDatasheet => "datasheet/kodak_vision3_200t",
-            DyeSet::KodakVision3_250DDatasheet => "datasheet/kodak_vision3_250d",
-            DyeSet::KodakVision3_500TDatasheet => "datasheet/kodak_vision3_500t",
-            DyeSet::Fujifilm160NC => "datasheet/fujifilm_160nc",
-            DyeSet::Fujifilm160NL => "datasheet/fujifilm_160nl",
-            DyeSet::Fujifilm160NPC => "datasheet/fujifilm_160npc",
-            DyeSet::Fujifilm160NS => "datasheet/fujifilm_160ns",
-            DyeSet::Fujifilm200 => "datasheet/fujifilm_200",
-            DyeSet::Fujifilm400 => "datasheet/fujifilm_400",
-            DyeSet::FujifilmFujicolor100 => "datasheet/fujifilm_fujicolor_100",
-            DyeSet::FujifilmNatura1600 => "datasheet/fujifilm_natura_1600",
-            DyeSet::FujifilmNewPro400 => "datasheet/fujifilm_new_pro_400",
-            DyeSet::FujifilmNexia400 => "datasheet/fujifilm_nexia_400",
-            DyeSet::FujifilmNexiaA200 => "datasheet/fujifilm_nexia_a200",
-            DyeSet::FujifilmNexiaZoomMaster800 => "datasheet/fujifilm_nexia_zoom_master_800",
-            DyeSet::FujifilmPro160C => "datasheet/fujifilm_pro_160c",
-            DyeSet::FujifilmPro160NC => "datasheet/fujifilm_pro_160nc",
-            DyeSet::FujifilmPro160NH => "datasheet/fujifilm_pro_160nh",
-            DyeSet::FujifilmPro160NS => "datasheet/fujifilm_pro_160ns",
-            DyeSet::FujifilmPro160S => "datasheet/fujifilm_pro_160s",
-            DyeSet::FujifilmPro800 => "datasheet/fujifilm_pro_800",
-            DyeSet::FujifilmPro800Z => "datasheet/fujifilm_pro_800z",
-            DyeSet::FujifilmRealaAce => "datasheet/fujifilm_reala_ace",
-            DyeSet::FujifilmSuperia100 => "datasheet/fujifilm_superia_100",
-            DyeSet::FujifilmSuperia200 => "datasheet/fujifilm_superia_200",
-            DyeSet::FujifilmSuperia1600 => "datasheet/fujifilm_superia_1600",
-            DyeSet::FujifilmSuperiaPremium400 => "datasheet/fujifilm_superia_premium_400",
-            DyeSet::FujifilmSuperiaReala => "datasheet/fujifilm_superia_reala",
-            DyeSet::FujifilmSuperiaVenus400 => "datasheet/fujifilm_superia_venus_400",
-            DyeSet::FujifilmSuperiaVenus800 => "datasheet/fujifilm_superia_venus_800",
-            DyeSet::FujifilmXtra800 => "datasheet/fujifilm_superia_x_tra_800",
-            DyeSet::KodakPortra160NC => "datasheet/kodak_portra_160nc",
-            DyeSet::KodakPortra160VC => "datasheet/kodak_portra_160vc",
-            DyeSet::KodakPortra400NC => "datasheet/kodak_portra_400nc",
-            DyeSet::KodakPortra400VC => "datasheet/kodak_portra_400vc",
+            DyeSet::FujifilmXtra400 => "fujifilm_superia_x_tra_400",
+            DyeSet::Fujifilm160NC => "fujifilm_160nc",
+            DyeSet::Fujifilm160NL => "fujifilm_160nl",
+            DyeSet::Fujifilm160NPC => "fujifilm_160npc",
+            DyeSet::Fujifilm160NS => "fujifilm_160ns",
+            DyeSet::Fujifilm200 => "fujifilm_200",
+            DyeSet::Fujifilm400 => "fujifilm_400",
+            DyeSet::FujifilmFujicolor100 => "fujifilm_fujicolor_100",
+            DyeSet::FujifilmNatura1600 => "fujifilm_natura_1600",
+            DyeSet::FujifilmNewPro400 => "fujifilm_new_pro_400",
+            DyeSet::FujifilmNexia400 => "fujifilm_nexia_400",
+            DyeSet::FujifilmNexiaA200 => "fujifilm_nexia_a200",
+            DyeSet::FujifilmNexiaZoomMaster800 => "fujifilm_nexia_zoom_master_800",
+            DyeSet::FujifilmPro160C => "fujifilm_pro_160c",
+            DyeSet::FujifilmPro160NC => "fujifilm_pro_160nc",
+            DyeSet::FujifilmPro160NH => "fujifilm_pro_160nh",
+            DyeSet::FujifilmPro160NS => "fujifilm_pro_160ns",
+            DyeSet::FujifilmPro160S => "fujifilm_pro_160s",
+            DyeSet::FujifilmPro800 => "fujifilm_pro_800",
+            DyeSet::FujifilmPro800Z => "fujifilm_pro_800z",
+            DyeSet::FujifilmRealaAce => "fujifilm_reala_ace",
+            DyeSet::FujifilmSuperia100 => "fujifilm_superia_100",
+            DyeSet::FujifilmSuperia200 => "fujifilm_superia_200",
+            DyeSet::FujifilmSuperia1600 => "fujifilm_superia_1600",
+            DyeSet::FujifilmSuperiaPremium400 => "fujifilm_superia_premium_400",
+            DyeSet::FujifilmSuperiaReala => "fujifilm_superia_reala",
+            DyeSet::FujifilmSuperiaVenus400 => "fujifilm_superia_venus_400",
+            DyeSet::FujifilmSuperiaVenus800 => "fujifilm_superia_venus_800",
+            DyeSet::FujifilmXtra800 => "fujifilm_superia_x_tra_800",
+            DyeSet::KodakPortra160NC => "kodak_portra_160nc",
+            DyeSet::KodakPortra160VC => "kodak_portra_160vc",
+            DyeSet::KodakPortra400NC => "kodak_portra_400nc",
+            DyeSet::KodakPortra400VC => "kodak_portra_400vc",
         })
     }
 

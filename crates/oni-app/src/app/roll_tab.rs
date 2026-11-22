@@ -244,9 +244,9 @@ impl Ctl {
         panel.set_paper_shown(settings.takes_paper());
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);
-        panel.set_paper_title(crate::stocks::paper_label(settings.fitting_paper()));
+        panel.set_paper_title(settings.fitting_paper().name().into());
         if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
-            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: crate::stocks::paper_label(*p), enabled: true, ..MenuLine::default() }).collect();
+            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
             panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));

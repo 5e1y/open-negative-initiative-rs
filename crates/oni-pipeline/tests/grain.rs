@@ -5,6 +5,7 @@ mod common;
 
 use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect};
+use oni_pipeline::film::GREY;
 use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, stages};
 use oni_render::{GRAIN_NODES, Grain, LUMA, cpu};
 use oni_settings::migrate::grain_size::microns;
@@ -382,16 +383,16 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     assert_eq!(notches(&mut g, &keyed, true, &key), notches(&mut g, &scanner, true, &key), "a key notch reruns the grain");
 }
 
-/// A digital photo shot on the virtual film keeps its grain where a photo's grain lies, fullest in the low
-/// mids and gone at the white: its scene's light crosses the film before the tone is read. Twin: read straight
-/// through the negative's stage 4-7, as if the scene were the scan, the shares turn over.
+/// A digital photo shot on the virtual film keeps its grain where a photo's grain lies, fullest in the low mids (a stop
+/// under the grey on Endura Premier) and gone at the white: its scene's light crosses the film before the tone is read.
+/// Twin: read straight through stage 4-7, as if the scene were the scan, the shares turn over.
 #[test]
 fn a_filmed_photo_keeps_its_grain_in_the_shadows() {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
     s.grain.amount = 0.5;
     let k = grain::grain(&s, Rect::new(0, 0, 6000, 4000), 1.0).expect("a grain");
     let node = |y: f32| (0..GRAIN_NODES).min_by(|a, b| (oni_render::grain_node_light(*a).log2() - y.log2()).abs().total_cmp(&(oni_render::grain_node_light(*b).log2() - y.log2()).abs())).unwrap();
-    let (shadow, highlight) = (k.share[node(0.03)], k.share[node(0.9)]);
+    let (shadow, highlight) = (k.share[node(GREY / 2.0)], k.share[node(0.9)]);
     println!("filmed: shadow {shadow:.3}, highlight {highlight:.3}");
     assert!(shadow > 0.6 && shadow > 2.0 * highlight, "shadow {shadow}, highlight {highlight}");
     let through = grain::shares(&s.grain.curve, &grain::tones(&oni_render::Stage47 { gain: [1.0; 3], ..conversion::stage47(&s) }));

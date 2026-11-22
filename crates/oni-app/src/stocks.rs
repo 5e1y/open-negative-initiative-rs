@@ -62,21 +62,9 @@ fn sized(data: &[u8], side: u32) -> Option<Vec<u8>> {
     Some(format!(r#"<svg width="{side}" height="{side}"{rest}"#).into_bytes())
 }
 
-/// What a stock says under its name wherever it is shown: a line that its stock is never named, a data-sheet
-/// twin its source; nothing for another stock.
-pub fn note(kind: &oni_settings::film::FilmStockKind) -> &'static str {
-    if kind.line {
-        oni_i18n::tr("Stock not specified")
-    } else if kind.sheet_twin {
-        oni_i18n::tr("Datasheet")
-    } else {
-        ""
-    }
-}
-
-/// A stock's name on one line, a data-sheet twin's source beside it, so it reads apart from the stock of its name.
-pub fn label(kind: &oni_settings::film::FilmStockKind) -> slint::SharedString {
-    if kind.sheet_twin { format!("{} · {}", kind.display_name, oni_i18n::tr("Datasheet")).into() } else { kind.display_name.into() }
+/// What a line, its stock never named, says under its name wherever it is shown; nothing for a precise stock.
+pub fn unspecified(kind: &oni_settings::film::FilmStockKind) -> &'static str {
+    if kind.line { oni_i18n::tr("Stock not specified") } else { "" }
 }
 
 /// A stock as a hero shows it, `note` under its name; the generic negative's canister and no name for none.
@@ -88,11 +76,6 @@ pub fn canister(kind: Option<&oni_settings::film::FilmStockKind>, note: String) 
         has_artwork: artwork.is_some(),
         artwork: artwork.unwrap_or_default(),
     }
-}
-
-/// A paper's name as its menu lists it, a data-sheet twin's source beside it.
-pub fn paper_label(paper: oni_settings::PaperStock) -> slint::SharedString {
-    if paper.sheet_twin() { format!("{} · {}", paper.name(), oni_i18n::tr("Datasheet")).into() } else { paper.name().into() }
 }
 
 /// The virtual film a stock of the catalogue is, when a digital photo can be shot on it.
@@ -202,22 +185,6 @@ mod tests {
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
         assert!(!listed.contains(&"ilford-hp5") && virtual_stock("ilford-hp5").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
-    }
-
-    /// A data-sheet twin names its source beside the stock of its name, in the menus and under its name; the
-    /// spektrafilm entry keeps its plain name, and each of the sixteen virtual films has its twin.
-    #[test]
-    fn a_data_sheet_twin_names_its_source_beside_its_stock() {
-        let kind = |id: &str| oni_settings::film::film_stock(Some(id)).unwrap();
-        let (twin, own) = (kind("kodak-portra800-datasheet"), kind("kodak-portra800"));
-        assert_eq!((twin.display_name, label(twin).as_str()), ("Kodak Portra 800", "Kodak Portra 800 · Datasheet"));
-        assert_eq!((note(twin), note(kind("kodak-portra"))), ("Datasheet", "Stock not specified"));
-        let twins = oni_settings::film::FILM_STOCKS.iter().filter(|k| k.sheet_twin).count();
-        assert_eq!(twins, 16);
-        assert_eq!(paper_label(oni_settings::PaperStock::KodakEnduraPremierDatasheet).as_str(), "Kodak Endura Premier · Datasheet");
-        // Twin: the stock of its name, and every other one, keeps its plain name and no note.
-        assert_eq!((label(own).as_str(), note(own)), ("Kodak Portra 800", ""));
-        assert_eq!(paper_label(oni_settings::PaperStock::KodakEnduraPremier).as_str(), "Kodak Endura Premier");
     }
 
     #[test]

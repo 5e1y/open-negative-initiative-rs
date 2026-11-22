@@ -1,5 +1,5 @@
-//! Format 46 keeps every look: each Scanner-face case and corpus sidecar renders to the bit as format 45 did, whose
-//! renders `legacy_print/fingerprints.json` holds: the whole chain on the GPU, stage 4-7 and the look on the CPU.
+//! Format 46 keeps every look: each Scanner-face case and corpus sidecar renders to the bit as `legacy_print/fingerprints.json`
+//! holds, format 45's look on format 60's data-sheet dyes: the whole chain on the GPU, stage 4-7 and the look on the CPU.
 
 use oni_graph::Graph;
 use oni_pipeline::{Inputs, Pipeline, Request, conversion, frontier_look, oni_look, scanner};

@@ -39,12 +39,10 @@ pub struct FilmStockKind {
     pub offered: bool,
     /// A whole line, the stock within it never named: the picker lists the line's stocks in its place.
     pub line: bool,
-    /// The stock of the entry before it, rendered from its maker's data sheet: a picker names that source.
-    pub sheet_twin: bool,
 }
 
 const fn stock(id: &'static str, display_name: &'static str, brand: &'static str, iso: Option<u16>, kind: FilmType) -> FilmStockKind {
-    FilmStockKind { id, display_name, icon_name: id, brand, iso, kind, offered: true, line: false, sheet_twin: false }
+    FilmStockKind { id, display_name, icon_name: id, brand, iso, kind, offered: true, line: false }
 }
 
 /// A stock of a line, drawn with the line's canister.
@@ -68,17 +66,12 @@ const fn undrawn(id: &'static str, display_name: &'static str, brand: &'static s
     FilmStockKind { icon_name: kind.generic(), ..stock(id, display_name, brand, Some(iso), kind) }
 }
 
-/// The stock of the entry before it rendered from its maker's data sheet, drawn with that entry's canister.
-const fn twin(id: &'static str, display_name: &'static str, brand: &'static str, iso: u16, kind: FilmType, icon: &'static str) -> FilmStockKind {
-    FilmStockKind { icon_name: icon, sheet_twin: true, ..stock(id, display_name, brand, Some(iso), kind) }
-}
-
 const CN: FilmType = FilmType::ColourNegative;
 const CINE: FilmType = FilmType::CineNegative;
 const SLIDE: FilmType = FilmType::ColourSlide;
 const BW: FilmType = FilmType::BlackAndWhite;
 
-pub const FILM_STOCKS: [FilmStockKind; 106] = [
+pub const FILM_STOCKS: [FilmStockKind; 90] = [
     stock("generic-azure", "Generic Azure", "Generic", None, CN),
     stock("generic-black-and-white", "Generic Black & White", "Generic", None, BW),
     stock("generic-color-negative", "Generic Colour Negative", "Generic", None, CN),
@@ -93,15 +86,12 @@ pub const FILM_STOCKS: [FilmStockKind; 106] = [
     withdrawn("foma-fomapan401", "Foma Fomapan 401", "Foma", Some(400), BW),
     stock("fujifilm-acros", "Fujifilm Acros", "Fujifilm", Some(100), BW),
     of_line("fujifilm-c200", "Fujifilm C200", "Fujifilm", 200, CN, "fujifilm-fujicolor"),
-    twin("fujifilm-c200-datasheet", "Fujifilm C200", "Fujifilm", 200, CN, "fujifilm-fujicolor"),
     line("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm", CN),
     line("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm", CN),
     of_line("fujifilm-pro400h", "Fujifilm Pro 400H", "Fujifilm", 400, CN, "fujifilm-fujicolor-pro"),
-    twin("fujifilm-pro400h-datasheet", "Fujifilm Pro 400H", "Fujifilm", 400, CN, "fujifilm-fujicolor-pro"),
     stock("fujifilm-provia100", "Fujifilm Provia 100", "Fujifilm", Some(100), SLIDE),
     line("fujifilm-superia", "Fujifilm Superia", "Fujifilm", CN),
     of_line("fujifilm-superia-xtra400", "Fujifilm Superia X-TRA 400", "Fujifilm", 400, CN, "fujifilm-superia"),
-    twin("fujifilm-superia-xtra400-datasheet", "Fujifilm Superia X-TRA 400", "Fujifilm", 400, CN, "fujifilm-superia"),
     stock("fujifilm-velvia100", "Fujifilm Velvia 100", "Fujifilm", Some(100), SLIDE),
     stock("fujifilm-velvia50", "Fujifilm Velvia 50", "Fujifilm", Some(50), SLIDE),
     of_line("fujifilm-160nc", "Fujifilm 160NC", "Fujifilm", 160, CN, "fujifilm-fujicolor-pro"),
@@ -148,44 +138,41 @@ pub const FILM_STOCKS: [FilmStockKind; 106] = [
     stock("kodak-colorplus", "Kodak ColorPlus", "Kodak", Some(200), CN),
     stock("kodak-ektachrome", "Kodak Ektachrome", "Kodak", Some(100), SLIDE),
     undrawn("kodak-ektar100", "Kodak Ektar 100", "Kodak", 100, CN),
-    twin("kodak-ektar100-datasheet", "Kodak Ektar 100", "Kodak", 100, CN, "generic-color-negative"),
     line("kodak-gold", "Kodak Gold", "Kodak", CN),
     of_line("kodak-gold200", "Kodak Gold 200", "Kodak", 200, CN, "kodak-gold"),
-    twin("kodak-gold200-datasheet", "Kodak Gold 200", "Kodak", 200, CN, "kodak-gold"),
     undrawn("kodak-kodachrome64", "Kodak Kodachrome 64", "Kodak", 64, SLIDE),
     line("kodak-portra", "Kodak Portra", "Kodak", CN),
     of_line("kodak-portra160", "Kodak Portra 160", "Kodak", 160, CN, "kodak-portra"),
-    twin("kodak-portra160-datasheet", "Kodak Portra 160", "Kodak", 160, CN, "kodak-portra"),
     of_line("kodak-portra400", "Kodak Portra 400", "Kodak", 400, CN, "kodak-portra"),
-    twin("kodak-portra400-datasheet", "Kodak Portra 400", "Kodak", 400, CN, "kodak-portra"),
     of_line("kodak-portra800", "Kodak Portra 800", "Kodak", 800, CN, "kodak-portra"),
-    twin("kodak-portra800-datasheet", "Kodak Portra 800", "Kodak", 800, CN, "kodak-portra"),
     of_line("kodak-portra800-push1", "Kodak Portra 800 (Push 1)", "Kodak", 1600, CN, "kodak-portra"),
-    twin("kodak-portra800-push1-datasheet", "Kodak Portra 800 (Push 1)", "Kodak", 1600, CN, "kodak-portra"),
     of_line("kodak-portra800-push2", "Kodak Portra 800 (Push 2)", "Kodak", 3200, CN, "kodak-portra"),
-    twin("kodak-portra800-push2-datasheet", "Kodak Portra 800 (Push 2)", "Kodak", 3200, CN, "kodak-portra"),
     of_line("kodak-portra160nc", "Kodak Portra 160NC", "Kodak", 160, CN, "kodak-portra"),
     of_line("kodak-portra160vc", "Kodak Portra 160VC", "Kodak", 160, CN, "kodak-portra"),
     of_line("kodak-portra400nc", "Kodak Portra 400NC", "Kodak", 400, CN, "kodak-portra"),
     of_line("kodak-portra400vc", "Kodak Portra 400VC", "Kodak", 400, CN, "kodak-portra"),
     line("kodak-ultramax", "Kodak UltraMax", "Kodak", CN),
     of_line("kodak-ultramax400", "Kodak UltraMax 400", "Kodak", 400, CN, "kodak-ultramax"),
-    twin("kodak-ultramax400-datasheet", "Kodak UltraMax 400", "Kodak", 400, CN, "kodak-ultramax"),
     undrawn("kodak-verita200d", "Kodak Verita 200D", "Kodak", 200, CINE),
-    twin("kodak-verita200d-datasheet", "Kodak Verita 200D", "Kodak", 200, CINE, "generic-color-negative"),
     undrawn("kodak-vision3-50d", "Kodak Vision3 50D", "Kodak", 50, CINE),
-    twin("kodak-vision3-50d-datasheet", "Kodak Vision3 50D", "Kodak", 50, CINE, "generic-color-negative"),
     undrawn("kodak-vision3-200t", "Kodak Vision3 200T", "Kodak", 200, CINE),
-    twin("kodak-vision3-200t-datasheet", "Kodak Vision3 200T", "Kodak", 200, CINE, "generic-color-negative"),
     undrawn("kodak-vision3-250d", "Kodak Vision3 250D", "Kodak", 250, CINE),
-    twin("kodak-vision3-250d-datasheet", "Kodak Vision3 250D", "Kodak", 250, CINE, "generic-color-negative"),
     undrawn("kodak-vision3-500t", "Kodak Vision3 500T", "Kodak", 500, CINE),
-    twin("kodak-vision3-500t-datasheet", "Kodak Vision3 500T", "Kodak", 500, CINE, "generic-color-negative"),
     stock("lomography-lomo-turquoise", "Lomography LomoChrome Turquoise", "Lomography", None, CN),
     stock("lucky-color200", "Lucky Color 200", "Lucky", Some(200), CN),
     stock("mira-color400", "Mira Color 400", "Mira", Some(400), CN),
     stock("mira-color800", "Mira Color 800", "Mira", Some(800), CN),
 ];
+
+/// A stored stock key as this catalogue names it: a data-sheet twin's, which a build before format 60 may have
+/// written, is its stock's.
+pub fn stored_key<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    let key = <Option<String> as serde::Deserialize>::deserialize(d)?;
+    Ok(key.map(|id| match id.strip_suffix("-datasheet") {
+        Some(stock) if film_stock(Some(stock)).is_some() => stock.to_string(),
+        _ => id,
+    }))
+}
 
 pub fn film_stock(id: Option<&str>) -> Option<&'static FilmStockKind> {
     let id = id?;
@@ -220,6 +207,21 @@ mod tests {
         assert_eq!(ids.len(), FILM_STOCKS.len());
         assert_eq!(film_stock(Some("fujifilm-fujicolor")).map(|k| k.brand), Some("Fujifilm"));
         assert_eq!(film_stock(Some("fujifilm-fujicolour")), None);
+    }
+
+    #[test]
+    fn a_data_sheet_twins_stored_key_reads_as_its_stocks() {
+        #[derive(serde::Deserialize)]
+        struct Stored {
+            #[serde(default, deserialize_with = "stored_key")]
+            stock: Option<String>,
+        }
+        let read = |json: &str| serde_json::from_str::<Stored>(json).unwrap().stock;
+        assert_eq!(read(r#"{"stock":"kodak-portra400-datasheet"}"#).as_deref(), Some("kodak-portra400"));
+        assert_eq!(read(r#"{"stock":"ilford-hp5"}"#).as_deref(), Some("ilford-hp5"));
+        assert_eq!(read("{}"), None);
+        // Twin: a key the catalogue holds under no stock stays as stored, never read as another.
+        assert_eq!(read(r#"{"stock":"kodak-portra900-datasheet"}"#).as_deref(), Some("kodak-portra900-datasheet"));
     }
 
     /// A stock draws its own canister, its line's, or its type's generic one; a generic stock and the canister

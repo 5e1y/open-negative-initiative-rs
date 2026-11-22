@@ -65,7 +65,7 @@ impl Ctl {
             for i in kinds {
                 let kind = &FILM_STOCKS[i];
                 let artwork = crate::stocks::row_icon(kind.id, side);
-                lines.push(StockLine { index: i as i32, name: crate::stocks::label(kind), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false });
+                lines.push(StockLine { index: i as i32, name: kind.display_name.into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false });
             }
         }
         let in_use = lines.iter().position(|l| !l.brand && Some(FILM_STOCKS[l.index as usize].id) == own).map_or(-1, |i| i as i32);
@@ -154,7 +154,7 @@ impl Ctl {
                         StockCell {
                             index: i as i32,
                             name: kind.display_name.into(),
-                            note: crate::stocks::note(kind).into(),
+                            note: crate::stocks::unspecified(kind).into(),
                             has_artwork: artwork.is_some(),
                             artwork: artwork.unwrap_or_default(),
                             picked: current == Some(kind.id),

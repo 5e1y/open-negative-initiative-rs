@@ -523,7 +523,6 @@
     -5.6572
    ]
   ],
-  "layers_as_printed": true,
   "channel_density": [
    [
     null,
@@ -2553,12 +2552,6 @@
     1.7886,
     2.158
    ]
-  ],
-  "hanatos2025_adaptation_window_params": [
-   0.0,
-   1.0,
-   10000.0,
-   1.0
   ]
  }
 }

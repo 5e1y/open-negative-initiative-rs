@@ -26,5 +26,5 @@ Licence. The files are measurements: the numbers the makers publish about their 
 technical sheets, with each sheet credited and linked. Such facts are not a work their makers' copyright covers, and
 no sheet is reproduced, only values read from its charts; the files ship under the repository's licence (GPL-3.0),
 with the attribution above kept. The makers' names and product names are their trademarks, used only to name the
-product a profile describes. spektrafilm's CC BY-SA 4.0 files in the folder above are still shipped and read by every
-stock and paper that names them; nothing here derives from them.
+product a profile describes. Every film stock and paper ONI prints is one of these files; nothing here derives from a
+spektrafilm profile, and none is shipped.

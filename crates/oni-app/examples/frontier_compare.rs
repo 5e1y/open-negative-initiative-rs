@@ -1,5 +1,5 @@
 //! `frontier_compare <raw> <out> [side]`: a frame at rest on the Frontier's legacy print, the Frontier paper (a stop
-//! under, at rest, a stop over) and Portra Endura, each as `w h` then f32 linear Rec. 2020 RGB.
+//! under, at rest, a stop over) and Endura Premier, each as `w h` then f32 linear Rec. 2020 RGB.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_settings::migrate::one_face::look_entry_exposure;
@@ -50,7 +50,7 @@ fn main() {
         ("frontier", on(frontier, 0.0)),
         ("frontier-under", on(frontier, -1.0)),
         ("frontier-over", on(frontier, 1.0)),
-        ("endura", on(Some(PaperStock::KodakPortraEndura), 0.0)),
+        ("endura", on(Some(PaperStock::KodakEnduraPremier), 0.0)),
     ];
     for (name, s) in &renders {
         if let Some(p) = oni_pipeline::conversion::printing(s) {

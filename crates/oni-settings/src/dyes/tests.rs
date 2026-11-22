@@ -58,6 +58,10 @@ fn every_set_but_the_generic_names_its_profile_and_reads_by_its_key() {
         let key = serde_json::to_string(&set).unwrap();
         assert_eq!(serde_json::from_str::<DyeSet>(&key).unwrap(), set);
     }
+    // A data-sheet twin's key reads as its stock's, written back under the stock's own.
+    let twin: DyeSet = serde_json::from_str("\"kodak-portra-800-datasheet\"").unwrap();
+    assert_eq!((twin, serde_json::to_string(&twin).unwrap().as_str()), (DyeSet::KodakPortra800, "\"kodak-portra-800\""));
     // Twin: a key no set carries is refused, never read as another.
     assert!(serde_json::from_str::<DyeSet>("\"kodak-portra-900\"").is_err());
+    assert!(serde_json::from_str::<DyeSet>("\"fujifilm-superia-reala-datasheet\"").is_err());
 }
