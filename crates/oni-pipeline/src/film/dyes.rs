@@ -48,6 +48,8 @@ pub fn source(name: &str) -> Option<&'static [u8]> {
         "kodak_portra_160" => include_bytes!("../../resources/film/kodak_portra_160.json"),
         "kodak_portra_400" => include_bytes!("../../resources/film/kodak_portra_400.json"),
         "kodak_portra_800" => include_bytes!("../../resources/film/kodak_portra_800.json"),
+        "kodak_portra_800_push1" => include_bytes!("../../resources/film/kodak_portra_800_push1.json"),
+        "kodak_portra_800_push2" => include_bytes!("../../resources/film/kodak_portra_800_push2.json"),
         "kodak_ektar_100" => include_bytes!("../../resources/film/kodak_ektar_100.json"),
         "kodak_gold_200" => include_bytes!("../../resources/film/kodak_gold_200.json"),
         "kodak_ultramax_400" => include_bytes!("../../resources/film/kodak_ultramax_400.json"),

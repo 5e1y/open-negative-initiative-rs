@@ -18,9 +18,11 @@ pub const FORMER_PORTRA_800: StockReference = StockReference {
     white: [0.538_642_35, 0.595_145_2, 0.620_921_6],
 };
 
+/// The reference format 37 stored for `stock`: Portra 800 was the one stock it named, so any other reads as its own.
 fn former(stock: VirtualStock) -> StockReference {
     match stock {
         VirtualStock::KodakPortra800 => FORMER_PORTRA_800,
+        other => other.reference(),
     }
 }
 

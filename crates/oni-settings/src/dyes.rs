@@ -154,10 +154,14 @@ pub const STOCK_DYE_SETS: [(&str, Option<DyeSet>); FILM_STOCKS.len()] = {
         ("kodak-ektar100", Some(KodakEktar100)),
         ("kodak-gold", Some(KodakGold200)),
         ("kodak-gold200", Some(KodakGold200)),
+        ("kodak-kodachrome64", None),
         ("kodak-portra", Some(KodakPortra400)),
         ("kodak-portra160", Some(KodakPortra160)),
         ("kodak-portra400", Some(KodakPortra400)),
         ("kodak-portra800", Some(KodakPortra800)),
+        // A push develops Portra 800's own dyes: its profile differs in its curves alone.
+        ("kodak-portra800-push1", Some(KodakPortra800)),
+        ("kodak-portra800-push2", Some(KodakPortra800)),
         ("kodak-ultramax", Some(KodakUltraMax400)),
         ("kodak-ultramax400", Some(KodakUltraMax400)),
         ("kodak-verita200d", Some(KodakVerita200D)),
@@ -184,17 +188,12 @@ mod tests {
 
     #[test]
     fn every_colour_negative_names_its_measured_dyes_and_only_a_colour_negative_does() {
-        let unmixed = |id: &str| !id.contains("positive") && !["velvia", "provia", "ektachrome"].iter().any(|s| id.contains(s));
+        use crate::film::FilmType;
         for (kind, (id, set)) in FILM_STOCKS.iter().zip(STOCK_DYE_SETS) {
             assert_eq!(kind.id, id, "the dye sets follow the catalogue's order");
-            if set.is_some() {
-                assert!(unmixed(id), "{id}: a slide's dyes are never unmixed");
-            }
+            let negative = matches!(kind.kind, FilmType::ColourNegative | FilmType::CineNegative);
+            assert_eq!(set.is_some(), negative, "{id}: a colour negative names its dyes, a slide or black and white none");
         }
-        let colour = ["generic-color-negative", "generic-azure", "generic-redscale", "kodak-colorplus", "harman-phoenix", "mira-color800"];
-        assert!(colour.iter().all(|id| dye_set(id).is_some()), "every colour negative names its dyes");
-        let grey = ["generic-black-and-white", "ilford-hp5", "ilford-xp2", "kodak-400tx", "fujifilm-acros"];
-        assert!(grey.iter().all(|id| dye_set(id).is_none()), "black and white names none");
         assert_eq!(dye_set("kodak-portra"), Some(DyeSet::KodakPortra400));
         assert_eq!(dye_set("cinestill-800t"), Some(DyeSet::KodakVision3_500T));
         assert_eq!(dye_set("lucky-color200"), Some(DyeSet::GenericC41), "a stock no profile measures takes the generic set");
@@ -209,9 +208,12 @@ mod tests {
     fn a_stock_separates_on_its_own_profile_and_a_line_on_the_one_it_stood_for() {
         for kind in FILM_STOCKS.iter().filter(|k| k.offered && !k.id.starts_with("cinestill")) {
             if let Some(set) = dye_set(kind.id).filter(|s| !s.is_generic()) {
-                assert_eq!(set.stock_name(), Some(kind.display_name), "{}", kind.id);
+                // A push is its stock developed longer, on the stock's own dyes.
+                let stock = kind.display_name.split(" (Push").next();
+                assert_eq!(set.stock_name(), stock, "{}", kind.id);
             }
         }
+        assert_eq!(dye_set("kodak-portra800-push2"), Some(DyeSet::KodakPortra800));
         for set in DyeSet::ALL.into_iter().filter(|s| !s.is_generic()) {
             let named = FILM_STOCKS.iter().filter(|k| k.offered && !k.line && dye_set(k.id) == Some(set)).count();
             assert!(named >= 1, "{set:?}: no stock the picker lists separates on it");

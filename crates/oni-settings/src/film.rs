@@ -1,11 +1,13 @@
-//! A roll, its film stock catalogue, and the marker a folder made a roll carries beside its photos.
+//! A roll, its film stock catalogue (`catalogue`), and the marker a folder made a roll carries beside its photos.
 
 use crate::date::{self, Date};
 use crate::id::Id;
-use crate::modes::ConversionMode;
 use serde::{Deserialize, Serialize};
 use std::io;
 use std::path::{Path, PathBuf};
+
+mod catalogue;
+pub use catalogue::*;
 
 /// A roll: the frames a hand put together, identified by `id` so a rename never scatters them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -30,122 +32,6 @@ pub struct Film {
 impl Film {
     pub fn new(name: &str) -> Self {
         Film { id: Id::new(), name: name.to_owned(), manual_order: None, stock: None, shot_date: None, camera_body: None, lens: None }
-    }
-}
-
-/// One entry of the closed stock list, keyed by a stable `id`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FilmStockKind {
-    pub id: &'static str,
-    pub display_name: &'static str,
-    pub icon_name: &'static str,
-    pub brand: &'static str,
-    /// The picker lists it; a stock it no longer lists still reads, names and draws on a roll that has it.
-    pub offered: bool,
-    /// A whole line, the stock within it never named: the picker lists the line's stocks in its place.
-    pub line: bool,
-}
-
-const fn stock(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    FilmStockKind { id, display_name, icon_name: id, brand, offered: true, line: false }
-}
-
-/// A stock of a line, drawn with the line's canister.
-const fn of_line(id: &'static str, display_name: &'static str, brand: &'static str, line: &'static str) -> FilmStockKind {
-    FilmStockKind { icon_name: line, ..stock(id, display_name, brand) }
-}
-
-/// A stock the picker no longer lists (owner's call), kept so a roll already on it reads as it did.
-const fn withdrawn(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    FilmStockKind { offered: false, ..stock(id, display_name, brand) }
-}
-
-/// A line split into its stocks: a roll set on the line keeps its name, canister and dyes, its stock unstated.
-const fn line(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    FilmStockKind { line: true, ..withdrawn(id, display_name, brand) }
-}
-
-/// A stock whose own canister is still to be drawn: the generic colour negative's stands in.
-const fn undrawn(id: &'static str, display_name: &'static str, brand: &'static str) -> FilmStockKind {
-    of_line(id, display_name, brand, "generic-color-negative")
-}
-
-pub const FILM_STOCKS: [FilmStockKind; 55] = [
-    stock("generic-azure", "Generic Azure", "Generic"),
-    stock("generic-black-and-white", "Generic Black & White", "Generic"),
-    stock("generic-color-negative", "Generic Colour Negative", "Generic"),
-    stock("generic-color-positive", "Generic Colour Positive", "Generic"),
-    stock("generic-redscale", "Generic Redscale", "Generic"),
-    stock("agfaphoto-apx", "AgfaPhoto APX", "AgfaPhoto"),
-    stock("cinestill-400d", "CineStill 400D", "CineStill"),
-    stock("cinestill-50d", "CineStill 50D", "CineStill"),
-    stock("cinestill-800t", "CineStill 800T", "CineStill"),
-    stock("foma-fomapan200", "Foma Fomapan 200", "Foma"),
-    stock("foma-fomapan400", "Foma Fomapan 400", "Foma"),
-    withdrawn("foma-fomapan401", "Foma Fomapan 401", "Foma"),
-    stock("fujifilm-acros", "Fujifilm Acros", "Fujifilm"),
-    of_line("fujifilm-c200", "Fujifilm C200", "Fujifilm", "fujifilm-fujicolor"),
-    line("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm"),
-    line("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm"),
-    of_line("fujifilm-pro400h", "Fujifilm Pro 400H", "Fujifilm", "fujifilm-fujicolor-pro"),
-    stock("fujifilm-provia100", "Fujifilm Provia 100", "Fujifilm"),
-    line("fujifilm-superia", "Fujifilm Superia", "Fujifilm"),
-    of_line("fujifilm-superia-xtra400", "Fujifilm Superia X-TRA 400", "Fujifilm", "fujifilm-superia"),
-    stock("fujifilm-velvia100", "Fujifilm Velvia 100", "Fujifilm"),
-    stock("fujifilm-velvia50", "Fujifilm Velvia 50", "Fujifilm"),
-    stock("harman-phoenix", "Harman Phoenix", "Harman"),
-    stock("harman-phoenixII", "Harman Phoenix II", "Harman"),
-    stock("harman-red", "Harman Red", "Harman"),
-    stock("ilford-delta100", "Ilford Delta 100", "Ilford"),
-    stock("ilford-delta3200", "Ilford Delta 3200", "Ilford"),
-    stock("ilford-delta400", "Ilford Delta 400", "Ilford"),
-    stock("ilford-fp4", "Ilford FP4", "Ilford"),
-    stock("ilford-hp5", "Ilford HP5", "Ilford"),
-    stock("ilford-ortho", "Ilford Ortho", "Ilford"),
-    stock("ilford-panf", "Ilford Pan F", "Ilford"),
-    stock("ilford-sfx", "Ilford SFX", "Ilford"),
-    stock("ilford-xp2", "Ilford XP2", "Ilford"),
-    stock("kodak-400tx", "Kodak Tri-X 400", "Kodak"),
-    stock("kodak-colorplus", "Kodak ColorPlus", "Kodak"),
-    stock("kodak-ektachrome", "Kodak Ektachrome", "Kodak"),
-    undrawn("kodak-ektar100", "Kodak Ektar 100", "Kodak"),
-    line("kodak-gold", "Kodak Gold", "Kodak"),
-    of_line("kodak-gold200", "Kodak Gold 200", "Kodak", "kodak-gold"),
-    line("kodak-portra", "Kodak Portra", "Kodak"),
-    of_line("kodak-portra160", "Kodak Portra 160", "Kodak", "kodak-portra"),
-    of_line("kodak-portra400", "Kodak Portra 400", "Kodak", "kodak-portra"),
-    of_line("kodak-portra800", "Kodak Portra 800", "Kodak", "kodak-portra"),
-    line("kodak-ultramax", "Kodak UltraMax", "Kodak"),
-    of_line("kodak-ultramax400", "Kodak UltraMax 400", "Kodak", "kodak-ultramax"),
-    undrawn("kodak-verita200d", "Kodak Verita 200D", "Kodak"),
-    undrawn("kodak-vision3-50d", "Kodak Vision3 50D", "Kodak"),
-    undrawn("kodak-vision3-200t", "Kodak Vision3 200T", "Kodak"),
-    undrawn("kodak-vision3-250d", "Kodak Vision3 250D", "Kodak"),
-    undrawn("kodak-vision3-500t", "Kodak Vision3 500T", "Kodak"),
-    stock("lomography-lomo-turquoise", "Lomography LomoChrome Turquoise", "Lomography"),
-    stock("lucky-color200", "Lucky Color 200", "Lucky"),
-    stock("mira-color400", "Mira Color 400", "Mira"),
-    stock("mira-color800", "Mira Color 800", "Mira"),
-];
-
-pub fn film_stock(id: Option<&str>) -> Option<&'static FilmStockKind> {
-    let id = id?;
-    FILM_STOCKS.iter().find(|k| k.id == id)
-}
-
-/// The stocks the picker lists, each with its place in `FILM_STOCKS`, which a pick names.
-pub fn offered_stocks() -> impl Iterator<Item = (usize, &'static FilmStockKind)> {
-    FILM_STOCKS.iter().enumerate().filter(|(_, k)| k.offered)
-}
-
-/// A roll's generic stock while nobody picked one, read off the mode a hand already set; a digital
-/// photo was shot on no film.
-pub fn default_stock_id(mode: ConversionMode) -> Option<&'static str> {
-    match mode {
-        ConversionMode::Negative => Some("generic-color-negative"),
-        ConversionMode::Positive => Some("generic-color-positive"),
-        ConversionMode::Monochrome => Some("generic-black-and-white"),
-        ConversionMode::Digital => None,
     }
 }
 
@@ -249,16 +135,6 @@ mod tests {
         let before = r#"{"id":"6A2D4F1C-9F2B-4C1E-9B11-7F0A0E3D2C11","name":"Roll","cameraBody":"Nikon FM2"}"#;
         let read = roll_folder::decode(before.as_bytes()).expect("a marker from before reads");
         assert_eq!((read.camera_body.as_deref(), read.lens), (Some("Nikon FM2"), None));
-    }
-
-    #[test]
-    fn the_catalogue_holds_unique_keys() {
-        let mut ids: Vec<_> = FILM_STOCKS.iter().map(|k| k.id).collect();
-        ids.sort();
-        ids.dedup();
-        assert_eq!(ids.len(), FILM_STOCKS.len());
-        assert_eq!(film_stock(Some("fujifilm-fujicolor")).map(|k| k.brand), Some("Fujifilm"));
-        assert_eq!(film_stock(Some("fujifilm-fujicolour")), None);
     }
 
     #[test]

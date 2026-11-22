@@ -305,3 +305,24 @@ fn a_line_the_generic_set_and_the_virtual_film_separate_on_pinned_numbers() {
     moved.matrix[1][1] = f32::from_bits(moved.matrix[1][1].to_bits() ^ 1);
     assert_ne!(fingerprint(&moved), whole);
 }
+
+/// Every set's dyes fit the kernel's uniform, a cine stock's 76 measured wavelengths included, and the GPU unmixes
+/// each as its reference does. Twin: each set's dose a tenth lower is another picture.
+#[test]
+fn the_gpu_separates_every_sets_every_band() {
+    let rows = |set: DyeSet| reading(set, 1.0).1.rows([1.0; 3], 0.0, 1e-12).len();
+    let widest = DyeSet::ALL.iter().map(|s| dyes::dyes(*s).dyes.len()).max().unwrap();
+    println!("the widest set measures {widest} wavelengths");
+    assert!(widest > 64 && widest <= oni_render::VIRTUAL_NEGATIVE_BANDS);
+    assert!(DyeSet::ALL.iter().all(|s| rows(*s) == rows(DyeSet::GenericC41)), "one uniform's size for every set");
+    let Some(mut g) = graph("the_gpu_separates_every_sets_every_band") else { return };
+    let stock = film::stock(VirtualStock::KodakPortra800);
+    let pixels: Vec<V4> = noise(19, 11, 9, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    let source = g.upload(19, 11, &pixels).unwrap();
+    for set in DyeSet::ALL {
+        let (k, d) = reading(set, 1.0);
+        let out = whole(&mut g, &Image::new(&source).then(stages::dye_separation(&k, &d)));
+        let twin = DyeSeparation { dose: 0.9, ..d };
+        judge(&format!("{set:?}"), &out, &mapped(&pixels, |p| cpu::dye_separation(p, &k, &d)), &mapped(&pixels, |p| cpu::dye_separation(p, &k, &twin)));
+    }
+}
