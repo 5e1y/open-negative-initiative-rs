@@ -1958,6 +1958,14 @@ msgid "Every paired phone is cut and pairs again from a new code."
 msgstr "Chaque téléphone jumelé est déconnecté et doit se jumeler à nouveau avec un nouveau code."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Colour compensation"
+msgstr "Compensation des couleurs"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The colour the print lays in answer to Lighting's tones: Exposure and the zones lower the colour density as the print brightens, Contrast and the points lay saturation curves, drawn dashed on the Saturation Curve, and the points hold the colour they stretch. On ONI's print, whose curve rests a stop and a half up, the density acts at rest too.\n\nOff, the sliders bend each channel's tone alone: the luma moves as before, the colour as each channel's curve gives it, so Contrast and the points change its strength."
+msgstr "La couleur que le tirage pose en réponse aux tons de Lumière : Exposition et les zones baissent la densité des couleurs quand le tirage s’éclaircit, Contraste et les points posent des courbes de saturation, tracées en pointillés sur la Courbe de saturation, et les points tiennent la couleur qu’ils étirent. Sur le tirage d’ONI, dont la courbe repose 1,5 EV plus haut, la densité agit aussi au repos.\n\nDésactivée, les curseurs courbent le ton de chaque canal seul : la luminance bouge comme avant, la couleur comme la courbe de chaque canal la donne, si bien que Contraste et les points changent sa force."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Print on paper"
 msgstr "Tirer sur papier"
 
@@ -2270,8 +2278,8 @@ msgid "Saturation Curve"
 msgstr "Courbe de saturation"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'."
-msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre.\n\nLa ligne pointillée est la saturation que le tirage pose de lui-même : celle du Contraste, qui garde la couleur de chaque ton quand le Contraste le raidit ou l'adoucit, et celle des points noir et blanc."
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'; none while Lighting's Colour compensation is off."
+msgstr "La saturation selon la luminosité, du point noir au point blanc : montez un point pour renforcer la couleur dans ses tons, baissez-le vers le gris. La luminosité ne bouge jamais.\n\nFaites glisser un point le long de la luminosité pour choisir ses tons ; double-cliquez pour le ramener au neutre.\n\nLa ligne pointillée est la saturation que le tirage pose de lui-même : celle du Contraste, qui garde la couleur de chaque ton quand le Contraste le raidit ou l'adoucit, et celle des points noir et blanc ; aucune tant que Compensation des couleurs, dans Lumière, est désactivée."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Kept"

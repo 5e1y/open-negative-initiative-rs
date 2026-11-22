@@ -20,6 +20,7 @@ mod dedust_grid;
 mod flat_drag;
 mod dedust_turn;
 mod collection;
+mod colour_compensation;
 mod kit;
 mod kit_failures;
 mod column_edges;

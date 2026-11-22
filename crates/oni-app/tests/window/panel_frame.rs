@@ -16,7 +16,7 @@ use crate::common;
 
 const WIDTH: f32 = 1280.0;
 /// Tall enough for the whole Colour tab, its last block's row in view.
-const HEIGHT: u32 = 1400;
+const HEIGHT: u32 = 1440;
 /// The editor's panel, `ShellStyle.panel-width`, and a block's inset in it, `SectionStyle.inset`.
 const PANEL: f32 = 340.0;
 const INSET: f32 = 16.0;

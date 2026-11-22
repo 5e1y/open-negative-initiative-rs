@@ -5295,6 +5295,7 @@ settings: PipelineSettings {
             0.0,
             0.0,
         ],
+        colour_compensation: true,
         bypassed: false,
     },
     print_paper: None,

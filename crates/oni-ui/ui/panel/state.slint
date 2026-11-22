@@ -94,6 +94,9 @@ export global PanelState {
     in property <string> paper-filtration;
     callback paper-toggled(bool);
     callback paper-chosen(int);
+    // Lighting's colour compensation: Hunt, the points' and Contrast's saturation and the points' colour hold.
+    in property <bool> colour-compensation: true;
+    callback colour-compensation-toggled(bool);
     // The stock a digital photo is shot on, by the Film block's tabs.
     in-out property <int> virtual-film;
     callback virtual-film-picked(int);

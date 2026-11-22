@@ -50,6 +50,7 @@ impl<'de> Deserialize<'de> for Print {
             channel_black: channels("channelBlack", Print::BLACK_POINT_RANGE)?,
             channel_mid: channels("channelMid", Print::ZONE_RANGE)?,
             channel_contrast: channels("channelContrast", Print::CONTRAST_RANGE)?,
+            colour_compensation: tolerant::opt::<bool, D::Error>(&map, "colourCompensation")?.unwrap_or(true),
             bypassed: false,
         })
     }

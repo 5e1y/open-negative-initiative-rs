@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign, Toggle, Field, Picker } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign, Toggle, Field, Picker, HelpMark } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -8,12 +8,27 @@ import { Plots, PanelState, RollState, Lab } from "state.slint";
 import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 import { FilmBlock } from "film_block.slint";
 
-// The paper the negative prints on, laid at Lighting's end on Pro and under the keys on the Scanner: its switch,
-// then the paper by its name and the enlarger's filtration while it prints.
-component PaperRows inherits VerticalLayout {
+// Lighting's colour compensation and the paper the negative prints on, laid at Lighting's end on Pro and under the keys
+// on the Scanner: the two switches, then the paper by its name and the enlarger's filtration while it prints.
+component PrintRows inherits VerticalLayout {
     spacing: Space.s;
-    Toggle { label: @tr("Print on paper"); on: PanelState.paper-on; toggled(on) => { PanelState.paper-toggled(on); } }
-    if PanelState.paper-on: Field {
+    if !PanelState.monochrome: HorizontalLayout {
+        spacing: Space.xs;
+        Toggle {
+            label: @tr("Colour compensation");
+            on: PanelState.colour-compensation;
+            toggled(on) => { PanelState.colour-compensation-toggled(on); }
+        }
+        VerticalLayout {
+            alignment: center;
+            HelpMark {
+                subject: @tr("Colour compensation");
+                note: @tr("The colour the print lays in answer to Lighting's tones: Exposure and the zones lower the colour density as the print brightens, Contrast and the points lay saturation curves, drawn dashed on the Saturation Curve, and the points hold the colour they stretch. On ONI's print, whose curve rests a stop and a half up, the density acts at rest too.\n\nOff, the sliders bend each channel's tone alone: the luma moves as before, the colour as each channel's curve gives it, so Contrast and the points change its strength.");
+            }
+        }
+    }
+    if PanelState.paper-shown: Toggle { label: @tr("Print on paper"); on: PanelState.paper-on; toggled(on) => { PanelState.paper-toggled(on); } }
+    if PanelState.paper-shown && PanelState.paper-on: Field {
         label: @tr("Paper");
         Picker {
             value: PanelState.paper-title;
@@ -21,7 +36,7 @@ component PaperRows inherits VerticalLayout {
             chosen(i) => { PanelState.paper-chosen(i); }
         }
     }
-    if PanelState.paper-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
+    if PanelState.paper-shown && PanelState.paper-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
 }
 
 export component ColorPane inherits Pane {
@@ -221,7 +236,7 @@ export component ColorPane inherits Pane {
             field: 7; label: @tr("Black point"); fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
             fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black;
         }
-        if PanelState.paper-shown: PaperRows {}
+        PrintRows {}
     }
     // Only on a paper: in any other working space the gains do nothing.
     if Exporting.on-paper: paper-block := Block {
@@ -287,12 +302,13 @@ export component ColorPane inherits Pane {
         LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
         if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
     }
-    // On a paper the machine prints on it, its keys moving the negative the enlarger reads.
-    if Lab.shown && PanelState.paper-shown: VerticalLayout {
+    // Lighting's colour compensation acts on the machine's print too; on a paper the machine prints on it, its keys
+    // moving the negative the enlarger reads.
+    if Lab.shown && (PanelState.paper-shown || !PanelState.monochrome): VerticalLayout {
         padding-left: SectionStyle.inset;
         padding-right: SectionStyle.inset;
         padding-top: SectionStyle.before;
-        PaperRows {}
+        PrintRows {}
     }
     EditorBlock {
         title: @tr("Curves");
@@ -322,7 +338,7 @@ export component ColorPane inherits Pane {
         block: 3;
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
-        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'.");
+        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'; none while Lighting's Colour compensation is off.");
         SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }
