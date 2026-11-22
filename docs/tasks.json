@@ -12721,5 +12721,13 @@
     "status": "done",
     "detail": "Measured on the profiles, nothing changed. 25 Fujifilm sheets print their curves to +1.5..+1.7 log over the grey (Pro 800 +1.27), still rising at 0.4-0.85 a log, and the converter holds them flat past it: a hard clip 5 to 5.6 stops over the grey, under Royal Digital's own (+3 stops) but reached on ONI's print, the neutral paper and with Exposure on the negative. Portra 800 Push 2's chart starts at -4.85 stops; at -4 its layers stand 0.015-0.025 over D-min at a slope of 0.05-0.09 (Portra 800 0.09 and 0.29-0.37), the push's real loss of shadow speed.",
     "outcome": "Options for the owner: Fujifilm, keep the hold (honest, a clip only far over), extend each layer at its last slope to a ceiling (inferred, unbounded guess), or graft a measured Kodak shoulder matched in slope (inferred, labelled so in the profile); Push 2, keep (the sheet's physics), or re-check that Kodak plots its push curves on the normal exposure axis, the one thing that could double the 0.6 log offset."
+  },
+  {
+    "id": 3570,
+    "type": "research",
+    "title": "Prepare's window read on the dye layers (CMY) before the paper: measured on prototypes, a design for the owner",
+    "status": "done",
+    "detail": "docs/research/cmy-window.md. Throwaway prototypes laid a per-layer window in the dye separation's tone table between the separation and the paper (roll #8 DSC_6440/6452/6464 and the digital ramp, Royal Digital, Endura Premier, the Frontier; examples/tone_response). Prepare's ends on the paper's ends cut mid contrast 8 to 35 % and squeeze the highlights (L* at +2: 77 against 89); the bare film on the paper's black in exposure adds 49 % of mid contrast; the window at the enlarger's rest (each layer read about its grey, bare film, grey and densest on one mean amount, the paper's neutral axis) keeps today's tone within 1 L* and cuts the grey ramp's channel spread 4 to 17 times on a scan. Design: levels on a dye-amount axis measured by Prepare's unchanged roll code with the separation on, laid after Lighting in the Negative's per-layer table, rest at the enlarger's grade; the enlarger a constant per paper, the black anchor Print lift's presentation step; migration by separation::toned's carriage, edited photos on a legacy flag. Nothing of the app changed.",
+    "outcome": "Awaits the owner's decision; images kept outside the repository (roll #8 not publishable)."
   }
 ]
