@@ -138,11 +138,7 @@ impl Ctl {
         p.set_left_out(left_out_text(left_out).into());
         p.set_film(ConversionMode::ALL.iter().position(|f| *f == film).unwrap_or(0) as i32);
         p.set_digital(film == ConversionMode::Digital);
-        let artwork = stock.and_then(|k| crate::stocks::icon(k.icon_name));
-        p.set_stock(stock.map_or(SharedString::new(), |k| k.display_name.into()));
-        p.set_stock_has_artwork(artwork.is_some());
-        p.set_stock_artwork(artwork.unwrap_or_default());
-        p.set_stock_note(stock_note(stock).into());
+        p.set_stock(crate::stocks::canister(stock, stock_note(stock)));
         p.set_capture(Capture::ALL.iter().position(|c| *c == capture).unwrap_or(1) as i32);
         p.set_passes_note(passes_note.into());
         p.set_flat_on(flat.mask != oni_settings::frame::FlatFieldMask::None);

@@ -113,7 +113,9 @@ impl Ctl {
             Act::AddFolder => self.pick(true),
             Act::Refresh => self.refresh(),
             Act::AutoBalance => self.auto_balance(),
-            Act::SelectRollType => self.select_roll_type(),
+            // The gallery's roll, else the open photo's film: its roll's stock, a digital photo's virtual film.
+            Act::SelectRollType if app.get_gallery() => self.select_roll_type(),
+            Act::SelectRollType => self.select_open_stock(),
             Act::SavePreset => self.save_preset(),
             Act::EditPresets => self.edit_presets(None),
             Act::ImportPresets => self.import_presets(),

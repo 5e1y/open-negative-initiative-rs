@@ -1505,7 +1505,7 @@ msgstr "«Preparar rollo», en la barra superior, mide el rollo antes de editar 
 msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
 msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
 
-#: crates/oni-ui/ui/info_sidebar.slint
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Film Stock"
 msgstr "Emulsión"
 
@@ -1516,10 +1516,6 @@ msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige u
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Sets every frame of this roll to the film stock's dyes, leaving each frame's Dye separation amount as it is."
 msgstr "Ajusta todos los fotogramas de este rollo a los tintes de la emulsión, sin tocar la Separación de tintes de cada uno."
-
-#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/stocks.slint
-msgid "Select Film Stock"
-msgstr "Seleccionar emulsión"
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Shot Date"
@@ -2362,28 +2358,20 @@ msgid "Film"
 msgstr "Película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the stock's own white and the reference its data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there."
-msgstr "Toma la foto sobre una película: su escena, iluminada con el blanco propio de la película, expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo, con el filtrado, los niveles y los tintes de la pestaña Origen.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nLa tecla de ajustes muestra el blanco propio de la película y la referencia que sus datos fijan para el negativo, como Preparar el rollo mide la de un rollo: las ganancias, el negro de cada canal sobre la película virgen, y su blanco donde el gris medio de la foto se imprime como en un RAW normal. El Filtrado y los Niveles por canal de la pestaña Origen descansan ahí."
+msgid "Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock shoots the photo on another film: its scene is lit at that film's own white, shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there."
+msgstr "Toma la foto sobre una película: su escena, iluminada con el blanco propio de la película, expone las tres capas de la película, se revela sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo, con el filtrado, los niveles y los tintes de la pestaña Origen.\n\nExposición de la película da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nSeleccionar emulsión toma la foto sobre otra película: su escena se ilumina con el blanco propio de esa película, mostrado debajo, y su negativo se lee sobre la referencia de esa película.\n\nLa tecla de ajustes muestra la referencia que los datos de la emulsión fijan para el negativo, como Preparar el rollo mide la de un rollo: las ganancias, el negro de cada canal sobre la película virgen, y su blanco donde el gris medio de la foto se imprime como en un RAW normal. El Filtrado y los Niveles por canal de la pestaña Origen descansan ahí."
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Show the film's white and reference"
-msgstr "Mostrar el blanco y la referencia de la película"
+msgid "Show the film's reference"
+msgstr "Mostrar la referencia de la película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Hide the film's white and reference"
-msgstr "Ocultar el blanco y la referencia de la película"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Portra 800"
-msgstr "Portra 800"
+msgid "Hide the film's reference"
+msgstr "Ocultar la referencia de la película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Film exposure"
 msgstr "Exposición de la película"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Scene white"
-msgstr "Blanco de la escena"
 
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Gains"
@@ -2476,6 +2464,10 @@ msgstr "B/N"
 #: crates/oni-app/src/app/roll_tab.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Digital"
 msgstr "Digital"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "What this roll was shot on. It names the dyes Dye Separation unmixes on every photo of the roll: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back."
+msgstr "En qué se fotografió este rollo. Nombra los tintes que Separación de tintes separa en cada foto del rollo: elegida aquí, cambia para todo el rollo, como en Preparar el rollo y en la galería, y Deshacer la devuelve."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Flat-Field"
@@ -3008,6 +3000,10 @@ msgstr "Apps conectadas"
 #: crates/oni-ui/ui/settings.slint
 msgid "About"
 msgstr "Acerca de"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Select Film Stock"
+msgstr "Seleccionar emulsión"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Base"
@@ -4209,10 +4205,6 @@ msgstr "Selecciona un proyecto"
 msgid "ONI Trash"
 msgstr "Papelera de ONI"
 
-#: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "No film stock set"
-msgstr "Sin emulsión definida"
-
 #: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/roll_card.rs
 msgid "Set Film Stock"
 msgstr "Definir emulsión"
@@ -4232,6 +4224,10 @@ msgstr "Definir objetivo"
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Shot Date"
 msgstr "Definir fecha de toma"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "No film stock set"
+msgstr "Sin emulsión definida"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"

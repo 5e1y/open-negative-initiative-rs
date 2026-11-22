@@ -82,7 +82,7 @@ impl Ctl {
             self.read_library();
             return self.lay_grid();
         }
-        let (title, stock, restocked) = {
+        let (title, restocked) = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
             let fresh = s.heading.is_none() && std::mem::take(&mut s.reveal.fresh);
@@ -101,15 +101,13 @@ impl Ctl {
                 let every: Vec<String> = folder.rows.iter().map(|e| e.path.clone()).collect();
                 s.store.set_archive_paths(every);
             }
-            let (title, stock) = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
+            let title = archive.groups.first().map(|g| g.title.clone()).unwrap_or_default();
             let restocked = s.nav.set_opened_stocks(archive.roll_stocks());
             s.archive = Some(archive);
-            (title, stock, restocked)
+            (title, restocked)
         };
         if let Some(w) = self.window() {
-            let lib = w.global::<Library>();
-            lib.set_roll_title(title.into());
-            lib.set_stock(stock.into());
+            w.global::<Library>().set_roll_title(title.into());
         }
         self.read_library();
         self.lay_grid();

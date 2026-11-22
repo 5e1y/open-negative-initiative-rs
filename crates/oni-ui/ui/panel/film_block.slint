@@ -1,30 +1,27 @@
-// A digital photo's Film block: the stock its scene is shot on and the film's exposure, then, one disclosure
-// deeper, the stock's own white and the reference its negative is read on, which the stock alone writes.
-import { Tabs, Field, Label, TextRole } from "../ds/ds.slint";
+// A digital photo's Film block: the stock its scene is shot on, the white it lights the scene at and the film's
+// exposure, then, one disclosure deeper, the reference its negative is read on, which the stock alone writes.
+import { Field, Label, TextRole } from "../ds/ds.slint";
+import { StockHero } from "../stocks.slint";
 import { Store } from "../store.slint";
 import { PanelState } from "state.slint";
 import { StoreSlider, Block, SettingsRow } from "parts.slint";
 
 export component FilmBlock inherits Block {
-    // The stock's white and reference behind the settings key.
+    // The stock's reference behind the settings key.
     property <bool> settings;
     title: @tr("Film");
     block: 14;
     modified: Store.film-modified;
-    help: @tr("Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nThe settings key shows the stock's own white and the reference its data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there.");
+    help: @tr("Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock shoots the photo on another film: its scene is lit at that film's own white, shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there.");
+    StockHero { stock: PanelState.stock; select => { PanelState.select-stock(); } }
+    // The white the stock locks the scene to, always in sight as a stock change moves it.
     SettingsRow {
         open <=> root.settings;
-        show-help: @tr("Show the film's white and reference");
-        hide-help: @tr("Hide the film's white and reference");
-        Tabs {
-            tabs: [@tr("Portra 800")];
-            marked: [false];
-            selected: PanelState.virtual-film;
-            picked(i) => { PanelState.virtual-film = i; PanelState.virtual-film-picked(i); }
-        }
+        show-help: @tr("Show the film's reference");
+        hide-help: @tr("Hide the film's reference");
+        Label { role: TextRole.note; text: PanelState.film-white; vertical-alignment: center; wrap: word-wrap; }
     }
     StoreSlider { field: 55; label: @tr("Film exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
-    if root.settings: Field { label: @tr("Scene white"); Label { role: TextRole.note; text: PanelState.film-white; } }
     if root.settings: Field { label: @tr("Gains"); Label { role: TextRole.note; text: PanelState.film-gains; } }
     if root.settings: Field { label: @tr("Black"); Label { role: TextRole.note; text: PanelState.film-black; } }
     if root.settings: Field { label: @tr("White"); Label { role: TextRole.note; text: PanelState.film-ends; } }

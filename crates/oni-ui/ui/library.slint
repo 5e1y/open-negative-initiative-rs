@@ -5,6 +5,7 @@ import { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
 export { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
 import { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
 export { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
+import { Canister } from "stocks.slint";
 import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach, KeyScope } from "ds/ds.slint";
 
 
@@ -109,10 +110,8 @@ export global Library {
     in property <string> info-empty;
     in property <string> info-title;
     in property <string> roll-title;
-    in property <string> stock;
-    in property <string> stock-note;
-    in property <image> stock-artwork;
-    in property <bool> stock-has-artwork;
+    // The roll's stock as the sidebar's hero shows it.
+    in property <Canister> stock;
     in-out property <string> month;
     in-out property <string> day;
     in-out property <string> year;

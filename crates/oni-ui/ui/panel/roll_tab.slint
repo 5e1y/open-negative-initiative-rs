@@ -1,6 +1,7 @@
 // The Roll tab: the prepared roll, the film type and the settings the roll shares.
 import { Colour, Space, SliderFill, Tabs, Button, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
+import { StockHero } from "../stocks.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState, RollState } from "state.slint";
 import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
@@ -53,6 +54,12 @@ export component RollPane inherits Pane {
             selected: PanelState.film-type;
             picked(i) => { PanelState.film-type = i; PanelState.film-type-picked(i); }
         }
+    }
+    // The roll's stock, whichever of its photos is open: a pick reaches every photo of the roll, as Prepare the Roll's.
+    if !PanelState.digital: Block {
+        title: @tr("Film Stock");
+        help: @tr("What this roll was shot on. It names the dyes Dye Separation unmixes on every photo of the roll: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back.");
+        StockHero { stock: PanelState.stock; select => { PanelState.select-stock(); } }
     }
     if !PanelState.digital: flat-block := Block {
         title: @tr("Flat-Field");

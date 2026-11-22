@@ -108,7 +108,7 @@ fn roll_8_opens_as_one_named_roll_of_its_photos() {
     let a = Archive::load(&dir);
     assert_eq!(a.groups.len(), 1);
     assert_eq!((a.groups[0].title.as_str(), a.groups[0].entries.len()), ("Roll #8", n));
-    assert_eq!(a.groups[0].stock, "Fujifilm Fujicolor");
+    assert_eq!(a.groups[0].film.as_ref().and_then(|f| f.stock.as_deref()), Some("fujifilm-fujicolor"));
     let rows = a.rows();
     assert_eq!(rows[0].title, "Roll #8");
     assert_eq!((rows[0].kind, rows.len()), (1, n + 1), "the roll, then its photos");
