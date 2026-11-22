@@ -1,7 +1,6 @@
 //! Lighting: the RGB curve's sliders, each channel's filter, the scan's black and white points,
 //! and the scalar replicas the migrations fit and fold through.
 
-use crate::axis::pipeline;
 use crate::levels::LevelsChannel;
 use serde::Serialize;
 
@@ -13,6 +12,7 @@ pub const CC_PER_STOP: f32 = 100.0 * std::f32::consts::LOG10_2;
 pub mod color_density;
 pub mod contrast;
 mod filtration;
+mod on_negative;
 mod read;
 
 /// One curve's sliders, each brightening or steepening to the right.
@@ -247,7 +247,7 @@ impl Print {
         rest + (stops - rest) / Self::EXPOSURE_GEAR
     }
 
-    /// This print with its Exposure in the curve's stops, as the kernel and its replicas read them.
+    /// This print with its Exposure in the curve's stops, as the former print-side replicas read them.
     pub fn on_curve(&self, rest: f32) -> Print {
         Print { exposure: Self::curve_stops(self.exposure, rest), ..*self }
     }
@@ -345,7 +345,7 @@ impl Print {
         libm::expf(-(self.master().shaped(g, self.exposure) - g))
     }
 
-    /// What the kernel prints for output `n`, as linear light, its Exposure in the curve's stops (`on_curve`).
+    /// What ONI's print curve prints for window output `n`, as linear light, its Exposure in the curve's stops.
     pub fn output(&self, n: f32, channel: LevelsChannel) -> f32 {
         self.printed(n, channel, true)
     }
@@ -360,14 +360,14 @@ impl Print {
         libm::powf(p.max(0.0), Self::DISPLAY_GAMMA)
     }
 
-    /// The kernel's block on one pixel's window outputs.
+    /// The former print-side Lighting on one pixel's window outputs, which a migration folds through.
     pub fn rendered(&self, n: V3, travel: f32) -> V3 {
         let mut after: V3 = std::array::from_fn(|c| self.output(n[c], LevelsChannel::PER_CHANNEL[c]));
         if self.filters() != [0.0; 3] {
             let plain: V3 = std::array::from_fn(|c| self.printed(n[c], LevelsChannel::PER_CHANNEL[c], false));
-            let filtered = pipeline::luma(after);
+            let filtered = crate::axis::pipeline::luma(after);
             if filtered > 1e-6 {
-                let k = pipeline::luma(plain) / filtered;
+                let k = crate::axis::pipeline::luma(plain) / filtered;
                 after = after.map(|c| c * k);
             }
         }

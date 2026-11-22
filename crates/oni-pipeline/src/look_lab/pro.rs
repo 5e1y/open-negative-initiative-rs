@@ -2,7 +2,6 @@
 //! the Frontier's cube input and through Pro's own CPU references to display code.
 
 use crate::conversion;
-use crate::finishing;
 use crate::scanner::{self, CHECK_GREY, MACHINE};
 use oni_render::{ScannerEncode, cpu};
 use oni_settings::PipelineSettings;
@@ -30,14 +29,9 @@ pub fn cube_input(pixel: [f32; 4], frontier: &PipelineSettings) -> Option<[f64; 
     inside.then_some(x)
 }
 
-/// Pro at rest on a scanned pixel, to display sRGB code: the conversion, the points' and Contrast's saturation, the clip.
+/// Pro at rest on a scanned pixel, to display sRGB code: the conversion, the clip.
 pub fn pro_code(pixel: [f32; 4], pro: &PipelineSettings) -> [f64; 3] {
-    let mut out = cpu::stage47(pixel, &conversion::stage47(pro));
-    for curve in finishing::print_saturation(pro) {
-        if let Some(k) = finishing::saturation(&curve) {
-            out = cpu::saturation_curve(out, &k);
-        }
-    }
+    let out = cpu::stage47(pixel, &conversion::stage47(pro));
     let code = cpu::scanner_encode(cpu::output_clip(out), &ScannerEncode { root: 1.0 });
     [code[0], code[1], code[2]].map(f64::from)
 }

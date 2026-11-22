@@ -216,9 +216,13 @@ pub const COUPLERS: M3 = [[0.336, 0.353, 0.302], [0.154, 0.319, 0.353], [0.168, 
 /// The curves above their least density, then the curves before the couplers act, so a grey
 /// developed through the couplers lands on the data sheet's curve.
 pub fn curves(p: &Profile) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
-    let low: [f64; 3] = std::array::from_fn(|c| p.density_curves.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
-    let normal: Vec<[f64; 3]> = p.density_curves.iter().map(|d| std::array::from_fn(|c| d[c] - low[c])).collect();
-    let le = &p.log_exposure;
+    curves_of(&p.log_exposure, &p.density_curves)
+}
+
+/// `curves` of the density curves `density` along the log exposures `le`.
+pub fn curves_of(le: &[f64], density: &[[f64; 3]]) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
+    let low: [f64; 3] = std::array::from_fn(|c| density.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
+    let normal: Vec<[f64; 3]> = density.iter().map(|d| std::array::from_fn(|c| d[c] - low[c])).collect();
     let before = (0..3)
         .map(|c| {
             let shifted: Vec<f64> = (0..le.len()).map(|i| le[i] - (0..3).map(|k| normal[i][k] * COUPLERS[k][c]).sum::<f64>()).collect();

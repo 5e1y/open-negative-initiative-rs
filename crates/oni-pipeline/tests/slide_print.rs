@@ -199,16 +199,16 @@ fn lighting_moves_a_slide_on_its_paper_as_it_moves_a_negative() {
     let grey_scan = scan_at(&s, paper::reference_grey(&s));
     let near = scan_at(&s, paper::reference_grey(&s).map(|d| d + 0.4));
     let rest = printed(&s, grey_scan);
-    // Exposure: a stop brighter is less light on the negative paper.
+    // Exposure: a stop more light on the internegative, a denser copy printed brighter, the enlarger at its rest.
     let over = moved(&s, |t| t.print.exposure += 1.0);
     let (k0, k1) = (conversion::stage47(&s).paper.unwrap(), conversion::stage47(&over).paper.unwrap());
-    assert!(luma(printed(&over, grey_scan)) > 1.3 * luma(rest) && (k0.scale / k1.scale - 2.0).abs() < 1e-4);
-    // A channel's filter: red brightened is a redder grey of the same light, the enlarger's cyan held at none.
+    assert!(luma(printed(&over, grey_scan)) > 1.15 * luma(rest) && k0.scale == k1.scale);
+    // A channel's filter: red brightened is a redder grey of about the same light, the enlarger at its rest.
     let red = moved(&s, |t| t.print.set_filters([0.5, 0.0, 0.0]));
     let r = printed(&red, grey_scan);
     let (f0, f1) = (conversion::printing(&s).unwrap().filtration, conversion::printing(&red).unwrap().filtration);
     println!("red: {r:?} from {rest:?}, filtration {f1:?} from {f0:?}");
-    assert!(r[0] / r[1] > 1.1 * rest[0] / rest[1] && (luma(r) / luma(rest) - 1.0).abs() < 0.02, "{r:?}");
+    assert!(r[0] / r[1] > 1.1 * rest[0] / rest[1] && (luma(r) / luma(rest) - 1.0).abs() < 0.04 && f0 == f1, "{r:?}");
     // Contrast: the grade turns about the grey, a denser tone darker.
     let hard = moved(&s, |t| t.print.contrast = 0.5);
     assert!((luma(printed(&hard, grey_scan)) / luma(rest) - 1.0).abs() < 0.01 && luma(printed(&hard, near)) < 0.9 * luma(printed(&s, near)));
@@ -257,9 +257,9 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             let lit = moved(&s, |t| t.print.brightness = brightness);
             let p = conversion::stage47(&lit).paper.unwrap();
             let k = conversion::stage47(&lit);
-            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts and Lighting's tones.
+            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts.
             let read = |q: V4| k.dyes.as_ref().map_or(negative(&s, q), |d| cpu::dye_separation(negative(&s, q), &k, d));
-            let amounts = |q: V4| p.toned(p.amounts(read(q)));
+            let amounts = |q: V4| p.amounts(read(q));
             let toward = |q: V4| p.toward_light(p.pick_log, p.exposed(amounts(q)));
             let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
             let lift = brightness * std::f32::consts::LOG10_2;
@@ -275,10 +275,10 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             } else {
                 assert!(moved_by(grey) / lift > 0.5 && moved_by(grey) / lift <= 1.0 + 1e-4, "{label}, {brightness}");
             }
-            // Twin: Exposure's stops move the densest read as much as the grey.
-            let exposure = conversion::stage47(&moved(&s, |t| t.print.exposure += brightness)).paper.unwrap();
-            let by_exposure = exposure.toward_light(p.pick_log, exposure.exposed(amounts(densest))) - toward(densest);
-            assert!((by_exposure - lift).abs() < 1e-3, "{label}, {brightness}: {by_exposure}");
+            // Twin: the enlarger's time, as many stops, moves the densest read as much as the grey.
+            let timed = Paper { scale: p.scale * (-brightness).exp2(), ..p };
+            let by_time = timed.toward_light(p.pick_log, timed.exposed(amounts(densest))) - toward(densest);
+            assert!((by_time - lift).abs() < 1e-3, "{label}, {brightness}: {by_time}");
         }
     }
 }

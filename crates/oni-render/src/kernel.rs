@@ -21,6 +21,7 @@ pub(crate) mod gaussian;
 pub(crate) mod grain;
 pub(crate) mod halation;
 pub(crate) mod grid;
+pub(crate) mod negative;
 pub(crate) mod orient;
 pub(crate) mod paper;
 pub(crate) mod output_clip;

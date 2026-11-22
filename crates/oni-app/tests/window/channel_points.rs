@@ -112,7 +112,8 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     rig.settle();
     assert!(common::placed(w, Role::Slider, "Green white point").is_empty());
 
-    // The render follows: red's white point lifts red's histogram, green's stays near where it was.
+    // The render follows: red's white point lifts red's histogram most; ONI's print's chroma decompression reads the
+    // moved negative as the film's own colour and takes some of green's and blue's.
     rig.until("a histogram", Duration::from_secs(60), || ctl.state.borrow().histogram().is_some());
     let before = means(&ctl);
     let renders = ctl.state.borrow().renders();
@@ -125,9 +126,9 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     let moved = [0, 1, 2].map(|c| after[c] - before[c]);
     println!("red's white point moves the histogram's means by {moved:?} bins");
     assert!(Knob::ChannelWhite(oni_core::knob::Channel::Red).get(&settings()) > 0.1);
-    assert!(moved[0] > 1.0 && moved[0] > 2.0 * moved[1].abs(), "red's point lifted red: {moved:?}");
+    assert!(moved[0] > 1.0 && moved[0] > 1.3 * moved[1].abs(), "red's point lifted red: {moved:?}");
     // Twin: the histogram's red read as green misses the move.
-    assert!(moved[1].abs() < moved[0] / 2.0);
+    assert!(moved[1] < 0.0);
 
     // Black and white shows no channel, so no More Color Settings; a positive does.
     panel.invoke_film_type_picked(2);

@@ -1,7 +1,7 @@
-//! `SaturationCurveView`: the five points over the output's histogram, laid on linear light, the print's own
-//! saturation dashed under them; a double click sets a point neutral.
+//! `SaturationCurveView`: the five points over the output's histogram, laid on linear light; a double click sets a point
+//! neutral.
 
-use super::geometry::{Dot, Drawing, Ink, Line, Size, dashed, ds, polyline, segments};
+use super::geometry::{Dot, Drawing, Ink, Line, Size, ds, polyline, segments};
 use super::points::{self, Points};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, SaturationCurve};
@@ -36,14 +36,8 @@ pub fn screen(p: Point, size: Size) -> (f64, f64) {
     points::screen::<SaturationCurve>(p, size)
 }
 
-/// The saturation `curves` lay one after the other at tone `x`, each pass scaling the colour by twice its value.
-pub fn laid(curves: &[SaturationCurve], x: f64) -> f64 {
-    0.5 * curves.iter().map(|c| (2.0 * Curve { points: c.points.clone() }.evaluated().value(x)).max(0.0)).product::<f64>()
-}
-
-/// The neutral line, the print's own saturation dashed where it moves, the spline held to the plot, and the five
-/// points, the dragged one lit.
-pub fn drawing(curve: &SaturationCurve, print: &[SaturationCurve], dragged: Option<usize>, size: Size) -> Drawing {
+/// The neutral line, the spline held to the plot, and the five points, the dragged one lit.
+pub fn drawing(curve: &SaturationCurve, dragged: Option<usize>, size: Size) -> Drawing {
     let trace = |at: &dyn Fn(f64) -> f64| -> Vec<(f64, f64)> {
         (0..=STEPS)
             .map(|s| {
@@ -53,9 +47,6 @@ pub fn drawing(curve: &SaturationCurve, print: &[SaturationCurve], dragged: Opti
             .collect()
     };
     let mut lines = vec![Line::new(segments(&[((0.0, size.h / 2.0), (size.w, size.h / 2.0))]), Ink::Separator, ds::STROKE_HAIRLINE)];
-    if print.iter().any(|c| !c.is_neutral()) {
-        lines.push(Line::new(dashed(&trace(&|x| laid(print, x)), ds::DASH_LENGTH), Ink::Guide, ds::STROKE_LINE));
-    }
     let evaluated = Curve { points: curve.points.clone() }.evaluated();
     lines.push(Line::new(polyline(&trace(&|x| evaluated.value(x))), Ink::Active, ds::STROKE_TRACE));
     Drawing {
@@ -122,34 +113,10 @@ mod tests {
     }
 
     #[test]
-    fn the_print_s_own_saturation_is_drawn_from_the_curves_the_render_lays() {
-        let mut s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-        s.print.contrast = 0.3;
-        let print = oni_pipeline::finishing::print_saturation(&s);
-        let d = drawing(&SaturationCurve::default(), &print, None, PLOT);
-        assert_eq!(d.lines.len(), 3, "the neutral line, the print's own dashed, the hand's");
-        let at = |curves: &[SaturationCurve]| -> Vec<(f64, f64)> {
-            (0..=STEPS).map(|i| i as f64 / STEPS as f64).map(|x| screen(Point::new(x, laid(curves, x).clamp(0.0, 1.0)), PLOT)).collect()
-        };
-        assert_eq!(d.lines[1].commands, Line::new(dashed(&at(&print), ds::DASH_LENGTH), Ink::Guide, ds::STROKE_LINE).commands);
-        let middle = laid(&print, 0.5);
-        assert!(middle < 0.45, "steeper mids lose colour: {middle}");
-        // Twin: the same curve at another gain, its departure from neutral doubled, is not what is drawn.
-        let doubled: Vec<SaturationCurve> = print
-            .iter()
-            .map(|c| SaturationCurve { points: c.points.iter().map(|p| Point::new(p.x, 0.5 + 2.0 * (p.y - 0.5))).collect() })
-            .collect();
-        assert_ne!(d.lines[1].commands, Line::new(dashed(&at(&doubled), ds::DASH_LENGTH), Ink::Guide, ds::STROKE_LINE).commands);
-        // Twin: Contrast at rest draws no dashed line.
-        let rest = oni_pipeline::finishing::print_saturation(&oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true));
-        assert_eq!(drawing(&SaturationCurve::default(), &rest, None, PLOT).lines.len(), 2);
-    }
-
-    #[test]
     fn the_curve_is_laid_on_linear_light() {
         let c = SaturationCurve::default();
         assert!((screen(c.points[2], PLOT).0 - 0.5f64.powf(f64::from(Print::DISPLAY_GAMMA)) * PLOT.w).abs() < 1e-9);
-        let d = drawing(&c, &[], Some(4), PLOT);
+        let d = drawing(&c, Some(4), PLOT);
         assert_eq!(d.dots[4].edge, Ink::Active);
         assert_eq!(d.dots[0].edge, Ink::Idle);
         // Twin: laid on perceived light the middle point would sit at the centre.

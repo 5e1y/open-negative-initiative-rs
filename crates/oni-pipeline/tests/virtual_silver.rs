@@ -188,3 +188,45 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
     let chroma = coloured.iter().map(|p| (p[0] - p[2]).abs()).fold(0.0f32, f32::max);
     assert!(chroma > 0.05, "twin: the colour film prints colour, {chroma}");
 }
+
+/// Lighting on a photo shot on a black and white film develops that film's own curve again, one layer and no coupler,
+/// where a scanned black and white roll develops the C-41 profiles' mean: Exposure moves the grey, Contrast holds it,
+/// a filter tints nothing. Twins: the roll's curve is another one, and Exposure's grey is no longer the rest's.
+#[test]
+fn lighting_develops_a_black_and_white_films_own_curve() {
+    use oni_pipeline::negative::{self, Film};
+    use oni_settings::tone::Print;
+    let stock = VirtualStock::IlfordHP5Plus;
+    let s = shot(stock);
+    assert_eq!(negative::Film::of(&s), Film::Stock(stock));
+    let roll = PipelineSettings::rest(ConversionMode::Monochrome, true);
+    assert_eq!(negative::Film::of(&roll), Film::Silver);
+    let (own, mean) = (negative::development(Film::Stock(stock)), negative::development(Film::Silver));
+    assert_eq!(own.couplers, [[0.0; 3]; 3]);
+    let profile = film::profile::Silver::read(film::dyes::source(stock.profile()).unwrap()).unwrap();
+    let curve: Vec<[f64; 3]> = profile.density_curve.iter().map(|d| [*d; 3]).collect();
+    let sheet = |e: f32| film::bake::interpolate(f64::from(e), &profile.log_exposure, &curve, 0) as f32;
+    let off = (0..own.after.len()).map(|i| (own.after[i][1] - sheet(own.log_low + i as f32 * own.log_step)).abs()).fold(0.0f32, f32::max);
+    let roll_off = (0..own.after.len()).map(|i| {
+        let e = own.log_low + i as f32 * own.log_step;
+        let j = (((e - mean.log_low) / mean.log_step).round().max(0.0) as usize).min(mean.after.len() - 1);
+        (mean.after[j][1] - sheet(e)).abs()
+    });
+    let roll_off = roll_off.fold(0.0f32, f32::max);
+    println!("HP5's development {off:.4} off its sheet, the roll's mean {roll_off:.3}");
+    // A flat foot read back rises at the least slope, a few thousandths over its sheet.
+    assert!(off < 1e-2 && roll_off > 0.05, "{off} {roll_off}");
+    let baked = film::stock(stock);
+    let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &baked.kernel, &baked.table);
+    let printed = |p: Print| cpu::stage47(grey, &conversion::stage47(&PipelineSettings { print: p, ..s.clone() }));
+    let rest = printed(s.print);
+    let lighter = printed(Print { exposure: s.print.exposure + 1.0, ..s.print });
+    let harder = printed(Print { contrast: 0.5, ..s.print });
+    let mut warm = s.print;
+    warm.set_filters(Print::TEMPERATURE_AXIS);
+    let warmed = printed(warm);
+    println!("the grey at rest {:.4}, a stop of Exposure {:.4}, Contrast +0.5 {:.4}, warmer {:.4}", rest[1], lighter[1], harder[1], warmed[1]);
+    assert!((harder[1] / rest[1] - 1.0).abs() < 1e-2, "Contrast holds the grey");
+    assert!((warmed[1] - rest[1]).abs() < 1e-4 && (warmed[0] - warmed[2]).abs() < 1e-4, "a filter tints nothing");
+    assert!((lighter[1] / rest[1] - 1.0).abs() > 0.1, "twin: Exposure moves the grey");
+}

@@ -105,7 +105,7 @@ export global PanelState {
     // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
     in property <bool> paper-blacks;
     callback paper-blacks-toggled(bool);
-    // Lighting's colour compensation: Hunt, the points' and Contrast's saturation and the points' colour hold.
+    // ONI's print's colour compensation: Hunt's colour density as its curve brightens the picture.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);
     // A photo edited on the former Scanner face: its legacy print's name, empty on every other photo, whether it is

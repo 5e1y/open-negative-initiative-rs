@@ -121,7 +121,7 @@ fn main() {
         let [pick, _, grey] = paper::anchors(&read, k.dyes.as_ref());
         let x_of = |i: usize| {
             let t = reach * i as f32 / n as f32;
-            p.toward_light(p.pick_log, p.exposed(p.toned(std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c])))))
+            p.toward_light(p.pick_log, p.exposed(std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))))
         };
         let xs: Vec<String> = [1.0f32, 3.0, 5.0, 8.0, 12.0, 20.0, 30.0, 50.0, 70.0, 90.0].iter()
             .map(|m| format!("{m}:{:.3}", x_of(rest.iter().position(|l| l[0] >= *m).unwrap_or(n)))).collect();

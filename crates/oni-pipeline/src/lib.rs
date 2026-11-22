@@ -12,6 +12,7 @@ pub mod grain;
 pub mod halation;
 mod healing;
 pub mod look_lab;
+pub mod negative;
 pub mod oni_look;
 pub mod paper;
 pub mod frontier_look;
@@ -258,12 +259,9 @@ impl Pipeline {
         let sheet = s.sheet.is_some();
         let mono = s.is_monochrome();
         let graded = self.curves(graph, toned, &s.manual_curves)?;
-        // The spectrogram, the points' and Contrast's saturation, the hand's and the vignette in one pass.
+        // The spectrogram, the hand's saturation and the vignette in one pass.
         let extent = graded.extent();
         let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
-        for curve in finishing::print_saturation(s) {
-            run.extend(saturation(&curve));
-        }
         run.extend(saturation(&s.saturation));
         if s.vignette.stops != 0.0 {
             run.push(stages::vignette(extent, s.vignette.stops, if mono { 0.0 } else { Print::HUNT_EXPONENT }));

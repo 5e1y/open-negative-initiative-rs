@@ -1,13 +1,12 @@
-//! The finishing stages' arguments: the curves' tables, the saturation curves (the hand's, the points',
-//! Contrast's, Chrome's), the colour mixer's packed doses, the vignette, the dosed detail radii and Texture's band.
+//! The finishing stages' arguments: the curves' tables, the saturation curves (the hand's, Chrome's), the colour
+//! mixer's packed doses, the vignette, the dosed detail radii and Texture's band.
 
 use oni_render::{Curves, Detail, LUT_SIZE, SaturationCurve as SaturationArgs, Spectrogram as SpectrogramArgs};
 use oni_settings::blocks::{ChromaDenoise, Sharpen, Texture};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet, SaturationCurve};
 use oni_settings::spectrogram::{Band, Spectrogram};
-use oni_settings::{ConversionMode, PipelineSettings};
-use oni_settings::tone::{Print, Tone, contrast};
+use oni_settings::tone::contrast;
 
 /// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags; `None` when all five curves rest.
 pub fn curves(set: &CurveSet) -> Option<Curves> {
@@ -73,74 +72,6 @@ pub fn sauce(amount: f32) -> SaturationCurve {
     SaturationCurve { points }
 }
 
-/// `Print.pointsCurve`: the black and white points' saturation, a line from the black's to the white's.
-/// A positive's white point moves its print the other way, so its saturation is mirrored (owner's call); none without
-/// Lighting's colour compensation.
-pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
-    if print.bypassed || !print.colour_compensation || (print.black_point == 0.0 && print.white_point == 0.0) {
-        return SaturationCurve::default();
-    }
-    let (black, white) = print.held_points();
-    let sense = if mode.reads_positive() { -1.0 } else { 1.0 };
-    let white = sense * white;
-    let low = f64::from(((1.0 - Print::POINT_SATURATION_GAIN * black) / 2.0).clamp(0.0, 1.0));
-    let high = f64::from(((1.0 + Print::POINT_SATURATION_GAIN * white) / 2.0).clamp(0.0, 1.0));
-    let points = SaturationCurve::resting().into_iter().map(|p| Point::new(p.x, low + p.x * (high - low))).collect();
-    SaturationCurve { points }
-}
-
-/// The saturation ONI's print lays by itself, the points' then Contrast's: the render's passes and the plot's guide; a
-/// paper's print lays none, its colour its own.
-pub fn print_saturation(s: &PipelineSettings) -> [SaturationCurve; 2] {
-    if s.is_monochrome() || on_paper(s) {
-        return [SaturationCurve::default(), SaturationCurve::default()];
-    }
-    [points_curve(&s.print, s.mode), contrast_curve(s)]
-}
-
-/// How far either side of a window value its slope is read, as a share of that value.
-const CONTRAST_REACH: f32 = 0.01;
-
-/// Contrast's saturation on ONI's print: at each tone it shows, the inverse of the colour Contrast's slope gives it there,
-/// so every tone keeps the colour of the print without Contrast; drawn on the Saturation Curve's plot as the render lays
-/// it; none on a paper or without Lighting's colour compensation.
-pub fn contrast_curve(s: &PipelineSettings) -> SaturationCurve {
-    let print = &s.print;
-    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.is_monochrome() || on_paper(s) {
-        return SaturationCurve::default();
-    }
-    let stops = print.on_curve(Print::resting_exposure(s.mode)).exposure;
-    let bent = print.master();
-    let points = SaturationCurve::resting()
-        .into_iter()
-        .map(|p| Point::new(p.x, f64::from((0.5 * held(&bent, stops, p.x as f32)).clamp(0.0, 1.0))))
-        .collect();
-    SaturationCurve { points }
-}
-
-fn on_paper(s: &PipelineSettings) -> bool {
-    s.paper().is_some() && !s.print.bypassed
-}
-
-/// The colour kept at printed tone `t`: the slope without Contrast over the slope with it, on logarithmic light; whole
-/// at the black, where every curve leaves straight.
-fn held(bent: &Tone, stops: f32, t: f32) -> f32 {
-    let n = unprinted(bent, stops, t);
-    let (low, high) = (n * (1.0 - CONTRAST_REACH), (n * (1.0 + CONTRAST_REACH)).min(1.0));
-    let slope = |tone: &Tone| (tone.shaped(high, stops) / tone.shaped(low, stops)).ln();
-    let (with, without) = (slope(bent), slope(&Tone { contrast: 0.0, ..*bent }));
-    if t <= 0.0 || !(with > 0.0 && without.is_finite()) { 1.0 } else { without / with }
-}
-
-/// The window value `tone` prints at `t`: the RGB curve read backwards, as the print plot's mirror draws it.
-fn unprinted(tone: &Tone, stops: f32, t: f32) -> f32 {
-    let (mut low, mut high) = (0.0f32, 1.0f32);
-    for _ in 0..32 {
-        let mid = 0.5 * (low + high);
-        if tone.shaped(mid, stops) < t { low = mid } else { high = mid }
-    }
-    0.5 * (low + high)
-}
 
 fn separation(a: f32, b: f32) -> f32 {
     Spectrogram::separation(a, b)
@@ -254,19 +185,5 @@ mod tests {
         assert!((k.sat_high[1] * authority(Band::Blue) - 0.5).abs() < 1e-6);
         // Twin: the bare dose would not reach grey at full travel.
         assert!((k.sat_high[1] - 0.5).abs() > 0.01);
-    }
-
-    #[test]
-    fn the_points_lay_a_line_of_saturation() {
-        let neg = ConversionMode::Negative;
-        assert!(points_curve(&Print::default(), neg).is_neutral());
-        let pointed = Print { black_point: 0.1, white_point: 0.1, ..Print::default() };
-        let p = points_curve(&pointed, neg);
-        assert!(p.points[0].y < 0.5 && p.points[4].y > 0.5);
-        let mid = (p.points[0].y + p.points[4].y) / 2.0;
-        assert!((p.points[2].y - mid).abs() < 1e-9);
-        // A slide's white point mirrors the negative's, its black point stays as it is.
-        let slide = points_curve(&pointed, ConversionMode::Positive);
-        assert!((slide.points[0].y - p.points[0].y).abs() < 1e-9 && (slide.points[4].y - (1.0 - p.points[4].y)).abs() < 1e-9);
     }
 }

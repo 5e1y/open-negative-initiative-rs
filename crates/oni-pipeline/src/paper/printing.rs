@@ -1,5 +1,5 @@
 //! Each frame's enlarger on its paper at rest: the time and filtration that print the reference grey at a plain RAW's
-//! grey, neutral, on the bare print, its ends the paper's own; Lighting then moves it (`lighting`).
+//! grey, neutral, on the bare film, its ends the paper's own; Lighting then moves the negative it prints (`lighting`).
 
 use super::*;
 use crate::film::bake::{self, M3};
@@ -84,7 +84,7 @@ fn windows_alone(s: &PipelineSettings) -> Stage47 {
 }
 
 /// The `x` between `low` and `high` where `f` reads `target`, `f` rising or falling along it.
-pub(super) fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) -> f32 {
+pub(crate) fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) -> f32 {
     let rising = f(high) >= f(low);
     for _ in 0..60 {
         let mid = 0.5 * (low + high);
@@ -163,7 +163,7 @@ fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
 /// Each layer's density under a negative holding `amounts`, as a share of its curve's range.
 pub fn layer_shares(p: &Paper, amounts: V3) -> V3 {
     let (low, high) = (p.curves[0], p.curves[PAPER_CURVE_NODES - 1]);
-    let density = p.developed(p.graded(p.exposed(p.toned(amounts))));
+    let density = p.developed(p.exposed(amounts));
     std::array::from_fn(|c| (density[c] - low[c]) / (high[c] - low[c]))
 }
 
@@ -186,13 +186,13 @@ pub fn resting(p: &Paper, grey: V3, mono: bool) -> (f32, V3) {
 }
 
 /// A dye's range on the negative, never empty: a window's span holds at least 1e-4 of density, as ONI's print reads it.
-fn spanned(v: f32) -> f32 {
+pub(crate) fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper, or the neutral one with Print on paper off, its enlarger at rest, then Lighting in density on the
-/// film and the enlarger, the grade on the paper, the colour density and the ends on the print. None on ONI's print.
-pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
+/// The frame's paper, or the neutral one with Print on paper off, its enlarger at rest on the bare film, then Brightness,
+/// the colour density and the ends on the print of the negative as Lighting develops it. None on ONI's print.
+pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.is_monochrome();
     let film = Film::of(s);
@@ -201,9 +201,12 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
     } else {
         (enlarger(film, stock), sheet(stock))
     };
-    let (gain, pedestal, log_guard, read_black) = match separation {
-        Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
-        None => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
+    let separation = k.dyes.as_ref();
+    // Past the dyes' pass or Lighting's, the paper reads density above the bare film, coded as light.
+    let (gain, pedestal, log_guard, read_black) = if separation.is_some() || k.negative.is_some() {
+        ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3])
+    } else {
+        (k.gain, k.pedestal, k.log_guard, film_ends(s).0)
     };
     let anchors = anchors(s, separation);
     let span = anchors[1].map(spanned);
@@ -214,18 +217,11 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         pedestal,
         log_guard,
         black: read_black,
-        span,
-        points_black: [0.0; 3],
-        points_white: [0.0; 3],
-        zones: [0.0; 2],
-        mids: [0.0; 3],
         negative: &table.negative,
         exposure: &table.exposure,
         dichroic: &table.dichroic,
         filters: [1.0; 3],
         scale: 1.0,
-        pivot: [0.0; 3],
-        slope: [1.0; 3],
         curves: &sheet.curves,
         curve_low: sheet.curve_low * axis,
         curve_step: sheet.curve_step * axis,
@@ -241,5 +237,5 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         luma: mono,
     };
     let rest = resting(&bare, anchors[2], mono);
-    Some(super::lighting::lit(&bare, rest, &anchors, k.density, s))
+    Some(super::lighting::lit(&bare, rest, &anchors, k.density, s, k.negative.as_ref()))
 }

@@ -47,13 +47,13 @@ fn luma(v: V3) -> f32 {
 
 // MARK: - DensityAxis.selfCheck
 
-/// `DensityAxis.rendered`: on the bare axis, decompression whole, no unmix, the RGB black at zero, the curve at none.
+/// `DensityAxis.rendered`: on the bare axis, decompression whole, no unmix, the RGB black at zero, Lighting at rest.
 fn on_axis(rgb: V3, mode: ConversionMode, ceiling: f32) -> V3 {
     let mut s = PipelineSettings { mode, ..PipelineSettings::default() };
     s.chroma_decompression = 1.0;
     s.levels = LevelsSet { red: Levels::on_axis(), green: Levels::on_axis(), blue: Levels::on_axis() };
     s.density_ceiling = ceiling;
-    (s.separation, s.print.black_point, s.print.exposure) = (0.0, 0.0, Print::exposure_at(0.0, Print::resting_exposure(mode)));
+    (s.separation, s.print.black_point, s.print.exposure) = (0.0, 0.0, Print::resting_exposure(mode));
     stage47(rgb, &s)
 }
 
@@ -251,12 +251,13 @@ fn the_colour_follows_the_windows_as_far_as_its_dose_says() {
     let slide = PipelineSettings { mode: ConversionMode::Positive, ..thin.clone() };
     assert_eq!(decompressed(&mut g, colour, &slide, 0.0, false), decompressed(&mut g, colour, &slide, 1.0, false));
 
-    // A red filter's tint on a grey stands the same at 0 and at 1.
+    // A red filter tints a grey at every dose: laid on the negative, the windows read its tint as the film's colour.
     let mut tinted = thin.clone();
     tinted.print.red.exposure = 0.3;
     let (tint_film, tint_full) = (decompressed(&mut g, grey, &tinted, 0.0, true), decompressed(&mut g, grey, &tinted, 1.0, true));
-    assert!(worst(tint_film, tint_full) < 2e-4, "a filter's tint is decompressed: {:.1e}", worst(tint_film, tint_full));
-    assert!((tint_full[0] - tint_full[1]).abs() > 0.01, "the twin: the filter lays a tint of {:.3}", tint_full[0] - tint_full[1]);
+    // Twin: unfiltered, the grey lays none of it.
+    let plain = decompressed(&mut g, grey, &thin, 0.0, true);
+    assert!([tint_film, tint_full].iter().all(|v| v[0] / v[1] > 1.05 * plain[0] / plain[1]), "{tint_film:?} {tint_full:?} {plain:?}");
 }
 
 /// `colourFilterChecks`' reading: the windows' own arithmetic on a 2-pixel patch, the print off.

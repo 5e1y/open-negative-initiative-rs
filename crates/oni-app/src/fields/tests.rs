@@ -354,25 +354,21 @@ fn every_slider_names_one_field_twice() {
     assert_eq!(crossed(&shifted), [(4, "exposure".to_string())]);
 }
 
-/// On a paper C, M and Y are the enlarger's own: a filter's six CC moved with the sliders reads six CC more on its
-/// dial over the paper's rest, the least at none, Temperature and Tint carrying it.
+/// On a paper C, M and Y lay their filter on the negative, a stop each 30.1 CC: the enlarger's dial stays at its rest.
 #[test]
-fn on_a_paper_a_filter_moved_moves_the_enlargers_dial_by_as_much() {
+fn on_a_paper_a_filter_moved_moves_the_negative_and_leaves_the_enlargers_dial() {
     use oni_core::knob::{Channel, Knob};
     let s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let dial = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::printing(s).expect("on its paper").filtration;
-    let rest = dial(&s);
-    for (c, i) in [(Channel::Red, 0), (Channel::Green, 1), (Channel::Blue, 2)] {
+    let own = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::stage47(s).negative.map_or([0.0; 3], |n| n.own_shift);
+    for c in [Channel::Red, Channel::Green, Channel::Blue] {
         let moved = Knob::Filtration(c).set(&s, Knob::Filtration(c).get(&s) + 6.0);
-        let mut want = rest;
-        want[i] += 6.0;
-        let least = want.iter().copied().fold(f32::INFINITY, f32::min);
-        let want = want.map(|v| v - least);
-        let got = dial(&moved);
-        assert!((0..3).all(|k| (got[k] - want[k]).abs() < 1e-3), "{c:?}: {got:?} where {want:?}");
-        // Twin: the same CC laid as Temperature alone misses the dial.
-        let warmed = Knob::Temperature.set(&s, 6.0 / oni_settings::tone::CC_PER_STOP);
-        assert!((0..3).any(|k| (dial(&warmed)[k] - want[k]).abs() > 1.0), "{c:?}");
+        assert_eq!(dial(&moved), dial(&s), "{c:?}: the enlarger at its rest");
+        let stops = own(&moved).map(|v| v / std::f32::consts::LOG10_2);
+        let filters = moved.print.filters();
+        assert!((0..3).all(|k| (stops[k] - filters[k]).abs() < 1e-5) && filters != [0.0; 3], "{c:?}: {stops:?}");
+        // Twin: at rest the negative takes no filter.
+        assert_eq!(own(&s), [0.0; 3]);
     }
 }
 

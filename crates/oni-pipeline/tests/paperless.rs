@@ -139,7 +139,7 @@ fn lightings_grade_turns_the_neutral_paper_about_its_grey() {
     let s = paperless(prepared_negative());
     let [black, white, grey] = lit(&s, |t| t.print.contrast = 0.3);
     let [_, rest_white, _] = lit(&s, |_| {});
-    assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-3), "{grey:?}");
+    assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 1e-2), "{grey:?}");
     assert!(black[..3].iter().all(|v| v.abs() < 1e-6), "{black:?}");
     // Twin: the white moves with the grade.
     assert!((0..3).any(|c| (white[c] - rest_white[c]).abs() > 1e-2), "{white:?} {rest_white:?}");

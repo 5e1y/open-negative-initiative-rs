@@ -2,7 +2,6 @@
 //! under, at rest, a stop over) and Endura Premier, each as `w h` then f32 linear Rec. 2020 RGB.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
-use oni_settings::migrate::one_face::look_entry_exposure;
 use oni_settings::tone::Print;
 use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, sidecar};
 use std::io::Write;
@@ -43,7 +42,6 @@ fn main() {
     };
     let mut today = on(None, 0.0);
     today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
-    today.print.exposure = look_entry_exposure(today.mode);
     let frontier = Some(PaperStock::FujifilmFrontierSp3000);
     let renders = [
         ("scanner-frontier", today),

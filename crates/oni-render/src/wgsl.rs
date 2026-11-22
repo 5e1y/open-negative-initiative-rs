@@ -8,6 +8,8 @@ pub const DETAIL_TAPS: &str = include_str!("wgsl/detail_taps.wgsl");
 
 /// `dye_separation_px(s)`.
 pub const DYE_SEPARATION: &str = include_str!("wgsl/dye_separation.wgsl");
+/// `negative_px(s)`.
+pub const NEGATIVE: &str = include_str!("wgsl/negative.wgsl");
 /// `paper_px(s)`.
 pub const PAPER: &str = include_str!("wgsl/paper.wgsl");
 /// `stage47_px(s)`.

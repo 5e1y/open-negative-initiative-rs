@@ -1,10 +1,10 @@
-//! Each channel's own points, mids and contrast through the whole render: equal on the three channels the points
-//! reach the windows as the global points would, one channel's moves that channel, black and white reads none.
+//! Each channel's own points, mids and contrast through the whole render: equal on the three channels the points lay
+//! on the negative as the global points would, one channel's moves that channel, black and white reads none.
 
 mod common;
 use common::{V4, graph, whole};
 use oni_graph::{Graph, Source};
-use oni_pipeline::{Pipeline, Request, conversion, finishing};
+use oni_pipeline::{Pipeline, Request, conversion};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const SIDE: (u32, u32) = (320, 200);
@@ -33,10 +33,10 @@ fn shifts(a: &[V4], b: &[V4]) -> [f32; 3] {
     [0, 1, 2].map(|c| a.iter().zip(b).map(|(p, q)| (p[c] - q[c]).abs()).sum::<f32>() / a.len() as f32)
 }
 
-/// Channel `c` moved, at least twice as far as either other on ONI's print: those follow only through the kernel's
-/// dye separation, chroma decompression and light-dependent colour, which mix the channels.
+/// Channel `c` moved, at least 1.3 times as far as either other on ONI's print: those follow through the stock's
+/// couplers, the dye separation, chroma decompression and light-dependent colour, which mix the channels.
 fn led_by(moved: [f32; 3], c: usize) -> bool {
-    leads(moved, c, 2.0)
+    leads(moved, c, 1.3)
 }
 
 /// `led_by` on a paper, whose own layers and dyes mix the channels too: by 1.4 at least (1.49 for green's contrast on
@@ -69,8 +69,6 @@ fn the_channels_points_render_as_their_folds_say() {
             own.print.channel_white[c] = 0.2;
             own.print.channel_black[c] = 0.05;
             let moved = render(&mut g, &mut pipeline, &source, &own);
-            // A colour move, not a contrast: the saturation the global points call for stays.
-            assert_eq!(finishing::points_curve(&own.print, mode), finishing::points_curve(&lit.print, mode));
             let moved = shifts(&moved, &at_rest);
             println!("{mode:?} {name}'s own points move the channels by {moved:?}");
             assert!(led_by(moved, c), "{mode:?}: {name}'s points move {moved:?}");
@@ -133,3 +131,4 @@ fn a_channels_own_mid_and_contrast_move_that_channel() {
     let (a, b) = (render(&mut g, &mut pipeline, &source, &positive(&mono)), render(&mut g, &mut pipeline, &source, &positive(&toned)));
     assert!(shifts(&a, &b)[0] > 5e-3);
 }
+
