@@ -12422,5 +12422,12 @@
     "status": "done",
     "detail": "crates/oni-pipeline/resources/film/datasheet/SOURCES.txt: what each file measures and infers, its sheet credited and linked, no PDF shipped, nothing from spektrafilm; the numbers are the makers' published measurements and ship under the repository's GPL-3.0 with that attribution, spektrafilm's CC BY-SA files kept for every stock and paper still naming them.",
     "outcome": ""
+  },
+  {
+    "id": 3365,
+    "type": "refactor",
+    "title": "The dye sets' and virtual stocks' tables in files of their own",
+    "status": "done",
+    "detail": "The datasheet stocks took oni-settings' dyes.rs to 527 lines and virtual_film.rs to 513, past the 400-line file ceiling. The catalogue's dye-set table moves to dyes/stocks.rs, the virtual stocks' entries to virtual_film/entries.rs, and each file's tests to a tests.rs beside it; nothing else moves."
   }
 ]
