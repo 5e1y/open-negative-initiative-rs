@@ -1,5 +1,5 @@
 //! The Paper section of the Colour tab in the headless window, open right after More Color Settings: the virtual enlarger
-//! offered on a negative, off at its rest; on, it prints on Endura Premier and shows Print on paper, on, Paper blacks, off
+//! offered on a negative, off at its rest; on, it prints on the default paper, Royal Digital, and shows Print on paper, on, Paper blacks, off
 //! at rest, the paper and the enlarger's filtration, and Lighting Brightness in place of Colour compensation, each
 //! rendering again; Print on paper off prints on the neutral paper, the paper kept, its picker and blacks hidden; another
 //! paper picked by its name, the Frontier SP-3000 among them; a slide on the same papers and the neutral one, through its
@@ -60,8 +60,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let renders = ctl.state.borrow().renders();
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakEnduraPremier), false));
-    assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Endura Premier");
+    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakRoyalDigital), false));
+    assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Royal Digital");
     assert_eq!(switches(), (1, 1, 1));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the frame printed on the paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
@@ -84,7 +84,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let (renders, on_paper) = (ctl.state.borrow().renders(), histogram());
     panel.invoke_on_paper_toggled(false);
     rig.pump();
-    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakEnduraPremier) && !panel.get_on_paper());
+    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakRoyalDigital) && !panel.get_on_paper());
     assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((1, 1, 0), 1, 0));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     assert!(common::placed(w, Role::Text, &panel.get_paper_filtration()).len() == 1, "the filtration shown");
@@ -158,8 +158,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert!(!panel.get_enlarger_on() && settings().print_paper.is_none());
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::KodakEnduraPremier));
-    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Endura Premier");
+    assert_eq!(settings().print_paper, Some(PaperStock::KodakRoyalDigital));
+    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Royal Digital");
     // Print on paper off: the slide's copy prints on the neutral paper, then back on its own.
     let renders = ctl.state.borrow().renders();
     panel.invoke_on_paper_toggled(false);

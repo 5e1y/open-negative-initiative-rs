@@ -12522,5 +12522,21 @@
     "status": "done",
     "detail": "examples/look_lab_fit run again: resources/scanner/lab.json's neutral set against Pro at rest median ΔE 0.561 (0.55 on spektrafilm's dyes, its bound 0.6), its Frontier set unchanged to the bit (it fits the cube alone).",
     "outcome": ""
+  },
+  {
+    "id": 3480,
+    "type": "feature",
+    "title": "Kodak Royal Digital is the default paper",
+    "status": "done",
+    "detail": "Owner's call: PaperStock's default moves from Endura Premier (green 10-90 % range 0.61 log H, slope 4.37) to Royal Digital (0.86, 3.18), Kodak's softest data-sheet paper, nearest the former Portra Endura (0.96, 2.49). Every default use follows by itself: a digital photo's rest, Prepare the Roll and the enlarger's switch (fitting_paper), a slide's paper. The retired keys of the former defaults, kodak-portra-endura and Radiance III's, now read as Royal Digital, so a photo left on the default stays on it: of the owner's sidecars (read-only), 386 scans and 157 digital photos on Portra Endura land on Royal Digital; Supra, Ultra and spektrafilm's Endura Premier stay on Endura Premier (the one sidecar naming kodak-endura-premier, of format 58, keeps it). No format change: the key a file stores is read anew. CLAUDE.md names the new default.",
+    "outcome": "Renders on the default paper move on purpose; the owner judges Royal Digital on the reference roll."
+  },
+  {
+    "id": 3481,
+    "type": "check",
+    "title": "The checks on the default paper re-derived on Royal Digital, each with its twin",
+    "status": "done",
+    "detail": "paper.rs: the default is kodak-royal-digital, its twin Endura Premier's key another paper; Portra Endura's and Radiance III's keys read as the default and never Endura Premier, Supra, Ultra and the former datasheet key as Endura Premier. Tests that used Royal Digital as a chosen, non-default paper (paperless, one_face, migrate::paper, slide_paper) take Ektacolor Edge so a fall back to the default still fails them; the GPU paper frames print the black and white frame on Endura Premier so every paper stays covered. Format 46's legacy fingerprints: the two cases on Portra Endura (oni-digital-on-paper, oni-paper-keys-temp) re-drawn on Royal Digital, every other case to the bit. Virtual stocks on the default paper: widest C*ab 13.4 on Pro 160NH (CPU and GPU, ceiling 14 kept), lights' 4.7 on Verita 200D, its bound 4.5 raised to 5.0; the window checks' paper switch takes Royal Digital.",
+    "outcome": ""
   }
 ]

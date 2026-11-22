@@ -6,23 +6,23 @@ use serde::{Deserialize, Serialize};
 /// A colour paper by the key a sidecar stores.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum PaperStock {
-    /// Also every key a retired Endura paper was stored under, and Kodak Ektachrome Radiance III's, so a document naming
-    /// one opens on the paper Kodak folded them into; its format's step says what a slide on Radiance III prints.
-    #[default]
+    /// Also the keys of Supra and Ultra Endura, which Kodak folded into it, and of its former profile, so a document naming
+    /// one opens on it.
     #[serde(
         rename = "kodak-endura-premier",
-        alias = "kodak-portra-endura",
         alias = "kodak-supra-endura",
         alias = "kodak-ultra-endura",
-        alias = "kodak-endura-premier-datasheet",
-        alias = "kodak-ektachrome-radiance-iii"
+        alias = "kodak-endura-premier-datasheet"
     )]
     KodakEnduraPremier,
     #[serde(rename = "kodak-endura-premier-metallic")]
     KodakEnduraPremierMetallic,
     #[serde(rename = "kodak-ektacolor-edge")]
     KodakEktacolorEdge,
-    #[serde(rename = "kodak-royal-digital")]
+    /// The default, Kodak's softest data sheet; also the keys of the former defaults, Portra Endura and Ektachrome Radiance
+    /// III, so a photo left on the default stays there; its format's step says what a slide on Radiance III prints.
+    #[default]
+    #[serde(rename = "kodak-royal-digital", alias = "kodak-portra-endura", alias = "kodak-ektachrome-radiance-iii")]
     KodakRoyalDigital,
     #[serde(rename = "kodak-photo-book")]
     KodakPhotoBook,
@@ -90,14 +90,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_paper_keeps_its_key_and_the_default_is_endura_premier() {
-        assert_eq!(serde_json::to_string(&PaperStock::default()).unwrap(), "\"kodak-endura-premier\"");
+    fn every_paper_keeps_its_key_and_the_default_is_royal_digital() {
+        assert_eq!(serde_json::to_string(&PaperStock::default()).unwrap(), "\"kodak-royal-digital\"");
         for p in PaperStock::ALL {
             let back: PaperStock = serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
             assert_eq!(back, p);
         }
         // Twin: another paper's key reads another paper.
-        let other: PaperStock = serde_json::from_str("\"kodak-royal-digital\"").unwrap();
+        let other: PaperStock = serde_json::from_str("\"kodak-endura-premier\"").unwrap();
         assert_ne!(other, PaperStock::default());
         let frontier: PaperStock = serde_json::from_str("\"fujifilm-frontier-sp-3000\"").unwrap();
         assert_eq!((frontier, frontier.profile()), (PaperStock::FujifilmFrontierSp3000, None));
@@ -106,8 +106,13 @@ mod tests {
     #[test]
     fn a_retired_papers_key_reads_as_the_paper_of_its_line() {
         let read = |key: &str| serde_json::from_str::<PaperStock>(&format!("\"{key}\"")).unwrap();
-        for key in ["kodak-portra-endura", "kodak-supra-endura", "kodak-ultra-endura", "kodak-endura-premier-datasheet", PaperStock::RETIRED_REVERSAL_KEY] {
+        for key in ["kodak-supra-endura", "kodak-ultra-endura", "kodak-endura-premier-datasheet"] {
             assert_eq!(read(key), PaperStock::KodakEnduraPremier, "{key}");
+        }
+        // The former defaults' keys read as the default, Royal Digital; twin: never as Endura Premier.
+        for key in ["kodak-portra-endura", PaperStock::RETIRED_REVERSAL_KEY] {
+            assert_eq!(read(key), PaperStock::default(), "{key}");
+            assert_ne!(read(key), PaperStock::KodakEnduraPremier, "{key}");
         }
         let crystal = read("fujifilm-crystal-archive-type-ii");
         assert_eq!(crystal, PaperStock::FujifilmCrystalArchiveDigitalDPII);

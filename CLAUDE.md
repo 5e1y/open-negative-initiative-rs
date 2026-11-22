@@ -62,7 +62,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
   profile from the official sheet's curves (`resources/film/datasheet`); no spektrafilm profile ships. ONI's bake follows spektrafilm's
-  model (couplers, gamut compression, TH-KG3 lamp, dichroic filters). The default paper is Kodak Endura Premier.
+  model (couplers, gamut compression, TH-KG3 lamp, dichroic filters). The default paper is Kodak Royal Digital, Kodak's softest
+  sheet (owner's call, 2026-11-22); a photo left on the former default, Portra Endura, lands on it.
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): Lighting acts before the paper curve, no ONI
