@@ -39,8 +39,10 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     rig.settle();
     let (own, undo, written) = (stored(), menus.get_live().undo, sidecar(&path));
     assert_eq!(on(&own), Some(VirtualStock::KodakPortra800));
-    let next = VirtualStock::ALL.iter().copied().find(|v| *v != VirtualStock::KodakPortra800).unwrap();
-    let third = VirtualStock::ALL.iter().copied().rev().find(|v| *v != VirtualStock::KodakPortra800 && *v != next).unwrap();
+    // The two stocks listed just above the one in use, which the menu scrolls into view as it drops.
+    let listed: Vec<VirtualStock> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).filter_map(|i| oni_app::stocks::virtual_stock(FILM_STOCKS[i].id)).collect();
+    let at = listed.iter().position(|v| *v == VirtualStock::KodakPortra800).unwrap();
+    let (next, third) = (listed[at - 1], listed[at - 2]);
 
     // The pointer on a line shows its film on the photo; nothing is written.
     drop_menu(&rig, w);

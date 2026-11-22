@@ -1,5 +1,5 @@
 //! A digital photo on a black and white virtual film under the hand: the film lit in the stock menu shows the photo in
-//! black and white with nothing written, an orthochromatic one darker in the reds than a panchromatic one; picked, it
+//! black and white with nothing written, an orthochromatic one printing a red darker than a panchromatic one; picked, it
 //! is one step an Undo takes back to the colour film. Twin: the colour film's frame is no grey one.
 
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -13,7 +13,7 @@ use crate::stock_hero::{drop_menu, point};
 
 /// The canvas's frame as RGBA bytes.
 fn frame(w: &oni_app::MainWindow) -> Vec<u8> {
-    w.global::<Canvas>().get_frame().to_rgba8().expect("the canvas shows the photo").as_slice().to_vec()
+    w.global::<Canvas>().get_frame().to_rgba8().expect("the canvas shows the photo").as_slice().iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect()
 }
 
 /// The frame's widest gap between a pixel's channels, in 8-bit codes.
@@ -21,13 +21,15 @@ fn chroma(frame: &[u8]) -> u8 {
     frame.chunks_exact(4).map(|p| p[0].abs_diff(p[1]).max(p[2].abs_diff(p[1]))).max().unwrap_or(0)
 }
 
-/// The frame's mean code in the photo's reddest corner, its right edge's middle, where the graded scene is red.
-fn reds(frame: &[u8], width: usize) -> f32 {
+/// The frame's mean green code on its left half, the scene's red, over its right half, the scene's grey: each read
+/// on its middle, away from the edge between them.
+fn red_over_grey(frame: &[u8], width: usize) -> f32 {
     let height = frame.len() / 4 / width;
-    let at = |x: usize, y: usize| f32::from(frame[(y * width + x) * 4 + 1]);
-    let (x0, y0) = (width * 9 / 10, height * 2 / 5);
-    let codes: Vec<f32> = (y0..y0 + height / 5).flat_map(|y| (x0..width - 2).map(move |x| (x, y))).map(|(x, y)| at(x, y)).collect();
-    codes.iter().sum::<f32>() / codes.len() as f32
+    let mean = |x0: usize, x1: usize| {
+        let codes: Vec<f32> = (height / 3..2 * height / 3).flat_map(|y| (x0..x1).map(move |x| f32::from(frame[(y * width + x) * 4 + 1]))).collect();
+        codes.iter().sum::<f32>() / codes.len() as f32
+    };
+    mean(width / 10, 4 * width / 10) / mean(6 * width / 10, 9 * width / 10)
 }
 
 pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and_white() {
@@ -38,7 +40,8 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     let root = std::env::temp_dir().join(format!("oni-app-bw-film-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(root.join("Scans")).unwrap();
-    common::graded_tiff(&root.join("Scans/A.tif"), 1200, 800, 0.7);
+    // A red on the left half, a grey on the right.
+    common::pixels_tiff(&root.join("Scans/A.tif"), 1200, 800, |x, _| if x < 600 { [0.75, 0.2, 0.15] } else { [0.4; 3] });
     let (rig, shell) = crate::film_effects::opened(&gpu, &root);
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, menus) = (w.global::<PanelState>(), w.global::<Menus>());
@@ -72,9 +75,9 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     let ortho = lit(VirtualStock::IlfordOrthoPlus);
     println!("shot {}", rig.shot("bw-film-hover-ortho").display());
     assert!(chroma(&pan) <= 2 && chroma(&ortho) <= 2, "a black and white frame: {} {}", chroma(&pan), chroma(&ortho));
-    let (pan_reds, ortho_reds) = (reds(&pan, width()), reds(&ortho, width()));
-    println!("the reds' mean code: panchromatic {pan_reds:.1}, orthochromatic {ortho_reds:.1}");
-    assert!(ortho_reds + 15.0 < pan_reds, "the orthochromatic film holds the reds darker");
+    let (pan_red, ortho_red) = (red_over_grey(&pan, width()), red_over_grey(&ortho, width()));
+    println!("the red over the grey: panchromatic {pan_red:.3}, orthochromatic {ortho_red:.3}");
+    assert!(ortho_red < 0.9 * pan_red, "the orthochromatic film prints the red darker");
     assert_eq!((stored(), menus.get_live().undo), (own.clone(), undo), "nothing written, no step");
     rig.key("\u{1b}");
     rig.settle();

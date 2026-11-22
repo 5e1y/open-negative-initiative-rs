@@ -140,7 +140,7 @@ mod tests {
         // Twin: Foma 400 stays among Foma's stocks.
         let foma = by_brand(None).into_iter().find(|(b, _)| *b == "Foma").map(|(_, l)| l).unwrap_or_default();
         let names: Vec<&str> = foma.iter().map(|&i| oni_settings::film::FILM_STOCKS[i].display_name).collect();
-        assert_eq!(names, ["Foma Fomapan 200", "Foma Fomapan 400"]);
+        assert_eq!(names, ["Foma Fomapan 100", "Foma Fomapan 200", "Foma Fomapan 400", "Foma Fomapan Cine 100", "Foma Fomapan Cine 400", "Foma Ortho 400", "Foma Cine Ortho 400", "Foma Retropan 320"]);
     }
 
     /// The sheet lists a line's stocks in its place, and a roll still on the line finds it shown among them.
@@ -226,7 +226,7 @@ mod tests {
         assert!(portra.as_slice().iter().any(|p| p.a > 0), "the artwork's pixels are drawn");
         // Twin: another side is drawn apart, another stock draws other pixels, an unknown one none.
         assert_eq!(row_icon("kodak-portra", 22).unwrap().size().width, 22);
-        assert_ne!(row_icon("agfaphoto-apx", 44).unwrap().to_rgba8().unwrap().as_slice(), portra.as_slice());
+        assert_ne!(row_icon("ilford-hp5", 44).unwrap().to_rgba8().unwrap().as_slice(), portra.as_slice());
         assert!(row_icon("no-such-stock", 44).is_none());
         ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
@@ -265,7 +265,7 @@ mod tests {
         ("ilford-delta3200", 0x0f5f3013545801d7),
         ("ilford-delta400", 0xa710f3c955ca8430),
         ("ilford-fp4", 0x3130019319f259de),
-        ("agfaphoto-apx", 0x24cc54097b67dd73),
+        ("ilford-hp5", 0x24cc54097b67dd73),
         ("ilford-ortho", 0x7ea35ce2af4e399e),
         ("ilford-panf", 0xbec50c93f7a944c8),
         ("ilford-sfx", 0xd2217db2be5d78ca),
