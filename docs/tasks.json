@@ -12578,5 +12578,29 @@
     "status": "done",
     "detail": "A digital photo's negative is the model's own: Lighting reads its dyes' amounts (ONI's print takes the dyes' pass untoned and the separation's tone after the moves) and develops them again on its virtual stock's three coupled layers, its Exposure within ΔE 0.5 of the Film section's. A scan's negative is not the model's: the couplers, read back, turned its small departures from the model's neutral into colour on every move. It is read on its stock's mean layer (the C-41 profiles' for the generic set), each channel scaled so the frame's reference grey sits on that layer at the speed's exposure, ONI's print reading the density its windows read: every common move keeps the frame's neutral to the bit. Under the toe's foot a density takes the foot's move, less the nearer the fog, which no move leaves; over the shoulder the shoulder's; foot and shoulder lie where the curve rises 0.1 of density a log, a scan's hundredth of grain then reading within a tenth of a log.",
     "outcome": ""
+  },
+  {
+    "id": 3520,
+    "type": "feature",
+    "title": "Lighting's Exposure rests at 0 EV in every pipe: the slider is the departure from the pipe's rest",
+    "status": "done",
+    "detail": "Print.exposure is stops of light off the frame's pipe's rest, 0 on a negative, a slide, black and white and a digital photo alike. Print::RESTING_EXPOSURE, resting_exposure(mode), exposure_at, curve_stops, on_curve and EXPOSURE_GEAR go, with every conversion they fed: PipelineSettings::rest lays no Exposure, a mode change carries none, Print::unlit and rests_on_negative take no mode, Lighting on the negative takes the stored value as its stops, a slide's internegative takes the slide's Lighting whole, the grain's tones, the filter balance's press and the paper's rests read Print::default(). ONI's print curve keeps its own rest inside the pipeline (conversion::NEGATIVE_PRINT_STOPS, 1.5 on a negative, none on a slide; a legacy print's machine entry 1.5 under it). The reset, the tick, the double click, the ± keys, the value editor, presets and the phone's steps all read the rest, so 0.00 EV at rest everywhere; the welcome scenes show 0.00 EV. Exposure's track stays ±4 EV, now about the rest.",
+    "outcome": ""
+  },
+  {
+    "id": 3521,
+    "type": "migration",
+    "title": "Sidecar format 64: every stored Exposure becomes its departure from its mode's former rest",
+    "status": "done",
+    "detail": "migrate::departure: a document before 64 (sidecar, preset, share code, paste) has its Exposure less its mode's former rest (a negative's 1.5, a slide's 0), after every older step, which keeps its own format's units on that former rest (the gear of 42, the Scanner face's entry of 46, the legacy print's of 61, the digital film of 38). reshape::as_stored and departure::stored_at write an older document in its era's units for the checks; departure::read_back reads what the Exposure steps make of it. The newer-file fixture is 65.",
+    "outcome": ""
+  },
+  {
+    "id": 3522,
+    "type": "test",
+    "title": "Exposure at 0 proven: every pipe renders to the bit across format 64",
+    "status": "done",
+    "detail": "tests/exposure_departure.rs: twelve pipes (ONI's print on a negative, with Contrast, a legacy Frontier, digital, black and white, a slide; the paper on a negative, digital, black and white, the Frontier, the neutral paper, a slide through its internegative) stored as format 61 at the former rest and ±0.5/−0.75 off it fold to the bits format 61 printed, stage 4-7 on the CPU and the whole chain on Metal; twin: read unmigrated they move. Each stored Exposure reads as its departure (+1.5 → 0, a slide's 0 stays). A negative at Exposure 0 prints its reference grey at a plain RAW's on ONI's print, the paper and the neutral paper; twin: the former rest's 0 prints it far darker. A slide through its internegative at a value f32 rounds on the former 1.5 (+0.6) prints within 4.2e-7 of format 61, which took that rounding. legacy_print's fingerprints (every corpus sidecar and Scanner case, CPU and GPU) and lighting_on_negative's fold hold unchanged. Window check slider_rest: Exposure reads 0.00 EV on its mid-track tick at rest and after Lighting's Reset, on a negative and a slide.",
+    "outcome": ""
   }
 ]

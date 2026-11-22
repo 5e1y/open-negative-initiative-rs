@@ -298,15 +298,16 @@ mod tests {
                 }
             }
         }
-        // A fresh negative opens on its rest: +1.50 EV under the tick, its Lighting's Reset away.
+        // A fresh negative opens on its rest: 0.00 EV under the tick at the track's middle, its Lighting's Reset away.
         let negative = &frames[0];
         let exposure = Field::Exposure;
-        assert_eq!(exposure.readout(exposure.knob().get(negative)), "+1.50 EV");
-        assert_eq!(rests(negative)[exposure.index() as usize], position_on(exposure, 1.5, &track_on(exposure, negative)));
+        assert_eq!(exposure.readout(exposure.knob().get(negative)), "0.00 EV");
+        assert_eq!(rests(negative)[exposure.index() as usize], position_on(exposure, 0.0, &track_on(exposure, negative)));
+        assert!((rests(negative)[exposure.index() as usize] - 0.5).abs() < 1e-6);
         assert!(!is_modified(negative, Block::Lighting, None));
-        // Twin: a tick at zero, as a slider's own middle, stands off the rest the reset returns to.
-        assert_ne!(rests(negative)[exposure.index() as usize], position_on(exposure, 0.0, &track_on(exposure, negative)));
-        assert!(is_modified(&exposure.knob().set(negative, 0.0), Block::Lighting, None));
+        // Twin: the former rest's +1.50 EV stands off the rest the reset returns to.
+        assert_ne!(rests(negative)[exposure.index() as usize], position_on(exposure, 1.5, &track_on(exposure, negative)));
+        assert!(is_modified(&exposure.knob().set(negative, 1.5), Block::Lighting, None));
     }
 
     #[test]

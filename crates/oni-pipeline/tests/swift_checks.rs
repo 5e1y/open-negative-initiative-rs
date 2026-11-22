@@ -53,7 +53,7 @@ fn on_axis(rgb: V3, mode: ConversionMode, ceiling: f32) -> V3 {
     s.chroma_decompression = 1.0;
     s.levels = LevelsSet { red: Levels::on_axis(), green: Levels::on_axis(), blue: Levels::on_axis() };
     s.density_ceiling = ceiling;
-    (s.separation, s.print.black_point, s.print.exposure) = (0.0, 0.0, Print::resting_exposure(mode));
+    (s.separation, s.print.black_point) = (0.0, 0.0);
     stage47(rgb, &s)
 }
 

@@ -268,7 +268,7 @@ export component FocusScene inherits Rectangle {
                 title: @tr("Lighting"); turned: root.settled(FocusBeats.header-from + 0.15, FocusBeats.header-for);
                 help: @tr("The negative back to light: exposure, contrast, highlights and shadows, the black and white points.");
             }
-            Morphing { label: @tr("Exposure"); old-readout: "+1.50"; readout: @tr("{} EV", "+1.50"); fraction: 0.65; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(3); awake: root.awake; }
+            Morphing { label: @tr("Exposure"); old-readout: "+0.00"; readout: @tr("{} EV", "0.00"); fraction: 0.5; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(3); awake: root.awake; }
             Morphing { label: @tr("Contrast"); old-readout: "+0"; readout: "0"; fraction: 0.5; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(4); awake: root.awake; }
             Morphing { label: @tr("Highlights"); old-readout: "−12"; readout: "−12"; fraction: 0.44; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(5); awake: root.awake; }
             Morphing { label: @tr("Shadows"); old-readout: "+8"; readout: "+8"; fraction: 0.54; fill: SliderFill.level; hand-x: root.hand-x - root.inset; hand-y: root.hand-y - root.head-y; turned: root.turned(6); awake: root.awake; }

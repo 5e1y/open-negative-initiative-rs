@@ -9,7 +9,6 @@ use oni_pipeline::stages::{self, DetailColumns, DetailRows};
 use oni_pipeline::scanner;
 use oni_render::cpu;
 use oni_render::{Curves, Detail, FlatField, LUT_SIZE, SaturationCurve, ScannerDensity, ScannerOutput, Spectrogram, Stage47, Texture};
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 /// Every mix of the values a kernel bends at: below zero, zero, a denormal's neighbour, one, past one.
@@ -67,9 +66,9 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
     let flattened = Stage47 { print_contrast: -0.5, print_zones: [0.6, -0.7], ..dense };
     let toned = Stage47 { own_contrast: [0.4, -0.3, 0.0], own_mid: [0.2, -0.25, 0.1], ..printed };
     let toned_alone = Stage47 { own_stops: [0.0; 3], ..toned };
-    let resting = Print::RESTING_EXPOSURE;
-    let over = Stage47 { print_stops: Print::curve_stops(resting + 2.0, resting), ..printed };
-    let under = Stage47 { print_stops: Print::curve_stops(resting - 2.0, resting), ..printed };
+    let resting = oni_pipeline::conversion::NEGATIVE_PRINT_STOPS;
+    let over = Stage47 { print_stops: resting + 4.0, ..printed };
+    let under = Stage47 { print_stops: resting - 4.0, ..printed };
     vec![
         ("rest", rest),
         ("gains and levels", gains),

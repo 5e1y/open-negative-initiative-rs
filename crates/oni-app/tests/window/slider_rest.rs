@@ -1,6 +1,6 @@
 //! One slider mechanic on both faces, through the window's pointer: a drag reaching rest holds there
 //! for a few points and leaves it without a jump, and a double click on the name brings it back to the
-//! rest its tick marks and its block's Reset returns to.
+//! rest its tick marks and its block's Reset returns to; Exposure rests at 0.00 EV on a negative and a slide.
 
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::app::{Options, Shell};
@@ -100,21 +100,40 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     assert_eq!(temperature(), 0.0, "the name's double click brings Temperature back to rest");
     println!("shot {}", rig.shot("slider-rest").display());
 
-    // Exposure's one rest: a fresh negative opens on its tick at +1.50 EV, its Lighting's Reset away.
+    // Exposure's one rest, on a negative and a slide alike: 0.00 EV on its tick at the track's middle, the Reset away.
     let exposure = || Knob::Exposure.get(ctl.state.borrow().store().settings());
+    let readout = || g.get_exposure_readout().to_string();
     let tick = g.get_rests().row_data(Field::Exposure.index() as usize).unwrap();
-    assert!((oni_app::app::fraction(&g, Field::Exposure) - tick).abs() < 1e-4, "the knob opens on its tick");
-    assert!(exposure() == 1.5 && !g.get_lighting_modified(), "the frame opens at its rest");
-    // Twin: the track's middle, a tick at zero, is not where it rests.
-    assert!((tick - 0.5).abs() > 0.1, "Exposure ticked mid-track: {tick}");
-    // A press on its rail moves it and the Reset shows; a double click on its name lands back on the tick.
+    let panel = w.global::<oni_app::PanelState>();
+    let lighting = oni_app::fields::Block::ALL.iter().position(|b| *b == oni_app::fields::Block::Lighting).unwrap() as i32;
     let rail = common::rail(w, "Exposure");
     let on_rail = LogicalPosition::new(rail.x + rail.width * 0.95, rail.y + rail.height - 13.0);
-    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+    for (mode, index) in [(oni_settings::ConversionMode::Negative, 0), (oni_settings::ConversionMode::Positive, 1)] {
+        panel.invoke_film_type_picked(index);
+        rig.settle();
+        assert_eq!(ctl.state.borrow().store().settings().mode, mode);
+        assert!((oni_app::app::fraction(&g, Field::Exposure) - tick).abs() < 1e-4, "{mode:?}: the knob on its tick");
+        assert!(exposure() == 0.0 && !g.get_lighting_modified(), "{mode:?}: the frame at its rest: {}", exposure());
+        assert_eq!(readout(), "0.00 EV", "{mode:?}: the readout at rest");
+        assert!((tick - 0.5).abs() < 1e-4, "Exposure ticked mid-track: {tick}");
+        // A press on its rail moves it, the readout and the Reset show; Lighting's Reset lands back on 0.00 EV.
+        std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+        press(&rig, on_rail);
+        release(&rig, on_rail);
+        rig.settle();
+        assert!(exposure() > 1.0 && g.get_lighting_modified(), "{mode:?}: the press moved Exposure: {}", exposure());
+        // Twin: the readout follows the move, so its rest's text is no constant.
+        assert_ne!(readout(), "0.00 EV", "{mode:?}");
+        g.invoke_reset(lighting);
+        rig.settle();
+        assert!(exposure() == 0.0 && !g.get_lighting_modified(), "{mode:?}: the Reset back to rest: {}", exposure());
+        assert_eq!(readout(), "0.00 EV", "{mode:?}: the readout after the Reset");
+        println!("shot {}", rig.shot(&format!("exposure-rest-{mode:?}")).display());
+    }
+    // A double click on its name lands back on the tick.
     press(&rig, on_rail);
     release(&rig, on_rail);
     rig.settle();
-    assert!(exposure() > 1.5 && g.get_lighting_modified(), "the press moved Exposure: {}", exposure());
     let name = common::placed(w, AccessibleRole::Text, "Exposure");
     let name = name.iter().find(|p| p.y >= rail.y - 1.0 && p.y < rail.y + 20.0).copied().expect("the slider's name");
     let at = LogicalPosition::new(name.middle().0, name.middle().1);
@@ -124,7 +143,7 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
         release(&rig, at);
     }
     rig.settle();
-    assert!(exposure() == 1.5 && !g.get_lighting_modified(), "back on its tick, the Reset gone: {}", exposure());
+    assert!(exposure() == 0.0 && !g.get_lighting_modified(), "back on its tick, the Reset gone: {}", exposure());
     assert!((oni_app::app::fraction(&g, Field::Exposure) - tick).abs() < 1e-4, "the knob back on its tick");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);

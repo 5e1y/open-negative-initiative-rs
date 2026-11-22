@@ -39,8 +39,7 @@ pub fn finite(p: [f32; 3]) -> bool {
 /// The settings a press reads: Lighting at rest but for its filters, so a press does not move with the light dialled.
 pub fn unlit(s: &PipelineSettings) -> PipelineSettings {
     let mut out = s.clone();
-    let exposure = Print::resting_exposure(s.mode);
-    out.print = Print { exposure, red: s.print.red, green: s.print.green, blue: s.print.blue, ..Print::default() };
+    out.print = Print { red: s.print.red, green: s.print.green, blue: s.print.blue, ..Print::default() };
     out
 }
 

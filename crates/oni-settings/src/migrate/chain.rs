@@ -107,6 +107,9 @@ pub const DATASHEET_VERSION: i64 = 60;
 /// The version Lighting came to act on the negative in every pipe, each print at its rest: a legacy print's look came to
 /// read its machine's entry itself, its photo's Exposure moved off it to Lighting's rest.
 pub const LIGHTING_ON_NEGATIVE_VERSION: i64 = 61;
+/// The version Lighting's Exposure came to be the departure from its pipe's rest, 0 at rest in every mode: each value
+/// moved by its mode's former rest.
+pub const EXPOSURE_DEPARTURE_VERSION: i64 = 64;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

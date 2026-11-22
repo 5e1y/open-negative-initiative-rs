@@ -179,7 +179,6 @@ impl PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };
         block.density_ceiling = density_axis::rest(mosaic, mode);
         block.levels = LevelsSet::neutral(mode, block.density_ceiling);
-        block.print.exposure = Print::resting_exposure(mode);
         if mode.is_digital() {
             block = block.on_stock(VirtualStock::default());
             block.print_paper = Some(PaperStock::default());
@@ -261,9 +260,6 @@ impl PipelineSettings {
             if self.grain.amount == from.grain.amount {
                 moved.grain.amount = to.grain.amount;
             }
-        }
-        if self.print.exposure == Print::resting_exposure(self.mode) {
-            moved.print.exposure = Print::resting_exposure(next);
         }
         moved
     }

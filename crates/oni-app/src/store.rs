@@ -169,11 +169,11 @@ pub(crate) mod tests {
         assert_eq!(get(&s, Field::Exposure), Field::Exposure.knob().get(&slide));
         assert_eq!(get(&s, Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
         assert!(!is_modified(s.settings(), Block::Lighting, None) && !is_modified(s.settings(), Block::DensityCeiling, None));
-        // Twin: a negative's rest sits elsewhere on both, so a reset to it would fail above.
+        // Twin: a negative's ceiling rests elsewhere, so a reset to it would fail above; Exposure rests at 0 on both.
         let negative = PipelineSettings::rest(ConversionMode::Negative, true);
-        assert_ne!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
+        assert_eq!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
         assert_ne!(Field::DensityCeiling.knob().get(&negative), Field::DensityCeiling.knob().get(&slide));
-        assert!(is_modified(&negative_on(s.settings()), Block::Lighting, None), "a negative's rest reads as moved on a slide");
+        assert!(is_modified(&negative_on(s.settings()), Block::DensityCeiling, None), "a negative's rest reads as moved on a slide");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

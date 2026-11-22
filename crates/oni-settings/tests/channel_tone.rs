@@ -9,7 +9,7 @@ use serde_json::json;
 
 /// The `oni-frame` document of `settings` stamped `version`.
 fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
-    let mut object = serde_json::to_value(Document::of(settings.clone())).unwrap();
+    let mut object = serde_json::to_value(migrate::departure::stored_at(&Document::of(settings.clone()), version)).unwrap();
     object["version"] = json!(version);
     serde_json::to_vec(&object).unwrap()
 }
@@ -25,7 +25,7 @@ fn a_document_from_before_the_channels_tone_reads_it_at_rest_and_a_current_one_k
     assert_eq!(migrate::standing(&older), migrate::Standing::Older(chain::CHANNEL_TONE_VERSION - 1));
     let read = migrate::document(&older).unwrap().document.settings;
     assert_eq!((read.print.channel_mid, read.print.channel_contrast, read.halation.sensitivity), ([0.0; 3], [0.0; 3], 0.0));
-    assert_eq!(read, s, "the older document reads whole");
+    assert_eq!(read, migrate::departure::read_back(chain::CHANNEL_TONE_VERSION - 1, s.clone()), "the older document reads whole");
     // Twin: a document of this format keeps a channel's own tone and the sensitivity to the bit.
     s.print.channel_mid = [0.0, -0.1373, 0.0];
     s.print.channel_contrast = [0.0625, 0.0, -0.25];

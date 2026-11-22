@@ -44,10 +44,10 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
-    // Exposure's rail, the knob's row at the slider's foot.
+    // Exposure's rail, the knob's row at the slider's foot, right of its mid-track rest so no drag meets its detent.
     let slider = common::rail(w, "Exposure");
     assert!(slider.y + slider.height < 1000.0, "Exposure's rail in the window: {slider:?}");
-    let (x, y) = (slider.x + slider.width / 3.0, slider.y + slider.height - 13.0);
+    let (x, y) = (slider.x + slider.width * 0.6, slider.y + slider.height - 13.0);
     moved(&rig, x, y);
     Some((rig, shell, root, (x, y)))
 }

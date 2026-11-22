@@ -41,7 +41,7 @@ fn main() {
         let name = raw.file_stem().unwrap().to_string_lossy().to_string();
         let read = sidecar::read(raw, true).expect("a sidecar").settings;
         let owner = PipelineSettings { print_paper: read.print_paper.or(Some(Default::default())), ..read };
-        let rest = PipelineSettings { print: Print { exposure: Print::resting_exposure(owner.mode), ..Print::default() }, ..owner.clone() };
+        let rest = PipelineSettings { print: Print::default(), ..owner.clone() };
         let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { paper_blacks: on, ..s.print }, ..s.clone() };
         let (stops, print) = (owner.print.exposure - rest.print.exposure, &owner.print);
         println!("{name}: paper {:?}, Exposure {stops:+.3} from the rest, Brightness {:+.3}, Paper blacks {}", owner.print_paper, print.brightness, print.paper_blacks);

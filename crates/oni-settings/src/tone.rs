@@ -121,6 +121,7 @@ impl Tone {
 /// Lighting: the window's output on a display gamma, bent by the RGB curve, then each channel's exposure.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub struct Print {
+    /// Stops of light off the frame's pipe's rest, 0 at rest in every mode.
     pub exposure: f32,
     pub contrast: f32,
     pub shadows: f32,
@@ -225,32 +226,7 @@ impl Print {
     pub const MINIMUM_SPAN: f32 = 0.02;
     pub const POINT_SATURATION_GAIN: f32 = 2.25;
     pub const RESTING_BLACK_POINT: f32 = 0.0;
-    /// A negative's exposure at rest: the roll's window holds its brightest frame. A slide rests at 0.
-    pub const RESTING_EXPOSURE: f32 = 1.5;
     pub const HUNT_EXPONENT: f32 = 0.19;
-
-    /// The print's odds gain takes Exposure's distance from its rest twice: near the rest the grey moves about
-    /// a stop per stop, and the curve alone tapers the ends.
-    pub const EXPOSURE_GEAR: f32 = 2.0;
-
-    pub fn resting_exposure(mode: crate::modes::ConversionMode) -> f32 {
-        if mode.reads_positive() { 0.0 } else { Self::RESTING_EXPOSURE }
-    }
-
-    /// The stops the print's curve takes for Exposure `exposure` resting at `rest`.
-    pub fn curve_stops(exposure: f32, rest: f32) -> f32 {
-        rest + Self::EXPOSURE_GEAR * (exposure - rest)
-    }
-
-    /// The Exposure whose curve takes `stops`, resting at `rest`: `curve_stops` undone.
-    pub fn exposure_at(stops: f32, rest: f32) -> f32 {
-        rest + (stops - rest) / Self::EXPOSURE_GEAR
-    }
-
-    /// This print with its Exposure in the curve's stops, as the former print-side replicas read them.
-    pub fn on_curve(&self, rest: f32) -> Print {
-        Print { exposure: Self::curve_stops(self.exposure, rest), ..*self }
-    }
 
     pub fn filters(&self) -> V3 {
         [self.red.exposure, self.green.exposure, self.blue.exposure]

@@ -62,9 +62,7 @@ fn occupied_codes(rgb: &[V3]) -> usize {
 
 /// The settings' defaults, Lighting at rest.
 fn bare() -> PipelineSettings {
-    let mut s = PipelineSettings::default();
-    s.print.exposure = oni_settings::tone::Print::RESTING_EXPOSURE;
-    s
+    PipelineSettings::default()
 }
 
 fn edited() -> PipelineSettings {

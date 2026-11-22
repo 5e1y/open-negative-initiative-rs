@@ -5,9 +5,7 @@ use oni_render::{ColorMatrix, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::levels::{Levels, LevelsSet};
 use oni_settings::tone::{Print, color_density};
-use oni_settings::PipelineSettings;
-#[cfg(test)]
-use oni_settings::ConversionMode;
+use oni_settings::{ConversionMode, PipelineSettings};
 
 pub type M3 = [[f32; 3]; 3];
 
@@ -68,9 +66,24 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
 
 /// Stage 4-7's arguments before any paper, Lighting on the negative.
 fn lit(s: &PipelineSettings) -> Stage47 {
-    let on_negative = !s.print.rests_on_negative(s.mode);
-    let k = unprinted(&PipelineSettings { print: s.print.unlit(s.mode), ..s.clone() }, on_negative && crate::negative::reads_amounts(s));
+    let on_negative = !s.print.rests_on_negative();
+    let k = unprinted(&PipelineSettings { print: s.print.unlit(), ..s.clone() }, on_negative && crate::negative::reads_amounts(s));
     Stage47 { negative: crate::negative::negative(s, &k), ..k }
+}
+
+/// The stops ONI's print curve takes at rest on a negative: the curve its windows and reference grey are read under.
+pub const NEGATIVE_PRINT_STOPS: f32 = 1.5;
+
+/// The stops ONI's print curve takes at its rest in `mode`: a negative's `NEGATIVE_PRINT_STOPS`, a slide's none.
+pub fn resting_print_stops(mode: ConversionMode) -> f32 {
+    if mode.reads_positive() { 0.0 } else { NEGATIVE_PRINT_STOPS }
+}
+
+/// The stops ONI's print curve takes on `s`, Lighting lying on the negative: its rest, or a legacy print's machine
+/// entry, the negative's stops left out as its look was fitted.
+fn print_stops(s: &PipelineSettings) -> f32 {
+    let rest = resting_print_stops(s.mode);
+    if s.legacy().is_some() { rest - NEGATIVE_PRINT_STOPS } else { rest }
 }
 
 /// Stage 4-7's arguments before any paper and Lighting: the reading, its dyes, the windows and ONI's print, the dyes'
@@ -97,8 +110,7 @@ fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
         low_points: windows.map(|w| w.shadow_ordinate()),
         high_points: windows.map(|w| w.highlight_ordinate()),
         print_on: if print.bypassed { 0.0 } else { 1.0 },
-        // A legacy print's look reads ONI's print curve at its machine's entry.
-        print_stops: if s.legacy().is_some() { oni_settings::migrate::one_face::look_entry_stops(s.mode) } else { print.exposure },
+        print_stops: print_stops(s),
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
         own_stops: print.filters(),

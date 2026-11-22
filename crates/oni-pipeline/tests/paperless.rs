@@ -103,7 +103,7 @@ fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone() {
 #[test]
 fn the_neutral_papers_curve_is_onis_print_at_rest_on_each_layer() {
     let sheet = neutral::sheet();
-    let rest = Print { exposure: Print::resting_exposure(ConversionMode::Negative), ..Print::default() };
+    let rest = Print { exposure: oni_pipeline::conversion::NEGATIVE_PRINT_STOPS, ..Print::default() };
     let last = (PAPER_CURVE_NODES - 1) as f32;
     for (i, d) in sheet.curves.iter().enumerate() {
         let expected = -rest.output(1.0 - i as f32 / last, LevelsChannel::Linked).max(neutral::NEUTRAL_DEEPEST).log10();

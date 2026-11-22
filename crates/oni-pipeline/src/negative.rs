@@ -8,7 +8,6 @@ use crate::film::dyes::{self, C41};
 use crate::film::profile::Profile;
 use crate::paper::{self, bisected, film_ends, spanned};
 use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LUMA, NEGATIVE_CURVE_NODES, Negative, Stage47};
-use oni_settings::tone::Print;
 use oni_settings::{DyeSet, PipelineSettings, VirtualStock};
 use std::sync::OnceLock;
 
@@ -175,7 +174,7 @@ fn straight(offset: V3) -> ([V3; DYE_TONE_NODES], V3, V3) {
 /// The moves turn about the reference grey's exposure, so Contrast holds the grey and the print's rest is the bare film's.
 pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let print = &s.print;
-    if print.rests_on_negative(s.mode) {
+    if print.rests_on_negative() {
         return None;
     }
     let mono = s.mode.is_monochrome();
@@ -211,7 +210,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     };
     let pivot = development.exposures(std::array::from_fn(|c| grey[c] / scale[c]));
     let own = |v: V3| if mono { [0.0; 3] } else { v };
-    let stops = print.exposure - Print::resting_exposure(s.mode);
+    let stops = print.exposure;
     let shift = |hold: f32| [stops * std::f32::consts::LOG10_2 + hold; 3];
     let slope = [GRADE_BASE.powf(print.contrast); 3];
     // Each channel's own moves turn about the grey as its layer develops it under the neutral ones.
