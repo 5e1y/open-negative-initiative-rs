@@ -1,8 +1,9 @@
-//! The Paper section of the Colour tab in the headless window, open right after More Color Settings: offered on a negative,
-//! off at its rest; on, it prints on Portra Endura and shows Paper blacks, off at rest, the paper and the enlarger's
-//! filtration, and Lighting Brightness in place of Colour compensation, each rendering again; another paper picked by its
-//! name, the Frontier SP-3000 among them; a slide on the same papers, through its internegative; a digital photo on its
-//! paper, its blacks pure.
+//! The Paper section of the Colour tab in the headless window, open right after More Color Settings: the virtual enlarger
+//! offered on a negative, off at its rest; on, it prints on Portra Endura and shows Print on paper, on, Paper blacks, off
+//! at rest, the paper and the enlarger's filtration, and Lighting Brightness in place of Colour compensation, each
+//! rendering again; Print on paper off prints on the neutral paper, the paper kept, its picker and blacks hidden; another
+//! paper picked by its name, the Frontier SP-3000 among them; a slide on the same papers and the neutral one, through its
+//! internegative; a digital photo on its paper, its blacks pure.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -49,29 +50,55 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.pump();
     let count = |role: Role, label: &str| common::placed(w, role, label).len();
 
-    // A negative never prepared rests on ONI's print, the switch offered in its own open section.
-    assert!(panel.get_paper_shown() && !panel.get_paper_on(), "offered, off");
-    assert_eq!((count(Role::Checkbox, "Print on paper"), count(Role::Checkbox, "Paper blacks"), count(Role::Checkbox, "Colour compensation")), (1, 0, 1));
+    // A negative never prepared rests on ONI's print, the enlarger offered in its own open section, Print on paper hidden.
+    assert!(panel.get_paper_shown() && !panel.get_enlarger_on(), "offered, off");
+    let switches = || (count(Role::Checkbox, "Virtual enlarger"), count(Role::Checkbox, "Print on paper"), count(Role::Checkbox, "Paper blacks"));
+    assert_eq!((switches(), count(Role::Checkbox, "Colour compensation")), ((1, 0, 0), 1));
     section_laid_after_more_color_settings(w);
     rig.settle();
     println!("shot {}", rig.shot("colour-negative-onis-print").display());
     let renders = ctl.state.borrow().renders();
-    panel.invoke_paper_toggled(true);
+    panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::KodakPortraEndura));
-    assert!(panel.get_paper_on() && panel.get_paper_title() == "Kodak Portra Endura");
+    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakPortraEndura), false));
+    assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Portra Endura");
+    assert_eq!(switches(), (1, 1, 1));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the frame printed on the paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     // On the paper the section offers Paper blacks, off at rest, and Lighting Brightness; Colour compensation, with
     // nothing to cut there, leaves.
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Paper blacks"), count(Role::Checkbox, "Colour compensation")), (1, 1, 0));
     assert!(!settings().print.paper_blacks && !panel.get_paper_blacks(), "pure black at rest, the switch off");
-    let (switches, blacks) = (common::the(w, Role::Checkbox, "Print on paper"), common::the(w, Role::Checkbox, "Paper blacks"));
+    let (enlarger, paper) = (common::the(w, Role::Checkbox, "Virtual enlarger"), common::the(w, Role::Checkbox, "Print on paper"));
+    let blacks = common::the(w, Role::Checkbox, "Paper blacks");
     let filtration = common::the(w, Role::Text, &panel.get_paper_filtration());
-    assert!(switches.y < blacks.y && blacks.y < filtration.y, "the switch, its blacks, then the paper's own rows");
+    assert!(enlarger.y < paper.y && paper.y < blacks.y && blacks.y < filtration.y, "the switches, the blacks, then the paper's own rows");
     section_laid_after_more_color_settings(w);
     rig.settle();
     println!("shot {}", rig.shot("colour-negative-on-paper").display());
+    // Print on paper off: the enlarger prints on the neutral paper, the paper kept as chosen, its picker and blacks gone,
+    // the filtration and Brightness kept; on again, the paper's print returns.
+    let histogram = || ctl.state.borrow().histogram().cloned();
+    let shown_paperless = |paperless: bool| ctl.state.borrow().shown_settings().is_some_and(|s| s.print_paper.is_some() && s.paperless == paperless);
+    rig.until("the paper's histogram", Duration::from_secs(60), || shown_paperless(false) && histogram().is_some());
+    let (renders, on_paper) = (ctl.state.borrow().renders(), histogram());
+    panel.invoke_on_paper_toggled(false);
+    rig.pump();
+    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakPortraEndura) && !panel.get_on_paper());
+    assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((1, 1, 0), 1, 0));
+    assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
+    assert!(common::placed(w, Role::Text, &panel.get_paper_filtration()).len() == 1, "the filtration shown");
+    rig.until("the frame printed on the neutral paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    // The neutral paper's print is another picture than the paper's, its own histogram.
+    rig.until("the neutral paper's own histogram", Duration::from_secs(60), || shown_paperless(true) && histogram().is_some_and(|h| Some(&h) != on_paper.as_ref()));
+    section_laid_after_more_color_settings(w);
+    rig.settle();
+    println!("shot {}", rig.shot("colour-negative-neutral-paper").display());
+    let renders = ctl.state.borrow().renders();
+    panel.invoke_on_paper_toggled(true);
+    rig.pump();
+    assert!(!settings().paperless && panel.get_on_paper() && switches() == (1, 1, 1));
+    rig.until("the frame printed on its paper again", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let renders = ctl.state.borrow().renders();
     panel.invoke_paper_blacks_toggled(true);
     rig.pump();
@@ -91,7 +118,6 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Type II");
     rig.until("the frame printed on Crystal Archive", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     // The Frontier SP-3000 is one more paper: picked by its name, the frame prints on it again.
-    let histogram = || ctl.state.borrow().histogram().cloned();
     let shown = |paper: PaperStock| ctl.state.borrow().shown_settings().is_some_and(|s| s.print_paper == Some(paper));
     rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::FujifilmCrystalArchiveTypeII) && histogram().is_some());
     let crystal = histogram();
@@ -115,7 +141,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let renders = ctl.state.borrow().renders();
     panel.invoke_film_type_picked(1);
     rig.pump();
-    assert!(panel.get_paper_shown() && panel.get_paper_on(), "the slide keeps its paper");
+    assert!(panel.get_paper_shown() && panel.get_enlarger_on(), "the slide keeps its paper");
     assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
     assert_eq!(panel.get_paper_lines().row_count(), PaperStock::ALL.len());
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
@@ -124,19 +150,28 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.settle();
     println!("shot {}", rig.shot("slide-on-paper").display());
     // Off, then on again, it takes the default paper.
-    panel.invoke_paper_toggled(false);
+    panel.invoke_enlarger_toggled(false);
     rig.pump();
-    assert!(!panel.get_paper_on() && settings().print_paper.is_none());
-    panel.invoke_paper_toggled(true);
+    assert!(!panel.get_enlarger_on() && settings().print_paper.is_none());
+    panel.invoke_enlarger_toggled(true);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::KodakPortraEndura));
-    assert!(panel.get_paper_on() && panel.get_paper_title() == "Kodak Portra Endura");
-    panel.invoke_paper_toggled(false);
+    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Portra Endura");
+    // Print on paper off: the slide's copy prints on the neutral paper, then back on its own.
+    let renders = ctl.state.borrow().renders();
+    panel.invoke_on_paper_toggled(false);
+    rig.pump();
+    assert!(settings().paperless && !panel.get_on_paper());
+    rig.until("the slide's copy on the neutral paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    panel.invoke_on_paper_toggled(true);
+    rig.pump();
+    assert!(!settings().paperless);
+    panel.invoke_enlarger_toggled(false);
     rig.pump();
     assert_eq!(settings().print_paper, None);
-    assert!(!panel.get_paper_on());
-    // On ONI's print Brightness and Paper blacks leave, Colour compensation returns.
-    assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Paper blacks"), count(Role::Checkbox, "Colour compensation")), (0, 0, 1));
+    assert!(!panel.get_enlarger_on());
+    // On ONI's print Brightness, Print on paper and Paper blacks leave, Colour compensation returns.
+    assert_eq!((count(Role::Slider, "Brightness"), switches(), count(Role::Checkbox, "Colour compensation")), (0, (1, 0, 0), 1));
     let _ = std::fs::remove_dir_all(&root);
 }
 
@@ -184,7 +219,7 @@ pub(crate) fn a_digital_photo_prints_on_its_paper_on_pure_black() {
     assert!(settings().mode.is_digital(), "{:?}", settings().mode);
     rig.until("the photo printed on its film and paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     // A digital photo prints on its paper at rest, its blacks pure, the switch shown off.
-    assert!(settings().paper().is_some() && panel.get_paper_on(), "on its paper");
+    assert!(settings().paper().is_some() && panel.get_enlarger_on() && panel.get_on_paper(), "on its paper");
     assert!(!settings().print.paper_blacks && !panel.get_paper_blacks());
     let count = |role: Role, label: &str| common::placed(w, role, label).len();
     assert_eq!((count(Role::Checkbox, "Paper blacks"), count(Role::Checkbox, "Colour compensation")), (1, 0));

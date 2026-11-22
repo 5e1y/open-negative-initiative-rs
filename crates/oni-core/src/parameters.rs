@@ -96,7 +96,7 @@ pub fn all() -> &'static [Row] {
             // legacy print its sliders print on with them, as they give them their meaning.
             Row {
                 id: "levelsGlobal",
-                covers: &["print", "printPaper", "legacyPrint"],
+                covers: &["print", "printPaper", "paperless", "legacyPrint"],
                 sliders: vec![
                     slider("print.exposure", carry!(print.exposure)),
                     slider("print.contrast", carry!(print.contrast)),
@@ -112,7 +112,7 @@ pub fn all() -> &'static [Row] {
                 carry: |from, to| {
                     let filters = (to.print.red, to.print.green, to.print.blue);
                     to.print = from.print;
-                    (to.print_paper, to.legacy_print) = (from.print_paper, from.legacy_print);
+                    (to.print_paper, to.paperless, to.legacy_print) = (from.print_paper, from.paperless, from.legacy_print);
                     (to.print.red, to.print.green, to.print.blue) = filters;
                 },
             },

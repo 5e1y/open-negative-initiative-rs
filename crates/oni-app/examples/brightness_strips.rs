@@ -149,7 +149,8 @@ fn main() {
             let fall = bright.windows(2).map(|w| w[0][0] - w[1][0]).fold(0.0f32, f32::max);
             let chroma = |c: &[V3]| c.iter().map(|v| v[1].hypot(v[2])).fold(0.0f32, f32::max);
             println!(
-                "  {b:+}: L* moves Brightness/Exposure by L* at rest {}\n        slope {lo:.2}..{hi:.2} (Exposure {elo:.2}..{ehi:.2}), slope step {jump:.3} (Exposure {ejump:.3}), fall {fall:.2e}, neutral C* max {:.2} (Exposure {:.2}, rest {:.2})",
+                "  {b:+}: L* moves Brightness/Exposure by L* at rest {}\n        slope {lo:.2}..{hi:.2} (Exposure {elo:.2}..{ehi:.2}), slope step {jump:.3} (Exposure {ejump:.3}), \
+                 fall {fall:.2e}, neutral C* max {:.2} (Exposure {:.2}, rest {:.2})",
                 moves.join(" "), chroma(&bright), chroma(&expo), chroma(&rest)
             );
             curves.push((b, bright, expo));

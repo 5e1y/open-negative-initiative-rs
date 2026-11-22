@@ -64,6 +64,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): Lighting acts before the paper curve, no ONI
   window and no colour compensation; the picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
+- **The virtual enlarger may print on no paper** (owner's call, 2026-11-22): Print on paper off swaps the paper for a neutral one,
+  ONI's print curve over the frame's range on each layer alone, to show what the paper brings (`paper::neutral`).
 - **A slide prints through an internegative** (owner's verdict, 2026-11-22): on any colour paper, copied on a virtual Vision3 50D
   (`paper::internegative`), as labs printed slides on negative paper; Kodak's reversal paper Radiance III, modelled from its data
   sheet, held half a slide's chroma and left. The copy's grey and black are the film's own, its bare base as a negative's.

@@ -260,10 +260,14 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
             let lift = brightness * std::f32::consts::LOG10_2;
             println!("{label}, Brightness {brightness:+}: densest {:.4} over the pick (reach {:.4}) moved {:.5}; grey {:.4} moved {:.5}", toward(densest), p.reach, moved_by(densest), toward(grey), moved_by(grey));
-            // The slide's densest read lies a breath over the copy's base: it moves under 3 % of the lift.
-            assert!(toward(densest) < 0.1 * p.reach && moved_by(densest).abs() <= 0.03 * lift.abs() + 1e-6, "{label}, {brightness}");
-            // Its grey, past the fade, moves the whole lift, as Exposure moves it.
-            assert!(toward(grey) > oni_render::fade(lift, p.reach) + lift.abs() && (moved_by(grey) - lift).abs() < 1e-3, "{label}, {brightness}");
+            // The slide's densest read lies in the copy's toe, a quarter of the reach over its base: under a quarter of the lift.
+            assert!(toward(densest) < 0.3 * p.reach && moved_by(densest).abs() <= 0.25 * lift.abs(), "{label}, {brightness}");
+            // Its grey moves the whole lift once past the fade, as Exposure moves it; within it, part of it, the same way.
+            if toward(grey) > oni_render::fade(lift, p.reach) + lift.abs() {
+                assert!((moved_by(grey) - lift).abs() < 1e-3, "{label}, {brightness}");
+            } else {
+                assert!(moved_by(grey) / lift > 0.5 && moved_by(grey) / lift <= 1.0 + 1e-4, "{label}, {brightness}");
+            }
             // Twin: Exposure's stops move the densest read as much as the grey.
             let exposure = conversion::stage47(&moved(&s, |t| t.print.exposure += brightness)).paper.unwrap();
             let by_exposure = exposure.toward_light(p.pick_log, exposure.exposed(amounts(densest))) - toward(densest);

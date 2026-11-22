@@ -122,7 +122,7 @@ impl Ctl {
                     *s = oni_core::balance::levelled(&balance.core(), s);
                     s.measured_gains = gains;
                     // Printed on its paper, as a prepared negative is (owner's call).
-                    s.print_paper = Some(s.fitting_paper());
+                    *s = std::mem::take(s).on_paper();
                 }
                 let written = (!stopped).then_some(written);
                 with_shell(move |c| c.land_measure(session, written, stopped, &paths, &blank));

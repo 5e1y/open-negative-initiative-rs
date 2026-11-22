@@ -1,6 +1,7 @@
 //! A colour paper printing the film in place of ONI's print: each paper's tables baked once from its profile or the
 //! Frontier's fit (`frontier`), each frame's enlarger at rest on it (`printing`) and Lighting on the enlarger and the
-//! paper (`lighting`). A slide prints through its internegative (`internegative`).
+//! paper (`lighting`). A slide prints through its internegative (`internegative`); with Print on paper off, any frame on a
+//! neutral paper carrying no paper's data (`neutral`).
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
@@ -16,6 +17,7 @@ type V4 = [f32; 4];
 pub mod frontier;
 pub mod internegative;
 mod lighting;
+pub mod neutral;
 mod printing;
 pub use lighting::*;
 pub use printing::*;

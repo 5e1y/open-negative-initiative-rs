@@ -23,7 +23,8 @@ pub struct Copy {
 }
 
 /// `s`'s copy where it is a slide printed on a paper, none for any other frame: its reference grey exposes the film at
-/// the film's grey, each channel through the slide's gains; Lighting, the paper and the colour density are the slide's.
+/// the film's grey, each channel through the slide's gains; Lighting, the paper (or the neutral one) and the colour
+/// density are the slide's.
 pub fn copy(s: &PipelineSettings) -> Option<Copy> {
     if !s.mode.reads_positive() || s.paper().is_none() || s.print.bypassed {
         return None;
@@ -38,6 +39,7 @@ pub fn copy(s: &PipelineSettings) -> Option<Copy> {
     settings.decoded_from_mosaic = s.decoded_from_mosaic;
     settings.print = Print { exposure: s.print.exposure - Print::resting_exposure(s.mode) + Print::resting_exposure(ConversionMode::Digital), ..s.print };
     settings.print_paper = s.print_paper;
+    settings.paperless = s.paperless;
     settings.density = s.density;
     let light = ColorMatrix {
         r_vector: [gain[0], 0.0, 0.0, 0.0],
