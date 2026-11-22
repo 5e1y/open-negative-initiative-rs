@@ -136,8 +136,10 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
         assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
         assert_eq!(read(&stored).settings, s, "{stock:?}");
     }
+    // A photo of 46 on its paper keeps the paper's own black it printed, Paper blacks on.
     let portra = PipelineSettings::rest(ConversionMode::Digital, true);
-    assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, portra);
+    let kept = PipelineSettings { print: Print { paper_blacks: true, ..portra.print }, ..portra.clone() };
+    assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);
     let newer = at(&portra, VERSION + 1);
     let refused = migrate::reading(&serde_json::to_vec(&newer).unwrap(), &Facts::bare(true), false).err();
     assert!(matches!(refused, Some(Refusal::Newer(v)) if v == VERSION + 1), "{refused:?}");

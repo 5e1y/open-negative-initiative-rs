@@ -23,9 +23,11 @@ const LIGHT_CHROMA: f32 = 2.0;
 const WHITE_SPREAD: f32 = 0.06;
 const GREY_GAP: f32 = 2e-3;
 
-/// A digital photo on `stock` at rest, its neighbourhood stages off.
+/// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
 fn on(stock: VirtualStock) -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock).per_pixel_only()
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock).per_pixel_only();
+    s.print.paper_blacks = true;
+    s
 }
 
 /// The print of a scene light lit at the film's white, through the CPU references of the chain.
