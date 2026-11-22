@@ -12240,6 +12240,30 @@
     "detail": "crates/oni-app/tests/window/stock_hero.rs: the check expected VirtualStock::ALL's order, true for one stock only; the sheet lists by brand in the catalogue's order (stocks::virtual_by_brand), and the check now asserts that order and, apart, that the set is exactly VirtualStock::ALL. With sixteen stocks the pick, render, reference and white, and Undo loop runs for each and passes."
   },
   {
+    "id": 3300,
+    "type": "research",
+    "title": "Why a slide on Radiance III lost its colour, and what prints a slide well: Radiance III checked for a construction error, then an internegative onto a negative paper on the owner's slides",
+    "status": "done",
+    "detail": "Five of the owner's slides (test Positif 334, 336, 340, 343, 358, their sidecars as the app now reads them) rendered at 900 px on ONI's print, on Radiance III and through a virtual internegative onto each negative paper, judged in Oklab against ONI's render and by eye. Radiance III's construction re-read: ISO 5-3 Status A as tabulated (blue from 420 nm, its slopes past each end), the dyes scaled to a Status A density of 1 in their own channel, the analytic amounts, the curve fit within 0.016, the rest's filtration (C 0.37 Y 20.1 against Kodak's 10M + 20C start), the black anchored on pure black: no error found. A spectral simulation of a slide (E-6 mean dyes) printed on it, against the slide on a D50 light table, keeps 0.47 to 0.80 of its chroma (green 0.47, blue 0.53, magenta 0.59 to 0.70, red 0.80) and turns yellow and magenta by 12 degrees: two passes of unwanted absorptions with no interimage effect, which Kodak's sheet does not give. The internegative: the slide's scan, through its gains, exposes a virtual colour negative with its reference grey at the film's grey, printed on the paper as a digital photo's negative is; spektrafilm profiles no internegative stock, so seven of its colour negatives were tried on Portra Endura (Vision3 50D and 250D, Portra 160 and 400, Ektar 100, Gold 200, C200).",
+    "outcome": "On the five slides Radiance III held 0.49 to 0.63 of ONI's chroma on the vivid quarter of the picture; the internegative on Portra Endura 0.83 to 1.06, its lightness within 0.016 to 0.053 Oklab L rms of ONI's (Radiance III 0.045 to 0.053). Among the stocks Vision3 50D turned the faded slides' blue-violets least (-4 to -12 degrees of Oklab hue against -5 to -26), kept chroma 0.85 to 1.06 and lightness closest: chosen. Every other paper keeps 0.75 to 1.29 (Endura Premier the most saturated, the Frontier warmest). Renders and figures: scratchpad slide-print/final/<frame>/before-after.png and papers.png, the stock sweep in stocks/."
+  },
+  {
+    "id": 3301,
+    "type": "feature",
+    "title": "A slide prints on every colour paper through a virtual Vision3 50D internegative; Kodak Ektachrome Radiance III retired; sidecar format 58",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/paperless.rs: the grey on a plain RAW's and the pick on pure black whatever Paper blacks says (twin: the paper's anchor), each dye moving its own channel alone (twin: the paper's crosstalk), the curve ONI's print node by node on both papers (twin: Portra Endura's own layers), a frame whose windows agree printing as on ONI's print within 1e-3 (twin: the paper 0.02 off at least), Contrast about the grey, Exposure and Brightness, the GPU against its reference on six frames (twin: the time 10 % off). crates/oni-settings/tests/paperless.rs and crates/oni-app/tests/window/paper.rs (the three states, the neutral print's own histogram).",
+    "outcome": "Every negative, black and white and digital photo prints as before: their stage 4-7 arguments come from the same code once the reversal flag is gone, the rest's solve the cyan-at-none one it was. A slide off its paper renders on ONI's print unchanged."
+  },
+  {
+    "id": 3302,
+    "type": "test",
+    "title": "A slide through its internegative: grey, ends, neutral scale, colour kept, Lighting and the GPU, with twins; the format's step; the window check on every paper",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/slide_print.rs replaces positive_paper.rs: the copy only for a slide on a paper (not bypassed, off the paper, a negative, an inverted positive); its reference grey prints a plain RAW's grey within 1 % (the copy unmixes its dyes, the stock's reference was placed without), its densest read under L* 3, its bare film near the paper's white, Paper blacks lifting it, twin a copy whose grey is not brought to the film's; a neutral wedge within 0.08 natural log of a channel over green above a hundredth of the light, twin the copy without the slide's gains; six colours keeping 0.8 to 1.6 of ONI's chroma, twin the print at colour density -0.5 refused; Exposure, a filter, Contrast, Shadows and Brightness acting as on a negative, twin the reversal sense; the GPU against the CPU (matrix, virtual negative, stage 4-7) and the editor's chain against it, twins a 10 % brighter paper and ONI's print. migrate::slide_paper's tests (each case and the newer format refused), the retired key reading as the default paper. tests/window/paper.rs: a negative switched to a slide keeps its paper, renders, lists every paper, shows the filtration, Brightness and Paper blacks; off then on takes Portra Endura. crates/oni-app/examples/slide_paper.rs renders a slide on ONI's print and on every paper.",
+    "outcome": "Measured: the slide's grey at 0.3958 against a plain RAW's 0.3985; its densest read at luma 0.0019 (L* 1.7); a neutral wedge's worst cast 0.055; chroma kept 0.83 (green) to 1.21 (yellow); GPU 8.7e-7 against its reference, twin 4.2e-2."
+  },
+  {
     "id": 3260,
     "type": "research",
     "title": "Each virtual stock's personality measured at every stage against spektrafilm's own chain: ONI keeps all of it",

@@ -166,7 +166,7 @@ impl Ctl {
         let p = me.clone();
         panel.on_paper_chosen(move |i| {
             p.write_settings(|s| {
-                if let Some(paper) = usize::try_from(i).ok().and_then(|i| PaperStock::listed(s.mode.reads_positive()).get(i).copied()) {
+                if let Some(paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i).copied()) {
                     s.print_paper = Some(paper);
                 }
             })
@@ -245,11 +245,8 @@ impl Ctl {
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);
         panel.set_paper_title(settings.fitting_paper().name().into());
-        // The papers that print the frame's film: a slide's reversal paper, a negative's every other.
-        let listed = PaperStock::listed(settings.mode.reads_positive());
-        let shown = panel.get_paper_lines();
-        if shown.row_count() != listed.len() || shown.row_data(0).is_none_or(|l| l.text != listed[0].name()) {
-            let lines: Vec<MenuLine> = listed.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
+        if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
+            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
             panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));

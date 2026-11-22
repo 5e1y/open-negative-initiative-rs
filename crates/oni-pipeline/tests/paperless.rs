@@ -1,7 +1,7 @@
 //! The virtual enlarger with Print on paper off: the neutral paper rests its grey on a plain RAW's, its pick on pure black
 //! whatever Paper blacks says, each layer printing its own dye alone on ONI's print curve, the same on the three, so a frame
-//! whose windows agree prints as on ONI's print; Lighting's grade turns about the grey; the GPU on every branch. Each
-//! verdict has a twin.
+//! whose windows agree prints as on ONI's print; a slide through its internegative; Lighting's grade turns about the grey;
+//! the GPU on every branch. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -22,7 +22,7 @@ fn paperless(s: PipelineSettings) -> PipelineSettings {
 }
 
 fn slide() -> PipelineSettings {
-    let mut s = PipelineSettings { print_paper: Some(PaperStock::KodakEktachromeRadianceIII), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+    let mut s = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
     s.gains.stops = [0.3, 0.0, -0.4];
     s
 }
@@ -63,13 +63,18 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
     let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0; 3], ..p }), ..k };
     let unfiltered = cpu::stage47(grey_scan(&s), &bare);
     assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2, "{unfiltered:?}");
-    // A slide rests on the neutral reversal paper: its densest film black, its grey a plain RAW's.
+    // A slide prints its internegative on the neutral paper: the copy's base black, its grey a plain RAW's.
     let s = paperless(slide());
-    let p = conversion::stage47(&s).paper.expect("a slide on the neutral paper");
-    let [pick, _, grey] = paper::anchors(&s, conversion::stage47(&s).dyes.as_ref());
+    let copy = paper::internegative::copy(&s).expect("a slide on the neutral paper is copied");
+    let k = conversion::stage47(&s);
+    let p = k.paper.expect("a slide on the neutral paper");
+    let [pick, _, grey] = paper::anchors(&copy.settings, k.dyes.as_ref());
     let (shown_pick, rested) = (p.shown(pick), p.printed(grey));
-    assert!(p.reversal && shown_pick.iter().all(|v| v.abs() < 1e-6), "{shown_pick:?}");
+    assert!(copy.settings.paperless && p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{:?}", p.white);
+    assert!(shown_pick.iter().all(|v| v.abs() < 1e-6), "{shown_pick:?}");
     assert!(rested.iter().all(|v| (v - *GREY_PRINT).abs() < 2e-6), "{rested:?}");
+    // Twin: the slide's copy on its own paper keeps the paper's white.
+    assert!(conversion::stage47(&slide()).paper.unwrap().white.iter().all(|w| *w < 0.95));
 }
 
 #[test]
@@ -97,18 +102,14 @@ fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone() {
 
 #[test]
 fn the_neutral_papers_curve_is_onis_print_at_rest_on_each_layer() {
-    for reversal in [false, true] {
-        let sheet = neutral::sheet(reversal);
-        let mode = if reversal { ConversionMode::Positive } else { ConversionMode::Negative };
-        let rest = Print { exposure: Print::resting_exposure(mode), ..Print::default() };
-        let last = (PAPER_CURVE_NODES - 1) as f32;
-        for (i, d) in sheet.curves.iter().enumerate() {
-            let share = if reversal { i as f32 / last } else { 1.0 - i as f32 / last };
-            let expected = -rest.output(share, LevelsChannel::Linked).max(neutral::NEUTRAL_DEEPEST).log10();
-            assert!(d.iter().all(|v| (v - expected).abs() < 1e-5), "node {i}: {d:?} for {expected}");
-        }
-        assert!(sheet.print.len() == 3 && sheet.view.len() == 3);
+    let sheet = neutral::sheet();
+    let rest = Print { exposure: Print::resting_exposure(ConversionMode::Negative), ..Print::default() };
+    let last = (PAPER_CURVE_NODES - 1) as f32;
+    for (i, d) in sheet.curves.iter().enumerate() {
+        let expected = -rest.output(1.0 - i as f32 / last, LevelsChannel::Linked).max(neutral::NEUTRAL_DEEPEST).log10();
+        assert!(d.iter().all(|v| (v - expected).abs() < 1e-5), "node {i}: {d:?} for {expected}");
     }
+    assert!(sheet.print.len() == 3 && sheet.view.len() == 3);
     // Twin: a paper's own layers each run their own curve.
     let portra = paper::sheet(PaperStock::KodakPortraEndura);
     assert!(portra.curves.iter().any(|d| (d[0] - d[1]).abs() > 0.05 || (d[1] - d[2]).abs() > 0.05));

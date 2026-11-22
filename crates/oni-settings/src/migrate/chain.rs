@@ -97,6 +97,9 @@ pub const VIRTUAL_STOCKS_VERSION: i64 = 54;
 pub const GRAIN_ON_FILM_VERSION: i64 = 55;
 /// The version a digital photo came to keep its own film's gains and dyes, a folder's roll never laying another film's.
 pub const OWN_FILM_VERSION: i64 = 56;
+/// The version a slide came to print on a negative paper through an internegative, the reversal paper retired: a slide
+/// that named a negative paper rendered on ONI's print, one on the reversal paper printed on paper.
+pub const SLIDE_INTERNEGATIVE_VERSION: i64 = 58;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

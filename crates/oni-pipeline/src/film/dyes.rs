@@ -1,6 +1,6 @@
 //! Each dye set as the scan's camera reads it, from the stock profiles ONI ships: the light table's D50 read
 //! by the 1931 observer in Rec. 2020, the virtual negative's own scan. The generic set is the C-41 profiles' mean
-//! at each wavelength most of them measure; a slide's dyes on its paper the E-6 profiles'.
+//! at each wavelength most of them measure.
 
 use super::bake::{self, M3};
 use super::cie;
@@ -39,9 +39,6 @@ pub const C41: [&str; 9] = [
     "fujifilm_xtra_400",
 ];
 
-/// The E-6 profiles a slide's dyes average: every reversal still film spektrafilm measures, Kodachrome's own process aside.
-pub const E6: [&str; 3] = ["kodak_ektachrome_100", "fujifilm_provia_100f", "fujifilm_velvia_100"];
-
 /// A profile's file, shipped unchanged.
 pub fn source(name: &str) -> Option<&'static [u8]> {
     Some(match name {
@@ -61,9 +58,6 @@ pub fn source(name: &str) -> Option<&'static [u8]> {
         "fujifilm_c200" => include_bytes!("../../resources/film/fujifilm_c200.json"),
         "fujifilm_pro_400h" => include_bytes!("../../resources/film/fujifilm_pro_400h.json"),
         "fujifilm_xtra_400" => include_bytes!("../../resources/film/fujifilm_xtra_400.json"),
-        "kodak_ektachrome_100" => include_bytes!("../../resources/film/kodak_ektachrome_100.json"),
-        "fujifilm_provia_100f" => include_bytes!("../../resources/film/fujifilm_provia_100f.json"),
-        "fujifilm_velvia_100" => include_bytes!("../../resources/film/fujifilm_velvia_100.json"),
         _ => return None,
     })
 }
@@ -78,11 +72,6 @@ pub fn measured(set: DyeSet) -> Vec<(usize, [f64; 4])> {
         Some(name) => bake::scanned(&profile(name)),
         None => mean(&C41.map(|name| bake::scanned(&profile(name)))),
     }
-}
-
-/// A slide's dyes and base, the E-6 profiles' mean: what an enlarger passes of a slide whatever its stock.
-pub fn slide() -> Vec<(usize, [f64; 4])> {
-    mean(&E6.map(|name| bake::scanned(&profile(name))))
 }
 
 /// The profiles' mean at each wavelength more than half of them measure.
@@ -133,12 +122,6 @@ pub fn dyes(set: DyeSet) -> &'static Dyes {
     static SETS: [OnceLock<Dyes>; DyeSet::ALL.len()] = [const { OnceLock::new() }; DyeSet::ALL.len()];
     let at = DyeSet::ALL.iter().position(|s| *s == set).expect("every set is listed");
     SETS[at].get_or_init(|| derive(measured(set)))
-}
-
-/// A slide's dyes read by the camera, derived at first use.
-pub fn slide_dyes() -> &'static Dyes {
-    static SLIDE: OnceLock<Dyes> = OnceLock::new();
-    SLIDE.get_or_init(|| derive(slide()))
 }
 
 impl Dyes {

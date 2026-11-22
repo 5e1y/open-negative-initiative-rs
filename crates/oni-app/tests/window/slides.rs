@@ -128,7 +128,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         let g = s.gains.stops;
         assert!(alike(s) && g[0] < g[1] && g[1] < g[2] && g.iter().sum::<f32>().abs() < 1e-4, "F{i}: red down, blue up, the level held: {:?} {:?}", s.levels, s.gains);
         assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
-        assert_eq!(s.paper(), Some(PaperStock::KodakEktachromeRadianceIII), "F{i}: printed on the reversal paper, as a prepared negative on its own");
+        assert_eq!(s.paper(), Some(PaperStock::default()), "F{i}: printed on the default paper, as a prepared negative is");
     }
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
     assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");

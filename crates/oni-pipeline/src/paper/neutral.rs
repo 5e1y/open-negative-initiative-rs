@@ -22,27 +22,26 @@ fn dye(c: usize) -> V4 {
 
 /// ONI's print at rest as a characteristic curve, its log exposure in units of the frame's range: the range spans the
 /// print from black to white as a window spans it, the reference grey at 0, where its share prints a plain RAW's grey.
-fn sheet_of(reversal: bool) -> Sheet {
-    let mode = if reversal { ConversionMode::Positive } else { ConversionMode::Negative };
-    let rest = Print { exposure: Print::resting_exposure(mode), ..Print::default() };
+fn sheet_of() -> Sheet {
+    let rest = Print { exposure: Print::resting_exposure(ConversionMode::Negative), ..Print::default() };
     let light = |t: f32| rest.output(t, LevelsChannel::Linked);
     let grey = bisected(0.0, 1.0, *GREY_PRINT, light);
     let last = (PAPER_CURVE_NODES - 1) as f32;
-    // More light prints darker on a negative paper, lighter on a reversal one.
-    let share = |i: usize| if reversal { i as f32 / last } else { 1.0 - i as f32 / last };
+    // More light prints darker.
+    let share = |i: usize| 1.0 - i as f32 / last;
     Sheet {
         curves: std::array::from_fn(|i| [-light(share(i)).max(NEUTRAL_DEEPEST).log10(); 3]),
-        curve_low: if reversal { -grey } else { grey - 1.0 },
+        curve_low: grey - 1.0,
         curve_step: 1.0 / last,
         print: (0..3).map(dye).collect(),
         view: (0..3).map(unit).collect(),
     }
 }
 
-/// The neutral paper, a negative's or a reversal one, baked at first use; its axis scales with the frame's range.
-pub fn sheet(reversal: bool) -> &'static Sheet {
-    static SHEETS: [OnceLock<Sheet>; 2] = [const { OnceLock::new() }; 2];
-    SHEETS[usize::from(reversal)].get_or_init(|| sheet_of(reversal))
+/// The neutral paper, baked at first use; its axis scales with the frame's range.
+pub fn sheet() -> &'static Sheet {
+    static SHEET: OnceLock<Sheet> = OnceLock::new();
+    SHEET.get_or_init(sheet_of)
 }
 
 /// The enlarger on the neutral paper: one band a dye, each layer reading its own behind the filter that holds it back;

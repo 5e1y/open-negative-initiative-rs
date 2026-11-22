@@ -171,7 +171,7 @@ fn on_black(p: &Paper, amounts: [f32; 3]) -> f32 {
 fn shown_moved(p: &Paper, amounts: [f32; 3], f: impl Fn(f32) -> f32) -> [f32; 3] {
     let log = p.exposed(p.toned(amounts));
     let x = p.toward_light(p.pick_log, log);
-    let moved = if p.reversal { x - f(x) } else { f(x) - x };
+    let moved = f(x) - x;
     let light = p.viewed(p.developed(p.graded(log.map(|v| v - moved))));
     let light = if p.luma { [0.2627 * light[0] + 0.678 * light[1] + 0.0593 * light[2]; 3] } else { light };
     p.ended(p.coloured(light))

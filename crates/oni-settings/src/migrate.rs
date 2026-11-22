@@ -25,6 +25,7 @@ pub mod matrices;
 mod on_disk;
 pub mod reshape;
 pub mod scan_line;
+pub mod slide_paper;
 pub mod measured_dyes;
 pub mod one_face;
 pub mod own_film;
@@ -231,6 +232,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         let mosaic = if version < chain::PRIMARIES_HELD_VERSION { Some(facts.mosaic.get()?) } else { None };
         earlier(stored, version, mosaic).map_err(Refusal::Unreadable)?
     };
+    converted.document.settings = slide_paper::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     let former = paper_blacks::Former::read(raw.as_ref()).map_err(Refusal::Unreadable)?;
     let mut held = None;
     let settings = std::mem::take(&mut converted.document.settings);
@@ -284,6 +286,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
         let scanner = one_face::Scanner::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let former = paper_blacks::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
+        let settings = slide_paper::caught_up(version, settings, Some(&raw));
         let settings = grain_size::unfiled(version, settings, Some(&raw));
         let settings = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw))));
         let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
@@ -293,6 +296,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     let former = paper_blacks::Former::read(stored.get("settings")).map_err(Refusal::Unreadable)?;
     let raw = stored.get("settings").cloned();
     let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
+    converted.document.settings = slide_paper::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     converted.document.settings = grain_size::unfiled(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
     converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
