@@ -8,7 +8,6 @@ use oni_settings::tone::{Print, color_density};
 use oni_settings::PipelineSettings;
 #[cfg(test)]
 use oni_settings::ConversionMode;
-use std::ops::RangeInclusive;
 
 pub type M3 = [[f32; 3]; 3];
 
@@ -21,11 +20,9 @@ pub const INVERSION: f32 = 5e-4;
 pub const INVERSION_FLOOR: f32 = INVERSION / 64.0;
 
 mod decompression;
-mod points;
 mod separation;
 
 pub use decompression::*;
-pub use points::*;
 pub use separation::*;
 
 fn vector(w: &Levels) -> [f32; 3] {
@@ -47,15 +44,15 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
-/// black and white print, no channel's own tone; the frame's paper in place of the windows and the print, the colour
-/// density and the print's ends its own; a slide on a paper, its internegative's.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: the dyes, Lighting on the negative, the windows and the
+/// print at its rest of every mode; a black and white print, no channel's own tone; the frame's paper in place of the
+/// windows and the print, the colour density and the print's ends its own; a slide on a paper, its internegative's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return stage47(&copy.settings);
     }
-    let k = unprinted(s);
-    match crate::paper::printing(s, &k, k.dyes.as_ref()) {
+    let k = lit(s);
+    match crate::paper::printing(s, &k) {
         Some(p) => Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, paper: Some(p.paper), ..k },
         None => k,
     }
@@ -66,27 +63,32 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return printing(&copy.settings);
     }
-    let k = unprinted(s);
-    crate::paper::printing(s, &k, k.dyes.as_ref())
+    crate::paper::printing(s, &lit(s))
 }
 
-/// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
-fn unprinted(s: &PipelineSettings) -> Stage47 {
-    let print = &s.print.on_curve(Print::resting_exposure(s.mode));
+/// Stage 4-7's arguments before any paper, Lighting on the negative.
+fn lit(s: &PipelineSettings) -> Stage47 {
+    let on_negative = !s.print.rests_on_negative(s.mode);
+    let k = unprinted(&PipelineSettings { print: s.print.unlit(s.mode), ..s.clone() }, on_negative && crate::negative::reads_amounts(s));
+    Stage47 { negative: crate::negative::negative(s, &k), ..k }
+}
+
+/// Stage 4-7's arguments before any paper and Lighting: the reading, its dyes, the windows and ONI's print, the dyes'
+/// amounts read as they are on a paper or where Lighting reads them before their tone (`amounts`).
+fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
+    let print = &s.print;
     let mono = s.mode.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     let on_paper = s.paper().is_some() && !print.bypassed;
-    let dyes = if on_paper { stock_amounts(s) } else { stock_separation(s) };
-    let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
-    let unreached = s.levels.windows();
-    let windows = lv.windows();
+    let dyes = if on_paper || amounts { stock_amounts(s) } else { stock_separation(s) };
+    let windows = s.levels.windows();
     Stage47 {
         gain: s.gains.stops.map(f32::exp2),
-        red: vector(&lv.red),
-        green: vector(&lv.green),
-        blue: vector(&lv.blue),
+        red: vector(&s.levels.red),
+        green: vector(&s.levels.green),
+        blue: vector(&s.levels.blue),
         invert: s.mode.invert_flag(),
         density: if mono { 1.0 } else { color_density::factor(s.density) },
         pedestal,
@@ -95,7 +97,8 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         low_points: windows.map(|w| w.shadow_ordinate()),
         high_points: windows.map(|w| w.highlight_ordinate()),
         print_on: if print.bypassed { 0.0 } else { 1.0 },
-        print_stops: print.exposure,
+        // A legacy print's look reads ONI's print curve at its machine's entry.
+        print_stops: if s.legacy().is_some() { oni_settings::migrate::one_face::look_entry_stops(s.mode) } else { print.exposure },
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
         own_stops: print.filters(),
@@ -103,10 +106,11 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono || !s.print.colour_compensation { 0.0 } else { 1.0 },
         decompression,
-        balance_low: unreached.map(|w| w.black),
-        balance_span: unreached.map(|w| signed_span(&w)),
+        balance_low: windows.map(|w| w.black),
+        balance_span: windows.map(|w| signed_span(&w)),
         film_share,
         dyes,
+        negative: None,
         paper: None,
     }
 }

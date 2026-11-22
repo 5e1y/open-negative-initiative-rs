@@ -176,7 +176,7 @@ fn the_print_is_the_papers_own_its_colour_density_included() {
         assert!(k.print_on == 0.0 && k.hunt == 0.0, "{label}: no print curve, no Hunt on the paper");
         let paper_alone = |q: V4| {
             let read = k.dyes.as_ref().map_or(q, |d| cpu::dye_separation(q, &k, d));
-            cpu::paper(read, &p)
+            cpu::paper(k.negative.as_ref().map_or(read, |n| cpu::negative(read, n)), &p)
         };
         let worst = |k: &Stage47| pixels.iter().map(|q| {
             let (a, b) = (cpu::stage47(*q, k), paper_alone(*q));

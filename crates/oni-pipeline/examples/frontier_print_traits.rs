@@ -4,7 +4,6 @@
 use oni_pipeline::look_lab::measure::{lch, linear_rgb, oklab, turn};
 use oni_pipeline::{conversion, film, frontier_look, scanner};
 use oni_render::{ScannerEncode, ScannerOutput, cpu};
-use oni_settings::migrate::one_face::look_entry_exposure;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
 type V3 = [f64; 3];
@@ -45,7 +44,6 @@ fn prints() -> Vec<(&'static str, PipelineSettings)> {
     let on = |p: Option<PaperStock>| PipelineSettings { print_paper: p, ..digital.clone() };
     let mut today = on(None);
     today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
-    today.print.exposure = look_entry_exposure(today.mode);
     vec![
         ("Frontier SP-3000 paper", on(Some(PaperStock::FujifilmFrontierSp3000))),
         ("Frontier legacy print", today),

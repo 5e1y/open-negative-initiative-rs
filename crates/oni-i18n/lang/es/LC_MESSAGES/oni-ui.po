@@ -1938,8 +1938,8 @@ msgid "Colour compensation"
 msgstr "Compensación del color"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The colour the print lays in answer to Lighting's tones: Exposure and the zones lower the colour density as the print brightens, Contrast and the points lay saturation curves, drawn dashed on the Saturation Curve, and the points hold the colour they stretch. On ONI's print, whose curve rests a stop and a half up, the density acts at rest too.\n\nOff, the sliders bend each channel's tone alone: the luma moves as before, the colour as each channel's curve gives it, so Contrast and the points change its strength."
-msgstr "El color que la copia aplica en respuesta a los tonos de Luz: Exposición y las zonas bajan la densidad del color cuando la copia se aclara, Contraste y los puntos aplican curvas de saturación, dibujadas con línea discontinua en la Curva de saturación, y los puntos conservan el color que estiran. En la copia de ONI, cuya curva reposa 1,5 EV más arriba, la densidad actúa también en reposo.\n\nDesactivada, los reguladores curvan el tono de cada canal por sí solo: la luminancia se mueve como antes y el color como lo da la curva de cada canal, así que Contraste y los puntos cambian su intensidad."
+msgid "The colour density ONI's print lays by itself as its curve, resting a stop and a half up, brightens the picture. Lighting acts on the negative, whose colour is its own.\n\nOff, ONI's print lays none: its colour is the windows' alone."
+msgstr "La densidad de color que la copia de ONI aplica por sí sola cuando su curva, en reposo un paso y medio más arriba, aclara la imagen. Luz actúa sobre el negativo, cuyo color es el suyo.\n\nDesactivada, la copia de ONI no aplica ninguna: su color es solo el de las ventanas."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "This photo was edited on the former Scanner face and keeps its print as that face laid it: the machine's look over ONI's print, or on a paper its keys alone, with the keypad's D, C, M, Y and TEMP read below. Off, the photo prints as the sliders above say, and the legacy print is kept to be laid again; a photo never edited there has none."
@@ -2162,8 +2162,8 @@ msgid "Saturation Curve"
 msgstr "Curva de saturación"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'; none while Lighting's Colour compensation is off."
-msgstr "Saturación según la luz, del punto negro al blanco: sube un punto para intensificar el color en sus tonos y bájalo para llevarlo hacia el gris. La luminosidad nunca se mueve.\n\nArrastra un punto a lo largo de la luz para elegir sus tonos; haz doble clic para devolverlo a neutro.\n\nLa línea discontinua es la saturación que la copia aplica por sí sola: la del Contraste, que conserva el color de cada tono cuando el Contraste lo endurece o lo suaviza, y la de los puntos negro y blanco; ninguna mientras Compensación del color, en Luz, esté desactivada."
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral."
+msgstr "Saturación según la luz, del punto negro al blanco: sube un punto para intensificar el color en sus tonos y bájalo para llevarlo hacia el gris. La luminosidad nunca se mueve.\n\nArrastra un punto a lo largo de la luz para elegir sus tonos; haz doble clic para devolverlo a neutro."
 
 #: crates/oni-ui/ui/panel/crop_tab.slint
 msgid "Kept"

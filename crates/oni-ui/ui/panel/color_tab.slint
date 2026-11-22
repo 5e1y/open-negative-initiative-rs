@@ -32,7 +32,7 @@ component PaperPicker inherits Picker {
     }
 }
 
-// Lighting's colour compensation, on ONI's print alone as the enlarger lays none, then a legacy print where one is kept.
+// ONI's print's colour compensation, on ONI's print alone as the enlarger lays none, then a legacy print where one is kept.
 component PrintRows inherits VerticalLayout {
     spacing: Space.s;
     if !PanelState.monochrome && !(PanelState.paper-shown && PanelState.enlarger-on): HorizontalLayout {
@@ -46,7 +46,7 @@ component PrintRows inherits VerticalLayout {
             alignment: center;
             HelpMark {
                 subject: @tr("Colour compensation");
-                note: @tr("The colour the print lays in answer to Lighting's tones: Exposure and the zones lower the colour density as the print brightens, Contrast and the points lay saturation curves, drawn dashed on the Saturation Curve, and the points hold the colour they stretch. On ONI's print, whose curve rests a stop and a half up, the density acts at rest too.\n\nOff, the sliders bend each channel's tone alone: the luma moves as before, the colour as each channel's curve gives it, so Contrast and the points change its strength.");
+                note: @tr("The colour density ONI's print lays by itself as its curve, resting a stop and a half up, brightens the picture. Lighting acts on the negative, whose colour is its own.\n\nOff, ONI's print lays none: its colour is the windows' alone.");
             }
         }
     }
@@ -341,7 +341,7 @@ export component ColorPane inherits Pane {
         block: 3;
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
-        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'; none while Lighting's Colour compensation is off.");
+        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.");
         SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }

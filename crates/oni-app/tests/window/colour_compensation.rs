@@ -1,5 +1,5 @@
 //! Lighting's colour compensation on the Colour tab of the headless window: a switch on at rest, turning it off stores
-//! it, renders the frame again and takes the print's dashed saturation off the Saturation Curve's plot.
+//! it and renders the frame again; the Saturation Curve's plot draws no print's own curve.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use crate::common;
 
-pub(crate) fn the_switch_renders_again_without_the_dashed_guide() {
+pub(crate) fn the_switch_renders_again_and_lays_no_dashed_guide() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the colour compensation switch is not exercised"),
@@ -43,27 +43,28 @@ pub(crate) fn the_switch_renders_again_without_the_dashed_guide() {
     editors.set_saturation_folded(false);
     rig.pump();
     let settings = || ctl.state.borrow().store().settings().clone();
-    // The neutral line, the print's own saturation dashed, the hand's curve.
+    // The neutral line and the hand's curve: Contrast acts on the negative and lays no curve of its own.
     let lines = || editors.get_saturation_lines().row_count();
 
-    // At rest the switch is on and shown in Lighting; Contrast lays its curve, dashed under the hand's.
+    // At rest the switch is on and shown in Lighting.
     assert!(settings().print.colour_compensation && panel.get_colour_compensation());
     common::the(w, Role::Checkbox, "Colour compensation");
     w.global::<Store>().invoke_step(Field::Contrast.index(), 6);
     rig.pump();
     assert_ne!(settings().print.contrast, 0.0);
-    assert_eq!(lines(), 3, "Contrast's curve drawn dashed while the compensation is on");
+    assert_eq!(lines(), 2, "no dashed line: the negative lays Contrast's colour");
 
     let renders = ctl.state.borrow().renders();
     panel.invoke_colour_compensation_toggled(false);
     rig.pump();
     assert!(!settings().print.colour_compensation && !panel.get_colour_compensation());
     rig.until("the frame rendered without the compensation", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    assert_eq!(lines(), 2, "no dashed line once the print lays no curve");
-    // Twin: back on, the dashed line returns.
+    assert_eq!(lines(), 2);
+    // Twin: back on, the frame renders again.
+    let renders = ctl.state.borrow().renders();
     panel.invoke_colour_compensation_toggled(true);
     rig.pump();
     assert!(settings().print.colour_compensation);
-    assert_eq!(lines(), 3);
+    rig.until("the frame rendered with the compensation", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -60,10 +60,10 @@ fn occupied_codes(rgb: &[V3]) -> usize {
     rgb.iter().map(|v| (v[1].clamp(0.0, 1.0) * 255.0).round() as u8).collect::<std::collections::HashSet<_>>().len()
 }
 
-/// The settings' defaults, the print's curve taking no exposure.
+/// The settings' defaults, Lighting at rest.
 fn bare() -> PipelineSettings {
     let mut s = PipelineSettings::default();
-    s.print.exposure = oni_settings::tone::Print::exposure_at(0.0, oni_settings::tone::Print::RESTING_EXPOSURE);
+    s.print.exposure = oni_settings::tone::Print::RESTING_EXPOSURE;
     s
 }
 

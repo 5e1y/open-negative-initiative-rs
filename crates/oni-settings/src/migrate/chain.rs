@@ -104,6 +104,9 @@ pub const SLIDE_INTERNEGATIVE_VERSION: i64 = 58;
 /// retired: a digital photo's gains and windows move onto its stock's new reference, and a build before it would print
 /// every key on spektrafilm's profile.
 pub const DATASHEET_VERSION: i64 = 60;
+/// The version Lighting came to act on the negative in every pipe, each print at its rest: a legacy print's look came to
+/// read its machine's entry itself, its photo's Exposure moved off it to Lighting's rest.
+pub const LIGHTING_ON_NEGATIVE_VERSION: i64 = 61;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

@@ -46,7 +46,12 @@ fn per_pixel_kernels_match_their_references() {
     let transmitted = noise(w, h, 2, 0.002, 0.9);
     let film = g.upload(w, h, &transmitted).unwrap();
 
-    let k = conversion::stage47(&negative());
+    let lit = conversion::stage47(&negative());
+    let n = lit.negative.expect("Lighting moved");
+    let moved = oni_render::Negative { shift: n.shift.map(|v| v + 0.01), ..n };
+    per_pixel(&mut g, "negative", &film, &transmitted, stages::negative(&n), |p| cpu::negative(p, &n), |p| cpu::negative(p, &moved));
+    // Stage 4-7's kernel alone, past Lighting's pass.
+    let k = oni_render::Stage47 { negative: None, ..lit };
     let shifted = oni_render::Stage47 { gain: [k.gain[0], k.gain[1] * 1.01, k.gain[2]], ..k };
     per_pixel(&mut g, "stage47", &film, &transmitted, stages::stage47(&k), |p| cpu::stage47(p, &k), |p| cpu::stage47(p, &shifted));
     per_pixel(&mut g, "stage47, channels swapped", &film, &transmitted, stages::stage47(&k), |p| cpu::stage47(p, &k), |p| swapped(cpu::stage47(p, &k)));

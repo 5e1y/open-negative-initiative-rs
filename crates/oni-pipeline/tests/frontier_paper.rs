@@ -1,5 +1,5 @@
 //! The Frontier SP-3000 as a paper: its print is the measured table, its rest neutral with no offset of the machine's,
-//! Lighting in true density as on every paper, the GPU its reference. Each verdict has a twin.
+//! Lighting on the negative as on every paper, the GPU its reference. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -9,7 +9,7 @@ use common::{V4, error, graph, judge, mapped, noise, whole};
 use frames::*;
 use oni_graph::Image;
 use oni_pipeline::look_lab::measure::{self, centile, constrained, median};
-use oni_pipeline::paper::{self, GREY_PRINT, GRADE_BASE};
+use oni_pipeline::paper::GREY_PRINT;
 use oni_pipeline::{conversion, film, scanner, stages};
 use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
@@ -30,9 +30,9 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a negative on the Frontier")
 }
 
-/// The print at unit time and no filtration, untoned and ungraded: the table's own coordinates, amounts read as `x`.
+/// The print at unit time and no filtration: the table's own coordinates, amounts read as `x`.
 fn bare(s: &PipelineSettings) -> Paper {
-    Paper { scale: 1.0, filters: [1.0; 3], slope: [1.0; 3], points_black: [0.0; 3], points_white: [0.0; 3], zones: [0.0; 2], mids: [0.0; 3], ..paper_of(s) }
+    Paper { scale: 1.0, filters: [1.0; 3], ..paper_of(s) }
 }
 
 /// Median and p90 ΔE (Oklab × 100, display-clipped) of `p` against the measured cube on its constrained nodes.
@@ -93,39 +93,34 @@ fn the_rest_prints_the_reference_grey_neutral_with_no_offset_of_the_machines() {
 }
 
 #[test]
-fn lighting_moves_it_in_true_density_as_on_every_paper() {
+fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
+    let luma = |v: V4| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
     for (label, s) in frames() {
         let rest = paper_of(&s);
-        let anchors = paper::anchors(&s, conversion::stage47(&s).dyes.as_ref());
-        let mut up = s.clone();
-        up.print.exposure += 1.0;
-        let p = paper_of(&up);
-        let off = anchors.iter().flat_map(|a| (0..3).map(move |c| (a, c))).map(|(a, c)| (p.exposed(*a)[c] - rest.exposed(*a)[c] + std::f32::consts::LOG10_2).abs()).fold(0.0f32, f32::max);
-        println!("{label}: Exposure +1 a stop less light within {off:.1e} of log10 2");
-        assert!(off < 2e-6, "{label}: {off}");
-        // Twin: ONI's gear, two stops a slider stop.
-        let geared = Paper { scale: rest.scale * (-Print::EXPOSURE_GEAR).exp2(), ..rest };
-        assert!((geared.exposed(anchors[2])[1] - p.exposed(anchors[2])[1]).abs() > 0.29, "{label}");
-        // Contrast is the print's grade about the grey.
-        let mut hard = s.clone();
-        hard.print.contrast = 0.3;
-        let p = paper_of(&hard);
-        let (g, b) = (p.exposed(anchors[2]), p.exposed(anchors[0]));
-        let slope = (p.graded(g)[1] - p.graded(b)[1]) / (g[1] - b[1]);
-        assert!((slope - GRADE_BASE.powf(0.3)).abs() < 1e-4 && (p.graded(g)[1] - g[1]).abs() < 1e-6, "{label}: {slope}");
+        let was = cpu::stage47(grey_scan(&s), &conversion::stage47(&s));
+        let moves: [(&str, fn(&mut Print)); 3] =
+            [("Exposure +1", |p| p.exposure += 1.0), ("Contrast 0.3", |p| p.contrast = 0.3), ("warmer", |p| p.set_filters(Print::TEMPERATURE_AXIS))];
+        for (name, f) in moves {
+            let mut t = s.clone();
+            f(&mut t.print);
+            let k = conversion::stage47(&t);
+            let p = k.paper.unwrap();
+            // Black and white reads no filter.
+            let filtered = name == "warmer" && label == "black and white";
+            assert!(k.negative.is_some() != filtered, "{label}, {name}: Lighting lays its move on the negative");
+            assert_eq!((p.scale, p.filters), (rest.scale, rest.filters), "{label}, {name}: the enlarger at its rest");
+            let is = cpu::stage47(grey_scan(&s), &k);
+            println!("{label}, {name}: the grey's luma {:.4} from {:.4}, red over blue {:.3} from {:.3}", luma(is), luma(was), is[0] / is[2], was[0] / was[2]);
+            match name {
+                "Exposure +1" => assert!(luma(is) > luma(was) * 1.1, "{label}"),
+                "Contrast 0.3" => assert!((luma(is) / luma(was) - 1.0).abs() < 0.02, "{label}: the grey held"),
+                _ if label != "black and white" => assert!((luma(is) / luma(was) - 1.0).abs() < 0.05 && is[0] / is[2] > was[0] / was[2] * 1.05, "{label}"),
+                _ => assert!(is == was, "{label}: black and white reads no filter"),
+            }
+        }
+        // Twin: at rest Lighting lays nothing on the negative.
+        assert!(conversion::stage47(&s).negative.is_none());
     }
-    // Temperature moves the filtration 30.1 CC a stop, the least at none, the grey's luma held.
-    let s = frames()[0].1.clone();
-    let rest = conversion::printing(&s).unwrap();
-    let mut warm = s.clone();
-    warm.print.set_filters(Print::TEMPERATURE_AXIS);
-    let now = conversion::printing(&warm).unwrap();
-    let expected: [f32; 3] = std::array::from_fn(|c| rest.filtration[c] + paper::CC_PER_STOP * Print::TEMPERATURE_AXIS[c]);
-    let least = expected.iter().copied().fold(f32::INFINITY, f32::min);
-    assert!((0..3).all(|c| (now.filtration[c] - (expected[c] - least)).abs() < 1e-4), "{:?} {:?}", now.filtration, rest.filtration);
-    let luma = |v: V4| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
-    let (was, is) = (cpu::stage47(grey_scan(&s), &conversion::stage47(&s)), cpu::stage47(grey_scan(&s), &conversion::stage47(&warm)));
-    assert!((luma(is) / luma(was) - 1.0).abs() < 1e-5 && is[0] / is[2] > was[0] / was[2] * 1.05, "{is:?} {was:?}");
 }
 
 #[test]

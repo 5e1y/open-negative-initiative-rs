@@ -200,20 +200,20 @@ fn at_rest_or_measured_the_chain_holds_no_halation() {
 }
 
 #[test]
-fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
-    let Some(mut g) = graph("the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow") else { return };
+fn the_halation_lies_under_the_film_so_lightings_exposure_develops_its_glow_as_the_films() {
+    let Some(mut g) = graph("the_halation_lies_under_the_film_so_lightings_exposure_develops_its_glow_as_the_films") else { return };
     let side = 1200;
     // A lamp the film's shoulder still prints past white at the print's rest.
     let source = lamp_of(&mut g, side, 100.0, 16.0);
     let mut pipeline = Pipeline::new();
-    // On ONI's print, which lets the lamp past white: a paper's white holds every exposure's lamp.
     let s = PipelineSettings { print_paper: None, ..haloed(1.0, 1.0) };
     let halo = ring(side, 102.0, 120.0);
-    // The glow's red in the print, at a print exposure: the lamp's surround with it less without it.
-    let mut glow = |after: bool, exposure: f32| -> f32 {
+    // The glow's red in the print, at Lighting's and the film's exposure: the lamp's surround with it less without it.
+    let mut glow = |after: bool, lighting: f32, film: f32| -> f32 {
         let mut render = |amount: f32| {
             let mut t = s.clone();
-            t.print.exposure = exposure;
+            t.print.exposure += lighting;
+            t.virtual_film = Some(oni_settings::VirtualFilm { exposure: film, ..t.film().unwrap() });
             t.halation.amount = if after { 0.0 } else { amount };
             let image = pipeline.image(&mut g, &source, &t, &Request::default(), &Default::default()).unwrap();
             let image = if after && amount > 0.0 { halation::halated(image, &s, Rect::new(0, 0, side, side)) } else { image };
@@ -222,15 +222,14 @@ fn the_halation_lies_under_the_print_so_its_exposure_reaches_the_glow() {
         let (with, without) = (render(1.0), render(0.0));
         halo.iter().map(|i| with[*i][0] - without[*i][0]).sum::<f32>() / halo.len() as f32
     };
-    // From the print's rest, where the lamp prints past white, a stop up, two on the print's curve.
-    let rest = oni_settings::tone::Print::resting_exposure(s.mode);
-    let under = glow(false, rest + 1.0) / glow(false, rest);
-    println!("two stops of the print's curve raise the glow {under:.3} times");
-    assert!(under > 1.05, "the print's exposure leaves the glow at {under:.3}");
-    // Twin: a halation laid on the print, its lamp clipped at white whatever the exposure.
-    let over = glow(true, rest + 1.0) / glow(true, rest);
-    println!("the twin's glow rises {over:.3} times");
-    assert!(over < 1.05, "the twin's glow rises {over:.3} times, so the check sees nothing");
+    // Two stops on Lighting develop the glow as two stops on the film, which exposes the halation with the scene.
+    let (by_lighting, by_film) = (glow(false, 2.0, 0.0), glow(false, 0.0, 2.0));
+    println!("the glow two stops up: {by_lighting:.5} by Lighting, {by_film:.5} by the film");
+    assert!((by_lighting / by_film - 1.0).abs() < 0.03, "{by_lighting} {by_film}");
+    // Twin: a halation laid on the print, its lamp clipped at white, glows otherwise.
+    let over = glow(true, 2.0, 0.0);
+    println!("the twin's glow {over:.5}");
+    assert!((over / by_film - 1.0).abs() > 0.1, "the twin's glow {over}, so the check sees nothing");
 }
 
 #[test]

@@ -18,10 +18,15 @@ fn digital() -> PipelineSettings {
 fn a_digital_photos_stage_4_to_7_is_a_colour_negatives_on_the_same_settings() {
     let s = digital();
     let negative = PipelineSettings { mode: ConversionMode::Negative, ..s.clone() };
-    assert_eq!(conversion::stage47(&s), conversion::stage47(&negative));
+    let unlit = |s: &PipelineSettings| conversion::stage47(&PipelineSettings { print: s.print.unlit(s.mode), ..s.clone() });
+    assert_eq!(unlit(&s), unlit(&negative));
+    let (photo, scan) = (conversion::stage47(&s), conversion::stage47(&negative));
+    // Lighting develops a digital photo's negative on its film's own layers, a scan's on its stock's mean layer.
+    let developed = |k: &oni_render::Stage47| k.negative.expect("Lighting moved").development.clone();
+    assert!(developed(&photo).couplers != [[0.0; 3]; 3] && developed(&scan).couplers == [[0.0; 3]; 3]);
     // Twin: the same settings read as a slide are no negative.
     let slide = PipelineSettings { mode: ConversionMode::Positive, ..s.clone() };
-    assert_ne!(conversion::stage47(&s), conversion::stage47(&slide));
+    assert_ne!(unlit(&s), unlit(&slide));
 }
 
 #[test]

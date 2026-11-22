@@ -12538,5 +12538,45 @@
     "status": "done",
     "detail": "paper.rs: the default is kodak-royal-digital, its twin Endura Premier's key another paper; Portra Endura's and Radiance III's keys read as the default and never Endura Premier, Supra, Ultra and the former datasheet key as Endura Premier. Tests that used Royal Digital as a chosen, non-default paper (paperless, one_face, migrate::paper, slide_paper) take Ektacolor Edge so a fall back to the default still fails them; the GPU paper frames print the black and white frame on Endura Premier so every paper stays covered. Format 46's legacy fingerprints: the two cases on Portra Endura (oni-digital-on-paper, oni-paper-keys-temp) re-drawn on Royal Digital, every other case to the bit. Virtual stocks on the default paper: widest C*ab 13.4 on Pro 160NH (CPU and GPU, ceiling 14 kept), lights' 4.7 on Verita 200D, its bound 4.5 raised to 5.0; the window checks' paper switch takes Royal Digital.",
     "outcome": ""
+  },
+  {
+    "id": 3400,
+    "type": "feature",
+    "title": "Lighting on the negative: a kernel reading each layer's log exposure back through its stock's development",
+    "status": "done",
+    "detail": "oni-render's negative kernel (CPU reference and WGSL): a pixel's density above the bare film read back to each layer's log exposure through the stock's two curves and its DIR couplers (Newton's steps), Exposure and Contrast laid there before the couplers pull, each channel's contrast and filter on what its layer develops on after they pull, the film developed again, then the points, zones and mids on its density and the print's tone. Under the toe's foot a density takes the foot's move, less the nearer the fog, which no move leaves; over the shoulder the shoulder's.",
+    "outcome": ""
+  },
+  {
+    "id": 3401,
+    "type": "feature",
+    "title": "Lighting on the negative in every pipe, each print at its rest",
+    "status": "done",
+    "detail": "conversion::stage47 prints with Lighting at rest (Print::unlit) and lays crate::negative's Negative before the windows or the paper: ONI's print (its windows unreached, its print curve, Hunt and colour density at rest), the enlarger on a paper or the neutral paper, digital photos, scanned colour negatives, black and white, slides on ONI's print and slides through their internegative. The film developed again is the virtual stock's (digital), the dye set's profile (scans), the C-41 profiles' mean (generic), its mean layer uncoupled (black and white), the slide's own light (a positive). The paper keeps its rest's time and filtration; the print's pick is the bare film as Lighting develops it, anchored as before. The points' and Contrast's saturation curves and the points reaching the windows go: their colour is the negative's own.",
+    "outcome": ""
+  },
+  {
+    "id": 3402,
+    "type": "migration",
+    "title": "Sidecar format 61: Lighting on the negative, a legacy print reading its machine's entry itself",
+    "status": "done",
+    "detail": "Every photo keeps its Lighting values and, where they move off rest, its render moves (owner's call). A photo on a laid legacy print off a paper kept its machine's entry in Lighting's Exposure, which ONI's print curve read: the legacy print lays that entry itself (one_face::look_entry_stops) and the migration moves Exposure to Lighting's rest by it, so a legacy photo at rest renders to the bit as before; its Scanner-face contrast, now on the negative, moves it. The corpus goldens of the eleven legacy sidecars read Exposure 1.5, the newer-format fixture is 62, and the legacy fingerprints of the 29 cases off Lighting's rest are format 61's.",
+    "outcome": ""
+  },
+  {
+    "id": 3403,
+    "type": "test",
+    "title": "Lighting on the negative proven on every pipe",
+    "status": "done",
+    "detail": "tests/lighting_on_negative.rs: every pipe at Lighting's rest folds to the bits of the build before it, a legacy print at its entry; Exposure ±1 on a scanned negative within ΔE 1.2 (median 0.2) of that negative shot a stop over, the enlarger's time 8 to 16 off; on a digital photo within ΔE 0.6 of the Film section's Exposure; colour lighter than the grey kept as the film keeps it; Contrast holding the grey's negative; the filters tinting with the grey's weight held; every print finite and monotone past the curves' ends; the GPU its reference. The kernel's own checks read back through the couplers and keep a channel's own move on its layer. Tests whose subject left (the exposure gear, Contrast's and the points' saturation curves, colour compensation's answer to Lighting, the paper's grade and filtration) go; the others read Lighting on the negative.",
+    "outcome": ""
+  },
+  {
+    "id": 3404,
+    "type": "feature",
+    "title": "Lighting on the negative reads each pipe's own neutral",
+    "status": "done",
+    "detail": "A digital photo's negative is the model's own: Lighting reads its dyes' amounts (ONI's print takes the dyes' pass untoned and the separation's tone after the moves) and develops them again on its virtual stock's three coupled layers, its Exposure within ΔE 0.5 of the Film section's. A scan's negative is not the model's: the couplers, read back, turned its small departures from the model's neutral into colour on every move. It is read on its stock's mean layer (the C-41 profiles' for the generic set), each channel scaled so the frame's reference grey sits on that layer at the speed's exposure, ONI's print reading the density its windows read: every common move keeps the frame's neutral to the bit. Under the toe's foot a density takes the foot's move, less the nearer the fog, which no move leaves; over the shoulder the shoulder's; foot and shoulder lie where the curve rises 0.1 of density a log, a scan's hundredth of grain then reading within a tenth of a log.",
+    "outcome": ""
   }
 ]
