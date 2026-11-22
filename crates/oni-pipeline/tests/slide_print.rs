@@ -208,11 +208,8 @@ fn lighting_moves_a_slide_on_its_paper_as_it_moves_a_negative() {
     // Contrast: the grade turns about the grey, a denser tone darker.
     let hard = moved(&s, |t| t.print.contrast = 0.5);
     assert!((luma(printed(&hard, grey_scan)) / luma(rest) - 1.0).abs() < 0.01 && luma(printed(&hard, near)) < 0.9 * luma(printed(&s, near)));
-    // Shadows lift the slide's dense tones; Brightness lightens the grey and leaves the densest read where it was.
+    // Shadows lift the slide's dense tones.
     assert!(luma(printed(&moved(&s, |t| t.print.shadows = 0.5), near)) > 1.05 * luma(printed(&s, near)));
-    let bright = moved(&s, |t| t.print.brightness = 1.0);
-    let densest = scan_at(&s, paper::film_ends(&s).1);
-    assert!(luma(printed(&bright, grey_scan)) > 1.1 * luma(rest) && (luma(printed(&bright, densest)) - luma(printed(&s, densest))).abs() < 1e-6);
     // Twin: a reversal paper's sense, a stop brighter as more light, darkens the grey instead.
     let wrong = Stage47 { paper: Some(Paper { scale: k0.scale * 2.0, ..k1 }), ..conversion::stage47(&over) };
     assert!(luma(rgb(cpu::stage47(negative(&s, grey_scan), &wrong))) < luma(rest));
@@ -244,5 +241,33 @@ fn the_gpu_prints_a_slide_through_its_internegative_as_its_reference_does() {
         let clipped = mapped(&reference, |p| [p[0].clamp(0.0, 1.0), p[1].clamp(0.0, 1.0), p[2].clamp(0.0, 1.0), p[3]]);
         let onis = mapped(&pixels, |q| cpu::stage47(q, &conversion::stage47(&PipelineSettings { print_paper: None, ..s.clone() })));
         judge(&format!("the editor's chain, a {label}"), &chain, &clipped, &onis);
+    }
+}
+
+#[test]
+fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_does() {
+    for (label, s) in slides() {
+        let densest = scan_at(&s, paper::film_ends(&s).1);
+        let grey = scan_at(&s, paper::reference_grey(&s));
+        for brightness in [-2.0f32, -1.0, 1.0, 2.0] {
+            let lit = moved(&s, |t| t.print.brightness = brightness);
+            let p = conversion::stage47(&lit).paper.unwrap();
+            let k = conversion::stage47(&lit);
+            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts and Lighting's tones.
+            let read = |q: V4| k.dyes.as_ref().map_or(negative(&s, q), |d| cpu::dye_separation(negative(&s, q), &k, d));
+            let amounts = |q: V4| p.toned(p.amounts(read(q)));
+            let toward = |q: V4| p.toward_light(p.pick_log, p.exposed(amounts(q)));
+            let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
+            let lift = brightness * std::f32::consts::LOG10_2;
+            println!("{label}, Brightness {brightness:+}: densest {:.4} over the pick (reach {:.4}) moved {:.5}; grey {:.4} moved {:.5}", toward(densest), p.reach, moved_by(densest), toward(grey), moved_by(grey));
+            // The slide's densest read lies a breath over the copy's base: it moves under 3 % of the lift.
+            assert!(toward(densest) < 0.1 * p.reach && moved_by(densest).abs() <= 0.03 * lift.abs() + 1e-6, "{label}, {brightness}");
+            // Its grey, past the fade, moves the whole lift, as Exposure moves it.
+            assert!(toward(grey) > oni_render::fade(lift, p.reach) + lift.abs() && (moved_by(grey) - lift).abs() < 1e-3, "{label}, {brightness}");
+            // Twin: Exposure's stops move the densest read as much as the grey.
+            let exposure = conversion::stage47(&moved(&s, |t| t.print.exposure += brightness)).paper.unwrap();
+            let by_exposure = exposure.toward_light(p.pick_log, exposure.exposed(amounts(densest))) - toward(densest);
+            assert!((by_exposure - lift).abs() < 1e-3, "{label}, {brightness}: {by_exposure}");
+        }
     }
 }

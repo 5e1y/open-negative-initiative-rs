@@ -1,6 +1,6 @@
 //! Lighting on a paper, in density as an enlarger and a printer take it: the points, zones and mids on the negative's
 //! density, Exposure the enlarger's time, Temperature and Tint its filtration, Contrast the paper's grade, Brightness
-//! the enlarger's light above a knee over the pick; the print's pick then laid on pure black, or where the rest prints
+//! the enlarger's light faded in over the deep shadows; the print's pick then laid on pure black, or where the rest prints
 //! it, the paper's white held.
 
 use super::printing::{bisected, filters, luma, root};
@@ -14,15 +14,15 @@ pub use oni_settings::tone::CC_PER_STOP;
 /// Contrast's paper grade: the slope times this to its power, so the track's ends are a grade softer or harder.
 pub const GRADE_BASE: f32 = 4.0;
 
-/// Brightness's knee: the light the print holds there, its pick on black and its white the paper's, L* 5; under it
-/// the blacks and the first shadows, 8 to 17 % of a well-exposed frame's pixels on roll #8.
-pub const BRIGHTNESS_KNEE_LIGHT: f32 = 0.0055;
+/// Where Brightness reaches Exposure's whole move: the light the print holds there, its pick on black and its white
+/// the paper's, L* 25; under it the blacks and the shadows, held more the darker they print.
+pub const BRIGHTNESS_REACH_LIGHT: f32 = 0.044155;
 
-/// How far past the grey, in its own amounts, the knee is sought: a print that never reaches it takes the end.
-const KNEE_REACH: f32 = 8.0;
+/// How far past the grey, in its own amounts, the reach is sought: a print that never gets there takes the end.
+const SOUGHT: f32 = 8.0;
 
-/// `p` with its ends, the pick printed untoned laid on `anchor`, the paper's white held, and Brightness's stops above
-/// its knee: where the neutral from the pick to the `grey` prints `BRIGHTNESS_KNEE_LIGHT` over the pick.
+/// `p` with its ends, the pick printed untoned laid on `anchor`, the paper's white held, and Brightness's stops faded
+/// in up to its reach: where the neutral from the pick to the `grey` prints `BRIGHTNESS_REACH_LIGHT` over the pick.
 pub fn ended(p: &Paper, pick: V3, grey: V3, anchor: V3, brightness: f32) -> Paper {
     let untoned = Paper { points_black: [0.0; 3], points_white: [0.0; 3], zones: [0.0; 2], mids: [0.0; 3], brightness: 0.0, ..*p };
     let white = untoned.viewed(p.curves[0]);
@@ -33,9 +33,9 @@ pub fn ended(p: &Paper, pick: V3, grey: V3, anchor: V3, brightness: f32) -> Pape
     let (k, w) = (luma(ended.pick), luma(ended.white));
     let neutral = |t: f32| std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]));
     let light = |t: f32| (luma(ended.coloured(ended.printed(neutral(t)))) - k) / (w - k) * w;
-    let t = bisected(0.0, KNEE_REACH, BRIGHTNESS_KNEE_LIGHT, light);
-    let knee = ended.toward_light(pick_log, ended.exposed(ended.toned(neutral(t))));
-    Paper { brightness, pick_log, knee, ..ended }
+    let t = bisected(0.0, SOUGHT, BRIGHTNESS_REACH_LIGHT, light);
+    let reach = ended.toward_light(pick_log, ended.exposed(ended.toned(neutral(t))));
+    Paper { brightness, pick_log, reach, ..ended }
 }
 
 /// `bare` at its `rest` (log time, filtration) under the frame's Lighting and colour `density`, its `anchors` the

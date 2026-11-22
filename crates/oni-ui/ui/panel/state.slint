@@ -109,9 +109,8 @@ export global PanelState {
     callback legacy-toggled(bool);
     // Colour's filters read as an enlarger's C, M and Y in place of Temperature and Tint, a choice of Settings.
     in property <bool> filtration-cmy;
-    // The open photo's film: its roll's stock, a digital photo's virtual film; the key opens the sheet on it.
+    // The open photo's film: its roll's stock, a digital photo's virtual film; its key drops the stocks' menu.
     in property <Canister> stock;
-    callback select-stock();
     // The stock's own white and the reference its negative is read on, written only by the stock.
     in property <string> film-white;
     in property <string> film-gains;

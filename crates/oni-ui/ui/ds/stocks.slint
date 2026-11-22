@@ -1,8 +1,11 @@
-// A film stock: its artwork in its own colours, at any size, and the picker's cell with the name under
-// it, grown under the pointer and filled when picked.
-import { Colour, Space, Radius, Motion } from "theme.slint";
+// A film stock: its artwork in its own colours, at any size, the picker's cell with the name under it,
+// grown under the pointer and filled when picked, and the menu that lists the stocks under their key.
+import { Colour, Space, Radius, Motion, ButtonStyle, MenuStyle } from "theme.slint";
 import { StockStyle } from "theme_views.slint";
-import { Label, TextRole, Tone } from "base.slint";
+import { Label, TextRole, Tone, Gap, Icon } from "base.slint";
+import { Icons } from "icons.slint";
+import { Popover } from "surfaces.slint";
+import { Scroller } from "scroller.slint";
 
 // `FilmStockIcon`: the canister in its own colours wherever a stock is shown, a picker's cell, a roll's
 // hero or a line of a list; no artwork, nothing, as every stock and every roll's default has one.
@@ -57,4 +60,133 @@ export component StockCellView inherits Rectangle {
         }
     }
     touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A line of the stock menu: a brand's name over its stocks, or a stock, `index` its place in the catalogue.
+export struct StockLine { index: int, name: string, artwork: image, has-artwork: bool, brand: bool }
+
+// The stocks dropped under their key, by brand, each with its canister, the one in use checked; past the
+// room the window leaves, they scroll. The line under the pointer or the arrows is lit and told its owner.
+export component StockMenu inherits PopupWindow {
+    in property <[StockLine]> lines;
+    // The line of the stock in use, -1 none.
+    in property <int> current: -1;
+    in property <length> span: MenuStyle.width;
+    // The height it may take, its lines scrolling past it.
+    in property <length> room;
+    // The stock lit, by its place in the catalogue, -1 once the pointer leaves the menu.
+    callback lit(int);
+    callback chosen(int);
+    property <int> at: -1;
+    property <length> whole: root.lines.length * StockStyle.line;
+    close-policy: close-on-click-outside;
+    forward-focus: keys;
+    width: root.span;
+    height: panel.height;
+    init => { root.reveal(root.current); }
+    // The line `i` lit, -1 none, and told at once, so no choice is ever followed by an older light.
+    function light(i: int) {
+        if (i != root.at) {
+            root.at = i;
+            root.lit(i >= 0 ? root.lines[i].index : -1);
+        }
+    }
+    // The line `i` scrolled into the list's view.
+    function reveal(i: int) {
+        if (i < 0) { return; }
+        let top = i * StockStyle.line;
+        if (top + list.content-y < 0) {
+            list.content-y = -top;
+        } else if (top + StockStyle.line + list.content-y > list.visible-height) {
+            list.content-y = list.visible-height - top - StockStyle.line;
+        }
+    }
+    // The arrows walk the stocks from the lit one, else from the one in use, past the brands' names.
+    function step(by: int) {
+        let from = root.at >= 0 ? root.at : root.current >= 0 ? root.current : (by > 0 ? -1 : root.lines.length);
+        let near = from + by;
+        let next = near >= 0 && near < root.lines.length && root.lines[near].brand ? near + by : near;
+        if (next < 0 || next >= root.lines.length) { return; }
+        root.light(next);
+        root.reveal(next);
+    }
+    function choose(i: int) {
+        if (i >= 0 && !root.lines[i].brand) {
+            root.chosen(root.lines[i].index);
+            root.close();
+        }
+    }
+    keys := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.DownArrow) { root.step(1); return accept; }
+            if (event.text == Key.UpArrow) { root.step(-1); return accept; }
+            if (event.text == Key.Return || event.text == " ") { root.choose(root.at); return accept; }
+            reject
+        }
+    }
+    // Its own hover holds while the pointer is over any of its lines; leaving the menu lights none.
+    inside := TouchArea {
+        width: root.width;
+        height: root.height;
+        changed has-hover => { if (!self.has-hover) { root.light(-1); } }
+        panel := Popover {
+            x: 0;
+            y: 0;
+            width: root.span;
+            menu: true;
+            tail: false;
+            pad: Gap.xs;
+            gap: Gap.none;
+            list := Scroller {
+                height: min(root.whole, root.room - 2 * Space.xs);
+                content-height: root.whole;
+                for line[i] in root.lines: Rectangle {
+                    y: i * StockStyle.line;
+                    width: parent.width;
+                    height: StockStyle.line;
+                    if line.brand: Label {
+                        x: Space.s;
+                        width: parent.width - 2 * Space.s;
+                        height: parent.height;
+                        text: line.name;
+                        role: TextRole.caption;
+                        tone: Tone.secondary;
+                        vertical-alignment: bottom;
+                        overflow: elide;
+                    }
+                    if !line.brand: Rectangle {
+                        border-radius: ButtonStyle.small-radius;
+                        background: i == root.at ? MenuStyle.lit : Colour.raised.transparentize(1);
+                        accessible-role: button;
+                        accessible-label: line.name;
+                        accessible-action-default => { root.choose(i); }
+                        HorizontalLayout {
+                            padding-left: Space.s;
+                            padding-right: Space.s;
+                            spacing: Space.s;
+                            VerticalLayout {
+                                alignment: center;
+                                Rectangle {
+                                    width: ButtonStyle.small-icon;
+                                    height: ButtonStyle.small-icon;
+                                    if i == root.current: Icon { source: Icons.done; tone: Tone.primary; width: parent.width; height: parent.height; }
+                                }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                StockIcon { artwork: line.artwork; has-artwork: line.has-artwork; side: StockStyle.line-icon; }
+                            }
+                            Label { text: line.name; horizontal-stretch: 1; overflow: elide; accessible-role: none; }
+                        }
+                        TouchArea {
+                            clicked => { root.choose(i); }
+                            pointer-event(event) => { if (event.kind == PointerEventKind.move) { root.light(i); } }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -6,7 +6,7 @@ use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
 use crate::film::dyes;
 use oni_render::PAPER_CURVE_NODES;
-use oni_settings::{DyeSet, PaperStock};
+use oni_settings::{DyeSet, PaperStock, PipelineSettings};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
@@ -190,6 +190,11 @@ pub enum Film {
 
 impl Film {
     const COUNT: usize = DyeSet::ALL.len() + 1;
+
+    /// What a frame lays in the enlarger: its silver or its negative's measured dyes.
+    pub fn of(s: &PipelineSettings) -> Film {
+        if s.mode.is_monochrome() { Film::Silver } else { Film::Negative(s.dye_set) }
+    }
 
     fn index(self) -> usize {
         match self {

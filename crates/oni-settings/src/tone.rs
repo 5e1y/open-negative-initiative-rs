@@ -148,8 +148,8 @@ pub struct Print {
     /// curves and the points' colour hold; off, the sliders bend each channel's tone alone.
     #[serde(rename = "colourCompensation", skip_serializing_if = "is_on")]
     pub colour_compensation: bool,
-    /// A paper's print lit as Exposure lights it, in stops of the enlarger's light, on the tones above a knee over the
-    /// pick alone, the blacks and the first shadows held; none on ONI's print.
+    /// A paper's print lit as Exposure lights it, in stops of the enlarger's light, faded in from the pick over the deep
+    /// shadows, the blacks held; none on ONI's print.
     #[serde(skip_serializing_if = "at_zero")]
     pub brightness: f32,
     /// A paper's print with the frame's pick where the paper's rest prints it, a hair above its own black; off, the

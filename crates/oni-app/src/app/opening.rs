@@ -39,6 +39,7 @@ impl Ctl {
             s.opens += 1;
             s.dust.next_photo();
             s.shelf.hovered = None;
+            s.stock_lit = None;
             // Fitted, unless Settings keeps the zoom to walk a roll at 100 % comparing grain.
             s.viewport.next_photo(crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed));
             for slide in &mut s.slides {

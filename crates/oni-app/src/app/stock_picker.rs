@@ -1,12 +1,29 @@
-//! `StockPickerSheet` in the window: Select Film Stock for a roll, a digital photo's virtual film and the export's
-//! film field for one frame, the stocks grouped by brand, a roll's line shown among its stocks; a click picks and
-//! closes, and Done leaves things as they were.
+//! `StockPickerSheet` in the window: Select Film Stock for a roll and the export's film field for one frame, the
+//! stocks grouped by brand, a roll's line shown among its stocks; a click picks and closes, and Done leaves things
+//! as they were. The editor's film drops a menu instead, each stock it lights shown on the open photo unwritten.
 
 use super::Ctl;
-use crate::{Exporting, StockBrand, StockCell, StockRow, Stocks};
-use oni_settings::film::{FILM_STOCKS, film_stock};
+use crate::{Exporting, StockBrand, StockCell, StockLine, StockRow, Stocks};
+use oni_settings::PipelineSettings;
+use oni_settings::film::{FILM_STOCKS, FilmStockKind, film_stock};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
+
+/// What a pick of `kind` writes on the open photo, which the menu shows unwritten while it lights it: a digital
+/// photo shot on that virtual film, a roll's photo on the stock's measured dyes; `own`, the stock in use, nothing.
+pub(super) fn picked(settings: &PipelineSettings, kind: &FilmStockKind, own: Option<&str>) -> PipelineSettings {
+    if own == Some(kind.id) {
+        return settings.clone();
+    }
+    match settings.film() {
+        Some(_) => crate::stocks::virtual_stock(kind.id).map_or_else(|| settings.clone(), |v| super::roll_tab::picked_film(settings, v)),
+        None => {
+            let mut out = settings.clone();
+            super::organising::roll_card::dyed(&mut out, Some(kind.id));
+            out
+        }
+    }
+}
 
 /// What a pick lands on.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -17,16 +34,107 @@ pub(crate) enum StockTarget {
     Export,
     /// Prepare the Roll's Film step: the roll it prepares, written with its measure.
     Prepare,
-    /// The editor's Roll tab: the roll the open photo lies in, one undoable step for every photo of it.
-    OpenRoll,
-    /// The editor's Film block: the virtual film the open digital photo is shot on, its stocks alone listed.
-    Film,
 }
 
 impl Ctl {
     pub(super) fn wire_stock_picker(me: &Rc<Ctl>, window: &crate::MainWindow) {
+        let g = window.global::<Stocks>();
         let p = me.clone();
-        window.global::<Stocks>().on_chosen(move |i| p.stock_chosen(usize::try_from(i).ok()));
+        g.on_chosen(move |i| p.stock_chosen(usize::try_from(i).ok()));
+        let p = me.clone();
+        g.on_dropping(move || p.lay_stock_menu());
+        let p = me.clone();
+        g.on_lit(move |i| p.light_stock(usize::try_from(i).ok()));
+        let p = me.clone();
+        g.on_picked(move |i| p.stock_picked(usize::try_from(i).ok()));
+    }
+
+    /// The editor's menu on the open photo's film: a digital photo's virtual films alone, else every stock a roll
+    /// takes, its line shown among them; each with its canister at a tree row's side, the stock in use checked.
+    fn lay_stock_menu(&self) {
+        let Some(w) = self.window() else { return };
+        let (film, own) = {
+            let s = self.state.borrow();
+            (s.store.settings().film().is_some(), s.open_stock().map(|k| k.id))
+        };
+        let side = crate::stocks::row_side(&w);
+        let listed = if film { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(own) };
+        let mut lines = Vec::new();
+        for (brand, kinds) in listed {
+            lines.push(StockLine { index: -1, name: brand.into(), brand: true, ..Default::default() });
+            for i in kinds {
+                let kind = &FILM_STOCKS[i];
+                let artwork = crate::stocks::row_icon(kind.id, side);
+                lines.push(StockLine { index: i as i32, name: kind.display_name.into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false });
+            }
+        }
+        let in_use = lines.iter().position(|l| !l.brand && Some(FILM_STOCKS[l.index as usize].id) == own).map_or(-1, |i| i as i32);
+        let g = w.global::<Stocks>();
+        g.set_lines(ModelRc::new(VecModel::from(lines)));
+        g.set_in_use(in_use);
+        self.state.borrow_mut().menu_baked = false;
+    }
+
+    /// The stock the menu lights shown on the open photo, nothing written; `None`, its own again. A light that
+    /// changes nothing the photo shows, as a stock naming no dyes on a negative, asks no render.
+    fn light_stock(self: &Rc<Self>, i: Option<usize>) {
+        let moved = {
+            let mut s = self.state.borrow_mut();
+            if s.stock_lit == i {
+                return;
+            }
+            let before = s.live_settings();
+            s.stock_lit = i;
+            let moved = s.live_settings() != before;
+            if moved {
+                s.ask_view_again();
+            }
+            moved
+        };
+        if i.is_some() {
+            self.bake_menu_stocks();
+        }
+        if moved {
+            self.request_render();
+        }
+    }
+
+    /// The tables a render on each listed stock reads, baked off this thread at the menu's first light, so the
+    /// next stock lit lands without its bake; a table already baked costs nothing.
+    fn bake_menu_stocks(&self) {
+        let settings: Vec<PipelineSettings> = {
+            let mut s = self.state.borrow_mut();
+            if std::mem::replace(&mut s.menu_baked, true) {
+                return;
+            }
+            let own = s.open_stock().map(|k| k.id);
+            let base = s.store.settings().clone();
+            let listed = if base.film().is_some() { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(own) };
+            listed.into_iter().flat_map(|(_, l)| l).map(|i| picked(&base, &FILM_STOCKS[i], own)).collect()
+        };
+        std::thread::spawn(move || {
+            crate::decode_gate::in_background();
+            for s in &settings {
+                oni_pipeline::bake_ahead(s);
+            }
+        });
+    }
+
+    /// A stock chosen in the menu, written as one step: a digital photo shot on it, else the open photo's roll on
+    /// it for every photo of the roll; the stock in use writes nothing. The light it ends showed what is written,
+    /// so the canvas renders nothing again.
+    fn stock_picked(self: &Rc<Self>, i: Option<usize>) {
+        let (film, own, open) = {
+            let mut s = self.state.borrow_mut();
+            s.stock_lit = None;
+            (s.store.settings().film().is_some(), s.open_stock().map(|k| k.id), s.open_path().map(str::to_string))
+        };
+        match (i.and_then(|i| FILM_STOCKS.get(i)), open) {
+            (Some(kind), _) if film => self.write_settings(|s| *s = picked(s, kind, own)),
+            (Some(kind), Some(path)) => self.set_stock_of_roll_at(&path, kind.id),
+            _ => {}
+        }
+        self.request_render();
     }
 
     /// The sheet on `current`, the stock picked marked.
@@ -34,7 +142,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let g = w.global::<Stocks>();
         let columns = g.get_columns().max(1) as usize;
-        let listed = if target == StockTarget::Film { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(current) };
+        let listed = crate::stocks::by_brand(current);
         let brands: Vec<StockBrand> = listed
             .into_iter()
             .map(|(brand, kinds)| {
@@ -72,17 +180,6 @@ impl Ctl {
         match (target, kind) {
             (Some(StockTarget::Roll), Some(kind)) => self.set_roll_stock(kind.id),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
-            (Some(StockTarget::OpenRoll), Some(kind)) => {
-                let open = self.state.borrow().open_path().map(str::to_string);
-                if let Some(path) = open {
-                    self.set_stock_of_roll_at(&path, kind.id);
-                }
-            }
-            (Some(StockTarget::Film), Some(kind)) => {
-                if let Some(stock) = crate::stocks::virtual_stock(kind.id) {
-                    self.write_settings(|s| *s = super::roll_tab::picked_film(s, stock));
-                }
-            }
             (Some(StockTarget::Prepare), Some(kind)) => {
                 self.state.borrow_mut().prepare.stock = Some(kind.id.to_string());
                 self.save_draft();
@@ -98,18 +195,6 @@ impl Ctl {
         self.open_stock_picker(StockTarget::Roll, current.as_deref());
     }
 
-    /// The editor's Select Film Stock: the sheet on the open digital photo's virtual film, else on its roll's stock.
-    pub(super) fn select_open_stock(&self) {
-        let (film, stock) = {
-            let s = self.state.borrow();
-            (s.store.settings().film(), s.open_stock().map(|k| k.id))
-        };
-        match film {
-            Some(f) => self.open_stock_picker(StockTarget::Film, Some(f.stock.catalogue_id())),
-            None => self.open_stock_picker(StockTarget::OpenRoll, stock),
-        }
-    }
-
     /// The open photo's film as the panel's hero shows it: a digital photo's virtual film, else its roll's stock.
     pub(super) fn open_canister(&self) -> crate::Canister {
         let s = self.state.borrow();
@@ -118,5 +203,49 @@ impl Ctl {
             Some(f) => crate::stocks::canister(film_stock(Some(f.stock.catalogue_id())), String::new()),
             None => super::organising::info_sidebar::roll_canister(s.open_stock(), Some(settings.mode)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_settings::{ConversionMode, DyeSet, VirtualStock};
+
+    fn kind(id: &str) -> &'static FilmStockKind {
+        film_stock(Some(id)).unwrap()
+    }
+
+    /// A digital photo lit on another virtual film is that film's reference; its own film, or a stock no
+    /// digital photo is shot on, leaves it as it is.
+    #[test]
+    fn a_digital_photo_lit_on_a_stock_is_what_its_pick_writes() {
+        let digital = PipelineSettings { mode: ConversionMode::Digital, ..PipelineSettings::default() };
+        let own = digital.film().unwrap().stock;
+        let next = VirtualStock::ALL.iter().copied().find(|v| *v != own).unwrap();
+        let lit = picked(&digital, kind(next.catalogue_id()), Some(own.catalogue_id()));
+        assert_eq!(lit, roll_tab_pick(&digital, next));
+        assert_eq!((lit.film().map(|f| f.stock), lit.gains.stops, lit.dye_set), (Some(next), next.reference().stops, next.dye_set()));
+        assert_eq!(picked(&digital, kind(own.catalogue_id()), Some(own.catalogue_id())), digital, "its own film writes nothing");
+        assert_eq!(picked(&digital, kind("ilford-hp5"), Some(own.catalogue_id())), digital, "no virtual film, nothing");
+        // Twin: lit on another film, the photo is no longer as it was.
+        assert_ne!(lit, digital);
+    }
+
+    /// A roll's photo lit on a stock takes the dyes the stock names; its own stock or one naming none, nothing.
+    #[test]
+    fn a_negative_lit_on_a_stock_takes_its_dyes() {
+        let negative = PipelineSettings::default();
+        assert!(negative.film().is_none());
+        let lit = picked(&negative, kind("fujifilm-c200"), None);
+        assert_eq!(lit.dye_set, DyeSet::FujifilmC200);
+        assert_eq!(PipelineSettings { dye_set: negative.dye_set, ..lit.clone() }, negative, "its dyes alone move");
+        assert_eq!(picked(&negative, kind("fujifilm-c200"), Some("fujifilm-c200")), negative, "the roll's own stock, nothing");
+        assert_eq!(picked(&negative, kind("ilford-hp5"), None), negative, "a stock naming no dyes, nothing");
+        // Twin: the dyes did move from the photo's own.
+        assert_ne!(negative.dye_set, DyeSet::FujifilmC200);
+    }
+
+    fn roll_tab_pick(s: &PipelineSettings, v: VirtualStock) -> PipelineSettings {
+        super::super::roll_tab::picked_film(s, v)
     }
 }

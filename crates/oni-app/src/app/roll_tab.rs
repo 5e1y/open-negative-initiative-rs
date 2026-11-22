@@ -146,8 +146,6 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
-        panel.on_select_stock(move || p.act(crate::Act::SelectRollType));
-        let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
         panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(|| s.fitting_paper())));

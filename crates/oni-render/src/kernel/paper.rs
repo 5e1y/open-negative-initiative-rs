@@ -1,7 +1,7 @@
 //! The paper: Lighting's tones laid on the negative's density, the enlarger's light through its dyes exposes a colour
 //! paper's layers, which develop on their curves turned by the grade; the print's dyes are read under D50, its colour
 //! density laid, then its ends: the frame's pick on its anchor, the paper's white held. Brightness moves the enlarger's
-//! light as Exposure does, but on the tones above a knee over the pick: the blacks and the first shadows stay.
+//! light as Exposure does, faded in from the pick over the deep shadows: the blacks stay, the mids move as Exposure.
 
 use super::*;
 use super::stage47::{coloured, midded, quartered};
@@ -49,11 +49,11 @@ pub struct Paper {
     /// Each layer's log exposure the grade turns about, and its slope's factor there.
     pub pivot: V3,
     pub slope: V3,
-    /// Brightness, in stops of the enlarger's light; the pick's mean log exposure untoned; the knee, how far from it
-    /// toward the light a tone's mean log exposure lies before Brightness moves it.
+    /// Brightness, in stops of the enlarger's light; the pick's mean log exposure untoned; the reach, how far from it
+    /// toward the light a tone's mean log exposure lies when Brightness moves it as far as Exposure would.
     pub brightness: f32,
     pub pick_log: f32,
-    pub knee: f32,
+    pub reach: f32,
     /// Each layer's density along the log exposure from `curve_low` by `curve_step`, held at either end.
     pub curves: &'static [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
@@ -91,7 +91,7 @@ impl Paper {
             v3(self.mids, 0.0),
             v3(self.filters, self.scale),
             v3(self.pivot, self.pick_log),
-            v3(self.slope, self.knee),
+            v3(self.slope, self.reach),
             [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
             v3(self.pick, self.density),
             v3(self.white, 0.0),
@@ -150,13 +150,13 @@ impl Paper {
     }
 
     /// Each layer's log exposure moved by Brightness as Exposure moves it, by the same amount on the three, as far as
-    /// its mean lies from the pick's toward the light: `kneed`.
+    /// its mean lies from the pick's toward the light: `lifted`.
     pub fn brightened(&self, log: V3) -> V3 {
         if self.brightness == 0.0 {
             return log;
         }
         let x = self.toward_light(self.pick_log, log);
-        let moved = kneed(x, self.brightness * LOG10_2, self.knee) - x;
+        let moved = lifted(x, self.brightness * LOG10_2, self.reach) - x;
         log.map(|v| v - moved)
     }
 
@@ -217,30 +217,39 @@ impl Paper {
     }
 }
 
-/// How far `x` lies past `knee`, eased in: none under it, a parabola over the next knee's worth, then straight on.
-pub fn excess(x: f32, knee: f32) -> f32 {
-    let y = x - knee;
-    if y <= 0.0 { 0.0 } else if y < knee { y * y / (2.0 * knee) } else { y - 0.5 * knee }
+/// The share of Brightness's shift a tone takes `x` of log exposure from the pick toward the light: none at the pick,
+/// the whole from `width` on, a smoothstep between so the print's slope never jumps.
+pub fn share(x: f32, width: f32) -> f32 {
+    let t = clamp(x / width, 0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
 
-/// The steepest Brightness makes a tone's slope brightening, its inverse the flattest darkening: a layer whose exposure
-/// runs a quarter slower than its tone's mean, as roll #8's neutrals do by a twentieth, never turns back.
-pub const PAPER_KNEE_SLOPE: f32 = 4.0;
+/// The fade of a `lift` in log exposure: its `reach`, never under √stops stops, so every slope stays within
+/// 1 + 1.5·√stops and its inverse, 4 and ¼ at ±4: a layer up to ¾ slower than its tone's mean never turns back.
+pub fn fade(lift: f32, reach: f32) -> f32 {
+    reach.max((lift.abs() * LOG10_2).sqrt())
+}
 
-/// A tone's mean log exposure `x` from the pick toward the light moved by `lift` on its excess `e` past the knee: each
-/// step of `e` gains its slope from the steepest down to one, so the whole lift lands from 2·lift / (slope − 1) on.
-pub fn kneed(x: f32, lift: f32, knee: f32) -> f32 {
-    let e = excess(x, knee);
-    let gain = PAPER_KNEE_SLOPE - 1.0;
-    let moved = if lift >= 0.0 {
-        if e < 2.0 * lift / gain { gain * e - gain * gain * e * e / (4.0 * lift) } else { lift }
-    } else {
-        // Darkening is that curve's inverse on the excess, in a form that keeps f32's precision near the knee.
-        let fall = -lift;
-        let steep = PAPER_KNEE_SLOPE;
-        if e < (steep + 1.0) * fall / gain { 2.0 * e / (steep + (steep * steep - gain * gain * e / fall).sqrt()) - e } else { lift }
-    };
-    x + moved
+/// `x` moved by `lift` times its share; a fall is that brightening's inverse, found by halving, so no tone passes
+/// another and −b undoes +b.
+pub fn lifted(x: f32, lift: f32, reach: f32) -> f32 {
+    let width = fade(lift, reach);
+    if lift >= 0.0 {
+        return x + lift * share(x, width);
+    }
+    let fall = -lift;
+    if x <= 0.0 {
+        return x;
+    }
+    if x >= width + fall {
+        return x - fall;
+    }
+    let (mut low, mut high) = ((x - fall).max(0.0), x.min(width));
+    for _ in 0..24 {
+        let mid = 0.5 * (low + high);
+        if mid + fall * share(mid, width) < x { low = mid } else { high = mid }
+    }
+    0.5 * (low + high)
 }
 
 /// One negative pixel printed on the paper, in linear Rec. 2020; alpha kept.

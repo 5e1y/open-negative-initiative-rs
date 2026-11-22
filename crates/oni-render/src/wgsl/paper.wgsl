@@ -1,5 +1,5 @@
 // The paper, operation for operation as `cpu::paper`: Lighting's tones on the film's density, the enlarger's
-// light through its dyes on the paper's layers, Brightness above its knee, the grade, its curves, its dyes seen under
+// light through its dyes on the paper's layers, Brightness faded in from the pick, the grade, its curves, its dyes seen under
 // D50 in Rec. 2020, its colour density, then its ends: the pick on its anchor, the white held; alpha kept.
 
 struct Params {
@@ -12,7 +12,7 @@ struct Params {
     mids: vec4<f32>,
     filters_scale: vec4<f32>,
     pivot_pick: vec4<f32>,
-    slope_knee: vec4<f32>,
+    slope_reach: vec4<f32>,
     curve_axis: vec4<f32>,
     pick_density: vec4<f32>,
     white: vec4<f32>,
@@ -27,28 +27,24 @@ struct Params {
 
 const PAPER_CURVE_NODES: f32 = 256.0;
 const PAPER_EXPOSURE_FLOOR: f32 = 1e-10;
-const PAPER_KNEE_SLOPE: f32 = 4.0;
-
-fn paper_excess(x: f32, knee: f32) -> f32 {
-    let y = x - knee;
-    if (y <= 0.0) { return 0.0; }
-    if (y < knee) { return y * y / (2.0 * knee); }
-    return y - 0.5 * knee;
+fn paper_share(x: f32, width: f32) -> f32 {
+    let t = clamp(x / width, 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
 }
 
-fn paper_kneed(x: f32, lift: f32, knee: f32) -> f32 {
-    let e = paper_excess(x, knee);
-    let gain = PAPER_KNEE_SLOPE - 1.0;
-    if (lift >= 0.0) {
-        if (e < 2.0 * lift / gain) { return x + gain * e - gain * gain * e * e / (4.0 * lift); }
-        return x + lift;
-    }
+fn paper_lifted(x: f32, lift: f32, reach: f32) -> f32 {
+    let width = max(reach, sqrt(abs(lift) * 0.3010299956639812));
+    if (lift >= 0.0) { return x + lift * paper_share(x, width); }
     let fall = -lift;
-    let steep = PAPER_KNEE_SLOPE;
-    if (e < (steep + 1.0) * fall / gain) {
-        return x + 2.0 * e / (steep + sqrt(steep * steep - gain * gain * e / fall)) - e;
+    if (x <= 0.0) { return x; }
+    if (x >= width + fall) { return x - fall; }
+    var low = max(x - fall, 0.0);
+    var high = min(x, width);
+    for (var i = 0u; i < 24u; i = i + 1u) {
+        let mid = 0.5 * (low + high);
+        if (mid + fall * paper_share(mid, width) < x) { low = mid; } else { high = mid; }
     }
-    return x + lift;
+    return 0.5 * (low + high);
 }
 
 fn paper_layer(log: f32, c: u32) -> f32 {
@@ -110,10 +106,10 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
     let brightness = P.curve_axis.z;
     if (brightness != 0.0) {
         let x = P.pivot_pick.w - (log_raw.x + log_raw.y + log_raw.z) / 3.0;
-        log_raw = log_raw - vec3<f32>(paper_kneed(x, brightness * 0.3010299956639812, P.slope_knee.w) - x);
+        log_raw = log_raw - vec3<f32>(paper_lifted(x, brightness * 0.3010299956639812, P.slope_reach.w) - x);
     }
-    if (any(P.slope_knee.xyz != vec3<f32>(1.0))) {
-        log_raw = P.pivot_pick.xyz + (log_raw - P.pivot_pick.xyz) * P.slope_knee.xyz;
+    if (any(P.slope_reach.xyz != vec3<f32>(1.0))) {
+        log_raw = P.pivot_pick.xyz + (log_raw - P.pivot_pick.xyz) * P.slope_reach.xyz;
     }
     let density = vec3<f32>(paper_layer(log_raw.x, 0u), paper_layer(log_raw.y, 1u), paper_layer(log_raw.z, 2u));
     var out = vec3<f32>(0.0);

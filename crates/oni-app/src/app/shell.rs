@@ -108,6 +108,8 @@ impl Shell {
             published_revision: 0,
             quitting: false,
             stock_target: None,
+            stock_lit: None,
+            menu_baked: false,
             masks,
             masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
