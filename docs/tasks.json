@@ -12042,5 +12042,12 @@
     "status": "done",
     "detail": "crates/oni-pipeline/tests/virtual_stocks.rs, table-driven over VirtualStock::ALL at the digital rest on the stock (paper included): a neutral ramp lit at the stock's white, -3 to +2.3 stops, printed through the CPU references; its grey within 2e-3 of a plain RAW's, its white's luma within 0.06 stop of Portra 800's, its CIELAB chroma under 4 (under 2 from L* 80 up); twin, the red gain 0.2 stop off the reference, 12.8 to 16.8. The GPU renders the same ramp through Pipeline::render (twin: lit at the other light, C* 40 or more). A tungsten stock turns a D55 grey blue (b/r 2.0 on 500T), a daylight one keeps it neutral; each stock's white is the chromaticity of the spectrum its bake reads. virtual_film's kernel-against-reference and grey checks run on every stock (in-gamut scenes within 0.001 density, the locus' primaries within 0.004: 0.0028 on 500T; a grey within a sixth of a stop of log 0, Portra 400's blue 0.037; the couplers' grey ramp within 0.03 density, Push 2 0.028).",
     "outcome": "Grey 0.3985 on every stock (a plain RAW's). White luma 0.753 (Verita 200D) to 0.795 (Push 2), Portra 800 0.766. Neutral chroma: grey 0.0 everywhere; from L* 80 up at most 1.6 (Vision3 200T); the shadows carry each stock's own toes, at most C* 3.7 (Pro 400H at -2 stops), 3.4 (Superia at -1), 3.2 (Verita at -2), 3.0 (Portra 160, C200), Portra 800 1.2."
+  },
+  {
+    "id": 3174,
+    "type": "feature",
+    "title": "A canister arrives by dropping its SVG in the stocks' folder: the artwork table is listed by the build script",
+    "status": "done",
+    "detail": "oni-app's build.rs lists crates/oni-ui/ui/stocks/*.svg into ARTWORK (rerun when the folder changes); the owner's hashes stay checked for the 41 shipped canisters, and any other SVG must name a catalogue stock. A dropped SVG then asks its catalogue line to read stock(…) (a_stock_with_its_own_artwork_draws_it names it), the one line it takes."
   }
 ]

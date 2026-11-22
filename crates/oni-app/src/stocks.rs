@@ -5,49 +5,8 @@ use slint::Image;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-const ARTWORK: [(&str, &[u8]); 41] = [
-    ("generic-azure", include_bytes!("../../oni-ui/ui/stocks/generic-azure.svg")),
-    ("generic-black-and-white", include_bytes!("../../oni-ui/ui/stocks/generic-black-and-white.svg")),
-    ("generic-color-negative", include_bytes!("../../oni-ui/ui/stocks/generic-color-negative.svg")),
-    ("generic-color-positive", include_bytes!("../../oni-ui/ui/stocks/generic-color-positive.svg")),
-    ("generic-redscale", include_bytes!("../../oni-ui/ui/stocks/generic-redscale.svg")),
-    ("agfaphoto-apx", include_bytes!("../../oni-ui/ui/stocks/agfaphoto-apx.svg")),
-    ("cinestill-400d", include_bytes!("../../oni-ui/ui/stocks/cinestill-400d.svg")),
-    ("cinestill-50d", include_bytes!("../../oni-ui/ui/stocks/cinestill-50d.svg")),
-    ("cinestill-800t", include_bytes!("../../oni-ui/ui/stocks/cinestill-800t.svg")),
-    ("foma-fomapan200", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan200.svg")),
-    ("foma-fomapan400", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan400.svg")),
-    ("foma-fomapan401", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan401.svg")),
-    ("fujifilm-acros", include_bytes!("../../oni-ui/ui/stocks/fujifilm-acros.svg")),
-    ("fujifilm-fujicolor", include_bytes!("../../oni-ui/ui/stocks/fujifilm-fujicolor.svg")),
-    ("fujifilm-fujicolor-pro", include_bytes!("../../oni-ui/ui/stocks/fujifilm-fujicolor-pro.svg")),
-    ("fujifilm-provia100", include_bytes!("../../oni-ui/ui/stocks/fujifilm-provia100.svg")),
-    ("fujifilm-superia", include_bytes!("../../oni-ui/ui/stocks/fujifilm-superia.svg")),
-    ("fujifilm-velvia100", include_bytes!("../../oni-ui/ui/stocks/fujifilm-velvia100.svg")),
-    ("fujifilm-velvia50", include_bytes!("../../oni-ui/ui/stocks/fujifilm-velvia50.svg")),
-    ("harman-phoenix", include_bytes!("../../oni-ui/ui/stocks/harman-phoenix.svg")),
-    ("harman-phoenixII", include_bytes!("../../oni-ui/ui/stocks/harman-phoenixII.svg")),
-    ("harman-red", include_bytes!("../../oni-ui/ui/stocks/harman-red.svg")),
-    ("ilford-delta100", include_bytes!("../../oni-ui/ui/stocks/ilford-delta100.svg")),
-    ("ilford-delta3200", include_bytes!("../../oni-ui/ui/stocks/ilford-delta3200.svg")),
-    ("ilford-delta400", include_bytes!("../../oni-ui/ui/stocks/ilford-delta400.svg")),
-    ("ilford-fp4", include_bytes!("../../oni-ui/ui/stocks/ilford-fp4.svg")),
-    ("ilford-hp5", include_bytes!("../../oni-ui/ui/stocks/ilford-hp5.svg")),
-    ("ilford-ortho", include_bytes!("../../oni-ui/ui/stocks/ilford-ortho.svg")),
-    ("ilford-panf", include_bytes!("../../oni-ui/ui/stocks/ilford-panf.svg")),
-    ("ilford-sfx", include_bytes!("../../oni-ui/ui/stocks/ilford-sfx.svg")),
-    ("ilford-xp2", include_bytes!("../../oni-ui/ui/stocks/ilford-xp2.svg")),
-    ("kodak-400tx", include_bytes!("../../oni-ui/ui/stocks/kodak-400tx.svg")),
-    ("kodak-colorplus", include_bytes!("../../oni-ui/ui/stocks/kodak-colorplus.svg")),
-    ("kodak-ektachrome", include_bytes!("../../oni-ui/ui/stocks/kodak-ektachrome.svg")),
-    ("kodak-gold", include_bytes!("../../oni-ui/ui/stocks/kodak-gold.svg")),
-    ("kodak-portra", include_bytes!("../../oni-ui/ui/stocks/kodak-portra.svg")),
-    ("kodak-ultramax", include_bytes!("../../oni-ui/ui/stocks/kodak-ultramax.svg")),
-    ("lomography-lomo-turquoise", include_bytes!("../../oni-ui/ui/stocks/lomography-lomo-turquoise.svg")),
-    ("lucky-color200", include_bytes!("../../oni-ui/ui/stocks/lucky-color200.svg")),
-    ("mira-color400", include_bytes!("../../oni-ui/ui/stocks/mira-color400.svg")),
-    ("mira-color800", include_bytes!("../../oni-ui/ui/stocks/mira-color800.svg")),
-];
+// `ARTWORK`: every SVG of crates/oni-ui/ui/stocks by its name, listed by the build script.
+include!(concat!(env!("OUT_DIR"), "/stock_artwork.rs"));
 
 thread_local! {
     static DECODED: RefCell<HashMap<&'static str, Image>> = RefCell::new(HashMap::new());
@@ -164,6 +123,18 @@ mod tests {
         assert!(icon(stock.icon_name).is_some() && stock.icon_name == "kodak-portra", "a stock draws its line's canister");
     }
 
+    /// A stock whose own artwork lies in the folder draws it: a dropped SVG asks its catalogue line to read `stock`.
+    #[test]
+    fn a_stock_with_its_own_artwork_draws_it() {
+        for kind in oni_settings::film::FILM_STOCKS {
+            let own = ARTWORK.iter().any(|(k, _)| *k == kind.id);
+            assert!(!own || kind.icon_name == kind.id, "{}.svg is drawn: its catalogue line reads stock(…)", kind.id);
+        }
+        // Twin: a stock still undrawn stands on its type's generic canister.
+        let ektar = oni_settings::film::film_stock(Some("kodak-ektar100")).unwrap();
+        assert!(!ARTWORK.iter().any(|(k, _)| *k == ektar.id) && ektar.icon_name == ektar.kind.generic());
+    }
+
     #[test]
     fn a_row_icon_is_drawn_once_at_the_rows_side() {
         for (id, _) in ARTWORK {
@@ -185,7 +156,7 @@ mod tests {
     }
 
     /// The owner's own artworks, as 1.5.6 shipped them and the site shows them: a stock's canister is
-    /// never redrawn here; a new one comes from the owner, its line added below.
+    /// never redrawn here; a new one comes from the owner, dropped in the folder under its stock's key.
     const ORIGINAL: [(&str, u64); 41] = [
         ("generic-azure", 0xe5b9ddefcbbbf16e),
         ("generic-black-and-white", 0x86243de8f26df732),
@@ -232,9 +203,13 @@ mod tests {
 
     #[test]
     fn every_canister_is_the_owners_own_artwork() {
-        for (id, data) in ARTWORK {
-            let kept = ORIGINAL.iter().find(|(k, _)| *k == id).map(|(_, h)| *h);
-            assert_eq!(kept, Some(fnv(data)), "{id}: not the owner's artwork, 0x{:016x}", fnv(data));
+        for (id, hash) in ORIGINAL {
+            let data = ARTWORK.iter().find(|(k, _)| *k == id).map(|(_, d)| *d);
+            assert_eq!(data.map(fnv), Some(hash), "{id}: not the owner's artwork");
+        }
+        for (id, _) in ARTWORK {
+            let named = oni_settings::film::film_stock(Some(id)).is_some();
+            assert!(named, "{id}.svg names no stock of the catalogue: its file takes the stock's key");
         }
         // Twin: one byte changed in an artwork is seen.
         let mut touched = ARTWORK[0].1.to_vec();
