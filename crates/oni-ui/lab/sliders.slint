@@ -141,8 +141,8 @@ component LiveSlider inherits Slider {
     step(f, by) => { root.move-to(root.fraction + by / 100); }
 }
 
-// The DS stepped `Slider` (the Scanner face's letters): whole steps, held at rest, a keycap either side
-// in its end's colour, ⇧ for three.
+// The DS stepped `Slider` (the Scanner face's letters): whole steps, held at rest, three a press of the
+// keycap either side, as every slider's keys.
 component LiveStepped inherits Slider {
     in-out property <int> amount;
     stepped: true;

@@ -76,7 +76,7 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
         rig.settle();
     };
-    let temperature = || ends(&rig, p.get_from(), p.get_to(), p.get_temperature_y());
+    let temperature = || ends(&rig, p.get_keyed_from(), p.get_keyed_to(), p.get_temperature_y());
     let cyan = || ends(&rig, p.get_keyed_from(), p.get_keyed_to(), p.get_c_y());
     let dark = || ends(&rig, p.get_keyed_from(), p.get_keyed_to(), p.get_d_y());
     to(p.get_to() + 40.0, 380.0);
@@ -84,7 +84,7 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
     println!("shot {}", rig.shot("slider-hues-rest").display());
 
     // Under the hand Temperature shows its blue and its yellow whole.
-    to(p.get_from() + 0.25 * (p.get_to() - p.get_from()), p.get_temperature_y());
+    to(p.get_keyed_from() + 0.25 * (p.get_keyed_to() - p.get_keyed_from()), p.get_temperature_y());
     let (hand, beside) = (temperature(), cyan());
     println!("shot {}", rig.shot("slider-hues-hand").display());
     println!("rest {rest:?}\nhand {hand:?}");
@@ -110,7 +110,7 @@ pub(crate) fn a_rail_of_hues_is_faint_at_rest_and_whole_under_the_hand_or_its_ke
     }
     let stepped = cyan();
     println!("shot {}", rig.shot("slider-hues-stepped").display());
-    assert_eq!(p.get_c(), 1, "the key stepped C once");
+    assert_eq!(p.get_c(), 3, "the key's press stepped C three times");
     assert!(chroma(stepped.low) > 100 && chroma(stepped.high) > 100, "a step shows C's red and cyan whole: {stepped:?}");
     rig.settle();
     let held = cyan();

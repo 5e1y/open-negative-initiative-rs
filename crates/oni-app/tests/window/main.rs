@@ -166,6 +166,7 @@ mod toolbar_fit;
 mod toolbar_keys;
 mod tooltip;
 mod slider_hand;
+mod slider_keys;
 mod tree_hand;
 mod tree_held;
 mod tree_cost;

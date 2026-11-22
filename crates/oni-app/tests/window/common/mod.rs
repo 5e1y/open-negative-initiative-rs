@@ -294,6 +294,45 @@ pub fn the(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::
     found[0]
 }
 
+/// Every key shown whose tooltip starts with `prefix`, where the layout put it: a slider's − key reads
+/// "Exposure −: lower by 0.03 EV", so `"Exposure −:"` finds it whatever its step.
+pub fn keys_named(window: &impl slint::ComponentHandle, prefix: &str) -> Vec<Placed> {
+    use i_slint_backend_testing::ElementRoot;
+    window
+        .root_element()
+        .query_descendants()
+        .match_accessible_role(i_slint_backend_testing::AccessibleRole::Button)
+        .find_all()
+        .into_iter()
+        .filter(|e| e.accessible_label().is_some_and(|l| l.starts_with(prefix)))
+        .map(|e| {
+            let (at, size) = (e.absolute_position(), e.size());
+            Placed { x: at.x, y: at.y, width: size.width, height: size.height }
+        })
+        .collect()
+}
+
+/// The one slider so named's − key, or its + key, standing at its rail's ends.
+pub fn slider_key(window: &impl slint::ComponentHandle, slider: &str, plus: bool) -> Placed {
+    let slid = the(window, i_slint_backend_testing::AccessibleRole::Slider, slider);
+    let prefix = format!("{slider} {}:", if plus { '+' } else { '\u{2212}' });
+    let within = |k: &Placed| k.x >= slid.x - 0.5 && k.x + k.width <= slid.x + slid.width + 0.5 && k.y >= slid.y - 0.5 && k.y + k.height <= slid.y + slid.height + 0.5;
+    let found: Vec<Placed> = keys_named(window, &prefix).into_iter().filter(within).collect();
+    assert_eq!(found.len(), 1, "one key {prefix:?} on {slider}'s row, found {found:?}");
+    found[0]
+}
+
+/// The one slider so named's track between its − and + keys, the knob's travel and its half width either
+/// side, over the slider's whole height as `the` places it: what a press on the rail aims at.
+pub fn rail(window: &oni_app::MainWindow, slider: &str) -> Placed {
+    use slint::ComponentHandle;
+    let slid = the(window, i_slint_backend_testing::AccessibleRole::Slider, slider);
+    let (minus, plus) = (slider_key(window, slider, false), slider_key(window, slider, true));
+    let gap = window.global::<oni_app::DS>().get_space_sm();
+    let x = minus.x + minus.width + gap;
+    Placed { x, y: slid.y, width: plus.x - gap - x, height: slid.height }
+}
+
 /// The one element so named in the popup open on top: the search places it in the popup's own
 /// points, so it moves by the corner the window shows the popup at.
 pub fn in_popup(window: &impl slint::ComponentHandle, role: i_slint_backend_testing::AccessibleRole, label: &str) -> Placed {

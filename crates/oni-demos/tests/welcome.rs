@@ -88,6 +88,19 @@ fn the_typed_figure_moves_temperature_alone_to_its_place_and_the_photograph_hold
     // Where the scene lays its pieces, read off a stage of its own.
     let stage = Stage::new(&welcome::scenes().join("interface.slint"), "Interface", welcome::SIZE).unwrap();
     let row = interface::row(&stage).unwrap();
+    // The track between Temperature's − and + keys, which stand at its row's ends: its left edge and width.
+    let keys: Vec<(f32, f32)> = {
+        use i_slint_backend_testing::ElementRoot;
+        stage.instance().root_element().query_descendants().match_accessible_role(AccessibleRole::Button).find_all().into_iter()
+            .map(|e| (e.absolute_position(), e.size()))
+            .filter(|(at, size)| size.width > 0.0 && (at.y + size.height - row.1 - row.3).abs() < 3.0 && at.x >= row.0 - 0.5 && at.x + size.width <= row.0 + row.2 + 0.5)
+            .map(|(at, size)| (at.x, size.width))
+            .collect()
+    };
+    assert_eq!(keys.len(), 2, "Temperature's − and + keys at its rail's ends: {keys:?}");
+    // `Space.s`, the row's spacing between a key and the track.
+    let gap = 8.0;
+    let track = (keys[0].0 + keys[0].1 + gap, keys[1].0 - gap - (keys[0].0 + keys[0].1 + gap));
     let tabs = interface::placed(&stage, AccessibleRole::Tab, "Roll")[0];
     let title = interface::placed(&stage, AccessibleRole::Text, "Colour").into_iter().find(|r| r.1 > tabs.1 + tabs.3).unwrap();
     drop(stage);
@@ -121,7 +134,7 @@ fn the_typed_figure_moves_temperature_alone_to_its_place_and_the_photograph_hold
     assert!(f < 0.45, "−1.20 sits left of the middle: {f}");
     let rail = |p: &(u32, u32)| p.1 as f32 > (row.1 + row.3 * 0.6) * SCALE;
     let near = |x: f32| moved.iter().filter(|p| rail(p) && ((p.0 as f32 / SCALE) - x).abs() < 6.0).count();
-    let (landed, mirror) = (row.0 + row.2 * f, row.0 + row.2 * (1.0 - f));
+    let (landed, mirror) = (track.0 + track.1 * f, track.0 + track.1 * (1.0 - f));
     assert!(near(landed) > 50, "the knob's place on the rail did not change: {}", near(landed));
     assert_eq!(near(mirror), 0, "twin: the rail changed where the knob did not go");
 

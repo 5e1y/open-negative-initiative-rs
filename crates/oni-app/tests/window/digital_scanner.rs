@@ -52,10 +52,10 @@ pub(crate) fn a_digital_photo_turns_to_the_scanner_face_and_keeps_its_other_bloc
 
     // D + prints the photo lighter: the key lands in the clicks and renders.
     let renders = ctl.state.borrow().renders();
-    let plus = common::the(w, Role::Button, "D +: toward light");
+    let plus = common::the(w, Role::Button, "D +: toward light, by 1.5");
     common::click(&rig, w, plus.middle());
     rig.until("the keyed render", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    assert_eq!(settings().scanner.d, 1);
+    assert_eq!(settings().scanner.d, 3, "a press is three steps");
     assert_eq!(settings().print, oni_settings::PipelineSettings::rest(ConversionMode::Digital, false).print, "Pro's Lighting is untouched");
 
     bar.invoke_act(Act::FacePro);
@@ -64,7 +64,7 @@ pub(crate) fn a_digital_photo_turns_to_the_scanner_face_and_keeps_its_other_bloc
     for title in PRO.iter().chain(&KEPT) {
         assert!(shown(title), "{title} back on Pro");
     }
-    assert_eq!(settings().scanner.d, 1, "the keys wait on their face");
+    assert_eq!(settings().scanner.d, 3, "the keys wait on their face");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

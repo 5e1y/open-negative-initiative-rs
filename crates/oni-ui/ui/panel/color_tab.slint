@@ -74,26 +74,26 @@ export component ColorPane inherits Pane {
     // The Scanner sets the density first, as a minilab's operator does, then the colour.
     if Lab.shown: LabBlock {
         title: @tr("Density");
-        help: @tr("D, a minilab's density key: + prints the photo lighter and − darker, half a point a step, the screen above counting the points.");
+        help: @tr("D, a minilab's density key: + prints the photo lighter and − darker, a point and a half a press, the screen above counting the points.");
         block: 0;
-        LabSlider { index: 0; label: @tr("D"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("D −: toward dark"); plus-help: @tr("D +: toward light"); }
+        LabSlider { index: 0; label: @tr("D"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("D −: toward dark, by {}", self.press-reads); plus-help: @tr("D +: toward light, by {}", self.press-reads); }
     }
     if Lab.shown: cmy-block := LabBlock {
         title: @tr("Colour");
-        help: @tr("C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, half a point a step, the screen above counting the points.");
+        help: @tr("C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, a point and a half a press, the screen above counting the points.");
         block: 1;
         news: News.keypad;
         news-note: News.keypad-note;
         news-read => { News.read("keypad.1.3.1"); }
-        LabSlider { near: cmy-block.hovered; index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; minus-help: @tr("C −: toward red"); plus-help: @tr("C +: toward cyan"); }
-        LabSlider { near: cmy-block.hovered; index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; minus-help: @tr("M −: toward green"); plus-help: @tr("M +: toward magenta"); }
-        LabSlider { near: cmy-block.hovered; index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; minus-help: @tr("Y −: toward blue"); plus-help: @tr("Y +: toward yellow"); }
+        LabSlider { near: cmy-block.hovered; index: 1; label: @tr("C"); low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; minus-help: @tr("C −: toward red, by {}", self.press-reads); plus-help: @tr("C +: toward cyan, by {}", self.press-reads); }
+        LabSlider { near: cmy-block.hovered; index: 2; label: @tr("M"); low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; minus-help: @tr("M −: toward green, by {}", self.press-reads); plus-help: @tr("M +: toward magenta, by {}", self.press-reads); }
+        LabSlider { near: cmy-block.hovered; index: 3; label: @tr("Y"); low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; minus-help: @tr("Y −: toward blue, by {}", self.press-reads); plus-help: @tr("Y +: toward yellow, by {}", self.press-reads); }
     }
     if Lab.shown: look-block := LabBlock {
         title: @tr("Look");
         help: @tr("TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it.");
         block: 2;
-        LabSlider { near: look-block.hovered; index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; minus-help: @tr("Temperature −: toward cool"); plus-help: @tr("Temperature +: toward warm"); }
+        LabSlider { near: look-block.hovered; index: 4; label: @tr("Temperature"); low: ScannerStyle.band-cool; high: ScannerStyle.band-warm; minus-help: @tr("Temperature −: toward cool, by {}", self.press-reads); plus-help: @tr("Temperature +: toward warm, by {}", self.press-reads); }
     }
     // Pro lays the colour first, then the light with its contrast, then the effects.
     // `ColorPane`: a black and white film has no colour for this block to move.
@@ -298,9 +298,9 @@ export component ColorPane inherits Pane {
         news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
         help: @tr("Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.");
-        LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Contrast −: toward softer, 5% a step"); plus-help: @tr("Contrast +: toward harder, 5% a step"); }
-        LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, 0.1 EV a step"); plus-help: @tr("Vignette +: toward darker corners, 0.1 EV a step"); }
-        if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, 5% a step"); plus-help: @tr("Chrome +: toward more, 5% a step"); }
+        LabSlider { index: 5; label: @tr("Contrast"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Contrast −: toward softer, by {}", self.press-reads); plus-help: @tr("Contrast +: toward harder, by {}", self.press-reads); }
+        LabSlider { index: 6; label: @tr("Vignette"); low: ScannerStyle.band-light; high: ScannerStyle.band-dark; minus-help: @tr("Vignette −: toward lighter corners, by {}", self.press-reads); plus-help: @tr("Vignette +: toward darker corners, by {}", self.press-reads); }
+        if !Lab.monochrome: LabSlider { index: 7; label: @tr("Chrome"); low: ScannerStyle.band-dark; high: ScannerStyle.band-light; minus-help: @tr("Chrome −: toward less, by {}", self.press-reads); plus-help: @tr("Chrome +: toward more, by {}", self.press-reads); }
     }
     // Lighting's colour compensation acts on the machine's print too; on a paper the machine prints on it, its keys
     // moving the negative the enlarger reads.

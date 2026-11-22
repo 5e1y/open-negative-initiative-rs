@@ -32,7 +32,7 @@ pub(crate) fn photo(folder: &Path) -> String {
 
 /// A press on the rail of the slider named `label`, at `share` of its travel.
 pub(crate) fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, share: f32) {
-    let slider = common::the(w, AccessibleRole::Slider, label);
+    let slider = common::rail(w, label);
     let at = LogicalPosition::new(slider.x + 10.0 + share * (slider.width - 20.0), slider.y + slider.height - 13.0);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: at });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: at, button: PointerEventButton::Left });

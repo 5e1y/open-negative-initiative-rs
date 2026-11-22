@@ -69,6 +69,27 @@ pub fn typed_steps(readout: &str, typed: &str, per: f32) -> i32 {
     ((wanted - shown) / unit).round() as i32
 }
 
+/// `steps` steps in a readout's own unit, unsigned, as a slider key's tooltip names its press: `per`
+/// readout units a step or, at 0, one unit of the readout's last digit; empty where it holds no number.
+pub fn pressed(readout: &str, per: f32, steps: i32) -> String {
+    // The last figure and the unit after it: a span's higher end, a side's name left before it.
+    let Some(end) = readout.rfind(|c: char| c.is_ascii_digit()) else { return String::new() };
+    let start = readout[..end].rfind(|c: char| !(c.is_ascii_digit() || matches!(c, '.' | ','))).map_or(0, |i| i + readout[i..].chars().next().map_or(1, char::len_utf8));
+    let figure = &readout[start..=end];
+    let places = figure.find(['.', ',']).map_or(0, |i| figure.len() - i - 1);
+    let unit = &readout[end + 1..];
+    let amount = f64::from(steps.unsigned_abs());
+    let (amount, places) = if per > 0.0 {
+        let amount = f64::from(per) * amount;
+        // A step finer than the readout's digit, as half a point on a whole count, keeps its own places.
+        let own = (0..=3).find(|p| ((amount * 10f64.powi(*p)).round() - amount * 10f64.powi(*p)).abs() < 1e-6).unwrap_or(3) as usize;
+        (amount, places.max(own))
+    } else {
+        (amount * 10f64.powi(-(places as i32)), places)
+    };
+    format!("{amount:.places$}{unit}")
+}
+
 /// Answers `Readouts` on `window`, whose sliders otherwise take no typed number.
 pub fn serve<C>(window: &C)
 where
@@ -77,6 +98,7 @@ where
 {
     window.global::<crate::Readouts>().on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
     window.global::<crate::Readouts>().on_number(|readout| number(&readout).into());
+    window.global::<crate::Readouts>().on_pressed(|readout, per, steps| pressed(&readout, per, steps).into());
 }
 
 pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
@@ -184,6 +206,49 @@ mod tests {
         let track = track_range(Field::Exposure);
         let at = stepped(Field::Exposure, 1.5, typed_steps(&Field::Exposure.readout(1.5), "-0.37", 0.0), &track);
         assert_eq!(Field::Exposure.readout(at), "\u{2212}0.37 EV");
+    }
+
+    #[test]
+    fn a_keys_press_is_three_shown_units_and_its_tooltip_names_them() {
+        // The value editor's − and + step one unit of the last digit; a key's press is three of them.
+        let track = track_range(Field::Exposure);
+        assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 3, &track)), "+0.53 EV");
+        assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, -3, &track)), "+0.47 EV");
+        // Twin: the value editor's own step moves one unit, a third of the press.
+        assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track)), "+0.51 EV");
+        // Every readout's press in its own unit, a span's and a side's included, a Scanner step its own.
+        let cases = [
+            ("+1.50 EV", 0.0, "0.03 EV"),
+            ("Warm +0.46 EV", 0.0, "0.03 EV"),
+            ("\u{2212}0.20 \u{2026} +0.30 EV", 0.0, "0.03 EV"),
+            ("85%", 0.0, "3%"),
+            ("+12°", 0.0, "3°"),
+            ("1.00\u{d7}", 0.0, "0.03\u{d7}"),
+            ("12.5 px", 0.0, "0.3 px"),
+            ("0.950", 0.0, "0.003"),
+            ("3 / 24", 0.0, "3"),
+            ("+15%", 5.0, "15%"),
+            ("0", 0.5, "1.5"),
+            ("\u{2212}0.30 EV", 0.1, "0.30 EV"),
+            ("Off", 0.0, ""),
+        ];
+        for (readout, per, words) in cases {
+            assert_eq!(pressed(readout, per, 3), words, "{readout}");
+        }
+        // Twin: one step, the value editor's, names a third of the press.
+        assert_eq!(pressed("+1.50 EV", 0.0, 1), "0.01 EV");
+        assert_ne!(pressed("+1.50 EV", 0.0, 1), pressed("+1.50 EV", 0.0, 3));
+        // The press named is the press taken: three units of the readout's digit from any Store readout.
+        for f in Field::ALL {
+            let range = track_range(f);
+            let mid = f.shown((range.start() + range.end()) / 2.0);
+            let (from, to) = (f.readout(mid), f.readout(stepped(f, mid, 3, &range)));
+            if let (Some((a, _)), Some((b, _))) = (read(&from), read(&to)) {
+                let unit = 10f64.powi(-(read(&from).unwrap().1 as i32));
+                let named = read(&pressed(&from, 0.0, 3)).unwrap().0;
+                assert!(((b - a).abs() - named).abs() < unit / 2.0 && (named / unit - 3.0).abs() < 1e-6, "{f:?}: {from} to {to}, {named}");
+            }
+        }
     }
 
     #[test]

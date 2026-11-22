@@ -15,12 +15,14 @@ export global Typing {
     pure callback steps(readout: string, typed: string, per: float) -> int;
 }
 
-// A stepped slider's keycap beside its rail, the interface's grey: one step a press, three with ⇧. Its
-// glyph, Trinil's minus or plus, names no slider, so assistive tools read its help, which names the way.
+// A slider's keycap beside its rail, the interface's grey: `SliderStyle.press` steps a press. Its glyph,
+// Trinil's minus or plus, names no slider, so assistive tools read its help, which names the way and the step.
 component StepKey inherits Button {
     keycap: true;
     rises: true;
     square: true;
+    // The hand's: the slider's arrows already step it under the keyboard.
+    tabbed: false;
     height: SliderStyle.step-key;
     width: self.height;
     // A mini key's glyph: the sign stays small on its key, as the typed one stood.
@@ -29,8 +31,8 @@ component StepKey inherits Button {
     accessible-label: self.help;
 }
 
-// `DSSlider`: the readout, then a track whose row grabs and to which Tab alone gives the keyboard; Rust
-// holds the value and its timing. `stepped`: whole steps from `lowest` to `highest`, a keycap either side.
+// `DSSlider`: the readout, then a track between a − and a + keycap, whose row grabs and to which Tab alone
+// gives the keyboard; Rust holds the value and its timing. `stepped`: whole steps from `lowest` to `highest`.
 export component Slider inherits VerticalLayout {
     in property <int> field;
     in property <string> label;
@@ -61,9 +63,11 @@ export component Slider inherits VerticalLayout {
     // click on the rail or on the name, whose tooltip `help` is, brings the slider back to it.
     in property <float> rest: -1;
     in property <string> help: @tr("Double-click to bring it back to rest");
-    // A stepped slider's minus and plus keys' tooltips.
-    in property <string> minus-help;
-    in property <string> plus-help;
+    // What a key's press moves, in the readout's unit: `SliderStyle.press` of the value editor's steps.
+    out property <string> press-reads: Readouts.pressed(root.readout, root.stepped ? root.step-reads : 0, SliderStyle.press);
+    // The minus and plus keys' tooltips: the slider, the way and the step.
+    in property <string> minus-help: root.press-reads == "" ? @tr("{} −: lower", root.label) : @tr("{} −: lower by {}", root.label, root.press-reads);
+    in property <string> plus-help: root.press-reads == "" ? @tr("{} +: higher", root.label) : @tr("{} +: higher by {}", root.label, root.press-reads);
     // Rust answers whether this press is the second of a double click.
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
@@ -95,7 +99,7 @@ export component Slider inherits VerticalLayout {
         lull.restart();
         root.step(root.field, by);
     }
-    // ⇧'s step with an arrow: three on a stepped slider, as its keys take, ten on a continuous one.
+    // ⇧'s step with an arrow: three on a stepped slider, ten on a continuous one.
     property <int> big: root.stepped ? 3 : 10;
     property <int> span: max(1, root.highest - root.lowest);
     // The travel a drag or a scroll measures against, and its sense: the ring's scale moves one for one
@@ -174,13 +178,13 @@ export component Slider inherits VerticalLayout {
     line := TouchArea {
       HorizontalLayout {
         spacing: Space.s;
-        if root.stepped: StepKey {
+        StepKey {
             has-icon: true;
             icon: Icons.zoom-out;
             help: root.minus-help;
             enabled: root.enabled;
             changed down => { root.keyed = self.down; }
-            clicked => { root.nudge(self.shift ? -3 : -1); }
+            clicked => { root.nudge(-SliderStyle.press); }
         }
         HorizontalLayout {
             padding-left: SliderStyle.knob-width / 2;
@@ -313,13 +317,13 @@ export component Slider inherits VerticalLayout {
                 }
             }
         }
-        if root.stepped: StepKey {
+        StepKey {
             has-icon: true;
             icon: Icons.zoom-in;
             help: root.plus-help;
             enabled: root.enabled;
             changed down => { root.keyed = self.down; }
-            clicked => { root.nudge(self.shift ? 3 : 1); }
+            clicked => { root.nudge(SliderStyle.press); }
         }
       }
     }

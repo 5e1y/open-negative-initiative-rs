@@ -84,7 +84,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
             }
         }
         for (field, label) in sliders {
-            let rail = common::the(w, Role::Slider, label);
+            let rail = common::rail(w, label);
             let knob = field.knob();
             std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
             click(&rig, (rail.x + rail.width * 0.92, rail.y + rail.height - 13.0));
@@ -116,7 +116,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     rig.until("a histogram", Duration::from_secs(60), || ctl.state.borrow().histogram().is_some());
     let before = means(&ctl);
     let renders = ctl.state.borrow().renders();
-    let red = common::the(w, Role::Slider, "Red white point");
+    let red = common::rail(w, "Red white point");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     click(&rig, (red.x + red.width * 0.95, red.y + red.height - 13.0));
     rig.until("the render of red's point", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
