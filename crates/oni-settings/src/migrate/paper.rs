@@ -23,10 +23,10 @@ mod tests {
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
         assert_eq!(digital.print_paper, Some(PaperStock::default()), "a digital photo at rest prints on the paper");
         assert_eq!(caught_up(older, digital.clone()).print_paper, None);
-        let negative = PipelineSettings { print_paper: Some(PaperStock::KodakRoyalDigital), ..PipelineSettings::rest(ConversionMode::Negative, true) };
+        let negative = PipelineSettings { print_paper: Some(PaperStock::KodakEktacolorEdge), ..PipelineSettings::rest(ConversionMode::Negative, true) };
         assert_eq!(caught_up(older, negative.clone()), PipelineSettings { print_paper: None, ..negative.clone() }, "nothing else moves");
         // Twin: a file of this format keeps the paper it names.
-        assert_eq!(caught_up(PAPER_VERSION, negative).print_paper, Some(PaperStock::KodakRoyalDigital));
+        assert_eq!(caught_up(PAPER_VERSION, negative).print_paper, Some(PaperStock::KodakEktacolorEdge));
     }
 
     #[test]

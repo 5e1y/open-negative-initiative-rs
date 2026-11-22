@@ -19,10 +19,10 @@ const WHITE: usize = 6;
 const GREY_CHROMA: f32 = 0.5;
 const GREY_GAP: f32 = 2e-3;
 const WHITE_SPREAD: f32 = 0.06;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 13.1 in Vision3
-/// 500T's shadows and 4.1 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
+/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 13.4 in Pro
+/// 160NH's shadows and 4.7 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
 const CHROMA: f32 = 14.0;
-const LIGHT_CHROMA: f32 = 4.5;
+const LIGHT_CHROMA: f32 = 5.0;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
 fn on(stock: VirtualStock) -> PipelineSettings {
@@ -151,7 +151,7 @@ fn each_stock_bakes_at_its_first_use_and_holds_one_table() {
 }
 
 /// The GPU chain on every stock: a neutral scene ramp lit at the stock's white, rendered as the editor renders a
-/// digital photo, prints within the CPU references' chroma (13.5 at most, on Vision3 500T). Twin: the same scene lit at
+/// digital photo, prints within the CPU references' chroma (13.4 at most, on Pro 160NH). Twin: the same scene lit at
 /// the other light is coloured.
 #[test]
 fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
