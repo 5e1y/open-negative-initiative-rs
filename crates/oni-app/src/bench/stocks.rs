@@ -70,8 +70,12 @@ pub(super) fn stocks(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     phase.set(if pass == 0 { St::Lighting { pass: 1, k: 0, at: Instant::now() } } else { St::Sweeping { k: 0 } });
                     return;
                 };
-                lit.borrow_mut()[pass].push(Instant::now());
+                // Timed only where the light moved what the canvas shows: one that changes nothing renders nothing.
+                let (shown, at) = (ctl.state.borrow().shown_settings().cloned(), Instant::now());
                 stocks.invoke_lit(i);
+                if ctl.state.borrow().shown_settings() != shown.as_ref() {
+                    lit.borrow_mut()[pass].push(at);
+                }
                 phase.set(St::Lighting { pass, k: k + 1, at: Instant::now() });
             }
             St::Sweeping { k } => match order.borrow().get(k) {
@@ -90,13 +94,21 @@ pub(super) fn stocks(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 stocks.invoke_lit(-1);
                 let restored = ctl.state.borrow().stock_lit().is_none();
                 let recorded = chain::taken();
-                let lights = lit.borrow();
+                let lights = lit.borrow().clone();
                 // Each light's render: the first asked after it, closed at its photon.
                 let to_photon = |at: &Instant| {
                     let view = recorded.views.iter().filter(|v| v.stages.asked >= *at).min_by_key(|v| v.stages.asked)?;
                     Some(photon(view.stages.encoded, &recorded.frames)? - *at)
                 };
                 let pass = |p: &[Instant]| p.iter().filter_map(to_photon).collect::<Vec<_>>();
+                // The warm pass's legs: to the render's encode, to the next frame's start, that frame's own time.
+                let legs = |at: &Instant| {
+                    let view = recorded.views.iter().filter(|v| v.stages.asked >= *at).min_by_key(|v| v.stages.asked)?;
+                    let frame = recorded.frames.iter().find(|f| f.began >= view.stages.encoded)?;
+                    Some([view.stages.encoded - *at, frame.began - view.stages.encoded, *frame.gpu.get()? - frame.began])
+                };
+                let warm_legs: Vec<[Duration; 3]> = lights[1].iter().filter_map(legs).collect();
+                let leg = |k: usize| centiles(warm_legs.iter().map(|l| l[k]).collect());
                 let (cold, warm) = (pass(&lights[0]), pass(&lights[1]));
                 let first = cold.first().copied();
                 let sweep = &lights[2];
@@ -104,11 +116,15 @@ pub(super) fn stocks(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let last = sweep.last().and_then(to_photon);
                 let written = ctl.state.borrow().store().settings() == &own;
                 finish(format!(
-                    "stocks: {} stocks lit, hover to photon cold {} (first {:.1} ms), warm {}; a sweep of {} lights rendered {} times, its last shown in {:.1} ms; light gone {restored}, settings untouched {written}",
+                    "stocks: {} stocks lit, {} moving the photo, hover to photon cold {} (first {:.1} ms), warm {} (to the encode {}, to the next frame {}, the frame {}); a sweep of {} lights rendered {} times, its last shown in {:.1} ms; light gone {restored}, settings untouched {written}",
                     order.borrow().len(),
+                    lights[0].len(),
                     centiles(cold.iter().skip(1).copied().collect()),
                     first.map_or(f64::NAN, |d| d.as_secs_f64() * 1000.0),
                     centiles(warm),
+                    leg(0),
+                    leg(1),
+                    leg(2),
                     sweep.len(),
                     swept,
                     last.map_or(f64::NAN, |d| d.as_secs_f64() * 1000.0),

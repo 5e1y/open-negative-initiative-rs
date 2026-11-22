@@ -75,20 +75,28 @@ impl Ctl {
         self.state.borrow_mut().menu_baked = false;
     }
 
-    /// The stock the menu lights shown on the open photo, nothing written; `None`, its own again.
+    /// The stock the menu lights shown on the open photo, nothing written; `None`, its own again. A light that
+    /// changes nothing the photo shows, as a stock naming no dyes on a negative, asks no render.
     fn light_stock(self: &Rc<Self>, i: Option<usize>) {
-        {
+        let moved = {
             let mut s = self.state.borrow_mut();
             if s.stock_lit == i {
                 return;
             }
+            let before = s.live_settings();
             s.stock_lit = i;
-            s.ask_view_again();
-        }
+            let moved = s.live_settings() != before;
+            if moved {
+                s.ask_view_again();
+            }
+            moved
+        };
         if i.is_some() {
             self.bake_menu_stocks();
         }
-        self.request_render();
+        if moved {
+            self.request_render();
+        }
     }
 
     /// The tables a render on each listed stock reads, baked off this thread at the menu's first light, so the
@@ -113,12 +121,12 @@ impl Ctl {
     }
 
     /// A stock chosen in the menu, written as one step: a digital photo shot on it, else the open photo's roll on
-    /// it for every photo of the roll; the stock in use writes nothing.
+    /// it for every photo of the roll; the stock in use writes nothing. The light it ends showed what is written,
+    /// so the canvas renders nothing again.
     fn stock_picked(self: &Rc<Self>, i: Option<usize>) {
         let (film, own, open) = {
             let mut s = self.state.borrow_mut();
             s.stock_lit = None;
-            s.ask_view_again();
             (s.store.settings().film().is_some(), s.open_stock().map(|k| k.id), s.open_path().map(str::to_string))
         };
         match (i.and_then(|i| FILM_STOCKS.get(i)), open) {

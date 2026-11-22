@@ -168,10 +168,12 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     stocks.invoke_lit(-1);
     rig.settle();
     assert_eq!(shown_dyes(), Some(DyeSet::GenericC41), "the photo's own dyes again");
-    // Twin: a stock lit that names no dyes shows the photo as it is.
+    // Twin: a stock lit that names no dyes shows the photo as it is, and asks no render.
+    let renders = ctl.state.borrow().renders();
     stocks.invoke_lit(stock("ilford-hp5"));
     rig.settle();
     assert_eq!(shown_dyes(), Some(DyeSet::GenericC41));
+    assert_eq!(ctl.state.borrow().renders(), renders, "nothing rendered for a light that moves nothing");
     stocks.invoke_lit(-1);
     assert_eq!(common::placed(w, Role::Button, &names[0]).len(), 1, "the first line in view as the menu drops");
     // The arrows walk the long list, which scrolls each stock they light into view.
@@ -391,10 +393,13 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     rig.settle();
     assert_eq!(stored(), own, "one Undo takes it back");
 
-    // A click writes the stock under the pointer; Undo takes it back.
+    // A click writes the stock under the pointer, its light's render the only one; Undo takes it back.
+    rig.settle();
     drop_menu(&rig, w);
+    let renders = ctl.state.borrow().renders();
     common::click(&rig, w, common::in_popup(w, Role::Button, next.name()).middle());
     rig.settle();
+    assert_eq!(ctl.state.borrow().renders(), renders + 1, "the pick renders nothing past what its light showed");
     assert!(!dropped(w), "a click closes the menu");
     assert_eq!(on(&stored()), Some(next), "the click writes the stock under the pointer");
     assert_eq!(stored(), own.on_stock(next), "as the light showed it");
