@@ -266,6 +266,10 @@ pub struct State {
     published_revision: u64,
     /// Where the stock picker's choice lands while it shows.
     stock_target: Option<StockTarget>,
+    /// The stock the editor's menu lights, by its place in the catalogue: kept out of the settings, so it writes nothing.
+    stock_lit: Option<usize>,
+    /// The menu's stocks baked since it last dropped.
+    menu_baked: bool,
     /// The window may close: a failed write was answered with Quit Anyway.
     quitting: bool,
     /// The flat-field masks loaded by hand, read once and again after each change to them.

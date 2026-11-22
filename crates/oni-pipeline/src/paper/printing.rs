@@ -186,12 +186,7 @@ fn spanned(v: f32) -> f32 {
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
-    let film = match (mono, s.mode.reads_positive()) {
-        (true, _) => Film::Silver,
-        (false, true) => Film::Slide,
-        (false, false) => Film::Negative(s.dye_set),
-    };
-    let table = enlarger(film, stock);
+    let table = enlarger(Film::of(s), stock);
     let sheet = sheet(stock);
     let (gain, pedestal, log_guard, read_black) = match separation {
         Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),

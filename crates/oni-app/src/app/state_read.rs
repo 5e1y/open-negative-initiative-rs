@@ -38,6 +38,11 @@ impl State {
         self.frame.as_ref()?.requests.requested_live.as_ref()
     }
 
+    /// The stock the editor's menu lights, by its place in the catalogue, which the canvas shows unwritten.
+    pub fn stock_lit(&self) -> Option<usize> {
+        self.stock_lit
+    }
+
     /// Every preview kept in memory let go, as a launch finds them: the next opening decodes.
     pub fn forget_previews(&self) {
         self.previews.lock().expect("previews").clear();

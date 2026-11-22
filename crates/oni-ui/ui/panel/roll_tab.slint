@@ -59,7 +59,7 @@ export component RollPane inherits Pane {
     if !PanelState.digital: Block {
         title: @tr("Film Stock");
         help: @tr("What this roll was shot on. It names the dyes Dye Separation unmixes on every photo of the roll: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back.");
-        StockHero { stock: PanelState.stock; select => { PanelState.select-stock(); } }
+        StockHero { stock: PanelState.stock; drops: true; }
     }
     if !PanelState.digital: flat-block := Block {
         title: @tr("Flat-Field");
