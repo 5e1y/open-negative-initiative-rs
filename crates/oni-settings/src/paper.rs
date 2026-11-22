@@ -1,4 +1,5 @@
-//! The colour papers a negative may be printed on in place of ONI's own print, each a spektrafilm profile.
+//! The colour papers a negative may be printed on in place of ONI's own print: spektrafilm's profiles, and the Frontier
+//! SP-3000's print refitted from its measured table.
 
 use serde::{Deserialize, Serialize};
 
@@ -16,15 +17,18 @@ pub enum PaperStock {
     KodakEnduraPremier,
     #[serde(rename = "fujifilm-crystal-archive-type-ii")]
     FujifilmCrystalArchiveTypeII,
+    #[serde(rename = "fujifilm-frontier-sp-3000")]
+    FujifilmFrontierSp3000,
 }
 
 impl PaperStock {
-    pub const ALL: [PaperStock; 5] = [
+    pub const ALL: [PaperStock; 6] = [
         PaperStock::KodakPortraEndura,
         PaperStock::KodakSupraEndura,
         PaperStock::KodakUltraEndura,
         PaperStock::KodakEnduraPremier,
         PaperStock::FujifilmCrystalArchiveTypeII,
+        PaperStock::FujifilmFrontierSp3000,
     ];
 
     /// The paper's trade name, never translated.
@@ -35,17 +39,19 @@ impl PaperStock {
             PaperStock::KodakUltraEndura => "Kodak Ultra Endura",
             PaperStock::KodakEnduraPremier => "Kodak Endura Premier",
             PaperStock::FujifilmCrystalArchiveTypeII => "Fujifilm Crystal Archive Type II",
+            PaperStock::FujifilmFrontierSp3000 => "Fujifilm Frontier SP-3000",
         }
     }
 
-    /// The profile's file, spektrafilm's name for it.
-    pub fn profile(self) -> &'static str {
+    /// The profile's file, spektrafilm's name for it; none for the Frontier, a machine measured, not a profile.
+    pub fn profile(self) -> Option<&'static str> {
         match self {
-            PaperStock::KodakPortraEndura => "kodak_portra_endura",
-            PaperStock::KodakSupraEndura => "kodak_supra_endura",
-            PaperStock::KodakUltraEndura => "kodak_ultra_endura",
-            PaperStock::KodakEnduraPremier => "kodak_endura_premier",
-            PaperStock::FujifilmCrystalArchiveTypeII => "fujifilm_crystal_archive_typeii",
+            PaperStock::KodakPortraEndura => Some("kodak_portra_endura"),
+            PaperStock::KodakSupraEndura => Some("kodak_supra_endura"),
+            PaperStock::KodakUltraEndura => Some("kodak_ultra_endura"),
+            PaperStock::KodakEnduraPremier => Some("kodak_endura_premier"),
+            PaperStock::FujifilmCrystalArchiveTypeII => Some("fujifilm_crystal_archive_typeii"),
+            PaperStock::FujifilmFrontierSp3000 => None,
         }
     }
 }
@@ -64,5 +70,7 @@ mod tests {
         // Twin: another paper's key reads another paper.
         let other: PaperStock = serde_json::from_str("\"kodak-supra-endura\"").unwrap();
         assert_ne!(other, PaperStock::default());
+        let frontier: PaperStock = serde_json::from_str("\"fujifilm-frontier-sp-3000\"").unwrap();
+        assert_eq!((frontier, frontier.profile()), (PaperStock::FujifilmFrontierSp3000, None));
     }
 }

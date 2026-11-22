@@ -38,13 +38,13 @@ pub(super) fn lit(bare: &Paper, rest: V3, anchors: &[V3; 3], s: &PipelineSetting
         ..at_rest
     };
     let moved = own(print.filters());
-    let (filtered, cc) = if moved == [0.0; 3] {
+    // Each filter moved from the rest, the least at none, a rest under none included; the time then holds the grey's luma.
+    let cc: V3 = std::array::from_fn(|c| rest_cc[c] + CC_PER_STOP * moved[c]);
+    let least = cc.iter().copied().fold(f32::INFINITY, f32::min);
+    let cc = cc.map(|v| v - least);
+    let (filtered, cc) = if cc == rest_cc {
         (toned, rest_cc)
     } else {
-        // Each filter moved from the rest, the least at none; the time then holds the grey's luma.
-        let cc: V3 = std::array::from_fn(|c| rest_cc[c] + CC_PER_STOP * moved[c]);
-        let least = cc.iter().copied().fold(f32::INFINITY, f32::min);
-        let cc = cc.map(|v| v - least);
         let target = luma(toned.printed(grey)).max(1e-12).ln();
         let with = |e: f32| Paper { scale: toned.scale * e.exp(), filters: filters(cc), ..toned };
         let e = root(0.0, |e| luma(with(e).printed(grey)).max(1e-12).ln() - target);

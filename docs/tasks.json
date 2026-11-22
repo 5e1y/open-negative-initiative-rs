@@ -11874,5 +11874,29 @@
     "status": "done",
     "detail": "Owner's decisions of 2026-11-21/22: the Frontier becomes one more print in the Paper list, taking the dye amounts every paper takes and Lighting in true density, no Hunt, no window, no resting offset. The table's x is the synthetic negatives' own density above base, without crosstalk, so the print reads the dye amounts as x at scale 1 (today's cube path stretches by 1.3 / green window and unmixes with the Swift generic rows at 0.6). Model: a 3 x 3 with rows summing to one (negative density to paper exposure), each layer's sensitometric curve a sum of three normal integrals, nine virtual print dyes each a density per layer, a base and a linear Rec. 2020 light. It runs in the existing paper kernel: three negative bands (one a layer, each dimmed by its own filter alone, so a CC is a hundredth of density on that layer) and nine print bands in place of wavelengths. Fitted by docs/research/frontier/frontier_print_fit.py (numpy, Levenberg-Marquardt, unclipped model against the table's clipped code so it keeps inside sRGB) to crates/oni-pipeline/resources/scanner/frontier_print.json. Note docs/research/frontier/frontier-paper.md.",
     "outcome": "Against frontier.cube's constrained nodes (1440, spread under 0.6): dE Oklab x100 median 1.04, p90 2.41, p99 4.46, max 7.08; mostly read (3584) 1.44 / 3.20; whole reach 2.41 / 7.30. The Look Lab model reads 1.19 / 2.99 on the same nodes; the curves linearised (twin) 33.4 / 51.8. The 63 renders' data is not on this machine: not measured against them (the cube reads them at 0.27). Least light of any density mix -1.6e-5, white 0.98. Variants left: two negative bands a layer, non-negative lights (1.28), a light-above-none penalty (1.21 to 1.39)."
+  },
+  {
+    "id": 3041,
+    "type": "change",
+    "title": "PaperStock::FujifilmFrontierSp3000, the Frontier SP-3000 in the Paper picker; sidecar format 45",
+    "status": "done",
+    "detail": "oni_settings::PaperStock gains FujifilmFrontierSp3000 (key fujifilm-frontier-sp-3000, trade name Fujifilm Frontier SP-3000, never translated); profile() is None for it. paper::frontier lays its sheet (curves tabulated on -2.5 to 2.5 log exposure) and its enlarger (three bands, base the table's neutral at unit time, black and white the mean) from the fit; sheet and enlarger dispatch on it, spektrafilm's sensitivities read in enlarging. The rest, Lighting, Brightness and True blacks are every paper's. A build of 44 cannot read the key: format 45 (chain::FRONTIER_PRINT_VERSION, no step), the newer-file corpus moves to broken/version-46, Refusal::Newer(46). The legacy Scanner-face Frontier machine and its cube are untouched; About's credits unchanged (Fuji's machine measured by the owner, no licence to cite). examples/frontier_print_traits.rs measures blues and skins per print; oni-app examples/frontier_compare.rs renders a frame on each.",
+    "outcome": "Blues and skins on the virtual Portra 800: Frontier paper blues dh -2.3 (ONI's print -11.7), 5 % past 270, skins dh +14.2 (ONI +4.7), skin red a x0.62 (ONI x1.00); today's Scanner Frontier -8.2 / +10.1 / x0.72; Portra Endura -11.3 / +6.8 / x1.04."
+  },
+  {
+    "id": 3042,
+    "type": "change",
+    "title": "The least filter at none at rest too; no Frontier resting offset on a paper",
+    "status": "done",
+    "detail": "paper::lighting::lit lays the least of the rest's filtration at none as it does a moved one, the time holding the grey's luma: the Frontier's solve lands under none (M -9.5, Y -14.6 on the checks' negative) and now reads C 14.6, M 5.1, Y 0, its print unchanged; spektrafilm's rests, already least at none, take the old path to the bit. scanner::gain_stops lays FRONTIER_REST only where the look's cube prints: on any paper the Scanner face's Frontier machine takes the keys alone.",
+    "outcome": "tests/frontier_paper.rs: the rest prints the reference grey at 0.398 within 2e-6 on a negative, a digital photo and black and white (twin unfiltered off neutral); on the Frontier paper on the Scanner face's Frontier machine the gains are the frame's (twin: on the cube's path the rest rides in them)."
+  },
+  {
+    "id": 3043,
+    "type": "check",
+    "title": "The Frontier paper's checks: the table, the rest, Lighting, the GPU, the picker",
+    "status": "done",
+    "detail": "oni-pipeline tests/frontier_paper.rs: the print reproduces the table (twin curves linearised); the rest neutral (twin no filtration) with no machine offset; Exposure +1 a stop less light exactly (twin the k=2 gear), Contrast the grade about the grey, Temperature 30.1 CC a stop the grey's luma held; the GPU against the CPU reference on a lit negative, a digital photo and black and white, True blacks on (twin half a stop, over 4e-2). oni-settings migrate::paper: the key written at 45 and read back (twin a newer version refused). Window check paper: the picker lists the Frontier, picking it prints the frame again with its own histogram (twin: picking it again writes and renders nothing).",
+    "outcome": "Table 1.038 / 2.408 (twin 33.4 / 51.8); grey within 2e-6; Exposure within 9e-8 of log10 2; GPU 6.6e-7 (negative), 1.1e-6 (digital), 3.1e-7 (black and white), twins 0.16 to 0.22; True blacks moves the print 2e-5, the Frontier's Dmax being at no light."
   }
 ]

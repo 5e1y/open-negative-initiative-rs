@@ -28,4 +28,18 @@ mod tests {
         // Twin: a file of this format keeps the paper it names.
         assert_eq!(caught_up(PAPER_VERSION, negative).print_paper, Some(PaperStock::KodakSupraEndura));
     }
+
+    #[test]
+    fn a_photo_on_the_frontier_is_written_past_every_build_that_cannot_read_its_key() {
+        use super::super::chain::{FRONTIER_PRINT_VERSION, PAPER_ENDS_VERSION};
+        use crate::document::VERSION;
+        let s = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..PipelineSettings::rest(ConversionMode::Negative, true) };
+        let mut stored = super::super::reshape::as_stored(&crate::Document::of(s.clone()), VERSION);
+        assert_eq!(stored["settings"]["printPaper"], serde_json::json!("fujifilm-frontier-sp-3000"));
+        assert!(stored["version"].as_i64() >= Some(FRONTIER_PRINT_VERSION) && FRONTIER_PRINT_VERSION == PAPER_ENDS_VERSION + 1);
+        assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).unwrap().document.settings, s);
+        // Twin: a reader refuses a version past its own as newer, as a build of 44 refuses this one.
+        stored["version"] = serde_json::json!(VERSION + 1);
+        assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).err(), Some(super::super::Refusal::Newer(VERSION + 1)));
+    }
 }

@@ -39,7 +39,7 @@ fn fixture() -> Fixture {
 }
 
 fn stock(name: &str) -> PaperStock {
-    *PaperStock::ALL.iter().find(|p| p.profile() == name).expect("a shipped paper")
+    *PaperStock::ALL.iter().find(|p| p.profile() == Some(name)).expect("a shipped paper")
 }
 
 /// spektrafilm's enlarger on Portra 800: its filters, its print exposure normalised on its mid grey's light.

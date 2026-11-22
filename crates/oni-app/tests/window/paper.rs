@@ -1,6 +1,6 @@
 //! The paper's switch on the Colour tab of the headless window: offered on a negative, off at its rest, on it prints
 //! on Portra Endura and shows the enlarger's filtration, Brightness and True blacks in place of Colour compensation,
-//! each rendering again; another paper picked by its name, none offered on a slide.
+//! each rendering again; another paper picked by its name, the Frontier SP-3000 among them, none offered on a slide.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -70,10 +70,32 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_sli
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
     assert_eq!(names, PaperStock::ALL.map(|p| p.name().to_string()));
+    let renders = ctl.state.borrow().renders();
     panel.invoke_paper_chosen(4);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
     assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Type II");
+    rig.until("the frame printed on Crystal Archive", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    // The Frontier SP-3000 is one more paper: picked by its name, the frame prints on it again.
+    let histogram = || ctl.state.borrow().histogram().cloned();
+    let shown = |paper: PaperStock| ctl.state.borrow().shown_settings().is_some_and(|s| s.print_paper == Some(paper));
+    rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::FujifilmCrystalArchiveTypeII) && histogram().is_some());
+    let crystal = histogram();
+    let renders = ctl.state.borrow().renders();
+    let frontier = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmFrontierSp3000).unwrap();
+    panel.invoke_paper_chosen(frontier as i32);
+    rig.pump();
+    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmFrontierSp3000));
+    assert_eq!(panel.get_paper_title(), "Fujifilm Frontier SP-3000");
+    rig.until("the frame printed on the Frontier", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.until("the Frontier's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != crystal.as_ref()));
+    // Twin: the same paper picked again writes nothing, so nothing renders anew.
+    let (renders, revision) = (ctl.state.borrow().renders(), ctl.state.borrow().store().revision());
+    panel.invoke_paper_chosen(frontier as i32);
+    rig.pump();
+    assert_eq!((ctl.state.borrow().renders(), ctl.state.borrow().store().revision()), (renders, revision));
+    panel.invoke_paper_chosen(4);
+    rig.pump();
 
     // A slide is never printed on a negative paper: the switch leaves, the choice kept for a negative.
     panel.invoke_film_type_picked(1);
