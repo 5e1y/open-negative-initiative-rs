@@ -27,6 +27,7 @@ pub mod reshape;
 pub mod scan_line;
 pub mod measured_dyes;
 pub mod one_face;
+pub mod own_film;
 pub mod paper;
 pub mod paper_blacks;
 pub mod strokes;
@@ -257,7 +258,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         }
     };
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
+    converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
@@ -284,7 +285,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let scanner = one_face::Scanner::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let former = paper_blacks::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let settings = grain_size::unfiled(version, settings, Some(&raw));
-        let settings = measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw)));
+        let settings = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw))));
         let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
         let settings = paper_blacks::caught_up(version, settings, &former);
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
@@ -294,7 +295,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = grain_size::unfiled(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
-    converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
+    converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);

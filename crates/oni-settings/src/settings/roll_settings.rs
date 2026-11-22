@@ -114,5 +114,14 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
             Field::BalanceStrength => out = dosed(&out, donor.balance_strength),
         }
     }
+    on_own_film(target, out)
+}
+
+/// `out`, a frame once `target`, reading its negative on its own film's gains, windows and dyes: a digital photo's
+/// reference is its film's, so a roll never lays another film's on it, and a film it newly takes is placed on its own.
+pub fn on_own_film(target: &PipelineSettings, mut out: PipelineSettings) -> PipelineSettings {
+    let Some(film) = out.film() else { return out };
+    let own = if target.film().map(|f| f.stock) == Some(film.stock) { target.clone() } else { out.on_stock(film.stock) };
+    (out.gains, out.levels, out.dye_set) = (own.gains, own.levels, own.dye_set);
     out
 }
