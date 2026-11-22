@@ -1,6 +1,6 @@
-//! The paper: spektrafilm's print of Portra 800's dyes on each paper; each frame's black, white and grey printed neutral
-//! through ONI's window, Exposure and Contrast on ONI's curve inside it; slides never printed; the GPU on every branch.
-//! Each verdict has a twin.
+//! The paper: spektrafilm's print of Portra 800's dyes on each paper; each frame's enlarger resting where its grey prints
+//! neutral at a plain RAW's grey, its ends the paper's own; the print the paper's alone; slides never printed; the GPU on
+//! every branch. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -88,33 +88,32 @@ fn every_paper_prints_portra_800s_dye_amounts_as_spektrafilm_does() {
     }
 }
 
-/// The paper's print without its window, as it printed before the window laid its anchors.
-fn unwindowed(k: &Stage47) -> Stage47 {
-    Stage47 { paper: k.paper.map(|p| Paper { window_black: [0.0; 3], window_white: [1.0; 3], window_luma: false, ..p }), ..*k }
+/// The frames the rest is read on: a digital photo, a negative, black and white, and a negative with no unmix.
+fn rests() -> [(&'static str, PipelineSettings); 4] {
+    [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", PipelineSettings { separation: 0.0, ..prepared_negative() })]
 }
 
 #[test]
-fn the_anchors_print_black_white_and_the_grey_neutral() {
-    let dose_zero = PipelineSettings { separation: 0.0, ..prepared_negative() };
-    for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", dose_zero)] {
+fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_and_the_ends_are_the_papers() {
+    for (label, s) in rests() {
         let k = conversion::stage47(&s);
         let p = k.paper.expect(label);
-        println!("{label}: window black {:?}, white {:?}", p.window_black, p.window_white);
         let [black, white, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
-        println!("{label}: black {black:?}, white {white:?}, grey {grey:?} (ONI's print {:.5})", *GREY_PRINT);
-        assert!((0..3).all(|c| black[c].abs() < 1e-4), "{label}: the black prints black: {black:?}");
-        assert!((0..3).all(|c| (white[c] - 1.0).abs() < 1e-4), "{label}: the white prints white: {white:?}");
-        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-4), "{label}: the grey prints a plain RAW's: {grey:?}");
-        // Twin: the paper without its window prints its own white and its Dmax.
-        let [black, white, _] = anchor_scans(&s).map(|q| cpu::stage47(q, &unwindowed(&k)));
-        println!("{label}: unwindowed, black {black:?}, white {white:?}");
-        assert!(white[1] < 0.9 && black[1] > 2e-3, "{label}: {white:?} {black:?}");
-        // Twin: the same paper with no filtration prints the grey off neutral.
-        let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0; 3], ..p }), ..k };
+        let shares = paper::layer_shares(&p, [0.0; 3]);
+        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), black {black:?} (Dmax {:?}), white {white:?} (paper {:?}); the base at {shares:?} of each layer's range", *GREY_PRINT, p.dmax, p.white);
+        // Measured within 3e-7: the solve's tolerance in log light.
+        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
+        // The ends are the paper's: the base above its Dmax, the densest read at most its white, neither laid on 0 or 1.
+        assert!((0..3).all(|c| black[c] >= p.dmax[c] - 1e-6 && black[c] > 1e-3 && white[c] <= p.white[c] + 1e-6 && white[c] < 0.9), "{label}");
+        // Twin: the same enlarger through no filtration prints the grey off neutral.
+        let bare = Stage47 { paper: Some(Paper { filters: [1.0; 3], ..p }), ..k };
         let unfiltered = cpu::stage47(grey_scan(&s), &bare);
         if label != "black and white" {
             assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2, "{label}: {unfiltered:?}");
         }
+        // Twin: ONI's window laid on the print would put the base on black and the densest read on white.
+        let windowed = |v: V4| -> [f32; 3] { std::array::from_fn(|c| (v[c] - black[c]) / (white[c] - black[c])) };
+        assert!(windowed(black) == [0.0; 3] && windowed(grey).iter().all(|g| (g - *GREY_PRINT).abs() > 0.01), "{label}");
     }
     // A digital photo's reference grey is its scene grey: the paper prints the scene's grey as ONI's print does.
     let s = digital();
@@ -125,81 +124,15 @@ fn the_anchors_print_black_white_and_the_grey_neutral() {
 }
 
 #[test]
-fn the_enlarger_rests_where_the_window_lays_the_grey_on_a_plain_raws() {
-    let dose_zero = PipelineSettings { separation: 0.0, ..prepared_negative() };
-    for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", dose_zero)] {
-        let k = conversion::stage47(&s);
-        let p = k.paper.expect(label);
-        let anchors = paper::anchors(&s, k.dyes.as_ref());
-        let grey = p.windowed(p.printed(anchors[2]));
-        let off = grey.iter().map(|g| (g - *GREY_PRINT).abs()).fold(0.0f32, f32::max);
-        println!("{label}: the windowed grey {grey:?}, within {off:.1e} of {:.5}; filtration {:?}", *GREY_PRINT, conversion::printing(&s).unwrap().filtration);
-        // Measured within 4e-7: the solve's tolerance in log light.
-        assert!(off < 2e-6, "{label}: {grey:?}");
-        // Twin: the enlarger set where the bare print's grey is a plain RAW's leaves the window's grey near 0.49.
-        let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
-        let (mut low, mut high) = (p.scale.ln() - 10.0, p.scale.ln() + 10.0);
-        for _ in 0..80 {
-            let mid = 0.5 * (low + high);
-            if luma(Paper { scale: mid.exp(), ..p }.printed(anchors[2])) > *GREY_PRINT { low = mid } else { high = mid }
-        }
-        let bare = paper::anchored(Paper { scale: (0.5 * (low + high)).exp(), ..p }, &anchors, s.mode == ConversionMode::Monochrome);
-        let lifted = bare.windowed(bare.printed(anchors[2]));
-        println!("{label}: set on the bare print, the windowed grey {lifted:?}, {:+.3} stop of exposure apart", (bare.scale / p.scale).log2());
-        assert!(lifted.iter().all(|g| *g > *GREY_PRINT + 0.05), "{label}: {lifted:?}");
-    }
-}
-
-#[test]
-fn exposure_brightens_the_grey_and_holds_the_black_and_the_white() {
-    let s = prepared_negative();
-    let [_, _, rest] = lit(&s, |_| {});
-    for stops in [-1.0, 1.0] {
-        let [black, white, grey] = lit(&s, |t| t.print.exposure += stops);
-        println!("{stops:+} stop: black {black:?}, white {white:?}, grey {grey:?}");
-        assert!((0..3).all(|c| black[c].abs() < 1e-4 && (white[c] - 1.0).abs() < 1e-4), "{stops}: {black:?} {white:?}");
-        // As on ONI's print: a stop doubles the grey's odds against white, 0.398 to 0.570 up, 0.249 down.
-        assert!((0..3).all(|c| if stops > 0.0 { grey[c] > rest[c] * 1.4 } else { grey[c] < rest[c] / 1.5 }), "{stops}: {grey:?} {rest:?}");
-    }
-    // Twin: a stop up as the enlarger's, a stop less light on the paper, lifts the black off black.
-    let k = conversion::stage47(&s);
-    let enlarger = Stage47 { paper: k.paper.map(|p| Paper { scale: p.scale * 0.5, ..p }), ..k };
-    let black = cpu::stage47(anchor_scans(&s)[0], &enlarger);
-    println!("the enlarger's stop lifts the black to {black:?}");
-    assert!(black[1] > 1e-3, "{black:?}");
-}
-
-#[test]
-fn contrast_bends_about_the_grey_and_holds_the_ends() {
-    let s = prepared_negative();
-    let k = conversion::stage47(&s);
-    let darker = { let g = grey_scan(&s); [g[0] * 3.0, g[1] * 3.0, g[2] * 3.0, 1.0] };
-    let flat = cpu::stage47(darker, &k);
-    for travel in [-0.3, 0.3] {
-        let [black, white, grey] = lit(&s, |t| t.print.contrast = travel);
-        let mut t = s.clone();
-        t.print.contrast = travel;
-        let dark = cpu::stage47(darker, &conversion::stage47(&t));
-        println!("contrast {travel:+}: black {black:?}, white {white:?}, grey {grey:?}, a darker grey {dark:?} from {flat:?}");
-        assert!((0..3).all(|c| black[c].abs() < 1e-4 && (white[c] - 1.0).abs() < 1e-4), "{travel}: {black:?} {white:?}");
-        assert!(if travel > 0.0 { dark[1] < flat[1] * 0.95 } else { dark[1] > flat[1] * 1.05 }, "{travel}: {dark:?} {flat:?}");
-    }
-    // Twin: a contrast laid as a straight slope about the grey, its window narrowed, pushes the white past white.
-    let pivot = GREY_PRINT.powf(1.0 / Print::DISPLAY_GAMMA);
-    let narrowed = [pivot - pivot / 1.3, pivot + (1.0 - pivot) / 1.3, 1.0];
-    let straight = Stage47 { red: narrowed, green: narrowed, blue: narrowed, ..k };
-    let white = cpu::stage47(anchor_scans(&s)[1], &straight);
-    assert!(white[1] > 1.1, "{white:?}");
-}
-
-#[test]
-fn at_rest_the_print_is_the_windowed_paper() {
+fn the_print_is_the_papers_own_and_the_colour_density_alone_follows() {
     let stock = film::stock(VirtualStock::KodakPortra800);
     let pixels: Vec<V4> = noise(23, 17, 5, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
-    let dose_zero = PipelineSettings { separation: 0.0, ..prepared_negative() };
-    for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono()), ("no unmix", dose_zero)] {
+    let mut lit = prepared_negative();
+    (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.black_point) = (2.0, 0.2, 0.1, 0.03);
+    for (label, s) in rests().into_iter().chain([("lit negative", lit)]) {
         let k = conversion::stage47(&s);
         let p = k.paper.expect(label);
+        assert!(k.print_on == 0.0 && k.hunt == 0.0, "{label}: no print curve, no Hunt on the paper");
         let paper_alone = |q: V4| {
             let read = k.dyes.as_ref().map_or(q, |d| cpu::dye_separation(q, &k, d));
             cpu::paper(read, &p)
@@ -208,13 +141,20 @@ fn at_rest_the_print_is_the_windowed_paper() {
             let (a, b) = (cpu::stage47(*q, k), paper_alone(*q));
             (0..3).map(|c| (a[c] - b[c]).abs() / (1e-3 + b[c].abs())).fold(0.0f32, f32::max)
         }).fold(0.0f32, f32::max);
-        let at_rest = worst(&k);
-        println!("{label}: at rest within {at_rest:.1e} of the windowed paper");
-        assert!(at_rest < 1e-5, "{label}: {at_rest}");
+        let alone = worst(&k);
+        println!("{label}: stage 4-7 within {alone:.1e} of the paper's print");
+        assert!(alone == 0.0, "{label}: {alone}");
         // Twin: ONI's print curve at its own rest laid on the paper, a tone curve stacked.
-        let stacked = worst(&Stage47 { print_stops: Print::RESTING_EXPOSURE, ..k });
+        let stacked = worst(&Stage47 { print_on: 1.0, print_stops: Print::RESTING_EXPOSURE, ..k });
         assert!(stacked > 1e-2, "{label}: {stacked}");
     }
+    // The colour density follows the paper's print, as on ONI's.
+    let mut dense = prepared_negative();
+    dense.density = 0.4;
+    let k = conversion::stage47(&dense);
+    let (q, plain) = (pixels[7], Stage47 { density: 1.0, ..k });
+    let (v, w) = (cpu::stage47(q, &k), cpu::stage47(q, &plain));
+    assert!(k.density > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
 }
 
 #[test]
@@ -265,8 +205,10 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.highlights) = (2.0, 0.2, 0.1, -0.1);
     lit.print.set_filters([0.2, -0.1, 0.0]);
     (lit.print.black_point, lit.print.white_point, lit.print.channel_contrast, lit.print.channel_mid) = (0.03, 0.05, [0.1, 0.0, -0.1], [0.0, 0.1, 0.0]);
+    (lit.print.channel_white, lit.print.channel_black, lit.print.brightness, lit.print.true_blacks) = ([0.02, 0.0, 0.0], [0.0, 0.0, 0.03], 0.5, true);
     lit.density = 0.3;
-    let mono = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..mono() };
+    let mut mono = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..mono() };
+    (mono.print.contrast, mono.print.highlights, mono.print.white_point, mono.print.brightness, mono.print.true_blacks) = (0.3, -0.2, 0.04, -0.5, true);
     let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveTypeII), ..prepared_negative() };
     for (label, s) in [("digital", digital()), ("lit negative", lit), ("black and white", mono), ("no unmix", unmixed_none)] {
         let k = conversion::stage47(&s);
@@ -279,6 +221,6 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let k = conversion::stage47(&digital());
     let p = k.paper.unwrap();
     let alone = whole(&mut g, &Image::new(&source).then(stages::paper(&p)));
-    let wider = p.window_white.map(|w| w * 1.05);
-    judge("paper alone", &alone, &mapped(&pixels, |q| cpu::paper(q, &p)), &mapped(&pixels, |q| cpu::paper(q, &Paper { window_white: wider, ..p })));
+    let brighter = Paper { brightness: 0.1, ..p };
+    judge("paper alone", &alone, &mapped(&pixels, |q| cpu::paper(q, &p)), &mapped(&pixels, |q| cpu::paper(q, &brighter)));
 }

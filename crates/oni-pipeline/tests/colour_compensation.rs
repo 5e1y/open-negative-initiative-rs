@@ -1,6 +1,6 @@
-//! Lighting's colour compensation switched off, on ONI's print and on the paper: no Hunt, no points' or Contrast's
-//! saturation and the points' colour unheld, the luma as with it, the roll's factor and the film's share kept, the
-//! GPU beside its reference; on, the print as before to the bit. Each verdict has a twin.
+//! Lighting's colour compensation switched off on ONI's print: no Hunt, no points' or Contrast's saturation and the
+//! points' colour unheld, the luma as with it, the roll's factor and the film's share kept, the GPU beside its
+//! reference; on, the print as before to the bit; on a paper nothing to cut. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -34,13 +34,10 @@ fn on_roll() -> PipelineSettings {
     s
 }
 
-/// Each frame on ONI's print and on the paper.
+/// Each frame on ONI's print; a paper lays no compensation for the switch to cut.
 fn prints() -> Vec<(String, PipelineSettings)> {
     let frames = [("on its roll", on_roll()), ("off a roll", negative()), ("digital", digital())];
-    frames
-        .into_iter()
-        .flat_map(|(frame, s)| [(format!("{frame}, ONI's print"), PipelineSettings { print_paper: None, ..s.clone() }), (format!("{frame}, the paper"), s)])
-        .collect()
+    frames.into_iter().map(|(frame, s)| (format!("{frame}, ONI's print"), PipelineSettings { print_paper: None, ..s })).collect()
 }
 
 /// Lighting's moves the checks make.
@@ -122,9 +119,6 @@ fn without_compensation_the_print_lays_no_colour_in_answer_to_lighting() {
             let (k_on, k_off) = (conversion::stage47(&on), conversion::stage47(&off));
             assert_eq!(k_off.hunt, 0.0, "{print}, {label}: no Hunt");
             assert_eq!(finishing::print_saturation(&off), [SaturationCurve::default(), SaturationCurve::default()], "{print}, {label}");
-            if k_off.paper.is_some() {
-                assert_eq!((k_off.decompression, k_off.film_share), (1.0, 0.0), "{print}, {label}: the paper's plain windows");
-            }
             // Twin: on, Hunt reads the move and Contrast and the points lay their curves.
             assert_eq!(k_on.hunt, 1.0, "{print}, {label}");
             let curves = finishing::print_saturation(&on).iter().filter(|c| !c.is_neutral()).count();
@@ -177,7 +171,7 @@ fn without_compensation_the_luma_moves_as_with_it_and_the_colour_as_the_curves_g
 
 #[test]
 fn without_compensation_the_rolls_factor_and_the_films_share_still_act() {
-    for (print, s) in prints().into_iter().filter(|(p, _)| p.contains("ONI's")) {
+    for (print, s) in prints() {
         let rest = with(&s, false, |_| {});
         let k = conversion::stage47(&rest);
         let at_rest = (conversion::colour_factor(&with(&s, true, |_| {})), k.decompression, k.film_share);
@@ -289,11 +283,26 @@ fn bits(on: Option<bool>) -> u64 {
 
 #[test]
 fn with_compensation_the_print_is_unchanged_to_the_bit() {
-    // The fold of these renders before the switch existed.
-    const BEFORE: u64 = 0xe179_bedf_98cd_0226;
+    // The fold of these renders on ONI's print before the switch existed, as the paper's density change left it.
+    const BEFORE: u64 = 0xbfb6_c507_37ed_0fec;
     let (stored, on) = (bits(None), bits(Some(true)));
     println!("the renders fold to {stored:#018x}");
     assert_eq!((stored, on), (BEFORE, BEFORE));
     // Twin: off, the fold moves.
     assert_ne!(bits(Some(false)), BEFORE);
+}
+
+#[test]
+fn on_a_paper_the_switch_has_nothing_to_cut() {
+    for (frame, s) in [("on its roll", on_roll()), ("off a roll", negative()), ("digital", digital())] {
+        for (label, f) in moves() {
+            let (on, off) = (with(&s, true, f), with(&s, false, f));
+            let printed = |t: &PipelineSettings| pairs(&s).into_iter().map(|(p, n)| [render(t, p), render(t, n)]).collect::<Vec<_>>();
+            assert_eq!(printed(&on), printed(&off), "{frame}, {label}");
+            assert_eq!(finishing::print_saturation(&on), finishing::print_saturation(&off), "{frame}, {label}");
+            // Twin: on ONI's print the switch cuts Hunt.
+            let onis = |t: &PipelineSettings| conversion::stage47(&PipelineSettings { print_paper: None, ..t.clone() }).hunt;
+            assert_ne!(onis(&on), onis(&off), "{frame}, {label}");
+        }
+    }
 }

@@ -10,7 +10,7 @@ struct Params {
     high_print: vec4<f32>,
     print_contrast_hunt: vec4<f32>,
     own_film: vec4<f32>,
-    balance_low_hunt_contrast: vec4<f32>,
+    balance_low: vec4<f32>,
     balance_span_decompression: vec4<f32>,
     print_zones: vec4<f32>,
     own_contrast: vec4<f32>,
@@ -71,9 +71,9 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32, own_co
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's windowed print on the
-// display gamma, its windows Lighting's points.
+// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print passes as it is.
 fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
+    if (P.print_contrast_hunt.w > 0.5) { return s.rgb; }
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
     let red = P.red_density.xyz;
@@ -84,7 +84,7 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let low_points = P.low_window.xyz;
     let window = P.low_window.w;
     let high_points = P.high_print.xyz;
-    let balance_low = P.balance_low_hunt_contrast.xyz;
+    let balance_low = P.balance_low.xyz;
     let balance_span = P.balance_span_decompression.xyz;
     let decompression = P.balance_span_decompression.w;
     let film_share = P.own_film.w;
@@ -92,9 +92,6 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     let t = (s.rgb + pedestal) * gain;
     let d = -log(max(t, vec3<f32>(log_guard))) * LOG10_E;
     var e = select(window - d, d, invert > 0.5);
-    if (P.print_contrast_hunt.w > 0.5) {
-        e = pow(max(s.rgb, vec3<f32>(0.0)), vec3<f32>(1.0 / DISPLAY_GAMMA));
-    }
 
     let film = e;
     e = vec3<f32>(apply_window(e.r, red, low_points.r, high_points.r),
@@ -123,7 +120,6 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
     let own_contrast = P.own_contrast.xyz;
     let own_mid = P.own_mid.xyz;
     let print_zones = P.print_zones.xy;
-    let hunt_contrast = P.balance_low_hunt_contrast.w;
     var e = windowed_in;
     if (print_on > 0.5) {
         let windowed = e;
@@ -139,7 +135,7 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
         }
         if (hunt > 0.0) {
             let g = (windowed.r + windowed.g + windowed.b) / 3.0;
-            density = density * exp(-hunt * (shaped(g, print_stops, print_contrast * hunt_contrast, print_zones) - g));
+            density = density * exp(-hunt * (shaped(g, print_stops, print_contrast, print_zones) - g));
         }
     }
 

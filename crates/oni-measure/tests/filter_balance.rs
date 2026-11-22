@@ -176,8 +176,8 @@ fn a_digital_photo_s_key_balances_its_print_on_its_films_reference() {
     assert_eq!((pressed.gains, pressed.levels, pressed.roll_reference.is_none()), (s.gains, s.levels, true), "the film's reference kept");
 }
 
-/// On a paper the key reads the paper's print, its Temperature and Tint toning it as on ONI's print: the filters it finds
-/// land the paper's means together; twin: the filters found on ONI's print of the same photo leave the paper's parted.
+/// On a paper the key reads the paper's print, its Temperature and Tint the enlarger's filtration: the filters it finds land
+/// the paper's means together; twin: the filters found on ONI's print of the same photo leave the paper's parted.
 #[test]
 fn on_a_paper_the_key_balances_the_papers_own_print() {
     let check = "filter_balance::paper";

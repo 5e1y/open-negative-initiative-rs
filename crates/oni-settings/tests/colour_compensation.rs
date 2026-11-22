@@ -45,7 +45,7 @@ fn every_older_document_reads_it_on() {
 #[test]
 fn a_document_that_carries_it_is_newer_than_any_build_that_cannot_read_it() {
     let written = stored(&off());
-    assert_eq!(written["version"], json!(chain::COLOUR_COMPENSATION_VERSION));
+    assert!(written["version"].as_i64().unwrap() >= chain::COLOUR_COMPENSATION_VERSION);
     assert_eq!(chain::COLOUR_COMPENSATION_VERSION, chain::EXPOSURE_GEAR_VERSION + 1);
     // A reader refuses any version past its own, as a build of 42 refuses this one.
     let mut ahead = written.clone();

@@ -75,6 +75,9 @@ pub const EXPOSURE_GEAR_VERSION: i64 = 42;
 /// The version Lighting's colour compensation came to be switched off, a key a build before it cannot read: no step,
 /// as every older document reads it on.
 pub const COLOUR_COMPENSATION_VERSION: i64 = 43;
+/// The version a paper's print came to keep its Brightness and True blacks, keys a build before it cannot read: no step,
+/// as every older document reads Brightness 0 and True blacks off.
+pub const PAPER_ENDS_VERSION: i64 = 44;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

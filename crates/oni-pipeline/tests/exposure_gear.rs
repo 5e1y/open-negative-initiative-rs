@@ -66,11 +66,11 @@ fn the_grey_moves_as_the_gears_table_says() {
         let before = (printed(n, &print_alone(&once)) / GREY).log2();
         assert!((before - ungeared).abs() < 0.01 && (before - want).abs() > 0.1, "{stops:+}: {before}");
     }
-    // On a paper the curve rests at none and takes the same twice.
+    // On a paper the curve is not run: Exposure is the enlarger's light, ungeared (`paper_lighting`).
     let mut papered = s.clone();
     papered.print_paper = Some(PaperStock::default());
     papered.print.exposure = rest + 1.0;
-    assert_eq!(conversion::stage47(&papered).print_stops, 2.0);
+    assert_eq!(conversion::stage47(&papered).print_on, 0.0);
 }
 
 /// Every mode at rest, on ONI's print and on a paper where it prints one.
@@ -91,11 +91,16 @@ fn a_rest_reaches_the_kernel_to_the_bit() {
     for s in rests() {
         let k = conversion::stage47(&s);
         let rest = Print::resting_exposure(s.mode);
-        let stops = if s.paper().is_some() { 0.0 } else { rest };
-        assert_eq!(k.print_stops.to_bits(), stops.to_bits(), "{:?} {:?}", s.mode, s.print_paper);
-        // Twin: a notch of a hundredth off the rest reaches the curve twice over.
         let notch = PipelineSettings { print: Print { exposure: s.print.exposure + 0.01, ..s.print }, ..s.clone() };
-        assert!((conversion::stage47(&notch).print_stops - stops - 0.02).abs() < 1e-6, "{:?}", s.mode);
+        if let Some(p) = k.paper {
+            // A paper runs no curve; a notch is a hundredth of a stop less light on it, ungeared.
+            let moved = conversion::stage47(&notch).paper.unwrap().scale / p.scale;
+            assert!(k.print_on == 0.0 && (moved - (-0.01f32).exp2()).abs() < 1e-6, "{:?}: {moved}", s.mode);
+            continue;
+        }
+        assert_eq!(k.print_stops.to_bits(), rest.to_bits(), "{:?}", s.mode);
+        // Twin: a notch of a hundredth off the rest reaches the curve twice over.
+        assert!((conversion::stage47(&notch).print_stops - rest - 0.02).abs() < 1e-6, "{:?}", s.mode);
     }
 }
 
@@ -114,10 +119,7 @@ fn densities() -> Vec<[f32; 4]> {
 
 /// The kernel's arguments before the gear, for `s` as an older build read it: the slider's stops on the curve once.
 fn before_the_gear(s: &PipelineSettings) -> Stage47 {
-    let k = conversion::stage47(s);
-    let rest = Print::resting_exposure(s.mode);
-    let print_stops = if s.paper().is_some() { s.print.exposure - rest } else { s.print.exposure };
-    Stage47 { print_stops, ..k }
+    Stage47 { print_stops: s.print.exposure, ..conversion::stage47(s) }
 }
 
 fn stored(s: &PipelineSettings, version: i64) -> Vec<u8> {
@@ -131,7 +133,8 @@ fn an_older_documents_render_stays_through_its_migration() {
     let older = chain::EXPOSURE_GEAR_VERSION - 1;
     let pixels = densities();
     let mut worst = 0.0f32;
-    for mut s in rests() {
+    // A paper's Exposure left the curve for the enlarger, so its older renders change on purpose: ONI's print alone.
+    for mut s in rests().into_iter().filter(|s| s.paper().is_none()) {
         let rest = Print::resting_exposure(s.mode);
         s.print.exposure = rest + 1.3;
         s.print.contrast = 0.2;
