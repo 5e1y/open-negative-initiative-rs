@@ -81,7 +81,7 @@ fn windows_alone(s: &PipelineSettings) -> Stage47 {
 }
 
 /// The `x` between `low` and `high` where `f` reads `target`, `f` rising or falling along it.
-fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) -> f32 {
+pub(super) fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) -> f32 {
     let rising = f(high) >= f(low);
     for _ in 0..60 {
         let mid = 0.5 * (low + high);
@@ -225,6 +225,8 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         white: [1.0; 3],
         anchor: [0.0; 3],
         brightness: 0.0,
+        pick_log: 0.0,
+        knee: 0.0,
         luma: mono,
         reversal: stock.reversal(),
     };

@@ -27,6 +27,9 @@ fn narrow() -> Paper {
         scale: 1.0,
         pivot: [0.0; 3],
         slope: [1.0; 3],
+        brightness: 0.0,
+        pick_log: -0.5,
+        knee: 0.1,
         curves: &CURVES,
         curve_low: -2.0,
         curve_step: 0.01,
@@ -36,7 +39,6 @@ fn narrow() -> Paper {
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
-        brightness: 0.0,
         luma: false,
         reversal: false,
     }
@@ -137,22 +139,17 @@ fn a_reversal_paper_reads_the_tones_from_the_densest_film_its_print_s_black() {
 }
 
 #[test]
-fn the_ends_lay_the_pick_on_its_anchor_hold_the_white_and_brighten_between() {
+fn the_ends_lay_the_pick_on_its_anchor_and_hold_the_white() {
     let k = narrow();
-    let anchors = [k.pick, [0.0; 3], [0.005, 0.03, 0.01]];
-    for (brightness, anchor) in [(1.0, anchors[0]), (-1.0, anchors[0]), (0.0, anchors[1]), (2.0, anchors[1]), (0.5, anchors[2])] {
-        let p = Paper { brightness, anchor, ..k };
+    for anchor in [k.pick, [0.0; 3], [0.005, 0.03, 0.01]] {
+        let p = Paper { anchor, ..k };
         let (black, white) = (p.ended(k.pick), p.ended(k.white));
         assert!((0..3).all(|c| (black[c] - anchor[c]).abs() < 1e-7 && (white[c] - k.white[c]).abs() < 1e-6), "{black:?} {white:?}");
     }
-    // Brightness: the odds gain between the ends, a stop lifting the middle of the range to two thirds.
-    let bright = Paper { brightness: 1.0, ..k };
-    let mid = map(k.pick, |c, b| b + 0.5 * (k.white[c] - b));
-    let lifted = bright.ended(mid);
-    assert!((0..3).all(|c| ((lifted[c] - k.pick[c]) / (k.white[c] - k.pick[c]) - 2.0 / 3.0).abs() < 1e-6), "{lifted:?}");
-    // On pure black: a straight line in light from no light to the white, so the middle of the range lands at half the
-    // white; under the pick a gain onto no light, past the white a straight line on.
+    // On pure black: a straight line in light from no light to the white, the middle of the range at half the white;
+    // under the pick a gain onto no light, past the white a straight line on.
     let laid = Paper { anchor: [0.0; 3], ..k };
+    let mid = map(k.pick, |c, b| b + 0.5 * (k.white[c] - b));
     assert!((0..3).all(|c| (laid.ended(mid)[c] - 0.5 * k.white[c]).abs() < 1e-6), "{:?}", laid.ended(mid));
     assert_eq!(laid.ended(map(k.pick, |_, v| v * 0.5)), [0.0; 3]);
     let past = map(k.white, |_, v| v + 0.1);
@@ -160,6 +157,87 @@ fn the_ends_lay_the_pick_on_its_anchor_hold_the_white_and_brighten_between() {
     // Twin: at rest the print's light passes as it is, the pick its own.
     assert_eq!(k.ended(k.pick), k.pick);
     assert_eq!(k.ended(mid), mid);
+}
+
+/// The slopes of `f` over `n` steps of x, from under the pick to past the end of the largest darkening's band.
+fn slopes(f: &dyn Fn(f32) -> f32, knee: f32, n: usize) -> Vec<f32> {
+    let h = 40.0 * knee / n as f32;
+    (0..n).map(|i| -knee + h * i as f32).map(|x| (f(x + h) - f(x)) / h).collect()
+}
+
+/// How far the slope of `f` right of `at` departs from its slope left of it, each read over `h`.
+fn kink(f: &dyn Fn(f32) -> f32, at: f32, h: f32) -> f32 {
+    ((f(at + h) - f(at)) / h - (f(at) - f(at - h)) / h).abs()
+}
+
+const LIFTS: [f32; 9] = [-1.2, -0.3, -0.15, -0.01, 0.0, 0.01, 0.15, 0.3, 1.2];
+
+#[test]
+fn brightness_holds_the_knee_moves_past_it_by_its_lift_and_never_turns_a_tone_back() {
+    let knee = 0.12;
+    for lift in LIFTS {
+        // The pick, the tones beyond it and every tone up to the knee keep their exposure, to the bit.
+        for x in [-0.3f32, -1e-7, 0.0, 1e-7, 0.05, knee] {
+            assert_eq!(kneed(x, lift, knee), x, "{lift} {x}");
+        }
+        // Past the knee's fade and the excess that lands the lift, the whole lift: Exposure's own shift.
+        let gain = PAPER_KNEE_SLOPE - 1.0;
+        let whole = knee * 1.5 + if lift >= 0.0 { 2.0 * lift / gain } else { -(gain + 2.0) * lift / gain };
+        for x in [whole + 1e-4, whole + 0.5, 4.0] {
+            assert!((kneed(x, lift, knee) - (x + lift)).abs() < 3e-7, "{lift} {x}: {}", kneed(x, lift, knee));
+        }
+        // Every slope within a quarter and 4, so no tone passes another and no layer turns back; C1 at each joint, the
+        // slopes either side meeting as h shrinks.
+        let f = |x: f32| kneed(x, lift, knee);
+        let (low, high) = slopes(&f, knee, 20000).into_iter().fold((f32::MAX, 0.0f32), |(l, h), v| (l.min(v), h.max(v)));
+        let (least, most) = (1.0 / PAPER_KNEE_SLOPE, PAPER_KNEE_SLOPE);
+        assert!(low > least - 1e-3 && high < most + 1e-3, "{lift}: slopes {low} to {high}");
+        for at in [knee, 2.0 * knee, whole] {
+            let (coarse, fine) = (kink(&f, at, 2e-3), kink(&f, at, 1e-3));
+            assert!(fine < 0.6 * coarse + 1.5e-3, "{lift} at {at}: {coarse} then {fine}");
+        }
+    }
+    // More lift never moves a tone back: at each x the map rises with the lift.
+    for i in 0..=300 {
+        let x = -0.1 + 4.0 * i as f32 / 300.0;
+        let moved: Vec<f32> = (0..=240).map(|j| kneed(x, -1.2 + 2.4 * j as f32 / 240.0, knee)).collect();
+        assert!(moved.windows(2).all(|w| w[1] >= w[0] - 1e-6), "{x}");
+    }
+    // Twin: a corner, the whole lift laid straight on from the knee, keeps its kink whatever h.
+    let corner = |x: f32| x + 0.3 * clamp(x / knee - 1.0, 0.0, 1.0);
+    assert!(kink(&corner, knee, 1e-3) > 0.9 * kink(&corner, knee, 2e-3));
+    // Twin: a fade of fixed width, a knee wide, darkening by 1.2 turns tones back.
+    let fixed = |x: f32| x - 1.2 * { let t = clamp(x / knee - 1.0, 0.0, 1.0); t * t * (3.0 - 2.0 * t) };
+    assert!(slopes(&fixed, knee, 20000).iter().any(|s| *s < 0.0));
+    // Twin: a fade as wide as the knee and the lift, eased by a smoothstep, gives a grey 0.8 under a knee of 0.36 less
+    // at +1.2 than at +0.6.
+    let wide = |x: f32, lift: f32| x + lift * { let t = clamp((x - 0.36) / (0.36 + lift), 0.0, 1.0); t * t * (3.0 - 2.0 * t) };
+    assert!(wide(0.8, 1.2) < wide(0.8, 0.6), "{} {}", wide(0.8, 1.2), wide(0.8, 0.6));
+}
+
+#[test]
+fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_under_the_pick() {
+    let k = Paper { brightness: 1.0, ..narrow() };
+    // Past twice the knee, the three layers a stop less exposed: log10 2 each.
+    let log = [-1.4, -1.2, -1.3];
+    let moved = k.brightened(log);
+    assert!((0..3).all(|c| (log[c] - moved[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{moved:?}");
+    // Under the knee, nothing moves; between, one shift on the three, their differences kept.
+    let near = [-0.52, -0.58, -0.6];
+    assert_eq!(k.brightened(near), near);
+    let between = [-0.62, -0.68, -0.7];
+    let shifted = k.brightened(between);
+    let by: V3 = map(between, |c, v| v - shifted[c]);
+    assert!(by[0] > 0.01 && (by[0] - by[1]).abs() < 1e-7 && (by[0] - by[2]).abs() < 1e-7, "{by:?}");
+    // The pick and the tones beyond it print where they did.
+    let rest = narrow();
+    for amounts in [[0.0; 3], [-0.2, -0.1, -0.3]] {
+        assert_eq!(k.shown(amounts), rest.shown(amounts), "{amounts:?}");
+    }
+    // Twin: each layer moved by its own distance under the pick lays different shifts on them.
+    let own: V3 = map(between, |_, v| v - (kneed(k.pick_log - v, std::f32::consts::LOG10_2, k.knee) - (k.pick_log - v)));
+    assert!(by[0] < std::f32::consts::LOG10_2 - 0.01, "between, a part of the stop: {by:?}");
+    assert!((between[0] - own[0] - (between[2] - own[2])).abs() > 1e-3, "{own:?}");
 }
 
 #[test]
@@ -188,4 +266,21 @@ fn the_print_reads_its_dyes_and_base_and_the_reading_lies_above_the_black() {
     let mono = Paper { luma: true, ..k }.printed([0.3, 0.6, 0.9]);
     assert!(mono[0] == mono[1] && mono[1] == mono[2]);
     assert_ne!(k.printed([0.3, 0.6, 0.9])[0], k.printed([0.3, 0.6, 0.9])[1]);
+}
+
+#[test]
+fn on_a_reversal_paper_brightness_gives_the_layers_more_light_as_far_as_their_mean_lies_over_the_pick() {
+    // The pick, the densest slide, holds the least exposure: lighter tones lie over it.
+    let k = Paper { brightness: 1.0, reversal: true, ..narrow() };
+    let log = [0.4, 0.2, 0.3];
+    let moved = k.brightened(log);
+    assert!((0..3).all(|c| (moved[c] - log[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{moved:?}");
+    // Within the knee over the pick and on the dark side of it, nothing moves; darkening takes light away past it.
+    for held in [[-0.48, -0.42, -0.45], [-0.7, -0.6, -0.65]] {
+        assert_eq!(k.brightened(held), held);
+    }
+    let darker = Paper { brightness: -1.0, ..k }.brightened(log);
+    assert!((0..3).all(|c| log[c] - darker[c] > 0.1), "{darker:?}");
+    // Twin: read as a negative paper the same tone lies under the pick's dark side and Brightness leaves it.
+    assert_eq!(Paper { reversal: false, ..k }.brightened(log), log);
 }

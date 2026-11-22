@@ -206,3 +206,86 @@ fn the_reversal_papers_primaries_hold_about_two_thirds_of_portra_enduras_chroma(
     let p = conversion::stage47(&slide()).paper.unwrap();
     assert!(chroma(p.viewed([0.8; 3])) < 0.5 * radiance.iter().copied().fold(f32::INFINITY, f32::min));
 }
+
+/// The slide's neutral from its pick, the densest film (0), through its reference grey (1), as dye amounts.
+fn neutral(s: &PipelineSettings, t: f32) -> [f32; 3] {
+    let [pick, _, grey] = paper::anchors(s, conversion::stage47(s).dyes.as_ref());
+    std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))
+}
+
+fn worst(a: [f32; 3], b: [f32; 3]) -> f32 {
+    (0..3).map(|c| (a[c] - b[c]).abs()).fold(0.0, f32::max)
+}
+
+#[test]
+fn brightness_on_the_reversal_paper_holds_the_shadows_under_its_knee_and_moves_the_rest_as_exposure_does() {
+    let mut followed = 0;
+    for (label, s) in slides() {
+        let rest = conversion::stage47(&s).paper.unwrap();
+        for brightness in [-3.0f32, -1.0, -0.5, 0.5, 1.0, 3.0] {
+            let p = conversion::stage47(&moved(&s, |u| u.print.brightness = brightness)).paper.unwrap();
+            let at_rest = Paper { brightness: 0.0, ..p };
+            let toward = |a: [f32; 3]| p.toward_light(p.pick_log, p.exposed(p.toned(a)));
+            // The knee lies over the pick, where the neutral prints L* 5 above it on the print's own range.
+            let (mut low, mut high) = (0.0f32, 8.0f32);
+            for _ in 0..60 {
+                let mid = 0.5 * (low + high);
+                if toward(neutral(&s, mid)) < p.knee { low = mid } else { high = mid }
+            }
+            let (k, w) = (luma(p.pick), luma(p.white));
+            let light = (luma(p.coloured(p.printed(neutral(&s, low)))) - k) / (w - k) * w;
+            assert!(p.knee > 0.0 && (light / paper::BRIGHTNESS_KNEE_LIGHT - 1.0).abs() < 1e-3, "{label}: knee {} at {light}", p.knee);
+            // The pick and every neutral tone under the knee print as at rest, to the bit.
+            let mut under = 0;
+            for i in 0..=400 {
+                let a = neutral(&s, -0.5 + 1.5 * i as f32 / 400.0);
+                if toward(a) <= p.knee {
+                    under += 1;
+                    assert_eq!(p.shown(a), at_rest.shown(a), "{label}, {brightness}");
+                }
+            }
+            assert!(under > 20, "{label}, {brightness}: {under}");
+            // Past the knee's fade and the lift's excess, the light Exposure gives, the ends kept: more on this paper.
+            let exposure = conversion::stage47(&moved(&s, |u| u.print.exposure += brightness)).paper.unwrap();
+            let exposed = Paper { scale: exposure.scale, brightness: 0.0, ..p };
+            assert!((exposure.scale > rest.scale) == (brightness > 0.0), "{label}: a lighter print takes more light");
+            let lift = brightness.abs() * std::f32::consts::LOG10_2;
+            let gain = oni_render::PAPER_KNEE_SLOPE - 1.0;
+            let whole = 1.5 * p.knee + if brightness > 0.0 { 2.0 * lift / gain } else { (gain + 2.0) * lift / gain };
+            for i in 0..=40 {
+                let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
+                if toward(a) < whole {
+                    continue;
+                }
+                followed += 1;
+                let (now, want) = (p.shown(a), exposed.shown(a));
+                assert!(worst(now, want) < 2e-5 * want.iter().copied().fold(0.0, f32::max) + 1e-7, "{label}, {brightness}: {now:?} {want:?}");
+                // Twin: the negative paper's sense, the light taken the other way, darkens where it should lighten.
+                let wrong = Paper { scale: rest.scale * (rest.scale / exposure.scale), brightness: 0.0, ..p };
+                assert!(worst(now, wrong.shown(a)) > 1e-4 || worst(now, p.white) < 1e-3 || now[1] < 1e-3, "{label}, {brightness}");
+            }
+            // Brightening lightens the grey, darkening darkens it.
+            let (grey, was) = (luma(p.shown(neutral(&s, 1.0))), luma(at_rest.shown(neutral(&s, 1.0))));
+            assert!((grey > was) == (brightness > 0.0), "{label}, {brightness}: {grey} {was}");
+        }
+    }
+    println!("{followed} tones past the knee checked against Exposure");
+    assert!(followed > 40, "{followed}");
+}
+
+#[test]
+fn the_slide_s_print_stays_monotone_from_its_densest_to_its_bare_film_at_any_brightness() {
+    for (label, s) in slides() {
+        for brightness in [-4.0f32, -1.0, 1.0, 4.0] {
+            let p = conversion::stage47(&moved(&s, |u| u.print.brightness = brightness)).paper.unwrap();
+            // From past the densest film (u = 0 here, its pick) to past the bare film, the print only lightens.
+            let tones: Vec<[f32; 3]> = (0..=3000).map(|i| p.shown(neutral(&s, -0.5 + 2.5 * i as f32 / 3000.0))).collect();
+            let fall = tones.windows(2).flat_map(|w| (0..3).map(move |c| w[0][c] - w[1][c])).fold(0.0f32, f32::max);
+            println!("{label}, Brightness {brightness:+}: largest fall {fall:.1e}");
+            assert!(fall < 1e-6, "{label}, {brightness}: {fall}");
+            // Twin: a fall of a hundredth past the middle is refused.
+            let dipped = tones.iter().enumerate().map(|(i, v)| if i > 1500 { v.map(|x| x - 0.01) } else { *v }).collect::<Vec<_>>();
+            assert!(dipped.windows(2).flat_map(|w| (0..3).map(move |c| w[0][c] - w[1][c])).fold(0.0f32, f32::max) > 1e-3);
+        }
+    }
+}

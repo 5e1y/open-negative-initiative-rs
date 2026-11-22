@@ -19,7 +19,7 @@ pub use kernel::gaussian::Gaussian;
 pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, GRAIN_NODES, Grain, grain_node_light};
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
 pub use kernel::orient::Orient;
-pub use kernel::paper::{PAPER_BANDS, PAPER_CURVE_NODES, PAPER_EXPOSURE_FLOOR, Paper};
+pub use kernel::paper::{PAPER_BANDS, PAPER_CURVE_NODES, PAPER_EXPOSURE_FLOOR, PAPER_KNEE_SLOPE, Paper, kneed};
 pub use kernel::saturation_curve::SaturationCurve;
 pub use kernel::scanner::{ScannerDensity, ScannerOutput, SCANNER_LIFT, ScannerEncode};
 pub use kernel::spectrogram::Spectrogram;
