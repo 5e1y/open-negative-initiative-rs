@@ -1,8 +1,11 @@
 //! The paper's switch on the Colour tab of the headless window: offered on a negative, off at its rest, on it prints
-//! on Portra Endura and shows the enlarger's filtration, another paper picked by its name, none offered on a slide.
+//! on Portra Endura and shows the enlarger's filtration, Brightness and True blacks in place of Colour compensation,
+//! each rendering again; another paper picked by its name, none offered on a slide.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
-use oni_app::{Library, PanelState};
+use oni_app::fields::Field;
+use oni_app::{Library, PanelState, Store};
 use oni_core::{Archive, EditorStore};
 use oni_settings::PaperStock;
 use slint::platform::WindowEvent;
@@ -28,7 +31,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_sli
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(store, engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1600));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     let w = &shell.window;
@@ -52,6 +55,19 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_sli
     assert!(panel.get_paper_on() && panel.get_paper_title() == "Kodak Portra Endura");
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the frame printed on the paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    // On the paper Lighting offers Brightness and True blacks; Colour compensation, with nothing to cut there, leaves.
+    let count = |role: Role, label: &str| common::placed(w, role, label).len();
+    assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "True blacks"), count(Role::Checkbox, "Colour compensation")), (1, 1, 0));
+    let renders = ctl.state.borrow().renders();
+    panel.invoke_true_blacks_toggled(true);
+    rig.pump();
+    assert!(settings().print.true_blacks && panel.get_true_blacks());
+    rig.until("the paper's Dmax laid on black", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    let renders = ctl.state.borrow().renders();
+    w.global::<Store>().invoke_step(Field::Brightness.index(), 4);
+    rig.pump();
+    assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
+    rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
     assert_eq!(names, PaperStock::ALL.map(|p| p.name().to_string()));
     panel.invoke_paper_chosen(4);
@@ -72,5 +88,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_sli
     rig.pump();
     assert_eq!(settings().print_paper, None);
     assert!(!panel.get_paper_on());
+    // On ONI's print Brightness and True blacks leave, Colour compensation returns.
+    assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "True blacks"), count(Role::Checkbox, "Colour compensation")), (0, 0, 1));
     let _ = std::fs::remove_dir_all(&root);
 }

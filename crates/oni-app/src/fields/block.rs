@@ -49,7 +49,7 @@ impl Block {
         use Field::*;
         match self {
             Block::Color => &[Temperature, Tint, ColorDensity],
-            Block::Lighting => &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
+            Block::Lighting => &[Exposure, Brightness, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
             Block::Effects => &[Vignette, Chrome],
             Block::DensityCeiling => &[DensityCeiling],
             Block::DyeSeparation => &[DyeSeparation],

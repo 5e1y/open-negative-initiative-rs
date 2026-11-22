@@ -220,7 +220,7 @@ mod tests {
             for block in Block::ALL.into_iter().filter(|b| *b != Block::FlatField) {
                 let reset = rested(&moved, block, None);
                 assert!(!is_modified(&reset, block, None), "{block:?} lit after its reset on {:?}", frame.mode);
-                for f in block.fields().iter().filter(|f| f.shown_in(moved.mode)) {
+                for f in block.fields().iter().filter(|f| f.shown_in(&moved)) {
                     let (at, landed) = (ticks[f.index() as usize], position_on(*f, f.knob().get(&reset), &track_on(*f, &moved)));
                     assert!((at - landed).abs() < 1e-5, "{f:?} ticked at {at}, reset to {landed} on {:?}", frame.mode);
                     assert!((f.base(&moved) - f.knob().get(&reset)).abs() < 1e-5, "{f:?}'s double click beside its reset");
