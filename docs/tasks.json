@@ -12238,5 +12238,37 @@
     "title": "The Film block's sheet is checked in its brand order against the sixteen virtual films",
     "status": "done",
     "detail": "crates/oni-app/tests/window/stock_hero.rs: the check expected VirtualStock::ALL's order, true for one stock only; the sheet lists by brand in the catalogue's order (stocks::virtual_by_brand), and the check now asserts that order and, apart, that the set is exactly VirtualStock::ALL. With sixteen stocks the pick, render, reference and white, and Undo loop runs for each and passes."
+  },
+  {
+    "id": 3260,
+    "type": "research",
+    "title": "Each virtual stock's personality measured at every stage against spektrafilm's own chain: ONI keeps all of it",
+    "status": "done",
+    "detail": "crates/oni-pipeline/examples/stock_chart.rs prints a chart (ColorChecker 24, 14 saturated Rec. 709 primaries and secondaries, a grey ramp) through each virtual stock at the digital rest on the CPU references: the scene lit at the stock's white, its dye amounts, its scan, its print on the default paper and on ONI's own print. crates/oni-app/examples/stock_strip.rs renders a photo headless on each stock (paper, ONI's print, the scene each film reads), and the photo as its sidecar holds it against the same edit placed on its own film. spektrafilm 3bb2c2d ran the same scenes as a benchmark (LUT mode, Rec. 2020 linear in and out, Portra Endura, each print's time and filtration solved so the 18.4 % grey prints neutral at a plain RAW's grey). Stocks: UltraMax 400, Verita 200D, Portra 400, Ektar 100, Portra 800, Portra 800 Push 1, Gold 200, Vision3 250D; five of the owner's digital photos copied to scratch (sky and foliage, skin and a red and white plane, skin in a mirror, an office with skin and saturated chairs, a lit shop front).",
+    "outcome": "Mean pairwise CIEDE2000 between stocks on the chart's colours: spektrafilm 2.67 (UltraMax to Verita 1.42, UltraMax to Portra 800 0.67, largest Push 1 to Verita 4.57); ONI on the paper 2.91 (UltraMax to Verita 1.49), the two matrices correlated at 0.9994, ONI's 8 % larger, each stock within 1.4 to 2.1 of spektrafilm's print; ONI's own print 3.50. The negatives agree: dye amounts within 0.01 density of spektrafilm's, scans 3.49 against 3.37. On the five photos: spektrafilm 2.42, ONI on the paper 2.30 (UltraMax to Verita 1.87 against 1.78), correlated at 0.967. Verita is not an intense stock in spektrafilm's data: its mean chroma on the paper is among the lowest (C* 51.3 against UltraMax 52.9, Ektar 55.6, Push 1 59.5). Decomposed on Portra 800 in spektrafilm, grey held neutral: another stock's sensitivities move the print 0.6 to 2.0, its curves 0.2 to 3.9, its dyes 0.2 to 1.0, the whole stock 0.7 to 3.9; the DIR couplers' interlayer terms, one matrix for every colour negative in spektrafilm, move it 3.6 to 3.7 at half or one and a half their strength (C* 43 or 60 from 52.4) and 6.7 off (C* 35.5)."
+  },
+  {
+    "id": 3261,
+    "type": "fix",
+    "title": "A digital photo reads its negative on its own film's gains, windows and dyes: its folder's roll never lays another film's",
+    "status": "done",
+    "detail": "A digital photo's roll is its folder (RollKey::Slides), whose rule leaves the film type and the windows out; a film picked on one photo moved its gains and its dye set, roll fields, so every other digital photo of the folder took the picked stock's gains and dyes on its own film and windows. oni_settings::settings::roll_settings::on_own_film places a digital photo back on its film's gains, windows and dyes after any roll copy (those it held when its film stands, its film's reference when it took another), called by roll_settings::copied and by Edit Together's step on a frame (oni-core store/together.rs); a slide alone takes the roll's gains as an offset. Checks (oni-core store::tests::digital): a film picked on one photo leaves the folder's others on their film's own reference; a dye dose moved on one still reaches the folder, each on its own film's dyes. Both fail with on_own_film laying nothing (twin run by hand: 2 of 4 failed), and each carries a twin asserting another film's gains and dyes read off the reference.",
+    "outcome": "Read-only scan of the owner's 161 digital photos: 159 carried another stock's gains and dyes, one per folder (Vision3 200T on the 97 photos of one session, UltraMax 400 on the 64 of the other) whatever their film: 91 on Portra 800 read through Vision3 200T's dyes, a Verita photo through Vision3 200T's. Placed on their own film, five of them move by a mean CIEDE2000 of 1.2, 2.4, 2.7, 5.9 and 9.5 (95th percentile up to 16.4): the Verita photo loses a blue cast. More than a stock's whole personality on the paper (2.3), so the library showed every photo of a folder through the last stock picked in it."
+  },
+  {
+    "id": 3262,
+    "type": "migration",
+    "title": "Sidecar format 56: a digital photo standing on another stock's gains and dyes whole moves onto its own film's",
+    "status": "done",
+    "detail": "oni_settings::migrate::own_film: a digital photo of a format before 56 whose gains are another stock's reference within 1e-6 and whose dye set is that stock's takes its own film's gains and dyes; its windows, its own, and every other value stay. A hand's gains, a photo already on its own film's (a push on Portra 800's), and a file of format 56 stay as they are (twins in its test). The corpus's newer file moves to version 57.",
+    "outcome": "159 of the owner's 161 digital photos move (count on copies of their sidecars), each onto the film it names: the owner asked for each stock's personality, and these photos were read on another stock's by a fault, so their render moves on purpose."
+  },
+  {
+    "id": 3263,
+    "type": "research",
+    "title": "The Film section's Exposure against Lighting's on the paper: half the brightness per stop, the negative's latitude besides",
+    "status": "done",
+    "detail": "stock_strip with ONI_FILM_EXPOSURE and ONI_PRINT_EXPOSURE at -2, -1, +1 and +2 on three of the owner's photos on Portra 800 and the default paper; CIELAB L* mean, 2nd and 98th percentiles, interquartile range and mean chroma, and each film move against the Lighting move nearest in mean L*.",
+    "outcome": "A stop of film exposure moves the print's mean L* by about 13 to 15, a stop of Lighting's Exposure by 21 to 24: the negative's contrast, about 0.6, halves the light the enlarger sees. Film -2 lands within CIEDE2000 3.0 of Lighting -1 and Film +2 within 2.4 to 3.0 of Lighting +1; at a matched brightness the film move keeps more of the tonal range (interquartile L* 37 against 29 at +1 on the plane) and 10 to 20 % more chroma, and its extremes reach the film's toe and shoulder (lifted, milky shadows at +2, deeper blue skies at -2). As a brightness control it repeats Lighting's; what it alone shows is a negative over or under exposed. Unchanged by #3261."
   }
 ]

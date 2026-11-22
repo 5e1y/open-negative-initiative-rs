@@ -104,10 +104,10 @@ fn slide_owns(f: Field) -> bool {
 }
 
 /// `frame` taking roll `key`'s `fields` from `after`: each slide keeps its own measured balance, the
-/// hand's move landing on it as an offset; a contact sheet takes no second flat-field.
+/// hand's move landing on it as an offset, a digital photo its film's; a contact sheet takes no second flat-field.
 fn rolled(fields: &BTreeSet<Shared>, key: &RollKey, after: &PipelineSettings, frame: &PipelineSettings) -> PipelineSettings {
     let mut out = roll_settings::copied(fields, after, frame);
-    if matches!(key, RollKey::Slides(_)) && fields.contains(&Shared::Gains) {
+    if matches!(key, RollKey::Slides(_)) && frame.mode.reads_positive() && fields.contains(&Shared::Gains) {
         let base = |s: &PipelineSettings| s.measured_gains.unwrap_or_default();
         out.gains.stops = std::array::from_fn(|c| base(frame)[c] + after.gains.stops[c] - base(after)[c]);
     }
@@ -157,7 +157,7 @@ impl Step<'_> {
         if mine && !self.fields.is_empty() {
             out = rolled(self.fields, self.key.expect("on the roll"), self.after, &out);
         }
-        out
+        roll_settings::on_own_film(frame, out)
     }
 }
 
