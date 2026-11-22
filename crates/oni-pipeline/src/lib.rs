@@ -289,6 +289,17 @@ impl Pipeline {
     }
 }
 
+/// The tables a render of `s` bakes at their first use, baked now: its virtual film's stock and the enlarger its
+/// paper prints through, so a render asked next finds them ready.
+pub fn bake_ahead(s: &PipelineSettings) {
+    if let Some(f) = s.film() {
+        film::stock(f.stock);
+    }
+    if let Some(paper) = s.paper().filter(|_| !s.print.bypassed) {
+        paper::enlarger(paper::Film::of(s), paper);
+    }
+}
+
 fn saturation(curve: &SaturationCurve) -> Option<stages::PerPixel> {
     finishing::saturation(curve).map(|k| stages::saturation(&k))
 }

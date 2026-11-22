@@ -22,6 +22,7 @@
 //! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure with the panel shown, then folded, counting
 //! each step rendered and drawn.
 //! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
+//! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon.
 
 use crate::Store;
 use crate::app::Ctl;
@@ -44,8 +45,9 @@ mod grid;
 mod midzoom;
 mod sweep;
 mod compare;
+mod stocks;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -139,6 +141,7 @@ pub enum Mode {
     Grid,
     Midzoom,
     Sweep,
+    Stocks,
 }
 
 impl Mode {
@@ -172,6 +175,7 @@ pub fn requested() -> Option<Mode> {
         "grid" => Some(Mode::Grid),
         "midzoom" => Some(Mode::Midzoom),
         "sweep" => Some(Mode::Sweep),
+        "stocks" => Some(Mode::Stocks),
         _ => None,
     }
 }
@@ -194,6 +198,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Sweep {
         return sweep(ctl, done);
+    }
+    if mode == Mode::Stocks {
+        return stocks(ctl, done);
     }
     if mode == Mode::Compare {
         return compare(ctl, done);

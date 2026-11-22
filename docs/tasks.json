@@ -12294,5 +12294,34 @@
     "status": "done",
     "detail": "oni-render kernel/paper/tests.rs, on reaches 0.3 and 0.05 (the floor setting the width) and lifts −4 to +4 stops: the pick and beyond to the bit; past the width and the fold Exposure's shift within 3e-7; a tone a tenth of the reach from the pick moved under 3 % of the lift (twin: a straight fade moves it a tenth); every slope within the smoothstep's steepest and its inverse and inside ¼ and 4 (twins: darkening by the same smoothstep turns tones back at −4; a fade held at a reach of 0.05 steepens past 8); C1 at the pick, the width and the fold's end (twin: a corner keeps its kink); −b undoes +b within 2e-6 (twin: the fold misses by 0.05); rising with the lift at every tone (twin: a width proportional to the lift moves the deepest tones back); brightened one shift on the three layers (twin: each layer by its own distance), the reversal paper's sense (twin: read as a negative paper). oni-pipeline tests/paper_ends.rs on a negative, a digital photo, black and white and the Frontier: the reach prints L* 25 over the pick within 1e-3 under each of the 22 Lighting moves, independent of the anchor (twin: read on a lifted anchor it lies elsewhere); at Brightness −4, −1, −0.5, +0.5, +1, +4 the pick and beyond to the bit; tones 0.5 to 3 L* over the pick move at most a third of Exposure's L* brightening (0.03 to 0.32) and 0.7 darkening (0.37 to 0.66, Exposure crushing them on black), each under a straight fade of the same width by 0.05 or more (twin), the twin's print the kernel's own when it moves as Brightness; the grey within 1.5 L* of Exposure's own print past the fade (16 cases), no darker than it nearer the pick; the 570 tones past the fold as Exposure's time with the ends kept within 2e-5 relative (twin: twice the stops). tests/positive_paper.rs, the same on the reversal paper (the reach, the dark side to the bit, past the fold as Exposure's light, a deep tone moved under 3 % of the lift while Exposure moves it all). tests/paper_ends.rs's monotone print now holds at Exposure +2 with Brightness −1, where a fixed width fell 4.5e-5. tests/paper.rs: the GPU within 2.2e-7 of its reference at Brightness −4, 6.8e-7 at +4, 3.2e-7 and 1.3e-6 on the slide at −3 and +3 (twins 2.8e-2 to 1.3e-1). tests/legacy_print.rs unchanged: the four paper cases carry no Brightness and their GPU fingerprints hold, none recorded again.",
     "outcome": "oni-render lib and every oni-pipeline test green; scripts/lint green."
+  },
+  {
+    "id": 3320,
+    "type": "feature",
+    "title": "A digital photo's film and a roll's stock drop a menu in the editor, each stock it lights shown on the photo unwritten",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/ds/stocks.slint (StockMenu, StockLine), crates/oni-ui/ui/stocks.slint (StockHero drops), crates/oni-app/src/app/stock_picker.rs. The Film block's and the Roll tab's key, and the canister and name above it, drop a menu under the key listing the stocks by brand, each with its canister at a tree row's side, the one in use checked; it scrolls within the window's room under the key. The line under the pointer or the arrows is lit and told at once (`Stocks.lit`): the stock rides in `State.stock_lit`, laid over the settings by `previewed` as a hovered preset is, so the canvas renders it through the one render path (one in flight, the latest waiting) with no write, no step and no sidecar. Leaving the menu, Escape or any close lights none, the photo's own again. A click or Return writes the stock as before (`picked` is the one function the light and the Film pick share; a roll's pick stays set_stock_of_roll_at, one step for every photo of the roll). Prepare the Roll, the gallery sidebar and the export's field keep the sheet; the editor's sheet route (StockTarget Film and OpenRoll, PanelState.select-stock, select_open_stock) is gone. A light that changes nothing the photo shows (a stock naming no dyes on a negative) asks no render, and a pick after its light renders nothing again: the light already showed what is written."
+  },
+  {
+    "id": 3321,
+    "type": "perf",
+    "title": "The menu's stocks are baked off the interface thread at its first light, never at launch",
+    "status": "done",
+    "detail": "crates/oni-pipeline/src/lib.rs bake_ahead, paper::Film::of (shared with printing). At the first stock lit after each drop, a thread bakes the virtual film's tables and its paper's enlarger for every listed stock, as each would render; a table already baked costs nothing (OnceLock)."
+  },
+  {
+    "id": 3322,
+    "type": "check",
+    "title": "The stocks' menu checked under the pointer, the arrows, Escape, a click and Return, with no write while lit",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/stock_hero.rs: a_stock_under_the_pointer_shows_on_the_photo_unwritten (pointer on a line renders it, store, Undo and sidecar unchanged; another line follows; leaving the menu and Escape restore; ↓ ↑↑ Return writes the stock lit; a click writes as the light showed; Undo; twins: the preview differs from the photo's own and a pick does write the sidecar), the Roll tab's (a lit stock shows its dyes, none written; one naming no dyes shows nothing; forty ↓ scroll the lit line into view while the first leaves it; pick, Undo, Redo) and the Film block's (lines by brand, the one in use checked, every film picked and undone); stock_picker unit checks of `picked` with twins."
+  },
+  {
+    "id": 3323,
+    "type": "bench",
+    "title": "ONI_BENCH=stocks: each stock lit timed to its photon, cold, warm and in a sweep",
+    "status": "done",
+    "detail": "crates/oni-app/src/bench/stocks.rs: lays the open photo's menu, lights every other stock in turn (600 ms apart) twice, then sweeps every line at 120 Hz; each light's time to the GPU's end of the first frame showing its render, and how many renders a sweep asked.",
+    "outcome": "App profile, 2560×1440 window on the 5K screen, mains power, machine loaded by three other builds: on a 47 Mpx Lumix RW2 shot digital, hover to photon p50 69 ms warm, 72 ms cold (first light 61 ms, the bake ahead absorbs it): 1.5 ms to the encode, 5.6 ms to the next frame, 62 ms the frame's GPU work, i.e. the photo's sharp render from the film stage on; a 120 Hz sweep over 15 lines rendered 3 times. On a 24 Mpx Nikon Z f NEF negative (Roll tab, 21 of 51 stocks move its dyes): p50 57 ms, of which 50 ms the frame; a sweep of 51 lights rendered 8 times."
   }
 ]

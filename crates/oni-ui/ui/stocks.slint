@@ -1,6 +1,6 @@
 // `StockPickerSheet`: Select Film Stock, the stocks grouped by brand, one click picking and closing; `StockHero`,
-// a stock shown large with its key to the sheet, wherever a roll's or a photo's film is picked.
-import { Space, StockStyle, SectionStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView, StockIcon } from "ds/ds.slint";
+// a stock shown large with its key to the sheet, or to the menu that shows each stock on the open photo.
+import { Space, StockStyle, SectionStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView, StockIcon, StockLine, StockMenu, Bounds } from "ds/ds.slint";
 
 // A stock as its hero shows it: its name, a line under it, empty for none, and its canister.
 export struct Canister { name: string, note: string, artwork: image, has-artwork: bool }
@@ -17,6 +17,13 @@ export global Stocks {
     in property <int> columns: 6;
     // The stock's place in the catalogue, -1 for Done.
     callback chosen(int);
+    // The editor's menu, laid by `dropping` as it opens: its lines and the one in use. The stock lit shows on
+    // the photo without a write, -1 its own again; one chosen is written as a pick from the sheet is.
+    in property <[StockLine]> lines;
+    in property <int> in-use: -1;
+    callback dropping();
+    callback lit(int);
+    callback picked(int);
 }
 
 export component StockPickerSheet inherits Sheet {
@@ -53,18 +60,59 @@ export component StockPickerSheet inherits Sheet {
     }
 }
 
-// `heroStock`: the canister large, the name and its line under it, what a place adds, then the key to the sheet.
+// `heroStock`: the canister large, the name and its line under it, what a place adds, then the key to the sheet,
+// or, `drops`, to the menu dropped under it, which the canister and the name open too.
 export component StockHero inherits VerticalLayout {
     in property <Canister> stock;
     in property <bool> enabled: true;
+    in property <bool> drops;
     callback select();
-    spacing: SectionStyle.gap;
-    HorizontalLayout {
-        alignment: center;
-        StockIcon { artwork: root.stock.artwork; has-artwork: root.stock.has-artwork; side: StockStyle.hero; }
+    // The menu's close, by a choice, Escape or a press outside: the photo shows its own stock again.
+    property <bool> open: menu.is-open;
+    changed open => { if (!self.open) { Stocks.lit(-1); } }
+    function drop() {
+        Stocks.dropping();
+        menu.show();
     }
-    if root.stock.name != "": Label { text: root.stock.name; centred: true; wrap: word-wrap; }
-    if root.stock.note != "": Label { text: root.stock.note; role: TextRole.note; centred: true; }
+    spacing: SectionStyle.gap;
+    face := Rectangle {
+        height: column.preferred-height;
+        column := VerticalLayout {
+            spacing: SectionStyle.gap;
+            HorizontalLayout {
+                alignment: center;
+                StockIcon { artwork: root.stock.artwork; has-artwork: root.stock.has-artwork; side: StockStyle.hero; }
+            }
+            if root.stock.name != "": Label { text: root.stock.name; centred: true; wrap: word-wrap; }
+            if root.stock.note != "": Label { text: root.stock.note; role: TextRole.note; centred: true; }
+        }
+        TouchArea {
+            enabled: root.drops && root.enabled;
+            mouse-cursor: self.enabled ? MouseCursor.pointer : MouseCursor.default;
+            clicked => { root.drop(); }
+        }
+    }
     @children
-    Button { text: @tr("Select Film Stock"); enabled: root.enabled; clicked => { root.select(); } }
+    key := Button {
+        text: @tr("Select Film Stock");
+        enabled: root.enabled;
+        clicked => {
+            if (root.drops) {
+                root.drop();
+            } else {
+                root.select();
+            }
+        }
+    }
+    menu := StockMenu {
+        x: key.x;
+        y: key.y + key.height + Space.xxs;
+        span: key.width;
+        // The window's height under the key, a few lines at least, so the menu never covers its key.
+        room: max(Bounds.height - key.absolute-position.y - key.height - Space.xxs - Space.m, 6 * StockStyle.line);
+        lines: Stocks.lines;
+        current: Stocks.in-use;
+        lit(i) => { Stocks.lit(i); }
+        chosen(i) => { Stocks.picked(i); }
+    }
 }
