@@ -61,12 +61,11 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a paper")
 }
 
-/// The paper's print of `amounts` through Lighting on the negative, its tones included.
+/// The paper's print of `amounts` through Lighting on the negative, its tones included; the negative's range on each
+/// dye, the frame's densest read above its bare film.
 fn lit_shown(k: &Stage47, amounts: [f32; 3]) -> [f32; 3] {
     k.paper.expect("a paper").shown(k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts))))
 }
-
-/// The negative's range on each dye, the frame's densest read above its bare film.
 fn span_of(s: &PipelineSettings) -> [f32; 3] {
     paper::anchors(s, conversion::stage47(s).dyes.as_ref())[1]
 }
@@ -202,12 +201,10 @@ fn brightnesss_reach_lies_where_the_neutral_prints_l_25_over_the_pick_whatever_l
                 f(u);
                 u.print.brightness = 0.5;
             });
-            let k = conversion::stage47(&t);
-            let p = k.paper.unwrap();
-            // The neutral from the pick to the grey as Lighting develops them.
+            let (k, p) = (conversion::stage47(&t), paper_of(&t));
             let [pick, _, grey] = paper::anchors(&t, k.dyes.as_ref()).map(|a| k.negative.map_or(a, |n| n.redeveloped(a)));
             let lit = |x: f32| -> [f32; 3] { std::array::from_fn(|c| pick[c] + x * (grey[c] - pick[c])) };
-            // The neutral's tone whose exposure lies at the reach prints the reach's light.
+            // The neutral's tone, pick to grey as Lighting develops them, whose exposure lies at the reach prints its light.
             let (mut low, mut high) = (0.0f32, 8.0f32);
             for _ in 0..60 {
                 let mid = 0.5 * (low + high);
@@ -297,7 +294,6 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
             }
             // Past the reach and what a darkening folds under it, each tone prints as Exposure's light would, the ends
             // kept.
-            let exposed = exposure;
             let twice = Paper { scale: p.scale * (-2.0 * brightness).exp2(), brightness: 0.0, ..p };
             for i in 0..=40 {
                 let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
@@ -305,7 +301,7 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
                     continue;
                 }
                 followed += 1;
-                let (now, want) = (p.shown(a), exposed.shown(a));
+                let (now, want) = (p.shown(a), exposure.shown(a));
                 assert!(worst(now, want) < 2e-5 * want.iter().copied().fold(0.0, f32::max) + 1e-7, "{label}, {brightness}: {now:?} {want:?}");
                 // Twin: Exposure at twice the stops misses wherever the print is not held at the paper's white or its
                 // black.
