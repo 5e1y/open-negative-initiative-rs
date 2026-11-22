@@ -1,6 +1,6 @@
 // The paper, operation for operation as `cpu::paper`: Lighting's tones on the negative's density, the enlarger's
-// light through its dyes on the paper's layers, the grade, its curves, its dyes seen under D50 in Rec. 2020, then
-// Brightness and True blacks between the paper's Dmax and white; alpha kept.
+// light through its dyes on the paper's layers, the grade, its curves, its dyes seen under D50 in Rec. 2020, its
+// colour density, then its ends: the pick on its anchor, the white held, Brightness between; alpha kept.
 
 struct Params {
     head: vec4<u32>,
@@ -14,8 +14,9 @@ struct Params {
     pivot: vec4<f32>,
     slope: vec4<f32>,
     curve_axis: vec4<f32>,
-    dmax_true_blacks: vec4<f32>,
+    pick_density: vec4<f32>,
     white: vec4<f32>,
+    anchor: vec4<f32>,
     negative: array<vec4<f32>, 81>,
     exposure: array<vec4<f32>, 81>,
     dichroic: array<vec4<f32>, 81>,
@@ -94,15 +95,22 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
     if (P.curve_axis.w > 0.5) {
         out = vec3<f32>(dot(out, LUMA));
     }
+    let colour = P.pick_density.w;
+    if (colour != 1.0) {
+        let pw = pow(max(out, vec3<f32>(0.0)), vec3<f32>(colour));
+        let p = dot(pw, LUMA);
+        if (p > 1e-12) { out = pw * pow(p, (1.0 / colour) - 1.0); }
+    }
     let brightness = P.curve_axis.z;
-    let true_blacks = P.dmax_true_blacks.w > 0.5;
-    if (brightness != 0.0 || true_blacks) {
-        let dmax = P.dmax_true_blacks.xyz;
+    let pick = P.pick_density.xyz;
+    let anchor = P.anchor.xyz;
+    if (brightness != 0.0 || any(anchor != pick)) {
         let white = P.white.xyz;
         let g = exp2(brightness);
-        let u = max((out - dmax) / (white - dmax), vec3<f32>(0.0));
-        let floor_ = select(dmax, vec3<f32>(0.0), true_blacks);
-        out = floor_ + (white - floor_) * (g * u / (vec3<f32>(1.0) + (g - 1.0) * u));
+        let u = (out - pick) / (white - pick);
+        let t = min(u, vec3<f32>(1.0));
+        let above = anchor + (white - anchor) * (g * t / (vec3<f32>(1.0) + (g - 1.0) * t) + (u - t));
+        out = select(above, out * anchor / pick, out <= pick);
     }
     return vec4<f32>(out, s.a);
 }

@@ -258,7 +258,7 @@ impl Field {
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
             // The stops of light a virtual film takes over the scene's own.
             Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
-            // A paper's print brightened between its own Dmax and white, in the stops of ONI's Exposure.
+            // A paper's print brightened between its anchored pick and its white, in the stops of ONI's Exposure.
             Field::Brightness => s("Brightness", Print::BRIGHTNESS_RANGE, Readout::Stops),
         }
     }

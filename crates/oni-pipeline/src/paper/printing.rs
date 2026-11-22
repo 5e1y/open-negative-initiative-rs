@@ -152,7 +152,7 @@ fn spanned(v: f32) -> f32 {
 }
 
 /// The frame's paper, its enlarger at rest, then Lighting in density on the negative and the enlarger, the
-/// grade on the paper, Brightness and True blacks on the print. None on ONI's print.
+/// grade on the paper, the colour density and the ends on the print. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
@@ -186,12 +186,13 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         curve_step: sheet.curve_step,
         print: &sheet.print,
         view: &sheet.view,
-        dmax: [0.0; 3],
+        density: 1.0,
+        pick: [0.0; 3],
         white: [1.0; 3],
+        anchor: [0.0; 3],
         brightness: 0.0,
-        true_blacks: false,
         luma: mono,
     };
     let rest = resting(&bare, anchors[2], mono);
-    Some(super::lighting::lit(&bare, rest, &anchors, s))
+    Some(super::lighting::lit(&bare, rest, &anchors, k.density, s))
 }
