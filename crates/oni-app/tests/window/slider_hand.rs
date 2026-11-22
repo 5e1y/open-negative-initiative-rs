@@ -31,7 +31,8 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    // Tall enough for Lighting under the Colour tab's Colour and Paper sections.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
     shell.window.show().unwrap();
     let ctl = shell.ctl.clone();
     shell.open_folder(&folder);
@@ -45,6 +46,7 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     rig.settle();
     // Exposure's rail, the knob's row at the slider's foot.
     let slider = common::rail(w, "Exposure");
+    assert!(slider.y + slider.height < 1000.0, "Exposure's rail in the window: {slider:?}");
     let (x, y) = (slider.x + slider.width / 3.0, slider.y + slider.height - 13.0);
     moved(&rig, x, y);
     Some((rig, shell, root, (x, y)))

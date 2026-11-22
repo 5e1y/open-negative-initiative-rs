@@ -28,7 +28,8 @@ fn fits(w: &oni_app::MainWindow, commit: &str) {
     let key = common::the(w, AccessibleRole::Button, commit);
     let size = w.window().size().to_logical(w.window().scale_factor());
     assert!(key.y + key.height <= size.height, "{commit} in the window: {key:?}");
-    let lowest = common::placed_all(w, AccessibleRole::Checkbox).into_iter().fold(0.0, |y: f32, b| y.max(b.y + b.height));
+    // The card's boxes alone: the panel's switches beside it lie right of its commit key.
+    let lowest = common::placed_all(w, AccessibleRole::Checkbox).into_iter().filter(|b| b.x < key.x + key.width).fold(0.0, |y: f32, b| y.max(b.y + b.height));
     assert!(lowest + 2.0 * STEP < key.y, "every box a step over the rule above {commit}: {lowest} against {key:?}");
     // Twin: a card taller than its content would leave the boxes far above its footer.
     assert!(key.y - lowest < 100.0, "the card ends with its content: {lowest} against {key:?}");

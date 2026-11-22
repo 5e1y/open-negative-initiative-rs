@@ -186,7 +186,13 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     };
     open();
     let names = listed(&stocks);
-    assert_eq!(names, VirtualStock::ALL.iter().map(|v| v.name()).collect::<Vec<_>>(), "the virtual films alone");
+    // By brand, in the catalogue's order, as every sheet lists its stocks.
+    let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| FILM_STOCKS[i].display_name).collect();
+    assert_eq!(names, by_brand);
+    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::ALL.iter().map(|v| v.name().to_string()).collect::<Vec<_>>());
+    sorted.sort();
+    virtual_names.sort();
+    assert_eq!(sorted, virtual_names, "the virtual films alone, every one");
     assert!(names.len() < oni_settings::film::offered_stocks().count(), "twin: a roll's sheet lists more");
     stocks.invoke_chosen(-1);
     rig.pump();

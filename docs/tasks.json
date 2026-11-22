@@ -12210,5 +12210,33 @@
     "title": "Grain size rests on the owner's 40%: 27.6 µm",
     "status": "done",
     "detail": "The owner set a digital photo's grain at 25% and size 40% of the former track; on a landscape scan that is 27.6 µm on the film, film grain's coarse end (Vitale's 10-30 µm), an ISO 800 stock's. SIZE_REST moves from 20 µm (the range's middle) to 27.6 µm: 4.6 px on a 24 Mpx Z f, 6.4 px on a 47 Mpx Lumix. Checked against migrate::grain_size::microns(0.4, 1.0), with the former 50% rest as its twin."
+  },
+  {
+    "id": 3205,
+    "type": "check",
+    "title": "slider_hand presses Exposure where the Colour tab now lays it: the window tall enough, the rail asserted in sight",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/slider_hand.rs: with the Paper section open by default between More Color Settings and Lighting (#3110), Exposure's rail fell under the 800 px window, so the press reached no slider and both checks failed on their first hand (deterministic alone, not load). The window is 1000 px and the rail is asserted inside it, so a later layout change fails on its cause."
+  },
+  {
+    "id": 3206,
+    "type": "check",
+    "title": "The Save a Preset fit check counts the card's own boxes, not the panel's switch beside it",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/presets.rs: fits() took every checkbox of the window; the panel's Print on paper switch, now at y 696 to 709 right of the card, was read as the card's lowest box. Only boxes left of the commit key's right edge count; the sheet itself was laid right (shot presets-save-sheet). Its twin (a card taller than its content) is kept."
+  },
+  {
+    "id": 3207,
+    "type": "check",
+    "title": "More Color Settings' folded check reads the section after it, Paper, where it once read Lighting",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/channel_points.rs: the check measured Lighting a row under the folded title; Paper now stands between (#3110), 148 pt. The next section's title is the measure again, for the folded gap, the opened gap and the band the block's tabs are searched in."
+  },
+  {
+    "id": 3208,
+    "type": "check",
+    "title": "The Film block's sheet is checked in its brand order against the sixteen virtual films",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/stock_hero.rs: the check expected VirtualStock::ALL's order, true for one stock only; the sheet lists by brand in the catalogue's order (stocks::virtual_by_brand), and the check now asserts that order and, apart, that the set is exactly VirtualStock::ALL. With sixteen stocks the pick, render, reference and white, and Undo loop runs for each and passes."
   }
 ]
