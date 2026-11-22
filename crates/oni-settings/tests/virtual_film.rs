@@ -124,3 +124,21 @@ fn a_film_writes_its_stock_by_key_and_a_build_before_refuses_the_file_as_newer()
     let negative = serde_json::to_value(Document::of(PipelineSettings::rest(ConversionMode::Negative, true))).unwrap();
     assert!(negative["settings"].get("virtualFilm").is_none());
 }
+
+/// A photo on any stock of 50 reads back on it, its film's key past every build that cannot read it, and a photo of
+/// 46 on Portra 800 reads unmoved. Twin: a reader refuses a version past its own as newer, as a build of 46 refuses 50.
+#[test]
+fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
+    assert!(VERSION >= chain::VIRTUAL_STOCKS_VERSION && chain::VIRTUAL_STOCKS_VERSION > chain::ONE_FACE_VERSION);
+    for stock in VirtualStock::ALL {
+        let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+        let stored = at(&s, VERSION);
+        assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
+        assert_eq!(read(&stored).settings, s, "{stock:?}");
+    }
+    let portra = PipelineSettings::rest(ConversionMode::Digital, true);
+    assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, portra);
+    let newer = at(&portra, VERSION + 1);
+    let refused = migrate::reading(&serde_json::to_vec(&newer).unwrap(), &Facts::bare(true), false).err();
+    assert!(matches!(refused, Some(Refusal::Newer(v)) if v == VERSION + 1), "{refused:?}");
+}

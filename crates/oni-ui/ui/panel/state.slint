@@ -1,6 +1,7 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
 import { Act } from "../act.slint";
 import { PlotStyle, ShellStyle, MenuLine } from "../ds/ds.slint";
+import { Canister } from "../stocks.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -94,9 +95,9 @@ export global PanelState {
     in property <string> paper-filtration;
     callback paper-toggled(bool);
     callback paper-chosen(int);
-    // The paper's Dmax laid on pure black, its white kept.
-    in property <bool> true-blacks;
-    callback true-blacks-toggled(bool);
+    // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
+    in property <bool> paper-blacks;
+    callback paper-blacks-toggled(bool);
     // Lighting's colour compensation: Hunt, the points' and Contrast's saturation and the points' colour hold.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);
@@ -108,9 +109,9 @@ export global PanelState {
     callback legacy-toggled(bool);
     // Colour's filters read as an enlarger's C, M and Y in place of Temperature and Tint, a choice of Settings.
     in property <bool> filtration-cmy;
-    // The stock a digital photo is shot on, by the Film block's tabs.
-    in-out property <int> virtual-film;
-    callback virtual-film-picked(int);
+    // The open photo's film: its roll's stock, a digital photo's virtual film; the key opens the sheet on it.
+    in property <Canister> stock;
+    callback select-stock();
     // The stock's own white and the reference its negative is read on, written only by the stock.
     in property <string> film-white;
     in property <string> film-gains;

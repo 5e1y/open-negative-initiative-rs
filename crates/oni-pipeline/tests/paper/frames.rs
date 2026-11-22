@@ -1,4 +1,5 @@
 //! The frames the paper's checks print: a digital photo, a prepared negative, black and white, and their anchors' scans.
+//! Each prints on the paper's own black (Paper blacks), so a check reads the paper's print itself; pure black is `paper_ends`'.
 
 #![allow(dead_code)]
 
@@ -7,8 +8,13 @@ use oni_pipeline::{conversion, paper};
 use oni_render::cpu;
 use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings};
 
+fn on_paper_blacks(mut s: PipelineSettings) -> PipelineSettings {
+    s.print.paper_blacks = true;
+    s
+}
+
 pub fn digital() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true)
+    on_paper_blacks(PipelineSettings::rest(ConversionMode::Digital, true))
 }
 
 pub fn prepared_negative() -> PipelineSettings {
@@ -20,7 +26,7 @@ pub fn prepared_negative() -> PipelineSettings {
     }
     s.dye_set = DyeSet::KodakPortra400;
     s.print_paper = Some(PaperStock::default());
-    s
+    on_paper_blacks(s)
 }
 
 /// The scan pixel holding densities `d`, through the frame's gains and pedestal.
@@ -42,7 +48,7 @@ pub fn anchor_scans(s: &PipelineSettings) -> [V4; 3] {
 }
 
 pub fn mono() -> PipelineSettings {
-    PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Monochrome, true) }
+    on_paper_blacks(PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Monochrome, true) })
 }
 
 /// `s` moved by `f`, its anchors printed.

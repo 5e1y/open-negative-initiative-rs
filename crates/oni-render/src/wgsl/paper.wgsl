@@ -1,4 +1,4 @@
-// The paper, operation for operation as `cpu::paper`: Lighting's tones on the negative's density, the enlarger's
+// The paper, operation for operation as `cpu::paper`: Lighting's tones on the film's density, the enlarger's
 // light through its dyes on the paper's layers, Brightness above its knee, the grade, its curves, its dyes seen under
 // D50 in Rec. 2020, its colour density, then its ends: the pick on its anchor, the white held; alpha kept.
 
@@ -8,7 +8,7 @@ struct Params {
     black_guard: vec4<f32>,
     span_shadows: vec4<f32>,
     points_black_highlights: vec4<f32>,
-    points_white: vec4<f32>,
+    points_white_reversal: vec4<f32>,
     mids: vec4<f32>,
     filters_scale: vec4<f32>,
     pivot_pick: vec4<f32>,
@@ -77,20 +77,23 @@ fn paper_midded(p: f32, mids: f32) -> f32 {
 fn paper_toned(amounts: vec3<f32>) -> vec3<f32> {
     let span = P.span_shadows.xyz;
     let black = P.points_black_highlights.xyz;
-    let white = P.points_white.xyz;
+    let white = P.points_white_reversal.xyz;
     let zones = vec2<f32>(P.span_shadows.w, P.points_black_highlights.w);
     let mids = P.mids.xyz;
     if (all(black == vec3<f32>(0.0)) && all(white == vec3<f32>(0.0)) && all(zones == vec2<f32>(0.0)) && all(mids == vec3<f32>(0.0))) {
         return amounts;
     }
-    let u = (amounts / span - black) / (vec3<f32>(1.0) - black - white);
+    let reversal = P.points_white_reversal.w > 0.5;
+    let read = select(amounts / span, vec3<f32>(1.0) - amounts / span, reversal);
+    let u = (read - black) / (vec3<f32>(1.0) - black - white);
     let tone = (u.x + u.y + u.z) / 3.0;
     var lift = 0.0;
     if (any(zones != vec2<f32>(0.0)) && tone >= 0.0 && tone <= 1.0) {
         lift = paper_quartered(paper_quartered(tone, zones.x, false), zones.y, true) - tone;
     }
     let v = u + vec3<f32>(lift);
-    return vec3<f32>(paper_midded(v.x, mids.x), paper_midded(v.y, mids.y), paper_midded(v.z, mids.z)) * span;
+    let toned = vec3<f32>(paper_midded(v.x, mids.x), paper_midded(v.y, mids.y), paper_midded(v.z, mids.z));
+    return select(toned, vec3<f32>(1.0) - toned, reversal) * span;
 }
 
 fn paper_px(s: vec4<f32>) -> vec4<f32> {
@@ -108,8 +111,9 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
     var log_raw = log(max(raw, vec3<f32>(0.0)) * P.filters_scale.w + PAPER_EXPOSURE_FLOOR) * LOG10_E;
     let brightness = P.curve_axis.z;
     if (brightness != 0.0) {
-        let x = P.pivot_pick.w - (log_raw.x + log_raw.y + log_raw.z) / 3.0;
-        log_raw = log_raw - vec3<f32>(paper_kneed(x, brightness * 0.3010299956639812, P.slope_knee.w) - x);
+        let sense = select(1.0, -1.0, P.points_white_reversal.w > 0.5);
+        let x = sense * (P.pivot_pick.w - (log_raw.x + log_raw.y + log_raw.z) / 3.0);
+        log_raw = log_raw - vec3<f32>(sense * (paper_kneed(x, brightness * 0.3010299956639812, P.slope_knee.w) - x));
     }
     if (any(P.slope_knee.xyz != vec3<f32>(1.0))) {
         log_raw = P.pivot_pick.xyz + (log_raw - P.pivot_pick.xyz) * P.slope_knee.xyz;

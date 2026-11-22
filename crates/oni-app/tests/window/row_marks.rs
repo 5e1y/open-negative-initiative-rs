@@ -261,8 +261,8 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
     let index = ctl.state.borrow().order().iter().position(|path| *path == fomapan).expect("Fomapan's photo is shown") as i32;
     lib.invoke_tile_clicked(index, false, false);
     rig.pump();
-    assert_eq!(lib.get_stock().as_str(), "Foma Fomapan 401", "the roll still names its stock");
-    assert!(lib.get_stock_has_artwork(), "and shows its canister");
+    assert_eq!(lib.get_stock().name.as_str(), "Foma Fomapan 401", "the roll still names its stock");
+    assert!(lib.get_stock().has_artwork, "and shows its canister");
     lib.invoke_select_roll_type();
     rig.pump();
     let stocks = w.global::<Stocks>();

@@ -6,7 +6,7 @@ use oni_app::{Framing, Library, PanelState, Preparing};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{ConversionMode, Id, PipelineSettings};
+use oni_settings::{ConversionMode, Id, PaperStock, PipelineSettings};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
@@ -128,6 +128,7 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         let g = s.gains.stops;
         assert!(alike(s) && g[0] < g[1] && g[1] < g[2] && g.iter().sum::<f32>().abs() < 1e-4, "F{i}: red down, blue up, the level held: {:?} {:?}", s.levels, s.gains);
         assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
+        assert_eq!(s.paper(), Some(PaperStock::KodakEktachromeRadianceIII), "F{i}: printed on the reversal paper, as a prepared negative on its own");
     }
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
     assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");

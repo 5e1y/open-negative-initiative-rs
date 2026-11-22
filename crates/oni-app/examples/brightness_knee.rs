@@ -210,7 +210,7 @@ fn main() {
         let name = raw.file_stem().unwrap().to_string_lossy().to_string();
         let mut read = sidecar::read(raw, true).expect("a sidecar").settings;
         read.print_paper = read.print_paper.or(Some(Default::default()));
-        (read.print.brightness, read.print.true_blacks) = (0.0, false);
+        (read.print.brightness, read.print.paper_blacks) = (0.0, true);
         let f = Frame::new(read.clone());
         let pick_l = lab(f.rest(paper::anchors(&f.s, conversion::stage47(&f.s).dyes.as_ref())[0]))[0];
         println!("{name}: paper {:?}, pick L* {pick_l:.2}, grey amounts {:.3?}, the pick's mean log exposure {:.3}", f.s.print_paper, f.grey, f.lp);

@@ -4,6 +4,8 @@
 use super::*;
 use oni_library::history::Marker;
 use oni_settings::dyes::dye_set;
+use oni_settings::ConversionMode;
+use oni_settings::film::FilmStockKind;
 
 impl Ctl {
     pub(in crate::app) fn publish_info(&self) {
@@ -23,7 +25,7 @@ impl Ctl {
             let stocks: Vec<StockCount> = oni_library::info::stocks(&group.entries, &s.roll_markers())
                 .into_iter()
                 .map(|(k, n)| {
-                    let artwork = crate::stocks::icon(k.icon_name);
+                    let artwork = crate::stocks::icon(k.id);
                     StockCount {
                         name: k.display_name.into(),
                         count: n.to_string().into(),
@@ -75,20 +77,7 @@ impl Ctl {
         let mode = roll.first.as_ref().and_then(|e| e.mode);
         // A digital folder's photos had no film to name.
         lib.set_roll_film(mode.is_none_or(|m| !m.is_digital()));
-        let explicit = film_stock(film.stock.as_deref());
-        let fallback = mode.and_then(|m| film_stock(default_stock_id(m)));
-        let (stock, note) = match (explicit, fallback, mode) {
-            (Some(k), _, _) => (k.display_name.to_string(), crate::stocks::unspecified(k).to_string()),
-            (None, Some(k), Some(m)) => (k.display_name.to_string(), tr!("Default, from this roll's {mode} mode", mode = crate::app::roll_tab::mode_name(m))),
-            _ => (String::new(), tr("No film stock set").to_string()),
-        };
-        // With no stock nor mode to name, the generic negative's canister stands in the hero's place.
-        let shown = explicit.or(fallback).or_else(|| film_stock(Some(crate::library::GENERIC_NEGATIVE)));
-        let artwork = shown.and_then(|k| crate::stocks::icon(k.icon_name));
-        lib.set_stock_has_artwork(artwork.is_some());
-        lib.set_stock_artwork(artwork.unwrap_or_default());
-        lib.set_stock(stock.into());
-        lib.set_stock_note(note.into());
+        lib.set_stock(roll_canister(film_stock(film.stock.as_deref()), mode));
         let default = default_date(&roll);
         lib.set_shot_date_set(film.shot_date.is_some());
         lib.set_shot_date_default(default.is_some());
@@ -321,5 +310,16 @@ fn spelled([month, day, year]: [&str; 3]) -> Option<Date> {
     match (month.trim().parse::<u32>(), year.trim().parse::<i32>()) {
         (Ok(m), Ok(y)) => oni_library::info::made(y, m, day.trim().parse().unwrap_or(1)),
         _ => None,
+    }
+}
+
+/// `heroStock`: a roll's stock as its hero shows it, the one a hand picked, a line said so, else its first photo's
+/// mode's default, said so; with no stock nor mode to name, the generic negative's canister and no name.
+pub(in crate::app) fn roll_canister(explicit: Option<&'static FilmStockKind>, mode: Option<ConversionMode>) -> crate::Canister {
+    let fallback = mode.and_then(|m| film_stock(default_stock_id(m)));
+    match (explicit, fallback, mode) {
+        (Some(k), _, _) => crate::stocks::canister(Some(k), crate::stocks::unspecified(k).to_string()),
+        (None, Some(k), Some(m)) => crate::stocks::canister(Some(k), tr!("Default, from this roll's {mode} mode", mode = crate::app::roll_tab::mode_name(m))),
+        _ => crate::stocks::canister(None, tr("No film stock set").to_string()),
     }
 }

@@ -110,16 +110,11 @@ pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
 }
 
 /// The Film block's tab for a photo: its stock's place.
-pub fn film_tab(s: &PipelineSettings) -> i32 {
-    s.film().and_then(|f| VirtualStock::ALL.iter().position(|k| *k == f.stock)).unwrap_or(0) as i32
-}
-
-/// The photo shot on the stock of tab `i`: the one it stands on kept, another placed on its own reference,
-/// as Prepare the Roll places a roll's.
-pub fn picked_film(s: &PipelineSettings, i: i32) -> PipelineSettings {
-    let Some(stock) = usize::try_from(i).ok().and_then(|i| VirtualStock::ALL.get(i)) else { return s.clone() };
+/// The photo shot on `stock`: the one it stands on kept, another placed on its own reference, as Prepare the
+/// Roll places a roll's; a photo shot on no film left as it is.
+pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSettings {
     match s.film() {
-        Some(f) if f.stock != *stock => s.on_stock(*stock),
+        Some(f) if f.stock != stock => s.on_stock(stock),
         _ => s.clone(),
     }
 }
@@ -151,15 +146,15 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
-        panel.on_virtual_film_picked(move |i| p.write_settings(|s| *s = picked_film(s, i)));
+        panel.on_select_stock(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
-        panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(PaperStock::default)));
+        panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(|| s.fitting_paper())));
         let p = me.clone();
         panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
         let p = me.clone();
-        panel.on_true_blacks_toggled(move |on| p.write_settings(|s| s.print.true_blacks = on));
+        panel.on_paper_blacks_toggled(move |on| p.write_settings(|s| s.print.paper_blacks = on));
         let p = me.clone();
         panel.on_legacy_toggled(move |on| {
             p.write_settings(|s| {
@@ -170,9 +165,11 @@ impl Ctl {
         });
         let p = me.clone();
         panel.on_paper_chosen(move |i| {
-            if let Some(&paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)) {
-                p.write_settings(|s| s.print_paper = Some(paper));
-            }
+            p.write_settings(|s| {
+                if let Some(paper) = usize::try_from(i).ok().and_then(|i| PaperStock::listed(s.mode.reads_positive()).get(i).copied()) {
+                    s.print_paper = Some(paper);
+                }
+            })
         });
         let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));
@@ -240,16 +237,18 @@ impl Ctl {
     }
 
     /// The Colour tab's print switches: Lighting's colour compensation, and the paper where one can print the photo, its
-    /// name, the filtration it prints through and True blacks.
+    /// name, the filtration it prints through and Paper blacks.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
         panel.set_colour_compensation(settings.print.colour_compensation);
-        panel.set_true_blacks(settings.print.true_blacks);
+        panel.set_paper_blacks(settings.print.paper_blacks);
         panel.set_paper_shown(settings.takes_paper());
         panel.set_paper_on(settings.paper().is_some());
-        let chosen = settings.print_paper.unwrap_or_default();
-        panel.set_paper_title(chosen.name().into());
-        if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
-            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
+        panel.set_paper_title(settings.fitting_paper().name().into());
+        // The papers that print the frame's film: a slide's reversal paper, a negative's every other.
+        let listed = PaperStock::listed(settings.mode.reads_positive());
+        let shown = panel.get_paper_lines();
+        if shown.row_count() != listed.len() || shown.row_data(0).is_none_or(|l| l.text != listed[0].name()) {
+            let lines: Vec<MenuLine> = listed.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
             panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
@@ -273,7 +272,7 @@ impl Ctl {
         self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
-        panel.set_virtual_film(film_tab(&settings));
+        panel.set_stock(self.open_canister());
         let [white, gains, black, ends] = film_lines(&settings);
         panel.set_film_white(white.into());
         panel.set_film_gains(gains.into());

@@ -134,7 +134,7 @@ fn printed_on_the_machine(settings: PipelineSettings, scanner: &Scanner) -> Pipe
     out.secret_sauce = f.secret_sauce;
     let exposure = if out.paper().is_some() { Print::resting_exposure(out.mode) } else { look_entry_exposure(out.mode) };
     let held = out.print;
-    out.print = Print { contrast: f.contrast, exposure, colour_compensation: held.colour_compensation, true_blacks: held.true_blacks, ..Print::default() };
+    out.print = Print { contrast: f.contrast, exposure, colour_compensation: held.colour_compensation, paper_blacks: held.paper_blacks, ..Print::default() };
     out.density = 0.0;
     out.balance_filters = None;
     let machine = match scanner.machine {

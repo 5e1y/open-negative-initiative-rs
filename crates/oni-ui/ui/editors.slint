@@ -1,5 +1,5 @@
 // The panel's editors: the manual curves, the per-channel levels, the spectrogram, the saturation
-// curve, the grain curve and the print curve over the main histogram. Rust lays out every line, dot and handle.
+// curve and the grain curve. Rust lays out every line, dot and handle.
 import { Plot, LevelsTrack, PlotReadouts, AxisCaptions, PlotLine, PlotDot, PlotKnob, PlotReadout, Tabs, Slider, SliderFill, Label, Tone, TextRole, PlotStyle, SliderStyle, Colour, Space } from "ds/ds.slint";
 
 // The plots' numbers, as `plot` names them in every callback.
@@ -35,7 +35,6 @@ export global Editors {
     in property <[PlotDot]> grain-dots;
     in property <bool> grain-modified;
 
-    in property <[PlotLine]> print-lines;
     in property <bool> monochrome;
     // An 8-bit source, flagged under Per-Channel Levels.
     in property <bool> low-precision;
@@ -202,7 +201,7 @@ export component GrainEditor inherits VerticalLayout {
     spacing: Space.xs;
     AxisCaptions { start: @tr("Black point"); end: @tr("White point"); }
     EditorPlot {
-        plot: 6;
+        plot: 5;
         height: PlotStyle.block;
         lines: Editors.grain-lines;
         dots: Editors.grain-dots;

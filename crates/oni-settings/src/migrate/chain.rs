@@ -83,6 +83,15 @@ pub const FRONTIER_PRINT_VERSION: i64 = 45;
 /// The version the Scanner face left: a photo it rendered keeps that edit alone, its machine's print in Lighting's fields
 /// and its keys and look in a legacy print, a key a build before it cannot read.
 pub const ONE_FACE_VERSION: i64 = 46;
+/// The version a slide came to print on a reversal paper, a paper key a build before it cannot read: no step, as no
+/// older document names it.
+pub const REVERSAL_PAPER_VERSION: i64 = 52;
+/// The version a paper's black came to rest on pure black, Paper blacks keeping the paper's own: True blacks retired, a key
+/// a build before it cannot read.
+pub const PAPER_BLACKS_VERSION: i64 = 53;
+/// The version a digital photo came to be shot on any colour negative spektrafilm profiles, a stock key a build before
+/// it cannot read: no step, as every older document names Portra 800.
+pub const VIRTUAL_STOCKS_VERSION: i64 = 54;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

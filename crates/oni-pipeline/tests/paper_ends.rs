@@ -1,5 +1,5 @@
-//! The paper's ends: whatever Lighting moves, the frame's pick prints where the enlarger's rest prints it, or on pure
-//! black with True blacks; the whites stay free, the points move the ends, Brightness moves the tones above its knee as
+//! The paper's ends: whatever Lighting moves, the frame's pick prints on pure black, or where the enlarger's rest prints
+//! it with Paper blacks; the whites stay free, the points move the ends, Brightness moves the tones above its knee as
 //! Exposure does and none under it, the print continuous and monotone. Each verdict has a twin.
 
 mod common;
@@ -106,11 +106,11 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
 }
 
 #[test]
-fn true_blacks_lay_the_pick_on_pure_black_under_every_slider() {
+fn without_paper_blacks_the_pick_lies_on_pure_black_under_every_slider() {
     for (label, s) in frames() {
-        let on = moved(&s, |t| t.print.true_blacks = true);
+        let on = moved(&s, |t| t.print.paper_blacks = false);
         let rest = printed_on(&s, &conversion::stage47(&on))[0];
-        println!("{label}: True blacks lays the pick at {rest:?}");
+        println!("{label}: pure black lays the pick at {rest:?}");
         assert!(rest.iter().all(|v| v.abs() < 1e-6), "{label}: {rest:?}");
         for (name, f) in SLIDERS {
             let pick = printed_on(&s, &conversion::stage47(&moved(&on, f)))[0];
@@ -155,10 +155,9 @@ fn neutral(s: &PipelineSettings, t: f32) -> [f32; 3] {
     std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))
 }
 
-/// How far a tone's mean log exposure lies under the pick's on `p`.
+/// How far a tone's mean log exposure lies from the pick's toward the light on `p`.
 fn under_pick(p: &Paper, amounts: [f32; 3]) -> f32 {
-    let log = p.exposed(p.toned(amounts));
-    p.pick_log - (log[0] + log[1] + log[2]) / 3.0
+    p.toward_light(p.pick_log, p.exposed(p.toned(amounts)))
 }
 
 /// The light `p` prints for `amounts` above its pick, its pick laid on black and its white the paper's.
@@ -206,8 +205,8 @@ fn brightnesss_knee_lies_where_the_neutral_prints_l_5_over_the_pick_whatever_lig
 fn brightness_holds_every_tone_under_its_knee_and_moves_those_past_it_as_exposure_does() {
     let mut followed = 0;
     for (label, s) in frames() {
-        for (brightness, true_blacks) in [(-4.0f32, false), (-1.0, false), (-0.5, true), (0.5, false), (1.0, true), (4.0, false)] {
-            let t = moved(&s, |u| (u.print.brightness, u.print.true_blacks) = (brightness, true_blacks));
+        for (brightness, paper_blacks) in [(-4.0f32, true), (-1.0, true), (-0.5, false), (0.5, true), (1.0, false), (4.0, true)] {
+            let t = moved(&s, |u| (u.print.brightness, u.print.paper_blacks) = (brightness, paper_blacks));
             let p = paper_of(&t);
             let at_rest = Paper { brightness: 0.0, ..p };
             // The pick, the tones beyond it and every tone under the knee print as they do at rest, to the bit; the
@@ -292,12 +291,12 @@ fn the_points_still_move_the_ends() {
 fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
     let settings: [Move; 6] = [
         ("at rest", |_| {}),
-        ("True blacks", |s| s.print.true_blacks = true),
+        ("pure black", |s| s.print.paper_blacks = false),
         ("Brightness -4", |s| s.print.brightness = -4.0),
-        ("Brightness +4, True blacks", |s| (s.print.brightness, s.print.true_blacks) = (4.0, true)),
+        ("Brightness +4, pure black", |s| (s.print.brightness, s.print.paper_blacks) = (4.0, false)),
         ("Exposure +2, Brightness -1", |s| (s.print.exposure, s.print.brightness) = (s.print.exposure + 2.0, -1.0)),
-        ("Exposure -1, Contrast +0.3, True blacks, Brightness +1", |s| {
-            (s.print.exposure, s.print.contrast, s.print.true_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, true, 1.0);
+        ("Exposure -1, Contrast +0.3, pure black, Brightness +1", |s| {
+            (s.print.exposure, s.print.contrast, s.print.paper_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, false, 1.0);
         }),
     ];
     for (label, s) in frames() {

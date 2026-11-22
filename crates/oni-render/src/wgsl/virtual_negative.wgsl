@@ -5,8 +5,8 @@ struct Params {
     head: vec4<u32>,
     to_film: array<vec4<f32>, 3>,
     couplers: array<vec4<f32>, 3>,
-    dyes: array<vec4<f32>, 64>,
-    weights: array<vec4<f32>, 64>,
+    dyes: array<vec4<f32>, 81>,
+    weights: array<vec4<f32>, 81>,
 }
 
 // The table is read through `negative_table(i, j)`, which the entry point defines: the light per

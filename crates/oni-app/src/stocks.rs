@@ -5,49 +5,8 @@ use slint::Image;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-const ARTWORK: [(&str, &[u8]); 41] = [
-    ("generic-azure", include_bytes!("../../oni-ui/ui/stocks/generic-azure.svg")),
-    ("generic-black-and-white", include_bytes!("../../oni-ui/ui/stocks/generic-black-and-white.svg")),
-    ("generic-color-negative", include_bytes!("../../oni-ui/ui/stocks/generic-color-negative.svg")),
-    ("generic-color-positive", include_bytes!("../../oni-ui/ui/stocks/generic-color-positive.svg")),
-    ("generic-redscale", include_bytes!("../../oni-ui/ui/stocks/generic-redscale.svg")),
-    ("agfaphoto-apx", include_bytes!("../../oni-ui/ui/stocks/agfaphoto-apx.svg")),
-    ("cinestill-400d", include_bytes!("../../oni-ui/ui/stocks/cinestill-400d.svg")),
-    ("cinestill-50d", include_bytes!("../../oni-ui/ui/stocks/cinestill-50d.svg")),
-    ("cinestill-800t", include_bytes!("../../oni-ui/ui/stocks/cinestill-800t.svg")),
-    ("foma-fomapan200", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan200.svg")),
-    ("foma-fomapan400", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan400.svg")),
-    ("foma-fomapan401", include_bytes!("../../oni-ui/ui/stocks/foma-fomapan401.svg")),
-    ("fujifilm-acros", include_bytes!("../../oni-ui/ui/stocks/fujifilm-acros.svg")),
-    ("fujifilm-fujicolor", include_bytes!("../../oni-ui/ui/stocks/fujifilm-fujicolor.svg")),
-    ("fujifilm-fujicolor-pro", include_bytes!("../../oni-ui/ui/stocks/fujifilm-fujicolor-pro.svg")),
-    ("fujifilm-provia100", include_bytes!("../../oni-ui/ui/stocks/fujifilm-provia100.svg")),
-    ("fujifilm-superia", include_bytes!("../../oni-ui/ui/stocks/fujifilm-superia.svg")),
-    ("fujifilm-velvia100", include_bytes!("../../oni-ui/ui/stocks/fujifilm-velvia100.svg")),
-    ("fujifilm-velvia50", include_bytes!("../../oni-ui/ui/stocks/fujifilm-velvia50.svg")),
-    ("harman-phoenix", include_bytes!("../../oni-ui/ui/stocks/harman-phoenix.svg")),
-    ("harman-phoenixII", include_bytes!("../../oni-ui/ui/stocks/harman-phoenixII.svg")),
-    ("harman-red", include_bytes!("../../oni-ui/ui/stocks/harman-red.svg")),
-    ("ilford-delta100", include_bytes!("../../oni-ui/ui/stocks/ilford-delta100.svg")),
-    ("ilford-delta3200", include_bytes!("../../oni-ui/ui/stocks/ilford-delta3200.svg")),
-    ("ilford-delta400", include_bytes!("../../oni-ui/ui/stocks/ilford-delta400.svg")),
-    ("ilford-fp4", include_bytes!("../../oni-ui/ui/stocks/ilford-fp4.svg")),
-    ("ilford-hp5", include_bytes!("../../oni-ui/ui/stocks/ilford-hp5.svg")),
-    ("ilford-ortho", include_bytes!("../../oni-ui/ui/stocks/ilford-ortho.svg")),
-    ("ilford-panf", include_bytes!("../../oni-ui/ui/stocks/ilford-panf.svg")),
-    ("ilford-sfx", include_bytes!("../../oni-ui/ui/stocks/ilford-sfx.svg")),
-    ("ilford-xp2", include_bytes!("../../oni-ui/ui/stocks/ilford-xp2.svg")),
-    ("kodak-400tx", include_bytes!("../../oni-ui/ui/stocks/kodak-400tx.svg")),
-    ("kodak-colorplus", include_bytes!("../../oni-ui/ui/stocks/kodak-colorplus.svg")),
-    ("kodak-ektachrome", include_bytes!("../../oni-ui/ui/stocks/kodak-ektachrome.svg")),
-    ("kodak-gold", include_bytes!("../../oni-ui/ui/stocks/kodak-gold.svg")),
-    ("kodak-portra", include_bytes!("../../oni-ui/ui/stocks/kodak-portra.svg")),
-    ("kodak-ultramax", include_bytes!("../../oni-ui/ui/stocks/kodak-ultramax.svg")),
-    ("lomography-lomo-turquoise", include_bytes!("../../oni-ui/ui/stocks/lomography-lomo-turquoise.svg")),
-    ("lucky-color200", include_bytes!("../../oni-ui/ui/stocks/lucky-color200.svg")),
-    ("mira-color400", include_bytes!("../../oni-ui/ui/stocks/mira-color400.svg")),
-    ("mira-color800", include_bytes!("../../oni-ui/ui/stocks/mira-color800.svg")),
-];
+// `ARTWORK`: every SVG of crates/oni-ui/ui/stocks by its name, listed by the build script.
+include!(concat!(env!("OUT_DIR"), "/stock_artwork.rs"));
 
 thread_local! {
     static DECODED: RefCell<HashMap<&'static str, Image>> = RefCell::new(HashMap::new());
@@ -57,9 +16,15 @@ thread_local! {
 /// Every artwork's root opens on this side, which `sized` sets to the pixels wanted.
 const ARTWORK_HEAD: &str = r#"<svg width="48" height="48""#;
 
-/// The stock's artwork, `None` when it has none.
+/// The canister the catalogue names for a stock: its own, its line's or its kind's generic one.
+fn artwork(id: &str) -> Option<&'static (&'static str, &'static [u8])> {
+    let kind = oni_settings::film::film_stock(Some(id))?;
+    ARTWORK.iter().find(|(k, _)| *k == kind.icon_name)
+}
+
+/// The stock's canister, `None` for a stock the catalogue lacks.
 pub fn icon(id: &str) -> Option<Image> {
-    let (key, data) = ARTWORK.iter().find(|(k, _)| *k == id)?;
+    let (key, data) = artwork(id)?;
     DECODED.with(|d| {
         if let Some(image) = d.borrow().get(key) {
             return Some(image.clone());
@@ -73,7 +38,7 @@ pub fn icon(id: &str) -> Option<Image> {
 /// The stock's artwork drawn once at `side` pixels, which every row a virtualised tree makes shares:
 /// an SVG source is drawn again, filters included, by each row it lands in.
 pub fn row_icon(id: &str, side: u32) -> Option<Image> {
-    let (key, data) = ARTWORK.iter().find(|(k, _)| *k == id)?;
+    let (key, data) = artwork(id)?;
     ROW_ICONS.with(|cache| {
         if let Some(image) = cache.borrow().get(&(*key, side)) {
             return Some(image.clone());
@@ -102,12 +67,36 @@ pub fn unspecified(kind: &oni_settings::film::FilmStockKind) -> &'static str {
     if kind.line { oni_i18n::tr("Stock not specified") } else { "" }
 }
 
+/// A stock as a hero shows it, `note` under its name; the generic negative's canister and no name for none.
+pub fn canister(kind: Option<&oni_settings::film::FilmStockKind>, note: String) -> crate::Canister {
+    let artwork = icon(kind.map_or(crate::library::GENERIC_NEGATIVE, |k| k.id));
+    crate::Canister {
+        name: kind.map_or_else(Default::default, |k| k.display_name.into()),
+        note: note.into(),
+        has_artwork: artwork.is_some(),
+        artwork: artwork.unwrap_or_default(),
+    }
+}
+
+/// The virtual film a stock of the catalogue is, when a digital photo can be shot on it.
+pub fn virtual_stock(id: &str) -> Option<oni_settings::VirtualStock> {
+    oni_settings::VirtualStock::ALL.iter().copied().find(|v| v.catalogue_id() == id)
+}
+
 /// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with the stocks it offers, as
 /// indices into the catalogue; `current`, when a line, stays at its place among the line's stocks.
 pub fn by_brand(current: Option<&str>) -> Vec<(&'static str, Vec<usize>)> {
+    among(|k| k.offered || (k.line && current == Some(k.id)))
+}
+
+/// The stocks a digital photo can be shot on, by brand as `by_brand` lists them.
+pub fn virtual_by_brand() -> Vec<(&'static str, Vec<usize>)> {
+    among(|k| virtual_stock(k.id).is_some())
+}
+
+fn among(shown: impl Fn(&oni_settings::film::FilmStockKind) -> bool) -> Vec<(&'static str, Vec<usize>)> {
     let mut out: Vec<(&'static str, Vec<usize>)> = Vec::new();
-    let shown = oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| k.offered || (k.line && current == Some(k.id)));
-    for (i, kind) in shown {
+    for (i, kind) in oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| shown(k)) {
         match out.iter_mut().find(|(b, _)| *b == kind.brand) {
             Some((_, list)) => list.push(i),
             None => out.push((kind.brand, vec![i])),
@@ -164,6 +153,40 @@ mod tests {
         assert!(icon(stock.icon_name).is_some() && stock.icon_name == "kodak-portra", "a stock draws its line's canister");
     }
 
+    /// A stock whose own artwork lies in the folder draws it: a dropped SVG asks its catalogue line to read `stock`.
+    #[test]
+    fn a_stock_with_its_own_artwork_draws_it() {
+        for kind in oni_settings::film::FILM_STOCKS {
+            let own = ARTWORK.iter().any(|(k, _)| *k == kind.id);
+            assert!(!own || kind.icon_name == kind.id, "{}.svg is drawn: its catalogue line reads stock(…)", kind.id);
+        }
+        // Twin: a stock still undrawn stands on its type's generic canister.
+        let ektar = oni_settings::film::film_stock(Some("kodak-ektar100")).unwrap();
+        assert!(!ARTWORK.iter().any(|(k, _)| *k == ektar.id) && ektar.icon_name == ektar.kind.generic());
+    }
+
+    /// A stock drawn with its line's or its kind's generic canister draws it by its own key, at any size.
+    #[test]
+    fn a_stock_draws_the_canister_its_catalogue_line_names() {
+        let pixels = |id: &str| row_icon(id, 44).and_then(|i| i.to_rgba8()).map(|p| p.as_slice().to_vec());
+        assert!(pixels("kodak-portra400").is_some() && pixels("kodak-portra400") == pixels("kodak-portra"), "Portra 400 draws the Portra canister");
+        assert!(pixels("kodak-ektar100") == pixels("generic-color-negative") && icon("kodak-ektar100").is_some(), "an undrawn negative draws its kind's");
+        // Twin: a stock of its own draws its own, never its brand's line.
+        assert_ne!(pixels("kodak-gold200"), pixels("kodak-portra"));
+    }
+
+    /// A digital photo's sheet lists the stocks a virtual film stands for, every one of them, and no other.
+    #[test]
+    fn the_virtual_films_are_listed_alone() {
+        let listed: Vec<&str> = virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::FILM_STOCKS[i].id).collect();
+        let virtual_ids: Vec<&str> = oni_settings::VirtualStock::ALL.iter().map(|v| v.catalogue_id()).collect();
+        assert_eq!(listed.len(), virtual_ids.len());
+        assert!(virtual_ids.iter().all(|id| listed.contains(id) && virtual_stock(id).is_some()), "{listed:?}");
+        // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
+        assert!(!listed.contains(&"ilford-hp5") && virtual_stock("ilford-hp5").is_none());
+        assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
+    }
+
     #[test]
     fn a_row_icon_is_drawn_once_at_the_rows_side() {
         for (id, _) in ARTWORK {
@@ -185,7 +208,7 @@ mod tests {
     }
 
     /// The owner's own artworks, as 1.5.6 shipped them and the site shows them: a stock's canister is
-    /// never redrawn here; a new one comes from the owner, its line added below.
+    /// never redrawn here; a new one comes from the owner, dropped in the folder under its stock's key.
     const ORIGINAL: [(&str, u64); 41] = [
         ("generic-azure", 0xe5b9ddefcbbbf16e),
         ("generic-black-and-white", 0x86243de8f26df732),
@@ -232,9 +255,13 @@ mod tests {
 
     #[test]
     fn every_canister_is_the_owners_own_artwork() {
-        for (id, data) in ARTWORK {
-            let kept = ORIGINAL.iter().find(|(k, _)| *k == id).map(|(_, h)| *h);
-            assert_eq!(kept, Some(fnv(data)), "{id}: not the owner's artwork, 0x{:016x}", fnv(data));
+        for (id, hash) in ORIGINAL {
+            let data = ARTWORK.iter().find(|(k, _)| *k == id).map(|(_, d)| *d);
+            assert_eq!(data.map(fnv), Some(hash), "{id}: not the owner's artwork");
+        }
+        for (id, _) in ARTWORK {
+            let named = oni_settings::film::film_stock(Some(id)).is_some();
+            assert!(named, "{id}.svg names no stock of the catalogue: its file takes the stock's key");
         }
         // Twin: one byte changed in an artwork is seen.
         let mut touched = ARTWORK[0].1.to_vec();

@@ -63,7 +63,7 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): Lighting acts before the paper curve, no ONI
-  window and no colour compensation; the picked black never lifts (True blacks lays it on pure black), the whites stay free.
+  window and no colour compensation; the picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
 - **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every
   older file migrates on its own (`oni_settings::migrate`, the launch's sweep or its first read), never lost; an older build opens it read-only.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,

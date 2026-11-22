@@ -192,7 +192,7 @@ settings: PipelineSettings {
         ],
         colour_compensation: true,
         brightness: 0.0,
-        true_blacks: false,
+        paper_blacks: false,
         bypassed: false,
     },
     print_paper: None,

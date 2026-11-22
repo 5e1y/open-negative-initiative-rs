@@ -14,7 +14,7 @@ use std::time::Duration;
 use crate::common;
 
 /// The Colour tab's blocks on a digital photo, every one the panel lays.
-const ONE_FACE: [&str; 9] = ["Film", "Colour", "More Color Settings", "Lighting", "Effects", "Film Effects", "Curves", "Colour Mixer", "Saturation Curve"];
+const ONE_FACE: [&str; 10] = ["Film", "Colour", "More Color Settings", "Paper", "Lighting", "Effects", "Film Effects", "Curves", "Colour Mixer", "Saturation Curve"];
 /// What only the Scanner face laid: its machine, its keypad's blocks, its face's line and the bar's switch.
 const SCANNER: [&str; 5] = ["Machine", "Density", "Look", "Scanner: a minilab's density and colour, in steps", "Pro: every setting by hand, the place to start"];
 
