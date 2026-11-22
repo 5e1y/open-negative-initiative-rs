@@ -1,4 +1,4 @@
-//! `brightness_strips <out> <raw>...` (`SIDE`, `TAG`): each photo on its paper (Portra Endura where it has none) at Exposure
+//! `brightness_strips <out> <raw>...` (`SIDE`, `TAG`): each photo on its paper (the default where it has none) at Exposure
 //! and Brightness −1 to +1 as PNG grids, its neutral's transfer plotted and measured; originals and sidecars only read.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};

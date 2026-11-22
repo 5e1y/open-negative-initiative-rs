@@ -1,4 +1,4 @@
-//! A spektrafilm film profile and the spectra table its exposure reads, as their files hold them.
+//! A film profile written from its maker's data sheet and the spectra table its exposure reads, as their files hold them.
 
 use super::cie::WAVELENGTHS;
 use serde::Deserialize;
@@ -16,23 +16,16 @@ struct Data {
     base_density: Vec<Option<f64>>,
     log_exposure: Vec<f64>,
     density_curves: Vec<[f64; 3]>,
-    hanatos2025_adaptation_window_params: [f64; 4],
-    #[serde(default)]
-    layers_as_printed: bool,
 }
 
-/// What the bake reads of a profile; a wavelength the profile leaves unmeasured is `None`.
+/// What the bake reads of a profile; a wavelength the profile leaves unmeasured is `None`. Each layer's sensitivity
+/// stands at its sheet's level: the bake scales it so a grey under the stock's light exposes it at log 0.
 pub struct Profile {
     pub log_sensitivity: Vec<[f64; 3]>,
     pub channel_density: Vec<[Option<f64>; 3]>,
     pub base_density: Vec<Option<f64>>,
     pub log_exposure: Vec<f64>,
     pub density_curves: Vec<[f64; 3]>,
-    /// The band-pass window: its ultraviolet edge's centre and width, then its infrared edge's, in nm.
-    pub window: [f64; 4],
-    /// Each layer's sensitivity at its data sheet's level: the bake scales it so a grey under the stock's light
-    /// exposes it at log 0, the curves' common log H. A spektrafilm profile comes balanced so.
-    pub layers_as_printed: bool,
 }
 
 impl Profile {
@@ -56,8 +49,6 @@ impl Profile {
             base_density: d.base_density,
             log_exposure: d.log_exposure,
             density_curves: d.density_curves,
-            window: d.hanatos2025_adaptation_window_params,
-            layers_as_printed: d.layers_as_printed,
         })
     }
 }

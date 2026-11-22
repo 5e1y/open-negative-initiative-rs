@@ -1,5 +1,5 @@
 //! `frontier_print_traits`: a scene's blues and skins on the virtual Portra 800, printed at rest on the Frontier paper,
-//! the Frontier legacy print, Portra Endura and ONI's print: Oklab hue and chroma against the scene's.
+//! the Frontier legacy print, Endura Premier and ONI's print: Oklab hue and chroma against the scene's.
 
 use oni_pipeline::look_lab::measure::{lch, linear_rgb, oklab, turn};
 use oni_pipeline::{conversion, film, frontier_look, scanner};
@@ -47,7 +47,7 @@ fn prints() -> Vec<(&'static str, PipelineSettings)> {
     vec![
         ("Frontier SP-3000 paper", on(Some(PaperStock::FujifilmFrontierSp3000))),
         ("Frontier legacy print", today),
-        ("Portra Endura", on(Some(PaperStock::KodakPortraEndura))),
+        ("Endura Premier", on(Some(PaperStock::KodakEnduraPremier))),
         ("ONI's print", on(None)),
     ]
 }

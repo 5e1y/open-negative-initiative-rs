@@ -12431,6 +12431,115 @@
     "detail": "The datasheet stocks took oni-settings' dyes.rs to 527 lines and virtual_film.rs to 513, past the 400-line file ceiling. The catalogue's dye-set table moves to dyes/stocks.rs, the virtual stocks' entries to virtual_film/entries.rs, and each file's tests to a tests.rs beside it; nothing else moves."
   },
   {
+    "id": 3460,
+    "type": "feature",
+    "title": "The Colour tab's paper drops the stocks' menu, each paper it lights shown on the photo unwritten",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/color_tab.slint (PaperPicker), panel/state.slint, ds/stocks.slint, crates/oni-app/src/app/stock_picker.rs, stocks.rs papers_by_maker. The paper's field drops the film's StockMenu under it, the papers of the catalogue by maker (a paper's trade name leads with its maker's), the one in use checked; a line without a canister takes no icon room. The line under the pointer or the arrows is lit and told at once: the stocks' light becomes one `Lit` (a stock or a paper) in `State.lit`, laid over the settings by `previewed`, so the canvas renders it through the one render path (one in flight, the latest waiting) with no write, no step and no sidecar. Leaving the menu, Escape or any close lights none. A click or Return writes the paper as one step through `menu_picked`, which writes `Lit::picked`, the function the light shows, so a pick renders nothing again; a paper changes the one the enlarger prints on and never turns the enlarger on, so a light outliving its section shows nothing. The paper menu's lines are laid at each drop (`paper-dropping`), no longer at each publish."
+  },
+  {
+    "id": 3461,
+    "type": "perf",
+    "title": "The papers are baked off the interface thread at the menu's first light, never at launch",
+    "status": "done",
+    "detail": "crates/oni-app/src/app/stock_picker.rs bake_menu: the stocks' bake ahead takes the lit menu's lines, every paper of the catalogue printed on the open photo's settings for the papers' menu, once a drop; oni_pipeline::bake_ahead bakes each paper's enlarger (OnceLock, a table already baked costs nothing)."
+  },
+  {
+    "id": 3462,
+    "type": "check",
+    "title": "The papers' menu checked under the pointer, the arrows, Escape, a click and Return, with no write while lit",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/paper_menu.rs a_paper_under_the_pointer_shows_on_the_photo_unwritten, on a digital photo printed on its paper at rest, the papers read from the catalogue so its contents may change: every paper listed once under its maker, the one in use checked (twin: a maker's line names no paper, each maker once); the pointer on a line renders it, store, Undo and sidecar unchanged; another line follows; leaving the menu and Escape restore; the arrows toward the longer side and back light the paper beside the one in use, Return writes it as one step, Undo; a click writes as the light showed, its render the light's alone, Undo (twins: the preview differs from the photo's own; a pick does write the sidecar). tests/window/paper.rs reads the menu's lines as it drops. Unit checks: stocks::the_papers_are_listed_once_each_under_its_maker (twin: grouped by another word, more lines than makers) and stock_picker::a_photo_lit_on_a_paper_is_what_its_pick_writes (twin: the lit paper moves the photo)."
+  },
+  {
+    "id": 3463,
+    "type": "bench",
+    "title": "ONI_BENCH=papers: each paper lit timed to its photon, cold, warm and in a sweep",
+    "status": "done",
+    "detail": "crates/oni-app/src/bench/stocks.rs: the stocks' bench takes the menu it lights (`Lights`), the papers' laid by `paper-dropping` and lit by `paper-lit`; a photo printing on no paper says so.",
+    "outcome": "App profile, 2560×1440 window on the 5K screen, mains power, machine loaded by two other agents' builds (load 5 to 7): on a 47 Mpx Lumix RW2 shot digital on Portra 800 and Portra Endura, the 13 other papers each moving the photo, hover to photon p50 62 ms warm (p90 65, worst 68), cold p50 47 ms (first light 36 ms, the bake ahead absorbing it): 2.2 ms to the encode, 3.5 ms to the next frame, 55 ms the frame's GPU work; a 120 Hz sweep over 13 lines rendered 3 times, its last shown in 56 ms. The stocks' menu on the same photo, run just before: warm p50 57 ms, cold p50 62 ms, 63 films."
+  },
+  {
+    "id": 3430,
+    "type": "feature",
+    "title": "Every film stock is its maker's data sheet: spektrafilm's sixteen profiles retired",
+    "status": "done",
+    "detail": "Owner's call: each of the sixteen spektrafilm stocks (Portra 160, 400, 800 and its two pushes, Ektar 100, Gold 200, UltraMax 400, Verita 200D, Vision3 50D, 200T, 250D and 500T, C200, Pro 400H, Superia X-TRA 400) is replaced by its data-sheet twin, which takes the stock's plain name and key; the twins' keys and the '· Datasheet' labels go. Every use reads the data sheet: a roll's per-stock dye separation (each line and CineStill 50D and 800T on the matching profile), a digital photo's virtual film (Portra 800 by default), a slide's internegative (Vision3 50D), the Frontier's dye amounts, and the generic C-41 set (the mean of the same nine still stocks, now their sheets'). The profile names lose their datasheet/ prefix; spektrafilm's film profiles, Kodachrome 64's, which nothing read, included, are deleted. Renders move on purpose.",
+    "outcome": ""
+  },
+  {
+    "id": 3431,
+    "type": "feature",
+    "title": "Every paper is its maker's data sheet: spektrafilm's five papers retired, Endura Premier by default",
+    "status": "done",
+    "detail": "Portra Endura, Supra Endura, Ultra Endura and spektrafilm's Endura Premier read as the data sheet's Kodak Endura Premier, now the default paper (the paper Kodak folded the three Endura papers into, its professional line's own), under the plain key kodak-endura-premier; Crystal Archive Type II reads as Crystal Archive Digital Type DP II, the digital paper of its line. The paper bake keeps sampled curves alone (spektrafilm's fitted model goes). The Frontier SP-3000 rests on its own measured table (frontier.cube refitted by frontier_print_fit.py, its own virtual dyes), never on a spektrafilm paper: its fit does not move; what it reads, a frame's dye amounts, follows the stock's data-sheet dyes.",
+    "outcome": ""
+  },
+  {
+    "id": 3432,
+    "type": "migration",
+    "title": "Format 60: a digital photo moves onto its stock's data-sheet reference, every retired key read as its successor",
+    "status": "done",
+    "detail": "crates/oni-settings/src/migrate/datasheet.rs: a digital photo before 60 on a stock spektrafilm profiled has its gains and its windows' ends moved from that profile's reference (kept for the sixteen stocks) onto the data sheet's, a value on the former landing on the new exactly and a hand's distance kept; a photo keyed as a twin (-datasheet) stood there already and moves nothing; every other setting stays. The steps before (formats 37 and 55) now lay the former reference, so a document crosses the move once. Every retired key reads by alias wherever a settings document is read (sidecars, presets, share codes, pastes): a stock's twin as its stock, the Endura papers and Radiance III as Endura Premier, Crystal Archive Type II as DP II; a roll marker's, a Prepare draft's or a frame's film stock key keyed as a twin reads as its stock's (film::stored_key). A build before 60 refuses the file as newer. Owner's files, read-only: of 161 digital photos on a film, 158 move (Portra 800 146, Gold 200 2, UltraMax 400 2, Verita 200D 2, Ektar 100, Portra 400, Vision3 50D, 200T, 250D and 500T one each), the two on twins (Portra 800, UltraMax 400) and the one on Superia Reala keep their gains; papers: 386 sidecars on Portra Endura (347 negatives, 38 slides, 1 black and white) and 157 digital move to Endura Premier, 1 on Endura Premier changes profile, 1 on Crystal Archive Type II moves to DP II; scanned frames' dye sets moving to their sheets: Gold 200 565, UltraMax 400 208, Portra 800 37, Superia X-TRA 400 40 (38 of them slides, which unmix none), the generic set on 787 negatives and black and white frames; presets: 1 Gold 200, 1 UltraMax 400, the rest generic; no roll marker names a twin.",
+    "outcome": ""
+  },
+  {
+    "id": 3433,
+    "type": "refactor",
+    "title": "The bake without spektrafilm's band-pass window and balance flag, every profile as printed",
+    "status": "done",
+    "detail": "Every profile is a data sheet's: its layers' levels as printed, which the bake now always balances on the grey, and no band-pass window (its parameters held it at exactly 1). film::profile drops both fields, bake::windowed_sensitivity becomes bake::sensitivity, scripts/datasheet-profiles.py writes neither, and the 48 film profiles are written again by it, their numbers unchanged to the bit.",
+    "outcome": ""
+  },
+  {
+    "id": 3434,
+    "type": "check",
+    "title": "The checks on the data-sheet stocks and papers, each re-derived with its twin",
+    "status": "done",
+    "detail": "Paper: each of the eight data-sheet papers prints Portra 800's dye amounts as a double-precision reading of its own profile file does (log exposure within 4.3e-7, density 3.3e-6, light 5.8e-6; twin: five CC more magenta), in place of spektrafilm's print, whose fixture keeps its lamp and dichroic filters alone. Virtual stocks: every stock's grey prints neutral (C*ab under 0.5) where a plain RAW prints one, its white within 0.06 stop of Portra 800's, its ramp's crossovers under a ceiling (C*ab 14, 4.5 in the lights; widest 13.1 on Vision3 500T, 4.1 on Verita 200D; twin: the red gain a fifth of a stop off prints the grey at C*ab 2 or more); the GPU within the same ceiling (13.5 at most; twin at the other light 69.6 at least). The virtual negative within 0.015 of its reference on the locus for every stock (0.0142 on 500T). The dye sets' pinned fingerprints re-derived; the data-sheet smoke checks on every stock and paper; the corpus's two format 37 digital goldens moved by the new reference, the newer-file fixture at 61; settings checks for every retired key and its twin. Elsewhere, re-derived on the data-sheet stocks and Endura Premier, each bound at its measure: the print folds pinned to the bit (colour compensation, paper Lighting, paper points, the legacy prints' 50 cases, every colour one moving and every black and white and slide one keeping its bits); a format 41 digital photo's Exposure gear on its former reference; the grain's low mids a stop under the grey (Endura Premier prints its fullest there); on a paper a channel's own tone leads by 1.4 (1.49 for green's contrast); Brightness under a straight fade by 0.02 (0.027), 0.4 brightening and 0.8 darkening at most (0.38, 0.76), ten greys past the reach; a white point read at 0.6 of the range (Endura Premier prints black and white's 0.7 on its white); the pick's Dmax twin at 1e-4 (9e-4 measured); a slide's neutral scale neutral from its grey to its bare film within 0.08, its shadows under 0.6 (0.57 in Vision3 50D's toe), its Saturation twin at -0.7.",
+    "outcome": ""
+  },
+  {
+    "id": 3435,
+    "type": "docs",
+    "title": "What ONI keeps from spektrafilm, credited",
+    "status": "done",
+    "detail": "resources/film/CHANGELOG.txt lists what remains: the spectra table, Schott KG3's curve, spektrafilm's model in ONI's own bake, and the former references the migration keeps (derived from its profiles, so SPEKTRAFILM_LICENSE.txt stays). SOURCES.txt, README, CLAUDE.md (every stock and paper a data sheet; spektrafilm's chain a benchmark outside the app on its own profiles) and the pipeline map follow; Settings' credits name the data sheets and spektrafilm's model, in French and Spanish too; the twin label's translations go.",
+    "outcome": ""
+  },
+  {
+    "id": 3436,
+    "type": "fix",
+    "title": "The enlarger's rest found on a steep paper: the time bracketed first, every Newton step damped",
+    "status": "done",
+    "detail": "On the data-sheet dyes the rest solve lost the Frontier SP-3000 (Portra 800's digital grey printed at 0.975, its filtration stuck at M10 Y50) and Fujiclear: from the time's guess a full Newton step crossed the root onto the paper's flat white, where no step returns. crates/oni-pipeline/src/paper/printing.rs: the time is first bisected about its guess (10 in ln either way, more light always printing darker), then each Newton step is shortened whole within its bounds, keeping its direction, and halved until it lowers the miss (squared, or absolute for the time alone), the solve stopping where none does. Every stock now rests on every paper within 2e-5 of a plain RAW's grey but Fujiclear (a display material, three stocks off) and Fujifilm Pro 160C on Ektacolor Edge and Royal Digital (2e-3: its layers want a cyan filtration no pack holds); checked in tests/paper.rs with its twin.",
+    "outcome": ""
+  },
+  {
+    "id": 3437,
+    "type": "fix",
+    "title": "The Look Lab's neutral set refitted to Pro on the data-sheet dyes",
+    "status": "done",
+    "detail": "examples/look_lab_fit run again: resources/scanner/lab.json's neutral set against Pro at rest median ΔE 0.561 (0.55 on spektrafilm's dyes, its bound 0.6), its Frontier set unchanged to the bit (it fits the cube alone).",
+    "outcome": ""
+  },
+  {
+    "id": 3480,
+    "type": "feature",
+    "title": "Kodak Royal Digital is the default paper",
+    "status": "done",
+    "detail": "Owner's call: PaperStock's default moves from Endura Premier (green 10-90 % range 0.61 log H, slope 4.37) to Royal Digital (0.86, 3.18), Kodak's softest data-sheet paper, nearest the former Portra Endura (0.96, 2.49). Every default use follows by itself: a digital photo's rest, Prepare the Roll and the enlarger's switch (fitting_paper), a slide's paper. The retired keys of the former defaults, kodak-portra-endura and Radiance III's, now read as Royal Digital, so a photo left on the default stays on it: of the owner's sidecars (read-only), 386 scans and 157 digital photos on Portra Endura land on Royal Digital; Supra, Ultra and spektrafilm's Endura Premier stay on Endura Premier (the one sidecar naming kodak-endura-premier, of format 58, keeps it). No format change: the key a file stores is read anew. CLAUDE.md names the new default.",
+    "outcome": "Renders on the default paper move on purpose; the owner judges Royal Digital on the reference roll."
+  },
+  {
+    "id": 3481,
+    "type": "check",
+    "title": "The checks on the default paper re-derived on Royal Digital, each with its twin",
+    "status": "done",
+    "detail": "paper.rs: the default is kodak-royal-digital, its twin Endura Premier's key another paper; Portra Endura's and Radiance III's keys read as the default and never Endura Premier, Supra, Ultra and the former datasheet key as Endura Premier. Tests that used Royal Digital as a chosen, non-default paper (paperless, one_face, migrate::paper, slide_paper) take Ektacolor Edge so a fall back to the default still fails them; the GPU paper frames print the black and white frame on Endura Premier so every paper stays covered. Format 46's legacy fingerprints: the two cases on Portra Endura (oni-digital-on-paper, oni-paper-keys-temp) re-drawn on Royal Digital, every other case to the bit. Virtual stocks on the default paper: widest C*ab 13.4 on Pro 160NH (CPU and GPU, ceiling 14 kept), lights' 4.7 on Verita 200D, its bound 4.5 raised to 5.0; the window checks' paper switch takes Royal Digital.",
+    "outcome": ""
+  },
+  {
     "id": 3400,
     "type": "feature",
     "title": "Lighting on the negative: a kernel reading each layer's log exposure back through its stock's development",
@@ -12449,9 +12558,9 @@
   {
     "id": 3402,
     "type": "migration",
-    "title": "Sidecar format 59: Lighting on the negative, a legacy print reading its machine's entry itself",
+    "title": "Sidecar format 61: Lighting on the negative, a legacy print reading its machine's entry itself",
     "status": "done",
-    "detail": "Every photo keeps its Lighting values and, where they move off rest, its render moves (owner's call). A photo on a laid legacy print off a paper kept its machine's entry in Lighting's Exposure, which ONI's print curve read: the legacy print lays that entry itself (one_face::look_entry_stops) and the migration moves Exposure to Lighting's rest by it, so a legacy photo at rest renders to the bit as before; its Scanner-face contrast, now on the negative, moves it. The corpus goldens of the eleven legacy sidecars read Exposure 1.5, the newer-format fixture is 60, and the legacy fingerprints of the 29 cases off Lighting's rest are format 59's.",
+    "detail": "Every photo keeps its Lighting values and, where they move off rest, its render moves (owner's call). A photo on a laid legacy print off a paper kept its machine's entry in Lighting's Exposure, which ONI's print curve read: the legacy print lays that entry itself (one_face::look_entry_stops) and the migration moves Exposure to Lighting's rest by it, so a legacy photo at rest renders to the bit as before; its Scanner-face contrast, now on the negative, moves it. The corpus goldens of the eleven legacy sidecars read Exposure 1.5, the newer-format fixture is 62, and the legacy fingerprints of the 29 cases off Lighting's rest are format 61's.",
     "outcome": ""
   },
   {

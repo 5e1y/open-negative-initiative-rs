@@ -21,7 +21,6 @@ What each part of a profile is:
   less D-min. Each dye is then scaled to a Status M density of 1 in its own channel, the curves' unit; Status M
   is approximated by normal bands at 650, 535 and 440 nm, 35, 40 and 40 nm wide at half height.
 - base_density: the sheet's D-min, printed.
-- No band-pass window: the profile's sensitivities are the sheet's.
 
 A colour paper's profile holds the same parts, its densities Status A (approximated by normal bands at 620, 540 and
 440 nm, 30, 40 and 40 nm wide); only a paper whose sheet prints its characteristic curves is taken, and a display
@@ -282,12 +281,10 @@ def convert(stock_id, push, reference_offset, basis):
         "data": {
             "wavelengths": [float(w) for w in WAVELENGTHS],
             "log_sensitivity": [[round(float(v), 6) for v in row] for row in log_sensitivity],
-            "layers_as_printed": True,
             "channel_density": [nulls(row) for row in channel],
             "base_density": nulls(base),
             "log_exposure": [round(float(v), 6) for v in le],
             "density_curves": [[round(float(v), 6) for v in row] for row in density],
-            "hanatos2025_adaptation_window_params": [0.0, 1.0, 10000.0, 1.0],
         },
     }
     (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")

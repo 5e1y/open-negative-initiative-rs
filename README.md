@@ -176,7 +176,9 @@ femtovg renderer (GPL-3.0-only or Slint's own licences, `vendor/i-slint-renderer
 Apache-2.0, `vendor/wgpu-hal`), notify (CC0-1.0, `vendor/notify`), and the Inter and Enriqueta fonts (OFL,
 `crates/oni-ui/fonts`).
 
-The virtual films and the dye separation's measured dyes are made from the film profiles of [spektrafilm](https://github.com/andreavolpato/spektrafilm) by
-Andrea Volpato (CC BY-SA 4.0, `crates/oni-pipeline/resources/film`, its changes in `CHANGELOG.txt` there) and the
-spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling from [vkdt](https://github.com/hanatos/vkdt)
-(BSD-2-Clause, `SPECTRA_LICENCE.txt` there). Both ship unchanged; what ONI derives from the profiles stays CC BY-SA 4.0.
+The virtual films, the dye separation's measured dyes and the papers are written from each film's and paper's
+data sheet as its maker publishes it (`crates/oni-pipeline/resources/film/datasheet`, `SOURCES.txt` there), developed,
+scanned and printed after the model of [spektrafilm](https://github.com/andreavolpato/spektrafilm) by Andrea Volpato,
+on the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling from [vkdt](https://github.com/hanatos/vkdt)
+(BSD-2-Clause, `SPECTRA_LICENCE.txt` in `crates/oni-pipeline/resources/film`, shipped unchanged). What ONI keeps from
+spektrafilm is listed in `CHANGELOG.txt` there; the few numbers derived from its profiles stay CC BY-SA 4.0.

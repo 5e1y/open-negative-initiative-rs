@@ -62,21 +62,9 @@ fn sized(data: &[u8], side: u32) -> Option<Vec<u8>> {
     Some(format!(r#"<svg width="{side}" height="{side}"{rest}"#).into_bytes())
 }
 
-/// What a stock says under its name wherever it is shown: a line that its stock is never named, a data-sheet
-/// twin its source; nothing for another stock.
-pub fn note(kind: &oni_settings::film::FilmStockKind) -> &'static str {
-    if kind.line {
-        oni_i18n::tr("Stock not specified")
-    } else if kind.sheet_twin {
-        oni_i18n::tr("Datasheet")
-    } else {
-        ""
-    }
-}
-
-/// A stock's name on one line, a data-sheet twin's source beside it, so it reads apart from the stock of its name.
-pub fn label(kind: &oni_settings::film::FilmStockKind) -> slint::SharedString {
-    if kind.sheet_twin { format!("{} · {}", kind.display_name, oni_i18n::tr("Datasheet")).into() } else { kind.display_name.into() }
+/// What a line, its stock never named, says under its name wherever it is shown; nothing for a precise stock.
+pub fn unspecified(kind: &oni_settings::film::FilmStockKind) -> &'static str {
+    if kind.line { oni_i18n::tr("Stock not specified") } else { "" }
 }
 
 /// A stock as a hero shows it, `note` under its name; the generic negative's canister and no name for none.
@@ -88,11 +76,6 @@ pub fn canister(kind: Option<&oni_settings::film::FilmStockKind>, note: String) 
         has_artwork: artwork.is_some(),
         artwork: artwork.unwrap_or_default(),
     }
-}
-
-/// A paper's name as its menu lists it, a data-sheet twin's source beside it.
-pub fn paper_label(paper: oni_settings::PaperStock) -> slint::SharedString {
-    if paper.sheet_twin() { format!("{} · {}", paper.name(), oni_i18n::tr("Datasheet")).into() } else { paper.name().into() }
 }
 
 /// The virtual film a stock of the catalogue is, when a digital photo can be shot on it.
@@ -111,12 +94,23 @@ pub fn virtual_by_brand() -> Vec<(&'static str, Vec<usize>)> {
     among(|k| virtual_stock(k.id).is_some())
 }
 
+/// The papers by maker, in the catalogue's order, as indices into it: a paper's trade name leads with its maker's.
+pub fn papers_by_maker() -> Vec<(&'static str, Vec<usize>)> {
+    let makers = oni_settings::PaperStock::ALL.iter().map(|p| p.name().split(' ').next().unwrap_or_default());
+    grouped(makers.enumerate())
+}
+
 fn among(shown: impl Fn(&oni_settings::film::FilmStockKind) -> bool) -> Vec<(&'static str, Vec<usize>)> {
+    grouped(oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| shown(k)).map(|(i, k)| (i, k.brand)))
+}
+
+/// Each entry under its brand, the brands in the order they first come.
+fn grouped(entries: impl Iterator<Item = (usize, &'static str)>) -> Vec<(&'static str, Vec<usize>)> {
     let mut out: Vec<(&'static str, Vec<usize>)> = Vec::new();
-    for (i, kind) in oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| shown(k)) {
-        match out.iter_mut().find(|(b, _)| *b == kind.brand) {
+    for (i, brand) in entries {
+        match out.iter_mut().find(|(b, _)| *b == brand) {
             Some((_, list)) => list.push(i),
-            None => out.push((kind.brand, vec![i])),
+            None => out.push((brand, vec![i])),
         }
     }
     out
@@ -192,6 +186,24 @@ mod tests {
         assert_ne!(pixels("kodak-gold200"), pixels("kodak-portra"));
     }
 
+    /// Every paper of the catalogue listed once under the maker its trade name leads with, each maker once.
+    #[test]
+    fn the_papers_are_listed_once_each_under_its_maker() {
+        let listed = papers_by_maker();
+        let mut all: Vec<usize> = listed.iter().flat_map(|(_, l)| l.iter().copied()).collect();
+        all.sort();
+        assert_eq!(all, (0..oni_settings::PaperStock::ALL.len()).collect::<Vec<_>>());
+        for (maker, papers) in &listed {
+            assert!(papers.iter().all(|&i| oni_settings::PaperStock::ALL[i].name().starts_with(&format!("{maker} "))), "{maker}");
+        }
+        let makers: Vec<&str> = listed.iter().map(|(m, _)| *m).collect();
+        assert!(makers.contains(&"Kodak") && makers.contains(&"Fujifilm"), "{makers:?}");
+        // Twin: grouped by a word other than the maker's, the papers would part into more lines than makers.
+        let words = grouped(oni_settings::PaperStock::ALL.iter().map(|p| p.name().split(' ').nth(1).unwrap_or_default()).enumerate());
+        assert!(words.len() > makers.len());
+        assert_eq!(makers.len(), makers.iter().collect::<std::collections::BTreeSet<_>>().len(), "each maker once");
+    }
+
     /// A digital photo's sheet lists the stocks a virtual film stands for, every one of them, and no other.
     #[test]
     fn the_virtual_films_are_listed_alone() {
@@ -202,22 +214,6 @@ mod tests {
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
         assert!(!listed.contains(&"ilford-hp5") && virtual_stock("ilford-hp5").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
-    }
-
-    /// A data-sheet twin names its source beside the stock of its name, in the menus and under its name; the
-    /// spektrafilm entry keeps its plain name, and each of the sixteen virtual films has its twin.
-    #[test]
-    fn a_data_sheet_twin_names_its_source_beside_its_stock() {
-        let kind = |id: &str| oni_settings::film::film_stock(Some(id)).unwrap();
-        let (twin, own) = (kind("kodak-portra800-datasheet"), kind("kodak-portra800"));
-        assert_eq!((twin.display_name, label(twin).as_str()), ("Kodak Portra 800", "Kodak Portra 800 · Datasheet"));
-        assert_eq!((note(twin), note(kind("kodak-portra"))), ("Datasheet", "Stock not specified"));
-        let twins = oni_settings::film::FILM_STOCKS.iter().filter(|k| k.sheet_twin).count();
-        assert_eq!(twins, 16);
-        assert_eq!(paper_label(oni_settings::PaperStock::KodakEnduraPremierDatasheet).as_str(), "Kodak Endura Premier · Datasheet");
-        // Twin: the stock of its name, and every other one, keeps its plain name and no note.
-        assert_eq!((label(own).as_str(), note(own)), ("Kodak Portra 800", ""));
-        assert_eq!(paper_label(oni_settings::PaperStock::KodakEnduraPremier).as_str(), "Kodak Endura Premier");
     }
 
     #[test]

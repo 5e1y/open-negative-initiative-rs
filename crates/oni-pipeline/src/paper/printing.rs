@@ -17,6 +17,9 @@ const START_CC: [f32; 2] = [50.0, 50.0];
 const PROBE: V3 = [0.01, 0.5, 0.5];
 const STEP_BOUND: V3 = [1.0, 20.0, 20.0];
 const ITERATIONS: usize = 40;
+/// The halvings a step may take before the solve stops where it stands, and the time's bracket about its guess in ln.
+const HALVINGS: i32 = 30;
+const TIME_REACH: f32 = 10.0;
 const TOLERANCE: f32 = 1e-6;
 
 /// A frame's paper and the enlarger's filtration it prints through, in CC: what the paper's block shows.
@@ -111,9 +114,19 @@ pub(super) fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
         if slope.is_nan() || slope.abs() <= 1e-6 {
             break;
         }
-        x -= (here / slope).clamp(-STEP_BOUND[0], STEP_BOUND[0]);
+        let step = (here / slope).clamp(-STEP_BOUND[0], STEP_BOUND[0]);
+        match damped(here.abs(), |t| f(x - t * step).abs()) {
+            Some(t) => x -= t * step,
+            None => break,
+        }
     }
     x
+}
+
+/// The share of a Newton step that lowers the miss from `now`, halving it from the whole: a steep paper's step past
+/// its root lands where its curve lies flat, from which no step returns.
+fn damped(now: f32, miss_at: impl Fn(f32) -> f32) -> Option<f32> {
+    (0..HALVINGS).map(|i| 0.5f32.powi(i)).find(|t| miss_at(*t) < now)
 }
 
 /// The exposure and the magenta and yellow filtration, from `x`, where every channel's `miss` is zero.
@@ -134,7 +147,15 @@ fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
         if !step.iter().all(|v| v.is_finite()) {
             break;
         }
-        x = std::array::from_fn(|j| x[j] - (step[j] as f32).clamp(-STEP_BOUND[j], STEP_BOUND[j]));
+        // Shortened whole within its bounds, so it keeps the direction that lowers the miss.
+        let within = (0..3).map(|j| STEP_BOUND[j] / (step[j] as f32).abs()).fold(1.0f32, f32::min);
+        let step: V3 = std::array::from_fn(|j| step[j] as f32 * within);
+        let moved = |t: f32| -> V3 { std::array::from_fn(|j| x[j] - t * step[j]) };
+        let squared = |v: V3| v.iter().map(|c| c * c).sum::<f32>();
+        match damped(squared(r), |t| squared(miss(moved(t)))) {
+            Some(t) => x = moved(t),
+            None => break,
+        }
     }
     x
 }
@@ -150,10 +171,13 @@ pub fn layer_shares(p: &Paper, amounts: V3) -> V3 {
 /// plain RAW's grey, neutral; black and white by the time alone, on its luma.
 pub fn resting(p: &Paper, grey: V3, mono: bool) -> (f32, V3) {
     let target = GREY_PRINT.ln();
-    let start = -(p.exposed(grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
+    let guess = -(p.exposed(grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
     // A pack holds no neutral density: its cyan at none, as a colour enlarger's rests.
     let cc = |x: V3| [0.0, x[1], x[2]];
     let miss = |x: V3| Paper { scale: x[0].exp(), filters: filters(cc(x)), ..*p }.printed(grey).map(|v| v.max(1e-12).ln() - target);
+    // The time first, bracketed, as more light always prints darker: a guess off the curve lies where it is flat.
+    let mean = |e: f32| miss([e, START_CC[0], START_CC[1]]).iter().sum::<f32>() / 3.0;
+    let start = bisected(guess - TIME_REACH, guess + TIME_REACH, 0.0, mean);
     if mono {
         return (root(start, |e| miss([e, 0.0, 0.0])[0]), [0.0; 3]);
     }

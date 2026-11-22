@@ -3,6 +3,7 @@
 //! Its white, its picture's own levels and its Black and White switch have none and are dropped.
 
 use super::chain::DIGITAL_ON_FILM_VERSION;
+use super::datasheet;
 use crate::PipelineSettings;
 use crate::axis::density_axis;
 use crate::blocks::{chroma_decompression, separation};
@@ -18,11 +19,11 @@ pub const FORMER_PORTRA_800: StockReference = StockReference {
     white: [0.538_642_35, 0.595_145_2, 0.620_921_6],
 };
 
-/// The reference format 37 stored for `stock`: Portra 800 was the one stock it named, so any other reads as its own.
+/// The reference format 37 stored for `stock`: Portra 800 was the one stock it named, so any other reads as format 38's.
 fn former(stock: VirtualStock) -> StockReference {
     match stock {
         VirtualStock::KodakPortra800 => FORMER_PORTRA_800,
-        other => other.reference(),
+        other => datasheet::former(other),
     }
 }
 
@@ -43,11 +44,11 @@ pub fn caught_up(version: i64, settings: PipelineSettings, stored: Option<&Value
     }
     let film = stored.and_then(|s| s.get("virtualFilm")).filter(|f| f.is_object());
     let stock = settings.virtual_film.map_or(VirtualStock::default(), |f| f.stock);
-    let mut out = settings.on_stock(stock);
+    let mut out = datasheet::on_former(&settings, stock);
     match film.and_then(stored_reference) {
         // The hand's moves off the former reference, laid on the stock's own.
         Some(held) => {
-            let (was, now) = (former(stock), stock.reference());
+            let (was, now) = (former(stock), datasheet::former(stock));
             let moved = |h: [f32; 3], w: [f32; 3], n: [f32; 3]| std::array::from_fn(|c| n[c] + h[c] - w[c]);
             let placed = StockReference {
                 stops: moved(held.stops, was.stops, now.stops),

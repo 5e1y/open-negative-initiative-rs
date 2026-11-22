@@ -180,7 +180,7 @@ fn printed(pixels: &[V4], k: &Stage47) -> Vec<[f32; 3]> {
 
 #[test]
 fn exposure_on_a_scanned_negative_is_that_negative_shot_a_stop_over() {
-    for stock in [VirtualStock::KodakPortra400, VirtualStock::KodakEktar100, VirtualStock::FujifilmXtra400Datasheet] {
+    for stock in [VirtualStock::KodakPortra400, VirtualStock::KodakEktar100, VirtualStock::FujifilmXtra400] {
         for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
             let s = PipelineSettings { print_paper: paper, ..shot_on(stock) };
             for stops in [-1.0f32, 1.0] {

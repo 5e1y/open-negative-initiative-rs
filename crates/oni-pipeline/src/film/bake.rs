@@ -106,22 +106,9 @@ pub fn wavelength(l: usize) -> f64 {
     cie::FIRST_NM + cie::STEP_NM * l as f64
 }
 
-/// The film's sensitivities through its band-pass window, each channel's response to its reference white kept.
-pub fn windowed_sensitivity(p: &Profile, reference: &[f64; WAVELENGTHS]) -> Vec<[f64; 3]> {
-    let [c_uv, s_uv, c_ir, s_ir] = p.window;
-    let window: Vec<f64> = (0..WAVELENGTHS)
-        .map(|l| {
-            let w = wavelength(l);
-            0.25 * (1.0 + erf((w - c_uv) / (s_uv * std::f64::consts::SQRT_2))) * (1.0 - erf((w - c_ir) / (s_ir * std::f64::consts::SQRT_2)))
-        })
-        .collect();
-    let sensitivity: Vec<[f64; 3]> = p.log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();
-    let kept: [f64; 3] = std::array::from_fn(|c| {
-        let through: f64 = (0..WAVELENGTHS).map(|l| sensitivity[l][c] * reference[l] * window[l]).sum();
-        let bare: f64 = (0..WAVELENGTHS).map(|l| sensitivity[l][c] * reference[l]).sum();
-        through / bare
-    });
-    (0..WAVELENGTHS).map(|l| std::array::from_fn(|c| sensitivity[l][c] * window[l] / kept[c])).collect()
+/// The film's sensitivities, linear.
+pub fn sensitivity(p: &Profile) -> Vec<[f64; 3]> {
+    p.log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect()
 }
 
 /// The table's square coordinates to CIE xy, and back, each held on 0…1.

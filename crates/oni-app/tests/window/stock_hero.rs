@@ -151,7 +151,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     // The key drops the menu on every stock a roll takes, by brand, the sheet's order.
     drop_menu(&rig, w);
     let (names, brands) = menu(&stocks);
-    let by_brand: Vec<String> = oni_app::stocks::by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| oni_app::stocks::label(&FILM_STOCKS[i]).to_string()).collect();
+    let by_brand: Vec<&str> = oni_app::stocks::by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| FILM_STOCKS[i].display_name).collect();
     assert_eq!(names, by_brand, "every stock offered for a roll, by brand");
     assert_eq!(brands.first().map(String::as_str), Some("Generic"));
     assert_eq!(stocks.get_in_use(), -1, "a roll on no stock checks none, as the sheet marks none");
@@ -260,10 +260,9 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     // The menu lists the virtual films alone, by brand, the one shot on checked.
     drop_menu(&rig, w);
     let (names, _) = menu(&stocks);
-    let by_brand: Vec<String> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_app::stocks::label(&FILM_STOCKS[i]).to_string()).collect();
+    let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| FILM_STOCKS[i].display_name).collect();
     assert_eq!(names, by_brand);
-    let virtual_label = |v: &VirtualStock| oni_app::stocks::label(oni_settings::film::film_stock(Some(v.catalogue_id())).unwrap()).to_string();
-    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::ALL.iter().map(virtual_label).collect::<Vec<_>>());
+    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::ALL.iter().map(|v| v.name().to_string()).collect::<Vec<_>>());
     sorted.sort();
     virtual_names.sort();
     assert_eq!(sorted, virtual_names, "the virtual films alone, every one");

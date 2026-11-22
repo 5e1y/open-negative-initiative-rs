@@ -30,7 +30,7 @@ pub struct Draft {
     pub step: String,
     pub film: ConversionMode,
     /// The film stock picked, by its catalogue key; none until a hand picks one.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none", default, deserialize_with = "crate::film::stored_key")]
     pub stock: Option<String>,
     pub capture: String,
     #[serde(rename = "passOrder", skip_serializing_if = "Option::is_none", default)]

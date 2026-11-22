@@ -69,13 +69,17 @@ fn read(name: &str) -> Profile {
     Profile::read(dyes::source(name).expect("a shipped profile")).expect("a shipped profile reads")
 }
 
-/// The C-41 profiles' mean density at each of their common log exposures.
+/// The C-41 profiles' mean density over the log exposures they all hold, on the development's nodes.
 fn generic() -> (Vec<f64>, Vec<[f64; 3]>) {
     let profiles = C41.map(read);
-    let le = profiles[0].log_exposure.clone();
-    assert!(profiles.iter().all(|p| p.log_exposure == le), "spektrafilm's C-41 profiles share their axis");
+    let low = profiles.iter().map(|p| p.log_exposure[0]).fold(f64::NEG_INFINITY, f64::max);
+    let high = profiles.iter().map(|p| p.log_exposure[p.log_exposure.len() - 1]).fold(f64::INFINITY, f64::min);
+    let le: Vec<f64> = (0..NEGATIVE_CURVE_NODES).map(|i| low + (high - low) * i as f64 / (NEGATIVE_CURVE_NODES - 1) as f64).collect();
     let n = profiles.len() as f64;
-    let mean = (0..le.len()).map(|i| std::array::from_fn(|c| profiles.iter().map(|p| p.density_curves[i][c]).sum::<f64>() / n)).collect();
+    let mean = le
+        .iter()
+        .map(|e| std::array::from_fn(|c| profiles.iter().map(|p| bake::interpolate(*e, &p.log_exposure, &p.density_curves, c)).sum::<f64>() / n))
+        .collect();
     (le, mean)
 }
 

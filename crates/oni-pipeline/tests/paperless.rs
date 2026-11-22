@@ -111,7 +111,7 @@ fn the_neutral_papers_curve_is_onis_print_at_rest_on_each_layer() {
     }
     assert!(sheet.print.len() == 3 && sheet.view.len() == 3);
     // Twin: a paper's own layers each run their own curve.
-    let portra = paper::sheet(PaperStock::KodakPortraEndura);
+    let portra = paper::sheet(PaperStock::KodakEnduraPremier);
     assert!(portra.curves.iter().any(|d| (d[0] - d[1]).abs() > 0.05 || (d[1] - d[2]).abs() > 0.05));
 }
 

@@ -1,5 +1,5 @@
 //! `slide_paper <raw> <out> [side]`: a slide as edited on ONI's print, then through its internegative on every paper at
-//! rest and on Portra Endura with Paper blacks, each as `w h` then f32 linear Rec. 2020 RGB.
+//! rest and on Endura Premier with Paper blacks, each as `w h` then f32 linear Rec. 2020 RGB.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_settings::{PaperStock, PipelineSettings, sidecar};
@@ -42,7 +42,7 @@ fn main() {
         }
         write(out, &key(paper), &e.render(&slide, &s, Some(side)).unwrap());
     }
-    let mut blacks = PipelineSettings { print_paper: Some(PaperStock::KodakPortraEndura), ..owner.clone() };
+    let mut blacks = PipelineSettings { print_paper: Some(PaperStock::KodakEnduraPremier), ..owner.clone() };
     blacks.print.paper_blacks = true;
-    write(out, "kodak-portra-endura-paper-blacks", &e.render(&slide, &blacks, Some(side)).unwrap());
+    write(out, "kodak-endura-premier-paper-blacks", &e.render(&slide, &blacks, Some(side)).unwrap());
 }

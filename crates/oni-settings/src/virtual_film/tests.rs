@@ -44,6 +44,9 @@ fn a_film_missing_its_exposure_reads_at_the_films_speed_and_a_stock_by_its_key()
     }
     let gold: VirtualFilm = serde_json::from_str(r#"{"stock":"kodak-gold-200","exposure":0.5}"#).unwrap();
     assert_eq!((gold.stock, gold.exposure), (VirtualStock::KodakGold200, 0.5));
+    let push: VirtualFilm = serde_json::from_str(r#"{"stock":"kodak-portra-800-push-2-datasheet"}"#).unwrap();
+    assert_eq!(push.stock, VirtualStock::KodakPortra800Push2, "a data-sheet twin's key reads as its stock's");
     // Twin: an unknown stock is refused, never read as another.
     assert!(serde_json::from_str::<VirtualFilm>(r#"{"stock":"kodak-gold-900"}"#).is_err());
+    assert!(serde_json::from_str::<VirtualFilm>(r#"{"stock":"fujifilm-pro-800-datasheet"}"#).is_err());
 }

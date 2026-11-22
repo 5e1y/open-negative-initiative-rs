@@ -2974,8 +2974,8 @@ msgid "Credits"
 msgstr "Crédits"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "The virtual films, the measured dyes of the dye separation and the papers are made from the film and paper profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans, unmixes and prints its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
-msgstr "Les pellicules virtuelles, les colorants mesurés de la séparation des colorants et les papiers sont faits des profils de pellicule et de papier de spektrafilm par Andrea Volpato, sous CC BY-SA 4.0, qu’ONI développe, scanne, sépare et tire à sa façon, et des spectres du suréchantillonnage spectral de Wenzel Jakob et Johannes Hanika, sous la licence BSD à 2 clauses. Les deux sont livrés inchangés avec leurs licences."
+msgid "The virtual films, the measured dyes of the dye separation and the papers are made from each film's and paper's data sheet, which ONI develops, scans, unmixes and prints its own way after spektrafilm's model by Andrea Volpato, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence, shipped unchanged with its licence."
+msgstr "Les pellicules virtuelles, les colorants mesurés de la séparation des colorants et les papiers sont faits de la fiche technique de chaque pellicule et de chaque papier, qu’ONI développe, scanne, sépare et tire à sa façon d’après le modèle de spektrafilm par Andrea Volpato, et des spectres du suréchantillonnage spectral de Wenzel Jakob et Johannes Hanika, sous la licence BSD à 2 clauses, livrés inchangés avec leur licence."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "spektrafilm"
@@ -5360,10 +5360,6 @@ msgstr "Compilation des noyaux d'image"
 #: crates/oni-app/src/stocks.rs
 msgid "Stock not specified"
 msgstr "Émulsion non précisée"
-
-#: crates/oni-app/src/stocks.rs
-msgid "Datasheet"
-msgstr "Fiche technique"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

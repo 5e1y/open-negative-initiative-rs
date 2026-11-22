@@ -129,7 +129,7 @@ fn a_film_writes_its_stock_by_key_and_a_build_before_refuses_the_file_as_newer()
 }
 
 /// A photo on any stock of 50 reads back on it, its film's key past every build that cannot read it, and a photo of
-/// 46 on Portra 800 reads unmoved. Twin: a reader refuses a version past its own as newer, as a build of 46 refuses 50.
+/// 46 on Portra 800 keeps its print. Twin: a reader refuses a version past its own as newer, as a build of 46 refuses 50.
 #[test]
 fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     assert!(VERSION >= chain::VIRTUAL_STOCKS_VERSION && chain::VIRTUAL_STOCKS_VERSION > chain::ONE_FACE_VERSION);
@@ -143,6 +143,8 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     let mut portra = PipelineSettings::rest(ConversionMode::Digital, true);
     portra.grain.amount = 0.0;
     let kept = PipelineSettings { print: Print { paper_blacks: true, ..portra.print }, ..portra.clone() };
+    // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
+    let portra = migrate::datasheet::on_former(&portra, VirtualStock::KodakPortra800);
     assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);
     let newer = at(&portra, VERSION + 1);
     let refused = migrate::reading(&serde_json::to_vec(&newer).unwrap(), &Facts::bare(true), false).err();

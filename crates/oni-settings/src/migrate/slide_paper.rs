@@ -42,16 +42,16 @@ mod tests {
     #[test]
     fn a_slide_on_a_negative_paper_before_stays_on_onis_print_and_one_on_the_reversal_paper_takes_the_default() {
         let older = SLIDE_INTERNEGATIVE_VERSION - 1;
-        let slide = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+        let slide = PipelineSettings { print_paper: Some(PaperStock::KodakEktacolorEdge), ..PipelineSettings::rest(ConversionMode::Positive, true) };
         assert_eq!(read(&stored(&slide, older, None)), PipelineSettings { print_paper: None, ..slide.clone() }, "nothing else moves");
         let reversal = read(&stored(&slide, older, Some(PaperStock::RETIRED_REVERSAL_KEY)));
-        assert_eq!(reversal.print_paper, Some(PaperStock::KodakPortraEndura));
+        assert_eq!(reversal.print_paper, Some(PaperStock::KodakRoyalDigital), "the default paper");
         // A negative keeps its paper; one naming the reversal paper printed on ONI's print and stays there.
         let negative = PipelineSettings { mode: ConversionMode::Negative, ..slide.clone() };
-        assert_eq!(read(&stored(&negative, older, None)).print_paper, Some(PaperStock::KodakSupraEndura));
+        assert_eq!(read(&stored(&negative, older, None)).print_paper, Some(PaperStock::KodakEktacolorEdge));
         assert_eq!(read(&stored(&negative, older, Some(PaperStock::RETIRED_REVERSAL_KEY))).print_paper, None);
         // Twin: a slide of this format keeps the negative paper it names.
-        assert_eq!(read(&stored(&slide, VERSION, None)).print_paper, Some(PaperStock::KodakSupraEndura));
+        assert_eq!(read(&stored(&slide, VERSION, None)).print_paper, Some(PaperStock::KodakEktacolorEdge));
     }
 
     #[test]
