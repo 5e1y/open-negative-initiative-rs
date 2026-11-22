@@ -16,6 +16,7 @@ struct Data {
     base_density: Vec<Option<f64>>,
     log_exposure: Vec<f64>,
     density_curves: Vec<[f64; 3]>,
+    sheet_density_curves: Vec<[f64; 3]>,
 }
 
 /// What the bake reads of a profile; a wavelength the profile leaves unmeasured is `None`. Each layer's sensitivity
@@ -25,7 +26,10 @@ pub struct Profile {
     pub channel_density: Vec<[Option<f64>; 3]>,
     pub base_density: Vec<Option<f64>>,
     pub log_exposure: Vec<f64>,
+    /// The dyes' amounts each layer develops along `log_exposure`, in units of its own Status M density.
     pub density_curves: Vec<[f64; 3]>,
+    /// The sheet's Status M curves above D-min: the densities a neutral reads, each dye's unwanted absorptions in them.
+    pub sheet_density_curves: Vec<[f64; 3]>,
 }
 
 impl Profile {
@@ -35,10 +39,12 @@ impl Profile {
         let on_grid = d.wavelengths.len() == WAVELENGTHS
             && d.wavelengths.iter().enumerate().all(|(i, w)| *w == super::cie::FIRST_NM + super::cie::STEP_NM * i as f64);
         let sized = [d.log_sensitivity.len(), d.channel_density.len(), d.base_density.len()].iter().all(|n| *n == WAVELENGTHS);
-        if !on_grid || !sized || d.log_exposure.len() != d.density_curves.len() || d.log_exposure.len() < 2 {
+        let curves = d.log_exposure.len() == d.density_curves.len() && d.log_exposure.len() == d.sheet_density_curves.len();
+        if !on_grid || !sized || !curves || d.log_exposure.len() < 2 {
             return Err("a profile off the 380 to 780 nm grid or with mismatched curves".into());
         }
-        let numbers = d.log_sensitivity.iter().flatten().chain(d.density_curves.iter().flatten()).chain(&d.log_exposure);
+        let curves = d.density_curves.iter().chain(&d.sheet_density_curves).flatten();
+        let numbers = d.log_sensitivity.iter().flatten().chain(curves).chain(&d.log_exposure);
         let known = d.channel_density.iter().flatten().chain(&d.base_density).flatten();
         if !numbers.chain(known).all(|v| v.is_finite()) {
             return Err("a profile holding a number that is not finite".into());
@@ -49,6 +55,7 @@ impl Profile {
             base_density: d.base_density,
             log_exposure: d.log_exposure,
             density_curves: d.density_curves,
+            sheet_density_curves: d.sheet_density_curves,
         })
     }
 }

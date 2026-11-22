@@ -188,7 +188,8 @@ fn every_colour_sheets_neutral_of_its_dye_amounts_reads_its_printed_curves() {
     for (name, json, status) in films.chain(papers) {
         let (gap, miss) = (neutral_gap(json, status, "density_curves"), neutral_gap(json, status, "sheet_density_curves"));
         println!("{name}: the neutral within {gap:.1e} of its sheet; the printed curves taken as amounts miss it by {miss:.3}");
-        assert!(gap < 1e-3, "{name}: {gap}");
+        // Within 0.02 D: where the traces disagree, on a shoulder, the unmix draws a dip, held as an amount never falls.
+        assert!(gap < 0.02, "{name}: {gap}");
         // Twin: the printed curves as the dyes' amounts read a neutral denser than its sheet's.
         assert!(miss > 0.05, "{name}: {miss}");
         (worst, least_miss) = (worst.max(gap), least_miss.min(miss));

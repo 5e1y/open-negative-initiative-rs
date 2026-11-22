@@ -35,6 +35,7 @@ pub mod own_film;
 pub mod paper;
 pub mod paper_blacks;
 pub mod strokes;
+pub mod unmixed;
 
 #[cfg(test)]
 mod checks;
@@ -267,7 +268,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
-    converted.document.settings = datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
+    converted.document.settings = unmixed::caught_up(version, datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref()));
     converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
@@ -295,7 +296,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let settings = grain_size::unfiled(version, settings, Some(&raw));
         let settings = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw))));
         let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
-        let settings = datasheet::caught_up(version, paper_blacks::caught_up(version, settings, &former), Some(&raw));
+        let settings = unmixed::caught_up(version, datasheet::caught_up(version, paper_blacks::caught_up(version, settings, &former), Some(&raw)));
         let settings = departure::caught_up(version, lighting_on_negative::caught_up(version, settings));
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
@@ -309,7 +310,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
     converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
-    converted.document.settings = datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
+    converted.document.settings = unmixed::caught_up(version, datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref()));
     converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
     Ok(converted)
 }

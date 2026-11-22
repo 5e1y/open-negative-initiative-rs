@@ -12682,5 +12682,29 @@
     "status": "in progress",
     "detail": "scripts/datasheet-profiles.py: a sheet's characteristic curves are a neutral's integral densities, each dye's unwanted absorptions in them, and were taken as the dyes' amounts, so a grey developed 8-25 % denser on a film and 10-31 % on a paper than its sheet prints (#3540). At each node the amounts are now solved (Newton on the band integrals) whose spectral density over the base reads the sheet's curves less D-min through ISO 5-3's Status M (films) or Status A (papers) spectral products, transcribed from ANSI/ISO 5-3-1995 tables 3 and 4, which replace the normal-band approximation in the dyes' unit too (each dye scaled until its own channel reads exactly 1). A paper's base is its dyes in the amounts that read the curves' least densities, solved the same way. Each colour profile keeps the sheet's curves as sheet_density_curves; the 27 black and white profiles, one silver layer, are unchanged to the byte. No migration: renders move on purpose (owner's call). Check: datasheet_stocks, each of the 48 films' and 8 papers' neutral reads its sheet within 1e-3 D, its twin (the printed curves as amounts) missing by 0.31 D or more.",
     "outcome": ""
+  },
+  {
+    "id": 3551,
+    "type": "migration",
+    "title": "Sidecar format 66: a digital photo's gains and windows move onto its stock's reference of the unmixed curves",
+    "status": "done",
+    "detail": "migrate::unmixed: a document before 66 on a colour virtual film has its gains and windows moved from the reference formats 60 to 65 derived (MIXED, its 48 colour stocks) onto the stock's new one, each hand's distance from it kept, as format 60's move did; datasheet::caught_up now lands a pre-60 document on that mixed reference, so every older document moves once per step. A black and white film, a scan and a file of this format stay as they are. Renders move on purpose: no migration keeps the old contrast (owner's call). The newer-format fixture is 67.",
+    "outcome": ""
+  },
+  {
+    "id": 3552,
+    "type": "check",
+    "title": "The checks re-derived on the unmixed profiles",
+    "status": "done",
+    "detail": "Every stock's StockReference re-derived (48 colour stocks moved, the 27 black and white unchanged); pinned folds and fingerprints re-drawn (dye separation, exposure departure CPU and GPU, Lighting at rest, legacy_print 42 of 50 cases, the 8 unchanged its monochrome and slide ones; corpus goldens of the two digital photos). Ceilings re-read on the printed numbers, the owner judging them: virtual stocks' widest ramp chroma 10.9 (Pro 800, ceiling 14 to 12), lights' 5.4 (Verita 200D, 5.0 to 6.0), the GPU twin at the other light 44.8 at least (3.5 times the ceiling, was 4), a silver film's Lighting twin 5 grey gaps (was 10, the paper softer); a slide's grey through its internegative within 1.5 % (1.3 %, was 1 %); a scan's lights brightened on the negative keep 85 % of the time's chroma (86.4 %, was 88 %). A silver scan's Lighting reads the C-41 sheets' own curves (sheet_density_curves, now in Profile), a density, as before: black and white renders unchanged.",
+    "outcome": ""
+  },
+  {
+    "id": 3553,
+    "type": "fix",
+    "title": "tone_response split into its parts, under the source ceiling and the width",
+    "status": "done",
+    "detail": "examples/tone_response/ (main, patches, curve): the example was 462 lines with two lines past 200 characters, failing the architecture check; a scan's ramp reads the stock's sheet curves, the density a scanner sees, not the dyes' amounts.",
+    "outcome": ""
   }
 ]

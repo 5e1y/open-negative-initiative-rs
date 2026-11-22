@@ -16,7 +16,7 @@ What each part of a profile is:
   "Log H Ref" (Gold 200, E-7022) holds over that sheet's speed point; a push sits n x 0.30 log under its stock's.
 - density_curves: the dyes' amounts the bake develops, the sheet's curves unmixed: a Status M curve is a neutral's
   integral density, each dye's absorption in the other bands in it, so at each node the amounts are solved whose
-  spectral density over the base Status M reads as the sheet prints.
+  spectral density over the base Status M reads as the sheet prints, a dip the traces leave held at the point reached.
 - channel_density: the dyes. A Vision3 sheet prints its cyan, magenta and yellow: their shapes are kept and their
   amounts fitted to the printed mid-scale neutral. Every other sheet prints only the mid-scale neutral and D-min:
   the Vision3 sheets' mean dyes are shifted and widened per dye (within 40 nm and 0.8-1.25, each held at its
@@ -200,7 +200,7 @@ def unit(dyes, status):
 def unmixed(net, base, dyes, status):
     """The dyes' amounts over `base` that `status` reads as `net` above the base's own reading, node by node: a
     printed curve is a neutral's integral density, each dye's unwanted absorptions in it. Newton's method on the
-    band integrals, exact where a linear crosstalk matrix is not."""
+    band integrals, exact where a linear crosstalk matrix is not; a dip it draws is held, as for the curves."""
     w = products(status)
     ok = ~np.isnan(base) & ~np.isnan(dyes).any(axis=1)
     w, base, dyes = w[:, ok], base[ok], dyes[ok]
@@ -219,7 +219,8 @@ def unmixed(net, base, dyes, status):
         else:
             raise SystemExit(f"the unmix does not converge on {target}")
         out.append(a.copy())
-    return np.array(out)
+    # An amount never falls with exposure: a dip the traces' small disagreements leave is held at the point reached.
+    return np.maximum.accumulate(np.array(out), axis=0)
 
 
 def deformed(basis, shift, stretch):

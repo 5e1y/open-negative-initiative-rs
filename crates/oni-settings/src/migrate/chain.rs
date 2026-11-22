@@ -110,6 +110,9 @@ pub const LIGHTING_ON_NEGATIVE_VERSION: i64 = 61;
 /// The version Lighting's Exposure came to be the departure from its pipe's rest, 0 at rest in every mode: each value
 /// moved by its mode's former rest.
 pub const EXPOSURE_DEPARTURE_VERSION: i64 = 64;
+/// The version each colour profile came to develop its dyes' amounts, its sheet's curves unmixed: a digital photo's gains
+/// and windows move onto its stock's new reference.
+pub const UNMIXED_VERSION: i64 = 66;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

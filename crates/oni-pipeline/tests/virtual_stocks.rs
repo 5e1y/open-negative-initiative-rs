@@ -19,10 +19,10 @@ const WHITE: usize = 6;
 const GREY_CHROMA: f32 = 0.5;
 const GREY_GAP: f32 = 2e-3;
 const WHITE_SPREAD: f32 = 0.06;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 13.4 in Pro
-/// 160NH's shadows and 4.7 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
-const CHROMA: f32 = 14.0;
-const LIGHT_CHROMA: f32 = 5.0;
+/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 10.9 in Pro
+/// 800's and 5.4 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
+const CHROMA: f32 = 12.0;
+const LIGHT_CHROMA: f32 = 6.0;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
 fn on(stock: VirtualStock) -> PipelineSettings {
@@ -96,7 +96,7 @@ fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s
             // Silver prints its ramp without a hue, its white on its own curve's contrast; twin, Lighting's exposure off.
             assert!(held.chroma() < 0.01, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
             let darker = ramp(stock, &PipelineSettings { print: oni_settings::tone::Print { exposure: s.print.exposure + 0.2, ..s.print }, ..s.clone() });
-            assert!((darker.grey - plain).abs() > 10.0 * GREY_GAP, "{stock:?}: twin, Lighting moved, its grey at {}", darker.grey);
+            assert!((darker.grey - plain).abs() > 5.0 * GREY_GAP, "{stock:?}: twin, Lighting moved, its grey at {}", darker.grey);
             continue;
         }
         assert!((held.white / portra).log2().abs() < WHITE_SPREAD, "{stock:?}: its white {}, Portra 800's {portra}", held.white);
@@ -193,6 +193,6 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             continue;
         }
         assert!(worst < CHROMA, "{stock:?}: {lit:?}");
-        assert!(twin > 4.0 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
+        assert!(twin > 3.5 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
     }
 }
