@@ -111,12 +111,23 @@ pub fn virtual_by_brand() -> Vec<(&'static str, Vec<usize>)> {
     among(|k| virtual_stock(k.id).is_some())
 }
 
+/// The papers by maker, in the catalogue's order, as indices into it: a paper's trade name leads with its maker's.
+pub fn papers_by_maker() -> Vec<(&'static str, Vec<usize>)> {
+    let makers = oni_settings::PaperStock::ALL.iter().map(|p| p.name().split(' ').next().unwrap_or_default());
+    grouped(makers.enumerate())
+}
+
 fn among(shown: impl Fn(&oni_settings::film::FilmStockKind) -> bool) -> Vec<(&'static str, Vec<usize>)> {
+    grouped(oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| shown(k)).map(|(i, k)| (i, k.brand)))
+}
+
+/// Each entry under its brand, the brands in the order they first come.
+fn grouped(entries: impl Iterator<Item = (usize, &'static str)>) -> Vec<(&'static str, Vec<usize>)> {
     let mut out: Vec<(&'static str, Vec<usize>)> = Vec::new();
-    for (i, kind) in oni_settings::film::FILM_STOCKS.iter().enumerate().filter(|(_, k)| shown(k)) {
-        match out.iter_mut().find(|(b, _)| *b == kind.brand) {
+    for (i, brand) in entries {
+        match out.iter_mut().find(|(b, _)| *b == brand) {
             Some((_, list)) => list.push(i),
-            None => out.push((kind.brand, vec![i])),
+            None => out.push((brand, vec![i])),
         }
     }
     out
@@ -190,6 +201,24 @@ mod tests {
         assert!(pixels("kodak-ektar100") == pixels("generic-color-negative") && icon("kodak-ektar100").is_some(), "an undrawn negative draws its kind's");
         // Twin: a stock of its own draws its own, never its brand's line.
         assert_ne!(pixels("kodak-gold200"), pixels("kodak-portra"));
+    }
+
+    /// Every paper of the catalogue listed once under the maker its trade name leads with, each maker once.
+    #[test]
+    fn the_papers_are_listed_once_each_under_its_maker() {
+        let listed = papers_by_maker();
+        let mut all: Vec<usize> = listed.iter().flat_map(|(_, l)| l.iter().copied()).collect();
+        all.sort();
+        assert_eq!(all, (0..oni_settings::PaperStock::ALL.len()).collect::<Vec<_>>());
+        for (maker, papers) in &listed {
+            assert!(papers.iter().all(|&i| oni_settings::PaperStock::ALL[i].name().starts_with(&format!("{maker} "))), "{maker}");
+        }
+        let makers: Vec<&str> = listed.iter().map(|(m, _)| *m).collect();
+        assert!(makers.contains(&"Kodak") && makers.contains(&"Fujifilm"), "{makers:?}");
+        // Twin: grouped by a word other than the maker's, the papers would part into more lines than makers.
+        let words = grouped(oni_settings::PaperStock::ALL.iter().map(|p| p.name().split(' ').nth(1).unwrap_or_default()).enumerate());
+        assert!(words.len() > makers.len());
+        assert_eq!(makers.len(), makers.iter().collect::<std::collections::BTreeSet<_>>().len(), "each maker once");
     }
 
     /// A digital photo's sheet lists the stocks a virtual film stands for, every one of them, and no other.

@@ -1,5 +1,5 @@
 // A film stock: its artwork in its own colours, at any size, the picker's cell with the name under it,
-// grown under the pointer and filled when picked, and the menu that lists the stocks under their key.
+// grown under the pointer and filled when picked, and the menu that lists the stocks, films or papers, under their key.
 import { Colour, Space, Radius, Motion, ButtonStyle, MenuStyle } from "theme.slint";
 import { StockStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Gap, Icon } from "base.slint";
@@ -65,8 +65,8 @@ export component StockCellView inherits Rectangle {
 // A line of the stock menu: a brand's name over its stocks, or a stock, `index` its place in the catalogue.
 export struct StockLine { index: int, name: string, artwork: image, has-artwork: bool, brand: bool }
 
-// The stocks dropped under their key, by brand, each with its canister, the one in use checked; past the
-// room the window leaves, they scroll. The line under the pointer or the arrows is lit and told its owner.
+// The stocks dropped under their key, by brand, each with its canister where it has one, the one in use checked;
+// past the room the window leaves, they scroll. The line under the pointer or the arrows is lit and told its owner.
 export component StockMenu inherits PopupWindow {
     in property <[StockLine]> lines;
     // The line of the stock in use, -1 none.
@@ -174,9 +174,9 @@ export component StockMenu inherits PopupWindow {
                                     if i == root.current: Icon { source: Icons.done; tone: Tone.primary; width: parent.width; height: parent.height; }
                                 }
                             }
-                            VerticalLayout {
+                            if line.has-artwork: VerticalLayout {
                                 alignment: center;
-                                StockIcon { artwork: line.artwork; has-artwork: line.has-artwork; side: StockStyle.line-icon; }
+                                StockIcon { artwork: line.artwork; has-artwork: true; side: StockStyle.line-icon; }
                             }
                             Label { text: line.name; horizontal-stretch: 1; overflow: elide; accessible-role: none; }
                         }

@@ -109,8 +109,9 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.pump();
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
-    assert_eq!(names, PaperStock::ALL.iter().map(|p| oni_app::stocks::paper_label(*p).to_string()).collect::<Vec<_>>());
+    let (mut names, mut listed) = (papers_listed(&panel), PaperStock::ALL.map(|p| oni_app::stocks::paper_label(p).to_string()).to_vec());
+    (names.sort(), listed.sort());
+    assert_eq!(names, listed, "every paper once");
     assert!(names.contains(&"Kodak Endura Premier · Datasheet".to_string()), "the data-sheet twin named by its source");
     let renders = ctl.state.borrow().renders();
     let crystal_archive = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmCrystalArchiveTypeII).unwrap();
@@ -145,7 +146,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.pump();
     assert!(panel.get_paper_shown() && panel.get_enlarger_on(), "the slide keeps its paper");
     assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
-    assert_eq!(panel.get_paper_lines().row_count(), PaperStock::ALL.len());
+    assert_eq!(papers_listed(&panel).len(), PaperStock::ALL.len());
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the slide printed through its internegative", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Paper blacks")), (1, 1));
@@ -175,6 +176,13 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     // On ONI's print Brightness, Print on paper and Paper blacks leave, Colour compensation returns.
     assert_eq!((count(Role::Slider, "Brightness"), switches(), count(Role::Checkbox, "Colour compensation")), (0, (1, 0, 0), 1));
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The papers the menu lists as it drops, by name, the makers' lines left out.
+fn papers_listed(panel: &PanelState) -> Vec<String> {
+    panel.invoke_paper_dropping();
+    let lines = panel.get_paper_lines();
+    (0..lines.row_count()).filter_map(|i| lines.row_data(i)).filter(|l| !l.brand).map(|l| l.name.to_string()).collect()
 }
 
 /// The Paper section open, its fold key between More Color Settings' and Lighting's.
