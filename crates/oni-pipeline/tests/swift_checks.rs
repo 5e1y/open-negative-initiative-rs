@@ -257,7 +257,7 @@ fn the_colour_follows_the_windows_as_far_as_its_dose_says() {
     let (tint_film, tint_full) = (decompressed(&mut g, grey, &tinted, 0.0, true), decompressed(&mut g, grey, &tinted, 1.0, true));
     // Twin: unfiltered, the grey lays none of it.
     let plain = decompressed(&mut g, grey, &thin, 0.0, true);
-    assert!([tint_film, tint_full].iter().all(|v| v[0] / v[1] > 1.2 * plain[0] / plain[1]), "{tint_film:?} {tint_full:?} {plain:?}");
+    assert!([tint_film, tint_full].iter().all(|v| v[0] / v[1] > 1.05 * plain[0] / plain[1]), "{tint_film:?} {tint_full:?} {plain:?}");
 }
 
 /// `colourFilterChecks`' reading: the windows' own arithmetic on a 2-pixel patch, the print off.

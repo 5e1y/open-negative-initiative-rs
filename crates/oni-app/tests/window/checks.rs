@@ -191,7 +191,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
     ("paper::the_paper_switch_prints_a_negative_and_a_slide_on_every_paper", paper::the_paper_switch_prints_a_negative_and_a_slide_on_every_paper),
     ("paper::a_digital_photo_prints_on_its_paper_on_pure_black", paper::a_digital_photo_prints_on_its_paper_on_pure_black),
-    ("colour_compensation::the_switch_renders_again_without_the_dashed_guide", colour_compensation::the_switch_renders_again_without_the_dashed_guide),
+    ("colour_compensation::the_switch_renders_again_and_lays_no_dashed_guide", colour_compensation::the_switch_renders_again_and_lays_no_dashed_guide),
     ("digital::digital_shows_a_negatives_blocks_on_its_film", digital::digital_shows_a_negatives_blocks_on_its_film),
     ("digital::a_digital_folders_sidebar_names_no_film_stock", digital::a_digital_folders_sidebar_names_no_film_stock),
     ("prepare_digital::a_digital_photos_roll_is_prepared_on_its_film_step_alone", prepare_digital::a_digital_photos_roll_is_prepared_on_its_film_step_alone),
