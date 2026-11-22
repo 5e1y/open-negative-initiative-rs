@@ -7,6 +7,7 @@ use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect, Stage};
 use oni_pipeline::{conversion, grain, scanner, stages};
 use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -18,7 +19,7 @@ fn digital() -> PipelineSettings {
 
 fn coloured(colour: [f32; 2]) -> PipelineSettings {
     let mut s = digital();
-    (s.grain.amount, s.grain.size) = (1.0, 0.5);
+    (s.grain.amount, s.grain.size) = (1.0, microns(0.5, 1.0));
     s.grain.colour = GrainColour { black: colour[0], white: colour[1] };
     s
 }

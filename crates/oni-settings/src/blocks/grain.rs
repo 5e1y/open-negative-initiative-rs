@@ -7,8 +7,9 @@ use crate::tolerant;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-/// Film grain on the scene before the print: its spread and its coarseness, each a share of its track,
-/// its strength by tone and its colour along it; either at rest is not written, so a new rest reaches every frame left on it.
+/// Film grain on the scene before the print: its spread, a share of its track, and its size, a grain's width
+/// on the film in micrometres, so every resolution lays it alike on the picture; its strength by tone and its
+/// colour along it; either at rest is not written, so a new rest reaches every frame left on it.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Grain {
@@ -22,13 +23,39 @@ pub struct Grain {
 
 impl Default for Grain {
     fn default() -> Self {
-        Grain { amount: 0.0, size: 0.5, curve: GrainCurve::REST, colour: GrainColour::REST }
+        Grain { amount: 0.0, size: Grain::SIZE_REST, curve: GrainCurve::REST, colour: GrainColour::REST }
     }
 }
 
 impl Grain {
     pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
-    pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
+    /// Film grain's 10 to 30 µm (Vitale, "Film Grain, Resolution and Fundamental Film Particles", 2010, table 1),
+    /// to twice its coarsest.
+    pub const SIZE_RANGE: (f32, f32) = (10.0, 60.0);
+    /// The owner's 40% of the former track on a landscape scan, one for every stock (no stock's own is published): film
+    /// grain's coarse end, an ISO 800 stock's.
+    pub const SIZE_REST: f32 = 27.6;
+    /// The Grain a digital photo opens with (owner's call).
+    pub const DIGITAL_AMOUNT: f32 = 0.25;
+    /// The film frame's long side, in micrometres, which the scan's long side stands for: a 135 frame's.
+    pub const FRAME_LONG: f64 = 36_000.0;
+    /// A grain's mean width along a line, in cells of the texture's lattice: its field's run between sign changes.
+    pub const CLUMP_CELLS: f64 = 2.64;
+
+    /// Size in pixels of a scan whose long side is `long` pixels.
+    pub fn pixels(size: f32, long: f64) -> f64 {
+        f64::from(size) * long / Self::FRAME_LONG
+    }
+
+    /// The micrometres `pixels` of a scan whose long side is `long` pixels stand for.
+    pub fn microns(pixels: f64, long: f64) -> f32 {
+        (pixels * Self::FRAME_LONG / long) as f32
+    }
+
+    /// The texture's lattice cell, in pixels of a scan whose long side is `long` pixels.
+    pub fn cell(&self, long: f64) -> f64 {
+        Self::pixels(self.size, long) / Self::CLUMP_CELLS
+    }
 }
 
 /// The share of Grain laid at each tone of the picture, from its black point to its white: five points

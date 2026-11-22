@@ -62,7 +62,7 @@ fn each_photo_lays_its_own_grain_and_the_export_lays_the_preview_s() {
     let (fw, fh, side) = (2400usize, 1600usize, 4usize);
     let grey = |w: usize, h: usize, seed: [u32; 2]| Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.18, 0.18, 0.18, 1.0]; w * h] }, full_width: fw as f64, undeclared: None, seed };
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, false);
-    (s.grain.amount, s.grain.size) = (1.0, 1.0);
+    (s.grain.amount, s.grain.size) = (1.0, oni_settings::blocks::Grain::SIZE_RANGE.1);
     let (a, b) = ([0x2545_f491, 7], [11, 0x9e37_79b9]);
     let stops = |l: &Linear| -> Vec<f64> { l.pixels.iter().map(|p| f64::from(p[1]).log2()).collect() };
     let mut preview = |seed| {

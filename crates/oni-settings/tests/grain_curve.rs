@@ -8,17 +8,20 @@ use oni_settings::migrate::{self, chain};
 use oni_settings::{ConversionMode, Document, PipelineSettings};
 use serde_json::json;
 
-/// The `oni-frame` document of `settings` stamped `version`.
+/// The `oni-frame` document of `settings` stamped `version`, its grain's size in that format's share of the track.
 fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
     let mut object = serde_json::to_value(Document::of(settings.clone())).unwrap();
     object["version"] = json!(version);
+    if version < chain::GRAIN_ON_FILM_VERSION {
+        object["settings"]["grain"]["size"] = json!(0.5);
+    }
     serde_json::to_vec(&object).unwrap()
 }
 
 #[test]
 fn a_document_from_before_the_grain_curve_reads_it_at_rest_and_a_current_one_keeps_it() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.grain.amount = 0.4;
+    (s.grain.amount, s.grain.size) = (0.4, migrate::grain_size::microns(0.5, 1.0));
     let older = stored(&s, chain::GRAIN_CURVE_VERSION - 1);
     assert!(!String::from_utf8_lossy(&older).contains("\"curve\""));
     assert_eq!(migrate::standing(&older), migrate::Standing::Older(chain::GRAIN_CURVE_VERSION - 1));

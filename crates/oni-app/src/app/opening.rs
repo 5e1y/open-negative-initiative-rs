@@ -116,6 +116,7 @@ impl Ctl {
             if let Some(f) = self.state.borrow_mut().frame_for(path) {
                 f.negative = Some(negative);
             }
+            self.publish_readouts([Field::GrainSize]);
             if self.downloaded(path) {
                 return;
             }
@@ -166,6 +167,8 @@ impl Ctl {
                     }
                     f.negative = Some(negative);
                 }
+                // Grain size reads in the scan's pixels, which the decode gives.
+                self.publish_readouts([Field::GrainSize]);
                 if self.downloaded(path) {
                     return;
                 }

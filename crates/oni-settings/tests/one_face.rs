@@ -68,11 +68,12 @@ fn a_pro_photo_keeps_pros_edit_whole_and_its_scanner_fields_go() {
 #[test]
 fn a_digital_photo_stored_on_the_scanner_before_the_machine_opens_on_pro() {
     let before = chain::DIGITAL_SCANNER_VERSION - 1;
-    let mut then = PipelineSettings::rest(ConversionMode::Digital, true);
-    then.print.exposure = 0.0;
+    let rest = PipelineSettings::rest(ConversionMode::Digital, true);
+    let mut then = rest.clone();
+    (then.print.exposure, then.grain.amount) = (0.0, 0.0);
     let s = read(&stored(&then, before, "scanner", "oni"));
-    // Its other values are its rest, and an earlier photo stays on ONI's print.
-    assert_eq!(s, PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) });
+    // Its other values are its rest, and an earlier photo stays on ONI's print with no grain.
+    assert_eq!(s, PipelineSettings { print_paper: None, grain: oni_settings::blocks::Grain { amount: 0.0, ..rest.grain }, ..rest });
     // Twin: a negative of that format and a digital photo stored at 30 printed on the machine.
     assert!(read(&stored(&PipelineSettings::rest(ConversionMode::Negative, true), before, "scanner", "oni")).legacy_print.is_some());
     assert!(read(&stored(&then, chain::DIGITAL_SCANNER_VERSION, "scanner", "oni")).legacy_print.is_some());

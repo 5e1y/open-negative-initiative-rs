@@ -92,6 +92,9 @@ pub const PAPER_BLACKS_VERSION: i64 = 53;
 /// The version a digital photo came to be shot on any colour negative spektrafilm profiles, a stock key a build before
 /// it cannot read: no step, as every older document names Portra 800.
 pub const VIRTUAL_STOCKS_VERSION: i64 = 54;
+/// The version Grain size came to be a grain's width on the film, in micrometres of its long side, in place of a
+/// share of its track laid on the scan's width.
+pub const GRAIN_ON_FILM_VERSION: i64 = 55;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

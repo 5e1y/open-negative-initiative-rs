@@ -9,7 +9,7 @@ fn unit(readout: Readout) -> f32 {
     match readout {
         Readout::Ceiling => 0.001,
         Readout::Pixels => 0.1,
-        Readout::SignedWhole | Readout::Cc => 1.0,
+        Readout::SignedWhole | Readout::Cc | Readout::Microns => 1.0,
         Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
         Readout::SignedPercent | Readout::Percent => 0.01,
     }
@@ -18,8 +18,14 @@ fn unit(readout: Readout) -> f32 {
 /// An arrow's step, or a number typed over the readout: `by` units of its last digit from the figure shown,
 /// laid on that digit's grid, held on the track.
 pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f32 {
-    let unit = unit(f.spec().readout);
-    let shown = ((f.shown(stored) / unit).round() + by as f32) * unit;
+    stepped_on(f, stored, by, track, None)
+}
+
+/// `stepped` on a photo whose scan's long side is `long` full-resolution pixels, the digit its readout shows.
+pub fn stepped_on(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>, long: Option<f64>) -> f32 {
+    let (readout, figure) = f.figure(stored, long);
+    let unit = unit(readout);
+    let shown = f.unfigured(((figure / unit).round() + by as f32) * unit, long);
     f.shown(shown.clamp(*track.start(), *track.end()))
 }
 

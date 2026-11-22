@@ -38,6 +38,8 @@ fn plain_37() -> Value {
     doc["label"] = json!("gold");
     doc["exifLine"] = json!({ "camera": "Lumix" });
     let settings = doc["settings"].as_object_mut().unwrap();
+    // Grain size in that format's share of its track.
+    settings["grain"]["size"] = json!(0.5);
     settings.insert("white".into(), json!({ "kelvin": 4300.0, "tint": 5.0 }));
     settings.insert("shotWhite".into(), json!({ "kelvin": 5210.0, "tint": 12.9 }));
     settings.insert("blackAndWhite".into(), json!(true));
@@ -58,7 +60,8 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     let rest = Print::RESTING_EXPOSURE;
     assert_eq!(s.print.exposure, Print::exposure_at(0.4 + rest, rest), "Lighting's move kept on the negative's rest, on its curve");
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
-    assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, before.grain, before.halation));
+    let grain = oni_settings::blocks::Grain { size: migrate::grain_size::microns(0.5, 1.0), ..before.grain };
+    assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, grain, before.halation));
     assert_eq!((s.lens_correction, s.geometry, &s.corrections), (before.lens_correction, before.geometry, &before.corrections));
     assert_eq!((doc.label, doc.exif_line.camera.as_deref()), (Medal::Gold, Some("Lumix")));
     let written = serde_json::to_value(&doc).unwrap();
@@ -66,7 +69,7 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
         assert!(written["settings"].get(gone).is_none(), "{gone} is dropped");
     }
     // Twin: the same photo stored at this format reads as it stands, no rest moved.
-    let current = read(&at(&before, VERSION));
+    let current = read(&at(&PipelineSettings { grain, ..before.clone() }, VERSION));
     assert_eq!((current.settings.print.exposure, current.settings.gains), (0.4, before.gains));
 }
 

@@ -375,3 +375,18 @@ fn on_a_paper_a_filter_moved_moves_the_enlargers_dial_by_as_much() {
         assert!((0..3).any(|k| (dial(&warmed)[k] - want[k]).abs() > 1.0), "{c:?}");
     }
 }
+
+#[test]
+fn grain_size_reads_in_the_photo_s_own_pixels_and_steps_by_them() {
+    let f = Field::GrainSize;
+    // 20 µm of a 36 mm frame: 3.4 px on a 24 Mpx scan, 4.6 px on a 47 Mpx one, on the film while none is known.
+    assert_eq!((f.readout_on(20.0, Some(6048.0)), f.readout_on(20.0, Some(8368.0)), f.readout(20.0)), ("3.4 px".into(), "4.6 px".into(), "20 µm".into()));
+    let track = crate::slider_track::track_range(f);
+    let pressed = crate::slider_track::stepped_on(f, 20.0, 3, &track, Some(6048.0));
+    assert_eq!(f.readout_on(pressed, Some(6048.0)), "3.7 px", "a key's three steps of the readout's last digit");
+    assert_eq!(f.readout_on(crate::slider_track::stepped_on(f, pressed, -3, &track, Some(6048.0)), Some(6048.0)), "3.4 px");
+    // The track's ends in pixels follow the scan: 10 to 60 µm.
+    assert_eq!((f.readout_on(track.start().to_owned(), Some(6048.0)), f.readout_on(*track.end(), Some(6048.0))), ("1.7 px".into(), "10.1 px".into()));
+    // Twin: a step on the film's micrometres, blind to the scan, moves three of them, half a pixel here.
+    assert_eq!(f.readout_on(crate::slider_track::stepped(f, 20.0, 3, &track), Some(6048.0)), "3.9 px");
+}

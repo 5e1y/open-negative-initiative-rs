@@ -7,12 +7,13 @@ mod common;
 use common::{V4, graph, noise, whole};
 use oni_graph::{Graph, Rect};
 use oni_pipeline::{Inputs, Pipeline, Request, grain};
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 /// A coarse grain over the whole frame, its blur well past its floor on a scan 1500 pixels wide.
 fn coarse() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, false).per_pixel_only();
-    (s.grain.amount, s.grain.size) = (0.8, 1.0);
+    (s.grain.amount, s.grain.size) = (0.8, microns(1.0, 1.0));
     s
 }
 
@@ -97,6 +98,7 @@ fn a_print_notch_reruns_neither_the_grain_nor_its_blur() {
     let mut pipeline = Pipeline::new();
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
     let grained = PipelineSettings { grain: coarse().grain, ..rest.clone() };
+    let rest = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.0, ..rest.grain }, ..rest };
     let mut image = |g: &mut Graph, s: &PipelineSettings| pipeline.image(g, &source, s, &Request::default(), &Default::default()).unwrap();
     assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is one pass of the chain, its blur read beside it");
     let mut notches = |g: &mut Graph, s: &PipelineSettings, notch: &dyn Fn(&mut PipelineSettings, f32)| -> (u64, u64) {

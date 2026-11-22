@@ -11,13 +11,11 @@ use oni_settings::tone::{Print, color_density};
 
 /// The spread at full resolution of Amount's top, in stops.
 pub const GRAIN_STOPS: f32 = 0.5;
-/// The finest cell, a share of the scan's full width, the one length every reduction keeps exactly:
-/// a pixel on a scan 6000 pixels wide.
+/// The length a clump's blur spares, a share of the scan's full width, the one length every reduction keeps
+/// exactly: a pixel on a scan 6000 pixels wide.
 pub const GRAIN_FINEST: f64 = 1.0 / 6000.0;
-/// How many times Size's top coarsens the finest cell.
-pub const GRAIN_COARSEST: f64 = 4.0;
-/// The blur a clump takes in, as a share of how much its cell outgrows the finest: none at the finest
-/// grain, so a fine grain blurs nothing, and half a cell's side less a pixel at a coarse one.
+/// The blur a clump takes in, as a share of how much its cell outgrows the finest: none at a grain that fine,
+/// so a fine grain blurs nothing, and half a cell's side less a pixel at a coarse one.
 pub const GRAIN_DISSOLVE: f64 = 0.5;
 /// The share of that blur laid between the clumps too, so a coarse grain lets no detail finer than itself
 /// read sharp through it; its blur growing with Size, none at the finest grain.
@@ -34,7 +32,7 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     if share.iter().all(|&v| v == 0.0) {
         return None;
     }
-    let cell = f64::from(scan.w) / scale * GRAIN_FINEST * GRAIN_COARSEST.powf(f64::from(s.grain.size));
+    let cell = s.grain.cell(f64::from(scan.w.max(scan.h)) / scale);
     let m = geometry::scan_from(&s.geometry, scan, scale).map(|r| r.map(|v| v as f32));
     let laid = Grain::on(m, cell as f32, scale as f32, GRAIN_STOPS * s.grain.amount, share).coloured(colours(&s.grain.colour, &tones));
     // Its clumps take in the scene whole at any Amount, so a faint grain is still grains, never a texture laid
@@ -43,9 +41,9 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
 }
 
 /// The deviation of the blur a clump of `s` takes in, in this render's pixels on a scan of extent `scan`:
-/// a share of its width whatever its scale, so fit, a zoom and an export dissolve the same detail.
+/// a share of its picture whatever its scale, so fit, a zoom and an export dissolve the same detail.
 pub fn dissolve(s: &PipelineSettings, scan: Rect) -> f64 {
-    GRAIN_DISSOLVE * f64::from(scan.w) * GRAIN_FINEST * (GRAIN_COARSEST.powf(f64::from(s.grain.size)) - 1.0)
+    GRAIN_DISSOLVE * (s.grain.cell(f64::from(scan.w.max(scan.h))) - f64::from(scan.w) * GRAIN_FINEST).max(0.0)
 }
 
 /// `image` grained by `k`, its clumps taking in its blur of deviation `sigma`; under the blur's floor

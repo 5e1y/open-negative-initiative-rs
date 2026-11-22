@@ -170,7 +170,7 @@ impl Default for PipelineSettings {
 
 impl PipelineSettings {
     /// `Parameters.rest`: the state a photograph is imported in; a digital photo on its default film, printed on
-    /// the default paper (owner's call: a scan takes its paper at Prepare the Roll).
+    /// the default paper, with its grain (owner's call: a scan takes its paper at Prepare the Roll).
     pub fn rest(mode: ConversionMode, mosaic: bool) -> PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };
         block.density_ceiling = density_axis::rest(mosaic, mode);
@@ -179,6 +179,7 @@ impl PipelineSettings {
         if mode.is_digital() {
             block = block.on_stock(VirtualStock::default());
             block.print_paper = Some(PaperStock::default());
+            block.grain.amount = Grain::DIGITAL_AMOUNT;
         }
         block
     }
@@ -249,6 +250,9 @@ impl PipelineSettings {
             }
             if self.print_paper == from.print_paper {
                 moved.print_paper = to.print_paper;
+            }
+            if self.grain.amount == from.grain.amount {
+                moved.grain.amount = to.grain.amount;
             }
         }
         if self.print.exposure == Print::resting_exposure(self.mode) {

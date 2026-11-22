@@ -243,11 +243,12 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
 }
 
-/// A digital photo at rest on the paper's own black, where the enlarger's rest solves the grey, its neighbourhood stages
-/// off so a pixel prints alone.
+/// A digital photo at rest on the paper's own black, where the enlarger's rest solves the grey, its grain and neighbourhood
+/// stages off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
     s.print.paper_blacks = true;
+    s.grain.amount = 0.0;
     s
 }
 

@@ -207,6 +207,12 @@ impl State {
         self.full_size
     }
 
+    /// The open frame's scan, its long side in full-resolution pixels, once its decode lands: what Grain size reads in.
+    pub fn scan_long(&self) -> Option<f64> {
+        let (w, h) = self.negative()?.full();
+        Some(w.max(h)).filter(|l| *l > 0.0)
+    }
+
     pub fn split(&self) -> Option<f32> {
         self.frame.as_ref()?.compare.split
     }

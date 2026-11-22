@@ -242,7 +242,7 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
 
     // One slider of each block and tab: Lighting, Colour, Effects, Film Effects, Details, Roll, Crop's dial,
     // De-dust's brush.
-    for name in ["Exposure", "Tint", "Vignette", "Grain"] {
+    for name in ["Exposure", "Tint", "Vignette", "Grain", "Grain size"] {
         steps_three(&rig, w, name);
     }
     for (t, name) in [(PanelTab::Details, "Texture"), (PanelTab::Roll, "Distortion"), (PanelTab::Crop, "Angle"), (PanelTab::Dedust, "Brush size")] {
