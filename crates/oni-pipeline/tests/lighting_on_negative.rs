@@ -26,14 +26,20 @@ fn slide() -> PipelineSettings {
     s
 }
 
-/// Every pipe Lighting reaches, each at Lighting's rest, some with the print's other tools moved.
+/// Every pipe Lighting reaches, each at Lighting's rest, some with the print's other tools moved, as a sidecar of format
+/// 58 held them, read through this format's migration.
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
+    stored_pipes().into_iter().map(|(label, s)| (label, stored(&s))).collect()
+}
+
+fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut unmixed = onis(prepared_negative());
     unmixed.separation = 0.0;
     let mut uncompensated = onis(prepared_negative());
     (uncompensated.print.colour_compensation, uncompensated.density) = (false, -0.3);
     let mut legacy = onis(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
+    legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode);
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.paper_blacks, bright.density) = (0.7, false, 0.4);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
@@ -42,7 +48,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("ONI's print, negative", onis(prepared_negative())),
         ("ONI's print, negative unmixed", unmixed),
         ("ONI's print, uncompensated", uncompensated),
-        ("ONI's print, legacy Frontier", legacy),
+        ("ONI's print, legacy Frontier at its entry", legacy),
         ("ONI's print, digital", onis(digital())),
         ("ONI's print, black and white", onis(mono())),
         ("ONI's print, slide", slide()),
@@ -64,6 +70,13 @@ fn pixels() -> Vec<V4> {
     pixels
 }
 
+/// `s` as a sidecar of format 58 held it, read through this format's migration.
+fn stored(s: &PipelineSettings) -> PipelineSettings {
+    let mut value = serde_json::to_value(oni_settings::document::Document::of(s.clone())).unwrap();
+    value["version"] = 58.into();
+    oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings
+}
+
 /// The bits of every pipe's print of `pixels`, folded by FNV-1a.
 fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
     let pixels = pixels();
@@ -81,8 +94,8 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
-    // The fold of every pipe's print before Lighting moved onto the negative.
-    const BEFORE: u64 = 0xff5d_f9dc_a4c8_86ce;
+    // The fold of every pipe's print before Lighting moved onto the negative, a legacy print at its machine's entry.
+    const BEFORE: u64 = 0x76ed_29fc_fdb1_497d;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -246,11 +259,9 @@ fn brightening_on_the_negative_keeps_the_films_colour_and_more_than_the_time_in_
             let grey = lab(on_negative[8])[0];
             let ((kept, n), (film, _), (lost, _)) = (chroma(&on_negative, grey), chroma(&shot, grey), chroma(&by_time, grey));
             let (all, every) = (chroma(&on_negative, 0.0).0, chroma(&by_time, 0.0).0);
-            println!(
-                "{label}, Exposure {stops:+}: the {n} colours lighter than the grey keep chroma {kept:.4} on the negative, {film:.4} shot so, {lost:.4} by the time ({:+.1} %); every colour {all:.4} and {every:.4} ({:+.1} %)",
-                100.0 * (kept / lost - 1.0),
-                100.0 * (all / every - 1.0)
-            );
+            let (gain, all_gain) = (100.0 * (kept / lost - 1.0), 100.0 * (all / every - 1.0));
+            println!("{label}, Exposure {stops:+}: the {n} colours lighter than the grey keep chroma {kept:.4} on the negative,");
+            println!("  {film:.4} shot so, {lost:.4} by the time ({gain:+.1} %); every colour {all:.4} and {every:.4} ({all_gain:+.1} %)");
             assert!(n >= 6 && kept > film * 0.98, "{label}, {stops}");
             // Twin: the time's print, its grey as bright, is another print.
             assert!(apart(&by_time, &on_negative).0 > 1.0, "{label}, {stops}");

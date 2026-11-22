@@ -109,7 +109,12 @@ impl Scanner {
 /// left out of the curve, so a slide, resting at 0, entered its curve as far under its own rest.
 pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
     let rest = Print::resting_exposure(mode);
-    Print::exposure_at(rest - Print::RESTING_EXPOSURE, rest)
+    Print::exposure_at(look_entry_stops(mode), rest)
+}
+
+/// The stops of ONI's print curve a legacy print's look reads: the machine's entry, a negative's rest left out.
+pub fn look_entry_stops(mode: ConversionMode) -> f32 {
+    Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
 }
 
 /// `settings` of `version` on the one face: the edit of the face that rendered it, every step before this one done.

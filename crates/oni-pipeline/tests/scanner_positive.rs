@@ -3,7 +3,6 @@
 
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{Inputs, Pipeline, scanner};
-use oni_settings::migrate::one_face::look_entry_exposure;
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
@@ -23,10 +22,11 @@ fn scene() -> Vec<[f32; 4]> {
         .collect()
 }
 
-/// The settings as the Scanner face built them before slides entered the look under their rest.
+/// The frame as bright as the look read it before slides entered it under their rest: a slide a stop and a half over on
+/// its own film, a negative, entering at its own rest, as it is.
 fn former(frame: &PipelineSettings) -> PipelineSettings {
     let mut out = scanner::on_legacy_print(frame).expect("a legacy print");
-    out.print.exposure = Print::exposure_at(0.0, Print::resting_exposure(frame.mode));
+    out.print.exposure += Print::RESTING_EXPOSURE - Print::resting_exposure(frame.mode);
     out
 }
 
@@ -56,10 +56,10 @@ fn clipped(px: &[[f32; 4]]) -> f64 {
     px.iter().filter(|p| p[..3].iter().any(|c| *c >= 0.999)).count() as f64 / px.len() as f64
 }
 
-/// A photo the Scanner face printed at rest, as the one face reads it: the machine's exposure, its look a legacy print.
+/// A photo the Scanner face printed at rest, as the one face reads it: Lighting at rest, its look a legacy print reading
+/// the machine's entry.
 fn at_rest(mode: ConversionMode, machine: LegacyMachine) -> PipelineSettings {
     let mut s = PipelineSettings::rest(mode, true).per_pixel_only();
-    s.print.exposure = look_entry_exposure(mode);
     s.legacy_print = Some(LegacyPrint { machine, ..LegacyPrint::default() });
     s
 }
@@ -80,7 +80,7 @@ fn a_slide_on_a_legacy_print_lands_near_its_plain_render() {
         let stops = (mean_luminance(&scanned) / mean_luminance(&pro)).log2();
         assert!(stops.abs() <= MARGIN_STOPS, "{machine:?}: {stops:+.2} stops from the plain render");
         assert!(clipped(&scanned) <= clipped(&pro), "{machine:?}: {} clipped against {}", clipped(&scanned), clipped(&pro));
-        // Twin: the former chain, the slide entering the look at its own rest, fails the same margin.
+        // Twin: the slide a stop and a half over, as the look took it at its own rest, fails the same margin.
         let before = bench.render(None, &frame, Some(&former(&frame)));
         let over = (mean_luminance(&before) / mean_luminance(&pro)).log2();
         assert!(over > MARGIN_STOPS, "{machine:?}: the former chain sat {over:+.2} stops from the plain render");

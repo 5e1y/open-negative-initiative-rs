@@ -100,6 +100,9 @@ pub const OWN_FILM_VERSION: i64 = 56;
 /// The version a slide came to print on a negative paper through an internegative, the reversal paper retired: a slide
 /// that named a negative paper rendered on ONI's print, one on the reversal paper printed on paper.
 pub const SLIDE_INTERNEGATIVE_VERSION: i64 = 58;
+/// The version Lighting came to act on the negative in every pipe, each print at its rest: a legacy print's look came to
+/// read its machine's entry itself, its photo's Exposure moved off it to Lighting's rest.
+pub const LIGHTING_ON_NEGATIVE_VERSION: i64 = 59;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

@@ -76,7 +76,7 @@ fn lit(s: &PipelineSettings) -> Stage47 {
 /// Stage 4-7's arguments before any paper and Lighting: the reading, its dyes, the windows and ONI's print, the dyes'
 /// amounts read as they are on a paper or where Lighting `on_negative` tones them after its moves.
 fn unprinted(s: &PipelineSettings, on_negative: bool) -> Stage47 {
-    let print = &s.print.on_curve(Print::resting_exposure(s.mode));
+    let print = &s.print;
     let mono = s.mode.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
@@ -97,7 +97,8 @@ fn unprinted(s: &PipelineSettings, on_negative: bool) -> Stage47 {
         low_points: windows.map(|w| w.shadow_ordinate()),
         high_points: windows.map(|w| w.highlight_ordinate()),
         print_on: if print.bypassed { 0.0 } else { 1.0 },
-        print_stops: print.exposure,
+        // A legacy print's look reads ONI's print curve at its machine's entry.
+        print_stops: if s.legacy().is_some() { oni_settings::migrate::one_face::look_entry_stops(s.mode) } else { print.exposure },
         print_contrast: print.contrast,
         print_zones: [print.shadows, print.highlights],
         own_stops: print.filters(),

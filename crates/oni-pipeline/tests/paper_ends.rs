@@ -63,8 +63,7 @@ fn paper_of(s: &PipelineSettings) -> Paper {
 
 /// The paper's print of `amounts` through Lighting on the negative, its tones included.
 fn lit_shown(k: &Stage47, amounts: [f32; 3]) -> [f32; 3] {
-    let a = k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts)));
-    k.paper.expect("a paper").shown(a)
+    k.paper.expect("a paper").shown(k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts))))
 }
 
 /// The negative's range on each dye, the frame's densest read above its bare film.
@@ -110,8 +109,7 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
             assert!(held < 1e-6, "{label}, {name}: {now:?} {rest:?}");
             lifted += usize::from(lift > 1e-4);
         }
-        // Twin: unanchored, the colour density lifts or sinks the pick; Lighting's moves on the negative leave the bare film
-        // at its fog, which no exposure moves, and black and white lays no colour density.
+        // Twin: unanchored, the colour density lifts or sinks the pick; Lighting on the negative leaves the bare film at its fog.
         println!("{label}: {lifted} moves of {} lift the unanchored pick", SLIDERS.len());
         assert!(lifted == if label == "black and white" { 0 } else { 3 }, "{label}: {lifted}");
     }

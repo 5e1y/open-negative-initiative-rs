@@ -12445,5 +12445,21 @@
     "status": "done",
     "detail": "conversion::stage47 prints with Lighting at rest (Print::unlit) and lays crate::negative's Negative before the windows or the paper: ONI's print (its windows unreached, its print curve, Hunt and colour density at rest), the enlarger on a paper or the neutral paper, digital photos, scanned colour negatives, black and white, slides on ONI's print and slides through their internegative. The film developed again is the virtual stock's (digital), the dye set's profile (scans), the C-41 profiles' mean (generic), its mean layer uncoupled (black and white), the slide's own light (a positive). The paper keeps its rest's time and filtration; the print's pick is the bare film as Lighting develops it, anchored as before. The points' and Contrast's saturation curves and the points reaching the windows go: their colour is the negative's own.",
     "outcome": ""
+  },
+  {
+    "id": 3402,
+    "type": "migration",
+    "title": "Sidecar format 59: Lighting on the negative, a legacy print reading its machine's entry itself",
+    "status": "done",
+    "detail": "Every photo keeps its Lighting values and, where they move off rest, its render moves (owner's call). A photo on a laid legacy print off a paper kept its machine's entry in Lighting's Exposure, which ONI's print curve read: the legacy print lays that entry itself (one_face::look_entry_stops) and the migration moves Exposure to Lighting's rest by it, so a legacy photo at rest renders to the bit as before; its Scanner-face contrast, now on the negative, moves it. The corpus goldens of the eleven legacy sidecars read Exposure 1.5, the newer-format fixture is 60, and the legacy fingerprints of the 29 cases off Lighting's rest are format 59's.",
+    "outcome": ""
+  },
+  {
+    "id": 3403,
+    "type": "test",
+    "title": "Lighting on the negative proven on every pipe",
+    "status": "done",
+    "detail": "tests/lighting_on_negative.rs: every pipe at Lighting's rest folds to the bits of the build before it, a legacy print at its entry; Exposure ±1 on a scanned negative within ΔE 1.2 (median 0.2) of that negative shot a stop over, the enlarger's time 8 to 16 off; on a digital photo within ΔE 0.6 of the Film section's Exposure; colour lighter than the grey kept as the film keeps it; Contrast holding the grey's negative; the filters tinting with the grey's weight held; every print finite and monotone past the curves' ends; the GPU its reference. The kernel's own checks read back through the couplers and keep a channel's own move on its layer. Tests whose subject left (the exposure gear, Contrast's and the points' saturation curves, colour compensation's answer to Lighting, the paper's grade and filtration) go; the others read Lighting on the negative.",
+    "outcome": ""
   }
 ]
