@@ -12382,5 +12382,45 @@
     "title": "The neutral paper's checks, its GPU on every branch, the sidecar's switch and the window's three states",
     "status": "done",
     "detail": "crates/oni-pipeline/tests/paperless.rs: the grey on a plain RAW's and the pick on pure black whatever Paper blacks says (twin: the paper's anchor), each dye moving its own channel alone (twin: the paper's crosstalk), the curve ONI's print node by node on both papers (twin: Portra Endura's own layers), a frame whose windows agree printing as on ONI's print within 1e-3 (twin: the paper 0.02 off at least), Contrast about the grey, Exposure and Brightness, the GPU against its reference on six frames (twin: the time 10 % off). crates/oni-settings/tests/paperless.rs and crates/oni-app/tests/window/paper.rs (the three states, the neutral print's own histogram)."
+  },
+  {
+    "id": 3360,
+    "type": "feature",
+    "title": "Film profiles written from the makers' data sheets",
+    "status": "done",
+    "detail": "scripts/datasheet-profiles.py reads the owner's emulsion dataset (curves traced from the official Kodak and Fujifilm sheets) and writes one profile per colour negative with complete data (46 stocks, Portra 800's two pushes besides) into crates/oni-pipeline/resources/film/datasheet/, each naming its sheet, URL and SHA-256 and listing what is measured and what is inferred, and the table the bake includes (film/datasheet.rs). Sensitivities as printed, each layer scaled at bake so a grey under the stock's light exposes it at log 0 (the curves' common log H; profile flag layers_as_printed, bake::balanced); curves Status M less D-min on log H less the grey, the grey 1.03 log over the ISO 5800 speed point (Kodak Gold 200's printed Log H Ref over its own), a push n x 0.30 log under; dyes: Vision3's printed C/M/Y, every other stock's split of its printed neutral less D-min on the Vision3 sheets' mean dyes moved and widened, each dye at a Status M density of 1 in its channel (Status M approximated by normal bands); D-min printed; no band-pass window. A profile holding a number not finite is refused.",
+    "outcome": ""
+  },
+  {
+    "id": 3361,
+    "type": "feature",
+    "title": "Every data-sheet colour negative as a roll stock and a virtual film, the 16 current stocks' twins beside them",
+    "status": "done",
+    "detail": "48 catalogue entries, virtual films and dye sets: 32 new stocks (Fujifilm Pro 160C/NC/NH/NS/S, 160NC/NL/NPC/NS, Pro 800/800Z, New Pro 400, 200, 400, Fujicolor 100, Superia 100/200/1600/Premium 400/Reala/Venus 400/Venus 800/X-TRA 800, Natura 1600, Nexia 400/A200/Zoom Master 800, Reala Ace, Kodak Portra 160NC/160VC/400NC/400VC) and a data-sheet twin of each of the 16 current virtual films, keyed -datasheet, listed right after its spektrafilm entry; every current key keeps its profile, so no photo moves. A twin carries sheet_twin: the editor's menu, the info sidebar and the paper menu name it '<stock> · Datasheet', the stock sheet and the hero show 'Datasheet' under its name (translated). Undrawn canisters stand on the generic negative's. Each stock's reference is derived and held as the others'.",
+    "outcome": ""
+  },
+  {
+    "id": 3362,
+    "type": "feature",
+    "title": "The colour papers and display materials whose own sheet prints their curves",
+    "status": "done",
+    "detail": "Kodak Endura Premier (a twin beside spektrafilm's), Endura Premier Metallic, Ektacolor Edge, Royal Digital, Photo Book; Fujifilm Crystal Archive Digital Type DP II and Digital Pearl (curves and log sensitivities from their older editions, AF3-212E and AF3-0220E) and the display material Fujiclear, each written whole from its sheet: sensitivities as printed, Status A curves less D-min sampled on 256 nodes, their log H origin where green prints an 18 % grey (the enlarger's time absorbs it; the solve starts there), a curve hidden under the others on its sheet taking their mean there, peak-normalised dyes at a Status A density of 1 (approximated by normal bands), the base their own dyes at the curves' least densities. Fujiclear prints as a paper, its densities read as its transmittance under the viewing light, as a light box shows it. The paper bake reads sampled curves beside spektrafilm's fitted model, which a spektrafilm paper keeps. Left out: Fujiflex and Fujitrans, whose layers, levelled for a laser, find no neutral rest in the enlarger (filtration off its range, the grey unprinted; Fujitrans's traced dyes never fall to zero); and, their sheets printing no characteristic curve, Crystal Archive Type CA, Super Type P, Digital Super Type CN and PDN, Supreme, Maxima, Textured, Deep Matte Velvet, Album, Album High Definition, the 2004 Crystal Archive Paper.",
+    "outcome": ""
+  },
+  {
+    "id": 3363,
+    "type": "check",
+    "title": "Every data-sheet film and paper bakes and renders finite on CPU and GPU",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/datasheet_stocks.rs: every data-sheet profile reads (twin: a curve node past any double is refused, film and paper alike); a digital photo on each data-sheet film prints finite through the CPU reference without paper and on the default paper, each data-sheet paper prints finite under Portra 800 and its twin, and each film and paper renders finite on the GPU (twins: a NaN in a print or a render is seen). The virtual film check's reference balances printed layers as the bake does, a data-sheet tungsten stock's locus bound 0.015 (0.0142 on 500T, its red layer through no band-pass window); the neutral ramp checks hold spektrafilm's stocks and print the data-sheet ones (widest C*ab 1.6 to 12.6) for the owner to judge; the paper window check reads the longer list by position and the twin's label.",
+    "outcome": ""
+  },
+  {
+    "id": 3364,
+    "type": "docs",
+    "title": "What the data-sheet profiles are and the licence they ship under",
+    "status": "done",
+    "detail": "crates/oni-pipeline/resources/film/datasheet/SOURCES.txt: what each file measures and infers, its sheet credited and linked, no PDF shipped, nothing from spektrafilm; the numbers are the makers' published measurements and ship under the repository's GPL-3.0 with that attribution, spektrafilm's CC BY-SA files kept for every stock and paper still naming them.",
+    "outcome": ""
   }
 ]

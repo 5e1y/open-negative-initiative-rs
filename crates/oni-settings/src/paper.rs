@@ -21,15 +21,40 @@ pub enum PaperStock {
     FujifilmCrystalArchiveTypeII,
     #[serde(rename = "fujifilm-frontier-sp-3000")]
     FujifilmFrontierSp3000,
+    #[serde(rename = "kodak-endura-premier-datasheet")]
+    KodakEnduraPremierDatasheet,
+    #[serde(rename = "kodak-endura-premier-metallic")]
+    KodakEnduraPremierMetallic,
+    #[serde(rename = "kodak-ektacolor-edge")]
+    KodakEktacolorEdge,
+    #[serde(rename = "kodak-royal-digital")]
+    KodakRoyalDigital,
+    #[serde(rename = "kodak-photo-book")]
+    KodakPhotoBook,
+    #[serde(rename = "fujifilm-crystal-archive-digital-dpii")]
+    FujifilmCrystalArchiveDigitalDPII,
+    #[serde(rename = "fujifilm-crystal-archive-digital-pearl")]
+    FujifilmCrystalArchiveDigitalPearl,
+    #[serde(rename = "fujifilm-fujiclear")]
+    FujifilmFujiclear,
 }
 
 impl PaperStock {
-    pub const ALL: [PaperStock; 6] = [
+    /// The order the paper menu lists them in, a data-sheet twin after the paper of its name.
+    pub const ALL: [PaperStock; 14] = [
         PaperStock::KodakPortraEndura,
         PaperStock::KodakSupraEndura,
         PaperStock::KodakUltraEndura,
         PaperStock::KodakEnduraPremier,
+        PaperStock::KodakEnduraPremierDatasheet,
+        PaperStock::KodakEnduraPremierMetallic,
+        PaperStock::KodakEktacolorEdge,
+        PaperStock::KodakRoyalDigital,
+        PaperStock::KodakPhotoBook,
         PaperStock::FujifilmCrystalArchiveTypeII,
+        PaperStock::FujifilmCrystalArchiveDigitalDPII,
+        PaperStock::FujifilmCrystalArchiveDigitalPearl,
+        PaperStock::FujifilmFujiclear,
         PaperStock::FujifilmFrontierSp3000,
     ];
 
@@ -45,10 +70,24 @@ impl PaperStock {
             PaperStock::KodakEnduraPremier => "Kodak Endura Premier",
             PaperStock::FujifilmCrystalArchiveTypeII => "Fujifilm Crystal Archive Type II",
             PaperStock::FujifilmFrontierSp3000 => "Fujifilm Frontier SP-3000",
+            PaperStock::KodakEnduraPremierDatasheet => "Kodak Endura Premier",
+            PaperStock::KodakEnduraPremierMetallic => "Kodak Endura Premier Metallic",
+            PaperStock::KodakEktacolorEdge => "Kodak Ektacolor Edge",
+            PaperStock::KodakRoyalDigital => "Kodak Royal Digital",
+            PaperStock::KodakPhotoBook => "Kodak Photo Book",
+            PaperStock::FujifilmCrystalArchiveDigitalDPII => "Fujifilm Crystal Archive Digital Type DP II",
+            PaperStock::FujifilmCrystalArchiveDigitalPearl => "Fujifilm Crystal Archive Digital Pearl",
+            PaperStock::FujifilmFujiclear => "Fujifilm Fujiclear",
         }
     }
 
-    /// The profile's file, spektrafilm's own; none for the Frontier, a machine measured, not a profile.
+    /// The paper of its name rendered from its maker's data sheet: the menu names that source.
+    pub fn sheet_twin(self) -> bool {
+        self == PaperStock::KodakEnduraPremierDatasheet
+    }
+
+    /// The profile's file, spektrafilm's or under `datasheet/` one written from its maker's data sheet; none for the
+    /// Frontier, a machine measured, not a profile.
     pub fn profile(self) -> Option<&'static str> {
         match self {
             PaperStock::KodakPortraEndura => Some("kodak_portra_endura"),
@@ -57,6 +96,14 @@ impl PaperStock {
             PaperStock::KodakEnduraPremier => Some("kodak_endura_premier"),
             PaperStock::FujifilmCrystalArchiveTypeII => Some("fujifilm_crystal_archive_typeii"),
             PaperStock::FujifilmFrontierSp3000 => None,
+            PaperStock::KodakEnduraPremierDatasheet => Some("datasheet/kodak_endura_premier"),
+            PaperStock::KodakEnduraPremierMetallic => Some("datasheet/kodak_endura_premier_metallic"),
+            PaperStock::KodakEktacolorEdge => Some("datasheet/kodak_ektacolor_edge"),
+            PaperStock::KodakRoyalDigital => Some("datasheet/kodak_royal_digital"),
+            PaperStock::KodakPhotoBook => Some("datasheet/kodak_photo_book"),
+            PaperStock::FujifilmCrystalArchiveDigitalDPII => Some("datasheet/fujifilm_crystal_archive_digital_paper_type_dpii"),
+            PaperStock::FujifilmCrystalArchiveDigitalPearl => Some("datasheet/fujifilm_crystal_archive_digital_pearl"),
+            PaperStock::FujifilmFujiclear => Some("datasheet/fujifilm_fujiclear_display_material_for_digital_printers"),
         }
     }
 }

@@ -210,6 +210,19 @@ pub fn light_table(spectra: &Spectra, sensitivity: &[[f64; 3]], reference: &[f64
         .collect()
 }
 
+/// The film's light from working Rec. 2020 `rgb` through `to_film`, as the kernel reads it off the table.
+fn exposure_of(light: &[[f64; 3]], n: usize, to_film: &M3, rgb: [f64; 3]) -> [f64; 3] {
+    let xyz = apply(to_film, rgb);
+    let b = xyz[0] + xyz[1] + xyz[2];
+    bilinear(light, n, square_of_xy([xyz[0] / b, xyz[1] / b])).map(|v| v * b)
+}
+
+/// Each layer's light scaled so working `grey` exposes it at 1, log 0: the light a data sheet's curves share.
+pub fn balanced(light: Vec<[f64; 3]>, n: usize, to_film: &M3, grey: f64) -> Vec<[f64; 3]> {
+    let at = exposure_of(&light, n, to_film, [grey; 3]);
+    light.into_iter().map(|v| std::array::from_fn(|c| v[c] / at[c])).collect()
+}
+
 /// spektrafilm's DIR couplers on a colour negative: the row layer's density inhibits the column's.
 pub const COUPLERS: M3 = [[0.336, 0.353, 0.302], [0.154, 0.319, 0.353], [0.168, 0.226, 0.273]];
 

@@ -3,6 +3,7 @@
 
 pub mod bake;
 pub mod cie;
+mod datasheet;
 pub mod dyes;
 pub mod profile;
 
@@ -49,6 +50,7 @@ fn bake(stock: VirtualStock) -> Stock {
     let white = reference_light(stock);
     let sensitivity = bake::windowed_sensitivity(&profile, white);
     let light = bake::light_table(&spectra, &sensitivity, white);
+    let light = if profile.layers_as_printed { bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY)) } else { light };
     let (before, after) = bake::curves(&profile);
     let scanned = bake::scanned(&profile);
     assert!(scanned.len() <= VIRTUAL_NEGATIVE_BANDS, "the uniform holds every scanned wavelength");

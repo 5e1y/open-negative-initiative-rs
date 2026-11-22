@@ -1,7 +1,7 @@
 //! `stock_strip <raw> <out> [side] [stock profile,...]`: a digital photo rendered headless at its rest on each virtual
 //! stock, as the editor renders it: on the default paper (`paper-<stock>`) and on ONI's own print (`oni-<stock>`), and the
 //! scene each film reads (`scene-<stock>`). `ONI_FILM_EXPOSURE` sets the virtual film's exposure, `ONI_PRINT_EXPOSURE`
-//! moves Lighting's Exposure. Each as `w h` then f32 RGB, linear Rec. 2020.
+//! moves Lighting's Exposure, `ONI_PAPER` names the paper by its key. Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
@@ -27,6 +27,7 @@ fn main() {
     let wanted: Option<Vec<String>> = args.get(3).map(|s| s.split(',').map(str::to_string).collect());
     let film_stops: f32 = std::env::var("ONI_FILM_EXPOSURE").map_or(0.0, |v| v.parse().unwrap());
     let print_stops: f32 = std::env::var("ONI_PRINT_EXPOSURE").map_or(0.0, |v| v.parse().unwrap());
+    let on_paper: Option<oni_settings::PaperStock> = std::env::var("ONI_PAPER").ok().map(|k| serde_json::from_str(&format!("\"{k}\"")).expect("a paper's key"));
     std::fs::create_dir_all(out).unwrap();
     // The photo's own framing and corrections, its colour at the digital rest.
     let owner = oni_settings::sidecar::read(raw, true).map(|l| l.settings).unwrap_or_else(|_| PipelineSettings::rest(ConversionMode::Digital, true));
@@ -54,8 +55,11 @@ fn main() {
             f.exposure = film_stops;
         }
         paper.print.exposure += print_stops;
+        if on_paper.is_some() {
+            paper.print_paper = on_paper;
+        }
         let oni = PipelineSettings { print_paper: None, ..paper.clone() };
-        let name = stock.profile();
+        let name = stock.profile().replace('/', "-");
         write(out, &format!("paper-{name}"), &e.render(&negative, &paper, Some(side)).unwrap());
         write(out, &format!("oni-{name}"), &e.render(&negative, &oni, Some(side)).unwrap());
         let (graph, pipeline) = e.parts();

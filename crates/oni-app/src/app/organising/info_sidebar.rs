@@ -27,7 +27,7 @@ impl Ctl {
                 .map(|(k, n)| {
                     let artwork = crate::stocks::icon(k.id);
                     StockCount {
-                        name: k.display_name.into(),
+                        name: crate::stocks::label(k),
                         count: n.to_string().into(),
                         has_artwork: artwork.is_some(),
                         artwork: artwork.unwrap_or_default(),
@@ -318,7 +318,7 @@ fn spelled([month, day, year]: [&str; 3]) -> Option<Date> {
 pub(in crate::app) fn roll_canister(explicit: Option<&'static FilmStockKind>, mode: Option<ConversionMode>) -> crate::Canister {
     let fallback = mode.and_then(|m| film_stock(default_stock_id(m)));
     match (explicit, fallback, mode) {
-        (Some(k), _, _) => crate::stocks::canister(Some(k), crate::stocks::unspecified(k).to_string()),
+        (Some(k), _, _) => crate::stocks::canister(Some(k), crate::stocks::note(k).to_string()),
         (None, Some(k), Some(m)) => crate::stocks::canister(Some(k), tr!("Default, from this roll's {mode} mode", mode = crate::app::roll_tab::mode_name(m))),
         _ => crate::stocks::canister(None, tr("No film stock set").to_string()),
     }

@@ -5361,6 +5361,10 @@ msgstr "Compilation des noyaux d'image"
 msgid "Stock not specified"
 msgstr "Émulsion non précisée"
 
+#: crates/oni-app/src/stocks.rs
+msgid "Datasheet"
+msgstr "Fiche technique"
+
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"
 msgstr "MISE À JOUR"

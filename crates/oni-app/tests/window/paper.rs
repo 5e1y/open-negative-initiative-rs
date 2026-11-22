@@ -110,9 +110,11 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
-    assert_eq!(names, PaperStock::ALL.iter().map(|p| p.name().to_string()).collect::<Vec<_>>());
+    assert_eq!(names, PaperStock::ALL.iter().map(|p| oni_app::stocks::paper_label(*p).to_string()).collect::<Vec<_>>());
+    assert!(names.contains(&"Kodak Endura Premier · Datasheet".to_string()), "the data-sheet twin named by its source");
     let renders = ctl.state.borrow().renders();
-    panel.invoke_paper_chosen(4);
+    let crystal_archive = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmCrystalArchiveTypeII).unwrap();
+    panel.invoke_paper_chosen(crystal_archive as i32);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
     assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Type II");
@@ -134,7 +136,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     panel.invoke_paper_chosen(frontier as i32);
     rig.pump();
     assert_eq!((ctl.state.borrow().renders(), ctl.state.borrow().store().revision()), (renders, revision));
-    panel.invoke_paper_chosen(4);
+    panel.invoke_paper_chosen(crystal_archive as i32);
     rig.pump();
 
     // A slide prints on the same papers through its internegative: switched to a slide, the frame keeps its paper.
