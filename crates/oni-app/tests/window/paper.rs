@@ -110,7 +110,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let (mut names, mut listed) = (papers_listed(&panel), PaperStock::ALL.map(|p| oni_app::stocks::paper_label(p).to_string()).to_vec());
-    (names.sort(), listed.sort());
+    names.sort();
+    listed.sort();
     assert_eq!(names, listed, "every paper once");
     assert!(names.contains(&"Kodak Endura Premier · Datasheet".to_string()), "the data-sheet twin named by its source");
     let renders = ctl.state.borrow().renders();
