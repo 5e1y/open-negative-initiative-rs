@@ -165,9 +165,9 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         });
     }
 
-    let key = (view.saturation.clone(), sizes[Plot::Saturation as usize], gestures.saturation_dragged);
+    let key = (view.saturation.clone(), oni_pipeline::finishing::print_saturation(&view), sizes[Plot::Saturation as usize], gestures.saturation_dragged);
     if drawn.saturation.as_ref() != Some(&key) {
-        let d = saturation::drawing(&key.0, key.2, key.1);
+        let d = saturation::drawing(&key.0, &key.1, key.3, key.2);
         g.set_saturation_lines(lines(&d));
         g.set_saturation_dots(dots(&d));
         drawn.saturation = Some(key);

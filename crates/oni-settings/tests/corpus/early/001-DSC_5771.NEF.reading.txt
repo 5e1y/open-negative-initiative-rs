@@ -128,17 +128,6 @@ settings: PipelineSettings {
             whites: 0.0,
             mids: 0.0,
         },
-        hunt_base: Some(
-            Tone {
-                exposure: 0.9809659,
-                contrast: -0.24551085,
-                blacks: 0.0,
-                shadows: -0.0046897,
-                highlights: 0.1047156,
-                whites: 0.0,
-                mids: 0.0,
-            },
-        ),
         black_point: 0.0,
         white_point: 0.0,
         channel_white: [

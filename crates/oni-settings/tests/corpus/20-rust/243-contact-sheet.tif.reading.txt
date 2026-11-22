@@ -398,7 +398,6 @@ settings: PipelineSettings {
             whites: 0.0,
             mids: 0.0,
         },
-        hunt_base: None,
         black_point: 0.0,
         white_point: 0.0,
         channel_white: [

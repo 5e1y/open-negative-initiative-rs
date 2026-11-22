@@ -62,8 +62,6 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
         print_zones: [0.2, -0.4],
         own_stops: [0.1, -0.05, -0.08],
         hunt: 0.4,
-        base_stops: 1.5,
-        follow: 0.5,
         ..separated
     };
     let dense = Stage47 { density: 1.3, ..printed };
@@ -81,7 +79,7 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
         ("window handles", windows),
         ("chroma decompression", decompressed),
         ("dye separation", separated),
-        ("print, filters, Hunt, follow", printed),
+        ("print, filters, Hunt", printed),
         ("colour density", dense),
         ("positive mode", positive),
         ("negative contrast, double quarters", flattened),

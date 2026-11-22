@@ -80,7 +80,7 @@ struct Drawn {
     curves: Option<(Curve, usize, Size, Vec<bool>)>,
     levels: Option<(Levels, usize, ConversionMode, f32, Size, Size, Option<levels::Grip>, Vec<bool>, bool)>,
     wheel: Option<(Spectrogram, Size, Option<spectrogram::Grip>, Option<spectrogram::Grip>, Band, Option<(usize, f32)>)>,
-    saturation: Option<(SaturationCurve, Size, Option<usize>)>,
+    saturation: Option<(SaturationCurve, [SaturationCurve; 2], Size, Option<usize>)>,
     grain: Option<(GrainCurve, Size, Option<usize>)>,
     print: Option<(Print, bool, Size)>,
 }

@@ -29,10 +29,6 @@ fn kernel_print(print: &Print, n: V3, travel: f32) -> V3 {
         own_contrast: print.channel_contrast,
         own_mid: print.channel_mid,
         hunt: 1.0,
-        base_stops: print.hunt_base.map_or(0.0, |b| b.exposure),
-        base_contrast: print.hunt_base.map_or(0.0, |b| b.contrast),
-        base_zones: print.hunt_base.map_or([0.0; 2], |b| [b.shadows, b.highlights]),
-        follow: Print::FOLLOW,
         ..Stage47::rest()
     };
     let source = n.map(|v| 10f32.powf(-v));
@@ -58,10 +54,10 @@ fn prints() -> Vec<(Print, f32)> {
         blue: Tone::exposure(-0.47),
         ..bent
     };
-    let caught_up = Print { hunt_base: Some(Tone { exposure: 0.4, contrast: 0.1, ..Tone::NEUTRAL }), ..filtered };
+    let darker = Print { exposure: -0.9, contrast: -0.3, ..filtered };
     let toned = Print { channel_contrast: [0.35, -0.2, 0.1], channel_mid: [-0.15, 0.2, 0.05], ..filtered };
     let toned_alone = Print { channel_contrast: [-0.4, 0.0, 0.3], channel_mid: [0.25, -0.1, 0.0], ..bent };
-    vec![(Print::default(), 0.0), (bent, 0.0), (filtered, 0.35), (caught_up, -0.6), (toned, 0.2), (toned_alone, 0.0)]
+    vec![(Print::default(), 0.0), (bent, 0.0), (filtered, 0.35), (darker, -0.6), (toned, 0.2), (toned_alone, 0.0)]
 }
 
 fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
@@ -82,23 +78,19 @@ fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
 fn the_print_replica_is_the_kernel_s_print() {
     let worst = worst_gap(|p, n, t| p.rendered(n, t));
     assert!(worst < 1e-6, "the replica parts from the kernel by {worst}");
-    // Twins: a replica dropping the filters, the Hunt factor or each channel's own tone is seen.
+    // Twins: a replica dropping the filters, laying the colour density apart from Hunt or dropping each channel's
+    // own tone is seen.
     let unfiltered = worst_gap(|p, n, t| {
         let mut bare = *p;
         bare.set_filters([0.0; 3]);
         bare.rendered(n, t)
     });
     assert!(unfiltered > 1e-2, "{unfiltered}");
-    let unhunted = worst_gap(|p, n, t| {
-        let mut flat = *p;
-        flat.hunt_base = Some(flat.master());
-        let after = flat.rendered(n, 0.0);
-        color_density::rendered(after, t)
-    });
-    assert!(unhunted > 1e-3, "{unhunted}");
+    let apart = worst_gap(|p, n, t| color_density::rendered(p.rendered(n, 0.0), t));
+    assert!(apart > 1e-3, "{apart}");
     let untoned = worst_gap(|p, n, t| Print { channel_contrast: [0.0; 3], channel_mid: [0.0; 3], ..*p }.rendered(n, t));
     assert!(untoned > 1e-2, "{untoned}");
-    eprintln!("print against the kernel: {worst:e}; unfiltered {unfiltered:e}; unhunted {unhunted:e}; untoned {untoned:e}");
+    eprintln!("print against the kernel: {worst:e}; unfiltered {unfiltered:e}; apart {apart:e}; untoned {untoned:e}");
 }
 
 /// A former document's settings object, the Swift check's own: exposure and a toned balance.
@@ -133,10 +125,6 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
         own_contrast: print.channel_contrast,
         own_mid: print.channel_mid,
         hunt: 1.0,
-        base_stops: print.hunt_base.map_or(0.0, |b| b.exposure),
-        base_contrast: print.hunt_base.map_or(0.0, |b| b.contrast),
-        base_zones: print.hunt_base.map_or([0.0; 2], |b| [b.shadows, b.highlights]),
-        follow: Print::FOLLOW,
         ..Stage47::rest()
     };
     let out = cpu::stage47([t, t, t, 1.0], &k);

@@ -322,7 +322,7 @@ export component ColorPane inherits Pane {
         block: 3;
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
-        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.");
+        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen colour in its tones, lower it toward grey. Brightness never moves.\n\nDrag a point along the light to choose its tones; double-click to return it to neutral.\n\nThe dashed line is the saturation the print lays by itself: Contrast's, which keeps each tone's colour as Contrast steepens or softens it, and the black and white points'.");
         SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }

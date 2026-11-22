@@ -11795,5 +11795,28 @@
     "status": "done",
     "detail": "help_card's LIGHTING constant still held the paper's former Temperature and Tint sentence; it now matches color_tab.slint and help_demo_color.",
     "outcome": "window help_card passes."
+  },
+  {
+    "id": 2990,
+    "type": "change",
+    "title": "Contrast's colour is a saturation curve the Saturation Curve's plot shows, on ONI's print and on a paper; follow is gone",
+    "status": "done",
+    "detail": "The owner read the Print readout's dashed mirror (the RGB curve's exact inverse, a drawing only) as an inverse saturation curve answering Contrast; the render held Contrast's colour by follow instead, inside stage 4-7 and shown nowhere. finishing::contrast_curve (oni-pipeline) is now that curve: at the five resting tones of a saturation curve, the window value the RGB curve prints there (the curve read backwards by bisection, as the mirror draws it), then the slope on logarithmic light of the RGB curve without Contrast over the slope with it (read 1 % either side), y = half that, held to the plot; 0.5 at the black, none at Contrast's rest, on black and white or a bypassed print. finishing::print_saturation (the points' curve, then Contrast's) is the one definition the render's finishing pass composes (Pipeline::finishing, look_lab::pro_code) and the Saturation Curve's plot draws as a dashed guide under the hand's curve (editors::saturation::laid, each pass scaling the colour by twice its value); the Saturation Curve's help says what the dashed line is (French and Spanish). It acts on the paper too, since the interface shows the print's curves there (print_stops: the paper's own Exposure distance from its rest). Removed at the source: Stage47.follow, base_stops, base_contrast and base_zones (CPU kernel and WGSL, the uniform block now 13 rows), Print::FOLLOW, CONTRAST_STEP, Print::hunt_base (huntBase, which only fed follow: ignored on read, no longer written; no format bump, no stored value changes meaning), Print::output's bent flag and Print::rendered's follow; the Lighting fit no longer sets the base. Older photos with Contrast moved change chroma on purpose (owner's call): no migration.",
+    "outcome": "Checks: tests/contrast_saturation.rs renders flat patches through the whole pipeline at Contrast -0.3 and +0.3 on ONI's print and on Portra Endura: within 1.7e-6 of stage 4-7's reference with the shown curve laid from the plot's own spline (twin, the curve not applied: 3.8e-2 to 8.0e-2), and at rest within 1.8e-6 with no curve; Contrast's curve on the GPU within 4.7e-7 of its reference (twin, not applied: 0.29 and 0.55); +0.3 lowers the mids, -0.3 raises them, the black at 0.5, none on black and white or bypassed (twins). editors::saturation: the dashed guide is drawn from print_saturation exactly (twin: the curve's departure doubled; Contrast at rest draws none). paper_lighting's bit check now folds ONI's print with Contrast at rest: 0x96406606c56de2e5 before, 0x33746d46e618f2e6 after; follow ran its identity arithmetic at a keep of 1 on every colour frame, so removing it moves ONI's print at rest by at most 6.6e-7 of linear light on DSC_6452 and 4.8e-7 on P1073076; the paper at rest is identical to the bit. paper_points' bit check on ONI's print under the points, which follow also touched, is pinned again (0x9a8bd567adf2dadb to 0x3986934315153ddd). kernel_oracle, branches, roll8 and balance_kept drop follow and the base."
+  },
+  {
+    "id": 2991,
+    "type": "research",
+    "title": "Contrast -0.3 and +0.3 before and after #2990 on DSC_6452 and P1073076, on ONI's print and on the paper",
+    "status": "done",
+    "detail": "A scratch probe rendered both photos on the Pro face (DSC_6452 from the test copy, P1073076 with the owner's settings), on ONI's print and on Portra Endura, at Contrast -0.3, 0 and +0.3, with follow (before) and with Contrast's saturation curve (after); JPEGs side by side, before left.",
+    "outcome": "Saturation (CIELAB C*/L*, median of each pixel's ratio to the frame at rest, L* 20 to 80): DSC_6452 ONI's print -0.3 x0.616 before, x0.935 after; +0.3 x1.295, x1.105; paper -0.3 x0.692, x1.003; +0.3 x1.417, x1.025. P1073076 ONI's print -0.3 x0.687, x1.007; +0.3 x1.155, x0.897; paper -0.3 x0.706, x1.027; +0.3 x1.347, x0.973. Before, Contrast softened the colour by a third and hardened it up to 40 % (follow only took colour, and little); after, it keeps each tone's saturation within 3 % on the paper and 11 % on ONI's print, where Hunt still reads Contrast. In C* alone, which falls with the lightness Contrast takes from the shadows, +0.3 now reads x0.78 to x0.86 of rest over the frame."
+  },
+  {
+    "id": 2992,
+    "type": "change",
+    "title": "On a paper Contrast's saturation curve gives back half the colour its slope takes; ONI's print keeps it whole",
+    "status": "done",
+    "detail": "finishing::PAPER_CONTRAST_HOLD = 0.5 (owner's call): contrast_curve lays on a paper the hold's ratio raised to that share (contrast_curve_held), so a paper's Contrast keeps some of a grade's bite; the Saturation Curve plot draws the same curve. Check: contrast_saturation::a_paper_gives_back_half_of_contrasts_colour (each point the whole hold's square root on a paper, twin the whole hold; ONI's print whole). swift_checks' bare density axis takes the curve at none under the Exposure gear (Print::exposure_at(0, rest)), as it did before #2980."
   }
 ]

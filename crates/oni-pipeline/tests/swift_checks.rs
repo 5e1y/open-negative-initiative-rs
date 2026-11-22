@@ -47,14 +47,13 @@ fn luma(v: V3) -> f32 {
 
 // MARK: - DensityAxis.selfCheck
 
-/// `DensityAxis.rendered`: on the bare axis, decompression whole, no unmix, the RGB black at zero.
+/// `DensityAxis.rendered`: on the bare axis, decompression whole, no unmix, the RGB black at zero, the curve at none.
 fn on_axis(rgb: V3, mode: ConversionMode, ceiling: f32) -> V3 {
     let mut s = PipelineSettings { mode, ..PipelineSettings::default() };
     s.chroma_decompression = 1.0;
     s.levels = LevelsSet { red: Levels::on_axis(), green: Levels::on_axis(), blue: Levels::on_axis() };
     s.density_ceiling = ceiling;
-    s.separation = 0.0;
-    s.print.black_point = 0.0;
+    (s.separation, s.print.black_point, s.print.exposure) = (0.0, 0.0, Print::exposure_at(0.0, Print::resting_exposure(mode)));
     stage47(rgb, &s)
 }
 

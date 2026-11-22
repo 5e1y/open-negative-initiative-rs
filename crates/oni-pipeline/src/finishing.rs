@@ -1,13 +1,14 @@
 //! The finishing stages' arguments: the curves' tables, the saturation curves (the hand's, the points',
-//! Chrome's), the colour mixer's packed doses, the vignette, the dosed detail radii and Texture's band.
+//! Contrast's, Chrome's), the colour mixer's packed doses, the vignette, the dosed detail radii and Texture's band.
 
 use oni_render::{Curves, Detail, LUT_SIZE, SaturationCurve as SaturationArgs, Spectrogram as SpectrogramArgs};
 use oni_settings::blocks::{ChromaDenoise, Sharpen, Texture};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet, SaturationCurve};
 use oni_settings::spectrogram::{Band, Spectrogram};
-use oni_settings::ConversionMode;
-use oni_settings::tone::{Print, contrast};
+use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::tone::{Print, Tone, contrast};
+use crate::conversion;
 
 /// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags; `None` when all five curves rest.
 pub fn curves(set: &CurveSet) -> Option<Curves> {
@@ -86,6 +87,62 @@ pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
     let high = f64::from(((1.0 + Print::POINT_SATURATION_GAIN * white) / 2.0).clamp(0.0, 1.0));
     let points = SaturationCurve::resting().into_iter().map(|p| Point::new(p.x, low + p.x * (high - low))).collect();
     SaturationCurve { points }
+}
+
+/// The saturation the print lays by itself, the points' then Contrast's: the render's passes and the plot's guide.
+pub fn print_saturation(s: &PipelineSettings) -> [SaturationCurve; 2] {
+    if s.mode.is_monochrome() {
+        return [SaturationCurve::default(), SaturationCurve::default()];
+    }
+    [points_curve(&s.print, s.mode), contrast_curve(s)]
+}
+
+/// How far either side of a window value its slope is read, as a share of that value.
+const CONTRAST_REACH: f32 = 0.01;
+
+/// The share of Contrast's colour a paper's print gives back: half, so its Contrast keeps some of a paper grade's
+/// bite (owner's call); ONI's print gives it all.
+pub const PAPER_CONTRAST_HOLD: f32 = 0.5;
+
+/// Contrast's saturation: at each tone the print shows, the inverse of the colour Contrast's slope gives it there, so
+/// every tone keeps the colour of the print without Contrast; drawn on the Saturation Curve's plot as the render lays it.
+pub fn contrast_curve(s: &PipelineSettings) -> SaturationCurve {
+    contrast_curve_held(s, if s.paper().is_some() { PAPER_CONTRAST_HOLD } else { 1.0 })
+}
+
+/// Contrast's saturation giving back `share` of the colour Contrast's slope takes, as a power of its ratio.
+pub fn contrast_curve_held(s: &PipelineSettings, share: f32) -> SaturationCurve {
+    let print = &s.print;
+    if print.bypassed || print.contrast == 0.0 || s.mode.is_monochrome() {
+        return SaturationCurve::default();
+    }
+    let stops = conversion::print_stops(s);
+    let bent = print.master();
+    let points = SaturationCurve::resting()
+        .into_iter()
+        .map(|p| Point::new(p.x, f64::from((0.5 * held(&bent, stops, p.x as f32).powf(share)).clamp(0.0, 1.0))))
+        .collect();
+    SaturationCurve { points }
+}
+
+/// The colour kept at printed tone `t`: the slope without Contrast over the slope with it, on logarithmic light; whole
+/// at the black, where every curve leaves straight.
+fn held(bent: &Tone, stops: f32, t: f32) -> f32 {
+    let n = unprinted(bent, stops, t);
+    let (low, high) = (n * (1.0 - CONTRAST_REACH), (n * (1.0 + CONTRAST_REACH)).min(1.0));
+    let slope = |tone: &Tone| (tone.shaped(high, stops) / tone.shaped(low, stops)).ln();
+    let (with, without) = (slope(bent), slope(&Tone { contrast: 0.0, ..*bent }));
+    if t <= 0.0 || !(with > 0.0 && without.is_finite()) { 1.0 } else { without / with }
+}
+
+/// The window value `tone` prints at `t`: the RGB curve read backwards, as the print plot's mirror draws it.
+fn unprinted(tone: &Tone, stops: f32, t: f32) -> f32 {
+    let (mut low, mut high) = (0.0f32, 1.0f32);
+    for _ in 0..32 {
+        let mid = 0.5 * (low + high);
+        if tone.shaped(mid, stops) < t { low = mid } else { high = mid }
+    }
+    0.5 * (low + high)
 }
 
 fn separation(a: f32, b: f32) -> f32 {

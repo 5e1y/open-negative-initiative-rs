@@ -66,12 +66,12 @@ fn each_channel_holds_its_own_sum_and_black_and_white_reads_the_global_pair() {
 fn at_rest_the_print_is_the_diagonal() {
     let rest = Print::default();
     for v in [0.0f32, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0] {
-        let out = rest.output(v, LevelsChannel::Linked, true).powf(1.0 / Print::DISPLAY_GAMMA);
+        let out = rest.output(v, LevelsChannel::Linked).powf(1.0 / Print::DISPLAY_GAMMA);
         assert!((out - v).abs() < 1e-5, "{v} printed {out}");
     }
     // Twin: a stop of exposure leaves the diagonal.
     let lit = Print { exposure: 1.0, ..Print::default() };
-    assert!((lit.output(0.5, LevelsChannel::Linked, true).powf(1.0 / 2.2) - 0.5).abs() > 0.05);
+    assert!((lit.output(0.5, LevelsChannel::Linked).powf(1.0 / 2.2) - 0.5).abs() > 0.05);
 }
 
 #[test]

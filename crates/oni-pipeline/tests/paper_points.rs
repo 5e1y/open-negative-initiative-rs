@@ -226,8 +226,8 @@ fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 
 #[test]
 fn onis_print_under_the_points_is_unchanged_to_the_bit() {
-    // ONI's print's outputs on these frames and moves before the paper held its colour.
-    const BEFORE: u64 = 0x9a8b_d567_adf2_dadb;
+    // ONI's print's outputs on these frames and moves, which the paper's hold of its colour leaves alone.
+    const BEFORE: u64 = 0x3986_9343_1515_3ddd;
     let bits = onis_print_bits(|k| k);
     println!("ONI's print folds to {bits:#018x}");
     assert_eq!(bits, BEFORE);

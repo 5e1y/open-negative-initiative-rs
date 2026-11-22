@@ -40,7 +40,7 @@ fn luma(v: V3) -> f32 {
 /// where every window reads the one share that grey prints at.
 pub fn reference_grey(s: &PipelineSettings) -> V3 {
     let rest = Print { exposure: Print::resting_exposure(s.mode), ..Print::default() };
-    let shown = |t: f32| rest.output(t, LevelsChannel::Linked, true);
+    let shown = |t: f32| rest.output(t, LevelsChannel::Linked);
     let share = bisected(0.0, 2.0, *GREY_PRINT, shown);
     let k = windows_alone(s);
     std::array::from_fn(|c| {

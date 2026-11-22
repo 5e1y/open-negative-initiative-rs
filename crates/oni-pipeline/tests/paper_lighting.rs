@@ -172,24 +172,18 @@ fn contrast_leaves_the_colour_density_on_the_paper() {
     }
 }
 
-/// ONI's print on every setting the paper's checks move, its outputs' bits folded by FNV-1a.
+/// ONI's print on every setting the paper's checks move, Contrast at rest, its outputs' bits folded by FNV-1a.
 fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
     let stock = film::stock(VirtualStock::KodakPortra800);
     let mut pixels: Vec<V4> = noise(23, 17, 5, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(noise(23, 17, 6, 0.0, 1.0));
     let off = |s: PipelineSettings| PipelineSettings { print_paper: None, ..s };
     let mut lit = off(prepared_negative());
-    // Exposure 1.75 and a half stop either way: on the curve, 2 and a stop as before its gear.
-    (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.highlights) = (1.75, 0.2, 0.1, -0.1);
+    (lit.print.exposure, lit.print.shadows, lit.print.highlights) = (1.75, 0.1, -0.1);
     lit.print.set_filters([0.2, -0.1, 0.0]);
     (lit.print.black_point, lit.print.white_point, lit.print.channel_contrast, lit.print.channel_mid) = (0.03, 0.05, [0.1, 0.0, -0.1], [0.0, 0.1, 0.0]);
     lit.density = 0.3;
     let mut settings = vec![off(prepared_negative()), off(digital()), off(mono()), lit];
-    for travel in [-0.3, 0.3] {
-        let mut t = off(prepared_negative());
-        t.print.contrast = travel;
-        settings.push(t);
-    }
     for stops in [-0.5, 0.5] {
         let mut t = off(prepared_negative());
         t.print.exposure += stops;
@@ -215,11 +209,11 @@ fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 
 #[test]
 fn onis_print_is_unchanged_to_the_bit() {
-    // ONI's print's outputs on these settings, Hunt reading its Contrast whole.
-    const BEFORE: u64 = 0xc0fd_96d8_2be0_989e;
+    // ONI's print's outputs on these settings, Contrast at rest, whose colour the kernel never touches.
+    const BEFORE: u64 = 0x3374_6d46_e618_f2e6;
     let bits = onis_print_bits(|k| k);
     println!("ONI's print folds to {bits:#018x}");
     assert_eq!(bits, BEFORE);
-    // Twin: Hunt blind to Contrast, as on a paper, moves it.
-    assert_ne!(onis_print_bits(|k| Stage47 { hunt_contrast: 0.0, ..k }), BEFORE);
+    // Twin: Contrast a notch off its rest moves it.
+    assert_ne!(onis_print_bits(|k| Stage47 { print_contrast: k.print_contrast + 0.05, ..k }), BEFORE);
 }

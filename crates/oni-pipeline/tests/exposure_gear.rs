@@ -5,7 +5,7 @@ use oni_pipeline::conversion;
 use oni_render::{Stage47, cpu};
 use oni_settings::document::{self, Document};
 use oni_settings::migrate::{self, chain};
-use oni_settings::tone::{Print, Tone};
+use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings};
 
 /// The print's grey, linear: what a plain RAW's grey prints at.
@@ -20,9 +20,7 @@ fn print_alone(k: &Stage47) -> Stage47 {
         log_guard: 1e-30,
         print_on: 1.0,
         print_stops: k.print_stops,
-        base_stops: k.base_stops,
         hunt: 1.0,
-        follow: Print::FOLLOW,
         ..Stage47::rest()
     }
 }
@@ -94,7 +92,7 @@ fn a_rest_reaches_the_kernel_to_the_bit() {
         let k = conversion::stage47(&s);
         let rest = Print::resting_exposure(s.mode);
         let stops = if s.paper().is_some() { 0.0 } else { rest };
-        assert_eq!((k.print_stops.to_bits(), k.base_stops.to_bits()), (stops.to_bits(), 0f32.to_bits()), "{:?} {:?}", s.mode, s.print_paper);
+        assert_eq!(k.print_stops.to_bits(), stops.to_bits(), "{:?} {:?}", s.mode, s.print_paper);
         // Twin: a notch of a hundredth off the rest reaches the curve twice over.
         let notch = PipelineSettings { print: Print { exposure: s.print.exposure + 0.01, ..s.print }, ..s.clone() };
         assert!((conversion::stage47(&notch).print_stops - stops - 0.02).abs() < 1e-6, "{:?}", s.mode);
@@ -119,7 +117,7 @@ fn before_the_gear(s: &PipelineSettings) -> Stage47 {
     let k = conversion::stage47(s);
     let rest = Print::resting_exposure(s.mode);
     let print_stops = if s.paper().is_some() { s.print.exposure - rest } else { s.print.exposure };
-    Stage47 { print_stops, base_stops: s.print.hunt_base.map_or(0.0, |b| b.exposure), ..k }
+    Stage47 { print_stops, ..k }
 }
 
 fn stored(s: &PipelineSettings, version: i64) -> Vec<u8> {
@@ -137,7 +135,6 @@ fn an_older_documents_render_stays_through_its_migration() {
         let rest = Print::resting_exposure(s.mode);
         s.print.exposure = rest + 1.3;
         s.print.contrast = 0.2;
-        s.print.hunt_base = Some(Tone { exposure: rest + 0.4, contrast: 0.1, ..Tone::NEUTRAL });
         let read = migrate::document(&stored(&s, older)).unwrap().document.settings;
         assert_eq!(read.print.exposure, Print::exposure_at(s.print.exposure, rest));
         let (was, now, unmigrated) = (before_the_gear(&s), conversion::stage47(&read), conversion::stage47(&s));

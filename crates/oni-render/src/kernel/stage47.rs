@@ -28,14 +28,10 @@ pub struct Stage47 {
     pub hunt: f32,
     /// The share of Contrast Hunt reads: whole on ONI's print, none on a paper, whose Contrast keeps its colour density.
     pub hunt_contrast: f32,
-    pub base_stops: f32,
-    pub base_contrast: f32,
-    pub base_zones: [f32; 2],
     pub decompression: f32,
     pub balance_low: [f32; 3],
     pub balance_span: [f32; 3],
     pub film_share: f32,
-    pub follow: f32,
     /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
     pub dyes: Option<super::dye_separation::DyeSeparation>,
     /// The negative printed on a paper in place of the windows and the print curve, laid with them in one GPU pass.
@@ -66,14 +62,10 @@ impl Stage47 {
             own_mid: [0.0; 3],
             hunt: 0.0,
             hunt_contrast: 1.0,
-            base_stops: 0.0,
-            base_contrast: 0.0,
-            base_zones: [0.0; 2],
             decompression: 1.0,
             balance_low: [0.0; 3],
             balance_span: [1.0; 3],
             film_share: 0.0,
-            follow: 1.0,
             dyes: None,
             paper: None,
         }
@@ -98,11 +90,10 @@ impl Stage47 {
                 v3(self.low_points, self.window),
                 v3(self.high_points, self.print_on),
                 [self.print_stops, self.print_contrast, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }],
-                v3(self.own_stops, self.base_stops),
-                v3(self.balance_low, self.base_contrast),
+                v3(self.own_stops, self.film_share),
+                v3(self.balance_low, self.hunt_contrast),
                 v3(self.balance_span, self.decompression),
-                v22(self.print_zones, self.base_zones),
-                [self.film_share, self.follow, self.hunt_contrast, 0.0],
+                v22(self.print_zones, [0.0; 2]),
                 v3(self.own_contrast, 0.0),
                 v3(self.own_mid, 0.0),
             ],
@@ -114,11 +105,9 @@ impl Stage47 {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Packed {
-    rows: [[f32; 4]; 14],
+    rows: [[f32; 4]; 13],
     count: [u32; 4],
 }
-
-const CONTRAST_STEP: f32 = 0.05;
 
 fn apply_levels(e: f32, lv: V3) -> f32 {
     ((e - lv[0]) / (lv[1] - lv[0]).max(1e-4)).max(0.0).powf(lv[2])
@@ -165,10 +154,6 @@ fn shaped(p_in: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
         p = quartered(p, zones[1], true);
     }
     p
-}
-
-fn printed_rgb(n: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
-    shaped(n, stops, contrast, zones).max(0.0).powf(DISPLAY_GAMMA)
 }
 
 /// Lighting's mids bend on the display value, held inside 0 to 1.
@@ -227,7 +212,8 @@ fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     e
 }
 
-/// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.
+/// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density; Contrast's colour is
+/// held downstream by its saturation curve.
 fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
     let mut density = k.density;
     let mut e = windowed_in;
@@ -244,30 +230,9 @@ fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
                 e = map(e, |_, x| x * f);
             }
         }
-        let bent = ps != k.base_stops || pc != k.base_contrast || pz != k.base_zones;
         if k.hunt > 0.0 {
             let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;
             density *= (-k.hunt * (shaped(g, ps, pc * k.hunt_contrast, pz) - g)).exp();
-        }
-        if k.follow < 1.0 && bent {
-            let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;
-            if g > 1e-3 {
-                let (up, down) = (g * (1.0 + CONTRAST_STEP), g * (1.0 - CONTRAST_STEP));
-                let through = |x: f32, s: f32, c: f32, z: [f32; 2]| shaped(x, s, c, z).max(1e-6).powf(DISPLAY_GAMMA);
-                let curve = (through(up, ps, pc, pz) / through(down, ps, pc, pz)).ln();
-                let base = (through(up, k.base_stops, k.base_contrast, k.base_zones)
-                    / through(down, k.base_stops, k.base_contrast, k.base_zones))
-                .ln();
-                let r = if base.abs() > 1e-6 { clamp(curve / base, 0.25, 4.0) } else { 1.0 };
-                let grey = printed_rgb(g, ps, pc, pz);
-                let keep = r.powf(k.follow - 1.0).min(1.0);
-                let held = map(e, |_, x| (grey + (x - grey) * keep).max(0.0));
-                let lit = dot(held, LUMA);
-                if lit > 1e-6 {
-                    let f = dot(e, LUMA) / lit;
-                    e = map(held, |_, x| x * f);
-                }
-            }
         }
     }
     if density != 1.0 {

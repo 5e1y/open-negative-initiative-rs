@@ -254,9 +254,9 @@ pub fn new_pixel(n: V3, print: &Print, density: f32, gammas: V3, monochrome: boo
     let moved = print.pointed(n, gammas);
     let rgb = if monochrome {
         [
-            print.output(moved[0], LevelsChannel::Red, true),
-            print.output(moved[1], LevelsChannel::Green, true),
-            print.output(moved[2], LevelsChannel::Blue, true),
+            print.output(moved[0], LevelsChannel::Red),
+            print.output(moved[1], LevelsChannel::Green),
+            print.output(moved[2], LevelsChannel::Blue),
         ]
     } else {
         print.rendered(moved, density)
@@ -352,13 +352,12 @@ pub fn fitted(f: &Former, manual_curves: &CurveSet, curves: &CurveSet, gammas: V
     let resting = |p: &[f32]| {
         let mut print = Print { black_point: 0.0, ..Print::default() };
         print.set_master(tone(&p[0..6]));
-        print.hunt_base = Some(print.master());
         print
     };
     let first = minimised(vec![0.0; bounds.len()], &bounds, &vec![2e-3; bounds.len()], &|p| {
         residuals(&resting(p), if mono { f.density } else { former + p[density_at] })
     });
-    // The former render had no lifted black, and the compensation measures from the fitted curve.
+    // The former render had no lifted black.
     let mut print = resting(&first);
     let density = if mono { f.density } else { former + first[density_at] };
     // Then the three filters, only where the balance or the former filters parted the channels.
