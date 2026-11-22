@@ -218,7 +218,7 @@ fn worst(a: [f32; 3], b: [f32; 3]) -> f32 {
 }
 
 #[test]
-fn brightness_on_the_reversal_paper_holds_the_shadows_under_its_knee_and_moves_the_rest_as_exposure_does() {
+fn brightness_on_the_reversal_paper_holds_the_densest_film_and_moves_the_mids_as_exposure_does() {
     let mut followed = 0;
     for (label, s) in slides() {
         let rest = conversion::stage47(&s).paper.unwrap();
@@ -226,32 +226,31 @@ fn brightness_on_the_reversal_paper_holds_the_shadows_under_its_knee_and_moves_t
             let p = conversion::stage47(&moved(&s, |u| u.print.brightness = brightness)).paper.unwrap();
             let at_rest = Paper { brightness: 0.0, ..p };
             let toward = |a: [f32; 3]| p.toward_light(p.pick_log, p.exposed(p.toned(a)));
-            // The knee lies over the pick, where the neutral prints L* 5 above it on the print's own range.
+            // The reach lies over the pick, where the neutral prints L* 25 above it on the print's own range, at rest.
             let (mut low, mut high) = (0.0f32, 8.0f32);
             for _ in 0..60 {
                 let mid = 0.5 * (low + high);
-                if toward(neutral(&s, mid)) < p.knee { low = mid } else { high = mid }
+                if toward(neutral(&s, mid)) < p.reach { low = mid } else { high = mid }
             }
             let (k, w) = (luma(p.pick), luma(p.white));
-            let light = (luma(p.coloured(p.printed(neutral(&s, low)))) - k) / (w - k) * w;
-            assert!(p.knee > 0.0 && (light / paper::BRIGHTNESS_KNEE_LIGHT - 1.0).abs() < 1e-3, "{label}: knee {} at {light}", p.knee);
-            // The pick and every neutral tone under the knee print as at rest, to the bit.
-            let mut under = 0;
+            let light = (luma(at_rest.coloured(at_rest.printed(neutral(&s, low)))) - k) / (w - k) * w;
+            assert!(p.reach > 0.0 && (light / paper::BRIGHTNESS_REACH_LIGHT - 1.0).abs() < 1e-3, "{label}: reach {} at {light}", p.reach);
+            // The pick and every neutral tone on its dark side print as at rest, to the bit.
+            let mut beyond = 0;
             for i in 0..=400 {
-                let a = neutral(&s, -0.5 + 1.5 * i as f32 / 400.0);
-                if toward(a) <= p.knee {
-                    under += 1;
+                let a = neutral(&s, -0.5 + 0.6 * i as f32 / 400.0);
+                if toward(a) <= 0.0 {
+                    beyond += 1;
                     assert_eq!(p.shown(a), at_rest.shown(a), "{label}, {brightness}");
                 }
             }
-            assert!(under > 20, "{label}, {brightness}: {under}");
-            // Past the knee's fade and the lift's excess, the light Exposure gives, the ends kept: more on this paper.
+            assert!(beyond > 20, "{label}, {brightness}: {beyond}");
+            // Past the fade and the lift's fold, the light Exposure gives, the ends kept: more on this paper.
             let exposure = conversion::stage47(&moved(&s, |u| u.print.exposure += brightness)).paper.unwrap();
             let exposed = Paper { scale: exposure.scale, brightness: 0.0, ..p };
             assert!((exposure.scale > rest.scale) == (brightness > 0.0), "{label}: a lighter print takes more light");
-            let lift = brightness.abs() * std::f32::consts::LOG10_2;
-            let gain = oni_render::PAPER_KNEE_SLOPE - 1.0;
-            let whole = 1.5 * p.knee + if brightness > 0.0 { 2.0 * lift / gain } else { (gain + 2.0) * lift / gain };
+            let lift = brightness * std::f32::consts::LOG10_2;
+            let whole = oni_render::fade(lift, p.reach) + lift.abs();
             for i in 0..=40 {
                 let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
                 if toward(a) < whole {
@@ -264,12 +263,22 @@ fn brightness_on_the_reversal_paper_holds_the_shadows_under_its_knee_and_moves_t
                 let wrong = Paper { scale: rest.scale * (rest.scale / exposure.scale), brightness: 0.0, ..p };
                 assert!(worst(now, wrong.shown(a)) > 1e-4 || worst(now, p.white) < 1e-3 || now[1] < 1e-3, "{label}, {brightness}");
             }
+            // A tone a tenth of the reach over the pick moves under 3 % of the lift's log exposure; Exposure moves it all.
+            let (mut deep_low, mut deep_high) = (0.0f32, 1.0f32);
+            for _ in 0..60 {
+                let mid = 0.5 * (deep_low + deep_high);
+                if toward(neutral(&s, mid)) < 0.1 * p.reach { deep_low = mid } else { deep_high = mid }
+            }
+            let deep = neutral(&s, deep_low);
+            let moved_by = p.toward_light(p.pick_log, p.brightened(p.exposed(p.toned(deep)))) - toward(deep);
+            let by_exposure = exposure.toward_light(p.pick_log, exposure.exposed(exposure.toned(deep))) - toward(deep);
+            assert!(moved_by.abs() <= 0.03 * lift.abs() + 1e-6 && (by_exposure - lift).abs() < 1e-3, "{label}, {brightness}: {moved_by} {by_exposure}");
             // Brightening lightens the grey, darkening darkens it.
             let (grey, was) = (luma(p.shown(neutral(&s, 1.0))), luma(at_rest.shown(neutral(&s, 1.0))));
             assert!((grey > was) == (brightness > 0.0), "{label}, {brightness}: {grey} {was}");
         }
     }
-    println!("{followed} tones past the knee checked against Exposure");
+    println!("{followed} tones past the reach checked against Exposure");
     assert!(followed > 40, "{followed}");
 }
 
