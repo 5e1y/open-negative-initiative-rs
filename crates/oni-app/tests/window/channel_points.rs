@@ -51,21 +51,21 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     rig.settle();
     let settings = || ctl.state.borrow().store().settings().clone();
     let title = || common::placed(w, Role::Text, TITLE);
-    let lighting = || common::the(w, Role::Text, "Lighting").y;
+    let paper = || common::the(w, Role::Text, "Paper").y;
 
-    // Folded at first, right under Saturation: Lighting follows its title a row below.
+    // Folded at first, right under Saturation: Paper, the next section, follows its title a row below.
     assert_eq!(title().len(), 1, "one title on the Colour block of a negative");
-    let folded = lighting() - title()[0].y;
-    assert!(folded < 100.0, "the sliders lie folded: Lighting {folded} pt below the title");
+    let folded = paper() - title()[0].y;
+    assert!(folded < 100.0, "the sliders lie folded: Paper {folded} pt below the title");
     rig.shot("channel-points-folded");
     click(&rig, title()[0].middle());
     rig.settle();
-    let open = lighting() - title()[0].y;
+    let open = paper() - title()[0].y;
     assert!(open > folded + 4.0 * 30.0, "the title's click lays the tabs and a tab's four sliders: {folded} then {open} pt");
     println!("shot {}", rig.shot("channel-points-open").display());
-    // The block's own tabs, between its title and Lighting: the Curves' further down share their names.
+    // The block's own tabs, between its title and Paper: the Curves' further down share their names.
     let tab = |name: &str| {
-        let (top, bottom) = (title()[0].y, lighting());
+        let (top, bottom) = (title()[0].y, paper());
         let found: Vec<_> = common::placed(w, Role::Tab, name).into_iter().filter(|t| t.y > top && t.y < bottom).collect();
         assert_eq!(found.len(), 1, "one {name} tab in {TITLE}: {found:?}");
         found[0]

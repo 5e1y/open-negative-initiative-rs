@@ -12155,5 +12155,33 @@
     "title": "Window checks: Prepare's hero picks the stock, the Roll tab's pick is one undoable roll step, the Film block lists the virtual films alone",
     "status": "done",
     "detail": "crates/oni-app/tests/window/stock_hero.rs (new, three checks, shots stock-hero-prepare, stock-hero-roll-tab, stock-hero-film), driven by clicks on the hero's key and Ctl::act: Prepare's default then Kodak Portra 400 named with its dyes (twin: Done changes nothing); in the editor Fujifilm C200 laid on the marker and on both photos' dyes, the render, the hero and Dye Separation following, one Undo taking all back and Redo laying them again (twin: Done writes nothing; the gallery's sidebar shows the editor's pick); a digital photo's sheet lists exactly VirtualStock::ALL (twin: fewer than a roll's), each film picked placing its reference and white, one Undo back (twin: a stock no digital photo is shot on, chosen anyway, changes nothing). stocks.rs, row_marks.rs and virtual_film.rs read the Canister; the hero taller than the old row, film_effects opens at 2160 px and panel_bindings at 1080 px so the rows they press stay in sight; fields::tests lays Film Stock in the Roll tab's order."
+  },
+  {
+    "id": 3205,
+    "type": "check",
+    "title": "slider_hand presses Exposure where the Colour tab now lays it: the window tall enough, the rail asserted in sight",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/slider_hand.rs: with the Paper section open by default between More Color Settings and Lighting (#3110), Exposure's rail fell under the 800 px window, so the press reached no slider and both checks failed on their first hand (deterministic alone, not load). The window is 1000 px and the rail is asserted inside it, so a later layout change fails on its cause."
+  },
+  {
+    "id": 3206,
+    "type": "check",
+    "title": "The Save a Preset fit check counts the card's own boxes, not the panel's switch beside it",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/presets.rs: fits() took every checkbox of the window; the panel's Print on paper switch, now at y 696 to 709 right of the card, was read as the card's lowest box. Only boxes left of the commit key's right edge count; the sheet itself was laid right (shot presets-save-sheet). Its twin (a card taller than its content) is kept."
+  },
+  {
+    "id": 3207,
+    "type": "check",
+    "title": "More Color Settings' folded check reads the section after it, Paper, where it once read Lighting",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/channel_points.rs: the check measured Lighting a row under the folded title; Paper now stands between (#3110), 148 pt. The next section's title is the measure again, for the folded gap, the opened gap and the band the block's tabs are searched in."
+  },
+  {
+    "id": 3208,
+    "type": "check",
+    "title": "The Film block's sheet is checked in its brand order against the sixteen virtual films",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/stock_hero.rs: the check expected VirtualStock::ALL's order, true for one stock only; the sheet lists by brand in the catalogue's order (stocks::virtual_by_brand), and the check now asserts that order and, apart, that the set is exactly VirtualStock::ALL. With sixteen stocks the pick, render, reference and white, and Undo loop runs for each and passes."
   }
 ]
