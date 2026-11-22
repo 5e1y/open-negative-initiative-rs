@@ -116,7 +116,8 @@ pub(super) fn stocks(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let last = sweep.last().and_then(to_photon);
                 let written = ctl.state.borrow().store().settings() == &own;
                 finish(format!(
-                    "stocks: {} stocks lit, {} moving the photo, hover to photon cold {} (first {:.1} ms), warm {} (to the encode {}, to the next frame {}, the frame {}); a sweep of {} lights rendered {} times, its last shown in {:.1} ms; light gone {restored}, settings untouched {written}",
+                    "stocks: {} stocks lit, {} moving the photo, hover to photon cold {} (first {:.1} ms), warm {} (to the encode {}, to the next frame {}, the frame {}); \
+                     a sweep of {} lights rendered {} times, its last shown in {:.1} ms; light gone {restored}, settings untouched {written}",
                     order.borrow().len(),
                     lights[0].len(),
                     centiles(cold.iter().skip(1).copied().collect()),

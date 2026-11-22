@@ -259,7 +259,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("stock_hero::prepare_picks_the_stock_on_its_hero", stock_hero::prepare_picks_the_stock_on_its_hero),
     ("stock_hero::the_roll_tab_changes_the_rolls_stock_as_one_undoable_step", stock_hero::the_roll_tab_changes_the_rolls_stock_as_one_undoable_step),
     ("stock_hero::a_digital_photos_film_is_picked_among_the_virtual_films", stock_hero::a_digital_photos_film_is_picked_among_the_virtual_films),
-    ("stock_hero::a_stock_under_the_pointer_shows_on_the_photo_unwritten", stock_hero::a_stock_under_the_pointer_shows_on_the_photo_unwritten),
+    ("stock_menu::a_stock_under_the_pointer_shows_on_the_photo_unwritten", stock_menu::a_stock_under_the_pointer_shows_on_the_photo_unwritten),
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),

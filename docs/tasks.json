@@ -12323,5 +12323,12 @@
     "status": "done",
     "detail": "crates/oni-app/src/bench/stocks.rs: lays the open photo's menu, lights every other stock in turn (600 ms apart) twice, then sweeps every line at 120 Hz; each light's time to the GPU's end of the first frame showing its render, and how many renders a sweep asked.",
     "outcome": "App profile, 2560×1440 window on the 5K screen, mains power, machine loaded by three other builds: on a 47 Mpx Lumix RW2 shot digital, hover to photon p50 69 ms warm, 72 ms cold (first light 61 ms, the bake ahead absorbs it): 1.5 ms to the encode, 5.6 ms to the next frame, 62 ms the frame's GPU work, i.e. the photo's sharp render from the film stage on; a 120 Hz sweep over 15 lines rendered 3 times. On a 24 Mpx Nikon Z f NEF negative (Roll tab, 21 of 51 stocks move its dyes): p50 57 ms, of which 50 ms the frame; a sweep of 51 lights rendered 8 times."
+  },
+  {
+    "id": 3324,
+    "type": "refactor",
+    "title": "The stocks' menu check in a file of its own, two bench lines broken under the width",
+    "status": "done",
+    "detail": "Merged together, the Roll-tab and menu checks took stock_hero.rs to 415 lines, past the file ceiling, and the Brightness strips' and stocks bench's format strings ran past 200 characters. The menu's hover check moves to window/stock_menu.rs with stock_hero's helpers shared; the two strings break with a continuation."
   }
 ]

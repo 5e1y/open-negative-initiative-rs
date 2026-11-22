@@ -150,6 +150,7 @@ mod sidebar_filter;
 mod space_chip;
 mod states;
 mod stock_hero;
+mod stock_menu;
 mod stocks;
 mod tab_bar;
 mod text_fields;
