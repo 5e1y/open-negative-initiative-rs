@@ -11,8 +11,8 @@ struct Params {
     matrix: array<vec4<f32>, 3>,
     tone_low: vec4<f32>,
     tone_step: vec4<f32>,
-    dyes: array<vec4<f32>, 64>,
-    weights: array<vec4<f32>, 64>,
+    dyes: array<vec4<f32>, 81>,
+    weights: array<vec4<f32>, 81>,
     tone: array<vec4<f32>, 128>,
 }
 

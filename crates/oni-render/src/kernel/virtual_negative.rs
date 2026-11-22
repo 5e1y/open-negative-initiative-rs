@@ -3,8 +3,8 @@
 
 use super::*;
 
-/// Most wavelengths the scan sums over: the uniform holds their dyes and weights.
-pub const VIRTUAL_NEGATIVE_BANDS: usize = 64;
+/// Most wavelengths the scan sums over, every one of a profile's 380 to 780 nm grid: a cine stock measures 76.
+pub const VIRTUAL_NEGATIVE_BANDS: usize = 81;
 
 /// The film's exposure, development and scan. The table beside the input is `tc_nodes` square, the
 /// light per chromaticity, then two rows of `curve_nodes`: each channel's density before the couplers act, then after.
