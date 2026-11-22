@@ -12429,5 +12429,34 @@
     "title": "The dye sets' and virtual stocks' tables in files of their own",
     "status": "done",
     "detail": "The datasheet stocks took oni-settings' dyes.rs to 527 lines and virtual_film.rs to 513, past the 400-line file ceiling. The catalogue's dye-set table moves to dyes/stocks.rs, the virtual stocks' entries to virtual_film/entries.rs, and each file's tests to a tests.rs beside it; nothing else moves."
+  },
+  {
+    "id": 3460,
+    "type": "feature",
+    "title": "The Colour tab's paper drops the stocks' menu, each paper it lights shown on the photo unwritten",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/color_tab.slint (PaperPicker), panel/state.slint, ds/stocks.slint, crates/oni-app/src/app/stock_picker.rs, stocks.rs papers_by_maker. The paper's field drops the film's StockMenu under it, the papers of the catalogue by maker (a paper's trade name leads with its maker's), the one in use checked; a line without a canister takes no icon room. The line under the pointer or the arrows is lit and told at once: the stocks' light becomes one `Lit` (a stock or a paper) in `State.lit`, laid over the settings by `previewed`, so the canvas renders it through the one render path (one in flight, the latest waiting) with no write, no step and no sidecar. Leaving the menu, Escape or any close lights none. A click or Return writes the paper as one step through `menu_picked`, which writes `Lit::picked`, the function the light shows, so a pick renders nothing again; a paper changes the one the enlarger prints on and never turns the enlarger on, so a light outliving its section shows nothing. The paper menu's lines are laid at each drop (`paper-dropping`), no longer at each publish."
+  },
+  {
+    "id": 3461,
+    "type": "perf",
+    "title": "The papers are baked off the interface thread at the menu's first light, never at launch",
+    "status": "done",
+    "detail": "crates/oni-app/src/app/stock_picker.rs bake_menu: the stocks' bake ahead takes the lit menu's lines, every paper of the catalogue printed on the open photo's settings for the papers' menu, once a drop; oni_pipeline::bake_ahead bakes each paper's enlarger (OnceLock, a table already baked costs nothing)."
+  },
+  {
+    "id": 3462,
+    "type": "check",
+    "title": "The papers' menu checked under the pointer, the arrows, Escape, a click and Return, with no write while lit",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/paper_menu.rs a_paper_under_the_pointer_shows_on_the_photo_unwritten, on a digital photo printed on its paper at rest, the papers read from the catalogue so its contents may change: every paper listed once under its maker, the one in use checked (twin: a maker's line names no paper, each maker once); the pointer on a line renders it, store, Undo and sidecar unchanged; another line follows; leaving the menu and Escape restore; the arrows toward the longer side and back light the paper beside the one in use, Return writes it as one step, Undo; a click writes as the light showed, its render the light's alone, Undo (twins: the preview differs from the photo's own; a pick does write the sidecar). tests/window/paper.rs reads the menu's lines as it drops. Unit checks: stocks::the_papers_are_listed_once_each_under_its_maker (twin: grouped by another word, more lines than makers) and stock_picker::a_photo_lit_on_a_paper_is_what_its_pick_writes (twin: the lit paper moves the photo)."
+  },
+  {
+    "id": 3463,
+    "type": "bench",
+    "title": "ONI_BENCH=papers: each paper lit timed to its photon, cold, warm and in a sweep",
+    "status": "done",
+    "detail": "crates/oni-app/src/bench/stocks.rs: the stocks' bench takes the menu it lights (`Lights`), the papers' laid by `paper-dropping` and lit by `paper-lit`; a photo printing on no paper says so.",
+    "outcome": "App profile, 2560×1440 window on the 5K screen, mains power, machine loaded by two other agents' builds (load 5 to 7): on a 47 Mpx Lumix RW2 shot digital on Portra 800 and Portra Endura, the 13 other papers each moving the photo, hover to photon p50 62 ms warm (p90 65, worst 68), cold p50 47 ms (first light 36 ms, the bake ahead absorbing it): 2.2 ms to the encode, 3.5 ms to the next frame, 55 ms the frame's GPU work; a 120 Hz sweep over 13 lines rendered 3 times, its last shown in 56 ms. The stocks' menu on the same photo, run just before: warm p50 57 ms, cold p50 62 ms, 63 films."
   }
 ]

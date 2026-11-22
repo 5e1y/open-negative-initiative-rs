@@ -164,17 +164,17 @@ impl super::State {
         if self.picks.selection.is_empty() { self.open_path().map(str::to_string).into_iter().collect() } else { self.selected() }
     }
 
-    /// The open frame's settings as the canvas and the loupe show them, a hovered preset or a lit stock laid over.
+    /// The open frame's settings as the canvas and the loupe show them, a hovered preset or a lit stock or paper laid over.
     pub(super) fn live_settings(&self) -> PipelineSettings {
         self.previewed(self.store.settings().clone())
     }
 
     /// `previewedSettings`: the hovered preset laid over `settings`, with the balance an automatic one
-    /// measured when it was measured on these settings, then the stock the menu lights; else `settings` as they are.
+    /// measured when it was measured on these settings, then the stock or paper a menu lights; else `settings` as they are.
     pub(super) fn previewed(&self, settings: PipelineSettings) -> PipelineSettings {
         let laid = self.preset_previewed(settings);
-        match self.stock_lit.and_then(|i| oni_settings::film::FILM_STOCKS.get(i)) {
-            Some(kind) => super::stock_picker::picked(&laid, kind, self.open_stock().map(|k| k.id)),
+        match self.lit {
+            Some(lit) => lit.picked(&laid, self.open_stock().map(|k| k.id)),
             None => laid,
         }
     }

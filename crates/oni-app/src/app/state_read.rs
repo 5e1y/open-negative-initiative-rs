@@ -40,7 +40,18 @@ impl State {
 
     /// The stock the editor's menu lights, by its place in the catalogue, which the canvas shows unwritten.
     pub fn stock_lit(&self) -> Option<usize> {
-        self.stock_lit
+        match self.lit? {
+            super::stock_picker::Lit::Stock(i) => Some(i),
+            super::stock_picker::Lit::Paper(_) => None,
+        }
+    }
+
+    /// The paper the Colour tab's menu lights, which the canvas shows unwritten.
+    pub fn paper_lit(&self) -> Option<oni_settings::PaperStock> {
+        match self.lit? {
+            super::stock_picker::Lit::Paper(p) => Some(p),
+            super::stock_picker::Lit::Stock(_) => None,
+        }
     }
 
     /// Every preview kept in memory let go, as a launch finds them: the next opening decodes.

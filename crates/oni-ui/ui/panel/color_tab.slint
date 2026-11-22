@@ -1,5 +1,5 @@
 // The Color tab: Colour, the paper, Lighting with the print, Effects, then the editors.
-import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ButtonGroup, GroupAlign, Toggle, Field, Picker, HelpMark } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ButtonGroup, GroupAlign, Toggle, Field, Picker, HelpMark, StockMenu, StockStyle, MenuStyle, Bounds } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -7,6 +7,30 @@ import { Exporting } from "../export.slint";
 import { Plots, PanelState, RollState } from "state.slint";
 import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 import { FilmBlock } from "film_block.slint";
+
+// The paper's field, dropping the papers by maker in the stocks' menu: the paper lit shows on the photo unwritten,
+// the photo's own again once the menu closes, by a choice, Escape or a press outside.
+component PaperPicker inherits Picker {
+    property <bool> showing: papers.is-open;
+    changed showing => { if (!self.showing) { PanelState.paper-lit(-1); } }
+    value: PanelState.paper-title;
+    own-popup: papers.is-open;
+    open => {
+        PanelState.paper-dropping();
+        papers.show();
+    }
+    papers := StockMenu {
+        x: root.field-x;
+        y: root.height + Space.xxs;
+        span: max(root.field-width, MenuStyle.width);
+        // The window's height under the field, a few lines at least, so the menu never covers its field.
+        room: max(Bounds.height - root.absolute-position.y - root.height - Space.xxs - Space.m, 6 * StockStyle.line);
+        lines: PanelState.paper-lines;
+        current: PanelState.paper-in-use;
+        lit(i) => { PanelState.paper-lit(i); }
+        chosen(i) => { PanelState.paper-chosen(i); }
+    }
+}
 
 // Lighting's colour compensation, on ONI's print alone as the enlarger lays none, then a legacy print where one is kept.
 component PrintRows inherits VerticalLayout {
@@ -209,11 +233,7 @@ export component ColorPane inherits Pane {
         }
         if PanelState.enlarger-on && PanelState.on-paper: Field {
             label: @tr("Paper");
-            Picker {
-                value: PanelState.paper-title;
-                lines: PanelState.paper-lines;
-                chosen(i) => { PanelState.paper-chosen(i); }
-            }
+            PaperPicker { }
         }
         if PanelState.enlarger-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
     }

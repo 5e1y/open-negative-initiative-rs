@@ -266,9 +266,9 @@ pub struct State {
     published_revision: u64,
     /// Where the stock picker's choice lands while it shows.
     stock_target: Option<StockTarget>,
-    /// The stock the editor's menu lights, by its place in the catalogue: kept out of the settings, so it writes nothing.
-    stock_lit: Option<usize>,
-    /// The menu's stocks baked since it last dropped.
+    /// The stock or the paper an editor's menu lights: kept out of the settings, so it writes nothing.
+    lit: Option<stock_picker::Lit>,
+    /// The menu's stocks or papers baked since it last dropped.
     menu_baked: bool,
     /// The window may close: a failed write was answered with Quit Anyway.
     quitting: bool,

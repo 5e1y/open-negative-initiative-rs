@@ -1,6 +1,6 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
 import { Act } from "../act.slint";
-import { PlotStyle, ShellStyle, MenuLine } from "../ds/ds.slint";
+import { PlotStyle, ShellStyle, MenuLine, StockLine } from "../ds/ds.slint";
 import { Canister } from "../stocks.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
@@ -87,15 +87,20 @@ export global PanelState {
     // A digital photo: shot on its virtual film, its negative read as any negative is; no flat-field or roll.
     in property <bool> digital;
     // The virtual enlarger printing the photo in place of ONI's print, offered where one can print it; on its paper, or
-    // with Print on paper off on a neutral one; the paper's name among the papers, and the enlarger's filtration.
+    // with Print on paper off on a neutral one; the paper's name, and the enlarger's filtration.
     in property <bool> paper-shown;
     in property <bool> enlarger-on;
     in property <bool> on-paper;
     in property <string> paper-title;
-    in property <[MenuLine]> paper-lines;
     in property <string> paper-filtration;
     callback enlarger-toggled(bool);
     callback on-paper-toggled(bool);
+    // The papers' menu, laid by `paper-dropping` as it opens: its lines by maker and the one in use. The paper lit
+    // shows on the photo without a write, -1 its own again; one chosen, by its place in the catalogue, is written.
+    in property <[StockLine]> paper-lines;
+    in property <int> paper-in-use: -1;
+    callback paper-dropping();
+    callback paper-lit(int);
     callback paper-chosen(int);
     // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
     in property <bool> paper-blacks;

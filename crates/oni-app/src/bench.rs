@@ -22,7 +22,8 @@
 //! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure with the panel shown, then folded, counting
 //! each step rendered and drawn.
 //! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
-//! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon.
+//! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon;
+//! `ONI_BENCH=papers` the same with the Colour tab's papers.
 
 use crate::Store;
 use crate::app::Ctl;
@@ -142,6 +143,7 @@ pub enum Mode {
     Midzoom,
     Sweep,
     Stocks,
+    Papers,
 }
 
 impl Mode {
@@ -176,6 +178,7 @@ pub fn requested() -> Option<Mode> {
         "midzoom" => Some(Mode::Midzoom),
         "sweep" => Some(Mode::Sweep),
         "stocks" => Some(Mode::Stocks),
+        "papers" => Some(Mode::Papers),
         _ => None,
     }
 }
@@ -200,7 +203,10 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         return sweep(ctl, done);
     }
     if mode == Mode::Stocks {
-        return stocks(ctl, done);
+        return lights(ctl, Lights::Stocks, done);
+    }
+    if mode == Mode::Papers {
+        return lights(ctl, Lights::Papers, done);
     }
     if mode == Mode::Compare {
         return compare(ctl, done);

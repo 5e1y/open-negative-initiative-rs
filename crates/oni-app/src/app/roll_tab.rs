@@ -7,8 +7,8 @@ use crate::{MenuLine, PanelState};
 use oni_i18n::tr;
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::{ConversionMode, DyeSet, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, SourceEncoding, VirtualStock};
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use oni_settings::{ConversionMode, DyeSet, LegacyMachine, LegacyPrint, PipelineSettings, SourceEncoding, VirtualStock};
+use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
 /// The name a measured dye set goes by: its stock's, the generic set's own.
@@ -164,14 +164,6 @@ impl Ctl {
             })
         });
         let p = me.clone();
-        panel.on_paper_chosen(move |i| {
-            p.write_settings(|s| {
-                if let Some(paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i).copied()) {
-                    s.print_paper = Some(paper);
-                }
-            })
-        });
-        let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));
         let p = me.clone();
         panel.on_flat_apply_selection(move || {
@@ -245,10 +237,6 @@ impl Ctl {
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);
         panel.set_paper_title(crate::stocks::paper_label(settings.fitting_paper()));
-        if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
-            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: crate::stocks::paper_label(*p), enabled: true, ..MenuLine::default() }).collect();
-            panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
-        }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;
