@@ -65,6 +65,11 @@ impl Development {
         (pull, n.map(|v| v.1))
     }
 
+    /// The node at the speed's log exposure, 0, where a grey exposes the three layers alike.
+    pub fn at_speed(&self) -> usize {
+        clamp((-self.log_low / self.log_step).round(), 0.0, (NEGATIVE_CURVE_NODES - 1) as f32) as usize
+    }
+
     /// Each layer's log exposure less the couplers' pull: what it develops on.
     pub fn inhibited(&self, log: V3) -> V3 {
         let (pull, _) = self.pulled(log);
@@ -120,6 +125,9 @@ pub struct Negative {
     /// 1 on a negative; −1 on a positive, whose density falls as its exposure rises.
     pub sense: f32,
     pub development: &'static Development,
+    /// Each layer's density over the development's own: the frame's development of that layer, which puts its reference
+    /// grey on the stock's neutral.
+    pub scale: V3,
     /// Each layer's log exposure turned about `pivot` by `slope`, then moved by `shift`: Exposure, Contrast and the
     /// filters' neutral hold, the couplers then pulling on it.
     pub pivot: V3,
@@ -176,6 +184,7 @@ impl Negative {
             v3(self.own_pivot, 0.0),
             v3(self.own_slope, 0.0),
             v3(self.own_shift, 0.0),
+            v3(self.scale, 0.0),
         ];
         rows.extend(d.normal.iter().map(|v| v3(*v, 0.0)));
         rows.extend(d.after.iter().map(|v| v3(*v, 0.0)));
@@ -211,12 +220,13 @@ impl Negative {
             return density;
         }
         let d = self.development;
-        let read = map(density, |c, v| v.max(d.foot[c]).min(d.top[c]));
+        let own = map(density, |c, v| v / self.scale[c]);
+        let read = map(own, |c, v| v.max(d.foot[c]).min(d.top[c]));
         let developed = d.developed_on(self.owned(d.inhibited(self.moved(d.exposures(read)))));
-        map(density, |c, v| {
+        map(own, |c, v| {
             let fog = d.after[0][c];
             let share = if v < d.foot[c] { clamp((v - fog) / (d.foot[c] - fog).max(1e-6), 0.0, 1.0) } else { 1.0 };
-            v + share * (developed[c] - read[c])
+            (v + share * (developed[c] - read[c])) * self.scale[c]
         })
     }
 

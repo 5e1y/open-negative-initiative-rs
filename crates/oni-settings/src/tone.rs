@@ -247,6 +247,11 @@ impl Print {
         rest + (stops - rest) / Self::EXPOSURE_GEAR
     }
 
+    /// This print with its Exposure in the curve's stops, as the former print-side replicas read them.
+    pub fn on_curve(&self, rest: f32) -> Print {
+        Print { exposure: Self::curve_stops(self.exposure, rest), ..*self }
+    }
+
     pub fn filters(&self) -> V3 {
         [self.red.exposure, self.green.exposure, self.blue.exposure]
     }

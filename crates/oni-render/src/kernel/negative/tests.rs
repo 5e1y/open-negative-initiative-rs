@@ -37,6 +37,7 @@ fn at_rest() -> Negative {
         black: [0.0; 3],
         sense: 1.0,
         development: &SMOOTH,
+        scale: [1.0; 3],
         pivot: [0.0; 3],
         slope: [1.0; 3],
         shift: [0.0; 3],

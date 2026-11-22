@@ -32,7 +32,7 @@ const LIGHT_SPAN: f64 = 8.0;
 pub enum Film {
     /// A digital photo's virtual stock, its own curves, pushed ones included.
     Stock(VirtualStock),
-    /// A scanned colour negative's stock, by its dyes; the generic set on the C-41 profiles' mean curves.
+    /// A scanned colour negative's stock, by its dyes, read on its mean layer; the generic set on the C-41 profiles'.
     Dyes(DyeSet),
     /// A black and white negative: the C-41 profiles' mean curve on its one layer, no couplers.
     Silver,
@@ -79,6 +79,11 @@ fn generic() -> (Vec<f64>, Vec<[f64; 3]>) {
     (le, mean)
 }
 
+/// The mean of a stock's three layers, on each.
+fn one_layer(density: &[[f64; 3]]) -> Vec<[f64; 3]> {
+    density.iter().map(|d| [(d[0] + d[1] + d[2]) / 3.0; 3]).collect()
+}
+
 /// `table` along `le` on the development's uniform nodes, each node at least `LEAST_SLOPE` a log over the last.
 fn rising(le: &[f64], table: &[[f64; 3]]) -> [V3; NEGATIVE_CURVE_NODES] {
     let (low, high) = (le[0], le[le.len() - 1]);
@@ -115,20 +120,21 @@ fn developed(film: Film) -> Development {
             let p = read(stock.profile());
             developing(&p.log_exposure, &p.density_curves, true)
         }
-        Film::Dyes(set) => match set.profile() {
-            Some(name) => {
-                let p = read(name);
-                developing(&p.log_exposure, &p.density_curves, true)
-            }
-            None => {
-                let (le, mean) = generic();
-                developing(&le, &mean, true)
-            }
-        },
+        // A scan's three layers are read on one curve, its stock's mean layer, each scaled to the frame's own: its windows
+        // print the frame's neutral, which every common move then keeps; the model's own neutral is a virtual film's alone.
+        Film::Dyes(set) => {
+            let (le, density) = match set.profile() {
+                Some(name) => {
+                    let p = read(name);
+                    (p.log_exposure, p.density_curves)
+                }
+                None => generic(),
+            };
+            developing(&le, &one_layer(&density), false)
+        }
         Film::Silver => {
             let (le, mean) = generic();
-            let grey: Vec<[f64; 3]> = mean.iter().map(|d| [(d[0] + d[1] + d[2]) / 3.0; 3]).collect();
-            developing(&le, &grey, false)
+            developing(&le, &one_layer(&mean), false)
         }
         Film::Light => {
             let (le, line) = ([-LIGHT_SPAN, LIGHT_SPAN], [[-LIGHT_SPAN; 3], [LIGHT_SPAN; 3]]);
@@ -145,6 +151,12 @@ pub fn development(film: Film) -> &'static Development {
     const COUNT: usize = VirtualStock::ALL.len() + DyeSet::ALL.len() + 2;
     static TABLES: [OnceLock<Development>; COUNT] = [const { OnceLock::new() }; COUNT];
     TABLES[film.index()].get_or_init(|| developed(film))
+}
+
+/// Whether Lighting reads `s`'s dyes' amounts, as a paper does and a digital photo's negative is developed, before any
+/// tone: then ONI's print takes the dyes' pass untoned.
+pub fn reads_amounts(s: &PipelineSettings) -> bool {
+    s.paper().is_some() || s.film().is_some()
 }
 
 /// The tone reading each density above the bare film as `offset` more, straight on: what a print reading the density
@@ -165,23 +177,35 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let mono = s.mode.is_monochrome();
     let positive = s.mode.reads_positive();
     let sense = if positive { -1.0 } else { 1.0 };
-    let separation = k.dyes.as_ref();
-    let (gain, pedestal, log_guard, black) = match separation {
-        Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
-        None => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
-    };
+    // A paper reads the dyes' amounts, and so does a digital photo, its negative the model's own; ONI's print reads a
+    // scan's density, its dyes toned onto the grey its windows print, which keeps the frame's neutral.
+    let film = Film::of(s);
     let on_paper = s.paper().is_some();
-    let (tone, tone_low, tone_step) = match (on_paper, separation) {
-        (true, _) => straight([0.0; 3]),
+    let amounts = k.dyes.as_ref().filter(|_| reads_amounts(s));
+    let (gain, pedestal, log_guard, black) = match (amounts, k.dyes.is_some()) {
+        (Some(_), _) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
+        (None, true) => ([1.0; 3], 0.0, k.log_guard, film_ends(s).0),
+        (None, false) => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
+    };
+    let (tone, tone_low, tone_step) = match (on_paper, amounts) {
         (false, Some(_)) => {
             let toned = conversion::stock_separation(s).expect("the frame's dyes");
             (toned.tone, toned.tone_low, toned.tone_step)
         }
+        (true, _) => straight([0.0; 3]),
         (false, None) => straight(black),
     };
-    let anchors = paper::anchors(s, separation);
-    let development = development(Film::of(s));
-    let pivot = development.exposures(anchors[2].map(|v| sense * v));
+    let anchors = paper::anchors(s, amounts);
+    let development = development(film);
+    // A colour negative's layers developed so its reference grey is the stock's neutral at the speed's exposure, so
+    // every common move on that neutral stays neutral; a positive's and silver's layers are one already.
+    let grey = anchors[2].map(|v| sense * v);
+    let speed = development.normal[development.at_speed()];
+    let scale = match film {
+        Film::Stock(_) | Film::Dyes(_) => std::array::from_fn(|c| grey[c] / speed[c]),
+        Film::Silver | Film::Light => [1.0; 3],
+    };
+    let pivot = development.exposures(std::array::from_fn(|c| grey[c] / scale[c]));
     let own = |v: V3| if mono { [0.0; 3] } else { v };
     let stops = print.exposure - Print::resting_exposure(s.mode);
     let shift = |hold: f32| [stops * std::f32::consts::LOG10_2 + hold; 3];
@@ -200,6 +224,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         black,
         sense,
         development,
+        scale,
         pivot,
         slope,
         shift: shift(0.0),
@@ -226,7 +251,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     // A filter tints and the grey keeps its weight: one neutral stop holds its densities' luma as they print unfiltered.
     let grey = |n: &Negative| {
         let d = development.developed_on(n.owned(development.inhibited(n.moved(pivot))));
-        LUMA.iter().zip(d).map(|(w, v)| w * v).sum::<f32>()
+        (0..3).map(|c| LUMA[c] * d[c] * scale[c]).sum::<f32>()
     };
     let target = grey(&Negative { own_shift: [0.0; 3], ..at });
     let hold = bisected(-2.0, 2.0, target, |h| grey(&Negative { shift: shift(h), ..at }));

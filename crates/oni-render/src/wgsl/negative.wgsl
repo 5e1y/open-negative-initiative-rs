@@ -20,6 +20,7 @@ struct Params {
     own_pivot: vec4<f32>,
     own_slope: vec4<f32>,
     own_shift: vec4<f32>,
+    scale: vec4<f32>,
     normal: array<vec4<f32>, 256>,
     after: array<vec4<f32>, 256>,
     tone: array<vec4<f32>, 128>,
@@ -149,17 +150,20 @@ fn negative_px(s: vec4<f32>) -> vec4<f32> {
     let sense = P.pivot_sense.w;
     let guard = P.black_guard.w;
     var density = sense * (-log(max((s.rgb + P.gain_pedestal.w) * P.gain_pedestal.xyz, vec3<f32>(guard))) * LOG10_E - P.black_guard.xyz);
+    let scale = P.scale.xyz;
     let slope = P.slope_low.xyz;
     let shift = P.shift_step.xyz;
     let own = any(P.own_slope.xyz != vec3<f32>(1.0)) || any(P.own_shift.xyz != vec3<f32>(0.0));
     if (any(slope != vec3<f32>(1.0)) || any(shift != vec3<f32>(0.0)) || own) {
-        // Over the shoulder a density takes the shoulder's move; under the toe's foot the foot's, less the nearer the fog.
-        let read = min(max(density, P.foot.xyz), P.top.xyz);
+        // On the stock's own development; over the shoulder a density takes the shoulder's move, under the toe's foot the
+        // foot's, less the nearer the fog.
+        let own_density = density / scale;
+        let read = min(max(own_density, P.foot.xyz), P.top.xyz);
         let e = negative_exposures(read);
         let pivot = P.pivot_sense.xyz;
         let fog = P.after[0].xyz;
-        let share = select(vec3<f32>(1.0), clamp((density - fog) / max(P.foot.xyz - fog, vec3<f32>(1e-6)), vec3<f32>(0.0), vec3<f32>(1.0)), density < P.foot.xyz);
-        density = density + share * (negative_developed(pivot + (e - pivot) * slope + shift) - read);
+        let share = select(vec3<f32>(1.0), clamp((own_density - fog) / max(P.foot.xyz - fog, vec3<f32>(1e-6)), vec3<f32>(0.0), vec3<f32>(1.0)), own_density < P.foot.xyz);
+        density = (own_density + share * (negative_developed(pivot + (e - pivot) * slope + shift) - read)) * scale;
     }
     let toned = negative_toned(sense * density);
     let f = (toned - P.tone_low.xyz) / P.tone_step.xyz;

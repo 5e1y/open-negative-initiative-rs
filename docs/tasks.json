@@ -12461,5 +12461,13 @@
     "status": "done",
     "detail": "tests/lighting_on_negative.rs: every pipe at Lighting's rest folds to the bits of the build before it, a legacy print at its entry; Exposure ±1 on a scanned negative within ΔE 1.2 (median 0.2) of that negative shot a stop over, the enlarger's time 8 to 16 off; on a digital photo within ΔE 0.6 of the Film section's Exposure; colour lighter than the grey kept as the film keeps it; Contrast holding the grey's negative; the filters tinting with the grey's weight held; every print finite and monotone past the curves' ends; the GPU its reference. The kernel's own checks read back through the couplers and keep a channel's own move on its layer. Tests whose subject left (the exposure gear, Contrast's and the points' saturation curves, colour compensation's answer to Lighting, the paper's grade and filtration) go; the others read Lighting on the negative.",
     "outcome": ""
+  },
+  {
+    "id": 3404,
+    "type": "feature",
+    "title": "Lighting on the negative reads each pipe's own neutral",
+    "status": "done",
+    "detail": "A digital photo's negative is the model's own: Lighting reads its dyes' amounts (ONI's print takes the dyes' pass untoned and the separation's tone after the moves) and develops them again on its virtual stock's three coupled layers, its Exposure within ΔE 0.5 of the Film section's. A scan's negative is not the model's: the couplers, read back, turned its small departures from the model's neutral into colour on every move. It is read on its stock's mean layer (the C-41 profiles' for the generic set), each channel scaled so the frame's reference grey sits on that layer at the speed's exposure, ONI's print reading the density its windows read: every common move keeps the frame's neutral to the bit. Under the toe's foot a density takes the foot's move, less the nearer the fog, which no move leaves; over the shoulder the shoulder's (the layer's Dmax less 0.1 a log of reading).",
+    "outcome": ""
   }
 ]

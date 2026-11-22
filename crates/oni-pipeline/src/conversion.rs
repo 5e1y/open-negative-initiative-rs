@@ -69,20 +69,20 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
 /// Stage 4-7's arguments before any paper, Lighting on the negative.
 fn lit(s: &PipelineSettings) -> Stage47 {
     let on_negative = !s.print.rests_on_negative(s.mode);
-    let k = unprinted(&PipelineSettings { print: s.print.unlit(s.mode), ..s.clone() }, on_negative);
+    let k = unprinted(&PipelineSettings { print: s.print.unlit(s.mode), ..s.clone() }, on_negative && crate::negative::reads_amounts(s));
     Stage47 { negative: crate::negative::negative(s, &k), ..k }
 }
 
 /// Stage 4-7's arguments before any paper and Lighting: the reading, its dyes, the windows and ONI's print, the dyes'
-/// amounts read as they are on a paper or where Lighting `on_negative` tones them after its moves.
-fn unprinted(s: &PipelineSettings, on_negative: bool) -> Stage47 {
+/// amounts read as they are on a paper or where Lighting reads them before their tone (`amounts`).
+fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
     let print = &s.print;
     let mono = s.mode.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     let on_paper = s.paper().is_some() && !print.bypassed;
-    let dyes = if on_paper || on_negative { stock_amounts(s) } else { stock_separation(s) };
+    let dyes = if on_paper || amounts { stock_amounts(s) } else { stock_separation(s) };
     let windows = s.levels.windows();
     Stage47 {
         gain: s.gains.stops.map(f32::exp2),
