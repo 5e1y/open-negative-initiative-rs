@@ -65,8 +65,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): no ONI window and no colour compensation; the
   picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
-  through the stock's curves and couplers, and the film is developed again (`negative`); ONI's print and the enlarger print it at
-  their rest. On a digital photo Lighting's Exposure is the Film section's; a legacy print reads its machine's entry itself.
+  through the stock's curves, and the film is developed again (`negative`); ONI's print and the enlarger print it at their rest. A
+  digital photo's negative is the model's own (three coupled layers: Lighting's Exposure is the Film section's); a scan is read on
+  its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
 - **The virtual enlarger may print on no paper** (owner's call, 2026-11-22): Print on paper off swaps the paper for a neutral one,
   ONI's print curve over the frame's range on each layer alone, to show what the paper brings (`paper::neutral`).
 - **A slide prints through an internegative** (owner's verdict, 2026-11-22): on any colour paper, copied on a virtual Vision3 50D
