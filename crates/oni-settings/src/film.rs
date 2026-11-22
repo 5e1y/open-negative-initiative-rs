@@ -18,7 +18,7 @@ pub struct Film {
     #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
     pub manual_order: Option<f64>,
     /// The catalogue's key, never the display name.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none", default, deserialize_with = "stored_key")]
     pub stock: Option<String>,
     #[serde(rename = "shotDate", skip_serializing_if = "Option::is_none", default)]
     pub shot_date: Option<Date>,
@@ -43,7 +43,7 @@ struct MarkerWire {
     name: String,
     #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
     manual_order: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[serde(skip_serializing_if = "Option::is_none", default, deserialize_with = "stored_key")]
     stock: Option<String>,
     #[serde(rename = "shotDate", with = "date::reference_seconds", skip_serializing_if = "Option::is_none", default)]
     shot_date: Option<Date>,

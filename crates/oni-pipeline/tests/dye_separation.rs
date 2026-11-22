@@ -131,7 +131,7 @@ const SPLIT: [(&str, &str); 14] = [
     ("kodak-portra800", "kodak_portra_800"),
     ("kodak-ektar100", "kodak_ektar_100"),
     ("kodak-gold200", "kodak_gold_200"),
-    ("kodak-ultramax400", "kodak_ultramax_400"),
+    ("kodak-ultramax400", "kodak_ultra_max_400"),
     ("kodak-verita200d", "kodak_verita_200d"),
     ("kodak-vision3-50d", "kodak_vision3_50d"),
     ("kodak-vision3-200t", "kodak_vision3_200t"),
@@ -139,7 +139,7 @@ const SPLIT: [(&str, &str); 14] = [
     ("kodak-vision3-500t", "kodak_vision3_500t"),
     ("fujifilm-c200", "fujifilm_c200"),
     ("fujifilm-pro400h", "fujifilm_pro_400h"),
-    ("fujifilm-superia-xtra400", "fujifilm_xtra_400"),
+    ("fujifilm-superia-xtra400", "fujifilm_superia_x_tra_400"),
 ];
 
 /// The dye and base densities a profile file holds where it measures all four, read straight from its JSON.
@@ -280,25 +280,25 @@ fn fingerprint(d: &dyes::Dyes) -> u64 {
     numbers.flat_map(|v| v.to_bits().to_le_bytes()).fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3))
 }
 
-/// A roll on a line, the generic set and a digital photo's film separate on these numbers to the bit, so what
-/// their frames render never moves.
+/// A roll on a line, the generic set and a digital photo's film separate on these numbers to the bit, their data
+/// sheets' dyes, so what their frames render never moves by accident.
 #[test]
 fn a_line_the_generic_set_and_the_virtual_film_separate_on_pinned_numbers() {
     let kept: [(&str, u64); 8] = [
-        ("kodak-portra", 0x3002_8f7e_2337_b290),
-        ("kodak-gold", 0x6762_9091_c1aa_f5d8),
-        ("kodak-ultramax", 0x780d_60ff_8a45_a8be),
-        ("fujifilm-fujicolor", 0x09ea_30f2_32c2_e924),
-        ("fujifilm-fujicolor-pro", 0x7715_5d4a_433e_c8a0),
-        ("fujifilm-superia", 0xea94_2072_8748_9fa1),
-        ("generic-color-negative", 0xdb4f_2a34_bc47_bfb1),
-        ("cinestill-800t", 0x51f9_b0a1_159d_a1ff),
+        ("kodak-portra", 0x5c6a_f43c_7079_54f0),
+        ("kodak-gold", 0xe338_2695_028d_f2a9),
+        ("kodak-ultramax", 0x8437_afcd_dee1_f82b),
+        ("fujifilm-fujicolor", 0xb5d1_ff0a_507a_60d4),
+        ("fujifilm-fujicolor-pro", 0x6648_fc4f_96d4_ede7),
+        ("fujifilm-superia", 0x4e30_f56e_684a_3f77),
+        ("generic-color-negative", 0xddbd_2d6f_cfa0_9076),
+        ("cinestill-800t", 0xc6e8_0670_75cc_a390),
     ];
     let read: Vec<(&str, u64)> = kept.iter().map(|(id, _)| (*id, fingerprint(dyes::dyes(oni_settings::dyes::dye_set(id).unwrap())))).collect();
     let digital = fingerprint(dyes::dyes(VirtualStock::KodakPortra800.dye_set()));
     println!("{read:x?}, digital 0x{digital:016x}");
     assert_eq!(read, kept);
-    assert_eq!(digital, 0xdebf_6011_42dd_6729);
+    assert_eq!(digital, 0x0d1e_59b1_37f2_2c54);
     // Twin: one bit moved in a matrix is seen.
     let mut moved = dyes::Dyes { dyes: Vec::new(), weights: Vec::new(), ..*dyes::dyes(DyeSet::KodakPortra400) };
     let whole = fingerprint(&moved);

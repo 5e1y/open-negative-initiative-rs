@@ -8,76 +8,44 @@ use crate::modes::ConversionMode;
 use crate::white::{self, White};
 use serde::{Deserialize, Serialize};
 
-/// The stocks a digital photo can be shot on, by the key a sidecar stores: every colour negative spektrafilm
-/// profiles, its pushed developments included, then every one written from its maker's data sheet, a stock both
-/// profile its twin keyed `-datasheet`.
+/// The stocks a digital photo can be shot on, by the key a sidecar stores: every colour negative profiled from its
+/// maker's data sheet, Portra 800's pushed developments included. A data-sheet twin's key, which a document before
+/// format 60 may store, reads as its stock's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum VirtualStock {
     #[default]
-    #[serde(rename = "kodak-portra-800")]
+    #[serde(rename = "kodak-portra-800", alias = "kodak-portra-800-datasheet")]
     KodakPortra800,
-    #[serde(rename = "kodak-portra-800-push-1")]
+    #[serde(rename = "kodak-portra-800-push-1", alias = "kodak-portra-800-push-1-datasheet")]
     KodakPortra800Push1,
-    #[serde(rename = "kodak-portra-800-push-2")]
+    #[serde(rename = "kodak-portra-800-push-2", alias = "kodak-portra-800-push-2-datasheet")]
     KodakPortra800Push2,
-    #[serde(rename = "kodak-portra-160")]
+    #[serde(rename = "kodak-portra-160", alias = "kodak-portra-160-datasheet")]
     KodakPortra160,
-    #[serde(rename = "kodak-portra-400")]
+    #[serde(rename = "kodak-portra-400", alias = "kodak-portra-400-datasheet")]
     KodakPortra400,
-    #[serde(rename = "kodak-ektar-100")]
+    #[serde(rename = "kodak-ektar-100", alias = "kodak-ektar-100-datasheet")]
     KodakEktar100,
-    #[serde(rename = "kodak-gold-200")]
+    #[serde(rename = "kodak-gold-200", alias = "kodak-gold-200-datasheet")]
     KodakGold200,
-    #[serde(rename = "kodak-ultramax-400")]
+    #[serde(rename = "kodak-ultramax-400", alias = "kodak-ultramax-400-datasheet")]
     KodakUltraMax400,
-    #[serde(rename = "kodak-verita-200d")]
+    #[serde(rename = "kodak-verita-200d", alias = "kodak-verita-200d-datasheet")]
     KodakVerita200D,
-    #[serde(rename = "kodak-vision3-50d")]
+    #[serde(rename = "kodak-vision3-50d", alias = "kodak-vision3-50d-datasheet")]
     KodakVision3_50D,
-    #[serde(rename = "kodak-vision3-200t")]
+    #[serde(rename = "kodak-vision3-200t", alias = "kodak-vision3-200t-datasheet")]
     KodakVision3_200T,
-    #[serde(rename = "kodak-vision3-250d")]
+    #[serde(rename = "kodak-vision3-250d", alias = "kodak-vision3-250d-datasheet")]
     KodakVision3_250D,
-    #[serde(rename = "kodak-vision3-500t")]
+    #[serde(rename = "kodak-vision3-500t", alias = "kodak-vision3-500t-datasheet")]
     KodakVision3_500T,
-    #[serde(rename = "fujifilm-c200")]
+    #[serde(rename = "fujifilm-c200", alias = "fujifilm-c200-datasheet")]
     FujifilmC200,
-    #[serde(rename = "fujifilm-pro-400h")]
+    #[serde(rename = "fujifilm-pro-400h", alias = "fujifilm-pro-400h-datasheet")]
     FujifilmPro400H,
-    #[serde(rename = "fujifilm-xtra-400")]
+    #[serde(rename = "fujifilm-xtra-400", alias = "fujifilm-xtra-400-datasheet")]
     FujifilmXtra400,
-    #[serde(rename = "fujifilm-c200-datasheet")]
-    FujifilmC200Datasheet,
-    #[serde(rename = "fujifilm-pro-400h-datasheet")]
-    FujifilmPro400HDatasheet,
-    #[serde(rename = "fujifilm-xtra-400-datasheet")]
-    FujifilmXtra400Datasheet,
-    #[serde(rename = "kodak-ektar-100-datasheet")]
-    KodakEktar100Datasheet,
-    #[serde(rename = "kodak-gold-200-datasheet")]
-    KodakGold200Datasheet,
-    #[serde(rename = "kodak-portra-160-datasheet")]
-    KodakPortra160Datasheet,
-    #[serde(rename = "kodak-portra-400-datasheet")]
-    KodakPortra400Datasheet,
-    #[serde(rename = "kodak-portra-800-datasheet")]
-    KodakPortra800Datasheet,
-    #[serde(rename = "kodak-portra-800-push-1-datasheet")]
-    KodakPortra800Push1Datasheet,
-    #[serde(rename = "kodak-portra-800-push-2-datasheet")]
-    KodakPortra800Push2Datasheet,
-    #[serde(rename = "kodak-ultramax-400-datasheet")]
-    KodakUltraMax400Datasheet,
-    #[serde(rename = "kodak-verita-200d-datasheet")]
-    KodakVerita200DDatasheet,
-    #[serde(rename = "kodak-vision3-50d-datasheet")]
-    KodakVision3_50DDatasheet,
-    #[serde(rename = "kodak-vision3-200t-datasheet")]
-    KodakVision3_200TDatasheet,
-    #[serde(rename = "kodak-vision3-250d-datasheet")]
-    KodakVision3_250DDatasheet,
-    #[serde(rename = "kodak-vision3-500t-datasheet")]
-    KodakVision3_500TDatasheet,
     #[serde(rename = "fujifilm-160nc")]
     Fujifilm160NC,
     #[serde(rename = "fujifilm-160nl")]
@@ -149,7 +117,7 @@ pub enum VirtualStock {
 pub enum Balance {
     /// D55, the 5500 K daylight.
     Daylight,
-    /// spektrafilm's "T", NIST's incandescent lamp.
+    /// NIST's incandescent lamp, a tungsten sheet's "T".
     Tungsten,
 }
 
@@ -192,7 +160,7 @@ use entries::{ENTRIES, Entry};
 
 impl VirtualStock {
     /// Portra 800 first, the default a digital photo opens on.
-    pub const ALL: [VirtualStock; 64] = [
+    pub const ALL: [VirtualStock; 48] = [
         VirtualStock::KodakPortra800,
         VirtualStock::KodakPortra800Push1,
         VirtualStock::KodakPortra800Push2,
@@ -209,22 +177,6 @@ impl VirtualStock {
         VirtualStock::FujifilmC200,
         VirtualStock::FujifilmPro400H,
         VirtualStock::FujifilmXtra400,
-        VirtualStock::FujifilmC200Datasheet,
-        VirtualStock::FujifilmPro400HDatasheet,
-        VirtualStock::FujifilmXtra400Datasheet,
-        VirtualStock::KodakEktar100Datasheet,
-        VirtualStock::KodakGold200Datasheet,
-        VirtualStock::KodakPortra160Datasheet,
-        VirtualStock::KodakPortra400Datasheet,
-        VirtualStock::KodakPortra800Datasheet,
-        VirtualStock::KodakPortra800Push1Datasheet,
-        VirtualStock::KodakPortra800Push2Datasheet,
-        VirtualStock::KodakUltraMax400Datasheet,
-        VirtualStock::KodakVerita200DDatasheet,
-        VirtualStock::KodakVision3_50DDatasheet,
-        VirtualStock::KodakVision3_200TDatasheet,
-        VirtualStock::KodakVision3_250DDatasheet,
-        VirtualStock::KodakVision3_500TDatasheet,
         VirtualStock::Fujifilm160NC,
         VirtualStock::Fujifilm160NL,
         VirtualStock::Fujifilm160NPC,
@@ -289,7 +241,7 @@ impl VirtualStock {
         self.entry().dyes
     }
 
-    /// Its profile's file: spektrafilm's name for it, or under `datasheet/` the one written from its data sheet.
+    /// Its profile's file, written from the stock's data sheet.
     pub fn profile(self) -> &'static str {
         self.entry().profile
     }

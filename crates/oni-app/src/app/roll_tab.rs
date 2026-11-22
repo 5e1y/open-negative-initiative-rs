@@ -236,7 +236,7 @@ impl Ctl {
         panel.set_paper_shown(settings.takes_paper());
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);
-        panel.set_paper_title(crate::stocks::paper_label(settings.fitting_paper()));
+        panel.set_paper_title(settings.fitting_paper().name().into());
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;

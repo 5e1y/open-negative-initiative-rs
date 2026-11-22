@@ -53,9 +53,9 @@ settings: PipelineSettings {
     },
     gains: Gains {
         stops: [
-            -0.84404904,
+            -0.8467025,
             0.0,
-            1.1973134,
+            1.1942314,
         ],
     },
     density_ceiling: 3.5,
@@ -88,22 +88,22 @@ settings: PipelineSettings {
     ],
     levels: LevelsSet {
         red: Levels {
-            black: 0.5436084,
-            white: 1.8197294,
+            black: 0.54254854,
+            white: 1.6911036,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         green: Levels {
-            black: 0.54339576,
-            white: 2.0850086,
+            black: 0.542336,
+            white: 2.046167,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         blue: Levels {
-            black: 0.54277563,
-            white: 2.206238,
+            black: 0.5417197,
+            white: 2.2729988,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,

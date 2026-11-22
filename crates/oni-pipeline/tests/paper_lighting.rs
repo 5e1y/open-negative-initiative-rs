@@ -215,8 +215,8 @@ fn onis_print_bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 
 #[test]
 fn onis_print_is_unchanged_to_the_bit() {
-    // ONI's print's outputs on these settings, Contrast at rest, as before the paper left its curve.
-    const BEFORE: u64 = 0x3374_6d46_e618_f2e6;
+    // ONI's print's outputs on these settings, Contrast at rest, as before the paper left its curve, on the data-sheet dyes.
+    const BEFORE: u64 = 0x7891_b7fb_f4df_7e2c;
     let bits = onis_print_bits(|k| k);
     println!("ONI's print folds to {bits:#018x}");
     assert_eq!(bits, BEFORE);

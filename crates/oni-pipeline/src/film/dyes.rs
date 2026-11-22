@@ -26,43 +26,22 @@ pub struct Dyes {
     pub matrix: [[f32; 3]; 3],
 }
 
-/// The C-41 profiles the generic set averages: every colour negative still film ONI ships, cine stocks aside.
+/// The C-41 profiles the generic set averages: the nine still colour negatives most shot today.
 pub const C41: [&str; 9] = [
     "kodak_portra_160",
     "kodak_portra_400",
     "kodak_portra_800",
     "kodak_ektar_100",
     "kodak_gold_200",
-    "kodak_ultramax_400",
+    "kodak_ultra_max_400",
     "fujifilm_c200",
     "fujifilm_pro_400h",
-    "fujifilm_xtra_400",
+    "fujifilm_superia_x_tra_400",
 ];
 
-/// A profile's file: spektrafilm's, shipped unchanged, or under `datasheet/` one written from its maker's data sheet.
+/// A profile's file, written from its maker's data sheet.
 pub fn source(name: &str) -> Option<&'static [u8]> {
-    if let Some(sheet) = name.strip_prefix("datasheet/") {
-        return super::datasheet::PROFILES.iter().find(|(n, _)| *n == sheet).map(|(_, json)| *json);
-    }
-    Some(match name {
-        "kodak_portra_160" => include_bytes!("../../resources/film/kodak_portra_160.json"),
-        "kodak_portra_400" => include_bytes!("../../resources/film/kodak_portra_400.json"),
-        "kodak_portra_800" => include_bytes!("../../resources/film/kodak_portra_800.json"),
-        "kodak_portra_800_push1" => include_bytes!("../../resources/film/kodak_portra_800_push1.json"),
-        "kodak_portra_800_push2" => include_bytes!("../../resources/film/kodak_portra_800_push2.json"),
-        "kodak_ektar_100" => include_bytes!("../../resources/film/kodak_ektar_100.json"),
-        "kodak_gold_200" => include_bytes!("../../resources/film/kodak_gold_200.json"),
-        "kodak_ultramax_400" => include_bytes!("../../resources/film/kodak_ultramax_400.json"),
-        "kodak_vision3_50d" => include_bytes!("../../resources/film/kodak_vision3_50d.json"),
-        "kodak_vision3_200t" => include_bytes!("../../resources/film/kodak_vision3_200t.json"),
-        "kodak_vision3_250d" => include_bytes!("../../resources/film/kodak_vision3_250d.json"),
-        "kodak_vision3_500t" => include_bytes!("../../resources/film/kodak_vision3_500t.json"),
-        "kodak_verita_200d" => include_bytes!("../../resources/film/kodak_verita_200d.json"),
-        "fujifilm_c200" => include_bytes!("../../resources/film/fujifilm_c200.json"),
-        "fujifilm_pro_400h" => include_bytes!("../../resources/film/fujifilm_pro_400h.json"),
-        "fujifilm_xtra_400" => include_bytes!("../../resources/film/fujifilm_xtra_400.json"),
-        _ => return None,
-    })
+    super::datasheet::PROFILES.iter().find(|(n, _)| *n == name).map(|(_, json)| *json)
 }
 
 fn profile(name: &str) -> Profile {

@@ -2974,8 +2974,8 @@ msgid "Credits"
 msgstr "Créditos"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "The virtual films, the measured dyes of the dye separation and the papers are made from the film and paper profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans, unmixes and prints its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences."
-msgstr "Las películas virtuales, los tintes medidos de la separación de tintes y los papeles se hacen con los perfiles de película y de papel de spektrafilm de Andrea Volpato, bajo CC BY-SA 4.0, que ONI revela, escanea, separa y positiva a su manera, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas. Ambos se distribuyen sin cambios con sus licencias."
+msgid "The virtual films, the measured dyes of the dye separation and the papers are made from each film's and paper's data sheet, which ONI develops, scans, unmixes and prints its own way after spektrafilm's model by Andrea Volpato, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence, shipped unchanged with its licence."
+msgstr "Las películas virtuales, los tintes medidos de la separación de tintes y los papeles se hacen con la ficha técnica de cada película y de cada papel, que ONI revela, escanea, separa y positiva a su manera según el modelo de spektrafilm de Andrea Volpato, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas, distribuidos sin cambios con su licencia."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "spektrafilm"
@@ -5360,10 +5360,6 @@ msgstr "Compilando los núcleos de imagen"
 #: crates/oni-app/src/stocks.rs
 msgid "Stock not specified"
 msgstr "Emulsión no especificada"
-
-#: crates/oni-app/src/stocks.rs
-msgid "Datasheet"
-msgstr "Ficha técnica"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

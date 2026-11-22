@@ -1,55 +1,26 @@
-Changes to the spektrafilm data shipped in this folder
-======================================================
+What Open Negative Initiative keeps from spektrafilm
+===================================================
 
 Source: spektrafilm by Andrea Volpato, https://github.com/andreavolpato/spektrafilm,
-commit 3bb2c2d (2026-06-07). Licence: SPEKTRAFILM_LICENSE.txt (CC BY-SA 4.0), kept unchanged.
+commit 3bb2c2d (2026-06-07).
 
-2026-11-21, by the Open Negative Initiative contributors:
+No spektrafilm film or paper profile is shipped: every film stock and paper ONI prints is written from its maker's
+data sheet (datasheet/, SOURCES.txt there). What remains:
 
-- kodak_portra_800.json: shipped unchanged.
-- irradiance_xy_tc.npy: shipped unchanged (Jakob and Hanika's spectra, see SPECTRA_LICENCE.txt).
-- kodak_portra_160.json, kodak_portra_400.json, kodak_ektar_100.json, kodak_gold_200.json,
-  kodak_ultramax_400.json, kodak_vision3_50d.json, kodak_vision3_500t.json, fujifilm_c200.json,
-  fujifilm_pro_400h.json, fujifilm_xtra_400.json: shipped unchanged, for the dye separation.
-- kodak_vision3_200t.json, kodak_vision3_250d.json, kodak_verita_200d.json: shipped unchanged, for the
-  dye separation of each stock the catalogue names after them.
-- kodak_portra_endura.json, kodak_supra_endura.json, kodak_ultra_endura.json, kodak_endura_premier.json,
-  fujifilm_crystal_archive_typeii.json: shipped unchanged, for the paper.
-- schott_kg3.csv: spektrafilm's data/filters/heat_absorbing/schott/KG3.csv (Schott KG3's transmittance as
-  Newport publishes it), shipped unchanged, for the enlarger's lamp.
+- irradiance_xy_tc.npy: Jakob and Hanika's spectra as the spektrafilm project ships them, unchanged (licence:
+  SPECTRA_LICENCE.txt).
+- schott_kg3.csv: spektrafilm's data/filters/heat_absorbing/schott/KG3.csv (Schott KG3's transmittance as Newport
+  publishes it), unchanged, for the enlarger's lamp; outside spektrafilm's profiles, under its code's licence, the
+  GPL-3.0.
+- spektrafilm's model, which ONI's bake follows in its own code (crates/oni-pipeline/src/film/bake.rs and
+  crates/oni-pipeline/src/paper.rs): the CAT16 adaptation the film is exposed through, the input gamut compression,
+  the colour negative's DIR coupler matrix, the TH-KG3 enlarger lamp and the custom dichroic filters, and the CAT02
+  adaptation the print is viewed through.
+- The references formats 54 to 59 derived from spektrafilm's sixteen colour negative profiles, kept so a digital
+  photo stored then moves onto its stock's data-sheet reference with every hand's move
+  (crates/oni-settings/src/migrate/datasheet.rs, and Portra 800's of format 37 in migrate/digital_film.rs): numbers
+  derived from the profiles, under CC BY-SA 4.0 (SPEKTRAFILM_LICENSE.txt, unchanged).
 
-2026-11-22, by the Open Negative Initiative contributors:
-
-- kodak_portra_800_push1.json, kodak_portra_800_push2.json: shipped unchanged, for the virtual films of Portra 800
-  pushed one and two stops (their dyes are Portra 800's; their curves are their own).
-- kodak_kodachrome_64.json: shipped unchanged, the last colour reversal film spektrafilm profiles, for the catalogue's
-  Kodachrome 64; nothing reads it yet.
-- Every colour negative film profile at commit 3bb2c2d is now shipped. Not shipped: the prints, spektrafilm's papers
-  kodak_ektacolor_edge.json and its cine print films kodak_2383.json and kodak_2393.json.
-
-Derivatives Open Negative Initiative computes from them at run time, never written to a file
-(crates/oni-pipeline/src/film/bake.rs):
-
-- Each stock's reference light, its profile's reference_illuminant: D55, or for "T" (Vision3 200T and 500T) NIST's
-  incandescent lamp as colour-science 0.4.6 ships it (CQS 7.4), the spectrum spektrafilm reads for "T", scaled to a
-  mean of 1 (crates/oni-pipeline/src/film/cie.rs).
-- The light per chromaticity: the spectra contracted with the profile's sensitivities through its
-  band-pass window (its window parameters, each channel's response to its reference light kept), the input gamut
-  compression (radial, Reinhard knee of power 6 toward the spectral locus) laid in, 192 x 192 nodes
-  in 32-bit floats, read bilinearly.
-- The density curves above their least density, and the curves before the DIR couplers act
-  (spektrafilm's colour-negative coupler matrix), so a developed grey lands on the profile's curves.
-- The scan: the dyes' and the base's densities on 405 to 695 nm, where the profile measures both,
-  read under D50 by the CIE 1931 observer, adapted to D65 by Bradford, in linear Rec. 2020.
-- The dye separation's dyes (crates/oni-pipeline/src/film/dyes.rs): each profile's dye and base densities on
-  the wavelengths it measures both, read by the 1931 observer under D50 (the virtual negative's scan) and by
-  that scan's Rec. 2020 matrix; the matrix of each stock's dye amounts at a unit of every dye; and a generic
-  colour-negative set, the mean of the nine C-41 profiles above (Portra 160, 400 and 800, Ektar 100, Gold 200,
-  UltraMax 400, C200, Pro 400H, Superia X-TRA 400) at each wavelength more than half of them measure.
-- The paper (crates/oni-pipeline/src/paper.rs): the enlarger's lamp, spektrafilm's TH-KG3 (a 3400 K blackbody
-  through the KG3 curve read by scipy's Akima interpolation, its mean 1), its dichroic filters (spektrafilm's
-  custom erf edges), each paper's layer sensitivities times that lamp on the wavelengths a stock measures its dyes
-  and base, its density curves from its fitted model (sums of normal integrals) on its 256 nodes, and its dyes and
-  base on 405 to 695 nm read under D50 by the 1931 observer, adapted to D65 by CAT02, in linear Rec. 2020.
-
-Everything derived from the profiles stays under CC BY-SA 4.0.
+2026-11-21 to 2026-11-22: spektrafilm's sixteen colour negative profiles, Kodachrome 64's and its five papers
+(Portra Endura, Supra Endura, Ultra Endura, Endura Premier, Crystal Archive Type II) were shipped unchanged.
+2026-11-22: all of them removed, each stock and paper replaced by its data-sheet profile.

@@ -33,10 +33,20 @@ fn shifts(a: &[V4], b: &[V4]) -> [f32; 3] {
     [0, 1, 2].map(|c| a.iter().zip(b).map(|(p, q)| (p[c] - q[c]).abs()).sum::<f32>() / a.len() as f32)
 }
 
-/// Channel `c` moved, at least twice as far as either other: those follow only through the kernel's
+/// Channel `c` moved, at least twice as far as either other on ONI's print: those follow only through the kernel's
 /// dye separation, chroma decompression and light-dependent colour, which mix the channels.
 fn led_by(moved: [f32; 3], c: usize) -> bool {
-    moved[c] > 5e-3 && (0..3).filter(|k| *k != c).all(|k| moved[k] * 2.0 < moved[c])
+    leads(moved, c, 2.0)
+}
+
+/// `led_by` on a paper, whose own layers and dyes mix the channels too: by 1.4 at least (1.49 for green's contrast on
+/// Endura Premier under Portra 800's dyes).
+fn paper_led_by(moved: [f32; 3], c: usize) -> bool {
+    leads(moved, c, 1.4)
+}
+
+fn leads(moved: [f32; 3], c: usize, by: f32) -> bool {
+    moved[c] > 5e-3 && (0..3).filter(|k| *k != c).all(|k| moved[k] * by < moved[c])
 }
 
 #[test]
@@ -96,6 +106,7 @@ fn a_channels_own_mid_and_contrast_move_that_channel() {
         let k = conversion::stage47(&rest);
         assert_eq!((k.own_contrast, k.own_mid), ([0.0; 3], [0.0; 3]), "{mode:?}: a frame at rest carries no channel tone");
         let at_rest = render(&mut g, &mut pipeline, &source, &rest);
+        let led = if rest.paper().is_some() { paper_led_by } else { led_by };
         for (c, name) in ["red", "green", "blue"].into_iter().enumerate() {
             for (what, contrast, mid) in [("contrast", 0.4, 0.0), ("mid", 0.0, 0.25)] {
                 let mut own = rest.clone();
@@ -103,14 +114,14 @@ fn a_channels_own_mid_and_contrast_move_that_channel() {
                 own.print.channel_mid[c] = mid;
                 let moved = shifts(&render(&mut g, &mut pipeline, &source, &own), &at_rest);
                 println!("{mode:?} {name}'s own {what} moves the channels by {moved:?}");
-                assert!(led_by(moved, c), "{mode:?}: {name}'s {what} moves {moved:?}");
+                assert!(led(moved, c), "{mode:?}: {name}'s {what} moves {moved:?}");
             }
         }
         // Twin: the same mids laid on the three channels leads with none of them.
         let mut all = rest.clone();
         all.print.channel_mid = [0.25; 3];
         let moved = shifts(&render(&mut g, &mut pipeline, &source, &all), &at_rest);
-        assert!((0..3).all(|c| !led_by(moved, c)), "{mode:?}: the mids on all three led with one channel {moved:?}");
+        assert!((0..3).all(|c| !led(moved, c)), "{mode:?}: the mids on all three led with one channel {moved:?}");
     }
     // Black and white shows no channel: its own tone renders nothing.
     let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);

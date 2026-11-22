@@ -1,5 +1,5 @@
 //! The Paper section of the Colour tab in the headless window, open right after More Color Settings: the virtual enlarger
-//! offered on a negative, off at its rest; on, it prints on Portra Endura and shows Print on paper, on, Paper blacks, off
+//! offered on a negative, off at its rest; on, it prints on Endura Premier and shows Print on paper, on, Paper blacks, off
 //! at rest, the paper and the enlarger's filtration, and Lighting Brightness in place of Colour compensation, each
 //! rendering again; Print on paper off prints on the neutral paper, the paper kept, its picker and blacks hidden; another
 //! paper picked by its name, the Frontier SP-3000 among them; a slide on the same papers and the neutral one, through its
@@ -60,8 +60,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let renders = ctl.state.borrow().renders();
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakPortraEndura), false));
-    assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Portra Endura");
+    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakEnduraPremier), false));
+    assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Endura Premier");
     assert_eq!(switches(), (1, 1, 1));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the frame printed on the paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
@@ -84,7 +84,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let (renders, on_paper) = (ctl.state.borrow().renders(), histogram());
     panel.invoke_on_paper_toggled(false);
     rig.pump();
-    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakPortraEndura) && !panel.get_on_paper());
+    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakEnduraPremier) && !panel.get_on_paper());
     assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((1, 1, 0), 1, 0));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     assert!(common::placed(w, Role::Text, &panel.get_paper_filtration()).len() == 1, "the filtration shown");
@@ -109,21 +109,20 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.pump();
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    let (mut names, mut listed) = (papers_listed(&panel), PaperStock::ALL.map(|p| oni_app::stocks::paper_label(p).to_string()).to_vec());
+    let (mut names, mut listed) = (papers_listed(&panel), PaperStock::ALL.map(|p| p.name().to_string()).to_vec());
     names.sort();
     listed.sort();
     assert_eq!(names, listed, "every paper once");
-    assert!(names.contains(&"Kodak Endura Premier · Datasheet".to_string()), "the data-sheet twin named by its source");
     let renders = ctl.state.borrow().renders();
-    let crystal_archive = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmCrystalArchiveTypeII).unwrap();
+    let crystal_archive = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmCrystalArchiveDigitalDPII).unwrap();
     panel.invoke_paper_chosen(crystal_archive as i32);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
-    assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Type II");
+    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveDigitalDPII));
+    assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Digital Type DP II");
     rig.until("the frame printed on Crystal Archive", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     // The Frontier SP-3000 is one more paper: picked by its name, the frame prints on it again.
     let shown = |paper: PaperStock| ctl.state.borrow().shown_settings().is_some_and(|s| s.print_paper == Some(paper));
-    rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::FujifilmCrystalArchiveTypeII) && histogram().is_some());
+    rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::FujifilmCrystalArchiveDigitalDPII) && histogram().is_some());
     let crystal = histogram();
     let renders = ctl.state.borrow().renders();
     let frontier = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmFrontierSp3000).unwrap();
@@ -146,7 +145,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     panel.invoke_film_type_picked(1);
     rig.pump();
     assert!(panel.get_paper_shown() && panel.get_enlarger_on(), "the slide keeps its paper");
-    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
+    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveDigitalDPII));
     assert_eq!(papers_listed(&panel).len(), PaperStock::ALL.len());
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the slide printed through its internegative", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
@@ -159,8 +158,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert!(!panel.get_enlarger_on() && settings().print_paper.is_none());
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::KodakPortraEndura));
-    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Portra Endura");
+    assert_eq!(settings().print_paper, Some(PaperStock::KodakEnduraPremier));
+    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Endura Premier");
     // Print on paper off: the slide's copy prints on the neutral paper, then back on its own.
     let renders = ctl.state.borrow().renders();
     panel.invoke_on_paper_toggled(false);

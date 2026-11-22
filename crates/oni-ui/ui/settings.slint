@@ -208,7 +208,7 @@ component AboutPage inherits Page {
             acts: [Act.check-updates, Act.whats-new];
         }
     }
-    // The data the virtual films are shot on, credited as their licences ask.
+    // The data and the model the virtual films are shot on, credited as their licences ask.
     Section {
         inset: SectionStyle.flush;
         foldable: false;
@@ -217,7 +217,7 @@ component AboutPage inherits Page {
         Label {
             role: TextRole.note;
             wrap: word-wrap;
-            text: @tr("The virtual films, the measured dyes of the dye separation and the papers are made from the film and paper profiles of spektrafilm by Andrea Volpato, under CC BY-SA 4.0, which ONI develops, scans, unmixes and prints its own way, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence. Both are shipped unchanged with their licences.");
+            text: @tr("The virtual films, the measured dyes of the dye separation and the papers are made from each film's and paper's data sheet, which ONI develops, scans, unmixes and prints its own way after spektrafilm's model by Andrea Volpato, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence, shipped unchanged with its licence.");
         }
         ButtonRows {
             keys: [@tr("spektrafilm"), @tr("vkdt")];

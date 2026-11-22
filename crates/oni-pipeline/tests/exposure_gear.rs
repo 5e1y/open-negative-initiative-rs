@@ -138,9 +138,14 @@ fn an_older_documents_render_stays_through_its_migration() {
         let rest = Print::resting_exposure(s.mode);
         s.print.exposure = rest + 1.3;
         s.print.contrast = 0.2;
+        // A digital photo then stood on spektrafilm's reference, which its stock's data sheet's takes over on purpose.
+        if let Some(film) = s.film() {
+            s = migrate::datasheet::on_former(&s, film.stock);
+        }
         let read = migrate::document(&stored(&s, older)).unwrap().document.settings;
         assert_eq!(read.print.exposure, Print::exposure_at(s.print.exposure, rest));
-        let (was, now, unmigrated) = (before_the_gear(&s), conversion::stage47(&read), conversion::stage47(&s));
+        let on_sheet = migrate::datasheet::caught_up(older, s.clone(), None);
+        let (was, now, unmigrated) = (before_the_gear(&on_sheet), conversion::stage47(&read), conversion::stage47(&s));
         let (mut gap, mut doubled) = (0.0f32, 0.0f32);
         for p in &pixels {
             let (a, b, c) = (cpu::stage47(*p, &was), cpu::stage47(*p, &now), cpu::stage47(*p, &unmigrated));

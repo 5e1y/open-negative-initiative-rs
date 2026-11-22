@@ -283,8 +283,9 @@ fn bits(on: Option<bool>) -> u64 {
 
 #[test]
 fn with_compensation_the_print_is_unchanged_to_the_bit() {
-    // The fold of these renders on ONI's print before the switch existed, as the paper's density change left it.
-    const BEFORE: u64 = 0xbfb6_c507_37ed_0fec;
+    // The fold of these renders on ONI's print before the switch existed, as the paper's density change left it, on the
+    // data-sheet dyes.
+    const BEFORE: u64 = 0x711b_f17a_c732_db9a;
     let (stored, on) = (bits(None), bits(Some(true)));
     println!("the renders fold to {stored:#018x}");
     assert_eq!((stored, on), (BEFORE, BEFORE));

@@ -1,4 +1,4 @@
-//! The stocks and papers written from their makers' data sheets each bake and print finite on the CPU and the GPU.
+//! Every stock and paper, each written from its maker's data sheet, bakes and prints finite on the CPU and the GPU.
 //! Twins: a profile holding a number not finite is refused, and a NaN in a print is seen.
 
 mod common;
@@ -10,16 +10,13 @@ use oni_pipeline::{Pipeline, Request, conversion, paper};
 use oni_render::cpu;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
-fn from_sheet(profile: Option<&str>) -> bool {
-    profile.is_some_and(|p| p.starts_with("datasheet/"))
-}
-
 fn sheet_stocks() -> Vec<VirtualStock> {
-    VirtualStock::ALL.into_iter().filter(|s| from_sheet(Some(s.profile()))).collect()
+    VirtualStock::ALL.to_vec()
 }
 
+/// Every paper but the Frontier, a machine measured.
 fn sheet_papers() -> Vec<PaperStock> {
-    PaperStock::ALL.into_iter().filter(|p| from_sheet(p.profile())).collect()
+    PaperStock::ALL.into_iter().filter(|p| p.profile().is_some()).collect()
 }
 
 fn finite(pixels: &[V4]) -> bool {
@@ -61,7 +58,7 @@ fn rendered(g: &mut Graph, s: &PipelineSettings) -> Vec<V4> {
 fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     let (stocks, papers) = (sheet_stocks(), sheet_papers());
     println!("{} films and {} papers from their data sheets", stocks.len(), papers.len());
-    assert!(stocks.len() >= 48 && papers.len() >= 6);
+    assert_eq!((stocks.len(), papers.len()), (48, 8));
     for stock in &stocks {
         let json = film::dyes::source(stock.profile()).expect("shipped");
         assert!(film::profile::Profile::read(json).is_ok(), "{stock:?}");
@@ -92,7 +89,7 @@ fn every_sheet_film_prints_finite_on_the_cpu_with_and_without_paper() {
         }
     }
     // Twin: a NaN a scene carries is seen.
-    let mut out = printed(VirtualStock::KodakPortra800Datasheet, &shot(VirtualStock::KodakPortra800Datasheet, None));
+    let mut out = printed(VirtualStock::KodakPortra800, &shot(VirtualStock::KodakPortra800, None));
     out[3][1] = f32::NAN;
     assert!(!finite(&out));
 }
@@ -100,7 +97,7 @@ fn every_sheet_film_prints_finite_on_the_cpu_with_and_without_paper() {
 #[test]
 fn every_sheet_paper_prints_finite_on_the_cpu() {
     for p in sheet_papers() {
-        for stock in [VirtualStock::KodakPortra800, VirtualStock::KodakPortra800Datasheet] {
+        for stock in [VirtualStock::KodakPortra800, VirtualStock::KodakVision3_500T] {
             assert!(finite(&printed(stock, &shot(stock, Some(p)))), "{p:?} under {stock:?}");
         }
     }
@@ -113,10 +110,10 @@ fn every_sheet_film_and_paper_renders_finite_on_the_gpu() {
         assert!(finite(&rendered(&mut g, &shot(stock, None))), "{stock:?}");
     }
     for p in sheet_papers() {
-        assert!(finite(&rendered(&mut g, &shot(VirtualStock::KodakPortra800Datasheet, Some(p)))), "{p:?}");
+        assert!(finite(&rendered(&mut g, &shot(VirtualStock::KodakPortra800, Some(p)))), "{p:?}");
     }
     // Twin: a NaN a render carries is seen.
-    let mut out = rendered(&mut g, &shot(VirtualStock::KodakPortra800Datasheet, None));
+    let mut out = rendered(&mut g, &shot(VirtualStock::KodakPortra800, None));
     out[0][0] = f32::NAN;
     assert!(!finite(&out));
 }

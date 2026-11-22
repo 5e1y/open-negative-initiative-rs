@@ -46,11 +46,11 @@ fn a_scanner_photo_reads_its_machines_print_and_its_keys_in_a_legacy_print() {
     assert_eq!((s.density, s.secret_sauce), (0.0, 0.3));
     assert_eq!(s.legacy_print, Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 3, c: 0, m: -2, y: 1, w: 4, laid: true }));
     // On a paper with every key at rest it prints the paper's print alone: no legacy print.
-    let supra = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..edited(ConversionMode::Negative) };
-    let mut papered = serde_json::from_slice::<Value>(&stored(&supra, before, "scanner", "oni")).unwrap();
+    let royal = PipelineSettings { print_paper: Some(PaperStock::KodakRoyalDigital), ..edited(ConversionMode::Negative) };
+    let mut papered = serde_json::from_slice::<Value>(&stored(&royal, before, "scanner", "oni")).unwrap();
     papered["settings"]["scanner"] = json!({});
     let on_paper = read(&serde_json::to_vec(&papered).unwrap());
-    assert_eq!((on_paper.legacy_print, on_paper.print.exposure, on_paper.print_paper), (None, oni_settings::tone::Print::RESTING_EXPOSURE, Some(PaperStock::KodakSupraEndura)));
+    assert_eq!((on_paper.legacy_print, on_paper.print.exposure, on_paper.print_paper), (None, oni_settings::tone::Print::RESTING_EXPOSURE, Some(PaperStock::KodakRoyalDigital)));
 }
 
 #[test]

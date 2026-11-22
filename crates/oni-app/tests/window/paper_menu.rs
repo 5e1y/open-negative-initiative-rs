@@ -77,7 +77,7 @@ pub(crate) fn a_paper_under_the_pointer_shows_on_the_photo_unwritten() {
     assert_eq!(makers.len(), makers.iter().collect::<std::collections::BTreeSet<_>>().len());
     let others: Vec<PaperStock> = order.iter().copied().filter(|p| *p != own_paper).collect();
     let (next, third) = (others[0], others[others.len() - 1]);
-    let label = |p: PaperStock| oni_app::stocks::paper_label(p).to_string();
+    let label = |p: PaperStock| p.name().to_string();
 
     // The pointer on a line shows its paper on the photo; nothing is written.
     let renders = ctl.state.borrow().renders();

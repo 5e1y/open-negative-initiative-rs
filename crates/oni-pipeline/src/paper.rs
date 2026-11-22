@@ -33,8 +33,7 @@ struct File {
     data: Data,
 }
 
-/// A paper's profile as its file holds it: spektrafilm's, its curves a fitted model, or one written from its maker's
-/// data sheet, its curves sampled.
+/// A paper's profile as its file holds it, written from its maker's data sheet, its curves sampled.
 #[derive(Deserialize)]
 struct Data {
     wavelengths: Vec<f64>,
@@ -42,54 +41,15 @@ struct Data {
     channel_density: Vec<[Option<f64>; 3]>,
     base_density: Vec<Option<f64>>,
     log_exposure: Vec<f64>,
-    density_curves_model: Option<Model>,
-    density_curves: Option<Vec<[f64; 3]>>,
+    density_curves: Vec<[f64; 3]>,
 }
 
-/// The paper's curves as spektrafilm develops them: each layer a sum of normal distributions' integrals.
-#[derive(Deserialize)]
-struct Model {
-    centers: [Vec<f64>; 3],
-    amplitudes: [Vec<f64>; 3],
-    sigmas: [Vec<f64>; 3],
-}
-
-impl Model {
-    fn density(&self, c: usize, log_exposure: f64) -> f64 {
-        let cdf = |z: f64| 0.5 * (1.0 + bake::erf(z / std::f64::consts::SQRT_2));
-        (0..self.centers[c].len()).map(|i| self.amplitudes[c][i] * cdf((log_exposure - self.centers[c][i]) / self.sigmas[c][i])).sum()
-    }
-}
-
-impl Data {
-    /// Channel `c`'s density at the curves' node `i`: spektrafilm's model where it fits one, else the sheet's sample.
-    fn density(&self, c: usize, i: usize) -> f64 {
-        match (&self.density_curves_model, &self.density_curves) {
-            (Some(model), _) => model.density(c, self.log_exposure[i]),
-            (None, Some(sampled)) => sampled[i][c],
-            (None, None) => unreachable!("a paper's curves are checked as it reads"),
-        }
-    }
-}
-
-/// A paper's profile file: spektrafilm's, shipped unchanged, or one written from its maker's data sheet; none for the
-/// Frontier.
+/// A paper's profile file; none for the Frontier.
 pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
-    let name = paper.profile()?;
-    if name.starts_with("datasheet/") {
-        return dyes::source(name);
-    }
-    Some(match name {
-        "kodak_portra_endura" => include_bytes!("../resources/film/kodak_portra_endura.json"),
-        "kodak_supra_endura" => include_bytes!("../resources/film/kodak_supra_endura.json"),
-        "kodak_ultra_endura" => include_bytes!("../resources/film/kodak_ultra_endura.json"),
-        "kodak_endura_premier" => include_bytes!("../resources/film/kodak_endura_premier.json"),
-        "fujifilm_crystal_archive_typeii" => include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json"),
-        _ => return None,
-    })
+    dyes::source(paper.profile()?)
 }
 
-/// A paper's profile, refused off the grid, off its curves' uniform nodes, without curves or holding a number not finite.
+/// A paper's profile, refused off the grid, off its curves' uniform nodes or holding a number not finite.
 fn parse(json: &[u8]) -> Result<Data, String> {
     let d = serde_json::from_slice::<File>(json).map_err(|e| e.to_string())?.data;
     let on_grid = d.wavelengths.len() == WAVELENGTHS && d.wavelengths.iter().enumerate().all(|(i, w)| *w == bake::wavelength(i));
@@ -102,12 +62,10 @@ fn parse(json: &[u8]) -> Result<Data, String> {
     if le.len() != PAPER_CURVE_NODES || !le.iter().enumerate().all(|(i, e)| (e - le[0] - step * i as f64).abs() < 1e-6) {
         return Err("a paper's curves off their uniform nodes".into());
     }
-    match (&d.density_curves, &d.density_curves_model) {
-        (Some(sampled), _) if sampled.len() != PAPER_CURVE_NODES => return Err("a paper's curves off their nodes".into()),
-        (None, None) => return Err("a paper without curves".into()),
-        _ => {}
+    if d.density_curves.len() != PAPER_CURVE_NODES {
+        return Err("a paper's curves off their nodes".into());
     }
-    let numbers = d.log_sensitivity.iter().flatten().chain(le).chain(d.density_curves.iter().flatten().flatten());
+    let numbers = d.log_sensitivity.iter().flatten().chain(le).chain(d.density_curves.iter().flatten());
     if !numbers.chain(d.channel_density.iter().flatten().chain(&d.base_density).flatten()).all(|v| v.is_finite()) {
         return Err("a paper holding a number that is not finite".into());
     }
@@ -149,7 +107,7 @@ fn baked(paper: PaperStock) -> Sheet {
         .unzip();
     let le = &d.log_exposure;
     Sheet {
-        curves: std::array::from_fn(|i| std::array::from_fn(|c| d.density(c, i) as f32)),
+        curves: std::array::from_fn(|i| d.density_curves[i].map(|v| v as f32)),
         curve_low: le[0] as f32,
         curve_step: ((le[PAPER_CURVE_NODES - 1] - le[0]) / (PAPER_CURVE_NODES - 1) as f64) as f32,
         print,
