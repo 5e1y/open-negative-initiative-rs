@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for Print {
             channel_contrast: channels("channelContrast", Print::CONTRAST_RANGE)?,
             colour_compensation: tolerant::opt::<bool, D::Error>(&map, "colourCompensation")?.unwrap_or(true),
             brightness: f("brightness", 0.0)?.clamp(Print::BRIGHTNESS_RANGE.0, Print::BRIGHTNESS_RANGE.1),
-            true_blacks: tolerant::opt::<bool, D::Error>(&map, "trueBlacks")?.unwrap_or(false),
+            paper_blacks: tolerant::opt::<bool, D::Error>(&map, "paperBlacks")?.unwrap_or(false),
             bypassed: false,
         })
     }

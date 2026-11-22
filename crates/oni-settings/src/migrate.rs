@@ -27,6 +27,7 @@ pub mod scan_line;
 pub mod measured_dyes;
 pub mod one_face;
 pub mod paper;
+pub mod paper_blacks;
 pub mod strokes;
 
 #[cfg(test)]
@@ -228,6 +229,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         let mosaic = if version < chain::PRIMARIES_HELD_VERSION { Some(facts.mosaic.get()?) } else { None };
         earlier(stored, version, mosaic).map_err(Refusal::Unreadable)?
     };
+    let former = paper_blacks::Former::read(raw.as_ref()).map_err(Refusal::Unreadable)?;
     let mut held = None;
     let settings = std::mem::take(&mut converted.document.settings);
     let settings = match matrices::caught_up(version, settings.clone(), facts.matrix) {
@@ -248,6 +250,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
+    converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -269,15 +272,19 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let raw = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
         let scanner = one_face::Scanner::read(Some(&raw)).map_err(Refusal::Unreadable)?;
+        let former = paper_blacks::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let settings = measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw)));
         let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
+        let settings = paper_blacks::caught_up(version, settings, &former);
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
+    let former = paper_blacks::Former::read(stored.get("settings")).map_err(Refusal::Unreadable)?;
     let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
     converted.document.settings = measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
+    converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
     Ok(converted)
 }
 

@@ -2,7 +2,6 @@
 import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LoupeBand, ModeHeader } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
-import { Editors } from "editors.slint";
 import { Plots, PanelState, PanelTab, RollState, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
@@ -19,8 +18,7 @@ export component Panel inherits Surface {
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
     VerticalLayout {
-        // The readout, one glass edge to edge from the canvas card's top: the histogram, Lighting's curves over it on
-        // the Colour tab; the loupe under Details.
+        // The readout, one glass edge to edge from the canvas card's top: the histogram; the loupe under Details.
         HorizontalLayout {
             Rectangle {
                 height: PlotStyle.main;
@@ -30,7 +28,6 @@ export component Panel inherits Surface {
                     height: parent.height;
                     Plot {
                         vertical-stretch: 1;
-                        plot: 5;
                         screen: false;
                         glass: true;
                         grid: false;
@@ -38,11 +35,8 @@ export component Panel inherits Surface {
                         radius: PlotStyle.readout-radius;
                         histogram: Plots.output;
                         histogram-revision: Plots.output-revision;
-                        lines: PanelState.tab == PanelTab.color ? Editors.print-lines : [];
                         // The trace's size, set by the plot itself so it is known before any histogram lands.
-                        resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
-                        property <int> epoch: Editors.epoch;
-                        changed epoch => { Editors.resized(self.plot, self.width, self.height); }
+                        resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; }
                     }
                 }
                 // Under Details the output histogram cannot move, so the readout holds the loupe.

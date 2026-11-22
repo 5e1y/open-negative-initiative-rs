@@ -1946,22 +1946,6 @@ msgid "The colour the print lays in answer to Lighting's tones: Exposure and the
 msgstr "La couleur que le tirage pose en réponse aux tons de Lumière : Exposition et les zones baissent la densité des couleurs quand le tirage s’éclaircit, Contraste et les points posent des courbes de saturation, tracées en pointillés sur la Courbe de saturation, et les points tiennent la couleur qu’ils étirent. Sur le tirage d’ONI, dont la courbe repose 1,5 EV plus haut, la densité agit aussi au repos.\n\nDésactivée, les curseurs courbent le ton de chaque canal seul : la luminance bouge comme avant, la couleur comme la courbe de chaque canal la donne, si bien que Contraste et les points changent sa force."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Print on paper"
-msgstr "Tirer sur papier"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Paper"
-msgstr "Papier"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "True blacks"
-msgstr "Vrais noirs"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The black picked in Prepare the Roll printed on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Off, that black prints where the paper lays it at rest, a hair above its own black. Lighting never lifts it; only Black point moves it."
-msgstr "Le noir choisi dans Préparer la pellicule tiré sur le noir pur, le blanc du papier gardé et les tons entre les deux étirés régulièrement, comme un tirage se montre sur un écran. Désactivé, ce noir se tire là où le papier le pose au repos, un rien au-dessus de son propre noir. Lumière ne le lève jamais ; seul Point noir le déplace."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "This photo was edited on the former Scanner face and keeps its print as that face laid it: the machine's look over ONI's print, or on a paper its keys alone, with the keypad's D, C, M, Y and TEMP read below. Off, the photo prints as the sliders above say, and the legacy print is kept to be laid again; a photo never edited there has none."
 msgstr "Cette photo a été retouchée sur l’ancienne face Scanner et garde son tirage tel que cette face le posait : le rendu de la machine sur le tirage d’ONI, ou sur un papier ses touches seules, avec les D, C, M, Y et TEMP du clavier lus ci-dessous. Désactivé, la photo s’imprime comme le disent les curseurs ci-dessus, et le tirage hérité est gardé pour être reposé ; une photo jamais retouchée là n’en a pas."
 
@@ -2068,6 +2052,26 @@ msgstr "Moyens bleus"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Blue contrast"
 msgstr "Contraste bleu"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Paper"
+msgstr "Papier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Print on paper prints the photo on a colour paper as an enlarger does, in place of ONI's own print: the paper's curves, dyes and white, the enlarger resting where the frame's grey prints neutral. Lighting then acts as in a darkroom.\n\nPaper blacks prints the black picked in Prepare the Roll where the paper lays it; off, that black lies on pure black."
+msgstr "Tirer sur papier tire la photo sur un papier couleur comme le fait un agrandisseur, à la place du tirage d’ONI : les courbes, les colorants et le blanc du papier, l’agrandisseur au repos là où le gris de l’image se tire neutre. Lumière agit alors comme en chambre noire.\n\nNoirs du papier tire le noir choisi dans Préparer la pellicule là où le papier le pose ; désactivé, ce noir repose sur le noir pur."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Print on paper"
+msgstr "Tirer sur papier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Paper blacks"
+msgstr "Noirs du papier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "On, the black picked in Prepare the Roll prints where the paper lays it at rest, a hair above the paper's own black, as on a print held in the hand. Off, that black prints on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Lighting never lifts it; only Black point moves it."
+msgstr "Activé, le noir choisi dans Préparer la pellicule se tire là où le papier le pose au repos, un rien au-dessus du propre noir du papier, comme sur un tirage tenu en main. Désactivé, ce noir se tire sur le noir pur, le blanc du papier gardé et les tons entre les deux étirés régulièrement, comme un tirage se montre sur un écran. Lumière ne le lève jamais ; seul Point noir le déplace."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between that black and the white."

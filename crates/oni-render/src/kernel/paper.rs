@@ -61,7 +61,7 @@ pub struct Paper {
     /// the ends the print's light is read between.
     pub pick: V3,
     pub white: V3,
-    /// Where the pick lands: where the enlarger's rest prints it, or pure black for True blacks.
+    /// Where the pick lands: pure black, or where the enlarger's rest prints it for Paper blacks.
     pub anchor: V3,
     /// Brightness, an odds gain of this many stops on the print's light between the anchor and the white.
     pub brightness: f32,

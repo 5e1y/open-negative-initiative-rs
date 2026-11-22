@@ -1,5 +1,5 @@
-//! The paper's ends: whatever Lighting moves, the frame's pick prints where the enlarger's rest prints it, or on pure
-//! black with True blacks; the whites stay free, the points move the ends, Brightness runs between the anchored pick and
+//! The paper's ends: whatever Lighting moves, the frame's pick prints on pure black, or where the enlarger's rest prints
+//! it with Paper blacks; the whites stay free, the points move the ends, Brightness runs between the anchored pick and
 //! the paper's white, the print continuous and monotone. Each verdict has a twin.
 
 mod common;
@@ -105,11 +105,11 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
 }
 
 #[test]
-fn true_blacks_lay_the_pick_on_pure_black_under_every_slider() {
+fn without_paper_blacks_the_pick_lies_on_pure_black_under_every_slider() {
     for (label, s) in frames() {
-        let on = moved(&s, |t| t.print.true_blacks = true);
+        let on = moved(&s, |t| t.print.paper_blacks = false);
         let rest = printed_on(&s, &conversion::stage47(&on))[0];
-        println!("{label}: True blacks lays the pick at {rest:?}");
+        println!("{label}: pure black lays the pick at {rest:?}");
         assert!(rest.iter().all(|v| v.abs() < 1e-6), "{label}: {rest:?}");
         for (name, f) in SLIDERS {
             let pick = printed_on(&s, &conversion::stage47(&moved(&on, f)))[0];
@@ -152,22 +152,22 @@ fn the_whites_stay_free() {
 fn brightness_runs_between_the_anchored_pick_and_the_papers_white() {
     for (label, s) in frames() {
         let [rest_pick, _, rest_grey] = printed_on(&s, &conversion::stage47(&s));
-        for (brightness, true_blacks) in [(-1.0f32, false), (1.0, false), (0.5, true), (-1.0, true)] {
-            let t = moved(&s, |u| (u.print.brightness, u.print.true_blacks) = (brightness, true_blacks));
+        for (brightness, pure) in [(-1.0f32, false), (1.0, false), (0.5, true), (-1.0, true)] {
+            let t = moved(&s, |u| (u.print.brightness, u.print.paper_blacks) = (brightness, !pure));
             let k = conversion::stage47(&t);
             let p = k.paper.unwrap();
             let [pick, _, grey] = printed_on(&s, &k);
-            let black = if true_blacks { [0.0; 3] } else { rest_pick };
+            let black = if pure { [0.0; 3] } else { rest_pick };
             assert!(worst(pick, black) < 1e-6 && worst(p.ended(p.white), p.white) < 1e-6, "{label}, {brightness}: ends held");
             let g = (Print::EXPOSURE_GEAR * brightness).exp2();
             let odds = |u: f32| g * u / (1.0 + (g - 1.0) * u);
             let law: [f32; 3] = std::array::from_fn(|c| black[c] + (p.white[c] - black[c]) * odds((rest_grey[c] - p.pick[c]) / (p.white[c] - p.pick[c])));
             let off = worst(grey, law);
-            println!("{label}, Brightness {brightness:+}{}: the grey {:.4} to {:.4}, within {off:.1e} of its curve", if true_blacks { ", True blacks" } else { "" }, rest_grey[1], grey[1]);
+            println!("{label}, Brightness {brightness:+}{}: the grey {:.4} to {:.4}, within {off:.1e} of its curve", if pure { ", pure black" } else { "" }, rest_grey[1], grey[1]);
             assert!(off < 2e-6, "{label}, {brightness}: {grey:?} {law:?}");
             // Twin: the curve run between the paper's Dmax and white misses the grey.
             let d = dmax(&p);
-            let floor = if true_blacks { [0.0; 3] } else { d };
+            let floor = if pure { [0.0; 3] } else { d };
             let on_dmax: [f32; 3] = std::array::from_fn(|c| floor[c] + (p.white[c] - floor[c]) * odds((rest_grey[c] - d[c]) / (p.white[c] - d[c])));
             println!("{label}, Brightness {brightness:+}: run between the Dmax and the white, the grey would miss by {:.1e}", worst(grey, on_dmax));
             assert!(worst(grey, on_dmax) > 1e-4, "{label}, {brightness}: {on_dmax:?}");
@@ -206,10 +206,10 @@ fn the_points_still_move_the_ends() {
 fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
     let settings: [Move; 4] = [
         ("at rest", |_| {}),
-        ("True blacks", |s| s.print.true_blacks = true),
+        ("pure black", |s| s.print.paper_blacks = false),
         ("Exposure +2, Brightness -1", |s| (s.print.exposure, s.print.brightness) = (s.print.exposure + 2.0, -1.0)),
-        ("Exposure -1, Contrast +0.3, True blacks, Brightness +1", |s| {
-            (s.print.exposure, s.print.contrast, s.print.true_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, true, 1.0);
+        ("Exposure -1, Contrast +0.3, pure black, Brightness +1", |s| {
+            (s.print.exposure, s.print.contrast, s.print.paper_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, false, 1.0);
         }),
     ];
     for (label, s) in frames() {

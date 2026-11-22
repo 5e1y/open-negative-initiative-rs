@@ -30,7 +30,7 @@ pub(super) fn lit(bare: &Paper, rest: V3, anchors: &[V3; 3], density: f32, s: &P
     let rest_cc = [0.0, rest[1], rest[2]];
     let at_rest = Paper { scale: rest[0].exp(), filters: filters(rest_cc), ..*bare };
     let [pick, _, grey] = *anchors;
-    let anchor = if print.true_blacks { [0.0; 3] } else { at_rest.printed(pick) };
+    let anchor = if print.paper_blacks { at_rest.printed(pick) } else { [0.0; 3] };
     let points = print.channel_points(mono);
     let own = |v: V3| if mono { [0.0; 3] } else { v };
     let channel_contrast = own(print.channel_contrast);

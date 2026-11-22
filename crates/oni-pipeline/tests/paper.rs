@@ -207,12 +207,12 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.highlights) = (2.0, 0.2, 0.1, -0.1);
     lit.print.set_filters([0.2, -0.1, 0.0]);
     (lit.print.black_point, lit.print.white_point, lit.print.channel_contrast, lit.print.channel_mid) = (0.03, 0.05, [0.1, 0.0, -0.1], [0.0, 0.1, 0.0]);
-    (lit.print.channel_white, lit.print.channel_black, lit.print.brightness, lit.print.true_blacks) = ([0.02, 0.0, 0.0], [0.0, 0.0, 0.03], 0.5, true);
+    (lit.print.channel_white, lit.print.channel_black, lit.print.brightness, lit.print.paper_blacks) = ([0.02, 0.0, 0.0], [0.0, 0.0, 0.03], 0.5, false);
     lit.density = 0.3;
     let mut mono = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..mono() };
-    (mono.print.contrast, mono.print.highlights, mono.print.white_point, mono.print.brightness, mono.print.true_blacks) = (0.3, -0.2, 0.04, -0.5, true);
+    (mono.print.contrast, mono.print.highlights, mono.print.white_point, mono.print.brightness, mono.print.paper_blacks) = (0.3, -0.2, 0.04, -0.5, false);
     let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveTypeII), ..prepared_negative() };
-    let mut anchored = PipelineSettings { print: Print { true_blacks: false, brightness: -0.7, ..lit.print }, ..lit.clone() };
+    let mut anchored = PipelineSettings { print: Print { paper_blacks: true, brightness: -0.7, ..lit.print }, ..lit.clone() };
     anchored.print.exposure -= 3.0;
     let frames = [("digital", digital()), ("lit negative", lit), ("lit negative, its pick on its rest", anchored), ("black and white", mono), ("no unmix", unmixed_none)];
     for (label, s) in frames {

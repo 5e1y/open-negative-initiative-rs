@@ -94,9 +94,9 @@ export global PanelState {
     in property <string> paper-filtration;
     callback paper-toggled(bool);
     callback paper-chosen(int);
-    // The paper's Dmax laid on pure black, its white kept.
-    in property <bool> true-blacks;
-    callback true-blacks-toggled(bool);
+    // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
+    in property <bool> paper-blacks;
+    callback paper-blacks-toggled(bool);
     // Lighting's colour compensation: Hunt, the points' and Contrast's saturation and the points' colour hold.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);

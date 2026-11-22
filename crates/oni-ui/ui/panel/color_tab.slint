@@ -1,4 +1,4 @@
-// The Color tab: Colour, Lighting with the print, Effects, then the editors.
+// The Color tab: Colour, the paper, Lighting with the print, Effects, then the editors.
 import { Colour, Space, SliderFill, Section, SectionStyle, Tabs, Button, Label, TextRole, Tone, ButtonGroup, GroupAlign, Toggle, Field, Picker, HelpMark } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
@@ -8,9 +8,7 @@ import { Plots, PanelState, RollState } from "state.slint";
 import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 import { FilmBlock } from "film_block.slint";
 
-// Lighting's colour compensation and the paper the negative prints on, laid at Lighting's end: the switches, then the
-// paper by its name, the enlarger's filtration and True blacks while it prints, then a legacy print where one is kept.
-// A paper lays no colour compensation, so its switch shows on ONI's print alone.
+// Lighting's colour compensation, on ONI's print alone as a paper lays none, then a legacy print where one is kept.
 component PrintRows inherits VerticalLayout {
     spacing: Space.s;
     if !PanelState.monochrome && !(PanelState.paper-shown && PanelState.paper-on): HorizontalLayout {
@@ -25,31 +23,6 @@ component PrintRows inherits VerticalLayout {
             HelpMark {
                 subject: @tr("Colour compensation");
                 note: @tr("The colour the print lays in answer to Lighting's tones: Exposure and the zones lower the colour density as the print brightens, Contrast and the points lay saturation curves, drawn dashed on the Saturation Curve, and the points hold the colour they stretch. On ONI's print, whose curve rests a stop and a half up, the density acts at rest too.\n\nOff, the sliders bend each channel's tone alone: the luma moves as before, the colour as each channel's curve gives it, so Contrast and the points change its strength.");
-            }
-        }
-    }
-    if PanelState.paper-shown: Toggle { label: @tr("Print on paper"); on: PanelState.paper-on; toggled(on) => { PanelState.paper-toggled(on); } }
-    if PanelState.paper-shown && PanelState.paper-on: Field {
-        label: @tr("Paper");
-        Picker {
-            value: PanelState.paper-title;
-            lines: PanelState.paper-lines;
-            chosen(i) => { PanelState.paper-chosen(i); }
-        }
-    }
-    if PanelState.paper-shown && PanelState.paper-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
-    if PanelState.paper-shown && PanelState.paper-on: HorizontalLayout {
-        spacing: Space.xs;
-        Toggle {
-            label: @tr("True blacks");
-            on: PanelState.true-blacks;
-            toggled(on) => { PanelState.true-blacks-toggled(on); }
-        }
-        VerticalLayout {
-            alignment: center;
-            HelpMark {
-                subject: @tr("True blacks");
-                note: @tr("The black picked in Prepare the Roll printed on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Off, that black prints where the paper lays it at rest, a hair above its own black. Lighting never lifts it; only Black point moves it.");
             }
         }
     }
@@ -211,6 +184,37 @@ export component ColorPane inherits Pane {
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
         if root.channel-tab == 2: StoreSlider { field: 52; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
+    }
+    // The paper a negative prints on in place of ONI's print, offered where one can print the photo: the switch and its
+    // black first, then the paper by its name and the enlarger's filtration it prints through.
+    if PanelState.paper-shown: Block {
+        title: @tr("Paper");
+        help: @tr("Print on paper prints the photo on a colour paper as an enlarger does, in place of ONI's own print: the paper's curves, dyes and white, the enlarger resting where the frame's grey prints neutral. Lighting then acts as in a darkroom.\n\nPaper blacks prints the black picked in Prepare the Roll where the paper lays it; off, that black lies on pure black.");
+        Toggle { label: @tr("Print on paper"); on: PanelState.paper-on; toggled(on) => { PanelState.paper-toggled(on); } }
+        if PanelState.paper-on: HorizontalLayout {
+            spacing: Space.xs;
+            Toggle {
+                label: @tr("Paper blacks");
+                on: PanelState.paper-blacks;
+                toggled(on) => { PanelState.paper-blacks-toggled(on); }
+            }
+            VerticalLayout {
+                alignment: center;
+                HelpMark {
+                    subject: @tr("Paper blacks");
+                    note: @tr("On, the black picked in Prepare the Roll prints where the paper lays it at rest, a hair above the paper's own black, as on a print held in the hand. Off, that black prints on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Lighting never lifts it; only Black point moves it.");
+                }
+            }
+        }
+        if PanelState.paper-on: Field {
+            label: @tr("Paper");
+            Picker {
+                value: PanelState.paper-title;
+                lines: PanelState.paper-lines;
+                chosen(i) => { PanelState.paper-chosen(i); }
+            }
+        }
+        if PanelState.paper-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
     }
     Block {
         title: @tr("Lighting");

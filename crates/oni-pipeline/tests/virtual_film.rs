@@ -226,9 +226,12 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
 }
 
-/// A digital photo at rest, its neighbourhood stages off so a pixel prints alone.
+/// A digital photo at rest on the paper's own black, where the enlarger's rest solves the grey, its neighbourhood stages
+/// off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only()
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    s.print.paper_blacks = true;
+    s
 }
 
 /// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, and neutral; the
@@ -256,7 +259,9 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
     let on = pipeline.render(&mut g, &source, &digital, &Request::default(), &Default::default(), None).unwrap().1;
     let plain = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
     let raw = pipeline.render(&mut g, &plain_grey, &plain, &Request::default(), &Default::default(), None).unwrap().1[0];
-    println!("a scene grey: the plain RAW {raw:?}, the film {:?}", on[0]);
+    let pure = PipelineSettings { print: oni_settings::tone::Print { paper_blacks: false, ..digital.print }, ..digital.clone() };
+    let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
+    println!("a scene grey: the plain RAW {raw:?}, the film {:?}, on pure black {stretched:?}", on[0]);
     for c in 0..3 {
         assert!((on[0][c] - raw[1]).abs() < 2e-3, "channel {c}: {:?} {raw:?}", on[0]);
     }

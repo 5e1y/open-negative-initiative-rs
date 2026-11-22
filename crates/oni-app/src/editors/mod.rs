@@ -1,6 +1,5 @@
 //! The panel's editors: the manual curves, the levels (a film's per channel, a digital photo's on the
-//! picture), the spectrogram wheel and its band sliders, the saturation curve, the grain curve and the
-//! print curve over the main histogram.
+//! picture), the spectrogram wheel and its band sliders, the saturation curve and the grain curve.
 
 mod bands;
 pub mod curve;
@@ -8,7 +7,6 @@ pub mod geometry;
 pub mod grain;
 pub mod levels;
 pub mod points;
-pub mod print;
 pub mod saturation;
 pub mod shell;
 pub mod spectrogram;
@@ -37,12 +35,11 @@ pub enum Plot {
     Wheel = 2,
     Saturation = 3,
     LevelsHistogram = 4,
-    Print = 5,
-    Grain = 6,
+    Grain = 5,
 }
 
 impl Plot {
-    pub const ALL: [Plot; 7] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram, Plot::Print, Plot::Grain];
+    pub const ALL: [Plot; 6] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram, Plot::Grain];
 
     pub fn from_index(i: i32) -> Option<Plot> {
         Self::ALL.get(usize::try_from(i).ok()?).copied()
@@ -264,7 +261,7 @@ impl Gestures {
                 if double { self.offer(store, now) } else { Then::Draw }
             }
             Plot::Saturation | Plot::Grain => self.points_press(store, plot, &view, at, now),
-            Plot::LevelsHistogram | Plot::Print => Then::Nothing,
+            Plot::LevelsHistogram => Then::Nothing,
         }
     }
 

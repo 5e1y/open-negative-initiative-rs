@@ -12004,5 +12004,36 @@
     "status": "done",
     "detail": "Under a full scripts/check the render thread died in wgpu-core 30.0.1 (device/resource.rs:948, 'If the queue is empty, the current submission index (393) should be at least the wait submission index (395)') and editor_routes timed out waiting for the canvas. Cause, upstream: Device::maintain reads the fence after a wait that ran out, then asks the life tracker whether the queue is empty; any other thread's poll or submit (every queue.submit maintains) can retire the waited submission between the two, so a stale fence meets an empty queue and the defensive assert fires. ONI's oni_graph::ran waits in 1 ms slices (#2251) while Slint's frames, the other render threads and the graph's own ended() poll the one device, which loads open that window. Fixed upstream by gfx-rs/wgpu#9958 (merged 2026-08-07, on trunk for wgpu 31, absent from 30.0.1 and 30.0.2); Slint pins wgpu 30, so vendor/wgpu-core is 30.0.1 with that change alone (the wait's outcome kept, an empty queue after a wait that ran out reported as WaitSucceeded or Timeout from the fence), [patch.crates-io] beside wgpu-hal, named in CLAUDE.md; the copy goes with wgpu 31. No ONI-side alternative removes the race: an unbounded wait holds the snatch lock a window's present needs for the GPU's whole time (#2251), and every submit of every thread maintains the device. crates/oni-graph/tests/polls.rs (new): one thread submits 8 copies of 32 MB and drains to an empty queue, five wait on its latest submission (one through oni_graph::ran, four in zero slices) for 2 s; no thread may panic and the waits must have run out by the thousand over 20 drains or more (twin: a race with no waiter is refused by that judge).",
     "outcome": "On wgpu-core 30.0.1 the race with zero slices panicked on all 8 runs (copies of 4 MB, 32 x 32 MB and 8 x 32 MB; the very assert, from submission 6 onward, within 0.5 s); oni_graph::ran alone, its 1 ms slices rarely ending in the microseconds the window lasts, passed 3 runs of 3 s on an idle Mac, as the app's render thread met it only under the full check's load. Vendored with #9958 the check passed 3 of 3 (about 1 200 submissions, 1.8 to 2.0 million waits run out)."
+  },
+  {
+    "id": 3110,
+    "type": "interface",
+    "title": "The print curve leaves the histogram: no RGB curve, channel curves or dashed mirror over the Colour tab's readout",
+    "status": "done",
+    "detail": "Owner's request. The readout's Plot no longer takes lines; Editors.print-lines, oni-app's editors::print (drawing, traces and their three tests), Plot::Print and its drawn key, and Print::channel_moved (read by that drawing alone) are gone, the grain plot renumbered 5. The readout keeps its histogram and the size it reports for it."
+  },
+  {
+    "id": 3111,
+    "type": "change",
+    "title": "A paper's black rests on pure black; Paper blacks, off at rest, keeps the paper's own; sidecar format 48",
+    "status": "done",
+    "detail": "Owner's request: True blacks on by default, renamed Paper blacks with its meaning inverted, shown off at rest. Print.true_blacks (key trueBlacks, written when on) becomes Print.paper_blacks (key paperBlacks, written when on): its default, false, is pure black, so every new photo, digital ones on their paper, every new Prepare of a frame whose Lighting never chose, and a Lighting rest print the pick on pure black; on, the pick prints where the enlarger's rest lays it (paper::lighting::lit's anchor). migrate::paper_blacks (chain::PAPER_BLACKS_VERSION = 48, after one_face): a document before it that prints on a paper keeps the black it printed, paperBlacks = !trueBlacks; any other takes the rest, as no render of it moves; a trueBlacks of the wrong shape refuses the document, as its typed read did. Run on sidecars, presets, share codes and pastes alike (migrate::reading and migrate::document). CLAUDE.md's paper bullet says so.",
+    "outcome": "A digital photo at rest (virtual_film's scene grey lit at the film's white): the grey printed at 0.3985 on the paper's own black, as a plain RAW, and at 0.3958 / 0.3956 / 0.3950 (R, G, B) on pure black, the pick's stretch taking 0.003 off and the blue 0.0008 more. The enlarger's rest still solves the grey on the bare print; any photo edited before keeps its render."
+  },
+  {
+    "id": 3112,
+    "type": "interface",
+    "title": "Paper, a section of its own right after More Color Settings, open by default: Print on paper, Paper blacks, the paper and its filtration",
+    "status": "done",
+    "detail": "color_tab.slint: a Block titled Paper (its fold remembered by title as every block's, open by default, no reset key as it holds no slider) shown wherever a paper can print the photo, laying Print on paper, then while it prints Paper blacks (a design-system Toggle with its HelpMark), the paper's Picker and the enlarger's filtration line. Lighting keeps Brightness under Exposure, Colour compensation on ONI's print and a legacy print's rows. Paper blacks in French Noirs du papier, in Spanish Negros del papel; the section's help and the switch's note translated.",
+    "outcome": "Shot on a negative on ONI's print, the same on Portra Endura and a digital photo on its paper: the section reads Paper, Print on paper, Paper blacks (off), the picker and the filtration, between More Color Settings and Lighting."
+  },
+  {
+    "id": 3113,
+    "type": "check",
+    "title": "Paper blacks' checks: the migration, the sidecar keys, the paper's ends either way, the section in the window on a negative and a digital photo",
+    "status": "done",
+    "detail": "oni-settings migrate::paper_blacks tests (an older photo on a paper keeps its black, True blacks kept as pure black; twins: ONI's print and a slide take the rest, a format-48 document keeps what it says, a number refused) and tests/paper_ends.rs (paperBlacks written only when on, trueBlacks never; a digital photo at rest on pure black; older documents at 44, 46 and 47 on a paper read Paper blacks on, off with trueBlacks). oni-pipeline paper frames print on Paper blacks so each paper check reads the paper's print itself; paper_ends checks pure black under every Lighting slider; paper.rs and frontier_paper.rs cases swapped. Window paper: the section open between More Color Settings and Lighting, Print on paper then Paper blacks then the filtration, Paper blacks off at rest and on when toggled, rendering anew; a_digital_photo_prints_on_its_paper_on_pure_black. one_face's block list names Paper. Corpus goldens read paper_blacks; the newer-format fixture is version 49. virtual_film's grey check reads the paper's own black, where the rest solves it, and prints the pure-black grey beside it.",
+    "outcome": "oni-settings, oni-pipeline (paper, paper_ends, frontier_paper, legacy_print, virtual_film), oni-core and oni-render green but swift_checks presets and sweep_pass, false on the exFAT build disk; oni-app lib green; window paper (both), one_face, panel_frame, colour_compensation, help_card, help_demo_color green."
   }
 ]

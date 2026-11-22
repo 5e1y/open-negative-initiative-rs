@@ -152,9 +152,10 @@ pub struct Print {
     /// `EXPOSURE_GEAR` times its stops, as ONI's print takes Exposure; none on ONI's print, whose Exposure is that curve.
     #[serde(skip_serializing_if = "at_zero")]
     pub brightness: f32,
-    /// A paper's print with the frame's pick on pure black, its white kept, for a print on a screen's black.
-    #[serde(rename = "trueBlacks", skip_serializing_if = "is_off")]
-    pub true_blacks: bool,
+    /// A paper's print with the frame's pick where the paper's rest prints it, a hair above its own black; off, the
+    /// pick lies on pure black, its white kept, for a print on a screen's black.
+    #[serde(rename = "paperBlacks", skip_serializing_if = "is_off")]
+    pub paper_blacks: bool,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -178,7 +179,7 @@ impl Default for Print {
             channel_contrast: [0.0; 3],
             colour_compensation: true,
             brightness: 0.0,
-            true_blacks: false,
+            paper_blacks: false,
             bypassed: false,
         }
     }
@@ -291,11 +292,6 @@ impl Print {
     pub fn channel_tone(&self, channel: LevelsChannel) -> Tone {
         let Some(c) = LevelsChannel::PER_CHANNEL.iter().position(|p| *p == channel) else { return Tone::NEUTRAL };
         Tone { contrast: self.channel_contrast[c], mids: self.channel_mid[c], ..Tone::exposure(self.channel(channel).exposure) }
-    }
-
-    /// Whether a channel's own pass moves anything, so its curve differs from the RGB one.
-    pub fn channel_moved(&self, channel: LevelsChannel) -> bool {
-        !self.channel_tone(channel).is_neutral()
     }
 
     /// Lighting's pair as a window takes it.

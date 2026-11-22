@@ -1,6 +1,6 @@
 //! `paper_black <out> <raw>...`: each photo printed on its paper (the default one where it has none) as the editor renders
-//! it, its pick (Prepare the Roll's black) printed as it stands, at Lighting's rest and with True blacks off and on, then
-//! strips of Exposure, Contrast, Temperature and Brightness either way, True blacks off and on, each as `w h` then f32
+//! it, its pick (Prepare the Roll's black) printed as it stands, at Lighting's rest and with Paper blacks on and off, then
+//! strips of Exposure, Contrast, Temperature and Brightness either way, Paper blacks on and off, each as `w h` then f32
 //! RGB, linear Rec. 2020. The originals and their sidecars are only read.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
@@ -42,12 +42,12 @@ fn main() {
         let read = sidecar::read(raw, true).expect("a sidecar").settings;
         let owner = PipelineSettings { print_paper: read.print_paper.or(Some(Default::default())), ..read };
         let rest = PipelineSettings { print: Print { exposure: Print::resting_exposure(owner.mode), ..Print::default() }, ..owner.clone() };
-        let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { true_blacks: on, ..s.print }, ..s.clone() };
+        let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { paper_blacks: on, ..s.print }, ..s.clone() };
         let (stops, print) = (owner.print.exposure - rest.print.exposure, &owner.print);
-        println!("{name}: paper {:?}, Exposure {stops:+.3} from the rest, Brightness {:+.3}, True blacks {}", owner.print_paper, print.brightness, print.true_blacks);
+        println!("{name}: paper {:?}, Exposure {stops:+.3} from the rest, Brightness {:+.3}, Paper blacks {}", owner.print_paper, print.brightness, print.paper_blacks);
         for (label, s) in [("rest", &rest), ("its Lighting", &owner)] {
-            let (off, on) = (pick(&with(s, false)), pick(&with(s, true)));
-            println!("  {label}: the pick prints at {off:.6?}, True blacks {on:.6?}");
+            let (on, off) = (pick(&with(s, true)), pick(&with(s, false)));
+            println!("  {label}: the pick prints at {on:.6?}, on pure black {off:.6?}");
         }
         let negative = e.prepare(render::decode(raw, Reading::of(&owner)).expect("a decode")).unwrap();
         let side = Some(900);
@@ -62,14 +62,14 @@ fn main() {
         ];
         for (strip, travels, f) in strips {
             for (i, v) in travels.into_iter().enumerate() {
-                let mut moved = with(&owner, false);
+                let mut moved = with(&owner, true);
                 f(&mut moved, v);
                 write(out, &format!("{name}-{strip}-{i}"), &e.render(&negative, &moved, side).unwrap());
                 println!("  {strip} {v:+}: the pick prints at {:.6?}", pick(&moved));
             }
         }
-        for (i, on) in [false, true].into_iter().enumerate() {
-            write(out, &format!("{name}-trueblacks-{i}"), &e.render(&negative, &with(&owner, on), side).unwrap());
+        for (i, on) in [true, false].into_iter().enumerate() {
+            write(out, &format!("{name}-paperblacks-{i}"), &e.render(&negative, &with(&owner, on), side).unwrap());
         }
     }
 }
