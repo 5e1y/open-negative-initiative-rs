@@ -226,7 +226,7 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         anchor: [0.0; 3],
         brightness: 0.0,
         pick_log: 0.0,
-        knee: 0.0,
+        reach: 0.0,
         luma: mono,
         reversal: stock.reversal(),
     };
