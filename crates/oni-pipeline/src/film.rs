@@ -9,10 +9,10 @@ pub mod profile;
 use bake::M3;
 use oni_render::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative, cpu};
 use oni_settings::axis::{density_axis, graduation};
-use oni_settings::virtual_film::StockReference;
+use oni_settings::virtual_film::{Balance, StockReference};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 use profile::{Profile, Spectra};
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 /// The scene light spektrafilm sets on a film's speed, log exposure 0: an 18.4 % grey.
 pub const GREY: f32 = 0.184;
@@ -31,19 +31,24 @@ fn f32s(m: &M3) -> [[f32; 3]; 3] {
     m.map(|r| r.map(|v| v as f32))
 }
 
-/// The profile's sources, read from the files spektrafilm ships, unchanged.
-fn sources(stock: VirtualStock) -> (&'static [u8], &'static [u8]) {
-    match stock {
-        VirtualStock::KodakPortra800 => (include_bytes!("../resources/film/kodak_portra_800.json"), include_bytes!("../resources/film/irradiance_xy_tc.npy")),
+/// The spectra table every stock's exposure reads, shipped unchanged.
+const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
+
+/// The light the stock is balanced for, as a spectrum: its scene's white and its layers' reference.
+pub fn reference_light(stock: VirtualStock) -> &'static [f64; cie::WAVELENGTHS] {
+    match stock.balance() {
+        Balance::Daylight => &cie::D55,
+        Balance::Tungsten => &cie::INCANDESCENT,
     }
 }
 
 fn bake(stock: VirtualStock) -> Stock {
-    let (json, npy) = sources(stock);
+    let json = dyes::source(stock.profile()).expect("every stock's profile is shipped");
     let profile = Profile::read(json).expect("a shipped profile reads");
-    let spectra = Spectra::read(npy).expect("the shipped spectra read");
-    let sensitivity = bake::windowed_sensitivity(&profile, &cie::D55);
-    let light = bake::light_table(&spectra, &sensitivity, &cie::D55);
+    let spectra = Spectra::read(SPECTRA).expect("the shipped spectra read");
+    let white = reference_light(stock);
+    let sensitivity = bake::windowed_sensitivity(&profile, white);
+    let light = bake::light_table(&spectra, &sensitivity, white);
     let (before, after) = bake::curves(&profile);
     let scanned = bake::scanned(&profile);
     assert!(scanned.len() <= VIRTUAL_NEGATIVE_BANDS, "the uniform holds every scanned wavelength");
@@ -52,7 +57,7 @@ fn bake(stock: VirtualStock) -> Stock {
     let m = profile.log_exposure.len();
     let le = &profile.log_exposure;
     let kernel = VirtualNegative {
-        to_film: f32s(&bake::to_film(&cie::D55)),
+        to_film: f32s(&bake::to_film(white)),
         exposure: 1.0,
         couplers: f32s(&bake::COUPLERS),
         log_low: le[0] as f32,
@@ -79,12 +84,10 @@ fn bake(stock: VirtualStock) -> Stock {
     Stock { kernel, table, reference }
 }
 
-static PORTRA_800: LazyLock<Stock> = LazyLock::new(|| bake(VirtualStock::KodakPortra800));
-
+/// The stock baked at its first use, never before: a digital photo on another stock costs nothing.
 pub fn stock(stock: VirtualStock) -> &'static Stock {
-    match stock {
-        VirtualStock::KodakPortra800 => &PORTRA_800,
-    }
+    static STOCKS: [OnceLock<Stock>; VirtualStock::ALL.len()] = [const { OnceLock::new() }; VirtualStock::ALL.len()];
+    STOCKS[stock as usize].get_or_init(|| bake(stock))
 }
 
 impl Stock {
@@ -151,8 +154,10 @@ mod tests {
     #[test]
     fn each_stocks_reference_is_its_profiles_derivation_and_prints_a_grey_as_a_plain_raw() {
         for kind in VirtualStock::ALL {
+            println!("{kind:?}: {:?}", stock(kind).reference);
+        }
+        for kind in VirtualStock::ALL {
             let (derived, held) = (stock(kind).reference, kind.reference());
-            println!("{kind:?}: {derived:?}");
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
             let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);
             let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(kind, &held)));

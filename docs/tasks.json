@@ -12012,5 +12012,35 @@
     "status": "done",
     "detail": "VIRTUAL_NEGATIVE_BANDS was 64 and the Vision3 profiles measure their dyes and base on 76 (Vision3 50D on 71): DyeSeparation::rows padded with 64 minus 76, an overflow, so a roll on Vision3 or CineStill 50D/800T could not render its dye separation, and a Vision3 virtual film could not bake. It is now 81, the 380 to 780 nm grid's every wavelength, in the kernel and both WGSL uniforms (virtual_negative, dye_separation), as the paper's PAPER_BANDS already was. Check dye_separation::the_gpu_separates_every_sets_every_band: every set fits one uniform size and the GPU unmixes each as its reference (Vision3 within 7.4e-7, twin dose 0.9 at 1.2e-2 or more); it failed on 64 (76 wavelengths measured).",
     "outcome": "No owner roll is on a Vision3 or CineStill 50D/800T stock (read-only scan of 1 715 sidecars), so none rendered through the overflow."
+  },
+  {
+    "id": 3170,
+    "type": "data",
+    "title": "Every spektrafilm colour negative and reversal profile ships unchanged in resources/film",
+    "status": "done",
+    "detail": "At spektrafilm's commit 3bb2c2d the profiles are 16 colour negatives (Portra 160, 400, 800 and its Push 1 and Push 2, Ektar 100, Gold 200, UltraMax 400, Verita 200D, Vision3 50D, 200T, 250D and 500T, C200, Pro 400H, Superia X-TRA 400), 4 colour reversals (Provia 100F, Velvia 100, Ektachrome 100, Kodachrome 64), 6 papers (Portra, Supra, Ultra Endura, Endura Premier, Crystal Archive Type II, Ektacolor Edge) and 2 cine print films (Vision 2383, Vision Premier 2393); no black and white. Newly shipped, byte for byte: kodak_portra_800_push1/2 (their dyes and sensitivities are Portra 800's, their curves their own) and the four reversals, which nothing reads yet. CHANGELOG.txt names them, the papers and print films left out, and the tungsten lamp."
+  },
+  {
+    "id": 3171,
+    "type": "feature",
+    "title": "A digital photo can be shot on any of the 16 colour negatives spektrafilm profiles, each baked at its first use; sidecar format 50",
+    "status": "done",
+    "detail": "oni_settings::VirtualStock lists every colour negative profile, Portra 800 first and the default, each by its key (the dye sets' own, kodak-portra-800-push-1/-2 for the pushes) and one table entry: name, catalogue stock, dye set (a push develops Portra 800's dyes), profile, balance and reference. Balance::Tungsten is the profile's reference_illuminant \"T\" (Vision3 200T and 500T): NIST's incandescent lamp as colour-science 0.4.6 ships it, the spectrum spektrafilm reads for T (film::cie::INCANDESCENT, x 0.45073 y 0.40805, about 2800 K); every other stock D55. film::bake reads the stock's light for its window, light table and adaptation; film::stock bakes in a OnceLock per stock, so nothing is baked before a photo uses it. A key a build of 46 cannot read moves the format to 50 (migrate::chain::VIRTUAL_STOCKS_VERSION, no step: every older document names Portra 800; corpus newer file version-51); the format 37 migration reads any other stock on its own reference. Portra 800's reference, kernel and table are unchanged to the bit, so no photo moves: a read-only scan of the owner's 161 digital photos found all on Portra 800.",
+    "outcome": "Bake per stock 21 to 30 ms (dev profile), its table 776 KB in memory and on the GPU once uploaded; 0 at startup."
+  },
+  {
+    "id": 3173,
+    "type": "feature",
+    "title": "The film catalogue states each stock's speed and type, lists Portra 800 Push 1 and 2 and Kodachrome 64, and an undrawn stock shows its type's generic canister",
+    "status": "done",
+    "detail": "FilmStockKind gains iso (the speed the roll is exposed at, a push's EI: 1600, 3200; none for a line, a generic stock, AgfaPhoto APX or LomoChrome Turquoise) and kind (FilmType: ColourNegative, CineNegative, ColourSlide, BlackAndWhite); FilmType::generic names the generic stock whose canister stands in. New stocks: kodak-portra800-push1/-push2 (Portra 800's dyes, Portra's canister) and kodak-kodachrome64 (no dyes, the generic positive's canister). Provia 100F, Velvia 100 and Ektachrome 100 profiles map to the existing Fujifilm Provia 100, Velvia 100 and Kodak Ektachrome. Checks: a colour or cine negative names its dyes and nothing else does (by type, replacing the name heuristics), every canister is the stock's own, its line's or its type's generic, a precise stock states its speed (twin: a cine negative stands on the colour negative's canister)."
+  },
+  {
+    "id": 3175,
+    "type": "check",
+    "title": "Every virtual stock measured on a neutral scene: grey, white and chroma on the default paper, CPU table and GPU, with twins",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/virtual_stocks.rs, table-driven over VirtualStock::ALL at the digital rest on the stock (paper included): a neutral ramp lit at the stock's white, -3 to +2.3 stops, printed through the CPU references; its grey within 2e-3 of a plain RAW's, its white's luma within 0.06 stop of Portra 800's, its CIELAB chroma under 4 (under 2 from L* 80 up); twin, the red gain 0.2 stop off the reference, 12.8 to 16.8. The GPU renders the same ramp through Pipeline::render (twin: lit at the other light, C* 40 or more). A tungsten stock turns a D55 grey blue (b/r 2.0 on 500T), a daylight one keeps it neutral; each stock's white is the chromaticity of the spectrum its bake reads. virtual_film's kernel-against-reference and grey checks run on every stock (in-gamut scenes within 0.001 density, the locus' primaries within 0.004: 0.0028 on 500T; a grey within a sixth of a stop of log 0, Portra 400's blue 0.037; the couplers' grey ramp within 0.03 density, Push 2 0.028).",
+    "outcome": "Grey 0.3985 on every stock (a plain RAW's). White luma 0.753 (Verita 200D) to 0.795 (Push 2), Portra 800 0.766. Neutral chroma: grey 0.0 everywhere; from L* 80 up at most 1.6 (Vision3 200T); the shadows carry each stock's own toes, at most C* 3.7 (Pro 400H at -2 stops), 3.4 (Superia at -1), 3.2 (Verita at -2), 3.0 (Portra 160, C200), Portra 800 1.2."
   }
 ]
