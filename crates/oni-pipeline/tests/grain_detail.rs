@@ -8,6 +8,7 @@ use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{grain, stages};
 use oni_render::{GRAIN_NODES, Grain, cpu};
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
@@ -22,7 +23,7 @@ const SIDE: u32 = 384;
 
 fn grainy(amount: f32, size: f32) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, false).per_pixel_only();
-    (s.grain.amount, s.grain.size, s.grain.curve, s.grain.colour) = (amount, size, FLAT, GrainColour { black: 0.0, white: 0.0 });
+    (s.grain.amount, s.grain.size, s.grain.curve, s.grain.colour) = (amount, microns(f64::from(size), 1.0), FLAT, GrainColour { black: 0.0, white: 0.0 });
     s
 }
 
@@ -103,7 +104,7 @@ fn a_fine_grain_blurs_nothing() {
     println!("size 0.25: detail {kept:.4}");
     assert!(kept >= 0.9, "size 0.25 keeps {kept}");
     // Twin: a blur of half a cell, which softens the finest grain too.
-    let half_cell = 0.5 * f64::from(SCAN.0) * grain::GRAIN_FINEST * grain::GRAIN_COARSEST.powf(0.25);
+    let half_cell = 0.5 * s.grain.cell(f64::from(SCAN.0));
     let soft = all(half_cell, &mut g);
     println!("size 0.25, the twin: detail {soft:.4}");
     assert!(soft < 0.9, "the twin keeps {soft}");

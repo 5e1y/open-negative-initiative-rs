@@ -227,8 +227,11 @@ fn the_gpu_develops_the_negative_its_reference_does() {
 }
 
 /// A digital photo at rest, its neighbourhood stages off so a pixel prints alone.
+/// A digital photo at rest, its grain off, so its film is read pixel for pixel.
 fn filmed() -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only()
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    s.grain.amount = 0.0;
+    s
 }
 
 /// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, and neutral; the

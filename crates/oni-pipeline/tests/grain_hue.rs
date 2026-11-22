@@ -7,6 +7,7 @@ use common::{V4, graph, noise, whole};
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{conversion, grain};
 use oni_render::{GRAIN_LOW_STOPS, Grain, LUMA, Stage47, cpu};
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::blocks::GrainColour;
 use oni_settings::{ConversionMode, PipelineSettings};
 
@@ -17,7 +18,7 @@ const COLOURS: [(&str, [f32; 3]); 5] = [("skin", [1.0, 0.64, 0.43]), ("sky", [0.
 /// A digital photo's grain at Amount's top, its curve at rest, its colour `colour`.
 fn grained(colour: GrainColour) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-    (s.grain.amount, s.grain.size, s.grain.colour) = (1.0, 0.5, colour);
+    (s.grain.amount, s.grain.size, s.grain.colour) = (1.0, microns(0.5, 1.0), colour);
     s
 }
 
@@ -165,7 +166,7 @@ fn a_reduced_render_deepens_the_colour_about_as_the_full_one_averaged() {
     let Some(mut g) = graph("a_reduced_render_deepens_the_colour_about_as_the_full_one_averaged") else { return };
     // Size 1 on a 3000-pixel scan, as the grain's own reduced check: under the cap to a quarter.
     let mut s = grained(GrainColour::REST);
-    s.grain.size = 1.0;
+    s.grain.size = microns(1.0, 1.0);
     let p = patch(COLOURS[0].1, light_at(0.2, &s));
     let at = |scale: f64| grain::grain(&s, Rect::new(0, 0, (3000.0 * scale) as u32, (2000.0 * scale) as u32), scale).unwrap();
     let full = laid(&mut g, &at(1.0), p, 800);

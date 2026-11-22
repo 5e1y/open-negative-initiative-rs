@@ -7,6 +7,7 @@ use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{Pipeline, Request, conversion, geometry, grain, stages};
 use oni_render::{GRAIN_NODES, Grain, LUMA, cpu};
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
 use oni_settings::frame::Geometry;
@@ -24,7 +25,7 @@ const FLAT: GrainCurve = GrainCurve { points: [Point::new(0.0, 1.0), Point::new(
 fn grainy(amount: f32, size: f32) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, false).per_pixel_only();
     s.grain.amount = amount;
-    s.grain.size = size;
+    s.grain.size = microns(f64::from(size), 1.0);
     s.grain.curve = FLAT;
     s
 }
@@ -267,8 +268,8 @@ fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
 }
 
 #[test]
-fn at_rest_or_measured_the_chain_holds_no_grain() {
-    let Some(mut g) = graph("at_rest_or_measured_the_chain_holds_no_grain") else { return };
+fn off_or_measured_the_chain_holds_no_grain() {
+    let Some(mut g) = graph("off_or_measured_the_chain_holds_no_grain") else { return };
     let (w, h) = (300, 200);
     let source = g.upload(w, h, &noise(w, h, 5, 0.05, 0.9)).unwrap();
     let mut pipeline = Pipeline::new();
@@ -277,8 +278,9 @@ fn at_rest_or_measured_the_chain_holds_no_grain() {
         pipeline.image(&mut g, &source, s, &request, &Default::default()).unwrap()
     };
     let rest = PipelineSettings::rest(ConversionMode::Digital, false);
+    let rest = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.0, ..rest.grain }, ..rest };
     let mut coarse = rest.clone();
-    coarse.grain.size = 0.9;
+    coarse.grain.size = microns(0.9, 1.0);
     coarse.grain.colour = GrainColour { black: 0.5, white: 1.5 };
     let (a, b) = (image(&rest, false), image(&coarse, false));
     assert_eq!((a.key(), a.stages()), (b.key(), b.stages()), "a size or a colour at amount 0 lays no stage");
@@ -344,8 +346,8 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     let source = g.upload(w, h, &noise(w, h, 9, 0.05, 0.9)).unwrap();
     let mut pipeline = Pipeline::new();
     let mut image = |g: &mut Graph, s: &PipelineSettings| pipeline.image(g, &source, s, &Request::default(), &Default::default()).unwrap();
-    let rest = PipelineSettings::rest(ConversionMode::Digital, false);
-    let grained = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.5, ..rest.grain }, ..rest.clone() };
+    let grained = PipelineSettings::rest(ConversionMode::Digital, false);
+    let rest = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.0, ..grained.grain }, ..grained.clone() };
     assert_eq!(image(&mut g, &grained).stages(), image(&mut g, &rest).stages() + 1, "the grain is a pass of its own");
     let legacy = Some(LegacyPrint::default());
     let (scanner, keyed) = (PipelineSettings { legacy_print: legacy, ..rest.clone() }, PipelineSettings { legacy_print: legacy, ..grained.clone() });

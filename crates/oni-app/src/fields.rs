@@ -250,7 +250,8 @@ impl Field {
             Field::GreenContrast => s("Green contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::BlueContrast => s("Blue contrast", Print::CONTRAST_RANGE, Readout::SignedPercent),
             Field::GrainAmount => s("Grain", Grain::AMOUNT_RANGE, Readout::Percent),
-            Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Percent),
+            // A grain's width on the film, which `readout_on` writes in the photo's own pixels.
+            Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Microns),
             // The grain's colour line, its saturation at the picture's black and at its white.
             Field::GrainColourBlack => s("Grain colour at the black point", GrainColour::RANGE, Readout::Percent),
             Field::GrainColourWhite => s("Grain colour at the white point", GrainColour::RANGE, Readout::Percent),
@@ -297,16 +298,43 @@ impl Field {
     /// The readout of a stored value, in the sense the slider shows it, after the end of its colour
     /// axis it leans to.
     pub fn readout(self, stored: f32) -> String {
-        let spec = self.spec();
-        spec.readout.along(spec.axis, self.shown(stored))
+        self.readout_on(stored, None)
+    }
+
+    /// `readout` on a photo whose scan's long side is `long` full-resolution pixels, once known.
+    pub fn readout_on(self, stored: f32, long: Option<f64>) -> String {
+        let (readout, figure) = self.figure(stored, long);
+        readout.along(self.spec().axis, figure)
     }
 
     /// The readout of stored values from `low` to `high` in the sense the slider shows them, as the
     /// frames shown together span them.
     pub fn span_readout(self, low: f32, high: f32) -> String {
-        let spec = self.spec();
-        let (a, b) = (self.shown(low), self.shown(high));
-        spec.readout.span(spec.axis, a.min(b), a.max(b))
+        self.span_readout_on(low, high, None)
+    }
+
+    /// `span_readout` on a photo whose scan's long side is `long` full-resolution pixels, once known.
+    pub fn span_readout_on(self, low: f32, high: f32, long: Option<f64>) -> String {
+        let ((readout, a), (_, b)) = (self.figure(low, long), self.figure(high, long));
+        readout.span(self.spec().axis, a.min(b), a.max(b))
+    }
+
+    /// How the readout writes `stored` and the figure it writes, in the shown sense: Grain size in pixels of a
+    /// scan whose long side is `long` pixels, so its readout follows the photo's resolution, on the film
+    /// while none is known.
+    pub fn figure(self, stored: f32, long: Option<f64>) -> (Readout, f32) {
+        match (self, long) {
+            (Field::GrainSize, Some(long)) => (Readout::Pixels, Grain::pixels(stored, long) as f32),
+            _ => (self.spec().readout, self.shown(stored)),
+        }
+    }
+
+    /// The value, in the shown sense, whose readout writes `figure` on a scan whose long side is `long` pixels.
+    pub fn unfigured(self, figure: f32, long: Option<f64>) -> f32 {
+        match (self, long) {
+            (Field::GrainSize, Some(long)) => Grain::microns(f64::from(figure), long),
+            _ => figure,
+        }
     }
 
     /// The range the track spans, in the shown sense.

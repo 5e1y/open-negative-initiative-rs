@@ -95,7 +95,7 @@ mod tests {
     fn every_reading_is_taken_without_the_film_effects() {
         let rest = PipelineSettings::rest(ConversionMode::Digital, true);
         let mut s = rest.clone();
-        (s.grain.amount, s.grain.size, s.halation.amount, s.halation.size) = (0.6, 0.2, 0.4, 0.9);
+        (s.grain.amount, s.grain.size, s.halation.amount, s.halation.size) = (0.6, 30.0, 0.4, 0.9);
         for stage in [Stage::Levels, Stage::GlobalLevels, Stage::ManualCurves, Stage::Curves] {
             assert_eq!(truncated(&s, stage), truncated(&rest, stage), "{stage:?}");
         }

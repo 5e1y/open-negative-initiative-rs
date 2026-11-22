@@ -95,7 +95,12 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
 
     let grain = || ctl.state.borrow().store().settings().grain;
     let g = w.global::<Store>();
-    assert!(grain().amount == 0.0 && !g.get_film_effects_modified(), "the photo opens with no grain");
+    let rest = oni_settings::blocks::Grain::default();
+    assert!(grain().amount == oni_settings::blocks::Grain::DIGITAL_AMOUNT && !g.get_film_effects_modified(), "the photo opens with its grain at rest");
+    // Grain size reads in the photo's own full-resolution pixels.
+    let long = ctl.state.borrow().scan_long().expect("the decode landed");
+    println!("a scan {long} px long: Grain size {}", g.get_grain_size_readout());
+    assert_eq!(g.get_grain_size_readout().to_string(), format!("{:.1} px", oni_settings::blocks::Grain::pixels(rest.size, long)), "on a scan {long} long");
     let renders = ctl.state.borrow().renders();
     press_rail(&rig, w, "Grain", 0.8);
     rig.until("the grain rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
@@ -104,7 +109,7 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
     assert!((laid.amount - 0.8).abs() < 0.03, "the press lays Grain at its place on the rail: {laid:?}");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the press reached Grain alone, its size at rest.
-    assert_eq!(laid.size, 0.5, "Grain size moved: {laid:?}");
+    assert_eq!(laid.size, rest.size, "Grain size moved: {laid:?}");
     println!("shot {}", rig.shot("film-effects-grain-fit").display());
     // At 100 %, where the grain's cells are a pixel or two.
     at_full_size(&rig, &ctl);
@@ -165,7 +170,7 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
     assert_eq!(laid.sensitivity, 0.0, "Halation sensitivity rests");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the presses reached Halation alone, the grain at rest.
-    assert_eq!(ctl.state.borrow().store().settings().grain.amount, 0.0);
+    assert_eq!(ctl.state.borrow().store().settings().grain.amount, oni_settings::blocks::Grain::DIGITAL_AMOUNT);
     println!("shot {}", rig.shot("film-effects-halation-fit").display());
     let glow = ring();
     // Near Sensitivity's left end the threshold stands over the window's light: nothing glows.

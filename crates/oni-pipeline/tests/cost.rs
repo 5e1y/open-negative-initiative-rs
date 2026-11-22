@@ -6,6 +6,7 @@
 use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_pipeline::{finishing, stages};
 use oni_render::TextureCoeff;
+use oni_settings::migrate::grain_size::microns;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::time::Instant;
 
@@ -171,7 +172,7 @@ fn a_digital_photo_s_film_effects_at_rest_and_on_a_notch() {
     let rest = PipelineSettings::rest(ConversionMode::Digital, true);
     let with = |grain: f32, size: f32, halation: f32| {
         let mut s = rest.clone();
-        (s.grain.amount, s.grain.size, s.halation.amount) = (grain, size, halation);
+        (s.grain.amount, s.grain.size, s.halation.amount) = (grain, microns(f64::from(size), 1.0), halation);
         s
     };
     let cases = [
