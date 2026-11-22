@@ -322,7 +322,7 @@ settings: PipelineSettings {
     },
     grain: Grain {
         amount: 0.0,
-        size: 20.0,
+        size: 27.6,
         curve: GrainCurve {
             points: [
                 Point {
