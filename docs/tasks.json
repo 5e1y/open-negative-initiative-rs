@@ -12330,5 +12330,33 @@
     "title": "The stocks' menu check in a file of its own, two bench lines broken under the width",
     "status": "done",
     "detail": "Merged together, the Roll-tab and menu checks took stock_hero.rs to 415 lines, past the file ceiling, and the Brightness strips' and stocks bench's format strings ran past 200 characters. The menu's hover check moves to window/stock_menu.rs with stock_hero's helpers shared; the two strings break with a continuation."
+  },
+  {
+    "id": 3340,
+    "type": "feature",
+    "title": "Print on paper becomes Virtual enlarger, and a second switch, Print on paper, takes the spektrafilm paper away",
+    "status": "done",
+    "detail": "Owner's experiment: see what the paper's bricks bring by taking them away. Three states: Virtual enlarger off (ONI's print, unchanged); on with Print on paper on (the paper print, unchanged); on with Print on paper off (new): the enlarger prints on a neutral paper (crates/oni-pipeline/src/paper/neutral.rs) holding no paper's data, one band a dye, each layer exposed by its own dye alone behind the filter that holds it back and printing its own channel alone, its characteristic curve ONI's print at rest (the mode's rest, 1.5 stops on a negative, 0 on a slide, reversal on a slide), the same on the three layers, its log exposure axis the frame's mean range (the anchors' span, as a window spans its own), the reference grey at the share that prints a plain RAW's grey. The enlarger's rest still solves the grey neutral at a plain RAW's grey by its time and M/Y filtration, the pick lies on pure black, Lighting and Brightness act as on a paper, the colour density and the ends the same code. The kernel is unchanged: the neutral paper is three bands of table data. Paper blacks is hidden there and lays nothing: the neutral paper's own black is ONI's print's, light 0."
+  },
+  {
+    "id": 3341,
+    "type": "feature",
+    "title": "The sidecar keeps Print on paper as `paperless`, the paper kept as chosen; format 60",
+    "status": "done",
+    "detail": "crates/oni-settings/src/settings.rs: `paperless: bool`, unwritten while false, beside `printPaper` (the enlarger on with its paper; none on ONI's print). No migration step: an older sidecar has none, so every paper print reads on its paper and nothing moves; the format moves to 60 so an older build opens a paperless print read-only. A paste and Lighting's preset row carry it with the paper; a Prepare prints on its fitting paper with Print on paper on (`PipelineSettings::on_paper`, used by the roll's reference, a digital roll and a slide's measure). The corpus's readings carry `paperless: false`, its newer file is now version 61, the field counts are 47."
+  },
+  {
+    "id": 3342,
+    "type": "ui",
+    "title": "The Paper section shows Virtual enlarger, then Print on paper while it is on, the paper's picker and Paper blacks while both are",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/color_tab.slint and state.slint (`enlarger-on`, `on-paper` and their callbacks), crates/oni-app/src/app/roll_tab.rs. The enlarger's filtration and Lighting Brightness stay while the enlarger is on, Colour compensation while it is off. The section's help and Lighting's say what each switch does; French Agrandisseur virtuel / Tirer sur papier, Spanish Ampliadora virtual / Positivar en papel."
+  },
+  {
+    "id": 3343,
+    "type": "check",
+    "title": "The neutral paper's checks, its GPU on every branch, the sidecar's switch and the window's three states",
+    "status": "done",
+    "detail": "crates/oni-pipeline/tests/paperless.rs: the grey on a plain RAW's and the pick on pure black whatever Paper blacks says (twin: the paper's anchor), each dye moving its own channel alone (twin: the paper's crosstalk), the curve ONI's print node by node on both papers (twin: Portra Endura's own layers), a frame whose windows agree printing as on ONI's print within 1e-3 (twin: the paper 0.02 off at least), Contrast about the grey, Exposure and Brightness, the GPU against its reference on six frames (twin: the time 10 % off). crates/oni-settings/tests/paperless.rs and crates/oni-app/tests/window/paper.rs (the three states, the neutral print's own histogram)."
   }
 ]

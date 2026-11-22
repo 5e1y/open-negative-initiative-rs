@@ -609,7 +609,7 @@ fn every_field_lives_in_exactly_one_family() {
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
         (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5 }), Some(Default::default()));
-        s.legacy_print = Some(Default::default());
+        (s.legacy_print, s.paperless) = (Some(Default::default()), true);
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
@@ -623,7 +623,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 46);
+    assert_eq!(keys.len(), 47);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

@@ -47,7 +47,8 @@ pub(super) fn lit(bare: &Paper, rest: (f32, V3), anchors: &[V3; 3], density: f32
     let (time, rest_cc) = rest;
     let at_rest = Paper { scale: time.exp(), filters: filters(rest_cc), ..*bare };
     let [pick, _, grey] = *anchors;
-    let anchor = if print.paper_blacks { at_rest.printed(pick) } else { [0.0; 3] };
+    // The neutral paper's own black is ONI's print's, pure black: Paper blacks, hidden there, lays nothing.
+    let anchor = if print.paper_blacks && !s.paperless { at_rest.printed(pick) } else { [0.0; 3] };
     let points = print.channel_points(mono);
     let own = |v: V3| if mono { [0.0; 3] } else { v };
     let channel_contrast = own(print.channel_contrast);

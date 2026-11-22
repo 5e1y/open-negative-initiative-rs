@@ -90,9 +90,12 @@ pub struct PipelineSettings {
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
     pub print: Print,
-    /// The colour paper the negative is printed on in place of ONI's own print; none prints on ONI's.
+    /// The virtual enlarger's paper, printing the negative in place of ONI's own print; none prints on ONI's.
     #[serde(rename = "printPaper", skip_serializing_if = "Option::is_none", default)]
     pub print_paper: Option<PaperStock>,
+    /// The enlarger printing on a neutral paper, its paper's curves and dyes taken away; the paper stays chosen.
+    #[serde(skip_serializing_if = "std::ops::Not::not", default)]
+    pub paperless: bool,
     /// The former Scanner face's print a photo edited there keeps; none on every other photo.
     #[serde(rename = "legacyPrint", skip_serializing_if = "Option::is_none", default)]
     pub legacy_print: Option<LegacyPrint>,
@@ -151,6 +154,7 @@ impl Default for PipelineSettings {
             balance_strength: filter_balance::RESTING_STRENGTH,
             print: Print::default(),
             print_paper: None,
+            paperless: false,
             legacy_print: None,
             density: 0.0,
             manual_curves: CurveSet::default(),
@@ -200,6 +204,11 @@ impl PipelineSettings {
     pub fn fitting_paper(&self) -> PaperStock {
         let positive = self.mode.reads_positive();
         self.print_paper.filter(|p| p.reversal() == positive).unwrap_or(PaperStock::default_for(positive))
+    }
+
+    /// These settings printed on their fitting paper through the enlarger, as a prepared frame is (owner's call).
+    pub fn on_paper(self) -> PipelineSettings {
+        PipelineSettings { print_paper: Some(self.fitting_paper()), paperless: false, ..self }
     }
 
     /// The former Scanner face's print the render lays, while it is laid.
@@ -297,10 +306,11 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 17] = [
+    pub const FIELDS: [&str; 18] = [
         "balanceFilters",
         "print",
         "printPaper",
+        "paperless",
         "legacyPrint",
         "density",
         "manualCurves",
@@ -341,6 +351,7 @@ pub mod look_settings {
         out.balance_filters = donor.balance_filters;
         out.print = donor.print;
         out.print_paper = donor.print_paper;
+        out.paperless = donor.paperless;
         out.legacy_print = donor.legacy_print;
         out.density = donor.density;
         out.manual_curves = donor.manual_curves.clone();

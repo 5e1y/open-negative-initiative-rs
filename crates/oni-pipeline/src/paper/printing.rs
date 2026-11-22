@@ -181,24 +181,31 @@ fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper, its enlarger at rest, then Lighting in density on the film and the enlarger, the
-/// grade on the paper, the colour density and the ends on the print. None on ONI's print.
+/// The frame's paper, or the neutral one with Print on paper off, its enlarger at rest, then Lighting in density on the
+/// film and the enlarger, the grade on the paper, the colour density and the ends on the print. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
-    let table = enlarger(Film::of(s), stock);
-    let sheet = sheet(stock);
+    let film = Film::of(s);
+    let (table, sheet) = if s.paperless {
+        (neutral::enlarger(film == Film::Silver), neutral::sheet(stock.reversal()))
+    } else {
+        (enlarger(film, stock), sheet(stock))
+    };
     let (gain, pedestal, log_guard, read_black) = match separation {
         Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
         None => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
     };
     let anchors = anchors(s, separation);
+    let span = anchors[1].map(spanned);
+    // The neutral paper's axis spans the frame's mean range, as a window spans its own: one range on the three layers.
+    let axis = if s.paperless { spanned(span.iter().sum::<f32>() / 3.0) } else { 1.0 };
     let bare = Paper {
         gain,
         pedestal,
         log_guard,
         black: read_black,
-        span: anchors[1].map(spanned),
+        span,
         points_black: [0.0; 3],
         points_white: [0.0; 3],
         zones: [0.0; 2],
@@ -211,8 +218,8 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         pivot: [0.0; 3],
         slope: [1.0; 3],
         curves: &sheet.curves,
-        curve_low: sheet.curve_low,
-        curve_step: sheet.curve_step,
+        curve_low: sheet.curve_low * axis,
+        curve_step: sheet.curve_step * axis,
         print: &sheet.print,
         view: &sheet.view,
         density: 1.0,
