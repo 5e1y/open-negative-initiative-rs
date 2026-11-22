@@ -183,15 +183,22 @@ impl PipelineSettings {
         block
     }
 
-    /// Whether a paper can print this frame: a negative's, a black and white's or a digital photo's, never a
-    /// positive's, which a negative paper would invert.
+    /// Whether a paper can print this frame: every one but a positive read as its own negative, whose light no
+    /// enlarger passes.
     pub fn takes_paper(&self) -> bool {
-        !self.mode.reads_positive() && !self.inverted_source
+        !self.inverted_source
     }
 
-    /// The paper the render prints on: the chosen one where the frame takes a paper.
+    /// The paper the render prints on: the chosen one where the frame takes a paper and the paper prints its film, a
+    /// reversal paper a slide, any other a negative.
     pub fn paper(&self) -> Option<PaperStock> {
-        self.print_paper.filter(|_| self.takes_paper())
+        self.print_paper.filter(|p| self.takes_paper() && p.reversal() == self.mode.reads_positive())
+    }
+
+    /// The paper a print on paper takes: the chosen one where it prints the frame's film, else its film's default.
+    pub fn fitting_paper(&self) -> PaperStock {
+        let positive = self.mode.reads_positive();
+        self.print_paper.filter(|p| p.reversal() == positive).unwrap_or(PaperStock::default_for(positive))
     }
 
     /// The former Scanner face's print the render lays, while it is laid.

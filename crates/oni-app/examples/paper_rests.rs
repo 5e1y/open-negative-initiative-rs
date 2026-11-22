@@ -96,7 +96,8 @@ fn main() {
         let mono = s.mode.is_monochrome();
         let separation = oni_pipeline::conversion::stock_amounts(&s);
         let anchors = paper::anchors(&s, separation.as_ref());
-        let a = paper::resting(&bare, anchors[2], mono);
+        let (time, pack) = paper::resting(&bare, anchors[2], mono);
+        let a = [time, pack[1], pack[2]];
         println!("{} ({:?}, dyes {:?}, separation {}, unmixed {})", raw.file_name().unwrap().to_string_lossy(), s.mode, s.dye_set, s.separation, k.dyes.is_some());
         println!("  anchors (dye amounts above the base): white {:.3} {:.3} {:.3}, grey {:.3} {:.3} {:.3}", anchors[1][0], anchors[1][1], anchors[1][2], anchors[2][0], anchors[2][1], anchors[2][2]);
         report("(a) grey at a plain RAW's grey", &bare, a, &anchors, a[0]);

@@ -42,4 +42,18 @@ mod tests {
         stored["version"] = serde_json::json!(VERSION + 1);
         assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).err(), Some(super::super::Refusal::Newer(VERSION + 1)));
     }
+
+    #[test]
+    fn a_slide_on_the_reversal_paper_is_written_past_every_build_that_cannot_read_its_key() {
+        use super::super::chain::{ONE_FACE_VERSION, REVERSAL_PAPER_VERSION};
+        use crate::document::VERSION;
+        let s = PipelineSettings { print_paper: Some(PaperStock::KodakEktachromeRadianceIII), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+        let mut stored = super::super::reshape::as_stored(&crate::Document::of(s.clone()), VERSION);
+        assert_eq!(stored["settings"]["printPaper"], serde_json::json!("kodak-ektachrome-radiance-iii"));
+        assert!(stored["version"].as_i64() >= Some(REVERSAL_PAPER_VERSION) && REVERSAL_PAPER_VERSION > ONE_FACE_VERSION);
+        assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).unwrap().document.settings, s);
+        // Twin: a reader refuses a version past its own as newer, as a build before the reversal paper refuses this one.
+        stored["version"] = serde_json::json!(VERSION + 1);
+        assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).err(), Some(super::super::Refusal::Newer(VERSION + 1)));
+    }
 }

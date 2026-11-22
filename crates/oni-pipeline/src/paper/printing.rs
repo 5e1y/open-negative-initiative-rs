@@ -4,6 +4,7 @@
 use super::*;
 use crate::film::bake::{self, M3};
 use oni_render::{DYE_LIGHT_FLOOR, DyeSeparation, PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_settings::axis::pipeline::DMAX;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
 use oni_settings::PipelineSettings;
@@ -43,11 +44,22 @@ pub fn reference_grey(s: &PipelineSettings) -> V3 {
     let shown = |t: f32| rest.output(t, LevelsChannel::Linked);
     let share = bisected(0.0, 2.0, *GREY_PRINT, shown);
     let k = windows_alone(s);
+    let (bare, densest) = film_ends(s);
     std::array::from_fn(|c| {
-        let w = s.levels.windows()[c];
-        let (low, high) = (w.black.min(w.white) - 1.0, w.black.max(w.white) + 4.0);
+        let (low, high) = (bare[c].min(densest[c]) - 1.0, bare[c].max(densest[c]) + 4.0);
         bisected(low, high, share, |d| cpu::stage47([10f32.powf(-d); 4], &k)[c])
     })
+}
+
+/// Each window's ends as scan densities: where its film is bare, the amounts' zero, and the densest it reads. A slide's
+/// windows read the axis' top less the density, so its white is its bare film.
+pub fn film_ends(s: &PipelineSettings) -> (V3, V3) {
+    let w = s.levels.windows();
+    if s.mode.reads_positive() {
+        (w.map(|l| DMAX - l.white), w.map(|l| DMAX - l.black))
+    } else {
+        (w.map(|l| l.black), w.map(|l| l.white))
+    }
 }
 
 /// The frame's windows alone, read on density at unit gain: stage 5's output with no print or decompression.
@@ -63,6 +75,7 @@ fn windows_alone(s: &PipelineSettings) -> Stage47 {
         blue: vector(2),
         low_points: w.map(|l| l.shadow_ordinate()),
         high_points: w.map(|l| l.highlight_ordinate()),
+        invert: s.mode.invert_flag(),
         ..Stage47::rest()
     }
 }
@@ -78,11 +91,13 @@ fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) ->
 }
 
 /// The frame's three anchors as the paper reads them, dye amounts above the bare film through the separation where
-/// one runs: each window's black (the dark pick, the film's base), its white (the densest it reads), and the reference grey.
+/// one runs: the pick its print lays black (a negative's bare film, a slide's densest), the densest read, the reference grey.
 pub fn anchors(s: &PipelineSettings, separation: Option<&DyeSeparation>) -> [V3; 3] {
-    let w = s.levels.windows();
+    let (bare, densest) = film_ends(s);
     let grey = reference_grey(s);
-    let above: [V3; 3] = [[0.0; 3], std::array::from_fn(|c| w[c].white - w[c].black), std::array::from_fn(|c| grey[c] - w[c].black)];
+    let span: V3 = std::array::from_fn(|c| densest[c] - bare[c]);
+    let pick = if s.mode.reads_positive() { span } else { [0.0; 3] };
+    let above: [V3; 3] = [pick, span, std::array::from_fn(|c| grey[c] - bare[c])];
     above.map(|a| separation.map_or(a, |d| d.separated(a)))
 }
 
@@ -133,17 +148,32 @@ pub fn layer_shares(p: &Paper, amounts: V3) -> V3 {
     std::array::from_fn(|c| (density[c] - low[c]) / (high[c] - low[c]))
 }
 
-/// The enlarger at rest on the bare paper `p`, as its log time and its magenta and yellow (cyan at none): the reference
-/// `grey` printed at a plain RAW's grey, neutral; black and white by the time alone, on its luma.
-pub fn resting(p: &Paper, grey: V3, mono: bool) -> V3 {
-    let at = |x: V3| Paper { scale: x[0].exp(), filters: filters([0.0, x[1], x[2]]), ..*p };
+/// The enlarger at rest on the bare paper `p`, as its log time and its filtration in CC: the reference `grey` printed at a
+/// plain RAW's grey, neutral; black and white by the time alone, on its luma.
+pub fn resting(p: &Paper, grey: V3, mono: bool) -> (f32, V3) {
     let target = GREY_PRINT.ln();
-    let miss = |x: V3| at(x).printed(grey).map(|v| v.max(1e-12).ln() - target);
     let start = -(p.exposed(grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
-    if mono {
-        return [root(start, |e| miss([e, 0.0, 0.0])[0]), 0.0, 0.0];
+    // A pack holds no neutral density, one filter at none: cyan, as a negative's enlarger rests, else whichever leaves
+    // the other two at none or more, as a reversal paper's may need (Kodak starts Radiance III on 10M + 20C).
+    let pack = |none: usize| {
+        let others = [(none + 1) % 3, (none + 2) % 3];
+        let cc = |x: V3| {
+            let mut cc = [0.0; 3];
+            (cc[others[0]], cc[others[1]]) = (x[1], x[2]);
+            cc
+        };
+        let miss = |x: V3| Paper { scale: x[0].exp(), filters: filters(cc(x)), ..*p }.printed(grey).map(|v| v.max(1e-12).ln() - target);
+        if mono {
+            return (root(start, |e| miss([e, 0.0, 0.0])[0]), [0.0; 3]);
+        }
+        let x = neutral_on(miss, [start, START_CC[0], START_CC[1]]);
+        (x[0], cc(x))
+    };
+    let cyan = pack(0);
+    if mono || cyan.1.iter().all(|v| *v >= 0.0) {
+        return cyan;
     }
-    neutral_on(miss, [start, START_CC[0], START_CC[1]])
+    [1, 2].into_iter().map(pack).find(|(_, cc)| cc.iter().all(|v| *v >= 0.0)).unwrap_or(cyan)
 }
 
 /// A dye's range on the negative, never empty: a window's span holds at least 1e-4 of density, as ONI's print reads it.
@@ -151,17 +181,21 @@ fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper, its enlarger at rest, then Lighting in density on the negative and the enlarger, the
+/// The frame's paper, its enlarger at rest, then Lighting in density on the film and the enlarger, the
 /// grade on the paper, the colour density and the ends on the print. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
-    let table = enlarger((!mono).then_some(s.dye_set), stock);
+    let film = match (mono, s.mode.reads_positive()) {
+        (true, _) => Film::Silver,
+        (false, true) => Film::Slide,
+        (false, false) => Film::Negative(s.dye_set),
+    };
+    let table = enlarger(film, stock);
     let sheet = sheet(stock);
-    let black = s.levels.windows().map(|w| w.black);
     let (gain, pedestal, log_guard, read_black) = match separation {
         Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
-        None => (k.gain, k.pedestal, k.log_guard, black),
+        None => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
     };
     let anchors = anchors(s, separation);
     let bare = Paper {
@@ -192,6 +226,7 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         anchor: [0.0; 3],
         brightness: 0.0,
         luma: mono,
+        reversal: stock.reversal(),
     };
     let rest = resting(&bare, anchors[2], mono);
     Some(super::lighting::lit(&bare, rest, &anchors, k.density, s))

@@ -23,7 +23,16 @@ pub fn stock_separation(s: &PipelineSettings) -> Option<DyeSeparation> {
     stock_amounts(s).map(|d| toned(d, &s.levels, guard))
 }
 
-/// The frame's measured dyes at its dose, their amounts read as they are: what a paper prints.
+/// The dye amounts a paper prints: a negative's measured dyes at its dose, a slide's E-6 dyes unmixed whole, as the
+/// enlarger passes them; ONI's print reads a slide as a plain RAW.
+pub fn paper_amounts(s: &PipelineSettings) -> Option<DyeSeparation> {
+    if s.mode.reads_positive() {
+        return Some(dyes::slide_dyes().separation(crate::paper::film_ends(s).0, 1.0));
+    }
+    stock_amounts(s)
+}
+
+/// The frame's measured dyes at its dose, their amounts read as they are.
 pub fn stock_amounts(s: &PipelineSettings) -> Option<DyeSeparation> {
     let (low, high) = oni_settings::blocks::separation::RANGE;
     stock_dyes(s).map(|d| d.separation(s.levels.windows().map(|w| w.black), s.separation.clamp(low, high)))
