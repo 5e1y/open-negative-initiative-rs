@@ -75,6 +75,7 @@ fields! {
     BalanceStrength => "balanceStrength", balance_strength;
     Print => "print", print;
     PrintPaper => "printPaper", print_paper;
+    Paperless => "paperless", paperless;
     LegacyPrint => "legacyPrint", legacy_print;
     Density => "density", density;
     ManualCurves => "manualCurves", manual_curves;
