@@ -58,7 +58,7 @@ pub enum Knob {
     BalanceStrength,
     Level(Channel, Handle),
     Exposure,
-    /// A paper's print brightened between its own ends.
+    /// A paper's print lit as Exposure lights it, its blacks and first shadows held.
     Brightness,
     Contrast,
     Shadows,

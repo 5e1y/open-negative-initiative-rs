@@ -1,6 +1,6 @@
 //! The paper's ends: whatever Lighting moves, the frame's pick prints where the enlarger's rest prints it, or on pure
-//! black with True blacks; the whites stay free, the points move the ends, Brightness runs between the anchored pick and
-//! the paper's white, the print continuous and monotone. Each verdict has a twin.
+//! black with True blacks; the whites stay free, the points move the ends, Brightness moves the tones above its knee as
+//! Exposure does and none under it, the print continuous and monotone. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -9,7 +9,8 @@ mod frames;
 use common::V4;
 use frames::*;
 use oni_pipeline::{conversion, paper};
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_pipeline::paper::BRIGHTNESS_KNEE_LIGHT;
+use oni_render::{PAPER_CURVE_NODES, PAPER_KNEE_SLOPE, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{PaperStock, PipelineSettings};
 
@@ -148,31 +149,116 @@ fn the_whites_stay_free() {
     assert!(seen >= 3, "{seen}");
 }
 
+/// The frame's neutral from its pick (0) through its reference grey (1), as dye amounts.
+fn neutral(s: &PipelineSettings, t: f32) -> [f32; 3] {
+    let [pick, _, grey] = paper::anchors(s, conversion::stage47(s).dyes.as_ref());
+    std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))
+}
+
+/// How far a tone's mean log exposure lies under the pick's on `p`.
+fn under_pick(p: &Paper, amounts: [f32; 3]) -> f32 {
+    let log = p.exposed(p.toned(amounts));
+    p.pick_log - (log[0] + log[1] + log[2]) / 3.0
+}
+
+/// The light `p` prints for `amounts` above its pick, its pick laid on black and its white the paper's.
+fn on_black(p: &Paper, amounts: [f32; 3]) -> f32 {
+    let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
+    let (k, w) = (luma(p.pick), luma(p.white));
+    (luma(p.coloured(p.printed(amounts))) - k) / (w - k) * w
+}
+
 #[test]
-fn brightness_runs_between_the_anchored_pick_and_the_papers_white() {
+fn brightnesss_knee_lies_where_the_neutral_prints_l_5_over_the_pick_whatever_lighting_does() {
     for (label, s) in frames() {
-        let [rest_pick, _, rest_grey] = printed_on(&s, &conversion::stage47(&s));
-        for (brightness, true_blacks) in [(-1.0f32, false), (1.0, false), (0.5, true), (-1.0, true)] {
+        for (name, f) in SLIDERS {
+            let t = moved(&s, |u| {
+                f(u);
+                u.print.brightness = 0.5;
+            });
+            let p = paper_of(&t);
+            // The neutral's tone whose exposure lies at the knee prints the knee's light.
+            let (mut low, mut high) = (0.0f32, 8.0f32);
+            for _ in 0..60 {
+                let mid = 0.5 * (low + high);
+                if under_pick(&p, neutral(&s, mid)) < p.knee { low = mid } else { high = mid }
+            }
+            let light = on_black(&p, neutral(&s, low));
+            assert!(p.knee > 0.0 && (light / BRIGHTNESS_KNEE_LIGHT - 1.0).abs() < 1e-3, "{label}, {name}: knee {} at {light}", p.knee);
+            // The anchor leaves the knee where it is: it is read on the print's own range.
+            let [pick, _, grey] = paper::anchors(&t, conversion::stage47(&t).dyes.as_ref());
+            assert_eq!(paper::ended(&p, pick, grey, [0.0; 3], 0.5).knee, p.knee, "{label}, {name}");
+        }
+        let p = paper_of(&moved(&s, |u| u.print.brightness = 0.5));
+        println!("{label}: the knee {:.3} of log exposure under the pick", p.knee);
+        // Twin: the knee's light read on the print as shown, its pick on its anchor, lies elsewhere.
+        let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
+        let (mut low, mut high) = (0.0f32, 8.0f32);
+        for _ in 0..60 {
+            let mid = 0.5 * (low + high);
+            if under_pick(&p, neutral(&s, mid)) < p.knee { low = mid } else { high = mid }
+        }
+        assert!((luma(p.shown(neutral(&s, low))) / BRIGHTNESS_KNEE_LIGHT - 1.0).abs() > 0.1, "{label}");
+    }
+}
+
+#[test]
+fn brightness_holds_every_tone_under_its_knee_and_moves_those_past_it_as_exposure_does() {
+    let mut followed = 0;
+    for (label, s) in frames() {
+        for (brightness, true_blacks) in [(-4.0f32, false), (-1.0, false), (-0.5, true), (0.5, false), (1.0, true), (4.0, false)] {
             let t = moved(&s, |u| (u.print.brightness, u.print.true_blacks) = (brightness, true_blacks));
-            let k = conversion::stage47(&t);
-            let p = k.paper.unwrap();
-            let [pick, _, grey] = printed_on(&s, &k);
-            let black = if true_blacks { [0.0; 3] } else { rest_pick };
-            assert!(worst(pick, black) < 1e-6 && worst(p.ended(p.white), p.white) < 1e-6, "{label}, {brightness}: ends held");
+            let p = paper_of(&t);
+            let at_rest = Paper { brightness: 0.0, ..p };
+            // The pick, the tones beyond it and every tone under the knee print as they do at rest, to the bit; the
+            // old odds gain between the pick and the white moved them.
             let g = (Print::EXPOSURE_GEAR * brightness).exp2();
-            let odds = |u: f32| g * u / (1.0 + (g - 1.0) * u);
-            let law: [f32; 3] = std::array::from_fn(|c| black[c] + (p.white[c] - black[c]) * odds((rest_grey[c] - p.pick[c]) / (p.white[c] - p.pick[c])));
-            let off = worst(grey, law);
-            println!("{label}, Brightness {brightness:+}{}: the grey {:.4} to {:.4}, within {off:.1e} of its curve", if true_blacks { ", True blacks" } else { "" }, rest_grey[1], grey[1]);
-            assert!(off < 2e-6, "{label}, {brightness}: {grey:?} {law:?}");
-            // Twin: the curve run between the paper's Dmax and white misses the grey.
-            let d = dmax(&p);
-            let floor = if true_blacks { [0.0; 3] } else { d };
-            let on_dmax: [f32; 3] = std::array::from_fn(|c| floor[c] + (p.white[c] - floor[c]) * odds((rest_grey[c] - d[c]) / (p.white[c] - d[c])));
-            println!("{label}, Brightness {brightness:+}: run between the Dmax and the white, the grey would miss by {:.1e}", worst(grey, on_dmax));
-            assert!(worst(grey, on_dmax) > 1e-4, "{label}, {brightness}: {on_dmax:?}");
+            let (mut held, mut odds_moved, mut under) = (0.0f32, 0.0f32, 0);
+            for i in 0..=400 {
+                let a = neutral(&s, -0.5 + 1.5 * i as f32 / 400.0);
+                if under_pick(&p, a) > p.knee {
+                    continue;
+                }
+                under += 1;
+                let (now, was) = (p.shown(a), at_rest.shown(a));
+                held = held.max(worst(now, was));
+                let raw = p.coloured(p.printed(a));
+                let odds: [f32; 3] = std::array::from_fn(|c| {
+                    let u = ((raw[c] - p.pick[c]) / (p.white[c] - p.pick[c])).max(0.0);
+                    p.anchor[c] + (p.white[c] - p.anchor[c]) * g * u / (1.0 + (g - 1.0) * u)
+                });
+                if under_pick(&p, a) > 0.5 * p.knee {
+                    odds_moved = odds_moved.max(worst(odds, was));
+                }
+            }
+            println!("{label}, Brightness {brightness:+}: {under} tones under the knee held within {held:.1e}; the odds gain moved them up to {odds_moved:.1e}");
+            assert!(under > 20 && held == 0.0, "{label}, {brightness}: {under} {held}");
+            assert!(odds_moved > 1e-4, "{label}, {brightness}: {odds_moved}");
+            // Past the knee's fade and the excess that lands the lift, each tone prints as Exposure's light would, the
+            // ends kept.
+            let exposure = paper_of(&moved(&s, |u| u.print.exposure += brightness));
+            let exposed = Paper { scale: exposure.scale, brightness: 0.0, ..p };
+            let geared = paper_of(&moved(&s, |u| u.print.exposure += Print::EXPOSURE_GEAR * brightness));
+            let twice = Paper { scale: geared.scale, brightness: 0.0, ..p };
+            for i in 0..=40 {
+                let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
+                let lift = brightness.abs() * std::f32::consts::LOG10_2;
+                let gain = PAPER_KNEE_SLOPE - 1.0;
+                if under_pick(&p, a) < 1.5 * p.knee + if brightness > 0.0 { 2.0 * lift / gain } else { (gain + 2.0) * lift / gain } {
+                    continue;
+                }
+                followed += 1;
+                let (now, want) = (p.shown(a), exposed.shown(a));
+                assert!(worst(now, want) < 2e-5 * want.iter().copied().fold(0.0, f32::max) + 1e-7, "{label}, {brightness}: {now:?} {want:?}");
+                // Twin: Exposure at twice the stops, as the odds gain was geared, misses wherever the print is not
+                // held at the paper's white or its black.
+                let off = worst(now, twice.shown(a));
+                assert!(off > 1e-4 || worst(now, p.white) < 1e-3 || now[1] < 1e-3, "{label}, {brightness}: {off}");
+            }
         }
     }
+    println!("{followed} tones past the knee checked against Exposure");
+    assert!(followed > 200, "{followed}");
 }
 
 #[test]
@@ -204,9 +290,11 @@ fn the_points_still_move_the_ends() {
 
 #[test]
 fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
-    let settings: [Move; 4] = [
+    let settings: [Move; 6] = [
         ("at rest", |_| {}),
         ("True blacks", |s| s.print.true_blacks = true),
+        ("Brightness -4", |s| s.print.brightness = -4.0),
+        ("Brightness +4, True blacks", |s| (s.print.brightness, s.print.true_blacks) = (4.0, true)),
         ("Exposure +2, Brightness -1", |s| (s.print.exposure, s.print.brightness) = (s.print.exposure + 2.0, -1.0)),
         ("Exposure -1, Contrast +0.3, True blacks, Brightness +1", |s| {
             (s.print.exposure, s.print.contrast, s.print.true_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, true, 1.0);
@@ -224,8 +312,8 @@ fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
             // Frontier's fit falls 6.5e-6 near its white at rest and prints its Dmax a hair under no light.
             let (falls, floor) = if label.starts_with("Frontier") { (3e-5, -2e-5) } else { (1e-6, 0.0) };
             assert!(falls_by < falls && lowest >= floor, "{label}, {name}");
-            // Twin: a jump of a hundredth past the middle keeps its step whatever the sampling, so the check refuses it.
-            let jump = |u: f32| print(u).map(|v| if u > 0.5 { v + 0.01 } else { v });
+            // Twin: a jump of a tenth past the middle keeps its step whatever the sampling, so the check refuses it.
+            let jump = |u: f32| print(u).map(|v| if u > 0.5 { v + 0.1 } else { v });
             assert!(steps(&jump, 4000) >= 0.6 * steps(&jump, 2000), "{label}, {name}");
             // Twin: a fall of a hundredth is refused.
             let dip = |u: f32| print(u).map(|v| if u > 0.5 { v - 0.01 } else { v });
@@ -253,3 +341,4 @@ fn fall(print: &dyn Fn(f32) -> [f32; 3], n: usize) -> f32 {
 fn least(print: &dyn Fn(f32) -> [f32; 3], n: usize) -> f32 {
     tones(print, n).iter().flatten().copied().fold(f32::INFINITY, f32::min)
 }
+

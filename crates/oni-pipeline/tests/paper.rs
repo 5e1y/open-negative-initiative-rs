@@ -214,7 +214,17 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveTypeII), ..prepared_negative() };
     let mut anchored = PipelineSettings { print: Print { true_blacks: false, brightness: -0.7, ..lit.print }, ..lit.clone() };
     anchored.print.exposure -= 3.0;
-    let frames = [("digital", digital()), ("lit negative", lit), ("lit negative, its pick on its rest", anchored), ("black and white", mono), ("no unmix", unmixed_none)];
+    let darker = PipelineSettings { print: Print { brightness: -4.0, ..anchored.print }, ..anchored.clone() };
+    let brighter = PipelineSettings { print: Print { brightness: 4.0, ..lit.print }, ..lit.clone() };
+    let frames = [
+        ("digital", digital()),
+        ("lit negative", lit),
+        ("lit negative, its pick on its rest", anchored),
+        ("lit negative, Brightness -4", darker),
+        ("lit negative, Brightness +4", brighter),
+        ("black and white", mono),
+        ("no unmix", unmixed_none),
+    ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));

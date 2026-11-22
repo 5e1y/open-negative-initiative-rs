@@ -1,6 +1,7 @@
 //! The paper: Lighting's tones laid on the negative's density, the enlarger's light through its dyes exposes a colour
 //! paper's layers, which develop on their curves turned by the grade; the print's dyes are read under D50, its colour
-//! density laid, then its ends: the frame's pick on its anchor, the paper's white held, Brightness between them.
+//! density laid, then its ends: the frame's pick on its anchor, the paper's white held. Brightness moves the enlarger's
+//! light as Exposure does, but on the tones above a knee over the pick: the blacks and the first shadows stay.
 
 use super::*;
 use super::stage47::{coloured, midded, quartered};
@@ -15,6 +16,7 @@ pub const PAPER_CURVE_NODES: usize = 256;
 pub const PAPER_EXPOSURE_FLOOR: f32 = 1e-10;
 
 const LOG2_10: f32 = std::f32::consts::LOG2_10;
+const LOG10_2: f32 = std::f32::consts::LOG10_2;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// A negative printed on a paper: how its pixel is read as dye amounts and toned, the enlarger's light, the paper's
@@ -47,6 +49,11 @@ pub struct Paper {
     /// Each layer's log exposure the grade turns about, and its slope's factor there.
     pub pivot: V3,
     pub slope: V3,
+    /// Brightness, in stops of the enlarger's light; the pick's mean log exposure untoned; the knee, how far under it a
+    /// tone's mean log exposure lies before Brightness moves it.
+    pub brightness: f32,
+    pub pick_log: f32,
+    pub knee: f32,
     /// Each layer's density along the log exposure from `curve_low` by `curve_step`, held at either end.
     pub curves: &'static [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
@@ -63,8 +70,6 @@ pub struct Paper {
     pub white: V3,
     /// Where the pick lands: where the enlarger's rest prints it, or pure black for True blacks.
     pub anchor: V3,
-    /// Brightness, an odds gain of this many stops on the print's light between the anchor and the white.
-    pub brightness: f32,
     /// A black and white print reads its luma on its three channels.
     pub luma: bool,
 }
@@ -85,8 +90,8 @@ impl Paper {
             v3(self.points_white, 0.0),
             v3(self.mids, 0.0),
             v3(self.filters, self.scale),
-            v3(self.pivot, 0.0),
-            v3(self.slope, 0.0),
+            v3(self.pivot, self.pick_log),
+            v3(self.slope, self.knee),
             [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
             v3(self.pick, self.density),
             v3(self.white, 0.0),
@@ -139,6 +144,17 @@ impl Paper {
         map(raw, |_, v| (v.max(0.0) * self.scale + PAPER_EXPOSURE_FLOOR).ln() * LOG10_E)
     }
 
+    /// Each layer's log exposure moved by Brightness as Exposure moves it, by the same amount on the three, as far as
+    /// its mean lies under the pick's: `kneed`.
+    pub fn brightened(&self, log: V3) -> V3 {
+        if self.brightness == 0.0 {
+            return log;
+        }
+        let x = self.pick_log - (log[0] + log[1] + log[2]) / 3.0;
+        let moved = kneed(x, self.brightness * LOG10_2, self.knee) - x;
+        log.map(|v| v - moved)
+    }
+
     /// Each layer's log exposure turned about its pivot by its slope: the paper's grade.
     pub fn graded(&self, log: V3) -> V3 {
         if self.slope == [1.0; 3] {
@@ -169,7 +185,7 @@ impl Paper {
 
     /// The print of a negative holding `amounts`, its tones laid, a black and white print on its luma; before its ends.
     pub fn printed(&self, amounts: V3) -> V3 {
-        let light = self.viewed(self.developed(self.graded(self.exposed(self.toned(amounts)))));
+        let light = self.viewed(self.developed(self.graded(self.brightened(self.exposed(self.toned(amounts))))));
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 
@@ -178,21 +194,15 @@ impl Paper {
         coloured(light, self.density)
     }
 
-    /// Each channel read from the printed pick K to the white W, u = (v − K) / (W − K), laid from the anchor A to W by
-    /// Brightness's odds gain g·u / (1 + (g − 1)·u), straight past W; under K by v·A / K, so it stays above no light.
+    /// Each channel laid from the printed pick K on the anchor A, the white W held: a straight line in light through
+    /// both, under K one onto no light, so the print stays above none.
     pub fn ended(&self, light: V3) -> V3 {
-        if self.brightness == 0.0 && self.anchor == self.pick {
+        if self.anchor == self.pick {
             return light;
         }
-        let g = self.brightness.exp2();
         map(light, |c, v| {
             let (k, a, w) = (self.pick[c], self.anchor[c], self.white[c]);
-            if v <= k {
-                return v * a / k;
-            }
-            let u = (v - k) / (w - k);
-            let t = u.min(1.0);
-            a + (w - a) * (g * t / (1.0 + (g - 1.0) * t) + (u - t))
+            if v <= k { v * a / k } else { a + (w - a) * ((v - k) / (w - k)) }
         })
     }
 
@@ -200,6 +210,32 @@ impl Paper {
     pub fn shown(&self, amounts: V3) -> V3 {
         self.ended(self.coloured(self.printed(amounts)))
     }
+}
+
+/// How far `x` lies past `knee`, eased in: none under it, a parabola over the next knee's worth, then straight on.
+pub fn excess(x: f32, knee: f32) -> f32 {
+    let y = x - knee;
+    if y <= 0.0 { 0.0 } else if y < knee { y * y / (2.0 * knee) } else { y - 0.5 * knee }
+}
+
+/// The steepest Brightness makes a tone's slope brightening, its inverse the flattest darkening: a layer whose exposure
+/// runs a quarter slower than its tone's mean, as roll #8's neutrals do by a twentieth, never turns back.
+pub const PAPER_KNEE_SLOPE: f32 = 4.0;
+
+/// A mean log exposure `x` under the pick moved by `lift` toward the light on its excess `e` past the knee: each
+/// step of `e` gains its slope from the steepest down to one, so the whole lift lands from 2·lift / (slope − 1) on.
+pub fn kneed(x: f32, lift: f32, knee: f32) -> f32 {
+    let e = excess(x, knee);
+    let gain = PAPER_KNEE_SLOPE - 1.0;
+    let moved = if lift >= 0.0 {
+        if e < 2.0 * lift / gain { gain * e - gain * gain * e * e / (4.0 * lift) } else { lift }
+    } else {
+        // Darkening is that curve's inverse on the excess, in a form that keeps f32's precision near the knee.
+        let fall = -lift;
+        let steep = PAPER_KNEE_SLOPE;
+        if e < (steep + 1.0) * fall / gain { 2.0 * e / (steep + (steep * steep - gain * gain * e / fall).sqrt()) - e } else { lift }
+    };
+    x + moved
 }
 
 /// One negative pixel printed on the paper, in linear Rec. 2020; alpha kept.

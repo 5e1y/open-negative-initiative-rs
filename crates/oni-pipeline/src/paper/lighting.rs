@@ -1,8 +1,9 @@
 //! Lighting on a paper, in density as an enlarger and a printer take it: the points, zones and mids on the negative's
-//! density, Exposure the enlarger's time, Temperature and Tint its filtration, Contrast the paper's grade; the print's
-//! pick then laid where the rest prints it, or on pure black, the paper's white held, Brightness between them.
+//! density, Exposure the enlarger's time, Temperature and Tint its filtration, Contrast the paper's grade, Brightness
+//! the enlarger's light above a knee over the pick; the print's pick then laid where the rest prints it, or on pure
+//! black, the paper's white held.
 
-use super::printing::{filters, luma, root};
+use super::printing::{bisected, filters, luma, root};
 use super::*;
 use oni_render::Paper;
 use oni_settings::tone::Print;
@@ -13,14 +14,29 @@ pub use oni_settings::tone::CC_PER_STOP;
 /// Contrast's paper grade: the slope times this to its power, so the track's ends are a grade softer or harder.
 pub const GRADE_BASE: f32 = 4.0;
 
-/// `p` with its print's ends: the pick printed without Lighting's points, zones and mids, and the paper's own white,
-/// both at its colour density; the pick laid on `anchor`, Brightness `brightness` stops between them.
-pub fn ended(p: &Paper, pick: V3, anchor: V3, brightness: f32) -> Paper {
-    let untoned = Paper { points_black: [0.0; 3], points_white: [0.0; 3], zones: [0.0; 2], mids: [0.0; 3], ..*p };
+/// Brightness's knee: the light the print holds there, its pick on black and its white the paper's, L* 5; under it
+/// the blacks and the first shadows, 8 to 17 % of a well-exposed frame's pixels on roll #8.
+pub const BRIGHTNESS_KNEE_LIGHT: f32 = 0.0055;
+
+/// `p` with its ends, the pick printed untoned laid on `anchor`, the paper's white held, and Brightness's stops above
+/// its knee: where the neutral from the pick to the `grey` prints `BRIGHTNESS_KNEE_LIGHT` over the pick.
+pub fn ended(p: &Paper, pick: V3, grey: V3, anchor: V3, brightness: f32) -> Paper {
+    let untoned = Paper { points_black: [0.0; 3], points_white: [0.0; 3], zones: [0.0; 2], mids: [0.0; 3], brightness: 0.0, ..*p };
     let white = untoned.viewed(p.curves[0]);
     let white = if p.luma { [luma(white); 3] } else { white };
-    Paper { pick: p.coloured(untoned.printed(pick)), white: p.coloured(white), anchor, brightness, ..*p }
+    let mean = |v: V3| (v[0] + v[1] + v[2]) / 3.0;
+    let pick_log = mean(untoned.exposed(pick));
+    let ended = Paper { pick: p.coloured(untoned.printed(pick)), white: p.coloured(white), anchor, brightness: 0.0, ..*p };
+    let (k, w) = (luma(ended.pick), luma(ended.white));
+    let neutral = |t: f32| std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]));
+    let light = |t: f32| (luma(ended.coloured(ended.printed(neutral(t)))) - k) / (w - k) * w;
+    let t = bisected(0.0, KNEE_REACH, BRIGHTNESS_KNEE_LIGHT, light);
+    let knee = pick_log - mean(ended.exposed(ended.toned(neutral(t))));
+    Paper { brightness, pick_log, knee, ..ended }
 }
+
+/// How far past the grey, in its own amounts, the knee is sought: a print that never reaches it takes the end.
+const KNEE_REACH: f32 = 8.0;
 
 /// `bare` at its `rest` (log time, magenta, yellow) under the frame's Lighting and colour `density`, its `anchors` the
 /// base, the densest read and the reference grey: the base prints where the rest prints it whatever Lighting moves.
@@ -53,7 +69,7 @@ pub(super) fn lit(bare: &Paper, rest: V3, anchors: &[V3; 3], density: f32, s: &P
     let cc: V3 = std::array::from_fn(|c| rest_cc[c] + CC_PER_STOP * moved[c]);
     let least = cc.iter().copied().fold(f32::INFINITY, f32::min);
     let cc = cc.map(|v| v - least);
-    let shown = |p: &Paper| luma(ended(p, pick, anchor, 0.0).shown(grey)).max(1e-12).ln();
+    let shown = |p: &Paper| luma(ended(p, pick, grey, anchor, 0.0).shown(grey)).max(1e-12).ln();
     let (filtered, cc) = if cc == rest_cc {
         (toned, rest_cc)
     } else {
@@ -62,5 +78,5 @@ pub(super) fn lit(bare: &Paper, rest: V3, anchors: &[V3; 3], density: f32, s: &P
         let e = root(0.0, |e| shown(&with(e)) - target);
         (with(e), cc)
     };
-    Printing { paper: ended(&filtered, pick, anchor, Print::EXPOSURE_GEAR * print.brightness), filtration: cc }
+    Printing { paper: ended(&filtered, pick, grey, anchor, print.brightness), filtration: cc }
 }
