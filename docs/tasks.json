@@ -11988,5 +11988,13 @@
     "title": "CLAUDE.md says the Frontier is a paper and how a paper prints; paper_black reads a photo without its removed face",
     "status": "done",
     "detail": "The Frontier bullet (the ONI machine's render with its baked look) gave way to two: the Frontier SP-3000 prints in the paper list (#3040-#3043), a former Scanner photo keeps its render on the legacy print (#3060-#3065); a paper prints in true density with its picked black anchored and True blacks laying it on pure black (#3010-#3013, #3090-#3093). examples/paper_black.rs no longer sets PipelineSettings::face, gone with the Scanner face."
+  },
+  {
+    "id": 3067,
+    "type": "test",
+    "title": "The legacy print's reference renders recorded again on format 45 with paper-black: the four paper cases moved, as paper-black meant",
+    "status": "done",
+    "detail": "tests/legacy_print.rs compares each Scanner-face case and corpus sidecar, read through format 46, with renders fingerprinted by a build of format 45. They were drawn on a2ae012c, before paper-black (#3090-#3093) changed how a paper prints (no Lighting slider lifts the picked black, True blacks on the pick, Brightness between it and the paper white, colour density inside the paper kernel), so after both merged the paper cases read the new paper against the old one. Recorded again on 75a7caa9, canvas with paper-black right before one-face, by a throwaway probe (same scene, same cases and corpus, the format-45 chain on the GPU and stage 4-7 with the machine's look on the CPU), twice, both runs identical. The probe calls the format-45 API (on_oni_machine, the face's fields), which no longer compiles, so it is not kept.",
+    "outcome": "4 of 50 moved, all on a paper and only those: oni-paper-keys-temp, frontier-paper-at-rest, frontier-on-frontier-paper, oni-digital-on-paper, each on the GPU and the CPU (frontier-on-frontier-paper now GPU 3c73f87618008ed6, CPU d2c849d10387e71d, as the merged tree renders it). The 46 others, every off-paper case and the 37 corpus sidecars (none on a paper), kept their fingerprints unchanged."
   }
 ]
