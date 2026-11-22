@@ -193,14 +193,5 @@ pub(crate) fn a_slider_s_tooltip_covers_no_neighbour() {
     let y = y.expect("Tint's rail tooltip");
     clear(&rig, w, (x, y), "Double-click to bring it back to rest", own.y + own.height, three);
 
-    // The Scanner face's step keys, between C and Y: M's minus and plus.
-    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FaceScanner);
-    rig.settle();
-    let three = sliders(["C", "M", "Y"]);
-    for help in ["M −: toward green, by 1.5", "M +: toward magenta, by 1.5"] {
-        moved(&rig, 0.0, 0.0);
-        let key = common::the(w, Role::Button, help);
-        clear(&rig, w, key.middle(), help, key.y + key.height, three);
-    }
     let _ = std::fs::remove_dir_all(&root);
 }

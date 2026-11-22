@@ -1,5 +1,5 @@
 //! The plots' readings: the input histograms read the frame the canvas shows, its custom mask and dust
-//! patches laid, the curves' on its face; the picture is counted for a plot on screen alone.
+//! patches laid, the curves' through its legacy print; the picture is counted for a plot on screen alone.
 use super::*;
 use oni_pipeline::corrections::PatchKey;
 
@@ -85,12 +85,12 @@ fn a_digital_photos_levels_reading_holds_while_lighting_moves() {
     assert_ne!(after.curves, before.curves);
 }
 
-/// On the Scanner face the curves' plot reads what enters its curves, the look and the keypad laid;
-/// the levels' stays Pro's windows, as the balance reads them, and no reading moves a render.
+/// On a legacy print the curves' plot reads what enters its curves, the look and the keys laid;
+/// the levels' stays ONI's windows, as the balance reads them, and no reading moves a render.
 #[test]
-fn the_scanner_curves_read_its_look_while_the_levels_stay_pro_s_and_no_render_moves() {
+fn a_legacy_prints_curves_read_its_look_while_the_levels_stay_onis_and_no_render_moves() {
     let Ok(device) = Device::open() else {
-        eprintln!("no adapter: the Scanner face's input histograms are not exercised");
+        eprintln!("no adapter: a legacy print's input histograms are not exercised");
         return;
     };
     let mut engine = Engine::on(&device);
@@ -98,21 +98,21 @@ fn the_scanner_curves_read_its_look_while_the_levels_stay_pro_s_and_no_render_mo
     let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
     let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None, seed: [0, 0] }).unwrap();
     let pro = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    let scanner = PipelineSettings { face: oni_settings::Face::Scanner, ..pro.clone() };
+    let scanner = PipelineSettings { legacy_print: Some(oni_settings::LegacyPrint::default()), ..pro.clone() };
     let shown = |s: &PipelineSettings, e: &mut Engine| e.render(&negative, s, None).unwrap().pixels;
     let (pro_shown, scanner_shown) = (shown(&pro, &mut engine), shown(&scanner, &mut engine));
     let (on_pro, on_scanner) = (engine.inputs(&negative, &pro, false, [true; 2]).expect("readings"), engine.inputs(&negative, &scanner, false, [true; 2]).expect("readings"));
-    assert_ne!(on_scanner.curves, on_pro.curves, "the Scanner's look moves what enters its curves");
-    // Twin: the levels read Pro's windows on both faces.
+    assert_ne!(on_scanner.curves, on_pro.curves, "the legacy print's look moves what enters its curves");
+    // Twin: the levels read ONI's windows under either.
     assert_eq!(on_scanner.levels, on_pro.levels);
-    // The keypad lies in front of the curves; the face's own curves follow what they read.
+    // The keys lie in front of the curves; the curves follow what they read.
     let mut keyed = scanner.clone();
-    keyed.scanner = oni_settings::scanner::ScannerClicks::new(4, 0, 0, 0, 0);
+    keyed.legacy_print = Some(oni_settings::LegacyPrint { d: 4, ..oni_settings::LegacyPrint::default() });
     assert_ne!(engine.inputs(&negative, &keyed, false, [true; 2]).expect("readings").curves, on_scanner.curves, "a density step reaches the curves' input");
     let mut curved = scanner.clone();
-    curved.scanner_finish.manual_curves.linked.points = vec![oni_settings::cg::Point::new(0.0, 0.0), oni_settings::cg::Point::new(0.3, 0.8), oni_settings::cg::Point::new(1.0, 1.0)];
+    curved.manual_curves.linked.points = vec![oni_settings::cg::Point::new(0.0, 0.0), oni_settings::cg::Point::new(0.3, 0.8), oni_settings::cg::Point::new(1.0, 1.0)];
     assert_eq!(engine.inputs(&negative, &curved, false, [true; 2]).expect("readings").curves, on_scanner.curves, "the curves' input is read in front of them");
-    // The readings, through either face, leave both renders as they were.
+    // The readings, under either, leave both renders as they were.
     assert_eq!((shown(&pro, &mut engine), shown(&scanner, &mut engine)), (pro_shown, scanner_shown.clone()));
     // Twin: the same comparison sees a render that moved.
     assert_ne!(shown(&curved, &mut engine), scanner_shown);

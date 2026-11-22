@@ -7,7 +7,7 @@ use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_pipeline::conversion;
 use oni_render::cpu;
 use oni_settings::tone::Print;
-use oni_settings::{Face, PipelineSettings, sidecar};
+use oni_settings::{PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
@@ -40,7 +40,7 @@ fn main() {
     for raw in args[1..].iter().map(Path::new) {
         let name = raw.file_stem().unwrap().to_string_lossy().to_string();
         let read = sidecar::read(raw, true).expect("a sidecar").settings;
-        let owner = PipelineSettings { print_paper: read.print_paper.or(Some(Default::default())), face: Face::Pro, ..read };
+        let owner = PipelineSettings { print_paper: read.print_paper.or(Some(Default::default())), ..read };
         let rest = PipelineSettings { print: Print { exposure: Print::resting_exposure(owner.mode), ..Print::default() }, ..owner.clone() };
         let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { true_blacks: on, ..s.print }, ..s.clone() };
         let (stops, print) = (owner.print.exposure - rest.print.exposure, &owner.print);

@@ -63,12 +63,12 @@ impl Ctl {
                 let redo = h.next_redo().and_then(name).map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l));
                 (h.can_undo(), h.can_redo(), undo, redo)
             };
-            let (has_settings, scanner_face) = (store.has_copied_settings(), store.scanner_face);
+            let has_settings = store.has_copied_settings();
             let reach = store
                 .roll_key()
                 .and_then(|k| store.measured_group(k))
                 .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
-            let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
+            let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings));
             let titles = MenuTitles {
                 mode: if gallery { tr("Editor") } else { tr("Gallery") }.into(),
                 export: crate::export::label::menu(exporting.unwrap_or(exported)).into(),
@@ -118,7 +118,6 @@ impl Ctl {
                 smaller_brush: painting,
                 mirror: open && single,
                 screen_gamut: true,
-                emulator: open && !gallery,
                 medal: selected > 0,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
@@ -194,7 +193,9 @@ fn step_name(step: &oni_library::history::Step, open: Option<&str>) -> Option<St
     }
     let ends = |p: &str| Some((step.before.get(p)?, step.after.get(p)?));
     let (before, after) = open.and_then(ends).or_else(|| step.before.keys().find_map(|p| ends(p)))?;
-    let mut moved = Field::ALL.into_iter().filter(|f| f.knob().get(before) != f.knob().get(after));
+    // C, M and Y read Temperature's and Tint's values: the step is named by the two it writes.
+    let views = [Field::Cyan, Field::Magenta, Field::Yellow];
+    let mut moved = Field::ALL.into_iter().filter(|f| !views.contains(f) && f.knob().get(before) != f.knob().get(after));
     match (moved.next(), moved.next()) {
         (Some(one), None) => Some(tr(one.spec().label).to_owned()),
         _ => None,

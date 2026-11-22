@@ -6,7 +6,7 @@ use oni_app::render::{Engine, Shared};
 use oni_app::{App, Pairing};
 use oni_core::{Archive, EditorStore};
 use oni_link::PairingCode;
-use oni_link_ffi::{Command, Frame, LinkError, RemoteSession, generate_identity, parse_pairing_code};
+use oni_link_ffi::{Command, Frame, LinkError, Param, RemoteSession, generate_identity, parse_pairing_code};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
 use std::path::{Path, PathBuf};
@@ -109,19 +109,18 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     rig.until("the sheet names the phone", WAIT, || pairing.get_phones().contains("Test Phone"));
     assert!(pairing.get_can_forget());
 
-    // A step on D moves the open frame's value through the window's store, as one undo step.
-    let start = ctl.state.borrow().store().settings().scanner.d;
-    let revision = ctl.state.borrow().store().revision();
-    session.press(Command::Step { letter: oni_link_ffi::Letter::D, by: 3 });
+    // A step on Exposure moves the open frame's value through the window's store, as one undo step.
+    let exposure = || ctl.state.borrow().store().settings().print.exposure;
+    let (start, revision) = (exposure(), ctl.state.borrow().store().revision());
+    session.press(Command::StepParam { param: Param::Exposure, by: 3 });
     let stepped = until_shown(&rig, &session, "the step", |d| d.state.applied == 1);
-    assert_eq!(ctl.state.borrow().store().settings().scanner.d, start + 3);
-    assert_eq!(i64::from(stepped.state.clicks.d), start + 3, "the phone reads the store's value");
+    assert!(exposure() > start, "the step lands");
     assert!(stepped.state.can_undo && ctl.state.borrow().store().revision() > revision);
     // Twin: the phone's undo returns it, and the screen follows.
     session.press(Command::Undo);
     let undone = until_shown(&rig, &session, "the undo", |d| d.state.applied == 2);
-    assert_eq!(ctl.state.borrow().store().settings().scanner.d, start);
-    assert_eq!(i64::from(undone.state.clicks.d), start);
+    assert_eq!(exposure(), start);
+    assert!(!undone.state.can_undo);
 
     // A walk opens the next frame and selects it; past the end it stops.
     session.press(Command::Walk { by: 1 });
@@ -166,9 +165,9 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     let again = phone(RemoteSession::connect(addresses.clone(), info.host_key.clone(), identity.clone(), "Test Phone".into()))
         .expect("the trusted phone reconnects without the code");
     until_shown(&rig, &again, "the screen after the restart", |d| d.connected && d.state.frame == Some(Frame { index: 1, count: 2 }));
-    again.press(Command::Step { letter: oni_link_ffi::Letter::D, by: 1 });
+    again.press(Command::StepParam { param: Param::Exposure, by: 1 });
     until_shown(&rig, &again, "the step after the restart", |d| d.state.applied == 1);
-    assert_eq!(ctl.state.borrow().store().settings().scanner.d, start + 1);
+    assert!(ctl.state.borrow().store().settings().print.exposure > start);
     // Twin: a phone the desktop never paired is refused at the same address.
     let stranger = phone(RemoteSession::connect(addresses.clone(), info.host_key.clone(), generate_identity(), "Stranger".into()));
     assert!(matches!(stranger, Err(LinkError::Refused)), "a stranger is refused");

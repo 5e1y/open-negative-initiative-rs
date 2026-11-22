@@ -7,8 +7,7 @@ use oni_settings::Medal;
 impl EditorStore {
     /// Each target back to its imported state, one step for the gesture.
     pub fn reset_frames(&mut self, targets: &[String]) -> usize {
-        let scanner = self.scanner_face;
-        self.reset_each(targets, |s| parameters::reset_blank(s, scanner))
+        self.reset_each(targets, parameters::reset_blank)
     }
 
     /// Each target back to its own rest, `rested` read off its own settings, one step: a rest depends

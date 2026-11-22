@@ -21,8 +21,8 @@ impl EditorStore {
         }
     }
 
-    /// The step under way recorded as it stands, a hand still down holding on: what comes next, a
-    /// face turned or frames regrouped, is never part of it.
+    /// The step under way recorded as it stands, a hand still down holding on: what comes next, frames
+    /// regrouped, is never part of it.
     pub(super) fn settle_under_way(&mut self) {
         if self.held || self.deferred.is_some() {
             let now = self.now();
@@ -80,7 +80,6 @@ impl EditorStore {
     /// Applies a command as at `now`, seconds on the store's own clock.
     pub fn apply_at(&mut self, command: Command, now: f64) -> Applied {
         match command {
-            Command::Face(face) => return Applied { changed: self.turn(face), walk: None },
             Command::Undo => return Applied { changed: self.undo(), walk: None },
             Command::Redo => return Applied { changed: self.redo(), walk: None },
             _ => {}
@@ -88,7 +87,7 @@ impl EditorStore {
         if self.open.is_none() {
             return Applied::default();
         }
-        if let Command::Scan(Scan::Walk { by }) = command {
+        if let Command::Walk { by } = command {
             return Applied { changed: FieldSet::EMPTY, walk: Some(by) };
         }
         if self.inert() {
@@ -120,38 +119,17 @@ impl EditorStore {
         Applied { changed, walk: None }
     }
 
-    /// The face the open frame is edited on, a film's or a digital photo's alike.
-    pub fn face(&self) -> Face {
-        if self.scanner_face { Face::Scanner } else { Face::Pro }
-    }
-
-    /// `colourBinding`: the settings as the open face's Color tab reads them, the Scanner's own
-    /// finishing in Pro's fields on the Scanner face.
-    pub fn face_view(&self) -> PipelineSettings {
-        if self.face() == Face::Scanner { self.settings.as_scanner() } else { self.settings.clone() }
-    }
-
-    /// An edit made on `face_view`, stored so the other face's finishing stays where it was.
-    pub(super) fn stored_by_face(&self, edited: PipelineSettings) -> PipelineSettings {
-        if self.face() == Face::Scanner { self.settings.storing_scanner_edit(&edited) } else { edited }
-    }
-
     pub(super) fn commanded(&self, command: Command) -> PipelineSettings {
         let s = &self.settings;
         match command {
-            Command::Set { knob, value } => self.stored_by_face(knob.set(&self.face_view(), value)),
-            Command::Step { knob, by } => {
-                let view = self.face_view();
-                self.stored_by_face(knob.set(&view, knob.get(&view) + by))
-            }
+            Command::Set { knob, value } => knob.set(s, value),
+            Command::Step { knob, by } => knob.set(s, knob.get(s) + by),
             Command::Write(next) => *next,
-            Command::Finish(next) => self.stored_by_face(*next),
             Command::Each(each) => each.on(s),
             Command::Mode(mode) => s.carried(mode),
-            Command::Reset => parameters::reset_blank(s, self.face() == Face::Scanner),
-            Command::Scan(scan) => scanned(s, scan),
-            // Taken before: a face is turned, an undo or a redo laid, never commanded.
-            Command::Face(_) | Command::Undo | Command::Redo => s.clone(),
+            Command::Reset => parameters::reset_blank(s),
+            // Taken before: a walk handed on, an undo or a redo laid, never commanded.
+            Command::Walk { .. } | Command::Undo | Command::Redo => s.clone(),
         }
     }
 
@@ -242,54 +220,5 @@ impl EditorStore {
     pub(super) fn others_on_roll(&mut self, key: &RollKey) -> Vec<String> {
         let open = self.path().map(str::to_string);
         self.measured_with(key.clone()).into_iter().filter(|p| Some(p) != open.as_ref()).collect()
-    }
-}
-
-/// The Scanner face's keys on its own fields; the ranges are the phone's, the desktop's the same.
-pub(super) fn scanned(s: &PipelineSettings, scan: Scan) -> PipelineSettings {
-    let mut out = s.clone();
-    match scan {
-        Scan::Step { letter, by } => {
-            let (lo, hi) = letter.range();
-            let clicks = clicks_mut(&mut out, letter);
-            *clicks = (*clicks + i64::from(by)).clamp(i64::from(lo), i64::from(hi));
-        }
-        Scan::Reset { letter } => *clicks_mut(&mut out, letter) = 0,
-        Scan::StepEffect { effect, by } => {
-            let channel = channel(s.mode);
-            if let Some(value) = effect_mut(&mut out, effect) {
-                let (lo, hi) = effect.range(channel);
-                let clicks = (*value / effect.step()).round() + f32::from(by);
-                *value = (clicks * effect.step()).clamp(lo, hi);
-            }
-        }
-        Scan::ResetEffect { effect } => {
-            if let Some(value) = effect_mut(&mut out, effect) {
-                *value = 0.0;
-            }
-        }
-        Scan::Machine(machine) => out.scanner_machine = machine_of(machine),
-        Scan::Walk { .. } => {}
-    }
-    out
-}
-
-fn clicks_mut(s: &mut PipelineSettings, letter: Letter) -> &mut i64 {
-    match letter {
-        Letter::D => &mut s.scanner.d,
-        Letter::C => &mut s.scanner.c,
-        Letter::M => &mut s.scanner.m,
-        Letter::Y => &mut s.scanner.y,
-        Letter::W => &mut s.scanner.w,
-    }
-}
-
-/// Chrome has no key in black and white.
-fn effect_mut(s: &mut PipelineSettings, effect: Effect) -> Option<&mut f32> {
-    match effect {
-        Effect::Contrast => Some(&mut s.scanner_finish.contrast),
-        Effect::Vignette => Some(&mut s.scanner_finish.vignette.stops),
-        Effect::Chrome if s.mode.is_monochrome() => None,
-        Effect::Chrome => Some(&mut s.scanner_finish.secret_sauce),
     }
 }

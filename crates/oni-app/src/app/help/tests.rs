@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn the_notes_are_swifts_and_each_names_its_heading_once() {
     let ids: Vec<&str> = NOTES.iter().map(|(i, _, _)| *i).collect();
-    assert_eq!(ids, ["machine.1.3.1", "keypad.1.3.1", "effects.scanner.1.3.1", "curves.scanner.1.3.1", "lighting.1.3.1", "space.1.3.1"]);
+    assert_eq!(ids, ["lighting.1.3.1", "space.1.3.1"]);
     assert!(NOTES.iter().all(|(_, w, _)| *w == "New" || *w == "Updated"));
     let mut unique = ids.clone();
     unique.dedup();

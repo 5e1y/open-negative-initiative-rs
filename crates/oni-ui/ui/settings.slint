@@ -17,8 +17,8 @@ export global AppSettings {
     in property <bool> full-decode;
     in property <bool> screen-gamut;
     in property <bool> whole-roll-after-prepare;
-    // The name of the hand's Frontier look file, empty while the measured table is in use.
-    in property <string> frontier-file;
+    // Colour's filters read as an enlarger's C, M and Y in place of Temperature and Tint.
+    in property <bool> filtration-cmy;
     // The phones connected or paired, empty with none, and whether any can be forgotten.
     in property <string> phones;
     in property <bool> can-forget;
@@ -111,6 +111,18 @@ component EditorPage inherits Page {
         inset: SectionStyle.flush;
         foldable: false;
         before: SectionStyle.sheet-before;
+        title: @tr("Colour Filtration");
+        Tabs {
+            tabs: [@tr("Temperature and Tint"), @tr("C, M and Y")];
+            selected: AppSettings.filtration-cmy ? 1 : 0;
+            picked(i) => { if ((i == 1) != AppSettings.filtration-cmy) { AppSettings.flip(Act.filtration-cmy); } }
+        }
+        Label { role: TextRole.note; text: @tr("How the Colour block shows each photo's filters: as Temperature and Tint, or as an enlarger's cyan, magenta and yellow in CC, a stop thirty CC, the least at none. Either writes the same values: switching moves no photo."); }
+    }
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.sheet-before;
         title: @tr("RAW Files");
         Toggle {
             label: @tr("Decode RAW files at full resolution");
@@ -118,31 +130,6 @@ component EditorPage inherits Page {
             toggled => { AppSettings.flip(Act.full-decode); }
         }
         Label { role: TextRole.note; text: @tr("Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50%. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."); }
-    }
-}
-
-component FrontierPage inherits Page {
-    section: 2;
-    Section {
-        inset: SectionStyle.flush;
-        foldable: false;
-        before: SectionStyle.flush;
-        separated: false;
-        title: @tr("Frontier Look");
-        // The way back to the measured table is the title row's Reset, apart from the keys that keep a file.
-        block: 0;
-        modified: AppSettings.frontier-file != "";
-        reset(b) => { AppSettings.flip(Act.frontier-measured); }
-        Field {
-            layout: FieldLayout.spread;
-            label: @tr("Table in use");
-            Label { tone: Tone.secondary; overflow: elide; text: AppSettings.frontier-file != "" ? AppSettings.frontier-file : @tr("Measured"); }
-        }
-        Label { role: TextRole.note; text: @tr("A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once, until Reset returns to the measured table."); }
-        ButtonRows {
-            keys: [@tr("Export…"), @tr("Use a File…")];
-            pressed(i) => { AppSettings.flip([Act.frontier-export, Act.frontier-choose][i]); }
-        }
     }
 }
 
@@ -257,10 +244,10 @@ export component SettingsSheet inherits Sheet {
     card-width: SheetStyle.settings-width;
     dismissed => { AppSettings.close(); }
     property <[{ name: string, section: int }]> pages: [
-        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier Look"), section: 2 },
+        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 },
         { name: @tr("Phone"), section: 3 }, { name: @tr("Connected Apps"), section: 5 }, { name: @tr("About"), section: 4 }];
     property <[{ name: string, section: int }]> pages-without-phone: [
-        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier Look"), section: 2 },
+        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 },
         { name: @tr("Connected Apps"), section: 5 }, { name: @tr("About"), section: 4 }];
     HorizontalLayout {
         VerticalLayout {
@@ -283,7 +270,6 @@ export component SettingsSheet inherits Sheet {
             padding-left: SheetStyle.gap;
             GeneralPage { row: 0; col: 0; }
             EditorPage { row: 0; col: 0; }
-            FrontierPage { row: 0; col: 0; }
             if Pairing.available: PhonePage { row: 0; col: 0; }
             AppsPage { row: 0; col: 0; }
             AboutPage { row: 0; col: 0; }

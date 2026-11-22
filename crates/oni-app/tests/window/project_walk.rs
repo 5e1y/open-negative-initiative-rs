@@ -2,7 +2,7 @@
 //! arrows, ⌘G and the editor's walk follow the project's order, roll by roll, and stay inside it.
 
 use oni_app::app::{self, Options, Shell};
-use oni_app::{App, Lab, Library};
+use oni_app::{App, Library};
 use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
@@ -52,8 +52,10 @@ impl Hand<'_> {
         self.shell.window.global::<App>().get_gallery()
     }
 
+    /// The open frame's place in its group, as the status line says it.
     fn frame(&self) -> String {
-        self.shell.window.global::<Lab>().get_frame().to_string()
+        let place = self.shell.ctl.state.borrow().place();
+        place.map(|(at, count)| format!("Frame {at} of {count}")).unwrap_or_default()
     }
 
     fn arrow(&self, key: Key) {
@@ -137,12 +139,12 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
     rig.chord(Key::Control, "g");
     assert!(!hand.gallery());
     assert_eq!(hand.open(), "B04", "⌘G opens the ringed B04");
-    assert_eq!(hand.frame(), "FRAME 02/04", "the screen counts B04 in Trip");
+    assert_eq!(hand.frame(), "Frame 2 of 4", "the status counts B04 in Trip");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A03", "→ walks to Trip's next, A03 in Roll A");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A01");
-    assert_eq!(hand.frame(), "FRAME 04/04");
+    assert_eq!(hand.frame(), "Frame 4 of 4");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A01", "Trip's end stops the walk: Other's A00 follows it in the grid only");
     hand.arrow(Key::UpArrow);
@@ -165,7 +167,7 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
     hand.arrow(Key::LeftArrow);
     rig.chord(Key::Control, "g");
     assert_eq!(hand.open(), "A03");
-    assert_eq!(hand.frame(), "FRAME 04/06", "twin: the screen counts A03 in Roll A");
+    assert_eq!(hand.frame(), "Frame 4 of 6", "twin: the status counts A03 in Roll A");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A04", "twin: → in the editor walks the folder, not Trip");
     rig.chord(Key::Control, "g");

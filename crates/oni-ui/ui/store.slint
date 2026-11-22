@@ -173,6 +173,16 @@ export global Store {
     in property <float> film-exposure-fraction;
     in property <string> film-exposure-readout;
     in property <string> film-exposure-value;
+    // Temperature and Tint read as an enlarger's C, M and Y.
+    in property <float> cyan-fraction;
+    in property <string> cyan-readout;
+    in property <string> cyan-value;
+    in property <float> magenta-fraction;
+    in property <string> magenta-readout;
+    in property <string> magenta-value;
+    in property <float> yellow-fraction;
+    in property <string> yellow-readout;
+    in property <string> yellow-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;

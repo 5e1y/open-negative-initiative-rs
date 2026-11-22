@@ -16,7 +16,7 @@ and every screen picks it up.
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
-| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the Scanner face's screen and the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 ## Changing a token
@@ -186,7 +186,7 @@ fade and the chrome stays. The picker's field wears the same face.
   a − and a + keycap as tall as the knob (`SliderStyle.step-key`), in the interface's keycap grey and neutral
   ink, never on Tab's path: a press is `SliderStyle.press` (three) of its value editor's steps, so three shown
   units, one undo step, no repeat while held; its tooltip names the slider, the way and the press
-  (`press-reads`, from `Readouts.pressed`), a Scanner key its colour's way. AppKit's press, continuous or stepped: the knob pressed is
+  (`press-reads`, from `Readouts.pressed`). AppKit's press, continuous or stepped: the knob pressed is
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field

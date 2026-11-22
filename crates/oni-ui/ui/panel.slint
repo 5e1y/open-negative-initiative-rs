@@ -1,15 +1,15 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand, ModeHeader } from "ds/ds.slint";
+import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LoupeBand, ModeHeader } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Editors } from "editors.slint";
-import { Plots, PanelState, PanelTab, RollState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
+import { Plots, PanelState, PanelTab, RollState, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
 import { DedustPane } from "panel/dedust_tab.slint";
 import { ColorPane } from "panel/color_tab.slint";
 import { DetailsPane } from "panel/details_tab.slint";
-export { Plots, PanelState, PanelTab, RollState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
+export { Plots, PanelState, PanelTab, RollState, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
@@ -19,13 +19,13 @@ export component Panel inherits Surface {
     changed header => { PanelState.header = self.header; }
     init => { PanelState.header = self.header; }
     VerticalLayout {
-        // The readout, one glass edge to edge from the canvas card's top, alike on both faces: Pro's histogram,
-        // Lighting's curves over it on the Colour tab; the scanner's screen on the Scanner face; the loupe under Details.
+        // The readout, one glass edge to edge from the canvas card's top: the histogram, Lighting's curves over it on
+        // the Colour tab; the loupe under Details.
         HorizontalLayout {
             Rectangle {
                 height: PlotStyle.main;
                 // The plot alone, one height on every tab, so the tab bar never moves.
-                if !Lab.shown && PanelState.tab != PanelTab.details: VerticalLayout {
+                if PanelState.tab != PanelTab.details: VerticalLayout {
                     width: parent.width;
                     height: parent.height;
                     Plot {
@@ -57,17 +57,6 @@ export component Panel inherits Surface {
                     ratio: DetailLoupe.ratio;
                     ratio-shown: DetailLoupe.ratio-shown;
                     toggled => { DetailLoupe.toggled(); }
-                }
-                if Lab.shown && PanelState.tab != PanelTab.details: LabScreen {
-                    width: parent.width;
-                    height: parent.height;
-                    radius: PlotStyle.readout-radius;
-                    frame: Lab.frame;
-                    machine: Lab.machine-line;
-                    remeasure: Lab.remeasure;
-                    remeasure-help: @tr("This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess.");
-                    cells: Lab.cells;
-                    widest: Lab.widest;
                 }
             }
         }

@@ -347,8 +347,7 @@ fn the_engine_inverts_a_negative_and_keeps_a_positive_in_order() {
     let (thin, dense) = (out.pixels[2 * w + 2], out.pixels[2 * w + 3]);
     assert!(luma(thin) < luma(dense), "light through a thin negative prints dark: {thin:?} {dense:?}");
     // Twin: the positive mode renders the same frame without inverting it.
-    let mut positive = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
-    positive.face = settings.face;
+    let positive = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let out = engine.render(&negative, &positive, None).unwrap();
     assert!(luma(out.pixels[2 * w + 2]) > luma(out.pixels[2 * w + 3]));
 }

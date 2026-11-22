@@ -6,9 +6,8 @@ use oni_settings::cg::{Point, Rect};
 use oni_settings::curves::SaturationCurve;
 use oni_settings::frame::{Correction, FlatField, FlatFieldMask, RollReference};
 use oni_settings::id::Id;
-use oni_settings::scanner::ScannerClicks;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Face, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyPrint, PipelineSettings};
 
 #[test]
 fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_and_crop_and_its_dust_bare() {
@@ -27,7 +26,7 @@ fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_and_crop_and
     edited.sharpen.amount = 0.9;
     edited.separation = 0.6;
     edited.density = -0.2;
-    edited.scanner = ScannerClicks::new(3, -2, 0, 0, 0);
+    edited.legacy_print = Some(LegacyPrint { d: 3, c: -2, ..LegacyPrint::default() });
     let reference = compare::reference(&edited);
     assert_eq!(reference, rested, "the look's every gesture gone, nothing else");
     assert!(reference.roll_reference == edited.roll_reference && reference.levels == rested.levels);
@@ -35,21 +34,21 @@ fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_and_crop_and
     assert!(reference.geometry == edited.geometry && reference.corrections.is_empty(), "the dust bare");
     // Twin: the after holds the patch the before leaves out.
     assert_eq!(edited.corrections.len(), 1);
-    assert!(reference.print.exposure == Print::resting_exposure(ConversionMode::Negative) && reference.scanner == ScannerClicks::default());
+    assert!(reference.print.exposure == Print::resting_exposure(ConversionMode::Negative) && reference.legacy_print.is_none());
     // Twin: a neutral block carrying the gains and levels alone misses the exposure and the flat-field.
     let former = PipelineSettings { mode: edited.mode, geometry: edited.geometry, gains: edited.gains, levels: edited.levels, ..PipelineSettings::default() };
     assert!(former.print.exposure != reference.print.exposure && former.flat_field != reference.flat_field);
 }
 
 #[test]
-fn on_the_scanner_face_the_before_is_the_pro_faces_plain_conversion() {
+fn a_legacy_prints_before_leaves_its_look_out() {
     let roll = RollReference { id: Id::new(), stops: [0.4, 0.0, -0.3], black: [0.19, 0.23, 0.31], white: [0.53, 0.58, 0.67], base: None, median: None };
     let mut pro = balance::written(&roll, &PipelineSettings::rest(ConversionMode::Negative, true));
     pro.print.exposure += 0.5;
-    let scanner = PipelineSettings { face: Face::Scanner, scanner: ScannerClicks::new(2, 0, -1, 0, 0), ..pro.clone() };
-    let before = compare::reference(&scanner);
-    assert_eq!(before.face, Face::Pro, "the Scanner's before leaves its table out");
-    assert_eq!(before, compare::reference(&pro), "the same before on either face");
-    // Twin: the reset the bar lands on keeps the Scanner face, so its table would still show.
-    assert_eq!(oni_core::parameters::imported(&scanner).face, Face::Scanner);
+    let legacy = PipelineSettings { legacy_print: Some(LegacyPrint { d: 2, m: -1, ..LegacyPrint::default() }), ..pro.clone() };
+    let before = compare::reference(&legacy);
+    assert_eq!(before.legacy_print, None, "the before leaves the legacy look out, so it shows as part of the after");
+    assert_eq!(before, compare::reference(&pro), "the same before with or without it");
+    // Twin: the photo itself keeps its legacy print.
+    assert!(legacy.legacy_print.is_some());
 }

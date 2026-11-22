@@ -22,8 +22,7 @@ const PADDING: f32 = 24.0;
 /// `ButtonStyle.group-gap` between the keys of a row.
 const GROUP_GAP: f32 = 8.0;
 /// Each page's rows of keys by its section, the phone's aside as it shows only where pairing is offered.
-const ROWS: [(i32, &[&str]); 3] = [
-    (2, &["Export\u{2026}", "Use a File\u{2026}"]),
+const ROWS: [(i32, &[&str]); 2] = [
     (4, &["Check for Updates", "What's New"]),
     (4, &["Welcome", "Report a Problem\u{2026}", "Diagnostic Log"]),
 ];
@@ -75,16 +74,16 @@ pub(crate) fn every_settings_key_stays_on_its_page_in_every_language() {
     // that would overflow; the live one reads English alone, every row on one line.
     assert!(!translated || carried > 0, "twin: some language's row would run past the page on one line");
 
-    // A key opening a sheet of its own closes Settings first; twin: Frontier's file keys leave it open.
+    // A key opening a sheet of its own closes Settings first; twin: Colour Filtration's choice leaves it open.
     let heard = Rc::new(RefCell::new(Vec::new()));
     let (closes, flips) = (heard.clone(), heard.clone());
     settings.on_close(move || closes.borrow_mut().push(None));
     settings.on_flip(move |act| flips.borrow_mut().push(Some(act)));
-    for (section, key, expected) in [(4, "Diagnostic Log", vec![None, Some(Act::Console)]), (2, "Use a File\u{2026}", vec![Some(Act::FrontierChoose)])] {
+    for (section, role, key, expected) in [(4, Role::Button, "Diagnostic Log", vec![None, Some(Act::Console)]), (1, Role::Tab, "C, M and Y", vec![Some(Act::FiltrationCmy)])] {
         settings.set_section(section);
         rig.settle();
         heard.borrow_mut().clear();
-        common::click(&rig, &window, common::the(&window, Role::Button, key).middle());
+        common::click(&rig, &window, common::the(&window, role, key).middle());
         assert_eq!(*heard.borrow(), expected, "{key:?} pressed");
     }
     window.hide().unwrap();

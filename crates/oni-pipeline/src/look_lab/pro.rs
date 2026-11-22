@@ -6,7 +6,6 @@ use crate::finishing;
 use crate::scanner::{self, CHECK_GREY, MACHINE};
 use oni_render::{ScannerEncode, cpu};
 use oni_settings::PipelineSettings;
-use oni_settings::modes::Face;
 
 use super::measure::SPREAD;
 
@@ -17,7 +16,7 @@ pub const STEP: f64 = 0.05;
 /// The roll `scanner::check_roll` balances, on the Frontier and on Pro.
 pub fn rolls() -> (PipelineSettings, PipelineSettings) {
     let frontier = scanner::check_roll();
-    let pro = PipelineSettings { face: Face::Pro, ..frontier.clone() };
+    let pro = PipelineSettings { legacy_print: None, ..frontier.clone() };
     (frontier, pro)
 }
 

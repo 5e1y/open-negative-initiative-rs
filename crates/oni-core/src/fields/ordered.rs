@@ -10,7 +10,7 @@ use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 
 /// The fields holding curves whose points keep their x order, and windows whose ends keep theirs.
 pub(super) fn bends(field: Field) -> bool {
-    matches!(field, Field::ManualCurves | Field::Saturation | Field::ScannerFinish | Field::Levels | Field::Grain)
+    matches!(field, Field::ManualCurves | Field::Saturation | Field::Levels | Field::Grain)
 }
 
 /// `on`'s curves after a patch from `moved`'s first to its second, each point it moved laid on `own`, the
@@ -19,10 +19,6 @@ pub(super) fn ordered(field: Field, moved: (&PipelineSettings, &PipelineSettings
     match field {
         Field::ManualCurves => set(&own.manual_curves, &mut on.manual_curves),
         Field::Saturation => saturation(&own.saturation, &mut on.saturation),
-        Field::ScannerFinish => {
-            set(&own.scanner_finish.manual_curves, &mut on.scanner_finish.manual_curves);
-            saturation(&own.scanner_finish.saturation, &mut on.scanner_finish.saturation);
-        }
         Field::Levels => windows(&own.levels, &mut on.levels),
         Field::Grain => on.grain.curve = grain(&moved.0.grain.curve, &moved.1.grain.curve, own.grain.curve),
         _ => {}

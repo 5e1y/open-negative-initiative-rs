@@ -1,11 +1,10 @@
-//! `frontier_compare <raw> <out> [side]`: a frame at rest on today's Scanner-face Frontier, the Frontier paper (a stop
+//! `frontier_compare <raw> <out> [side]`: a frame at rest on the Frontier's legacy print, the Frontier paper (a stop
 //! under, at rest, a stop over) and Portra Endura, each as `w h` then f32 linear Rec. 2020 RGB.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
-use oni_settings::modes::ScannerMachine;
-use oni_settings::scanner::ScannerClicks;
+use oni_settings::migrate::one_face::look_entry_exposure;
 use oni_settings::tone::Print;
-use oni_settings::{Face, PaperStock, PipelineSettings, sidecar};
+use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
@@ -29,7 +28,7 @@ fn main() {
     let owner = sidecar::read(raw, true).expect("a sidecar").settings;
     let marked = raw.parent().and_then(oni_settings::roll_folder::roll).and_then(|r| r.stock).and_then(|k| oni_settings::dyes::dye_set(&k));
     let mut rest = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
-    (rest.face, rest.scanner, rest.density) = (Face::Pro, ScannerClicks::default(), 0.0);
+    (rest.legacy_print, rest.density) = (None, 0.0);
     rest.print = Print { exposure: Print::resting_exposure(rest.mode), ..Print::default() };
     println!("{:?}, dyes {:?}, separation {}", rest.mode, rest.dye_set, rest.separation);
 
@@ -43,7 +42,8 @@ fn main() {
         s
     };
     let mut today = on(None, 0.0);
-    (today.face, today.scanner_machine) = (Face::Scanner, ScannerMachine::Frontier);
+    today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
+    today.print.exposure = look_entry_exposure(today.mode);
     let frontier = Some(PaperStock::FujifilmFrontierSp3000);
     let renders = [
         ("scanner-frontier", today),

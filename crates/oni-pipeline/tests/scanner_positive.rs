@@ -1,12 +1,11 @@
-//! A slide on the Scanner face lands near its Pro render, as a negative does, and a negative on the
-//! Scanner face renders as before, bit for bit.
+//! A slide on a legacy print lands near its plain render, as a negative does, and a negative on one renders as before,
+//! bit for bit.
 
 use oni_graph::{Graph, Image, Rect};
 use oni_pipeline::{Inputs, Pipeline, scanner};
-use oni_settings::modes::{Face, ScannerMachine};
-use oni_settings::scanner::ScannerClicks;
+use oni_settings::migrate::one_face::look_entry_exposure;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 const W: u32 = 128;
 const H: u32 = 4;
@@ -24,9 +23,9 @@ fn scene() -> Vec<[f32; 4]> {
         .collect()
 }
 
-/// The machine's settings as the Scanner face built them before slides entered the look under their rest.
+/// The settings as the Scanner face built them before slides entered the look under their rest.
 fn former(frame: &PipelineSettings) -> PipelineSettings {
-    let mut out = scanner::on_oni_machine(frame).expect("the Scanner face");
+    let mut out = scanner::on_legacy_print(frame).expect("a legacy print");
     out.print.exposure = Print::exposure_at(0.0, Print::resting_exposure(frame.mode));
     out
 }
@@ -57,56 +56,60 @@ fn clipped(px: &[[f32; 4]]) -> f64 {
     px.iter().filter(|p| p[..3].iter().any(|c| *c >= 0.999)).count() as f64 / px.len() as f64
 }
 
-fn at_rest(mode: ConversionMode, machine: ScannerMachine) -> PipelineSettings {
-    PipelineSettings { face: Face::Scanner, scanner_machine: machine, ..PipelineSettings::rest(mode, true).per_pixel_only() }
+/// A photo the Scanner face printed at rest, as the one face reads it: the machine's exposure, its look a legacy print.
+fn at_rest(mode: ConversionMode, machine: LegacyMachine) -> PipelineSettings {
+    let mut s = PipelineSettings::rest(mode, true).per_pixel_only();
+    s.print.exposure = look_entry_exposure(mode);
+    s.legacy_print = Some(LegacyPrint { machine, ..LegacyPrint::default() });
+    s
 }
 
-/// Within half a stop of Pro's mean, no more clipped; the looks' own lift on a negative is about 0.4 stop.
+/// Within half a stop of the plain render's mean, no more clipped; the looks' own lift on a negative is about 0.4 stop.
 const MARGIN_STOPS: f64 = 0.5;
 
 #[test]
-fn a_slide_on_the_scanner_face_lands_near_its_pro_render() {
+fn a_slide_on_a_legacy_print_lands_near_its_plain_render() {
     let Ok(mut g) = Graph::new() else { return println!("SKIPPED: no GPU") };
     let source = g.upload(W, H, &scene()).expect("the scene uploads");
     let mut bench = Bench { g, source };
     let pro_frame = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
     let pro = bench.render(None, &pro_frame, None);
-    for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
+    for machine in [LegacyMachine::Oni, LegacyMachine::Frontier] {
         let frame = at_rest(ConversionMode::Positive, machine);
-        let scanned = bench.render(None, &frame, scanner::on_oni_machine(&frame).as_ref());
+        let scanned = bench.render(None, &frame, scanner::on_legacy_print(&frame).as_ref());
         let stops = (mean_luminance(&scanned) / mean_luminance(&pro)).log2();
-        assert!(stops.abs() <= MARGIN_STOPS, "{machine:?}: {stops:+.2} stops from Pro");
+        assert!(stops.abs() <= MARGIN_STOPS, "{machine:?}: {stops:+.2} stops from the plain render");
         assert!(clipped(&scanned) <= clipped(&pro), "{machine:?}: {} clipped against {}", clipped(&scanned), clipped(&pro));
         // Twin: the former chain, the slide entering the look at its own rest, fails the same margin.
         let before = bench.render(None, &frame, Some(&former(&frame)));
         let over = (mean_luminance(&before) / mean_luminance(&pro)).log2();
-        assert!(over > MARGIN_STOPS, "{machine:?}: the former chain sat {over:+.2} stops from Pro");
-        println!("{machine:?}: {stops:+.2} stops from Pro, {over:+.2} before");
+        assert!(over > MARGIN_STOPS, "{machine:?}: the former chain sat {over:+.2} stops from the plain render");
+        println!("{machine:?}: {stops:+.2} stops from the plain render, {over:+.2} before");
     }
 }
 
 #[test]
-fn a_negative_on_the_scanner_face_renders_as_before_bit_for_bit() {
+fn a_negative_on_a_legacy_print_renders_as_before_bit_for_bit() {
     let Ok(mut g) = Graph::new() else { return println!("SKIPPED: no GPU") };
     // The scene as a negative's transmittances: dense where the slide is light.
     let negative: Vec<[f32; 4]> = scene().iter().map(|p| [0.8 - 0.75 * p[0], 0.7 - 0.65 * p[1], 0.6 - 0.55 * p[2], 1.0]).collect();
     let source = g.upload(W, H, &negative).expect("the negative uploads");
     let mut bench = Bench { g, source };
     for mode in [ConversionMode::Negative, ConversionMode::Monochrome] {
-        for machine in [ScannerMachine::Oni, ScannerMachine::Frontier] {
+        for machine in [LegacyMachine::Oni, LegacyMachine::Frontier] {
             let mut frame = at_rest(mode, machine);
-            frame.scanner = ScannerClicks::new(3, -2, 1, 4, 2);
-            frame.scanner_finish.contrast = 0.2;
-            let now = bench.render(None, &frame, scanner::on_oni_machine(&frame).as_ref());
+            frame.legacy_print = Some(LegacyPrint { machine, d: 3, c: -2, m: 1, y: 4, w: 2, laid: true });
+            frame.print.contrast = 0.2;
+            let now = bench.render(None, &frame, scanner::on_legacy_print(&frame).as_ref());
             let before = bench.render(None, &frame, Some(&former(&frame)));
             assert!(now.iter().flatten().zip(before.iter().flatten()).all(|(a, b)| a.to_bits() == b.to_bits()), "{mode:?} {machine:?} moved");
         }
     }
     // Twin: the comparison sees the change where there is one, on a slide.
-    let slide = at_rest(ConversionMode::Positive, ScannerMachine::Oni);
+    let slide = at_rest(ConversionMode::Positive, LegacyMachine::Oni);
     let pixels = scene();
     let (now, before) = (
-        bench.render(Some(&pixels), &slide, scanner::on_oni_machine(&slide).as_ref()),
+        bench.render(Some(&pixels), &slide, scanner::on_legacy_print(&slide).as_ref()),
         bench.render(Some(&pixels), &slide, Some(&former(&slide))),
     );
     assert!(now.iter().flatten().zip(before.iter().flatten()).any(|(a, b)| a.to_bits() != b.to_bits()));

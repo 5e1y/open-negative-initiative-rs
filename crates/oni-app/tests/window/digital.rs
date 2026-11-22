@@ -57,7 +57,7 @@ pub(crate) fn digital_shows_a_negatives_blocks_on_its_film() {
         assert!(!shown(Role::Text, title), "no {title} on a digital photo");
     }
     assert!(shown(Role::Text, "Lens Corrections") && shown(Role::Tab, "Source") && !shown(Role::Tab, "Roll"), "its lens, its source");
-    assert!(shown(Role::Tab, "Scanner") && shown(Role::Tab, "Pro"), "a digital photo keeps its faces");
+    assert!(!shown(Role::Tab, "Scanner") && !shown(Role::Tab, "Pro"), "one face, no switch");
     println!("shot {}", rig.shot("digital-roll").display());
 
     tab(PanelTab::Color);

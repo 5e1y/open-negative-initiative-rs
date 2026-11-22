@@ -2,7 +2,7 @@
 //! roll is read, never written.
 
 use oni_core::balance::{Outcome, Strategy};
-use oni_core::{Archive, Channel, Command, EditorStore, Family, FieldSet, Knob, PasteCheck, Scan};
+use oni_core::{Archive, Channel, Command, EditorStore, Family, FieldSet, Knob, PasteCheck};
 use oni_settings::{PipelineSettings, sidecar};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -51,9 +51,7 @@ impl Roll {
         EditorStore::new(Archive::new(self.frames.clone(), |p: &Path| p.extension().is_some_and(|e| e == "NEF")))
     }
 
-    /// Opens a frame on the face its sidecar was left on, so opening alone rewrites nothing.
     fn open(&self, store: &mut EditorStore, frame: &str) {
-        store.scanner_face = self.settings(frame).face == oni_settings::Face::Scanner;
         store.open(frame).unwrap();
     }
 
@@ -288,21 +286,17 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
 fn the_bars_reset_keeps_framing_flat_field_and_roll() {
     let Some(roll) = Roll::copy("reset") else { return };
     let mut store = roll.store();
-    // On the Pro face, whatever face the frame was left on.
     store.open(&roll.frames[4]).unwrap();
     store.apply_at(Command::Set { knob: Knob::Angle, value: 2.0 }, 0.0);
     store.apply_at(Command::Set { knob: Knob::SharpenAmount, value: 2.5 }, 1.0);
-    store.apply_at(Command::Scan(Scan::Step { letter: oni_keys::Letter::D, by: 3 }), 2.0);
+    let legacy = Some(oni_settings::LegacyPrint { d: 3, ..oni_settings::LegacyPrint::default() });
+    store.apply_at(Command::Write(Box::new(oni_settings::PipelineSettings { legacy_print: legacy, ..store.settings().clone() })), 2.0);
     let edited = store.settings().clone();
     store.apply_at(Command::Reset, 3.0);
     let blank = store.settings().clone();
     assert_eq!((blank.geometry, blank.flat_field.clone()), (edited.geometry, edited.flat_field.clone()));
     assert_eq!(blank.roll_reference, edited.roll_reference);
-    assert_eq!(blank.scanner, edited.scanner, "the Pro face's reset leaves the scanner's clicks");
     assert_ne!(blank.sharpen, edited.sharpen);
-    // Twin: on the Scanner face the clicks are the edit, and go.
-    store.undo();
-    store.scanner_face = true;
-    store.apply_at(Command::Reset, 10.0);
-    assert_eq!(store.settings().scanner.d, 0);
+    // A reset lands on the rest: a legacy print is a look, and goes with it.
+    assert_eq!((edited.legacy_print, blank.legacy_print), (legacy, None));
 }

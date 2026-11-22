@@ -299,7 +299,7 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
     settings.set_shown(true);
     rig.settle();
     let editor = common::the(w, Role::ListItem, "Editor");
-    let frontier = common::the(w, Role::ListItem, "Frontier Look");
+    let frontier = common::the(w, Role::ListItem, "Connected Apps");
     let drawn = rig.drawn();
     println!("shot {}", rig.shot("row-marks-settings").display());
     assert!(!raised(w).iter().any(|s| lies_on(s, &editor)), "no raised surface under the section shown");

@@ -27,14 +27,7 @@ fn phone(uri: String, pressed: Arc<AtomicUsize>, fold: Arc<AtomicBool>) {
                 Err(e) => return crate::timing::line(&format!("bench phone: no pairing: {e:?}")),
             };
             crate::timing::line("bench phone: paired");
-            // `ONI_FOLDED=scanner` steps the Scanner face's keypad on the Frontier machine instead.
-            let scanner = std::env::var("ONI_FOLDED").is_ok_and(|v| v == "scanner");
-            if scanner {
-                remote.press(oni_link::Command::Face(oni_link::Face::Scanner));
-                remote.press(oni_link::Command::Machine(oni_link::Machine::Frontier));
-                tokio::time::sleep(Duration::from_millis(700)).await;
-            }
-            let key = if scanner { oni_link::Command::Step { letter: oni_link::Letter::C, by: 1 } } else { oni_link::Command::StepParam { param: oni_link::Param::Exposure, by: 3 } };
+            let key = oni_link::Command::StepParam { param: oni_link::Param::Exposure, by: 3 };
             for step in 0..STEPS {
                 if step == STEPS / 2 {
                     fold.store(true, Ordering::Relaxed);

@@ -59,23 +59,23 @@ fn a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch() {
 }
 
 #[test]
-fn a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch_on_the_scanner() {
+fn a_prewarmed_engine_compiles_nothing_on_a_digital_photo_s_first_busy_notch_on_a_legacy_print() {
     let Ok(device) = Device::open() else {
-        eprintln!("no adapter: the digital Scanner prewarm is not exercised");
+        eprintln!("no adapter: the digital legacy print's prewarm is not exercised");
         return;
     };
     let warm = Engine::shared(&device);
     let mut engine = warm.lock().unwrap();
     engine.prewarm();
     let compiled = engine.compiled();
-    notch(&mut engine, &engine::prewarm::digital_scanner_busy());
-    assert_eq!(engine.compiled(), compiled, "a pipeline compiled on a digital photo's first notch on the Scanner");
+    notch(&mut engine, &engine::prewarm::digital_legacy_busy());
+    assert_eq!(engine.compiled(), compiled, "a pipeline compiled on a digital photo's first notch on a legacy print");
     drop(engine);
     // Twin: warmed on the film modes alone, the digital machine's film passes wait.
     let pro = Engine::shared(&Device::open().unwrap());
     let mut engine = pro.lock().unwrap();
     engine.prewarm_where(&|s| !s.mode.is_digital());
     let compiled = engine.compiled();
-    notch(&mut engine, &engine::prewarm::digital_scanner_busy());
-    assert!(engine.compiled() > compiled, "the film modes alone warm the digital machine's");
+    notch(&mut engine, &engine::prewarm::digital_legacy_busy());
+    assert!(engine.compiled() > compiled, "the film modes alone warm the digital legacy print's");
 }

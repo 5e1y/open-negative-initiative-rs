@@ -15,21 +15,25 @@ fn coded(prefix: &str, json: &str) -> String {
 }
 
 const KEYPAD: &str = concat!(
-    r#"{"preset":{"id":"3676F1B6-B28F-4B26-9125-71C8039CD81B","name":"Keys","note":"","parameters":["sharpen"],"tint":"teal"},"#,
-    r#""settings":{"scanner":{"d":3,"halves":{"d":1}},"sharpen":{"amount":1.5}},"version":19}"#
+    r#"{"preset":{"id":"3676F1B6-B28F-4B26-9125-71C8039CD81B","name":"Keys","note":"","parameters":["face","scanner","sharpen"],"tint":"teal"},"#,
+    r#""settings":{"face":"scanner","scanner":{"d":3,"halves":{"d":1}},"sharpen":{"amount":1.5}},"version":19}"#
 );
 
 #[test]
 fn an_earlier_code_reads_through_the_chain_and_a_new_one_is_of_this_format() {
     let read = from_share_code(&coded(EARLIER_PREFIX, KEYPAD)).unwrap();
-    assert_eq!((read.name.as_str(), read.settings.sharpen.amount, read.settings.scanner.d), ("Keys", 1.5, 7));
-    // Twin: the same body read as this format's, without the chain, loses its half step.
+    let keys = read.settings.legacy_print.map(|l| l.d);
+    assert_eq!((read.name.as_str(), read.settings.sharpen.amount, keys), ("Keys", 1.5, Some(7)));
+    // The keypad's row carries the one face's rows its print lives in; the face's row goes.
+    assert!(read.parameters.contains("levelsGlobal") && read.parameters.contains("sharpen"));
+    assert!(!read.parameters.contains("scanner") && !read.parameters.contains("face"));
+    // Twin: the same body read as this format's, without the chain, keeps no legacy print.
     let typed = KEYPAD.replace(r#""version":19"#, &format!(r#""format":"{FORMAT}","version":{VERSION}"#));
     let as_current = from_share_code(&coded(SHARE_CODE_PREFIX, &typed)).unwrap();
-    assert_ne!(as_current.settings.scanner.d, 7);
+    assert_eq!(as_current.settings.legacy_print, None);
     // A new code says its format, and reads back as the same look, its keypad in steps.
     let mut keyed = read.clone();
-    keyed.parameters = BTreeSet::from(["sharpen".to_string()]);
+    keyed.parameters = BTreeSet::from(["sharpen".to_string(), "levelsGlobal".to_string()]);
     let code = share_code(&keyed).unwrap();
     assert!(code.starts_with("ONI2:"), "{code}");
     assert!(from_share_code(&code).unwrap().same_look(&keyed));

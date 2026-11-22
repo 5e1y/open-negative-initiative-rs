@@ -7,7 +7,6 @@ pub mod corrections;
 pub mod film;
 pub mod finishing;
 pub mod flat_field;
-pub mod frontier_table;
 pub mod geometry;
 pub mod grain;
 pub mod halation;
@@ -27,7 +26,7 @@ use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
-use oni_settings::{PipelineSettings, ScannerMachine};
+use oni_settings::{LegacyMachine, LegacyPrint, PipelineSettings};
 use stages::{Before, DetailColumns, DetailRows, OnGround};
 use std::collections::HashMap;
 
@@ -72,8 +71,6 @@ pub struct Inputs<'a> {
 pub struct Pipeline {
     valoi: Option<(Source, [f32; 3])>,
     cubes: HashMap<&'static str, (Source, usize)>,
-    /// The hand's Frontier look by its generation, uploaded once per edit.
-    hand: Option<(u64, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     /// Each virtual film's table, uploaded once per graph.
     films: HashMap<oni_settings::VirtualStock, Source>,
@@ -215,37 +212,26 @@ impl Pipeline {
         Ok((code.clone().then_reading(stages::color_cube(n), &[table]), share))
     }
 
-    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
-    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
-        let frontier = frame.scanner_machine == ScannerMachine::Frontier;
-        let hand = frontier.then(frontier_table::current).flatten();
+    /// `ScannerRender.oniFinish`: the legacy print's machine's look on ONI's render in display code, then TEMP's warmth.
+    fn oni_finish(&mut self, graph: &mut Graph, image: Image, legacy: &LegacyPrint) -> Result<Image> {
+        let frontier = legacy.machine == LegacyMachine::Frontier;
         // The Frontier's look stands where ONI's does, on the same render in plain display code.
         let encode = stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT });
         let code = stages::laid(image, vec![encode]);
-        let (table, n) = match hand {
-            Some((generation, cube)) => {
-                if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
-                    self.hand = Some((generation, upload_cube(graph, &cube)?, cube.cube_dimension));
-                }
-                let (_, source, n) = self.hand.as_ref().expect("uploaded above");
-                (Image::new(source), *n)
-            }
-            None if frontier => self.cube(graph, "frontier-look", &frontier_look::CUBE)?,
-            None => self.cube(graph, "oni-look", &oni_look::CUBE)?,
-        };
+        let (table, n) = if frontier { self.cube(graph, "frontier-look", &frontier_look::CUBE)? } else { self.cube(graph, "oni-look", &oni_look::CUBE)? };
         let looked = code.then_reading(stages::color_cube(n), &[table]);
-        let (warmth, share) = self.warmed(graph, &looked, s.scanner.w)?;
+        let (warmth, share) = self.warmed(graph, &looked, legacy.w)?;
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }
 
-    /// The Scanner face's TEMP on a paper's print, its warmth look laid on the print's plain display code; the
-    /// print as it is at no count.
-    fn warmed_paper(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
-        if s.scanner.w == 0 {
+    /// The legacy print's TEMP on a paper's print, its warmth look laid on the print's plain display code; the print as
+    /// it is at no count.
+    fn warmed_paper(&mut self, graph: &mut Graph, image: Image, legacy: &LegacyPrint) -> Result<Image> {
+        if legacy.w == 0 {
             return Ok(image);
         }
         let code = stages::laid(image, vec![stages::scanner_encode(1.0)]);
-        let (warmth, share) = self.warmed(graph, &code, s.scanner.w)?;
+        let (warmth, share) = self.warmed(graph, &code, legacy.w)?;
         Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }
 
@@ -267,7 +253,7 @@ impl Pipeline {
         Ok(image.then_reading(stages::curves(&k), &[Image::new(&rgb), Image::new(&luma)]))
     }
 
-    /// Curves to the output clip, both faces.
+    /// Curves to the output clip.
     fn finishing(&mut self, graph: &mut Graph, toned: Image, s: &PipelineSettings, scale: f64, reference: f64, measuring: bool) -> Result<Image> {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();

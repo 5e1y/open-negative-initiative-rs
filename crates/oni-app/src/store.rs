@@ -20,7 +20,7 @@ pub fn get(store: &EditorStore, field: Field) -> f32 {
 /// with it move by the same distance, each keeping its own offset.
 pub fn moved(store: &EditorStore, field: Field, to: f32) -> Command {
     let knob = field.knob();
-    Command::Step { knob, by: to - knob.get(&store.face_view()) }
+    Command::Step { knob, by: to - knob.get(store.settings()) }
 }
 
 /// What a block's reset key lands on: `Parameters.rest(for:)` in the frame's own mode and decode.

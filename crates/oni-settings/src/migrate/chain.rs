@@ -2,7 +2,6 @@
 //! for the versions written before its change, in the order the format moved.
 
 use crate::blocks::{chroma_decompression, separation};
-use crate::modes::ScannerMachine;
 use crate::settings::PipelineSettings;
 use crate::tolerant::{self, Object};
 use serde_json::Value;
@@ -81,6 +80,9 @@ pub const PAPER_ENDS_VERSION: i64 = 44;
 /// The version a photo came to print on the Frontier SP-3000, a paper key a build before it cannot read: no step, as
 /// no older document names it.
 pub const FRONTIER_PRINT_VERSION: i64 = 45;
+/// The version the Scanner face left: a photo it rendered keeps that edit alone, its machine's print in Lighting's fields
+/// and its keys and look in a legacy print, a key a build before it cannot read.
+pub const ONE_FACE_VERSION: i64 = 46;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
@@ -169,7 +171,7 @@ fn keeping_converted_primaries(document: Object) -> Object {
 /// A frame written before renders through the Frontier, the one machine it knew.
 fn on_frontier(document: Object) -> Object {
     with_settings(document, |s| {
-        s.insert("scannerMachine".into(), Value::from(ScannerMachine::Frontier.raw_value()));
+        s.insert("scannerMachine".into(), Value::from("frontier"));
     })
 }
 

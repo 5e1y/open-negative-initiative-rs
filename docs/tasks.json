@@ -11938,5 +11938,55 @@
     "status": "done",
     "detail": "True blacks: the black picked in Prepare the Roll printed on pure black, the paper's white kept; off, that black prints where the paper lays it at rest, a hair above its own black; Lighting never lifts it, only Black point moves it. Lighting's paper paragraph: the sliders act as in a darkroom with that black held, Brightness lightening the print between that black and the white. French and Spanish; the window checks help_card and help_demo_color read the new text.",
     "outcome": "Catalogues complete (scripts/i18n)."
+  },
+  {
+    "id": 3060,
+    "type": "change",
+    "title": "One face: the Scanner face, its machines, keypad and keypad screen leave; one edit per photo",
+    "status": "done",
+    "detail": "Owner's decisions of 2026-11-21/22. PipelineSettings loses face, scanner, scannerMachine and scannerFinish (as_scanner, storing_scanner_edit gone); oni-core loses Command::Face, Command::Finish and Command::Scan (Command::Walk keeps the phone's walk), EditorStore::scanner_face, face(), face_view(), the Took face flag of Edit Together, the face rows of presets and fields (Field::LegacyPrint in their place, carried with Lighting by paste, Apply Settings to Roll and the levelsGlobal row), parameters::reset_blank's face argument. The app loses its Lab controller (app/lab.rs, its sliders and tests), the bar's Pro/Scanner switch, the remembered face, Act::Emulator/FacePro/FaceScanner, the Scanner Emulator menu item and the keypad's hand; the walk keys move to keys.rs unchanged. The hand's Frontier look (frontier_table, app/frontier_look.rs, Settings' Frontier Look page, Act::Frontier*) goes with the Frontier machine it stood in for. The phone link stays compiling: the desktop publishes Pro's face with the keypad at rest; the phone's keypad, machine and face keys find no field and land nowhere (link::command_of returns None for them), its panel sliders, walk, undo and redo work as before; the phone panel's Scanner rows go. Pro's order stays, Colour then Lighting: the keypad's density-first was a minilab operator's order of keys, and on the one face Exposure sits right under Colour, the Auto White Balance key acting on Colour."
+  },
+  {
+    "id": 3061,
+    "type": "change",
+    "title": "Sidecar format 46: a photo the Scanner face rendered keeps that edit, its machine's print in Lighting's fields and a legacy print; a Pro photo keeps Pro's whole",
+    "status": "done",
+    "detail": "migrate::one_face (chain::ONE_FACE_VERSION = 46, after FRONTIER_PRINT_VERSION) reads the retired keys off the stored settings (one_face::Scanner: Face, Clicks, Machine, Finish; a key of the wrong shape refuses the document as its typed read did), the < 22 path through reshape (keypad in steps, scannerFinish's retired curves folded) and every later one through the raw settings, last after every other step. A face of Scanner (a digital photo before format 30 reads Pro, the former digital_face step folded in) lays what on_oni_machine laid: the Scanner finishing in Pro's fields (contrast, curves, Colour Mixer, Saturation Curve, vignette, Chrome), Lighting at the machine's rest (Print default but Contrast, colour compensation and True blacks; Exposure the looks' entry exposure, or the paper's rest on a paper), Colour Density 0, Pro's Auto White Balance result dropped (balance_filters None, so a roll's strength never re-doses it), and PipelineSettings.legacy_print (key legacyPrint: machine, D, C, M, Y, TEMP steps, laid, written when present) unless the photo prints on a paper with every key at rest, where it lays nothing. A Pro photo drops the Scanner keys alone. Presets and share codes: a keypad row saved off the Scanner face becomes levelsGlobal, the filters, Colour Density and the finishing's rows; the face row goes. The keypad's clicks cannot become a slider: they move the gains, which are the roll's (Roll tab Filtration), so they stay in the legacy print, read-only on screen. The newer-file corpus moves to broken/version-47 (Refusal::Newer(47)); a build of 45 refuses 46 as newer. Corpus goldens rewritten: Pro frames lose the four keys and read legacy_print None, nothing else moving; the 11 Scanner frames read their machine's print and a legacy print."
+  },
+  {
+    "id": 3062,
+    "type": "change",
+    "title": "The legacy print renders the former Scanner chain: its keys in the gains, the machine's look cube and TEMP's warmth, the Frontier's rest on the cube's path alone",
+    "status": "done",
+    "detail": "scanner::on_legacy_print (was on_oni_machine) moves the gains by the laid legacy print's keys, the Frontier's measured clicks (Machine::offset on D, C, M and Y steps), with FRONTIER_REST (D+0.5 M+2 Y-2, now [i64; 4]) where the Frontier's cube prints, off a paper; the chain lays the ONI or Frontier look cube then the warmth look (oni_finish), on a paper TEMP's warmth alone (warmed_paper), exactly as the face did. Off (laid false) the photo prints as its sliders say. A measure in front of the print and the balance read no legacy print, as they read Pro's face; Compare's before leaves it out. Prewarm compiles a legacy print's looks on a negative and a digital photo."
+  },
+  {
+    "id": 3063,
+    "type": "interface",
+    "title": "The Colour tab of one face: no machine, keypad, face line or keypad screen; a legacy print's switch and keys under the print",
+    "status": "done",
+    "detail": "color_tab.slint loses the face's line, Machine, Density, the Scanner's Colour and Look blocks, its Effects keys and their news pills; Lighting, Colour, More Color Settings and Effects show on every photo. PrintRows gains, on a photo carrying one, a design-system Toggle named for the legacy print (Scanner ONI look (legacy), Scanner Frontier look (legacy), on a paper Scanner keys (legacy)) with its HelpMark, and a note with the keypad's values as its screen read them (D +1.5 · C −1.0 · M 0.0 · Y +2.0 · TEMP +0.5); off keeps it to lay again. Not a paper-list entry: the face laid its keys and warmth over a paper's print too, so it is a layer over whichever print, not one of them. Gone: the Lab global, LabBlock/LabSlider, keypad.slint (LabScreen, LabCell), ScreenProbe, ScannerStyle's bands and face bar, Bar.face, the toolbar's switch (Reset's help names no face), the Scanner news notes and welcome point, the Pro/Scanner tabs of the welcome clarity scene, the Frontier Look settings page; probe_states' stepped sliders take the channel colours. French and Spanish laid for every new text. The DS lab (crates/oni-ui/lab) keeps its keypad specimens and their tokens."
+  },
+  {
+    "id": 3064,
+    "type": "feature",
+    "title": "Colour's filters shown as Temperature and Tint or as an enlarger's C, M and Y, a Settings choice",
+    "status": "done",
+    "detail": "Settings > Editor > Colour Filtration (preference filtrationCmy, Act::FiltrationCmy): Temperature and Tint, or C, M and Y. A display choice, so it sits with the app's other reading choices: a switch beside the sliders would be the only control of Colour that edits no photo. Knob::Filtration(channel) reads Print::filtration(): each filter's stops as CC (tone::CC_PER_STOP, 100 log10 2, the paper's own, now one constant for both), red's as C, the least at none, the neutral density ONI's held luma and the enlarger's time take back; a C, M or Y edit lands as Temperature and Tint moves (Print::filtration_moves: C − Y and (C + Y)/2 − M over 30.1), so both views write the same two values and switching moves nothing. Same meaning on ONI's print and on a paper (the filters' filtration over the rest); on a paper the enlarger's dial, rest included, stays on the note under the paper. Track 0 to 80 CC, a press 3 CC, readout whole CC. Not shown on the phone."
+  },
+  {
+    "id": 3065,
+    "type": "check",
+    "title": "Format 46 checks: every Scanner photo renders as format 45 rendered it to the bit; C, M and Y round trip; one face in the window",
+    "status": "done",
+    "detail": "oni-pipeline tests/legacy_print.rs: 13 format-45 cases (ONI and Frontier, clicks, TEMP, monochrome, slide, Portra Endura with keys and TEMP, Supra at rest, the Frontier paper, digital on and off its paper, compensation off with True blacks, Pro with Scanner fields) written by the build of a2ae012c and every non-broken corpus sidecar, their renders fingerprinted by that build (legacy_print/fingerprints.json): read through format 46 each renders to the same bits, the whole chain on the GPU (Metal on Apple silicon, where the bits were drawn) and stage 4-7 with the look on the CPU; twins: a Scanner photo read as Pro's, or migrated without its legacy print, moves; a Pro photo read as the Scanner's moves. oni-settings tests/one_face.rs (machine's print and keys, Pro unchanged, early digital, codec 46 written and read, 47 refused) and a folder survey (ONI_ONE_FACE_DIR). Knob C/M/Y read back to the bit, an edit within 1e-5 (twin, green's weight forgotten); on a paper six CC move the enlarger's dial six CC (twin, Temperature alone). Window one_face: the Colour tab's blocks exactly, no Scanner title or tab; a format-45 Scanner sidecar opens on its legacy print, keys shown, switched off and on; C, M and Y read 30, 15, 0 CC for a stop of Temperature, switching back reads 1.00.",
+    "outcome": "CPU and GPU: 50 of 50 documents to the bit (23 rendered by the Scanner face, 27 by Pro), every twin apart. Corpus: 37 read, 11 Scanner photos, 11 on a legacy print (4 Frontier), none on a paper. A copy of the test roll's 39 sidecars (format 25, read in a scratch folder, the owner's left untouched): 10 Scanner photos, 10 on an ONI legacy print, 29 Pro; their 39 renders, fingerprinted by the build of format 45 and by this one, identical on the GPU and the CPU. C, M and Y: written back as read, to the bit; an edit within 7.6e-6 CC, the largest filter 75.3 CC; the paper's dial within 1e-3 CC."
+  },
+  {
+    "id": 3066,
+    "type": "docs",
+    "title": "CLAUDE.md says the Frontier is a paper and how a paper prints; paper_black reads a photo without its removed face",
+    "status": "done",
+    "detail": "The Frontier bullet (the ONI machine's render with its baked look) gave way to two: the Frontier SP-3000 prints in the paper list (#3040-#3043), a former Scanner photo keeps its render on the legacy print (#3060-#3065); a paper prints in true density with its picked black anchored and True blacks laying it on pure black (#3010-#3013, #3090-#3093). examples/paper_black.rs no longer sets PipelineSettings::face, gone with the Scanner face."
   }
 ]

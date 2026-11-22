@@ -1,5 +1,5 @@
-// `LabScreen`'s glass, shared by the Scanner face and the measure's bank: the phosphor's ink and its
-// glow on the dark glass, scanlines over everything.
+// The scanner's glass the measure's bank reads on: the phosphor's ink and its glow on the dark glass, scanlines
+// over everything.
 import { Space, Stroke, ScannerStyle, CrtStyle, PlotStyle, Type } from "theme.slint";
 import { Label, Tone } from "base.slint";
 
@@ -8,8 +8,7 @@ export struct CrtCurve { area: string, edge: string, black: length, white: lengt
 // A frame before, fading on its channel's screen as a phosphor's afterglow; `fade` 1 is the latest.
 export struct CrtEcho { channel: int, edge: string, fade: float }
 
-// The glass at the plots' corner: what it holds, then `LabScreen`'s scanlines, laid once per size in a
-// layer of their own.
+// The glass at the plots' corner: what it holds, then its scanlines, laid once per size in a layer of their own.
 export component CrtScreen inherits Rectangle {
     in property <length> radius: PlotStyle.radius;
     background: ScannerStyle.glass;
@@ -34,7 +33,7 @@ component Halo inherits Text {
     stroke-style: outside;
 }
 
-// A line on the glass in the phosphor's ink, the value size when `large`, glowing as `LabScreen` does.
+// A line on the glass in the phosphor's ink, the value size when `large`, glowing as the screen does.
 export component CrtLine inherits Label {
     in property <bool> large;
     font-family: ScannerStyle.mono;

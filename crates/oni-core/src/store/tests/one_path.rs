@@ -85,25 +85,21 @@ fn a_dye_reset_lays_the_open_roll_s_stock_on_its_roll_alone() {
 #[test]
 fn an_action_the_open_frame_stands_still_for_still_reaches_the_frames_together() {
     let mut theirs = PipelineSettings { vignette: oni_settings::blocks::Vignette { stops: -0.7 }, ..PipelineSettings::default() };
-    theirs.scanner.c = 3;
-    theirs.scanner.y = 10;
+    theirs.print.set_filters([0.25, 0.0, -0.25]);
     theirs.manual_curves.red.add(oni_settings::cg::Point::new(0.5, 0.7));
-    let mut open = PipelineSettings::default();
-    open.scanner.y = 48;
-    let (mut store, dir, p) = frames("still", vec![("a.tif", open), ("b.tif", theirs.clone()), ("c.tif", theirs)]);
+    let (mut store, dir, p) = frames("still", vec![("a.tif", PipelineSettings::default()), ("b.tif", theirs.clone()), ("c.tif", theirs)]);
     let (own, left) = (read(&p[1]), read(&p[2]));
     store.set_together(vec![p[1].clone()]);
     let set = store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.0 }, 0.0);
-    let reset = store.apply_at(Command::Scan(Scan::Reset { letter: Letter::C }), 5.0);
-    let step = store.apply_at(Command::Scan(Scan::Step { letter: Letter::Y, by: 1 }), 10.0);
+    let warmth = store.apply_at(Command::Set { knob: Knob::Temperature, value: 0.0 }, 5.0);
     let curves = store.apply_at(Command::Each(Each::new(|s| PipelineSettings { manual_curves: Default::default(), ..s.clone() })), 15.0);
     // Twin: the open frame stood each time, so a step read off its own change alone would land nowhere.
-    assert!([set, reset, step, curves].iter().all(|a| a.changed.is_empty()));
+    assert!([set, warmth, curves].iter().all(|a| a.changed.is_empty()));
     let b = read(&p[1]);
-    assert_eq!((b.vignette.stops, b.scanner.c, b.scanner.y), (0.0, 0, 11), "the double click, the C reset, the key past the open frame's end");
+    assert_eq!((b.vignette.stops, Knob::Temperature.get(&b)), (0.0, 0.0), "the double clicks on Vignette and Temperature");
     assert!(b.manual_curves.red.is_neutral(), "the curves reset on a frame whose own were moved");
     assert_eq!(read(&p[2]), left, "a frame left out is written nothing");
-    for _ in 0..4 {
+    for _ in 0..3 {
         store.undo();
     }
     assert_eq!(read(&p[1]), own, "the undos lay its own settings back, exactly");
@@ -168,25 +164,6 @@ fn a_frame_of_the_roll_on_another_decode_takes_its_roll_settings() {
     assert!((read(&p[1]).density_ceiling - 2.5).abs() < 1e-5, "{}", read(&p[1]).density_ceiling);
     // Twin: a frame of another roll keeps its own.
     assert_eq!(read(&p[2]).density_ceiling, 2.4);
-    let _ = std::fs::remove_dir_all(&dir);
-}
-
-#[test]
-fn a_move_lands_on_the_face_it_was_made_on() {
-    let mut theirs = PipelineSettings::default();
-    theirs.print.contrast = 0.1;
-    theirs.scanner_finish.contrast = -0.1;
-    let (mut store, dir, p) = frames("faces", vec![("a.tif", PipelineSettings::default()), ("b.tif", theirs)]);
-    store.set_together(vec![p[1].clone()]);
-    store.hold();
-    store.apply_at(Command::Step { knob: Knob::Contrast, by: 0.2 }, 0.0);
-    store.apply_at(Command::Face(oni_settings::Face::Scanner), 0.1);
-    store.apply_at(Command::Step { knob: Knob::Contrast, by: 0.05 }, 0.2);
-    store.release_at(0.3);
-    let b = read(&p[1]);
-    assert!((b.print.contrast - 0.3).abs() < 1e-6, "Pro's move on Pro's contrast: {}", b.print.contrast);
-    // Twin: both moves laid on the face of the release would leave Pro's and take 0.25 on the Scanner's.
-    assert!((b.scanner_finish.contrast - -0.05).abs() < 1e-6, "{}", b.scanner_finish.contrast);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

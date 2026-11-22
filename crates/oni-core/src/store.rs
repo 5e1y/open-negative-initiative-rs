@@ -2,7 +2,7 @@
 //! reports the fields it moved; the sidecar stays the truth and is written through `oni-settings`.
 
 use crate::balance::{self, Measure, Strategy};
-use crate::command::{Command, Scan};
+use crate::command::Command;
 use crate::fields::{Family, FieldSet};
 use crate::parameters;
 use crate::presets::Preset;
@@ -10,12 +10,11 @@ use oni_library::history::{self, History, Marker, Step, Trash};
 use oni_library::roll_membership::{self, RollKey};
 use oni_library::{refusal, trash};
 use oni_i18n::{tr, trn};
-use oni_keys::{Channel, Effect, Letter, Machine};
 use oni_settings::document;
 use oni_settings::frame::Geometry;
 use oni_settings::settings::{look_settings, roll_settings};
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{ConversionMode, Date, Face, Id, PipelineSettings, ScannerMachine};
+use oni_settings::{ConversionMode, Date, Id, PipelineSettings};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 use std::time::Instant;
@@ -27,7 +26,6 @@ mod undo;
 mod paste;
 mod several;
 mod oni_trash;
-mod scanner;
 mod together;
 
 use writes::{Written, gather};
@@ -35,7 +33,6 @@ use writes::{Written, gather};
 pub use opening::Unsaved;
 pub use oni_library::roll_folder::{Walk, Walked};
 pub use oni_trash::mark_run;
-pub use scanner::{channel, machine_for, machine_of, remeasure};
 
 pub mod roll;
 
@@ -102,9 +99,6 @@ pub struct EditorStore {
     history: History,
     archive: Archive,
     pub board: Board,
-    /// Open on the Scanner face: the frame adopts it, its Color tab edits `ScannerFinish`, its reset
-    /// keeps Chrome and clears the clicks. Turned by `Command::Face` and by an undo, never a step.
-    pub scanner_face: bool,
     held: bool,
     /// When a lifted hand's step is recorded; every change before it moves it on.
     deferred: Option<f64>,
@@ -141,7 +135,6 @@ impl EditorStore {
             history: History::default(),
             archive,
             board: Board::default(),
-            scanner_face: false,
             held: false,
             deferred: None,
             roll_touched: false,

@@ -8,8 +8,7 @@ use oni_render::Paper;
 use oni_settings::tone::Print;
 use oni_settings::PipelineSettings;
 
-/// Kodak CC a stop of filter: a stop halves its band's light, a density of log10 2.
-pub const CC_PER_STOP: f32 = CC_PER_DENSITY * std::f32::consts::LOG10_2;
+pub use oni_settings::tone::CC_PER_STOP;
 
 /// Contrast's paper grade: the slope times this to its power, so the track's ends are a grade softer or harder.
 pub const GRADE_BASE: f32 = 4.0;

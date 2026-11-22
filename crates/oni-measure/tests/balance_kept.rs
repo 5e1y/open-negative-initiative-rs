@@ -9,8 +9,8 @@ use oni_pipeline::flat_field::Mask;
 use oni_pipeline::resident::Files;
 use oni_settings::cg::{Point, Rect, Size};
 use oni_settings::frame::{ContactSheetGrid, Correction, FlatFieldMask, RgbPasses, RollReference};
-use oni_settings::modes::{Face, SourceEncoding};
-use oni_settings::ScannerMachine;
+use oni_settings::modes::SourceEncoding;
+use oni_settings::LegacyPrint;
 use oni_settings::tone::Tone;
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use std::path::{Path, PathBuf};
@@ -57,7 +57,7 @@ const MOVING: [&str; 13] =
     ["mode", "capture_stops", "crop", "measure_window", "angle", "gains", "density_ceiling", "separation", "flat_field", "corrections", "levels", "roll_reference", "density"];
 
 /// Every look the reading leaves at rest, each moved.
-const LOOKS: [Change; 34] = [
+const LOOKS: [Change; 30] = [
     ("print.exposure", |s| s.print.exposure = 0.8),
     ("print.contrast", |s| s.print.contrast = 0.5),
     ("print.shadows", |s| s.print.shadows = -0.4),
@@ -85,10 +85,7 @@ const LOOKS: [Change; 34] = [
         s.sharpen.radius = 2.0;
         s.sharpen.halo = 0.4;
     }),
-    ("face", |s| s.face = Face::Scanner),
-    ("scanner", |s| s.scanner.d = 3),
-    ("scanner_machine", |s| s.scanner_machine = ScannerMachine::Frontier),
-    ("scanner_finish", |s| s.scanner_finish.contrast = 0.4),
+    ("legacy_print", |s| s.legacy_print = Some(LegacyPrint { d: 3, w: -2, ..LegacyPrint::default() })),
     ("balance_filters", |s| s.balance_filters = Some([0.2, 0.0, -0.2])),
     ("balance_strength", |s| s.balance_strength = 0.3),
     ("balance_method", |s| s.balance_method = Some("auto".into())),
@@ -97,7 +94,6 @@ const LOOKS: [Change; 34] = [
     ("film", |s| s.film = serde_json::from_value(serde_json::json!({"id": Id::new(), "name": "Portra 400"})).ok()),
     ("roll_reference_declined", |s| s.roll_reference_declined = !s.roll_reference_declined),
     ("print.green", |s| s.print.green = Tone::exposure(0.1)),
-    ("scanner.w", |s| s.scanner.w = -2),
     ("sharpen.halo", |s| s.sharpen.halo = 0.9),
 ];
 

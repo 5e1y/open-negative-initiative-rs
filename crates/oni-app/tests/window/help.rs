@@ -51,7 +51,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     // What's New: every note news on a fresh Mac; a hover reads one, which keeps its pill until quit.
     let first = shell(&support);
     let news = first.window.global::<News>();
-    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("Updated", "New"));
+    assert_eq!((news.get_lighting().as_str(), news.get_space().as_str()), ("Updated", "New"));
     news.invoke_read("lighting.1.3.1".into());
     rig.pump();
     assert_eq!(news.get_lighting().as_str(), "Updated", "read, but kept this session");
@@ -94,7 +94,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     // The next launch: the read note is gone, the others stay, and the sheet is not due.
     let second = shell(&support);
     let news = second.window.global::<News>();
-    assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("", "New"));
+    assert_eq!((news.get_lighting().as_str(), news.get_space().as_str()), ("", "New"));
     assert!(!second.ctl.welcome_due());
     second.ctl.act(oni_app::Act::WhatsNew);
     rig.pump();

@@ -71,7 +71,7 @@ impl Ctl {
         self.publish_roll_tab();
         self.publish_presets();
         self.publish_export();
-        self.publish_lab();
+        self.publish_mode();
         self.publish_organising();
         self.publish_projects();
         self.publish_prepare();
@@ -86,7 +86,7 @@ impl Ctl {
         s.set_keep_zoom(crate::viewport::KEEP_ZOOM.load(Ordering::Relaxed));
         s.set_full_decode(crate::render::FULL_DECODE.load(Ordering::Relaxed));
         s.set_whole_roll_after_prepare(self.state.borrow().preferences.whole_roll_after_prepare());
-        s.set_frontier_file(self.frontier_file().into());
+        s.set_filtration_cmy(self.state.borrow().preferences.filtration_cmy());
         s.set_screen_gamut(self.state.borrow().screen_gamut);
         s.set_version(oni_i18n::tr!("Version {version}", version = crate::updates::version()).into());
         let pairing = w.global::<crate::Pairing>();

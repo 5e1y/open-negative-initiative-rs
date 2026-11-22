@@ -1,0 +1,410 @@
+{
+  "format": "oni-frame",
+  "version": 45,
+  "settings": {
+    "mode": "digital",
+    "virtualFilm": {
+      "stock": "kodak-portra-800",
+      "exposure": 0.0
+    },
+    "decodedFromMosaic": true,
+    "captureStops": 0.0,
+    "lensCorrected": false,
+    "primariesConverted": false,
+    "geometry": {
+      "quarterTurns": 0,
+      "angle": 0.0,
+      "crop": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ],
+      "portrait": false,
+      "mirrored": false,
+      "mirroredVertically": false
+    },
+    "chroma": {
+      "radius": 4.0,
+      "force": 0.2
+    },
+    "gains": {
+      "stops": [
+        -0.84404904,
+        0.0,
+        1.1973134
+      ]
+    },
+    "densityCeiling": 3.5,
+    "separation": 1.0,
+    "separationByHand": false,
+    "dyeSet": "kodak-portra-800",
+    "flatField": {
+      "mask": "None",
+      "amount": 1.0,
+      "temperature": 0.0,
+      "tint": 0.0
+    },
+    "corrections": [],
+    "levels": {
+      "red": {
+        "black": 0.5436084,
+        "white": 1.8197294,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "highlights": 0.75
+      },
+      "green": {
+        "black": 0.54339576,
+        "white": 2.0850086,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "highlights": 0.75
+      },
+      "blue": {
+        "black": 0.54277563,
+        "white": 2.206238,
+        "mid": 0.5,
+        "shadows": 0.25,
+        "highlights": 0.75
+      }
+    },
+    "chromaDecompression": 0.5,
+    "chromaDecompressionByHand": false,
+    "rollReferenceDeclined": false,
+    "balanceFilters": [
+      0.2,
+      -0.1,
+      -0.1
+    ],
+    "balanceStrength": 0.67,
+    "print": {
+      "exposure": 2.1,
+      "contrast": 0.0,
+      "shadows": 0.12,
+      "highlights": 0.0,
+      "red": {
+        "exposure": 0.2,
+        "contrast": 0.0,
+        "blacks": 0.0,
+        "shadows": 0.0,
+        "highlights": 0.0,
+        "whites": 0.0,
+        "mids": 0.0
+      },
+      "green": {
+        "exposure": -0.1,
+        "contrast": 0.0,
+        "blacks": 0.0,
+        "shadows": 0.0,
+        "highlights": 0.0,
+        "whites": 0.0,
+        "mids": 0.0
+      },
+      "blue": {
+        "exposure": -0.1,
+        "contrast": 0.0,
+        "blacks": 0.0,
+        "shadows": 0.0,
+        "highlights": 0.0,
+        "whites": 0.0,
+        "mids": 0.0
+      },
+      "blackPoint": 0.0,
+      "whitePoint": 0.0
+    },
+    "density": 0.3,
+    "manualCurves": {
+      "contrast": 0.0,
+      "luma": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "linked": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "red": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "green": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "blue": {
+        "points": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      }
+    },
+    "spectrogram": {
+      "hue": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "saturation": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "luma": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "saturation": {
+      "points": [
+        [
+          0.0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1.0,
+          0.5
+        ]
+      ]
+    },
+    "vignette": {
+      "stops": 0.4
+    },
+    "secretSauce": 0.8,
+    "paperCorrection": {
+      "stops": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "face": "scanner",
+    "scanner": {
+      "c": -2,
+      "d": 3,
+      "m": 1,
+      "w": 0,
+      "y": 4
+    },
+    "scannerMachine": "frontier",
+    "scannerFinish": {
+      "contrast": 0.2,
+      "manualCurves": {
+        "contrast": 0.0,
+        "luma": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "linked": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "red": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "green": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "blue": {
+          "points": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "spectrogram": {
+        "hue": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "saturation": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "luma": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "saturation": {
+        "points": [
+          [
+            0.0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1.0,
+            0.5
+          ]
+        ]
+      },
+      "vignette": {
+        "stops": -0.3
+      },
+      "secretSauce": 0.4
+    },
+    "texture": {
+      "amount": 0.0
+    },
+    "sharpen": {
+      "radius": 2.092,
+      "amount": 1.0,
+      "halo": 0.5
+    },
+    "grain": {
+      "amount": 0.0,
+      "size": 0.5
+    },
+    "halation": {
+      "amount": 0.0,
+      "size": 0.5,
+      "sensitivity": 0.0
+    },
+    "lensCorrection": {
+      "distortion": 0.0,
+      "red": 0.0,
+      "blue": 0.0,
+      "vignetting": 0.0
+    }
+  }
+}

@@ -142,7 +142,7 @@ settings: PipelineSettings {
     balance_filters: None,
     balance_strength: 0.67,
     print: Print {
-        exposure: 1.5,
+        exposure: 0.75,
         contrast: 0.0,
         shadows: 0.0,
         highlights: 0.0,
@@ -201,6 +201,17 @@ settings: PipelineSettings {
         bypassed: false,
     },
     print_paper: None,
+    legacy_print: Some(
+        LegacyPrint {
+            machine: Oni,
+            d: 0,
+            c: 0,
+            m: 0,
+            y: 0,
+            w: 0,
+            laid: true,
+        },
+    ),
     density: 0.0,
     manual_curves: CurveSet {
         contrast: 0.0,
@@ -331,141 +342,6 @@ settings: PipelineSettings {
             0.0,
             0.0,
         ],
-    },
-    face: Scanner,
-    scanner: ScannerClicks {
-        d: 0,
-        c: 0,
-        m: 0,
-        y: 0,
-        w: 0,
-    },
-    scanner_machine: Oni,
-    scanner_finish: ScannerFinish {
-        contrast: 0.0,
-        manual_curves: CurveSet {
-            contrast: 0.0,
-            luma: Curve {
-                points: [
-                    Point {
-                        x: 0.0,
-                        y: 0.0,
-                    },
-                    Point {
-                        x: 1.0,
-                        y: 1.0,
-                    },
-                ],
-            },
-            linked: Curve {
-                points: [
-                    Point {
-                        x: 0.0,
-                        y: 0.0,
-                    },
-                    Point {
-                        x: 1.0,
-                        y: 1.0,
-                    },
-                ],
-            },
-            red: Curve {
-                points: [
-                    Point {
-                        x: 0.0,
-                        y: 0.0,
-                    },
-                    Point {
-                        x: 1.0,
-                        y: 1.0,
-                    },
-                ],
-            },
-            green: Curve {
-                points: [
-                    Point {
-                        x: 0.0,
-                        y: 0.0,
-                    },
-                    Point {
-                        x: 1.0,
-                        y: 1.0,
-                    },
-                ],
-            },
-            blue: Curve {
-                points: [
-                    Point {
-                        x: 0.0,
-                        y: 0.0,
-                    },
-                    Point {
-                        x: 1.0,
-                        y: 1.0,
-                    },
-                ],
-            },
-        },
-        spectrogram: Spectrogram {
-            hue: [
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ],
-            saturation: [
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ],
-            luma: [
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ],
-        },
-        saturation: SaturationCurve {
-            points: [
-                Point {
-                    x: 0.0,
-                    y: 0.5,
-                },
-                Point {
-                    x: 0.25,
-                    y: 0.5,
-                },
-                Point {
-                    x: 0.5,
-                    y: 0.5,
-                },
-                Point {
-                    x: 0.75,
-                    y: 0.5,
-                },
-                Point {
-                    x: 1.0,
-                    y: 0.5,
-                },
-            ],
-        },
-        vignette: Vignette {
-            stops: 0.0,
-        },
-        secret_sauce: 0.0,
     },
     texture: Texture {
         amount: 0.0,

@@ -1,44 +1,9 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
-// store, the scrolled pane, the Scanner's sliders.
-import { Icons, Slider, SliderFill, Section, Scroller, Button, ButtonSize, Space } from "../ds/ds.slint";
+// store, the scrolled pane.
+import { Icons, Slider, Section, Scroller, Button, ButtonSize, Space } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
-import { PanelState, Lab } from "state.slint";
-
-export component LabBlock inherits Section {
-    modified: Lab.modified[self.block];
-    reset(b) => { Lab.reset-group(b); }
-}
-
-// A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects,
-// each resting at its zero step; its use site tells which way its − and + keys move.
-export component LabSlider inherits Slider {
-    in property <int> index;
-    stepped: true;
-    fill: SliderFill.bipolar;
-    value: Lab.steps[root.index];
-    lowest: Lab.lows[root.index];
-    highest: Lab.highs[root.index];
-    rest: (0 - self.lowest) / max(1, self.highest - self.lowest);
-    readout: Lab.readouts[root.index];
-    value-text: self.readout;
-    step-reads: Lab.step-reads[root.index];
-    held(on) => { Lab.hold(on); }
-    step(f, by) => {
-        if (root.index < 5) {
-            Lab.press(root.index, by);
-        } else {
-            Lab.step-effect(root.index - 5, by);
-        }
-    }
-    reset => {
-        if (root.index < 5) {
-            Lab.clear(root.index);
-        } else {
-            Lab.clear-effect(root.index - 5);
-        }
-    }
-}
+import { PanelState } from "state.slint";
 
 export component StoreSlider inherits Slider {
     rest: Store.rests[self.field];

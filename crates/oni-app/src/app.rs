@@ -43,7 +43,6 @@ mod filter_menu;
 mod gallery_view;
 mod phone_link;
 mod settings_sheet;
-mod frontier_look;
 mod actions;
 mod keys;
 mod gestures;
@@ -87,7 +86,6 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 
 mod board;
 mod folds;
-mod lab;
 mod loupe;
 mod masks;
 mod navigator;

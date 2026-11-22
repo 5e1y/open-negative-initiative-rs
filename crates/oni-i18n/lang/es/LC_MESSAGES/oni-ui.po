@@ -62,10 +62,6 @@ msgid "Smaller Brush"
 msgstr "Pincel más pequeño"
 
 #: crates/oni-ui/ui/app.slint
-msgid "Scanner Emulator"
-msgstr "Emulador de escáner"
-
-#: crates/oni-ui/ui/app.slint
 msgid "Labels"
 msgstr "Etiquetas"
 
@@ -355,10 +351,6 @@ msgstr "Antes"
 msgid "After"
 msgstr "Después"
 
-#: crates/oni-ui/ui/ds/keypad.slint
-msgid "REMEASURE ROLL"
-msgstr "VOLVER A MEDIR"
-
 #: crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint
 msgid "DONE"
 msgstr "OK"
@@ -463,7 +455,7 @@ msgstr "The Lens DB"
 msgid "THE LENS DB"
 msgstr "THE LENS DB"
 
-#: crates/oni-ui/ui/ds/tldb.slint crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/ds/tldb.slint
 msgid "ONI"
 msgstr "ONI"
 
@@ -490,14 +482,6 @@ msgstr "Polvo"
 #: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/toolbar.slint
 msgid "Compare"
 msgstr "Comparar"
-
-#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/toolbar.slint
-msgid "Pro"
-msgstr "Pro"
-
-#: crates/oni-ui/ui/ds/welcome_clarity.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
-msgid "Scanner"
-msgstr "Escáner"
 
 #: crates/oni-ui/ui/ds/welcome_dust.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/toolbar.slint
 msgid "Leave De-dust"
@@ -646,16 +630,8 @@ msgid "A slider moved on the whole roll keeps each frame's own balance"
 msgstr "Un deslizador movido en todo el rollo conserva el balance propio de cada fotograma"
 
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
-msgid "The Scanner face no longer reads zero while Pro values act"
-msgstr "La cara Escáner ya no marca cero mientras actúan valores Pro"
-
-#: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "Undo keeps its history when you go to another frame"
 msgstr "Deshacer conserva su historial al pasar a otro fotograma"
-
-#: crates/oni-ui/ui/ds/welcome_fixes.slint
-msgid "Switching face is no longer an undo step"
-msgstr "Cambiar de cara ya no es un paso que deshacer"
 
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "A slider held while the photo changes no longer writes on the new one"
@@ -684,10 +660,6 @@ msgstr "Salir del editor libera su memoria"
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "Undo in a text field undoes the typing, not the photo"
 msgstr "Deshacer en un campo deshace lo escrito, no la foto"
-
-#: crates/oni-ui/ui/ds/welcome_fixes.slint
-msgid "Frames edited together stay on one face"
-msgstr "Los fotogramas editados juntos se quedan en una misma cara"
 
 #: crates/oni-ui/ui/ds/welcome_fixes.slint
 msgid "The view sharpens as soon as a zoom stops"
@@ -1438,14 +1410,6 @@ msgid "Keys 1, 2 and 3 now give gold, silver and bronze."
 msgstr "Las teclas 1, 2 y 3 ahora dan oro, plata y bronce."
 
 #: crates/oni-ui/ui/help.slint
-msgid "The Scanner face shows its keypad"
-msgstr "La cara Escáner muestra su teclado"
-
-#: crates/oni-ui/ui/help.slint
-msgid "No more Auto White Balance under it: it shows what its keypad reads."
-msgstr "Sin balance automático: muestra lo que marca su teclado."
-
-#: crates/oni-ui/ui/help.slint
 msgid "Website"
 msgstr "Sitio web"
 
@@ -1777,7 +1741,7 @@ msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
 msgid "New Project"
 msgstr "Nuevo proyecto"
 
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint crates/oni-ui/ui/settings.slint
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/menus.slint
 msgid "Export…"
 msgstr "Exportar…"
 
@@ -1997,105 +1961,13 @@ msgstr "Negros verdaderos"
 msgid "The black picked in Prepare the Roll printed on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Off, that black prints where the paper lays it at rest, a hair above its own black. Lighting never lifts it; only Black point moves it."
 msgstr "El negro elegido en Preparar el rollo llevado al negro puro, el blanco del papel conservado y los tonos intermedios estirados de forma regular, como se muestra una copia en una pantalla. Desactivado, ese negro se imprime donde el papel lo deja en reposo, apenas por encima de su propio negro. Luz nunca lo eleva; solo Punto negro lo mueve."
 
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "Scanner: a minilab's density and colour, in steps"
-msgstr "Escáner: densidad y color de un minilab, por pasos"
-
-#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
-msgid "Pro: every setting by hand, the place to start"
-msgstr "Pro: cada ajuste a mano, por donde empezar"
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "This photo was edited on the former Scanner face and keeps its print as that face laid it: the machine's look over ONI's print, or on a paper its keys alone, with the keypad's D, C, M, Y and TEMP read below. Off, the photo prints as the sliders above say, and the legacy print is kept to be laid again; a photo never edited there has none."
+msgstr "Esta foto se editó en la antigua cara Escáner y conserva su copia tal como esa cara la ponía: el aspecto de la máquina sobre la copia de ONI, o sobre un papel solo sus teclas, con los D, C, M, Y y TEMP del teclado que se leen abajo. Desactivada, la foto se imprime como dicen los controles de arriba, y la copia heredada se guarda para volver a ponerla; una foto nunca editada allí no tiene ninguna."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Machine"
-msgstr "Máquina"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, the photo's negative under ONI's own look, or the Frontier, the same negative under the minilab's look. The keypad and the effects act on either.\n\nThe Source tab, the film and its effects act on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, el negativo de la foto con el aspecto propio de ONI, o la Frontier, el mismo negativo con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Origen, la película y sus efectos actúan en ambas caras; el Balance de blancos automático, la Luz, el Color y los Efectos de Pro siguen siendo solo de Pro."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The machine the Scanner face prints with: ONI, the roll's conversion under ONI's own look, or the Frontier, the same conversion under the minilab's look. The keypad and the effects act on either.\n\nThe Roll tab acts on both faces; Pro's Auto White Balance, Lighting, Colour and Effects stay Pro's own."
-msgstr "La máquina con la que imprime la cara Escáner: ONI, la conversión del rollo con el aspecto propio de ONI, o la Frontier, la misma conversión con el aspecto del minilab. El teclado y los efectos actúan en ambas.\n\nLa pestaña Rollo actúa en ambas caras; el Balance de blancos automático, la Luz, el Color y los Efectos de Pro siguen siendo solo de Pro."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Frontier"
-msgstr "Frontier"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Density"
-msgstr "Densidad"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D, a minilab's density key: + prints the photo lighter and − darker, a point and a half a press, the screen above counting the points."
-msgstr "D, la tecla de densidad de un minilab: + imprime la foto más clara y − más oscura, un punto y medio por pulsación, y la pantalla de arriba cuenta los puntos."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D"
-msgstr "D"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −: toward dark, by {}"
-msgstr "D −: hacia oscuro, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light, by {}"
-msgstr "D +: hacia claro, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C, M and Y, a minilab's colour keys: + moves the print toward cyan, magenta or yellow and − toward red, green or blue, a point and a half a press, the screen above counting the points."
-msgstr "C, M e Y, las teclas de color de un minilab: + lleva la copia hacia el cian, el magenta o el amarillo y − hacia el rojo, el verde o el azul, un punto y medio por pulsación, y la pantalla de arriba cuenta los puntos."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C"
-msgstr "C"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C −: toward red, by {}"
-msgstr "C −: hacia rojo, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C +: toward cyan, by {}"
-msgstr "C +: hacia cian, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M"
-msgstr "M"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M −: toward green, by {}"
-msgstr "M −: hacia verde, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M +: toward magenta, by {}"
-msgstr "M +: hacia magenta, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y"
-msgstr "Y"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y −: toward blue, by {}"
-msgstr "Y −: hacia azul, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y +: toward yellow, by {}"
-msgstr "Y +: hacia amarillo, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Look"
-msgstr "Aspecto"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP lays the machine's warm or cool look over the print, a little more at each step; at zero the print stays as the keys above set it."
-msgstr "TEMP aplica el aspecto cálido o frío de la máquina sobre la copia, un poco más con cada paso; en cero, la copia queda como la fijaron las teclas de arriba."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature −: toward cool, by {}"
-msgstr "Temperatura −: hacia frío, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Temperature +: toward warm, by {}"
-msgstr "Temperatura +: hacia cálido, en {}"
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with the filters. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nC, M and Y are an enlarger's cyan, magenta and yellow filters in CC, each taking its own band of light, thirty CC a stop: more C prints redder, more M greener, more Y bluer. The least stays at none, as on an enlarger, and none changes how light the photograph is. Settings shows them as Temperature and Tint instead, the same values.\n\nSaturation makes every colour stronger or greyer at once."
+msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras, y la lleva hacia el gris con los filtros. La intensidad del balance de blancos automático es la parte de esa corrección que asumen: cada foto conserva su propia corrección, la proporción es la del rollo.\n\nC, M e Y son los filtros cian, magenta y amarillo de una ampliadora en CC, cada uno reteniendo su propia banda de luz, treinta CC por paso: más C imprime más rojo, más M más verde, más Y más azul. El menor queda en cero, como en una ampliadora, y ninguno cambia la luminosidad de la fotografía. Los Ajustes los muestran en cambio como Temperatura y Matiz, los mismos valores.\n\nLa saturación hace todos los colores más intensos o más grises a la vez."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once."
@@ -2128,6 +2000,18 @@ msgstr "Intensidad del balance de blancos automático"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Shared by the {} photos of this roll."
 msgstr "Común a las {} fotos de este rollo."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C"
+msgstr "C"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M"
+msgstr "M"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y"
+msgstr "Y"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "More Color Settings"
@@ -2230,10 +2114,6 @@ msgid "Film Effects"
 msgstr "Efectos de película"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before the machine prints it, as on the film."
-msgstr "Grano pone una textura de película sobre la escena, sus granos formados enteros a toda intensidad, más contrastados con Grano, más gruesos con Tamaño del grano, dispuesta de nuevo en cada foto; se queda en la foto al recortarla, girarla o ampliarla. Un grano grueso absorbe en sus grumos el detalle más fino que un grano, y lo deja nítido entre ellos.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha, Sensibilidad de la halación hace brillar también una luz más débil, o solo la más viva.\n\nAmbos actúan sobre la escena antes de que la máquina la imprima, como en la película."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain lays a film-like texture over the scene, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
 msgstr "Grano pone una textura de película sobre la escena, sus granos formados enteros a toda intensidad, más contrastados con Grano, más gruesos con Tamaño del grano, dispuesta de nuevo en cada foto; se queda en la foto al recortarla, girarla o ampliarla. Un grano grueso absorbe en sus grumos el detalle más fino que un grano, y lo deja nítido entre ellos.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha, Sensibilidad de la halación hace brillar también una luz más débil, o solo la más viva.\n\nAmbos actúan sobre la escena antes de Luz y Color, como en la película."
 
@@ -2256,34 +2136,6 @@ msgstr "Tamaño de la halación"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Halation sensitivity"
 msgstr "Sensibilidad de la halación"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast bends the print into an S about a middle grey, its ends held.\n\nVignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle."
-msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos.\n\nViñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara.\n\nChrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −: toward softer, by {}"
-msgstr "Contrast −: hacia más suave, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +: toward harder, by {}"
-msgstr "Contrast +: hacia más duro, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −: toward lighter corners, by {}"
-msgstr "Viñeta −: hacia esquinas más claras, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +: toward darker corners, by {}"
-msgstr "Viñeta +: hacia esquinas más oscuras, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −: toward less, by {}"
-msgstr "Chrome −: hacia menos, en {}"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +: toward more, by {}"
-msgstr "Chrome +: hacia más, en {}"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
@@ -2809,17 +2661,9 @@ msgstr "Separación de tintes"
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
 msgstr "Desactivado en una hoja de contactos: sus fotogramas son copias reducidas. Los ajustes se conservan para cuando una fotografía los reciba."
 
-#: crates/oni-app/src/app/prepare/trace.rs crates/oni-ui/ui/panel/state.slint
-msgid "FRAME --/--"
-msgstr "FOTOGRAMA --/--"
-
 #: crates/oni-ui/ui/panel.slint
 msgid "Drag the frame's corners or edges on the photo to crop it, or move it with the arrow keys and its right or bottom edge with {} and an arrow, ten times as far with Shift. Escape or Cancel puts the photo back as Crop found it; Return or DONE keeps the crop."
 msgstr "Arrastra las esquinas o los bordes del marco sobre la foto para recortarla, o muévelo con las flechas y su borde derecho o inferior con {} y una flecha, diez veces más lejos con Mayús. Esc o Cancelar devuelve la foto tal como la encontró el recorte; Retorno u OK conserva el recorte."
-
-#: crates/oni-ui/ui/panel.slint
-msgid "This roll was prepared before the scanner kept its median: prepare it again, or the scanner centres on a guess."
-msgstr "Este rollo se preparó antes de que el escáner guardara su mediana: vuelve a prepararlo, o el escáner se centrará en una estimación."
 
 #: crates/oni-ui/ui/panel.slint
 msgid "Source"
@@ -2856,6 +2700,10 @@ msgstr "Tipo de película"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
 msgstr "Digitalizado con"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Scanner"
+msgstr "Escáner"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "DSLR Scan"
@@ -3058,6 +2906,22 @@ msgid "Stripes over the colours this screen cannot show."
 msgstr "Rayas sobre los colores que esta pantalla no puede mostrar."
 
 #: crates/oni-ui/ui/settings.slint
+msgid "Colour Filtration"
+msgstr "Filtrado del color"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Temperature and Tint"
+msgstr "Temperatura y Matiz"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "C, M and Y"
+msgstr "C, M e Y"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "How the Colour block shows each photo's filters: as Temperature and Tint, or as an enlarger's cyan, magenta and yellow in CC, a stop thirty CC, the least at none. Either writes the same values: switching moves no photo."
+msgstr "Cómo muestra el bloque Color los filtros de cada foto: como Temperatura y Matiz, o como el cian, magenta y amarillo de una ampliadora en CC, treinta CC por paso, el menor en cero. Ambos escriben los mismos valores: cambiar no mueve ninguna foto."
+
+#: crates/oni-ui/ui/settings.slint
 msgid "RAW Files"
 msgstr "Archivos RAW"
 
@@ -3068,26 +2932,6 @@ msgstr "Decodificar los archivos RAW a resolución completa"
 #: crates/oni-ui/ui/settings.slint
 msgid "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50%. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."
 msgstr "Desactivado, un RAW se lee a la mitad de su tamaño, de 3 a 5 veces más rápido, y se ve así con cualquier zoom. Activado, se lee entero, para el grano más fino por encima del 50 %. Detalles, Eliminar polvo y todas las exportaciones leen siempre el RAW completo. Se aplica a la siguiente foto que se abra."
-
-#: crates/oni-ui/ui/settings.slint
-msgid "Frontier Look"
-msgstr "Aspecto Frontier"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "Table in use"
-msgstr "Tabla en uso"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "Measured"
-msgstr "Medida"
-
-#: crates/oni-ui/ui/settings.slint
-msgid "A colour table laid over ONI's conversion, in sRGB. Export it as a .cube file, edit it in any app that opens one, then use the file: each save shows at once, until Reset returns to the measured table."
-msgstr "Una tabla de colores sobre la conversión de ONI, en sRGB. Expórtala como archivo .cube, edítala en cualquier app que lo abra y usa el archivo: cada vez que lo guardas, el cambio se ve al instante, hasta que Restablecer vuelve a la tabla medida."
-
-#: crates/oni-ui/ui/settings.slint
-msgid "Use a File…"
-msgstr "Usar un archivo…"
 
 #: crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
 msgid "Phone Remote"
@@ -3186,12 +3030,8 @@ msgid "Select All ({})"
 msgstr "Seleccionar todo ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Reset the Scanner settings ({})"
-msgstr "Restablecer los ajustes Scanner ({})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Reset the Pro settings ({})"
-msgstr "Restablecer los ajustes Pro ({})"
+msgid "Reset the settings ({})"
+msgstr "Restablecer los ajustes ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Trash"
@@ -3697,30 +3537,6 @@ msgstr "Elige perfiles ICC, o el zip en el que los distribuye un fabricante de p
 msgid "Where should the {count} files be written?"
 msgstr "¿Dónde se deben guardar los {count} archivos?"
 
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "Export the Frontier look"
-msgstr "Exportar el aspecto Frontier"
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "Use a Frontier look"
-msgstr "Usar un aspecto Frontier"
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "The Frontier look could not be read again: {e}. The measured table is used."
-msgstr "No se pudo volver a leer el aspecto Frontier: {e}. Se usa la tabla medida."
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "The look could not be written: {e}"
-msgstr "No se pudo escribir el aspecto: {e}"
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "This file cannot be the Frontier look: {e}"
-msgstr "Este archivo no puede ser el aspecto Frontier: {e}"
-
-#: crates/oni-app/src/app/frontier_look.rs
-msgid "The Frontier look's last save cannot be read: {e}"
-msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
-
 #: crates/oni-app/src/app/gestures/busy.rs
 msgid "It stopped halfway: read the folder again to see where each file is."
 msgstr "Se detuvo a medias: vuelve a leer la carpeta para ver dónde está cada archivo."
@@ -3854,40 +3670,20 @@ msgid "The welcome cannot be marked seen: {error}"
 msgstr "No se puede marcar la bienvenida como vista: {error}"
 
 #: crates/oni-app/src/app/help.rs
-msgid "New"
-msgstr "Nuevo"
-
-#: crates/oni-app/src/app/help.rs
-msgid "Two machines: the Frontier as measured, and ONI's own, Pro's conversion with ONI's look. A photo converted before keeps the Frontier."
-msgstr "Dos máquinas: la Frontier tal como se midió y la propia de ONI, la conversión de Pro con el aspecto de ONI. Una foto convertida antes conserva la Frontier."
-
-#: crates/oni-app/src/app/help.rs
 msgid "Updated"
 msgstr "Actualizado"
-
-#: crates/oni-app/src/app/help.rs
-msgid "A simpler Scanner, after your feedback: three blocks that fold, D, C, M and Y on half steps, W now TEMP. The S look and CMY CANCEL are gone."
-msgstr "Un Escáner más sencillo, gracias a tus comentarios: tres bloques plegables, D, C, M e Y en medios pasos y W, que ahora es TEMP. El aspecto S y CMY CANCEL desaparecen."
-
-#: crates/oni-app/src/app/help.rs
-msgid "Contrast, Vignette and Chrome are five keys each, read on the machine's screen."
-msgstr "Contraste, Viñeta y Chrome tienen cinco teclas cada uno, que se leen en la pantalla de la máquina."
-
-#: crates/oni-app/src/app/help.rs
-msgid "Curves, the Colour Mixer and the Saturation Curve now act on the Scanner face too, after the machine's render."
-msgstr "Las Curvas, la Mezcla de color y la Curva de saturación actúan ahora también en la cara Escáner, después del render de la máquina."
 
 #: crates/oni-app/src/app/help.rs
 msgid "Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays."
 msgstr "Sombras y Luces llegan a ±0.50, con la curva aún subiendo en los extremos. La exposición automática desaparece; el balance de blancos automático se queda."
 
 #: crates/oni-app/src/app/help.rs
+msgid "New"
+msgstr "Nuevo"
+
+#: crates/oni-app/src/app/help.rs
 msgid "ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips."
 msgstr "ProPhoto RGB, el espacio más amplio, en TIFF de 16 bits: conserva los colores que Adobe RGB recorta."
-
-#: crates/oni-app/src/app/lab.rs crates/oni-app/src/app/prepare/trace.rs
-msgid "FRAME {at}/{count}"
-msgstr "FOTOGRAMA {at}/{count}"
 
 #: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/prepare/flat_masks.rs
 msgid "No Mask Set"
@@ -4902,6 +4698,14 @@ msgid "ROLL"
 msgstr "ROLLO"
 
 #: crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME --/--"
+msgstr "FOTOGRAMA --/--"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME {at}/{count}"
+msgstr "FOTOGRAMA {at}/{count}"
+
+#: crates/oni-app/src/app/prepare/trace.rs
 msgid "ROLL · {n} FRAME"
 msgid_plural "ROLL · {n} FRAMES"
 msgstr[0] "ROLLO · {n} FOTOGRAMA"
@@ -5036,12 +4840,28 @@ msgid "Generic C-41"
 msgstr "C-41 genérico"
 
 #: crates/oni-app/src/app/roll_tab.rs
+msgid "Scanner keys (legacy)"
+msgstr "Teclas del Escáner (heredadas)"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "Scanner ONI look (legacy)"
+msgstr "Aspecto ONI del Escáner (heredado)"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "Scanner Frontier look (legacy)"
+msgstr "Aspecto Frontier del Escáner (heredado)"
+
+#: crates/oni-app/src/app/roll_tab.rs
 msgid "Missing mask"
 msgstr "Falta la máscara"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "Enlarger filtration: C {c}, M {m}, Y {y}"
 msgstr "Filtrado de la ampliadora: C {c}, M {m}, Y {y}"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "D {d} · C {c} · M {m} · Y {y} · TEMP {w}"
+msgstr "D {d} · C {c} · M {m} · Y {y} · TEMP {w}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "R {red} · G {green} · B {blue}"
@@ -5692,10 +5512,6 @@ msgstr "vacío"
 #: crates/oni-core/src/preset_parameters.rs
 msgid "{list} and {last}"
 msgstr "{list} y {last}"
-
-#: crates/oni-core/src/preset_parameters.rs
-msgid "Scanner Keypad"
-msgstr "Teclado del escáner"
 
 #: crates/oni-core/src/preset_parameters.rs
 msgid "Colour (Temperature, Tint)"

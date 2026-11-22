@@ -43,6 +43,7 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     let link = Arc::new(Mutex::new(Link::new(host.clone())));
     {
         let mut link = link.lock().unwrap();
+        link.sliders = Box::new(Exposure);
         link.frame = Some((9, 38));
         link.refresh(&store.lock().unwrap());
     }
@@ -61,6 +62,7 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &Identity::generate(), &code, "Phone")
         .await
         .unwrap();
+    // The keypad finds no field of the one face: its presses land nowhere, the walk is handed on.
     remote.press(Command::Step { letter: Letter::D, by: 2 });
     remote.press(Command::Step { letter: Letter::C, by: -1 });
     remote.press(Command::StepEffect { effect: Effect::Vignette, by: 3 });
@@ -68,26 +70,21 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     remote.press(Command::Walk { by: 1 });
     let mut display = remote.display();
     let shown = until(&mut display, |d| d.state.applied == 5).await;
-
-    let (d, c) = (start.scanner.d as i8, start.scanner.c as i8);
-    assert_eq!((shown.state.clicks.d, shown.state.clicks.c), (d + 2, c - 1));
-    assert!((shown.state.vignette - 0.3).abs() < 1e-6);
-    assert_eq!((shown.state.machine, shown.state.frame), (Machine::Frontier, Some((9, 38))));
-    assert!(shown.state.can_undo);
+    assert_eq!((shown.state.clicks, shown.state.machine, shown.state.frame), (oni_link::Clicks::default(), Machine::Oni, Some((9, 38))));
+    assert!((shown.state.vignette - start.vignette.stops).abs() < 1e-6 && !shown.state.can_undo);
     {
         let store = store.lock().unwrap();
-        assert_eq!((store.settings().scanner.d, store.settings().scanner.c), (start.scanner.d + 2, start.scanner.c - 1));
-        assert_eq!(store.settings().scanner_machine, oni_settings::ScannerMachine::Frontier);
+        assert_eq!(store.settings(), &start, "nothing of the frame moved");
         assert_eq!(shown.state.revision, store.revision(), "the screen is the store's, not the prediction");
     }
     assert_eq!(*walks.lock().unwrap(), vec![1]);
 
-    // Twin: the phone's undo takes every press back, and the screen follows the store there.
-    for _ in 0..4 {
-        remote.press(Command::Undo);
-    }
-    let back = until(&mut display, |d| d.state.applied == 9).await;
-    assert_eq!((back.state.clicks.d, back.state.clicks.c), (d, c));
+    // Twin: a panel slider from the same phone lands, and its undo takes it back.
+    remote.press(Command::StepParam { param: Param::Exposure, by: 3 });
+    until(&mut display, |d| d.state.applied == 6).await;
+    assert_ne!(store.lock().unwrap().settings(), &start);
+    remote.press(Command::Undo);
+    until(&mut display, |d| d.state.applied == 7).await;
     let store = store.lock().unwrap();
     assert_eq!(store.settings(), &start);
     assert!(!store.can_undo());
@@ -115,7 +112,7 @@ impl oni_app::link::Sliders for Exposure {
 }
 
 #[tokio::test]
-async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
+async fn the_phone_steps_a_slider_the_host_resolves_and_its_face_key_lands_nowhere() {
     let dir = std::env::temp_dir().join(format!("oni-core-link-panel-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let frame = dir.join("frame.tif");
@@ -133,16 +130,8 @@ async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
     link.sliders = Box::new(Exposure);
     link.refresh(&store.lock().unwrap());
     let link = Arc::new(Mutex::new(link));
-    let faces = Arc::new(Mutex::new(Vec::new()));
-    let (l, s, f) = (link.clone(), store.clone(), faces.clone());
-    tokio::spawn(async move {
-        drive(events, &l, &s, |out| {
-            if let Outward::Face(face) = out {
-                f.lock().unwrap().push(face);
-            }
-        })
-        .await
-    });
+    let (l, s) = (link.clone(), store.clone());
+    tokio::spawn(async move { drive(events, &l, &s, |_| {}).await });
 
     let code = PairingCode::parse(&host.open_pairing(vec![addr]).to_uri()).unwrap();
     let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &Identity::generate(), &code, "Phone")
@@ -152,24 +141,18 @@ async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
     let first = until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
     assert_eq!((first.state.panel.face, first.state.panel.rows[0].value.clone()), (Face::Pro, ev(start)));
 
-    remote.press(Command::Face(Face::Scanner));
+    // The phone's Scanner key finds no face to turn: the panel stays Pro's, the slider still lands.
     remote.press(Command::Face(Face::Scanner));
     remote.press(Command::StepParam { param: Param::Exposure, by: 3 });
-    let shown = until(&mut display, |d| d.state.applied == 3).await;
-    assert_eq!((shown.state.panel.face, shown.state.panel.rows[0].value.clone()), (Face::Scanner, ev(start + 0.3)));
-    {
-        let store = store.lock().unwrap();
-        assert_eq!(store.settings().face, oni_settings::Face::Scanner, "the face is the sidecar's field");
-        assert!((store.settings().print.exposure - start - 0.3).abs() < 1e-6);
-    }
-    // Twin: the face already on is not switched again, so the host remembers one switch.
-    assert_eq!(*faces.lock().unwrap(), vec![Face::Scanner]);
+    let shown = until(&mut display, |d| d.state.applied == 2).await;
+    assert_eq!((shown.state.panel.face, shown.state.panel.rows[0].value.clone()), (Face::Pro, ev(start + 0.3)));
+    assert!((store.lock().unwrap().settings().print.exposure - start - 0.3).abs() < 1e-6);
 
     remote.press(Command::Undo);
-    let undone = until(&mut display, |d| d.state.applied == 4).await;
+    let undone = until(&mut display, |d| d.state.applied == 3).await;
     assert_eq!(undone.state.panel.rows[0].value, ev(start), "the step was one undo step");
     remote.press(Command::ResetParam { param: Param::Texture });
-    let ignored = until(&mut display, |d| d.state.applied == 5).await;
+    let ignored = until(&mut display, |d| d.state.applied == 4).await;
     assert_eq!(ignored.state.revision, undone.state.revision, "a slider the host does not resolve moves nothing");
     let _ = std::fs::remove_dir_all(&dir);
 }

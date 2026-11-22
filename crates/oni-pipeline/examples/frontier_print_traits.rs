@@ -1,11 +1,11 @@
 //! `frontier_print_traits`: a scene's blues and skins on the virtual Portra 800, printed at rest on the Frontier paper,
-//! today's Scanner-face Frontier, Portra Endura and ONI's print: Oklab hue and chroma against the scene's.
+//! the Frontier legacy print, Portra Endura and ONI's print: Oklab hue and chroma against the scene's.
 
 use oni_pipeline::look_lab::measure::{lch, linear_rgb, oklab, turn};
 use oni_pipeline::{conversion, film, frontier_look, scanner};
 use oni_render::{ScannerEncode, ScannerOutput, cpu};
-use oni_settings::modes::ScannerMachine;
-use oni_settings::{ConversionMode, Face, PaperStock, PipelineSettings, VirtualStock};
+use oni_settings::migrate::one_face::look_entry_exposure;
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
 type V3 = [f64; 3];
 
@@ -29,7 +29,7 @@ fn printed(colour: V3, s: &PipelineSettings) -> V3 {
         cpu::color_matrix([colour[0] as f32, colour[1] as f32, colour[2] as f32, 1.0], &m)
     });
     let negative = cpu::virtual_negative(lit, &stock.kernel, &stock.table);
-    let machine = scanner::on_oni_machine(s);
+    let machine = scanner::on_legacy_print(s);
     let k = conversion::stage47(machine.as_ref().unwrap_or(s));
     let mut out = cpu::stage47(negative, &k);
     if machine.is_some() && s.paper().is_none() {
@@ -44,10 +44,11 @@ fn prints() -> Vec<(&'static str, PipelineSettings)> {
     let digital = PipelineSettings::rest(ConversionMode::Digital, true);
     let on = |p: Option<PaperStock>| PipelineSettings { print_paper: p, ..digital.clone() };
     let mut today = on(None);
-    (today.face, today.scanner_machine) = (Face::Scanner, ScannerMachine::Frontier);
+    today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
+    today.print.exposure = look_entry_exposure(today.mode);
     vec![
         ("Frontier SP-3000 paper", on(Some(PaperStock::FujifilmFrontierSp3000))),
-        ("today's Scanner-face Frontier", today),
+        ("Frontier legacy print", today),
         ("Portra Endura", on(Some(PaperStock::KodakPortraEndura))),
         ("ONI's print", on(None)),
     ]

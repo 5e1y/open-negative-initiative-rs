@@ -9,10 +9,8 @@ use oni_pipeline::stages::{self, DetailColumns, DetailRows};
 use oni_pipeline::scanner;
 use oni_render::cpu;
 use oni_render::{Curves, Detail, FlatField, LUT_SIZE, SaturationCurve, ScannerDensity, ScannerOutput, Spectrogram, Stage47, Texture};
-use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::tone::Print;
-use oni_settings::scanner::ScannerClicks;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 /// Every mix of the values a kernel bends at: below zero, zero, a denormal's neighbour, one, past one.
 fn edges() -> (u32, u32, Vec<V4>) {
@@ -201,9 +199,7 @@ fn saturation_texture_and_scanner_reach_their_other_branches() {
     judge("texture, negative gain", &out, &three(Texture { gain }), &three(Texture { gain: gain + 0.05 }));
 
     let mut frontier = PipelineSettings::rest(ConversionMode::Negative, true);
-    frontier.face = Face::Scanner;
-    frontier.scanner_machine = ScannerMachine::Frontier;
-    frontier.scanner = ScannerClicks::new(1, -2, 3, 0, 0);
+    frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: -2, m: 3, ..LegacyPrint::default() });
     let slide = ScannerDensity { invert: 0.0, ..scanner::fitted_density(&frontier) };
     let film = transmittances((w * h) as usize);
     let source = g.upload(w, h, &film).unwrap();

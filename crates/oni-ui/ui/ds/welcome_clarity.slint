@@ -1,11 +1,10 @@
 // The welcome's first scene: a close framing of the window's bar under the 1.5 photograph. The canvas
 // tools' former keycaps turn into the bar's worded keys, then a hand lays Crop on, then De-dust; it plays
 // once, rests on its last state, and starts again.
-import { Colour, Space, ButtonStyle, ShellStyle, CardStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, ButtonStyle, ShellStyle, CardStyle } from "theme.slint";
 import { ToolStyle } from "theme_views.slint";
 import { Icons } from "icons.slint";
 import { Button, Look } from "controls.slint";
-import { Tabs } from "tabs.slint";
 import { ModeRing } from "modes.slint";
 
 export global ClarityBeats {
@@ -253,14 +252,6 @@ export component ClarityScene inherits Rectangle {
             flat: root.flat(3); slide: root.slide(3); worded: root.worded(3);
             old-x: root.plate-x + ButtonStyle.cap-height; new-x: row.x + k3.x; new-width: k3.width;
             look: root.look(row.x + k3.x, k3.width, -1);
-        }
-        // Pro and Scanner after the tools, cut by the stage's edge, moving with the last key.
-        Tabs {
-            x: root.lone-x + ButtonStyle.cap-height + ShellStyle.bar-gap + (row.x + row.preferred-width - root.lone-x - ButtonStyle.cap-height) * root.slide(3);
-            y: (ShellStyle.bar-height - self.height) / 2;
-            width: ScannerStyle.face-bar;
-            tabs: [@tr("Pro"), @tr("Scanner")];
-            selected: 0;
         }
         if root.crop: ModeRing {
             x: 0;

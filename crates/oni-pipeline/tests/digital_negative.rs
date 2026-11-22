@@ -3,7 +3,7 @@
 
 use oni_pipeline::{conversion, scanner};
 use oni_settings::blocks::separation;
-use oni_settings::{ConversionMode, Face, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, LegacyPrint, PipelineSettings, VirtualStock};
 
 fn digital() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
@@ -54,16 +54,15 @@ fn a_digital_photos_scene_is_lit_at_its_stocks_white_and_a_films_never() {
 }
 
 #[test]
-fn a_digital_photos_scanner_keys_move_its_negatives_gains_as_a_negatives_do() {
+fn a_digital_photos_legacy_keys_move_its_negatives_gains_as_a_negatives_do() {
     let mut s = digital();
-    s.face = Face::Scanner;
-    s.scanner.c = 2;
-    let machine = scanner::on_oni_machine(&s).expect("the Scanner face prints on the machine");
+    s.legacy_print = Some(LegacyPrint { c: 2, ..LegacyPrint::default() });
+    let laid = scanner::on_legacy_print(&s).expect("the legacy print lays its keys");
     let keys = scanner::gain_stops(&s);
-    let negative = scanner::on_oni_machine(&PipelineSettings { mode: ConversionMode::Negative, ..s.clone() }).unwrap();
-    assert_eq!(machine.gains.stops, std::array::from_fn(|c| s.gains.stops[c] + keys[c]));
-    assert_eq!(machine.gains.stops, negative.gains.stops);
+    let negative = scanner::on_legacy_print(&PipelineSettings { mode: ConversionMode::Negative, ..s.clone() }).unwrap();
+    assert_eq!(laid.gains.stops, std::array::from_fn(|c| s.gains.stops[c] + keys[c]));
+    assert_eq!(laid.gains.stops, negative.gains.stops);
     assert!(keys[0] != 0.0);
-    // Twin: Pro's face prints on no machine.
-    assert!(scanner::on_oni_machine(&PipelineSettings { face: Face::Pro, ..s }).is_none());
+    // Twin: a photo with no legacy print lays none.
+    assert!(scanner::on_legacy_print(&PipelineSettings { legacy_print: None, ..s }).is_none());
 }

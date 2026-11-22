@@ -5,7 +5,7 @@ use super::draft::RollDraft;
 use crate::date::Date;
 use crate::document::{AutoBalance, Document, FORMAT, Failure, Original, VERSION};
 use crate::modes::Medal;
-use crate::scanner::ScannerClicks;
+use super::one_face::{Clicks, Scanner};
 use crate::settings::PipelineSettings;
 use crate::sidecar::ExifLine;
 use crate::tolerant::{self, Object};
@@ -34,15 +34,16 @@ struct Stored {
     settings: PipelineSettings,
 }
 
-/// `completed`, the chain's document over the resting one, in this format's types, and the roll
-/// draft it kept.
-pub(super) fn reshaped(completed: Value) -> Result<(Document, Option<RollDraft>), Failure> {
+/// `completed`, the chain's document over the resting one, in this format's types, the roll draft it kept and the
+/// Scanner face's fields, the keypad in steps.
+pub(super) fn reshaped(completed: Value) -> Result<(Document, Option<RollDraft>, Scanner), Failure> {
     let Value::Object(mut map) = completed else { return Err(Failure::NotAnObject) };
     if let Some(Value::Object(settings)) = map.get_mut("settings")
         && let Some(Value::Object(clicks)) = settings.get_mut("scanner")
     {
         in_steps(clicks);
     }
+    let scanner = Scanner::read(map.get("settings"))?;
     let text = |key: &str| map.get(key).and_then(Value::as_str).map(str::to_owned);
     let original = text("originalPrint").map(|print| Original { print, tail: text("originalTail") });
     // A balance kept that does not read whole is read again rather than guessed.
@@ -59,7 +60,7 @@ pub(super) fn reshaped(completed: Value) -> Result<(Document, Option<RollDraft>)
         auto_balance,
         settings: stored.settings,
     };
-    Ok((document, stored.roll_draft))
+    Ok((document, stored.roll_draft, scanner))
 }
 
 /// Each letter's whole units and its half step, read as the keypad of format 21 read them, in steps.
@@ -69,7 +70,7 @@ fn in_steps(clicks: &mut Object) {
     for key in LETTERS {
         let half = halves.and_then(|h| tolerant::integer(h.get(key))).unwrap_or(0).clamp(-1, 1);
         let whole = tolerant::integer(clicks.get(key)).unwrap_or(0);
-        clicks.insert(key.into(), Value::from(whole.saturating_mul(ScannerClicks::PER_UNIT).saturating_add(half)));
+        clicks.insert(key.into(), Value::from(whole.saturating_mul(Clicks::PER_UNIT).saturating_add(half)));
     }
 }
 
@@ -86,21 +87,6 @@ pub fn as_stored(document: &Document, version: i64) -> Value {
     if let Some(Value::Object(mut original)) = map.remove("original") {
         map.extend(original.remove("print").map(|p| ("originalPrint".to_owned(), p)));
         map.extend(original.remove("tail").map(|t| ("originalTail".to_owned(), t)));
-    }
-    if let Some(Value::Object(settings)) = map.get_mut("settings")
-        && let Some(Value::Object(clicks)) = settings.get_mut("scanner")
-    {
-        let mut halves = Object::new();
-        for key in LETTERS {
-            let steps = tolerant::integer(clicks.get(key)).unwrap_or(0);
-            clicks.insert(key.into(), Value::from(steps / ScannerClicks::PER_UNIT));
-            if steps % ScannerClicks::PER_UNIT != 0 {
-                halves.insert(key.into(), Value::from(steps % ScannerClicks::PER_UNIT));
-            }
-        }
-        if !halves.is_empty() {
-            clicks.insert("halves".into(), Value::Object(halves));
-        }
     }
     value
 }
@@ -122,8 +108,8 @@ mod tests {
         assert_eq!(steps(json!({"d": -3, "halves": {"d": -1}}))["d"], -7);
         // A half past one step is held to one; a count past the range lands on its stop as it is read.
         assert_eq!(steps(json!({"c": 1, "halves": {"c": 5}}))["c"], 3);
-        let past: ScannerClicks = serde_json::from_value(steps(json!({"d": 30, "halves": {"d": 1}}))).unwrap();
-        assert_eq!(past.d, ScannerClicks::DENSITY_RANGE.1);
+        let past: Clicks = serde_json::from_value(steps(json!({"d": 30, "halves": {"d": 1}}))).unwrap();
+        assert_eq!(past.d, Clicks::DENSITY_RANGE.1);
         // Twin: a reshape that drops the half step reads 6 where the keypad stood on 7.
         let dropped = |stored: Value| {
             let Value::Object(mut clicks) = stored else { unreachable!() };
@@ -136,13 +122,13 @@ mod tests {
     #[test]
     fn a_document_stored_the_old_way_reads_back_whole() {
         let mut document = Document::of(PipelineSettings::default());
-        document.settings.scanner = ScannerClicks::new(7, -3, 2, 0, 1);
         document.original = Some(Original { print: "1-2-3".into(), tail: Some("4".into()) });
         document.exif_line.lens = Some("50mm".into());
-        let stored = as_stored(&document, 21);
-        assert_eq!(stored["settings"]["scanner"], json!({"d": 3, "c": -1, "m": 1, "y": 0, "w": 0, "halves": {"d": 1, "c": -1, "w": 1}}));
+        let mut stored = as_stored(&document, 21);
         assert_eq!((&stored["originalPrint"], &stored["exif"]["lens"]), (&json!("1-2-3"), &json!("50mm")));
+        stored["settings"]["scanner"] = json!({"d": 3, "c": -1, "m": 1, "y": 0, "w": 0, "halves": {"d": 1, "c": -1, "w": 1}});
         let completed = super::super::chain::merged(&stored, super::super::chain::neutral_document());
-        assert_eq!(reshaped(completed).unwrap().0, document);
+        let (read, _, scanner) = reshaped(completed).unwrap();
+        assert_eq!((read, scanner.clicks), (document, Clicks::new(7, -3, 2, 0, 1)));
     }
 }

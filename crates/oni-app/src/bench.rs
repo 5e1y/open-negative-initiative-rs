@@ -19,8 +19,8 @@
 //! `ONI_BENCH=prepare` prepares the open frame's roll from the gallery: the steps by the panel's key,
 //! the base clicked on its scan, a frame flagged on the sheet, the measure landed, then undone.
 //! `ONI_BENCH=grid` opens up to 36 frames together and drags Exposure over them.
-//! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure (`ONI_FOLDED=scanner`: the Scanner
-//! keypad on Frontier) with the panel shown, then folded, counting each step rendered and drawn.
+//! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure with the panel shown, then folded, counting
+//! each step rendered and drawn.
 //! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
 
 use crate::Store;

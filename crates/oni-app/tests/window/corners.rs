@@ -2,7 +2,7 @@
 //! those a folded column squares; the readout's glass, the scanner's screen too, runs edge to edge from the
 //! card's top, square.
 
-use oni_app::{Act, Bar, DS};
+use oni_app::{Act, DS};
 use slint::{Color, ComponentHandle};
 
 use crate::common;
@@ -46,13 +46,6 @@ pub(crate) fn the_canvas_squares_its_corner_against_a_readout_run_edge_to_edge()
     assert_ne!(pixel(&rig, panel, BAR), ground, "the readout's corner beside the canvas is the glass's");
     assert_ne!(pixel(&rig, 1279.0, BAR), ground, "the readout runs to the window's edge");
     assert!(!inside(ROUND, 0.0) && inside(ROUND, 2.0), "a round would take the corner pixel");
-
-    // The scanner's screen in the readout's place, as square.
-    w.global::<Bar>().invoke_act(Act::FaceScanner);
-    rig.settle();
-    assert_ne!(pixel(&rig, panel, BAR), ground, "the screen's glass at its very corner");
-    w.global::<Bar>().invoke_act(Act::FacePro);
-    rig.settle();
 
     // Twin: the panel folded squares the canvas's right side, and the same probe sees it.
     ctl.act(Act::HidePanel);

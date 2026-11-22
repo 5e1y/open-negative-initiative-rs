@@ -1,11 +1,34 @@
 //! The keys no menu item carries: Escape out of the innermost thing open, Return on a sheet, the
-//! Lab's, the rows', the grid's and the walk keys.
+//! rows', the grid's and the walk keys.
 
 use super::*;
 
+const SPACE: &str = " ";
+const UP: &str = "\u{F700}";
+const DOWN: &str = "\u{F701}";
+const LEFT: &str = "\u{F702}";
+const RIGHT: &str = "\u{F703}";
+
 impl Ctl {
+    /// `walkKeys`: beside a photo a bare arrow walks the open frame's group and a bare Space, outside De-dust, goes to
+    /// the gallery, once while held.
+    fn walk_key(self: &Rc<Self>, text: &str, bare: bool, repeat: bool) -> bool {
+        let Some(w) = self.window() else { return false };
+        if w.global::<App>().get_gallery() {
+            return false;
+        }
+        let dedust = w.global::<PanelState>().get_tab() == crate::PanelTab::Dedust;
+        match text {
+            UP | LEFT if bare => self.walk(-1),
+            DOWN | RIGHT if bare => self.walk(1),
+            SPACE if bare && !repeat && !dedust => self.act(crate::Act::ToggleMode),
+            _ => return false,
+        }
+        true
+    }
+
     /// The keys no menu item carries, ⌘= apart from the menu's ⌘+ included: Escape leaves the innermost
-    /// sheet, typing, help card, surface or mode open, Return answers a sheet, then the Lab's and the walk keys.
+    /// sheet, typing, help card, surface or mode open, Return answers a sheet, then the walk keys.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, option: bool, bare: bool, repeat: bool) -> bool {
         // Tab and ⇧Tab are Slint's walk through the controls, a sheet's included: no branch takes them.
         if matches!(text, "\t" | "\u{19}") {
@@ -92,7 +115,7 @@ impl Ctl {
             return !repeat && self.escape();
         }
         // Beside the crop the arrows move its frame rather than walk the photos.
-        if self.nudge_frame(text, command, shift, option, bare) || self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
+        if self.nudge_frame(text, command, shift, option, bare) || self.walk_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
             return true;
         }
         if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {
