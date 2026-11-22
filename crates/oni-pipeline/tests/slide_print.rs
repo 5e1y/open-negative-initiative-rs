@@ -259,7 +259,10 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             let toward = |q: V4| p.toward_light(p.pick_log, p.exposed(amounts(q)));
             let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
             let lift = brightness * std::f32::consts::LOG10_2;
-            println!("{label}, Brightness {brightness:+}: densest {:.4} over the pick (reach {:.4}) moved {:.5}; grey {:.4} moved {:.5}", toward(densest), p.reach, moved_by(densest), toward(grey), moved_by(grey));
+            println!(
+                "{label}, Brightness {brightness:+}: densest {:.4} over the pick (reach {:.4}) moved {:.5}; grey {:.4} moved {:.5}",
+                toward(densest), p.reach, moved_by(densest), toward(grey), moved_by(grey)
+            );
             // The slide's densest read lies in the copy's toe, a quarter of the reach over its base: under a quarter of the lift.
             assert!(toward(densest) < 0.3 * p.reach && moved_by(densest).abs() <= 0.25 * lift.abs(), "{label}, {brightness}");
             // Its grey moves the whole lift once past the fade, as Exposure moves it; within it, part of it, the same way.
