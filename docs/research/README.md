@@ -20,3 +20,4 @@ tagged where the note says so: measured on our files, said by a cited source, or
 - [positive-paper/radiance_iii.py](positive-paper/radiance_iii.py): Kodak Ektachrome Radiance III, the reversal paper
   slides once printed on, read off Kodak's data sheet E-1766 (its points in `radiance_iii.csv`) into a profile; it held
   about half a slide's chroma and left the app for a virtual internegative (tasks #3300 to #3302).
+- [cmy-window.md](cmy-window.md): Prepare the Roll's per-channel window read on the dye layers and laid before the paper, measured against the enlarger rest and the black anchor on roll #8 and three papers; the design proposed (task #3570).

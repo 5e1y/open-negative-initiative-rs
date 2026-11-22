@@ -12681,5 +12681,13 @@
     "title": "The tone response example in a folder of its own, on Exposure's rest at 0",
     "status": "done",
     "detail": "Merged after exposure-zero, examples/tone_response.rs still called Print::resting_exposure and ran 462 lines with two lines past 200 characters. Its pixel helpers move to tone_response/image.rs, the two format strings break with a continuation, and its rest Lighting takes Exposure 0, the rest of every pipe."
+  },
+  {
+    "id": 3570,
+    "type": "research",
+    "title": "Prepare's window read on the dye layers (CMY) before the paper: measured on prototypes, a design for the owner",
+    "status": "done",
+    "detail": "docs/research/cmy-window.md. Throwaway prototypes laid a per-layer window in the dye separation's tone table between the separation and the paper (roll #8 DSC_6440/6452/6464 and the digital ramp, Royal Digital, Endura Premier, the Frontier; examples/tone_response). Prepare's ends on the paper's ends cut mid contrast 8 to 35 % and squeeze the highlights (L* at +2: 77 against 89); the bare film on the paper's black in exposure adds 49 % of mid contrast; the window at the enlarger's rest (each layer read about its grey, bare film, grey and densest on one mean amount, the paper's neutral axis) keeps today's tone within 1 L* and cuts the grey ramp's channel spread 4 to 17 times on a scan. Design: levels on a dye-amount axis measured by Prepare's unchanged roll code with the separation on, laid after Lighting in the Negative's per-layer table, rest at the enlarger's grade; the enlarger a constant per paper, the black anchor Print lift's presentation step; migration by separation::toned's carriage, edited photos on a legacy flag. Nothing of the app changed.",
+    "outcome": "Awaits the owner's decision; images kept outside the repository (roll #8 not publishable)."
   }
 ]
