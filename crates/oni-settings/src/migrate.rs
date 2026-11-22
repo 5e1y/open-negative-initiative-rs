@@ -33,7 +33,7 @@ pub mod measured_dyes;
 pub mod one_face;
 pub mod own_film;
 pub mod paper;
-pub mod paper_blacks;
+pub mod print_lift;
 pub mod strokes;
 pub mod unmixed;
 
@@ -237,7 +237,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
         earlier(stored, version, mosaic).map_err(Refusal::Unreadable)?
     };
     converted.document.settings = slide_paper::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    let former = paper_blacks::Former::read(raw.as_ref()).map_err(Refusal::Unreadable)?;
+    let former = print_lift::Former::read(raw.as_ref()).map_err(Refusal::Unreadable)?;
     let mut held = None;
     let settings = std::mem::take(&mut converted.document.settings);
     let settings = match matrices::caught_up(version, settings.clone(), facts.matrix) {
@@ -267,7 +267,7 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
-    converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
+    converted.document.settings = print_lift::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
     converted.document.settings = unmixed::caught_up(version, datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref()));
     converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
     let line = std::mem::take(&mut converted.document.exif_line);
@@ -291,16 +291,16 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let raw = stored.get("settings").cloned().unwrap_or(Value::Object(Object::new()));
         let settings: PipelineSettings = serde_json::from_value(raw.clone()).map_err(|e| Refusal::Unreadable(Failure::Malformed(e.to_string())))?;
         let scanner = one_face::Scanner::read(Some(&raw)).map_err(Refusal::Unreadable)?;
-        let former = paper_blacks::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
+        let former = print_lift::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let settings = slide_paper::caught_up(version, settings, Some(&raw));
         let settings = grain_size::unfiled(version, settings, Some(&raw));
         let settings = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw))));
         let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
-        let settings = unmixed::caught_up(version, datasheet::caught_up(version, paper_blacks::caught_up(version, settings, &former), Some(&raw)));
+        let settings = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, settings, &former), Some(&raw)));
         let settings = departure::caught_up(version, lighting_on_negative::caught_up(version, settings));
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
-    let former = paper_blacks::Former::read(stored.get("settings")).map_err(Refusal::Unreadable)?;
+    let former = print_lift::Former::read(stored.get("settings")).map_err(Refusal::Unreadable)?;
     let raw = stored.get("settings").cloned();
     let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = slide_paper::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
@@ -309,7 +309,7 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
     converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
     converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
-    converted.document.settings = paper_blacks::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
+    converted.document.settings = print_lift::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
     converted.document.settings = unmixed::caught_up(version, datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref()));
     converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
     Ok(converted)

@@ -93,7 +93,7 @@ fn a_slide_on_a_paper_prints_through_its_internegative_and_off_it_renders_on_oni
 }
 
 #[test]
-fn the_slides_grey_prints_a_plain_raws_neutral_its_densest_read_near_black_its_bare_film_near_the_papers_white() {
+fn the_slides_grey_prints_a_plain_raws_neutral_its_densest_read_near_black_its_bare_film_near_white() {
     for (label, s) in slides() {
         let (bare, densest) = paper::film_ends(&s);
         let [grey, dense, clear] = [paper::reference_grey(&s), densest, bare].map(|d| printed(&s, scan_at(&s, d)));
@@ -103,9 +103,10 @@ fn the_slides_grey_prints_a_plain_raws_neutral_its_densest_read_near_black_its_b
         assert!((0..3).all(|c| (grey[c] / *GREY_PRINT - 1.0).abs() < 1.5e-2), "{label}: {grey:?}");
         // The densest read lies on the film's toe, a breath over its base, the print's black: under L* 3.
         assert!(luma(dense) > 0.0 && luma(dense) < 3.3e-3, "{label}: {dense:?}");
-        assert!(luma(clear) > 0.6 * luma(white) && luma(clear) <= luma(white) + 1e-6, "{label}: {clear:?}");
-        // Paper blacks: the base where the enlarger's rest prints it, the densest read lighter, under the grey.
-        let held = printed(&moved(&s, |t| t.print.paper_blacks = true), scan_at(&s, densest));
+        // The bare film near the paper's white, which lies on pure white.
+        assert!(luma(clear) > 0.6 && luma(clear) <= 1.0 + 1e-6 && luma(white) < 0.9, "{label}: {clear:?}");
+        // Print lift: the base where the enlarger's rest prints it, the densest read lighter, under the grey.
+        let held = printed(&moved(&s, |t| t.print.print_lift = true), scan_at(&s, densest));
         assert!(luma(held) > luma(dense) + 1e-3 && luma(held) < 0.1 * luma(grey), "{label}: {held:?}");
         // Twin: the scan's light taken through the gains alone, its grey not brought to the film's, prints another grey.
         let copy = internegative::copy(&s).unwrap();
@@ -205,7 +206,8 @@ fn lighting_moves_a_slide_on_its_paper_as_it_moves_a_negative() {
     let r = printed(&red, grey_scan);
     let (f0, f1) = (conversion::printing(&s).unwrap().filtration, conversion::printing(&red).unwrap().filtration);
     println!("red: {r:?} from {rest:?}, filtration {f1:?} from {f0:?}");
-    assert!(r[0] / r[1] > 1.1 * rest[0] / rest[1] && (luma(r) / luma(rest) - 1.0).abs() < 0.04 && f0 == f1, "{r:?}");
+    // About: 4.4 % lighter, the paper's white laid on pure white stretching the move.
+    assert!(r[0] / r[1] > 1.1 * rest[0] / rest[1] && (luma(r) / luma(rest) - 1.0).abs() < 0.05 && f0 == f1, "{r:?}");
     // Contrast: the grade turns about the grey, a denser tone darker.
     let hard = moved(&s, |t| t.print.contrast = 0.5);
     assert!((luma(printed(&hard, grey_scan)) / luma(rest) - 1.0).abs() < 0.01 && luma(printed(&hard, near)) < 0.9 * luma(printed(&s, near)));

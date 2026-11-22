@@ -3,7 +3,7 @@
 //! references; then each file as its pipe prints it, with its L* spread. A digital photo's ramp is a scene; a scan's is
 //! its stock's mean layer read through the frame's own measure; a slide's needs `SLIDE_CURVE` (JSON `x`, `m`: density
 //! above its least along log exposure from its grey). `STOCK`, `DYES`, `PAPER` (a key, `oni` or `neutral`), `BLACKS`
-//! (Paper blacks on) and `DERIVED` (a digital photo on its stock's derived reference) override.
+//! (Print lift on) and `DERIVED` (a digital photo on its stock's derived reference) override.
 
 mod curve;
 mod patches;
@@ -120,7 +120,7 @@ fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
 
 fn rest_lighting(s: &PipelineSettings) -> PipelineSettings {
     let mut s = s.clone();
-    s.print = Print { paper_blacks: std::env::var("BLACKS").is_ok(), ..Print::default() };
+    s.print = Print { print_lift: std::env::var("BLACKS").is_ok(), ..Print::default() };
     s
 }
 
@@ -153,7 +153,7 @@ fn overridden(mut s: PipelineSettings) -> PipelineSettings {
         s.dye_set = serde_json::from_str(&key(&dyes)).expect("a dye set's key");
     }
     if std::env::var("BLACKS").is_ok() {
-        s.print.paper_blacks = true;
+        s.print.print_lift = true;
     }
     match std::env::var("PAPER").as_deref() {
         Ok("oni") => s.print_paper = None,

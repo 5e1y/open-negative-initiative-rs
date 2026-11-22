@@ -12721,5 +12721,29 @@
     "status": "done",
     "detail": "Measured on the profiles, nothing changed. 25 Fujifilm sheets print their curves to +1.5..+1.7 log over the grey (Pro 800 +1.27), still rising at 0.4-0.85 a log, and the converter holds them flat past it: a hard clip 5 to 5.6 stops over the grey, under Royal Digital's own (+3 stops) but reached on ONI's print, the neutral paper and with Exposure on the negative. Portra 800 Push 2's chart starts at -4.85 stops; at -4 its layers stand 0.015-0.025 over D-min at a slope of 0.05-0.09 (Portra 800 0.09 and 0.29-0.37), the push's real loss of shadow speed.",
     "outcome": "Options for the owner: Fujifilm, keep the hold (honest, a clip only far over), extend each layer at its last slope to a ceiling (inferred, unbounded guess), or graft a measured Kodak shoulder matched in slope (inferred, labelled so in the profile); Push 2, keep (the sheet's physics), or re-check that Kodak plots its push curves on the normal exposure axis, the one thing that could double the 0.6 log offset."
+  },
+  {
+    "id": 3590,
+    "type": "feature",
+    "title": "Print lift: off lays a paper's white on pure white with its black, the rest showing the grey where a plain RAW does",
+    "status": "done",
+    "detail": "The paper kernel (CPU reference and WGSL) lays the paper's white on its own anchor beside the pick's: off, the pick on 0 and the white on 1 by one straight line in light, to the bit; on, both the paper's own, every bit as before. The enlarger's rest is solved on the print as shown, through its ends, so the reference grey stays at a plain RAW's grey, neutral, once the white is lifted; its time is bracketed on the print before its ends, where pure ends read the pick and the grey both at the paper's white. The neutral paper's ends are pure already (its white 1.0, its pick laid on black whatever the switch), so Print lift means nothing there and stays hidden, as on ONI's print.",
+    "outcome": "Measured on Royal Digital at the former rest, the grey moves +0.28 to +0.29 stop laid in light and +0.24 to +0.25 in density (the Frontier, its white at 0.98: +0.016 and +0.010), so neither keeps it: the rest takes the ends instead, the time 0.13 stop longer on a digital photo and its filtration 1.6 M and 0.6 Y lighter, the paper base's tint no longer seen; the line in light, the black's own form, keeps ratios. Checks: kernel pure ends and twins, pipeline pick 0 and white 1 under every Lighting slider, grey within 2e-6 of a plain RAW's, Print lift's ends the paper's, the GPU on every branch; the format 61 and Lighting-at-rest folds re-derived (the neutral paper and an off slide among their pipes)."
+  },
+  {
+    "id": 3591,
+    "type": "feature",
+    "title": "Sidecar format 67: Paper blacks stored as printLift, every older document read as it printed or with its white lifted",
+    "status": "done",
+    "detail": "The field `print.paper_blacks` becomes `print.print_lift`, stored `printLift`. A document of format 53 to 66 reads its `paperBlacks` as Print lift: on keeps its render to the bit, off gains the white end (the owner's request); before 53 True blacks is read as before. The corpus's newer file moves to 68.",
+    "outcome": "Read-only scan of the owner's 1833 sidecars (all format 66): 699 print on a paper, 134 with Paper blacks on (Scans) keep their render, 565 with it off (404 Scans, 161 Photos Digitales) gain the white on pure white; 1134 on ONI's print and none on the neutral paper are untouched."
+  },
+  {
+    "id": 3592,
+    "type": "interface",
+    "title": "The Paper section's switch is Print lift, its help in two sentences, translated",
+    "status": "done",
+    "detail": "Label Print lift; help: on, the print keeps the paper's own ends; off, its black lies on pure black and its white on pure white, the grey kept. French 'Noirs et blancs du papier', Spanish 'Negros y blancos del papel': 'lift' has no settled photographic word in either language outside grading software, and the former labels already named what the switch keeps. The window check toggles it both ways, each a render and the second its own histogram.",
+    "outcome": "Window check, catalogue check and lint green."
   }
 ]

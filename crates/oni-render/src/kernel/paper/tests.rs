@@ -32,6 +32,7 @@ fn narrow() -> Paper {
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
+        white_anchor: [0.8, 0.85, 0.9],
         luma: false,
     }
 }
@@ -81,6 +82,25 @@ fn the_ends_lay_the_pick_on_its_anchor_and_hold_the_white() {
     // Twin: at rest the print's light passes as it is, the pick its own.
     assert_eq!(k.ended(k.pick), k.pick);
     assert_eq!(k.ended(mid), mid);
+}
+
+#[test]
+fn pure_ends_lay_the_pick_on_black_and_the_papers_white_on_white_exactly() {
+    let k = narrow();
+    let pure = Paper { anchor: [0.0; 3], white_anchor: [1.0; 3], ..k };
+    assert_eq!((pure.ended(k.pick), pure.ended(k.white)), ([0.0; 3], [1.0; 3]), "to the bit");
+    // Between them a straight line in light, the middle of the range at one half, rising throughout.
+    let mid = map(k.pick, |c, b| b + 0.5 * (k.white[c] - b));
+    assert!(pure.ended(mid).iter().all(|v| (v - 0.5).abs() < 1e-6), "{:?}", pure.ended(mid));
+    let tones: Vec<V3> = (0..=200).map(|i| pure.ended(map(k.white, |_, w| w * 1.1 * i as f32 / 200.0))).collect();
+    assert!(tones.windows(2).all(|w| (0..3).all(|c| w[1][c] >= w[0][c])), "monotone");
+    // Twin: the white held, as on the pick's anchor alone, misses pure white by the paper's own base.
+    let held = Paper { anchor: [0.0; 3], ..k };
+    assert!(held.ended(k.white).iter().all(|v| *v < 0.95), "{:?}", held.ended(k.white));
+    // Twin: the white laid alone, the pick on its own anchor, leaves the black where it was.
+    let white_only = Paper { white_anchor: [1.0; 3], ..k };
+    let (black, white) = (white_only.ended(k.pick), white_only.ended(k.white));
+    assert!((0..3).all(|c| (black[c] - k.pick[c]).abs() < 1e-7 && (white[c] - 1.0).abs() < 1e-6), "{black:?} {white:?}");
 }
 
 /// The slopes of `f` over `n` steps of x, from under the pick to past the end of the largest darkening's fade.

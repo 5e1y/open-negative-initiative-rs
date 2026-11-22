@@ -154,7 +154,7 @@ impl Ctl {
         let p = me.clone();
         panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
         let p = me.clone();
-        panel.on_paper_blacks_toggled(move |on| p.write_settings(|s| s.print.paper_blacks = on));
+        panel.on_print_lift_toggled(move |on| p.write_settings(|s| s.print.print_lift = on));
         let p = me.clone();
         panel.on_legacy_toggled(move |on| {
             p.write_settings(|s| {
@@ -229,10 +229,10 @@ impl Ctl {
     }
 
     /// The Colour tab's print switches: Lighting's colour compensation, and the enlarger where one can print the photo,
-    /// Print on paper, the paper's name, the filtration it prints through and Paper blacks.
+    /// Print on paper, the paper's name, the filtration it prints through and Print lift.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
         panel.set_colour_compensation(settings.print.colour_compensation);
-        panel.set_paper_blacks(settings.print.paper_blacks);
+        panel.set_print_lift(settings.print.print_lift);
         panel.set_paper_shown(settings.takes_paper());
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);

@@ -1,98 +1,19 @@
-//! The paper's ends: whatever Lighting moves, the frame's pick prints on pure black, or where the enlarger's rest prints
-//! it with Paper blacks; the whites stay free, the points move the ends, Brightness holds the pick, barely moves the
-//! deep shadows and moves the mids as the enlarger's time does, the print continuous and monotone. Each verdict has a
-//! twin.
+//! The paper's ends: whatever Lighting moves, the frame's pick prints where the rest lays it, the whites stay free, the
+//! points move the ends, Brightness holds the pick, barely moves the deep shadows and moves the mids as the enlarger's
+//! time does, the print continuous and monotone; pure ends are `print_lift`'s. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
 mod frames;
+#[path = "paper/ends.rs"]
+mod ends;
 
-use common::V4;
+use ends::*;
 use frames::*;
 use oni_pipeline::{conversion, paper};
 use oni_pipeline::paper::BRIGHTNESS_REACH_LIGHT;
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu, fade};
-use oni_settings::tone::Print;
-use oni_settings::{PaperStock, PipelineSettings};
-
-fn frames() -> [(&'static str, PipelineSettings); 4] {
-    let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..prepared_negative() };
-    [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier)]
-}
-
-type Move = (&'static str, fn(&mut PipelineSettings));
-
-/// Every Lighting slider but the points, each at a visible travel either way.
-const SLIDERS: [Move; 22] = [
-    ("Exposure -1", |s| s.print.exposure -= 1.0),
-    ("Exposure +1", |s| s.print.exposure += 1.0),
-    ("Contrast -0.3", |s| s.print.contrast = -0.3),
-    ("Contrast +0.3", |s| s.print.contrast = 0.3),
-    ("Temperature -1", |s| s.print.set_filters(Print::TEMPERATURE_AXIS.map(|a| -a))),
-    ("Temperature +1", |s| s.print.set_filters(Print::TEMPERATURE_AXIS)),
-    ("Tint -1", |s| s.print.set_filters(Print::TINT_AXIS.map(|a| -a))),
-    ("Tint +1", |s| s.print.set_filters(Print::TINT_AXIS)),
-    ("red filter +0.3", |s| s.print.set_filters([0.3, 0.0, 0.0])),
-    ("Shadows -0.2", |s| s.print.shadows = -0.2),
-    ("Shadows +0.2", |s| s.print.shadows = 0.2),
-    ("Highlights -0.2", |s| s.print.highlights = -0.2),
-    ("Highlights +0.2", |s| s.print.highlights = 0.2),
-    ("channel contrast -0.2", |s| s.print.channel_contrast = [-0.2, 0.0, 0.2]),
-    ("channel contrast +0.2", |s| s.print.channel_contrast = [0.2, 0.0, -0.2]),
-    ("channel mids", |s| s.print.channel_mid = [0.2, -0.2, 0.0]),
-    ("Saturation -0.5", |s| s.density = -0.5),
-    ("Saturation +0.5", |s| s.density = 0.5),
-    ("Brightness -1", |s| s.print.brightness = -1.0),
-    ("Brightness +1", |s| s.print.brightness = 1.0),
-    ("Exposure +1, Contrast +0.3, Temperature +1", |s| {
-        (s.print.exposure, s.print.contrast) = (s.print.exposure + 1.0, 0.3);
-        s.print.set_filters(Print::TEMPERATURE_AXIS);
-    }),
-    ("Exposure -1, Saturation +0.5, Brightness +1", |s| (s.print.exposure, s.density, s.print.brightness) = (s.print.exposure - 1.0, 0.5, 1.0)),
-];
-
-fn moved(s: &PipelineSettings, f: impl Fn(&mut PipelineSettings)) -> PipelineSettings {
-    let mut t = s.clone();
-    f(&mut t);
-    t
-}
-
-fn paper_of(s: &PipelineSettings) -> Paper {
-    conversion::stage47(s).paper.expect("a paper")
-}
-
-/// The paper's print of `amounts` through Lighting on the negative, its tones included; the negative's range on each
-/// dye, the frame's densest read above its bare film.
-fn lit_shown(k: &Stage47, amounts: [f32; 3]) -> [f32; 3] {
-    k.paper.expect("a paper").shown(k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts))))
-}
-fn span_of(s: &PipelineSettings) -> [f32; 3] {
-    paper::anchors(s, conversion::stage47(s).dyes.as_ref())[1]
-}
-
-/// The frame's anchors printed on `k`: its pick, its densest read and its reference grey.
-fn printed_on(s: &PipelineSettings, k: &Stage47) -> [[f32; 3]; 3] {
-    anchor_scans(s).map(|q| rgb(cpu::stage47(q, k)))
-}
-
-/// The same print with no ends: the paper's light at its colour density, as before the pick was anchored.
-fn unanchored(k: Stage47) -> Stage47 {
-    Stage47 { paper: k.paper.map(|p| Paper { anchor: p.pick, brightness: 0.0, ..p }), ..k }
-}
-
-/// The paper's own Dmax as its print shows it, at its colour density.
-fn dmax(p: &Paper) -> [f32; 3] {
-    let v = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
-    p.coloured(if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v })
-}
-
-fn rgb(v: V4) -> [f32; 3] {
-    [v[0], v[1], v[2]]
-}
-
-fn worst(a: [f32; 3], b: [f32; 3]) -> f32 {
-    (0..3).map(|c| (a[c] - b[c]).abs()).fold(0.0, f32::max)
-}
+use oni_render::{Paper, Stage47, cpu, fade};
+use oni_settings::PipelineSettings;
 
 #[test]
 fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
@@ -111,28 +32,6 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
         // Twin: unanchored, the colour density lifts or sinks the pick; Lighting on the negative leaves the bare film at its fog.
         println!("{label}: {lifted} moves of {} lift the unanchored pick", SLIDERS.len());
         assert!(lifted == if label == "black and white" { 0 } else { 3 }, "{label}: {lifted}");
-    }
-}
-
-#[test]
-fn without_paper_blacks_the_pick_lies_on_pure_black_under_every_slider() {
-    for (label, s) in frames() {
-        let on = moved(&s, |t| t.print.paper_blacks = false);
-        let rest = printed_on(&s, &conversion::stage47(&on))[0];
-        println!("{label}: pure black lays the pick at {rest:?}");
-        assert!(rest.iter().all(|v| v.abs() < 1e-6), "{label}: {rest:?}");
-        for (name, f) in SLIDERS {
-            let pick = printed_on(&s, &conversion::stage47(&moved(&on, f)))[0];
-            assert!(pick.iter().all(|v| v.abs() < 1e-6), "{label}, {name}: {pick:?}");
-        }
-        // Twin: the paper's Dmax laid on black, its white kept, leaves the pick above it.
-        let p = paper_of(&s);
-        let (d, w) = (dmax(&p), p.white);
-        let printed = printed_on(&s, &unanchored(conversion::stage47(&s)))[0];
-        let on_dmax: [f32; 3] = std::array::from_fn(|c| w[c] * (printed[c] - d[c]) / (w[c] - d[c]));
-        println!("{label}: on the Dmax's black the pick would print at {on_dmax:?} (Dmax {d:?})");
-        // A hundred times the pick's own bound: Endura Premier lays a negative's bare film 9e-4 over its Dmax.
-        assert!(on_dmax.iter().any(|v| *v > 1e-4), "{label}: {on_dmax:?}");
     }
 }
 
@@ -214,11 +113,11 @@ fn brightnesss_reach_lies_where_the_neutral_prints_l_25_over_the_pick_whatever_l
             let light = on_black(&Paper { brightness: 0.0, ..p }, lit(low));
             assert!(p.reach > 0.0 && (light / BRIGHTNESS_REACH_LIGHT - 1.0).abs() < 1e-3, "{label}, {name}: reach {} at {light}", p.reach);
             // The anchor leaves the reach where it is: it is read on the print's own range.
-            assert_eq!(paper::ended(&p, pick, grey, [0.0; 3], 0.5).reach, p.reach, "{label}, {name}");
+            assert_eq!(paper::ended(&p, pick, grey, None, 0.5).reach, p.reach, "{label}, {name}");
         }
         let p = paper_of(&moved(&s, |u| u.print.brightness = 0.5));
         println!("{label}: the reach {:.3} of log exposure under the pick", p.reach);
-        // Twin: the reach's light read on the print as shown with Paper blacks, its pick on its anchor, lies elsewhere.
+        // Twin: the reach's light read on the print as shown with Print lift, its pick on its anchor, lies elsewhere.
         let (mut low, mut high) = (0.0f32, 8.0f32);
         for _ in 0..60 {
             let mid = 0.5 * (low + high);
@@ -234,8 +133,8 @@ fn brightnesss_reach_lies_where_the_neutral_prints_l_25_over_the_pick_whatever_l
 fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_exposure_does() {
     let (mut followed, mut deep_seen, mut greys) = (0, 0, 0);
     for (label, s) in frames() {
-        for (brightness, paper_blacks) in [(-4.0f32, true), (-1.0, true), (-0.5, false), (0.5, true), (1.0, false), (4.0, true)] {
-            let t = moved(&s, |u| (u.print.brightness, u.print.paper_blacks) = (brightness, paper_blacks));
+        for (brightness, print_lift) in [(-4.0f32, true), (-1.0, true), (-0.5, false), (0.5, true), (1.0, false), (4.0, true)] {
+            let t = moved(&s, |u| (u.print.brightness, u.print.print_lift) = (brightness, print_lift));
             let p = paper_of(&t);
             let at_rest = Paper { brightness: 0.0, ..p };
             // The enlarger's time, as many stops: Exposure's move on the print.
@@ -303,10 +202,10 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
                 followed += 1;
                 let (now, want) = (p.shown(a), exposure.shown(a));
                 assert!(worst(now, want) < 2e-5 * want.iter().copied().fold(0.0, f32::max) + 1e-7, "{label}, {brightness}: {now:?} {want:?}");
-                // Twin: Exposure at twice the stops misses wherever the print is not held at the paper's white or its
-                // black.
+                // Twin: Exposure at twice the stops misses wherever the print is not held where the paper's white
+                // lands or at its black.
                 let off = worst(now, twice.shown(a));
-                assert!(off > 1e-4 || worst(now, p.white) < 1e-3 || now[1] < 1e-3, "{label}, {brightness}: {off}");
+                assert!(off > 1e-4 || worst(now, p.white_anchor) < 1e-3 || now[1] < 1e-3, "{label}, {brightness}: {off}");
             }
         }
     }
@@ -346,12 +245,12 @@ fn the_points_still_move_the_ends() {
 fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
     let settings: [Move; 6] = [
         ("at rest", |_| {}),
-        ("pure black", |s| s.print.paper_blacks = false),
+        ("pure ends", |s| s.print.print_lift = false),
         ("Brightness -4", |s| s.print.brightness = -4.0),
-        ("Brightness +4, pure black", |s| (s.print.brightness, s.print.paper_blacks) = (4.0, false)),
+        ("Brightness +4, pure ends", |s| (s.print.brightness, s.print.print_lift) = (4.0, false)),
         ("Exposure +2, Brightness -1", |s| (s.print.exposure, s.print.brightness) = (s.print.exposure + 2.0, -1.0)),
-        ("Exposure -1, Contrast +0.3, pure black, Brightness +1", |s| {
-            (s.print.exposure, s.print.contrast, s.print.paper_blacks, s.print.brightness) = (s.print.exposure - 1.0, 0.3, false, 1.0);
+        ("Exposure -1, Contrast +0.3, pure ends, Brightness +1", |s| {
+            (s.print.exposure, s.print.contrast, s.print.print_lift, s.print.brightness) = (s.print.exposure - 1.0, 0.3, false, 1.0);
         }),
     ];
     for (label, s) in frames() {
