@@ -107,3 +107,6 @@ i-slint-renderer-femtovg = { path = "vendor/i-slint-renderer-femtovg" }
 # wgpu-hal 30.0.1 (MIT OR Apache-2.0): on the Mac a window's first frame owes nothing to AppKit's occlusion
 # state (`ONI:` comment in src/metal/surface.rs).
 wgpu-hal = { path = "vendor/wgpu-hal" }
+# wgpu-core 30.0.1 (MIT OR Apache-2.0): a poll's wait that ran out while another thread emptied the queue is a
+# timeout, not a panic (`ONI:` comment in src/device/resource.rs).
+wgpu-core = { path = "vendor/wgpu-core" }

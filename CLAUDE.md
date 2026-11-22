@@ -78,6 +78,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **wgpu-hal is vendored** (`vendor/wgpu-hal`, 30.0.1, `[patch.crates-io]`) for upstream's fix, in no release yet: a window's first
   frame owes nothing to AppKit's occlusion state. Without it Slint holds a window at alpha 0 until a frame wgpu refuses until that
   state says visible: where it never does, nothing shows and nothing is logged. The copy goes at the release that carries the fix.
+- **wgpu-core is vendored** (`vendor/wgpu-core`, 30.0.1, `[patch.crates-io]`) for upstream's fix gfx-rs/wgpu#9958, on trunk for wgpu 31
+  and in no wgpu 30 release (`ONI:` comment in `src/device/resource.rs`): a poll's wait that ran out while another thread emptied the queue
+  panicked on an assert, killing the render thread when the canvas waited on the GPU in slices as others submitted. The copy goes with wgpu 31.
 - **femtovg redraws the whole window at every frame**: the columns and the bar carry `cache-rendering-hint`, or a
   pan redraws every row of the tree. A gesture renders the view lighter, sharp once the hand rests (`SETTLE`).
 
