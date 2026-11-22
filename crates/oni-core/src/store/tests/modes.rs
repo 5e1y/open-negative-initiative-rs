@@ -3,7 +3,6 @@
 
 use super::*;
 use oni_settings::frame::RollReference;
-use oni_settings::tone::Print;
 
 /// RAWs named `names` in a fresh folder, `edit` laid on each sidecar by its name.
 fn frames(label: &str, names: &[&str], edit: impl Fn(&str, &mut PipelineSettings)) -> (EditorStore, std::path::PathBuf, Vec<String>) {
@@ -47,10 +46,10 @@ fn every_rest_follows_the_mode_and_a_placed_value_stays() {
     placed.levels.red.set_black(0.05);
     let carried = placed.carried(ConversionMode::Digital);
     assert_eq!((carried.print.exposure, carried.density_ceiling, carried.levels.red.black), (0.7, placed.density_ceiling, 0.05));
-    // Twin: the open frame's former rule, its exposure kept whatever it rested on, leaves +1.50 EV on a slide.
+    // Twin: a ceiling kept whatever it rested on leaves a slide off its rest.
     let negative = PipelineSettings::rest(ConversionMode::Negative, true);
-    let kept = PipelineSettings { print: negative.print, ..negative.carried(ConversionMode::Positive) };
-    assert!(!on_rest(&kept) && kept.print.exposure == Print::RESTING_EXPOSURE);
+    let kept = PipelineSettings { density_ceiling: negative.density_ceiling, ..negative.carried(ConversionMode::Positive) };
+    assert!(!on_rest(&kept) && kept.density_ceiling != PipelineSettings::rest(ConversionMode::Positive, true).density_ceiling);
 }
 
 #[test]
@@ -72,7 +71,7 @@ fn a_roll_turned_digital_from_its_open_frame_rests_every_frame_on_digital_in_one
     store.undo();
     store.flush();
     for p in [a, b] {
-        assert_eq!((read(p).mode, read(p).print.exposure), (ConversionMode::Negative, Print::RESTING_EXPOSURE), "one undo");
+        assert_eq!((read(p).mode, read(p).print.exposure), (ConversionMode::Negative, 0.0), "one undo");
     }
     assert_eq!(read(c).print.exposure, 0.7);
     let _ = std::fs::remove_dir_all(&dir);

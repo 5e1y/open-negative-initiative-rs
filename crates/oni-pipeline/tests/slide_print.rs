@@ -12,7 +12,6 @@ use oni_pipeline::film::{self, GREY};
 use oni_pipeline::{Pipeline, conversion, stages};
 use oni_render::{Paper, Stage47, cpu};
 use oni_settings::axis::density_axis;
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings};
 
 /// A slide at rest on the default paper.
@@ -80,11 +79,9 @@ fn a_slide_on_a_paper_prints_through_its_internegative_and_off_it_renders_on_oni
     assert_eq!((copy.settings.mode, copy.settings.film().map(|f| f.stock), copy.settings.print_paper), (ConversionMode::Digital, Some(STOCK), s.print_paper));
     assert_eq!(conversion::stage47(&s), conversion::stage47(&copy.settings));
     assert!(conversion::stage47(&s).paper.is_some() && conversion::printing(&s).is_some());
-    // Exposure keeps its distance from the rest, every other Lighting value its value.
+    // Lighting is the slide's own, Exposure's departure from its rest included.
     let lit = moved(&s, |t| (t.print.exposure, t.print.contrast) = (0.7, 0.2));
-    let copied = internegative::copy(&lit).unwrap().settings.print;
-    assert!((copied.exposure - Print::resting_exposure(ConversionMode::Digital) - 0.7).abs() < 1e-6);
-    assert_eq!(Print { exposure: 0.7, ..copied }, lit.print);
+    assert_eq!(internegative::copy(&lit).unwrap().settings.print, lit.print);
     // Off the paper, bypassed, a negative or a positive read as its own negative: no copy.
     let off = PipelineSettings { print_paper: None, ..s.clone() };
     assert!(internegative::copy(&off).is_none() && conversion::stage47(&off).paper.is_none() && conversion::stage47(&off).print_on == 1.0);

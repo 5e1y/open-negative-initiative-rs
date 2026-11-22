@@ -1,0 +1,199 @@
+//! Format 64 keeps every render: a sidecar of format 61 on every pipe, its Exposure at the former rest or off it, reads
+//! Exposure as its departure from the pipe's rest and prints to the bit as format 61 did, stage 4-7 on the CPU and the
+//! whole chain on the GPU. A negative at Exposure 0 prints its grey at a plain RAW's. Each verdict has a twin.
+
+mod common;
+#[path = "paper/frames.rs"]
+mod frames;
+
+use common::V4;
+use frames::*;
+use oni_graph::Graph;
+use oni_pipeline::{Inputs, Pipeline, Request, conversion, film, paper};
+use oni_render::cpu;
+use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
+use serde_json::Value;
+
+/// Format 61's Exposure at rest: a negative's 1.5, a slide's 0.
+fn former_rest(mode: ConversionMode) -> f32 {
+    if mode == ConversionMode::Positive { 0.0 } else { 1.5 }
+}
+
+fn onis(s: PipelineSettings) -> PipelineSettings {
+    PipelineSettings { print_paper: None, ..s }
+}
+
+fn slide() -> PipelineSettings {
+    let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
+    s.gains.stops = [0.3, 0.0, -0.4];
+    s
+}
+
+/// Every pipe Exposure reaches, as this build lays it before any Exposure.
+fn pipes() -> Vec<(&'static str, PipelineSettings)> {
+    let mut legacy = onis(prepared_negative());
+    legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
+    let mut contrasted = onis(prepared_negative());
+    contrasted.print.contrast = 0.2;
+    vec![
+        ("ONI's print, negative", onis(prepared_negative())),
+        ("ONI's print, negative, Contrast", contrasted),
+        ("ONI's print, legacy Frontier", legacy),
+        ("ONI's print, digital", onis(digital())),
+        ("ONI's print, black and white", onis(mono())),
+        ("ONI's print, slide", slide()),
+        ("paper, negative", prepared_negative()),
+        ("paper, digital", digital()),
+        ("paper, black and white", mono()),
+        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() }),
+        ("neutral paper", PipelineSettings { paperless: true, ..prepared_negative() }),
+        ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
+    ]
+}
+
+/// Each pipe as a sidecar of format 61 held it, its Exposure `by` stops off that format's rest, each a sum f32 holds
+/// exactly.
+fn stored() -> Vec<(String, Value)> {
+    let mut out = Vec::new();
+    for (label, s) in pipes() {
+        for by in [0.0f32, 0.5, -0.75] {
+            let mut value = serde_json::to_value(oni_settings::document::Document::of(s.clone())).unwrap();
+            value["version"] = 61.into();
+            value["settings"]["print"]["exposure"] = f64::from(former_rest(s.mode) + by).into();
+            out.push((format!("{label}, {by:+}"), value));
+        }
+    }
+    out
+}
+
+fn read(value: &Value) -> PipelineSettings {
+    oni_settings::migrate::document(&serde_json::to_vec(value).unwrap()).unwrap().document.settings
+}
+
+/// A scan noise and a virtual negative's scan.
+fn pixels() -> Vec<V4> {
+    let stock = film::stock(VirtualStock::KodakPortra800);
+    let mut pixels: Vec<V4> = common::noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    pixels.extend(common::noise(17, 13, 8, 0.0, 1.0));
+    pixels
+}
+
+fn fold(hash: &mut u64, px: &[V4]) {
+    for b in px.iter().flatten().flat_map(|v| v.to_bits().to_le_bytes()) {
+        *hash = (*hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3);
+    }
+}
+
+/// The bits of every stored pipe's stage 4-7 print of `pixels`, each read through `read`, folded by FNV-1a.
+fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
+    let pixels = pixels();
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for (_, value) in stored() {
+        let k = conversion::stage47(&read(&value));
+        fold(&mut hash, &pixels.iter().map(|p| cpu::stage47(*p, &k)).collect::<Vec<_>>());
+    }
+    hash
+}
+
+/// The fold of every pipe's print as format 61 rendered it, on the CPU and on the GPU (Metal on Apple silicon).
+const BEFORE_CPU: u64 = 0xf15f_37d3_6ec7_4912;
+const BEFORE_GPU: u64 = 0x3d44_ec8d_0b63_738b;
+
+#[test]
+fn every_stored_exposure_reads_as_its_departure() {
+    for (label, value) in stored() {
+        let mode = read(&value).mode;
+        let kept = value["settings"]["print"]["exposure"].as_f64().unwrap() as f32;
+        assert_eq!(read(&value).print.exposure, kept - former_rest(mode), "{label}");
+    }
+    // The old negative's rest reads 0, a slide's 0 stays.
+    let (negative, slide) = (&stored()[0].1, &stored()[15].1);
+    assert_eq!((negative["settings"]["print"]["exposure"].as_f64(), read(negative).print.exposure), (Some(1.5), 0.0));
+    assert_eq!((slide["settings"]["mode"].as_str(), read(slide).print.exposure), (Some("positive"), 0.0));
+    // Twin: a document of this format keeps the value it holds.
+    let mut current = negative.clone();
+    current["version"] = oni_settings::document::VERSION.into();
+    assert_eq!(read(&current).print.exposure, 1.5);
+}
+
+#[test]
+fn every_pipe_prints_as_format_61_did_on_the_cpu() {
+    let folded = cpu_bits(read);
+    println!("every stored pipe folds to {folded:#018x} on the CPU");
+    assert_eq!(folded, BEFORE_CPU);
+    // Twin: the same documents read as this format's, their Exposure taken whole, move.
+    let unmigrated = |v: &Value| {
+        let mut v = v.clone();
+        v["version"] = oni_settings::document::VERSION.into();
+        read(&v)
+    };
+    assert_ne!(cpu_bits(unmigrated), BEFORE_CPU);
+}
+
+/// The whole chain on the GPU, bit for bit, where the fold was drawn: Metal on Apple silicon.
+#[test]
+fn every_pipe_renders_whole_as_format_61_did_on_the_gpu() {
+    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        return println!("SKIPPED every_pipe_renders_whole_as_format_61_did_on_the_gpu: its bits are Metal's on Apple silicon");
+    }
+    let Ok(mut g) = Graph::new() else { return println!("SKIPPED every_pipe_renders_whole_as_format_61_did_on_the_gpu: no GPU") };
+    let pixels = pixels();
+    let source = g.upload(17, 26, &pixels).unwrap();
+    let mut render = |read: &dyn Fn(&Value) -> PipelineSettings| {
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+        for (_, value) in stored() {
+            let image = Pipeline::new().image(&mut g, &source, &read(&value), &Request::default(), &Inputs::default()).unwrap();
+            fold(&mut hash, &g.render(&image, image.extent(), None).unwrap());
+        }
+        hash
+    };
+    let folded = render(&read);
+    println!("every stored pipe folds to {folded:#018x} on the GPU");
+    assert_eq!(folded, BEFORE_GPU);
+    // Twin: a stop's tenth more on the first negative moves it.
+    let nudged = |v: &Value| {
+        let mut s = read(v);
+        if v == &stored()[0].1 {
+            s.print.exposure += 0.1;
+        }
+        s
+    };
+    assert_ne!(render(&nudged), BEFORE_GPU);
+}
+
+/// The reference grey's print on `s`, its luma.
+fn grey(s: &PipelineSettings) -> f32 {
+    let p = cpu::stage47(grey_scan(s), &conversion::stage47(s));
+    oni_render::LUMA.iter().zip(p).map(|(w, v)| w * v).sum()
+}
+
+#[test]
+fn a_negative_at_exposure_zero_prints_its_grey_at_a_plain_raws() {
+    let plain = *paper::GREY_PRINT;
+    for (label, s) in pipes().into_iter().filter(|(_, s)| s.mode == ConversionMode::Negative && s.legacy_print.is_none()) {
+        assert_eq!(s.print.exposure, 0.0, "{label}: Exposure rests at 0");
+        let at = grey(&s);
+        println!("{label}: the grey at Exposure 0 prints {at:.5}, a plain RAW's {plain:.5}");
+        assert!((at / plain).log2().abs() < 0.05, "{label}: {at} against {plain}");
+        // Twin: the former rest's 0, a stop and a half under, prints the grey far darker.
+        let under = PipelineSettings { print: oni_settings::tone::Print { exposure: -1.5, ..s.print }, ..s.clone() };
+        assert!((grey(&under) / plain).log2() < -0.5, "{label}: {} under the former rest", grey(&under));
+    }
+}
+
+/// Format 61 sent a slide's Exposure through its internegative on a negative's rest, 1.5 added then taken off again:
+/// where f32 holds that sum short, its print stood a rounding off the slide's own. Format 64 prints the slide's value.
+#[test]
+fn a_slide_through_its_internegative_prints_its_own_exposure() {
+    let s = PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() };
+    let print = |exposure: f32| {
+        let k = conversion::stage47(&PipelineSettings { print: oni_settings::tone::Print { exposure, ..s.print }, ..s.clone() });
+        pixels().iter().map(|p| cpu::stage47(*p, &k)).collect::<Vec<_>>()
+    };
+    let (own, former) = (0.6f32, (0.6f32 + 1.5) - 1.5);
+    let gap = common::error(&print(own), &print(former));
+    println!("a slide at +0.6 through its internegative: {gap:.1e} off format 61's print, its Exposure {former} there");
+    assert!(gap < 1e-5, "{gap}");
+    // Twin: the rounding is real, so format 61's print of +0.6 is not this one's.
+    assert!(former != own && gap > 0.0);
+}

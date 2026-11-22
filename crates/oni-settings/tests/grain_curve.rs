@@ -10,7 +10,7 @@ use serde_json::json;
 
 /// The `oni-frame` document of `settings` stamped `version`, its grain's size in that format's share of the track.
 fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
-    let mut object = serde_json::to_value(Document::of(settings.clone())).unwrap();
+    let mut object = serde_json::to_value(migrate::departure::stored_at(&Document::of(settings.clone()), version)).unwrap();
     object["version"] = json!(version);
     if version < chain::GRAIN_ON_FILM_VERSION {
         object["settings"]["grain"]["size"] = json!(0.5);
@@ -27,7 +27,7 @@ fn a_document_from_before_the_grain_curve_reads_it_at_rest_and_a_current_one_kee
     assert_eq!(migrate::standing(&older), migrate::Standing::Older(chain::GRAIN_CURVE_VERSION - 1));
     let read = migrate::document(&older).unwrap().document.settings;
     assert_eq!(read.grain.curve, GrainCurve::REST);
-    assert_eq!(read, s, "the older document reads whole");
+    assert_eq!(read, migrate::departure::read_back(chain::GRAIN_CURVE_VERSION - 1, s.clone()), "the older document reads whole");
     // Twin: a document of this format keeps a moved point to the bit.
     s.grain.curve.move_point(3, Point::new(0.9137, 0.0625));
     let current = stored(&s, VERSION);

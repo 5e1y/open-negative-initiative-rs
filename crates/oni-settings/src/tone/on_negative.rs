@@ -5,10 +5,10 @@ use super::{Print, Tone};
 impl Print {
     /// This print with every slider Lighting lays on the negative at rest: Exposure, Contrast, the zones, the filters,
     /// the points and each channel's own; Brightness, Paper blacks and the colour compensation kept.
-    pub fn unlit(&self, mode: crate::modes::ConversionMode) -> Print {
+    pub fn unlit(&self) -> Print {
         let unfiltered = |t: Tone| Tone { exposure: 0.0, ..t };
         Print {
-            exposure: Self::resting_exposure(mode),
+            exposure: 0.0,
             contrast: 0.0,
             shadows: 0.0,
             highlights: 0.0,
@@ -26,7 +26,7 @@ impl Print {
     }
 
     /// Whether Lighting lays nothing on the negative: bypassed, or every slider it lays there at rest.
-    pub fn rests_on_negative(&self, mode: crate::modes::ConversionMode) -> bool {
-        self.bypassed || *self == self.unlit(mode)
+    pub fn rests_on_negative(&self) -> bool {
+        self.bypassed || *self == self.unlit()
     }
 }

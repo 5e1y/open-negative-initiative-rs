@@ -7,7 +7,6 @@ use super::datasheet;
 use crate::PipelineSettings;
 use crate::axis::density_axis;
 use crate::blocks::{chroma_decompression, separation};
-use crate::tone::Print;
 use crate::virtual_film::{StockReference, VirtualStock};
 use serde_json::Value;
 
@@ -65,7 +64,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings, stored: Option<&Value
         }
     }
     // Lighting's move kept, on the rest a negative's print stands on.
-    out.print.exposure += Print::RESTING_EXPOSURE;
+    out.print.exposure += super::departure::FORMER_REST;
     // The negative's own values, which a digital photo never rendered, start at their rest.
     out.density_ceiling = density_axis::rest(out.decoded_from_mosaic, out.mode);
     (out.separation, out.separation_by_hand) = (separation::FAMILY_REST, false);

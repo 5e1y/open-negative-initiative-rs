@@ -7,7 +7,6 @@ use crate::conversion;
 use crate::film::{self, GREY};
 use oni_render::ColorMatrix;
 use oni_settings::axis::density_axis;
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, PipelineSettings, VirtualFilm, VirtualStock};
 
 /// The film a slide is copied on: of the colour negatives, the one that kept the owner's slides' hues and chroma
@@ -37,7 +36,7 @@ pub fn copy(s: &PipelineSettings) -> Option<Copy> {
     settings.mode = ConversionMode::Digital;
     settings.virtual_film = Some(VirtualFilm { stock: STOCK, exposure: 0.0 });
     settings.decoded_from_mosaic = s.decoded_from_mosaic;
-    settings.print = Print { exposure: s.print.exposure - Print::resting_exposure(s.mode) + Print::resting_exposure(ConversionMode::Digital), ..s.print };
+    settings.print = s.print;
     settings.print_paper = s.print_paper;
     settings.paperless = s.paperless;
     settings.density = s.density;

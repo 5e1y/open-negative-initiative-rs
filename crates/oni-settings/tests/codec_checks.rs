@@ -12,15 +12,16 @@ use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::sidecar::ExifLine;
+use oni_settings::migrate::{departure::FORMER_REST, exposure::GEAR};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Date, Document, Film, Id, LegacyMachine, Medal, PipelineSettings};
 use serde_json::{Map, Value, json};
 
 type Object = Map<String, Value>;
 
-/// `settings` as a build of format 21 and under wrote them.
-fn encoded(settings: &PipelineSettings) -> Object {
-    match migrate::reshape::as_stored(&Document::of(settings.clone()), VERSION) {
+/// `settings` as a build of format 21 and under wrote them, stamped `version`.
+fn encoded(settings: &PipelineSettings, version: i64) -> Object {
+    match migrate::reshape::as_stored(&Document::of(settings.clone()), version) {
         Value::Object(o) => o,
         _ => unreachable!(),
     }
@@ -28,8 +29,7 @@ fn encoded(settings: &PipelineSettings) -> Object {
 
 /// The document of `settings`, stamped `version`, its settings object edited by hand.
 fn aged(settings: &PipelineSettings, version: i64, edit: impl FnOnce(&mut Object)) -> Vec<u8> {
-    let mut object = encoded(settings);
-    object.insert("version".into(), json!(version));
+    let mut object = encoded(settings, version);
     if let Some(Value::Object(inner)) = object.get_mut("settings") {
         edit(inner);
     }
@@ -193,7 +193,7 @@ fn the_crop_display_flag_stays_out_of_the_sidecar() {
 #[test]
 fn empty_reads_neutral_garbage_fails_and_the_future_is_flagged() {
     let empty = migrate::document(b"{}").unwrap();
-    assert_eq!((empty.document.settings, empty.from), (migrate::exposure::caught_up(0, PipelineSettings::default()), 0));
+    assert_eq!((empty.document.settings, empty.from), (migrate::departure::caught_up(0, migrate::exposure::caught_up(0, PipelineSettings::default())), 0));
     assert!(migrate::document(b"this is not JSON").is_err());
     assert!(migrate::document(b"[1, 2]").is_err());
     let future = migrate::document(&aged(&full(), VERSION + 1, |_| {}));
@@ -359,7 +359,7 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     for c in LevelsChannel::PER_CHANNEL {
         assert_eq!(read.levels.get(c).mid, placed.levels.get(c).mid);
     }
-    assert_eq!((read.gains, &read.manual_curves, read.print), (placed.gains, &placed.manual_curves, migrate::exposure::geared(placed.print, Print::RESTING_EXPOSURE)));
+    assert_eq!((read.gains, &read.manual_curves, read.print), (placed.gains, &placed.manual_curves, migrate::departure::read_back(1, placed.clone()).print));
 
     let missing = aged(&placed, before_1_0::DENSITY_AXIS_VERSION - 1, |s| {
         s["levels"].as_object_mut().unwrap().remove("red");
@@ -581,10 +581,11 @@ fn a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not() {
     let fitted = decode(&former(before_1_0::LIGHTING_VERSION - 1, false));
     assert_ne!(fitted.print, Print::default(), "the fit placed Lighting");
     assert_eq!(fitted.print.black_point, 0.0);
-    assert!(Print::curve_stops(fitted.print.exposure, Print::RESTING_EXPOSURE) > 0.0, "a brighter former exposure reads brighter");
+    assert!(FORMER_REST + GEAR * fitted.print.exposure > 0.0, "a brighter former exposure reads brighter");
     // Twin: the same keys beside a Lighting block, or written since, are left to the decoder.
-    let rest = migrate::exposure::geared(Print::default(), Print::RESTING_EXPOSURE);
-    assert_eq!((decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, decode(&former(before_1_0::LIGHTING_VERSION, false)).print), (rest, rest));
+    let (kept, bare) = (migrate::departure::read_back(1, PipelineSettings::default()), PipelineSettings::default());
+    let bare = migrate::departure::caught_up(1, migrate::exposure::caught_up(1, bare));
+    assert_eq!((decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, decode(&former(before_1_0::LIGHTING_VERSION, false)).print), (kept.print, bare.print));
 }
 
 // MARK: - Families
@@ -610,7 +611,7 @@ fn every_field_lives_in_exactly_one_family() {
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
         (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5 }), Some(Default::default()));
         (s.legacy_print, s.paperless) = (Some(Default::default()), true);
-        encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
+        encoded(&s, VERSION)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
         let mut all: Vec<String> = oni_settings::settings::look_settings::FIELDS
@@ -634,7 +635,7 @@ fn every_field_lives_in_exactly_one_family() {
 fn the_rest_is_the_import_state_of_each_mode() {
     let negative = PipelineSettings::rest(ConversionMode::Negative, true);
     assert_eq!(negative.density_ceiling, density_axis::MOSAIC_REST);
-    assert_eq!(negative.print.exposure, Print::RESTING_EXPOSURE);
+    assert_eq!(negative.print.exposure, 0.0);
     assert!(negative.decoded_from_mosaic);
     assert_eq!(negative.levels, LevelsSet::neutral(ConversionMode::Negative, density_axis::MOSAIC_REST));
     let scan = PipelineSettings::rest(ConversionMode::Negative, false);
@@ -644,7 +645,7 @@ fn the_rest_is_the_import_state_of_each_mode() {
     assert_eq!(slide.print.exposure, 0.0);
     assert_eq!(slide.levels.red.black, Levels::resting_black(ConversionMode::Positive, density_axis::base()));
     let mono = PipelineSettings::rest(ConversionMode::Monochrome, false);
-    assert_eq!(mono.print.exposure, Print::RESTING_EXPOSURE);
+    assert_eq!(mono.print.exposure, 0.0);
     // Twin: the rest is not the bare struct, whose Lighting is unexposed.
     assert_ne!(negative, PipelineSettings::default());
     assert_ne!(PipelineSettings::rest(ConversionMode::Negative, false), PipelineSettings::rest(ConversionMode::Negative, true));
@@ -676,7 +677,7 @@ fn a_former_balance_lands_in_the_filters_and_its_greys_render_as_they_did() {
     let (mut worst, mut unmigrated) = (0f32, 0f32);
     for t in [0.02f32, 0.08, 0.2, 0.45] {
         let target = former_pixel([n(t); 3], &f, &identity, &identity);
-        let got = new_pixel([n(t); 3], &read.print.on_curve(Print::RESTING_EXPOSURE), read.density, [1.0; 3], false, &identity, &identity);
+        let got = new_pixel([n(t); 3], &Print { exposure: FORMER_REST + GEAR * read.print.exposure, ..read.print }, read.density, [1.0; 3], false, &identity, &identity);
         let plain = new_pixel([n(t); 3], &bare.print, bare.density, [1.0; 3], false, &identity, &identity);
         for c in 0..3 {
             worst = worst.max((display(got[c]) - display(target[c])).abs());
@@ -692,11 +693,11 @@ fn a_former_balance_lands_in_the_filters_and_its_greys_render_as_they_did() {
 
     let mut own = raw.clone();
     own.insert("print".into(), json!({"exposure": 0.5}));
-    let mut current = encoded(&PipelineSettings::default());
+    let mut current = encoded(&PipelineSettings::default(), VERSION);
     current.insert("version".into(), json!(before_1_0::LIGHTING_VERSION - 1));
     current.insert("settings".into(), Value::Object(own));
     let kept = decode(&serde_json::to_vec(&Value::Object(current)).unwrap());
-    assert_eq!(Print::curve_stops(kept.print.exposure, Print::RESTING_EXPOSURE), 0.5);
+    assert_eq!(FORMER_REST + GEAR * kept.print.exposure, 0.5);
     assert_eq!((kept.print.red, kept.print.blue), (Tone::NEUTRAL, Tone::NEUTRAL));
     assert!(lighting::former(&json!({})).is_none());
 }

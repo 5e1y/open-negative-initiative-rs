@@ -39,7 +39,8 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     (uncompensated.print.colour_compensation, uncompensated.density) = (false, -0.3);
     let mut legacy = onis(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
-    legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode);
+    // At its machine's entry, as format 58 stored it.
+    legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode) - oni_settings::migrate::departure::former_rest(legacy.mode);
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.paper_blacks, bright.density) = (0.7, false, 0.4);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
@@ -72,7 +73,7 @@ fn pixels() -> Vec<V4> {
 
 /// `s` as a sidecar of format 58 held it, read through this format's migration.
 fn stored(s: &PipelineSettings) -> PipelineSettings {
-    let mut value = serde_json::to_value(oni_settings::document::Document::of(s.clone())).unwrap();
+    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(s.clone()), 58)).unwrap();
     value["version"] = 58.into();
     oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings
 }

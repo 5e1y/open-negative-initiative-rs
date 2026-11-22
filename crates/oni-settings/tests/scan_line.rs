@@ -47,7 +47,7 @@ fn edited() -> Document {
 /// `document` as the build of `version` wrote it: format 22 in this shape, earlier ones in theirs.
 fn stored_at(document: &Document, version: i64) -> Vec<u8> {
     if version >= chain::NAMED_VERSION {
-        return document::encode(&Document { version, ..document.clone() }).unwrap();
+        return document::encode(&Document { version, ..migrate::departure::stored_at(document, version) }).unwrap();
     }
     serde_json::to_vec_pretty(&reshape::as_stored(document, version)).unwrap()
 }
@@ -73,7 +73,7 @@ fn a_line_of_format_22_and_one_kept_under_exif_release_the_scan_s_facts() {
         answering(&|| Some(z_f()), |f| assert_eq!(migrate::file_with(&photo, f), Ok(Outcome::Migrated { from: version })));
         let read = sidecar::read(&photo, true).unwrap();
         assert_eq!(read.exif, released(), "format {version}: the lens differing from the scan's and every clear stay");
-        let exposure = migrate::exposure::caught_up(version, edited().settings).print.exposure;
+        let exposure = migrate::departure::read_back(version, edited().settings).print.exposure;
         assert_eq!((read.settings.print.exposure, read.writable), (exposure, true), "format {version}");
         // Twin: a scan of another camera releases nothing of the camera.
         let other = laid(&dir.join("other"), &stored_at(&edited(), version));
@@ -137,7 +137,7 @@ fn a_line_written_at_this_format_keeps_what_equals_the_scan() {
 fn a_settings_document_of_format_22_reads_its_settings_as_they_stand() {
     let d = edited();
     let read = migrate::document(&stored_at(&d, chain::NAMED_VERSION)).unwrap();
-    assert_eq!(read.document.settings, migrate::exposure::caught_up(chain::NAMED_VERSION, d.settings.clone()));
+    assert_eq!(read.document.settings, migrate::departure::read_back(chain::NAMED_VERSION, d.settings.clone()));
     // Twin: a keypad of format 22 reads its steps, the same keypad read as format 21 takes them for whole units.
     let keyed = |bytes: Vec<u8>| {
         let mut v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();

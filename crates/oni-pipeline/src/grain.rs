@@ -70,7 +70,7 @@ pub fn tones(picture: &Stage47) -> [f32; GRAIN_NODES] {
 fn scene_tones(s: &PipelineSettings) -> [f32; GRAIN_NODES] {
     // Read on the print at rest and the film's own gains: no print slider, filtration or Scanner key reaches the
     // tones, so a notch on one keeps the grain's pass.
-    let rest = PipelineSettings { print: Print { exposure: Print::resting_exposure(s.mode), ..Print::default() }, density: color_density::BASE, ..s.clone() };
+    let rest = PipelineSettings { print: Print::default(), density: color_density::BASE, ..s.clone() };
     let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(&rest) };
     let Some(f) = s.film() else { return tones(&picture) };
     let stock = film::stock(f.stock);

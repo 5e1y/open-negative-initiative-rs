@@ -74,10 +74,10 @@ fn in_steps(clicks: &mut Object) {
     }
 }
 
-/// `document` as a build of format 21 and under wrote it, stamped `version`: what the checks age a
-/// document with, and what an earlier build is shown reading.
+/// `document` as a build of format 21 and under wrote it, stamped `version`, Exposure in that format's units: what the
+/// checks age a document with, and what an earlier build is shown reading.
 pub fn as_stored(document: &Document, version: i64) -> Value {
-    let mut value = serde_json::to_value(document).unwrap_or(Value::Null);
+    let mut value = serde_json::to_value(super::departure::stored_at(document, version)).unwrap_or(Value::Null);
     let Value::Object(map) = &mut value else { return value };
     map.remove("format");
     map.insert("version".into(), Value::from(version));
@@ -129,6 +129,6 @@ mod tests {
         stored["settings"]["scanner"] = json!({"d": 3, "c": -1, "m": 1, "y": 0, "w": 0, "halves": {"d": 1, "c": -1, "w": 1}});
         let completed = super::super::chain::merged(&stored, super::super::chain::neutral_document());
         let (read, _, scanner) = reshaped(completed).unwrap();
-        assert_eq!((read, scanner.clicks), (document, Clicks::new(7, -3, 2, 0, 1)));
+        assert_eq!((read, scanner.clicks), (super::super::departure::stored_at(&document, 21), Clicks::new(7, -3, 2, 0, 1)));
     }
 }

@@ -28,7 +28,7 @@ fn main() {
     let marked = raw.parent().and_then(oni_settings::roll_folder::roll).and_then(|r| r.stock).and_then(|k| oni_settings::dyes::dye_set(&k));
     let mut rest = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
     (rest.legacy_print, rest.density) = (None, 0.0);
-    rest.print = Print { exposure: Print::resting_exposure(rest.mode), ..Print::default() };
+    rest.print = Print::default();
     println!("{:?}, dyes {:?}, separation {}", rest.mode, rest.dye_set, rest.separation);
 
     let device = Device::open().expect("a GPU");

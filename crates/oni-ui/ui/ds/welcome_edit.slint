@@ -116,7 +116,7 @@ export component EditScene inherits Rectangle {
             sat := Morphing { label: @tr("Saturation"); readout: "0%"; fraction: 0.5; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; awake: root.near; }
             Divider { }
             Heading { title: @tr("Lighting"); turned: 1; help: @tr("The negative back to light: exposure, contrast, highlights and shadows, the black and white points."); }
-            Morphing { label: @tr("Exposure"); readout: @tr("{} EV", "+1.50"); fraction: 0.65; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
+            Morphing { label: @tr("Exposure"); readout: @tr("{} EV", "0.00"); fraction: 0.5; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
             Morphing { label: @tr("Contrast"); readout: "0"; fraction: 0.5; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
             Morphing { label: @tr("Highlights"); readout: "−12"; fraction: 0.44; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }
             Morphing { label: @tr("Shadows"); readout: "+8"; fraction: 0.54; fill: SliderFill.level; hand-x: root.col-x; hand-y: root.col-y; turned: 1; }

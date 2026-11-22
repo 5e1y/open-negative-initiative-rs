@@ -186,7 +186,7 @@ fn the_print_is_the_papers_own_its_colour_density_included() {
         println!("{label}: stage 4-7 within {alone:.1e} of the paper's print");
         assert!(alone == 0.0, "{label}: {alone}");
         // Twin: ONI's print curve at its own rest laid on the paper, a tone curve stacked.
-        let stacked = worst(&Stage47 { print_on: 1.0, print_stops: Print::RESTING_EXPOSURE, ..k });
+        let stacked = worst(&Stage47 { print_on: 1.0, print_stops: oni_pipeline::conversion::NEGATIVE_PRINT_STOPS, ..k });
         assert!(stacked > 1e-2, "{label}: {stacked}");
     }
     // The colour density is the paper's own, laid on its print before its ends, as on ONI's print after its curve.
