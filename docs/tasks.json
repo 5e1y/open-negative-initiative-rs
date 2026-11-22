@@ -12674,5 +12674,12 @@
     "status": "done",
     "detail": "tests/exposure_departure.rs: twelve pipes (ONI's print on a negative, with Contrast, a legacy Frontier, digital, black and white, a slide; the paper on a negative, digital, black and white, the Frontier, the neutral paper, a slide through its internegative) stored as format 61 at the former rest and ±0.5/−0.75 off it fold to the bits format 61 printed, stage 4-7 on the CPU and the whole chain on Metal; twin: read unmigrated they move. Each stored Exposure reads as its departure (+1.5 → 0, a slide's 0 stays). A negative at Exposure 0 prints its reference grey at a plain RAW's on ONI's print, the paper and the neutral paper; twin: the former rest's 0 prints it far darker. A slide through its internegative at a value f32 rounds on the former 1.5 (+0.6) prints within 4.2e-7 of format 61, which took that rounding. legacy_print's fingerprints (every corpus sidecar and Scanner case, CPU and GPU) and lighting_on_negative's fold hold unchanged. Window check slider_rest: Exposure reads 0.00 EV on its mid-track tick at rest and after Lighting's Reset, on a negative and a slide.",
     "outcome": ""
+  },
+  {
+    "id": 3541,
+    "type": "refactor",
+    "title": "The tone response example in a folder of its own, on Exposure's rest at 0",
+    "status": "done",
+    "detail": "Merged after exposure-zero, examples/tone_response.rs still called Print::resting_exposure and ran 462 lines with two lines past 200 characters. Its pixel helpers move to tone_response/image.rs, the two format strings break with a continuation, and its rest Lighting takes Exposure 0, the rest of every pipe."
   }
 ]
