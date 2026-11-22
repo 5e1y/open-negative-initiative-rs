@@ -113,6 +113,9 @@ pub const EXPOSURE_DEPARTURE_VERSION: i64 = 64;
 /// The version each colour profile came to develop its dyes' amounts, its sheet's curves unmixed: a digital photo's gains
 /// and windows move onto its stock's new reference.
 pub const UNMIXED_VERSION: i64 = 66;
+/// The version Paper blacks came to be Print lift, keeping the paper's white with its black, off laying that white on pure
+/// white: its stored key renamed, a key a build before it cannot read.
+pub const PRINT_LIFT_VERSION: i64 = 67;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

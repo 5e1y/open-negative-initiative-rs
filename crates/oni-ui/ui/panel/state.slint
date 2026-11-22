@@ -103,8 +103,8 @@ export global PanelState {
     callback paper-lit(int);
     callback paper-chosen(int);
     // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
-    in property <bool> paper-blacks;
-    callback paper-blacks-toggled(bool);
+    in property <bool> print-lift;
+    callback print-lift-toggled(bool);
     // ONI's print's colour compensation: Hunt's colour density as its curve brightens the picture.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);

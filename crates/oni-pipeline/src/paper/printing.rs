@@ -1,5 +1,5 @@
-//! Each frame's enlarger on its paper at rest: the time and filtration that print the reference grey at a plain RAW's
-//! grey, neutral, on the bare film, its ends the paper's own; Lighting then moves the negative it prints (`lighting`).
+//! Each frame's enlarger on its paper at rest: the time and filtration that show the reference grey at a plain RAW's
+//! grey, neutral, on the bare film, through the print's ends; Lighting then moves the negative it prints (`lighting`).
 
 use super::*;
 use crate::film::bake::{self, M3};
@@ -167,16 +167,28 @@ pub fn layer_shares(p: &Paper, amounts: V3) -> V3 {
     std::array::from_fn(|c| (density[c] - low[c]) / (high[c] - low[c]))
 }
 
-/// The enlarger at rest on the bare paper `p`, as its log time and its filtration in CC: the reference `grey` printed at a
-/// plain RAW's grey, neutral; black and white by the time alone, on its luma.
-pub fn resting(p: &Paper, grey: V3, mono: bool) -> (f32, V3) {
+/// Whether the print keeps the paper's own ends, Print lift on a paper: the neutral paper prints ONI's print's, pure.
+pub fn lifted(s: &PipelineSettings) -> bool {
+    s.print.print_lift && !s.paperless
+}
+
+/// The enlarger at rest on the bare paper `p`, as its log time and its filtration in CC: the reference `grey` shown at a
+/// plain RAW's grey, neutral, through the ends `pick` lays, the paper's own with `lift`; black and white by the time
+/// alone, on its luma.
+pub fn resting(p: &Paper, pick: V3, grey: V3, mono: bool, lift: bool) -> (f32, V3) {
     let target = GREY_PRINT.ln();
     let guess = -(p.exposed(grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
     // A pack holds no neutral density: its cyan at none, as a colour enlarger's rests.
     let cc = |x: V3| [0.0, x[1], x[2]];
-    let miss = |x: V3| Paper { scale: x[0].exp(), filters: filters(cc(x)), ..*p }.printed(grey).map(|v| v.max(1e-12).ln() - target);
-    // The time first, bracketed, as more light always prints darker: a guess off the curve lies where it is flat.
-    let mean = |e: f32| miss([e, START_CC[0], START_CC[1]]).iter().sum::<f32>() / 3.0;
+    let at = |x: V3| Paper { scale: x[0].exp(), filters: filters(cc(x)), ..*p };
+    let off = |v: V3| v.map(|v| v.max(1e-12).ln() - target);
+    let miss = |x: V3| {
+        let q = at(x);
+        off(if lift { q.printed(grey) } else { super::laid(&q, pick, None).ended(q.printed(grey)) })
+    };
+    // The time first, bracketed on the print before its ends, as more light always prints darker: a guess off the curve
+    // lies where it is flat, and pure ends read the pick and the grey both at the paper's white there.
+    let mean = |e: f32| off(at([e, START_CC[0], START_CC[1]]).printed(grey)).iter().sum::<f32>() / 3.0;
     let start = bisected(guess - TIME_REACH, guess + TIME_REACH, 0.0, mean);
     if mono {
         return (root(start, |e| miss([e, 0.0, 0.0])[0]), [0.0; 3]);
@@ -231,11 +243,12 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         pick: [0.0; 3],
         white: [1.0; 3],
         anchor: [0.0; 3],
+        white_anchor: [1.0; 3],
         brightness: 0.0,
         pick_log: 0.0,
         reach: 0.0,
         luma: mono,
     };
-    let rest = resting(&bare, anchors[2], mono);
+    let rest = resting(&bare, anchors[0], anchors[2], mono, lifted(s));
     Some(super::lighting::lit(&bare, rest, &anchors, k.density, s, k.negative.as_ref()))
 }

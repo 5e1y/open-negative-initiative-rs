@@ -125,7 +125,7 @@ fn main() {
         };
         let xs: Vec<String> = [1.0f32, 3.0, 5.0, 8.0, 12.0, 20.0, 30.0, 50.0, 70.0, 90.0].iter()
             .map(|m| format!("{m}:{:.3}", x_of(rest.iter().position(|l| l[0] >= *m).unwrap_or(n)))).collect();
-        println!("{name}: paper {:?}, Paper blacks {}, pick L* {:.2}, reach {:.3}; log exposure from the pick by L* {}", read.print_paper, read.print.paper_blacks, rest[0][0], p.reach, xs.join(" "));
+        println!("{name}: paper {:?}, Print lift {}, pick L* {:.2}, reach {:.3}; log exposure from the pick by L* {}", read.print_paper, read.print.print_lift, rest[0][0], p.reach, xs.join(" "));
         // Measures on the neutral: each Brightness against Exposure at the same value.
         let values = [-4.0f32, -2.0, -1.0, -0.5, 0.5, 1.0, 2.0, 4.0];
         let marks = [3.0f32, 5.0, 8.0, 12.0, 20.0, 30.0, 50.0, 70.0];

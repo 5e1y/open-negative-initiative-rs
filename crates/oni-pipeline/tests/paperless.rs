@@ -1,5 +1,5 @@
 //! The virtual enlarger with Print on paper off: the neutral paper rests its grey on a plain RAW's, its pick on pure black
-//! whatever Paper blacks says, each layer printing its own dye alone on ONI's print curve, the same on the three, so a frame
+//! whatever Print lift says, each layer printing its own dye alone on ONI's print curve, the same on the three, so a frame
 //! whose windows agree prints as on ONI's print; a slide through its internegative; Lighting's grade turns about the grey;
 //! the GPU on every branch. Each verdict has a twin.
 
@@ -41,16 +41,17 @@ fn even_negative() -> PipelineSettings {
 #[test]
 fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black() {
     for (label, s) in [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono())] {
-        assert!(s.print.paper_blacks, "{label}: Paper blacks on, so its silence shows");
+        assert!(s.print.print_lift, "{label}: Print lift on, so its silence shows");
         let s = paperless(s);
         let k = conversion::stage47(&s);
         let p = k.paper.expect(label);
         let [black, _, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
         let rested = p.printed(paper::anchors(&s, k.dyes.as_ref())[2]);
         println!("{label}: grey {rested:?} at rest, {grey:?} shown (a plain RAW's {:.5}), black {black:?}, pick {:?}", *GREY_PRINT, p.pick);
-        // The rest prints the grey neutral; the pick then laid on pure black moves it by as little as the pick's light.
-        assert!((0..3).all(|c| (rested[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {rested:?}");
-        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() <= p.pick[c] + 2e-6), "{label}: {grey:?}");
+        // The rest shows the grey neutral through the pick laid on pure black, printed before it by as little as the
+        // pick's light off.
+        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
+        assert!((0..3).all(|c| (rested[c] - *GREY_PRINT).abs() <= p.pick[c] + 2e-6), "{label}: {rested:?}");
         assert!(black[..3].iter().all(|v| v.abs() < 1e-6) && p.anchor == [0.0; 3], "{label}: the pick on pure black, {black:?}");
         assert!(p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{label}: no paper's white, {:?}", p.white);
         // Twin: the same frame on its paper lays the pick where the paper's rest prints it.
@@ -69,7 +70,7 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
     let k = conversion::stage47(&s);
     let p = k.paper.expect("a slide on the neutral paper");
     let [pick, _, grey] = paper::anchors(&copy.settings, k.dyes.as_ref());
-    let (shown_pick, rested) = (p.shown(pick), p.printed(grey));
+    let (shown_pick, rested) = (p.shown(pick), p.shown(grey));
     assert!(copy.settings.paperless && p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{:?}", p.white);
     assert!(shown_pick.iter().all(|v| v.abs() < 1e-6), "{shown_pick:?}");
     assert!(rested.iter().all(|v| (v - *GREY_PRINT).abs() < 2e-6), "{rested:?}");

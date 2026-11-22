@@ -141,7 +141,7 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     // A photo of 46 on its paper, grain off as every photo of then, keeps the paper's own black it printed.
     let mut portra = PipelineSettings::rest(ConversionMode::Digital, true);
     portra.grain.amount = 0.0;
-    let kept = PipelineSettings { print: Print { paper_blacks: true, ..portra.print }, ..portra.clone() };
+    let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, ..portra.clone() };
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
     let portra = migrate::datasheet::on_former(&portra, VirtualStock::KodakPortra800);
     assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);

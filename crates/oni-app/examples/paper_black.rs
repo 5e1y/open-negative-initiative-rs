@@ -1,6 +1,6 @@
 //! `paper_black <out> <raw>...`: each photo printed on its paper (the default one where it has none) as the editor renders
-//! it, its pick (Prepare the Roll's black) printed as it stands, at Lighting's rest and with Paper blacks on and off, then
-//! strips of Exposure, Contrast, Temperature and Brightness either way, Paper blacks on and off, each as `w h` then f32
+//! it, its pick (Prepare the Roll's black) printed as it stands, at Lighting's rest and with Print lift on and off, then
+//! strips of Exposure, Contrast, Temperature and Brightness either way, Print lift on and off, each as `w h` then f32
 //! RGB, linear Rec. 2020. The originals and their sidecars are only read.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
@@ -42,9 +42,9 @@ fn main() {
         let read = sidecar::read(raw, true).expect("a sidecar").settings;
         let owner = PipelineSettings { print_paper: read.print_paper.or(Some(Default::default())), ..read };
         let rest = PipelineSettings { print: Print::default(), ..owner.clone() };
-        let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { paper_blacks: on, ..s.print }, ..s.clone() };
+        let with = |s: &PipelineSettings, on: bool| PipelineSettings { print: Print { print_lift: on, ..s.print }, ..s.clone() };
         let (stops, print) = (owner.print.exposure - rest.print.exposure, &owner.print);
-        println!("{name}: paper {:?}, Exposure {stops:+.3} from the rest, Brightness {:+.3}, Paper blacks {}", owner.print_paper, print.brightness, print.paper_blacks);
+        println!("{name}: paper {:?}, Exposure {stops:+.3} from the rest, Brightness {:+.3}, Print lift {}", owner.print_paper, print.brightness, print.print_lift);
         for (label, s) in [("rest", &rest), ("its Lighting", &owner)] {
             let (on, off) = (pick(&with(s, true)), pick(&with(s, false)));
             println!("  {label}: the pick prints at {on:.6?}, on pure black {off:.6?}");
@@ -69,7 +69,7 @@ fn main() {
             }
         }
         for (i, on) in [true, false].into_iter().enumerate() {
-            write(out, &format!("{name}-paperblacks-{i}"), &e.render(&negative, &with(&owner, on), side).unwrap());
+            write(out, &format!("{name}-printlift-{i}"), &e.render(&negative, &with(&owner, on), side).unwrap());
         }
     }
 }

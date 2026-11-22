@@ -68,8 +68,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
-- **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): no ONI window and no colour compensation; the
-  picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
+- **A paper prints in true density with its ends anchored** (owner's calls, 2026-11-22 and 23): no ONI window and no colour compensation;
+  the picked black never lifts and lies on pure black, the paper's white on pure white, the rest showing the grey where a plain RAW
+  does (Print lift keeps the paper's own black and white); Lighting moves the whites freely.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
   through the stock's curves, and the film is developed again (`negative`); ONI's print and the enlarger print it at their rest. A
   digital photo's negative is the model's own (three coupled layers, a black and white film's one uncoupled: Lighting's Exposure is the Film section's); a scan is read on

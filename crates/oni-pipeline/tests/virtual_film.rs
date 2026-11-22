@@ -252,7 +252,7 @@ fn the_gpu_develops_the_negative_its_reference_does() {
 /// stages off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
-    s.print.paper_blacks = true;
+    s.print.print_lift = true;
     s.grain.amount = 0.0;
     s
 }
@@ -282,7 +282,7 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
     let on = pipeline.render(&mut g, &source, &digital, &Request::default(), &Default::default(), None).unwrap().1;
     let plain = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
     let raw = pipeline.render(&mut g, &plain_grey, &plain, &Request::default(), &Default::default(), None).unwrap().1[0];
-    let pure = PipelineSettings { print: oni_settings::tone::Print { paper_blacks: false, ..digital.print }, ..digital.clone() };
+    let pure = PipelineSettings { print: oni_settings::tone::Print { print_lift: false, ..digital.print }, ..digital.clone() };
     let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
     println!("a scene grey: the plain RAW {raw:?}, the film {:?}, on pure black {stretched:?}", on[0]);
     for c in 0..3 {
