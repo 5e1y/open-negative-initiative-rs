@@ -95,6 +95,9 @@ pub const VIRTUAL_STOCKS_VERSION: i64 = 54;
 /// The version Grain size came to be a grain's width on the film, in micrometres of its long side, in place of a
 /// share of its track laid on the scan's width.
 pub const GRAIN_ON_FILM_VERSION: i64 = 55;
+/// The version a slide came to print on a negative paper through an internegative, the reversal paper retired: a slide
+/// that named a negative paper rendered on ONI's print, one on the reversal paper printed on paper.
+pub const SLIDE_INTERNEGATIVE_VERSION: i64 = 58;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

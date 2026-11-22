@@ -1,5 +1,5 @@
-//! `slide_paper <raw> <out> [side]`: a slide as edited on ONI's print, then on Kodak Ektachrome Radiance III at rest
-//! and on pure black, each as `w h` then f32 linear Rec. 2020 RGB.
+//! `slide_paper <raw> <out> [side]`: a slide as edited on ONI's print, then through its internegative on every paper at
+//! rest and on Portra Endura with Paper blacks, each as `w h` then f32 linear Rec. 2020 RGB.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_settings::{PaperStock, PipelineSettings, sidecar};
@@ -17,6 +17,10 @@ fn write(out: &Path, name: &str, l: &Linear) {
     println!("{name}: {} x {}", l.width, l.height);
 }
 
+fn key(paper: PaperStock) -> String {
+    serde_json::to_string(&paper).unwrap().trim_matches('"').to_owned()
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let (raw, out) = (Path::new(&args[0]), Path::new(&args[1]));
@@ -28,15 +32,17 @@ fn main() {
     let device = Device::open().expect("a GPU");
     let engine = Engine::shared(&device);
     let mut e = engine.lock().unwrap();
-    let negative = e.prepare(render::decode(raw, Reading::of(&owner)).expect("a decode")).unwrap();
-    let mut paper = PipelineSettings { print_paper: Some(PaperStock::KodakEktachromeRadianceIII), ..owner.clone() };
-    paper.print.paper_blacks = true;
-    let mut pure = paper.clone();
-    pure.print.paper_blacks = false;
-    for (name, s) in [("oni", &owner), ("radiance", &paper), ("radiance-pure-black", &pure)] {
-        if let Some(p) = oni_pipeline::conversion::printing(s) {
-            println!("{name}: filtration {:?} CC", p.filtration);
+    let slide = e.prepare(render::decode(raw, Reading::of(&owner)).expect("a decode")).unwrap();
+    write(out, "oni", &e.render(&slide, &PipelineSettings { print_paper: None, ..owner.clone() }, Some(side)).unwrap());
+    for paper in PaperStock::ALL {
+        let mut s = PipelineSettings { print_paper: Some(paper), ..owner.clone() };
+        s.print.paper_blacks = false;
+        if let Some(p) = oni_pipeline::conversion::printing(&s) {
+            println!("{}: filtration {:?} CC", key(paper), p.filtration);
         }
-        write(out, name, &e.render(&negative, s, Some(side)).unwrap());
+        write(out, &key(paper), &e.render(&slide, &s, Some(side)).unwrap());
     }
+    let mut blacks = PipelineSettings { print_paper: Some(PaperStock::KodakPortraEndura), ..owner.clone() };
+    blacks.print.paper_blacks = true;
+    write(out, "kodak-portra-endura-paper-blacks", &e.render(&slide, &blacks, Some(side)).unwrap());
 }

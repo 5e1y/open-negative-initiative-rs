@@ -47,8 +47,10 @@ impl Pipeline {
         let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
         // A digital photo's scene, lit at its film's white, takes its film's own light, then its grain, as the
-        // film does; a measure reads neither. A film mode renders neither effect (owner's call).
-        let lit = match conversion::scene_white(s) {
+        // film does; a measure reads neither. A film mode renders neither effect (owner's call). A slide on a paper
+        // exposes its internegative with its light.
+        let copy = crate::paper::internegative::copy(s);
+        let lit = match copy.as_ref().map(|c| c.light).or_else(|| conversion::scene_white(s)) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
         };
@@ -60,8 +62,9 @@ impl Pipeline {
             None => haloed,
         };
         // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is.
-        let negative = self.filmed(graph, grained, s)?;
-        let printed = stages::converted(negative, &conversion::stage47(s));
+        let read = copy.as_ref().map_or(s, |c| &c.settings);
+        let negative = self.filmed(graph, grained, read)?;
+        let printed = stages::converted(negative, &conversion::stage47(read));
         // On a paper the legacy print lays its keys and TEMP alone: no look cube is laid over the paper's print.
         let looked = match legacy.and_then(PipelineSettings::legacy) {
             Some(l) if s.paper().is_some() => self.warmed_paper(graph, printed, &l)?,

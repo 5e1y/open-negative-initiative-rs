@@ -64,6 +64,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): Lighting acts before the paper curve, no ONI
   window and no colour compensation; the picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
+- **A slide prints through an internegative** (owner's verdict, 2026-11-22): on any colour paper, copied on a virtual Vision3 50D
+  (`paper::internegative`), as labs printed slides on negative paper; Kodak's reversal paper Radiance III, modelled from its data
+  sheet, held half a slide's chroma and left. The copy's grey and black are the film's own, its bare base as a negative's.
 - **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every
   older file migrates on its own (`oni_settings::migrate`, the launch's sweep or its first read), never lost; an older build opens it read-only.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,

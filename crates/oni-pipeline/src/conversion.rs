@@ -49,8 +49,11 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
 /// black and white print, no channel's own tone; the frame's paper in place of the windows and the print, the colour
-/// density and the print's ends its own.
+/// density and the print's ends its own; a slide on a paper, its internegative's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
+    if let Some(copy) = crate::paper::internegative::copy(s) {
+        return stage47(&copy.settings);
+    }
     let k = unprinted(s);
     match crate::paper::printing(s, &k, k.dyes.as_ref()) {
         Some(p) => Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, paper: Some(p.paper), ..k },
@@ -60,6 +63,9 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
 
 /// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on ONI's own print.
 pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
+    if let Some(copy) = crate::paper::internegative::copy(s) {
+        return printing(&copy.settings);
+    }
     let k = unprinted(s);
     crate::paper::printing(s, &k, k.dyes.as_ref())
 }
@@ -72,7 +78,7 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     let on_paper = s.paper().is_some() && !print.bypassed;
-    let dyes = if on_paper { paper_amounts(s) } else { stock_separation(s) };
+    let dyes = if on_paper { stock_amounts(s) } else { stock_separation(s) };
     let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
     let unreached = s.levels.windows();
     let windows = lv.windows();

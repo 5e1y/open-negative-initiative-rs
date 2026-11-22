@@ -1,6 +1,6 @@
 //! The paper: spektrafilm's print of Portra 800's dyes on each paper; each frame's enlarger resting where its grey prints
-//! neutral at a plain RAW's grey, its ends the paper's own; the print the paper's alone; slides never on a negative paper;
-//! the GPU on every branch, a slide's reversal paper included. Each verdict has a twin.
+//! neutral at a plain RAW's grey, its ends the paper's own; the print the paper's alone; a measure on none; the GPU on
+//! every branch, a slide's internegative included. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -178,9 +178,7 @@ fn a_legacy_print_on_a_paper_rests_at_its_rest_and_its_keys_move_the_enlarger() 
 }
 
 #[test]
-fn a_slide_is_never_printed_on_a_negative_paper_and_a_measure_reads_no_paper() {
-    let slide = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
-    assert!(slide.paper().is_none() && conversion::stage47(&slide).paper.is_none());
+fn a_measure_and_a_positive_read_as_its_own_negative_read_no_paper() {
     let inverted = PipelineSettings { inverted_source: true, ..prepared_negative() };
     assert!(conversion::stage47(&inverted).paper.is_none(), "a positive read as its own negative");
     let mut measured = prepared_negative();
@@ -216,7 +214,7 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     anchored.print.exposure -= 3.0;
     let darker = PipelineSettings { print: Print { brightness: -4.0, ..anchored.print }, ..anchored.clone() };
     let brighter = PipelineSettings { print: Print { brightness: 4.0, ..lit.print }, ..lit.clone() };
-    let mut slide = PipelineSettings { print_paper: Some(PaperStock::KodakEktachromeRadianceIII), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+    let mut slide = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
     slide.gains.stops = [0.3, 0.0, -0.4];
     let mut lit_slide = slide.clone();
     (lit_slide.print.exposure, lit_slide.print.contrast, lit_slide.print.shadows, lit_slide.print.highlights) = (0.5, 0.3, 0.2, -0.1);

@@ -1,7 +1,8 @@
 //! The Paper section of the Colour tab in the headless window, open right after More Color Settings: offered on a negative,
 //! off at its rest; on, it prints on Portra Endura and shows Paper blacks, off at rest, the paper and the enlarger's
 //! filtration, and Lighting Brightness in place of Colour compensation, each rendering again; another paper picked by its
-//! name, the Frontier SP-3000 among them; a slide offered the reversal paper alone; a digital photo on its paper, its blacks pure.
+//! name, the Frontier SP-3000 among them; a slide on the same papers, through its internegative; a digital photo on its
+//! paper, its blacks pure.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -16,7 +17,7 @@ use std::time::Duration;
 
 use crate::common;
 
-pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_a_slide_on_the_reversal_paper() {
+pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the paper's switch is not exercised"),
@@ -82,7 +83,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_a_slide_on_the
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
-    assert_eq!(names, PaperStock::listed(false).iter().map(|p| p.name().to_string()).collect::<Vec<_>>());
+    assert_eq!(names, PaperStock::ALL.iter().map(|p| p.name().to_string()).collect::<Vec<_>>());
     let renders = ctl.state.borrow().renders();
     panel.invoke_paper_chosen(4);
     rig.pump();
@@ -110,29 +111,26 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_its_paper_and_a_slide_on_the
     panel.invoke_paper_chosen(4);
     rig.pump();
 
-    // A slide is never printed on a negative paper: its switch stays offered, off, and lists the reversal paper alone.
+    // A slide prints on the same papers through its internegative: switched to a slide, the frame keeps its paper.
+    let renders = ctl.state.borrow().renders();
     panel.invoke_film_type_picked(1);
     rig.pump();
-    assert!(panel.get_paper_shown() && !panel.get_paper_on(), "a negative's paper prints no slide");
+    assert!(panel.get_paper_shown() && panel.get_paper_on(), "the slide keeps its paper");
     assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveTypeII));
-    let renders = ctl.state.borrow().renders();
-    panel.invoke_paper_toggled(true);
-    rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::KodakEktachromeRadianceIII));
-    assert!(panel.get_paper_on() && panel.get_paper_title() == "Kodak Ektachrome Radiance III");
-    let names: Vec<String> = (0..panel.get_paper_lines().row_count()).filter_map(|i| panel.get_paper_lines().row_data(i)).map(|l| l.text.to_string()).collect();
-    assert_eq!(names, ["Kodak Ektachrome Radiance III"]);
+    assert_eq!(panel.get_paper_lines().row_count(), PaperStock::ALL.len());
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
-    rig.until("the slide printed on the reversal paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.until("the slide printed through its internegative", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Paper blacks")), (1, 1));
-    // Twin: back on a negative, the reversal paper prints none, and the switch takes the negative's default.
-    panel.invoke_film_type_picked(0);
+    rig.settle();
+    println!("shot {}", rig.shot("slide-on-paper").display());
+    // Off, then on again, it takes the default paper.
+    panel.invoke_paper_toggled(false);
     rig.pump();
-    assert!(panel.get_paper_shown() && !panel.get_paper_on());
+    assert!(!panel.get_paper_on() && settings().print_paper.is_none());
     panel.invoke_paper_toggled(true);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::KodakPortraEndura));
-    assert_eq!(panel.get_paper_lines().row_count(), PaperStock::ALL.len() - 1);
+    assert!(panel.get_paper_on() && panel.get_paper_title() == "Kodak Portra Endura");
     panel.invoke_paper_toggled(false);
     rig.pump();
     assert_eq!(settings().print_paper, None);

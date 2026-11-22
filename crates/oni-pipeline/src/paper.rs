@@ -1,6 +1,6 @@
 //! A colour paper printing the film in place of ONI's print: each paper's tables baked once from its profile or the
 //! Frontier's fit (`frontier`), each frame's enlarger at rest on it (`printing`) and Lighting on the enlarger and the
-//! paper (`lighting`). A negative prints on a negative paper, a slide on a reversal paper.
+//! paper (`lighting`). A slide prints through its internegative (`internegative`).
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
@@ -14,6 +14,7 @@ type V3 = [f32; 3];
 type V4 = [f32; 4];
 
 pub mod frontier;
+pub mod internegative;
 mod lighting;
 mod printing;
 pub use lighting::*;
@@ -55,8 +56,7 @@ impl Model {
     }
 }
 
-/// A paper's profile file: spektrafilm's, shipped unchanged, or Radiance III's read off Kodak's data sheet
-/// (`docs/research/positive-paper`); none for the Frontier.
+/// A paper's profile file, spektrafilm's, shipped unchanged; none for the Frontier.
 pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
     match paper {
         PaperStock::KodakPortraEndura => Some(include_bytes!("../resources/film/kodak_portra_endura.json")),
@@ -65,7 +65,6 @@ pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
         PaperStock::KodakEnduraPremier => Some(include_bytes!("../resources/film/kodak_endura_premier.json")),
         PaperStock::FujifilmCrystalArchiveTypeII => Some(include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json")),
         PaperStock::FujifilmFrontierSp3000 => None,
-        PaperStock::KodakEktachromeRadianceIII => Some(include_bytes!("../resources/film/kodak_ektachrome_radiance_iii.json")),
     }
 }
 
@@ -182,22 +181,20 @@ pub struct Enlarger {
     pub dichroic: Vec<V3>,
 }
 
-/// What the enlarger holds: a black and white negative's silver, a colour negative's dyes, or a slide's.
+/// What the enlarger holds: a black and white negative's silver, or a colour negative's dyes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Film {
     Silver,
     Negative(DyeSet),
-    Slide,
 }
 
 impl Film {
-    const COUNT: usize = DyeSet::ALL.len() + 2;
+    const COUNT: usize = DyeSet::ALL.len() + 1;
 
     fn index(self) -> usize {
         match self {
             Film::Silver => 0,
-            Film::Slide => 1,
-            Film::Negative(d) => 2 + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"),
+            Film::Negative(d) => 1 + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"),
         }
     }
 }
@@ -214,7 +211,6 @@ fn enlarging(film: Film, paper: PaperStock) -> Enlarger {
     let bands = match film {
         Film::Silver => silver(),
         Film::Negative(set) => dyes::measured(set),
-        Film::Slide => dyes::slide(),
     };
     let lamp = lamp();
     let s: Vec<[f64; 3]> = read(paper).log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();

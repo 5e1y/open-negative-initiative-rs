@@ -72,8 +72,6 @@ pub struct Paper {
     pub anchor: V3,
     /// A black and white print reads its luma on its three channels.
     pub luma: bool,
-    /// A reversal paper printing a slide: the print's black lies at the densest film, so the tones read the range from it.
-    pub reversal: bool,
 }
 
 impl Paper {
@@ -89,7 +87,7 @@ impl Paper {
             v3(self.black, self.log_guard),
             v3(self.span, self.zones[0]),
             v3(self.points_black, self.zones[1]),
-            v3(self.points_white, flag(self.reversal)),
+            v3(self.points_white, 0.0),
             v3(self.mids, 0.0),
             v3(self.filters, self.scale),
             v3(self.pivot, self.pick_log),
@@ -119,25 +117,20 @@ impl Paper {
         self.points_black != [0.0; 3] || self.points_white != [0.0; 3] || self.zones != [0.0; 2] || self.mids != [0.0; 3]
     }
 
-    /// The amounts Lighting's tones leave on the film, each read on its range from the end the print lays black (0, the
-    /// bare negative or the densest slide) to the other (1): the points stretch that range, the zones lay one density by
-    /// the mean tone, the mids each channel's own.
+    /// The amounts Lighting's tones leave on the film, each read on its range from the bare film (0) to the densest (1):
+    /// the points stretch that range, the zones lay one density by the mean tone, the mids each channel's own.
     pub fn toned(&self, amounts: V3) -> V3 {
         if !self.tones() {
             return amounts;
         }
-        let from_black = |c: usize, a: f32| if self.reversal { 1.0 - a / self.span[c] } else { a / self.span[c] };
-        let u = map(amounts, |c, a| (from_black(c, a) - self.points_black[c]) / (1.0 - self.points_black[c] - self.points_white[c]));
+        let u = map(amounts, |c, a| (a / self.span[c] - self.points_black[c]) / (1.0 - self.points_black[c] - self.points_white[c]));
         let tone = (u[0] + u[1] + u[2]) / 3.0;
         let lift = if self.zones != [0.0; 2] && (0.0..=1.0).contains(&tone) {
             quartered(quartered(tone, self.zones[0], false), self.zones[1], true) - tone
         } else {
             0.0
         };
-        map(u, |c, v| {
-            let toned = midded(v + lift, self.mids[c]);
-            (if self.reversal { 1.0 - toned } else { toned }) * self.span[c]
-        })
+        map(u, |c, v| midded(v + lift, self.mids[c]) * self.span[c])
     }
 
     /// Each layer's log exposure under the negative holding `amounts`, before the grade turns it.
@@ -151,11 +144,9 @@ impl Paper {
         map(raw, |_, v| (v.max(0.0) * self.scale + PAPER_EXPOSURE_FLOOR).ln() * LOG10_E)
     }
 
-    /// How far the mean of `log` lies from the pick's `pick_log` toward a lighter print: under it on a negative paper,
-    /// over it on a reversal one, where more light prints lighter.
+    /// How far the mean of `log` lies under the pick's `pick_log`, toward a lighter print.
     pub fn toward_light(&self, pick_log: f32, log: V3) -> f32 {
-        let gap = pick_log - (log[0] + log[1] + log[2]) / 3.0;
-        if self.reversal { -gap } else { gap }
+        pick_log - (log[0] + log[1] + log[2]) / 3.0
     }
 
     /// Each layer's log exposure moved by Brightness as Exposure moves it, by the same amount on the three, as far as
@@ -166,7 +157,6 @@ impl Paper {
         }
         let x = self.toward_light(self.pick_log, log);
         let moved = kneed(x, self.brightness * LOG10_2, self.knee) - x;
-        let moved = if self.reversal { -moved } else { moved };
         log.map(|v| v - moved)
     }
 

@@ -189,7 +189,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
-    ("paper::the_paper_switch_prints_a_negative_on_its_paper_and_a_slide_on_the_reversal_paper", paper::the_paper_switch_prints_a_negative_on_its_paper_and_a_slide_on_the_reversal_paper),
+    ("paper::the_paper_switch_prints_a_negative_and_a_slide_on_every_paper", paper::the_paper_switch_prints_a_negative_and_a_slide_on_every_paper),
     ("paper::a_digital_photo_prints_on_its_paper_on_pure_black", paper::a_digital_photo_prints_on_its_paper_on_pure_black),
     ("colour_compensation::the_switch_renders_again_without_the_dashed_guide", colour_compensation::the_switch_renders_again_without_the_dashed_guide),
     ("digital::digital_shows_a_negatives_blocks_on_its_film", digital::digital_shows_a_negatives_blocks_on_its_film),

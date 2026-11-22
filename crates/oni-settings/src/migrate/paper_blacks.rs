@@ -65,7 +65,7 @@ mod tests {
         // Twin: a photo on ONI's print, or a slide whose paper never printed, takes the rest.
         let onis = PipelineSettings { print_paper: None, ..on_paper() };
         assert!(!caught_up(older, onis, &former(json!({}))).print.paper_blacks);
-        let slide = PipelineSettings { mode: ConversionMode::Positive, ..on_paper() };
+        let slide = super::super::slide_paper::caught_up(older, PipelineSettings { mode: ConversionMode::Positive, ..on_paper() }, None);
         assert!(!caught_up(older, slide, &former(json!({}))).print.paper_blacks);
         // Twin: a document of this format keeps what it says.
         assert!(!caught_up(PAPER_BLACKS_VERSION, on_paper(), &former(json!({}))).print.paper_blacks);
