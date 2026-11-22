@@ -322,7 +322,7 @@ fn the_gpu_separates_every_sets_every_band() {
     for set in DyeSet::ALL {
         let (k, d) = reading(set, 1.0);
         let out = whole(&mut g, &Image::new(&source).then(stages::dye_separation(&k, &d)));
-        let twin = DyeSeparation { dose: 0.9, ..d.clone() };
+        let twin = DyeSeparation { dose: 0.9, ..d };
         judge(&format!("{set:?}"), &out, &mapped(&pixels, |p| cpu::dye_separation(p, &k, &d)), &mapped(&pixels, |p| cpu::dye_separation(p, &k, &twin)));
     }
 }
