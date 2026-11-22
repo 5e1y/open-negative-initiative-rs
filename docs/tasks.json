@@ -12457,6 +12457,6 @@
     "title": "ONI_BENCH=papers: each paper lit timed to its photon, cold, warm and in a sweep",
     "status": "done",
     "detail": "crates/oni-app/src/bench/stocks.rs: the stocks' bench takes the menu it lights (`Lights`), the papers' laid by `paper-dropping` and lit by `paper-lit`; a photo printing on no paper says so.",
-    "outcome": ""
+    "outcome": "App profile, 2560×1440 window on the 5K screen, mains power, machine loaded by two other agents' builds (load 5 to 7): on a 47 Mpx Lumix RW2 shot digital on Portra 800 and Portra Endura, the 13 other papers each moving the photo, hover to photon p50 62 ms warm (p90 65, worst 68), cold p50 47 ms (first light 36 ms, the bake ahead absorbing it): 2.2 ms to the encode, 3.5 ms to the next frame, 55 ms the frame's GPU work; a 120 Hz sweep over 13 lines rendered 3 times, its last shown in 56 ms. The stocks' menu on the same photo, run just before: warm p50 57 ms, cold p50 62 ms, 63 films."
   }
 ]
