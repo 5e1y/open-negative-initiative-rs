@@ -1,0 +1,30 @@
+Film and paper profiles written from the makers' data sheets
+============================================================
+
+Each .json here is written by scripts/datasheet-profiles.py from the curves traced off one official data sheet
+(Kodak, Kodak Alaris, Fujifilm), as the emulsion dataset of the Open Negative Initiative contributors records them.
+Each file names its sheet in "provenance": the sheet's reference, its official URL, the SHA-256 of the PDF it was
+traced from, the charts read, what is measured and what is inferred. No PDF and no image of a sheet is shipped, and
+no number here comes from spektrafilm.
+
+What the files hold:
+
+- Measured, as printed on the sheet: each layer's spectral sensitivity, the characteristic curves (Status M for a
+  film, Status A for a paper, each less its least density), a film's D-min and mid-scale neutral spectral densities,
+  a Vision3 sheet's and a paper's cyan, magenta and yellow dye shapes. A paper is taken only when its sheet, or an
+  older edition of it, prints its characteristic curves; a display material (Fujiclear) is written as a paper, its
+  densities read as its transmittance under the viewing light.
+- Inferred by the script, each listed in its file: a sensitivity or a dye past the sheet's last point; a film's grey
+  exposure (its ISO 5800 speed point plus the offset Kodak Gold 200's printed Log H Ref holds over its own); a
+  photographic film's cyan, magenta and yellow split of its printed neutral (the Vision3 sheets' mean dyes moved and
+  widened to fit it); each dye's unit (Status M or Status A approximated by normal bands); a paper's base spectrum
+  (its own dyes at its curves' least densities); a paper's curve under its first printed point, where its sheet
+  hides it under the others (their mean). The fourth, cyan-sensitive layer some Fujifilm sheets print is left
+  out.
+
+Licence. The files are measurements: the numbers the makers publish about their products, read off their public
+technical sheets, with each sheet credited and linked. Such facts are not a work their makers' copyright covers, and
+no sheet is reproduced, only values read from its charts; the files ship under the repository's licence (GPL-3.0),
+with the attribution above kept. The makers' names and product names are their trademarks, used only to name the
+product a profile describes. spektrafilm's CC BY-SA 4.0 files in the folder above are still shipped and read by every
+stock and paper that names them; nothing here derives from them.

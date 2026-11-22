@@ -17,6 +17,8 @@ struct Data {
     log_exposure: Vec<f64>,
     density_curves: Vec<[f64; 3]>,
     hanatos2025_adaptation_window_params: [f64; 4],
+    #[serde(default)]
+    layers_as_printed: bool,
 }
 
 /// What the bake reads of a profile; a wavelength the profile leaves unmeasured is `None`.
@@ -28,6 +30,9 @@ pub struct Profile {
     pub density_curves: Vec<[f64; 3]>,
     /// The band-pass window: its ultraviolet edge's centre and width, then its infrared edge's, in nm.
     pub window: [f64; 4],
+    /// Each layer's sensitivity at its data sheet's level: the bake scales it so a grey under the stock's light
+    /// exposes it at log 0, the curves' common log H. A spektrafilm profile comes balanced so.
+    pub layers_as_printed: bool,
 }
 
 impl Profile {
@@ -40,6 +45,11 @@ impl Profile {
         if !on_grid || !sized || d.log_exposure.len() != d.density_curves.len() || d.log_exposure.len() < 2 {
             return Err("a profile off the 380 to 780 nm grid or with mismatched curves".into());
         }
+        let numbers = d.log_sensitivity.iter().flatten().chain(d.density_curves.iter().flatten()).chain(&d.log_exposure);
+        let known = d.channel_density.iter().flatten().chain(&d.base_density).flatten();
+        if !numbers.chain(known).all(|v| v.is_finite()) {
+            return Err("a profile holding a number that is not finite".into());
+        }
         Ok(Profile {
             log_sensitivity: d.log_sensitivity,
             channel_density: d.channel_density,
@@ -47,6 +57,7 @@ impl Profile {
             log_exposure: d.log_exposure,
             density_curves: d.density_curves,
             window: d.hanatos2025_adaptation_window_params,
+            layers_as_printed: d.layers_as_printed,
         })
     }
 }

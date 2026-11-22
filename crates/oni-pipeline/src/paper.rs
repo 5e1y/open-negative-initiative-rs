@@ -33,6 +33,8 @@ struct File {
     data: Data,
 }
 
+/// A paper's profile as its file holds it: spektrafilm's, its curves a fitted model, or one written from its maker's
+/// data sheet, its curves sampled.
 #[derive(Deserialize)]
 struct Data {
     wavelengths: Vec<f64>,
@@ -40,7 +42,8 @@ struct Data {
     channel_density: Vec<[Option<f64>; 3]>,
     base_density: Vec<Option<f64>>,
     log_exposure: Vec<f64>,
-    density_curves_model: Model,
+    density_curves_model: Option<Model>,
+    density_curves: Option<Vec<[f64; 3]>>,
 }
 
 /// The paper's curves as spektrafilm develops them: each layer a sum of normal distributions' integrals.
@@ -58,16 +61,57 @@ impl Model {
     }
 }
 
-/// A paper's profile file, spektrafilm's, shipped unchanged; none for the Frontier.
-pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
-    match paper {
-        PaperStock::KodakPortraEndura => Some(include_bytes!("../resources/film/kodak_portra_endura.json")),
-        PaperStock::KodakSupraEndura => Some(include_bytes!("../resources/film/kodak_supra_endura.json")),
-        PaperStock::KodakUltraEndura => Some(include_bytes!("../resources/film/kodak_ultra_endura.json")),
-        PaperStock::KodakEnduraPremier => Some(include_bytes!("../resources/film/kodak_endura_premier.json")),
-        PaperStock::FujifilmCrystalArchiveTypeII => Some(include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json")),
-        PaperStock::FujifilmFrontierSp3000 => None,
+impl Data {
+    /// Channel `c`'s density at the curves' node `i`: spektrafilm's model where it fits one, else the sheet's sample.
+    fn density(&self, c: usize, i: usize) -> f64 {
+        match (&self.density_curves_model, &self.density_curves) {
+            (Some(model), _) => model.density(c, self.log_exposure[i]),
+            (None, Some(sampled)) => sampled[i][c],
+            (None, None) => unreachable!("a paper's curves are checked as it reads"),
+        }
     }
+}
+
+/// A paper's profile file: spektrafilm's, shipped unchanged, or one written from its maker's data sheet; none for the
+/// Frontier.
+pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
+    let name = paper.profile()?;
+    if name.starts_with("datasheet/") {
+        return dyes::source(name);
+    }
+    Some(match name {
+        "kodak_portra_endura" => include_bytes!("../resources/film/kodak_portra_endura.json"),
+        "kodak_supra_endura" => include_bytes!("../resources/film/kodak_supra_endura.json"),
+        "kodak_ultra_endura" => include_bytes!("../resources/film/kodak_ultra_endura.json"),
+        "kodak_endura_premier" => include_bytes!("../resources/film/kodak_endura_premier.json"),
+        "fujifilm_crystal_archive_typeii" => include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json"),
+        _ => return None,
+    })
+}
+
+/// A paper's profile, refused off the grid, off its curves' uniform nodes, without curves or holding a number not finite.
+fn parse(json: &[u8]) -> Result<Data, String> {
+    let d = serde_json::from_slice::<File>(json).map_err(|e| e.to_string())?.data;
+    let on_grid = d.wavelengths.len() == WAVELENGTHS && d.wavelengths.iter().enumerate().all(|(i, w)| *w == bake::wavelength(i));
+    let sized = [d.log_sensitivity.len(), d.channel_density.len(), d.base_density.len()].iter().all(|n| *n == WAVELENGTHS);
+    if !on_grid || !sized {
+        return Err("a paper off the 380 to 780 nm grid".into());
+    }
+    let le = &d.log_exposure;
+    let step = le.last().zip(le.first()).map_or(0.0, |(h, l)| (h - l) / (PAPER_CURVE_NODES - 1) as f64);
+    if le.len() != PAPER_CURVE_NODES || !le.iter().enumerate().all(|(i, e)| (e - le[0] - step * i as f64).abs() < 1e-6) {
+        return Err("a paper's curves off their uniform nodes".into());
+    }
+    match (&d.density_curves, &d.density_curves_model) {
+        (Some(sampled), _) if sampled.len() != PAPER_CURVE_NODES => return Err("a paper's curves off their nodes".into()),
+        (None, None) => return Err("a paper without curves".into()),
+        _ => {}
+    }
+    let numbers = d.log_sensitivity.iter().flatten().chain(le).chain(d.density_curves.iter().flatten().flatten());
+    if !numbers.chain(d.channel_density.iter().flatten().chain(&d.base_density).flatten()).all(|v| v.is_finite()) {
+        return Err("a paper holding a number that is not finite".into());
+    }
+    Ok(d)
 }
 
 /// A paper as the stage reads it: its curves, its print's dyes and how they are shown.
@@ -79,15 +123,13 @@ pub struct Sheet {
     pub view: Vec<V3>,
 }
 
+/// Whether `json` reads as a paper's profile, and why not.
+pub fn validate(json: &[u8]) -> Result<(), String> {
+    parse(json).map(|_| ())
+}
+
 fn read(paper: PaperStock) -> Data {
-    let file: File = serde_json::from_slice(source(paper).expect("a profiled paper")).expect("a shipped paper reads");
-    let d = file.data;
-    let on_grid = d.wavelengths.len() == WAVELENGTHS && d.wavelengths.iter().enumerate().all(|(i, w)| *w == bake::wavelength(i));
-    assert!(on_grid && d.log_sensitivity.len() == WAVELENGTHS && d.channel_density.len() == WAVELENGTHS, "a paper on the 380 to 780 nm grid");
-    assert!(d.log_exposure.len() == PAPER_CURVE_NODES, "a paper's curves on its nodes");
-    let step = (d.log_exposure[PAPER_CURVE_NODES - 1] - d.log_exposure[0]) / (PAPER_CURVE_NODES - 1) as f64;
-    assert!(d.log_exposure.iter().enumerate().all(|(i, e)| (e - d.log_exposure[0] - step * i as f64).abs() < 1e-9), "a uniform log exposure axis");
-    d
+    parse(source(paper).expect("a profiled paper")).expect("a shipped paper reads")
 }
 
 fn baked(paper: PaperStock) -> Sheet {
@@ -107,7 +149,7 @@ fn baked(paper: PaperStock) -> Sheet {
         .unzip();
     let le = &d.log_exposure;
     Sheet {
-        curves: std::array::from_fn(|i| std::array::from_fn(|c| d.density_curves_model.density(c, le[i]) as f32)),
+        curves: std::array::from_fn(|i| std::array::from_fn(|c| d.density(c, i) as f32)),
         curve_low: le[0] as f32,
         curve_step: ((le[PAPER_CURVE_NODES - 1] - le[0]) / (PAPER_CURVE_NODES - 1) as f64) as f32,
         print,

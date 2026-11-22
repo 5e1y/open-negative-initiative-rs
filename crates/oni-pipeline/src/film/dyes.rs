@@ -39,8 +39,11 @@ pub const C41: [&str; 9] = [
     "fujifilm_xtra_400",
 ];
 
-/// A profile's file, shipped unchanged.
+/// A profile's file: spektrafilm's, shipped unchanged, or under `datasheet/` one written from its maker's data sheet.
 pub fn source(name: &str) -> Option<&'static [u8]> {
+    if let Some(sheet) = name.strip_prefix("datasheet/") {
+        return super::datasheet::PROFILES.iter().find(|(n, _)| *n == sheet).map(|(_, json)| *json);
+    }
     Some(match name {
         "kodak_portra_160" => include_bytes!("../../resources/film/kodak_portra_160.json"),
         "kodak_portra_400" => include_bytes!("../../resources/film/kodak_portra_400.json"),

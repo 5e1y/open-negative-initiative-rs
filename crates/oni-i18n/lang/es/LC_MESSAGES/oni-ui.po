@@ -5361,6 +5361,10 @@ msgstr "Compilando los núcleos de imagen"
 msgid "Stock not specified"
 msgstr "Emulsión no especificada"
 
+#: crates/oni-app/src/stocks.rs
+msgid "Datasheet"
+msgstr "Ficha técnica"
+
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"
 msgstr "ACTUALIZAR"
