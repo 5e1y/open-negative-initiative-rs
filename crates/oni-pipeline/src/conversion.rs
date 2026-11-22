@@ -72,7 +72,7 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
     let on_paper = s.paper().is_some() && !print.bypassed;
-    let dyes = if on_paper { stock_amounts(s) } else { stock_separation(s) };
+    let dyes = if on_paper { paper_amounts(s) } else { stock_separation(s) };
     let lv = reaching(print, &s.levels, mono.then(|| graduation::window(s.mode)), mono);
     let unreached = s.levels.windows();
     let windows = lv.windows();

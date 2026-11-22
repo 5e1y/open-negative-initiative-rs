@@ -1,6 +1,6 @@
 //! The paper: spektrafilm's print of Portra 800's dyes on each paper; each frame's enlarger resting where its grey prints
-//! neutral at a plain RAW's grey, its ends the paper's own; the print the paper's alone; slides never printed; the GPU on
-//! every branch. Each verdict has a twin.
+//! neutral at a plain RAW's grey, its ends the paper's own; the print the paper's alone; slides never on a negative paper;
+//! the GPU on every branch, a slide's reversal paper included. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -178,7 +178,7 @@ fn a_legacy_print_on_a_paper_rests_at_its_rest_and_its_keys_move_the_enlarger() 
 }
 
 #[test]
-fn a_slide_is_never_printed_and_a_measure_reads_no_paper() {
+fn a_slide_is_never_printed_on_a_negative_paper_and_a_measure_reads_no_paper() {
     let slide = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
     assert!(slide.paper().is_none() && conversion::stage47(&slide).paper.is_none());
     let inverted = PipelineSettings { inverted_source: true, ..prepared_negative() };
@@ -214,7 +214,21 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveTypeII), ..prepared_negative() };
     let mut anchored = PipelineSettings { print: Print { paper_blacks: true, brightness: -0.7, ..lit.print }, ..lit.clone() };
     anchored.print.exposure -= 3.0;
-    let frames = [("digital", digital()), ("lit negative", lit), ("lit negative, its pick on its rest", anchored), ("black and white", mono), ("no unmix", unmixed_none)];
+    let mut slide = PipelineSettings { print_paper: Some(PaperStock::KodakEktachromeRadianceIII), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+    slide.gains.stops = [0.3, 0.0, -0.4];
+    let mut lit_slide = slide.clone();
+    (lit_slide.print.exposure, lit_slide.print.contrast, lit_slide.print.shadows, lit_slide.print.highlights) = (0.5, 0.3, 0.2, -0.1);
+    (lit_slide.print.black_point, lit_slide.print.white_point, lit_slide.print.channel_mid, lit_slide.print.brightness) = (0.04, 0.03, [0.1, 0.0, -0.1], 0.4);
+    lit_slide.print.set_filters([0.1, 0.0, -0.2]);
+    let frames = [
+        ("digital", digital()),
+        ("lit negative", lit),
+        ("lit negative, its pick on its rest", anchored),
+        ("black and white", mono),
+        ("no unmix", unmixed_none),
+        ("slide", slide),
+        ("lit slide", lit_slide),
+    ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));

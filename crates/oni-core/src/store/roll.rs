@@ -39,7 +39,7 @@ fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> Pipeline
 pub fn digital(settings: &PipelineSettings) -> PipelineSettings {
     let digital = PipelineSettings { roll_reference: None, ..settings.carried(oni_settings::ConversionMode::Digital) };
     let placed = digital.on_stock(digital.film().map_or_else(Default::default, |f| f.stock));
-    PipelineSettings { print_paper: Some(settings.print_paper.unwrap_or_default()), ..placed }
+    PipelineSettings { print_paper: Some(placed.fitting_paper()), ..placed }
 }
 
 /// The undo label of a measure, counting frames, never the passes riding with them.
