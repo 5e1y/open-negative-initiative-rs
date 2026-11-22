@@ -48,12 +48,12 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 }
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
-/// black and white print, no channel's own tone; the frame's paper in place of the windows and the print, its own print
-/// followed by the colour density alone.
+/// black and white print, no channel's own tone; the frame's paper in place of the windows and the print, the colour
+/// density and the print's ends its own.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let k = unprinted(s);
     match crate::paper::printing(s, &k, k.dyes.as_ref()) {
-        Some(p) => Stage47 { print_on: 0.0, hunt: 0.0, paper: Some(p.paper), ..k },
+        Some(p) => Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, paper: Some(p.paper), ..k },
         None => k,
     }
 }

@@ -12,7 +12,7 @@ use oni_graph::Image;
 use oni_pipeline::film::{self, GREY};
 use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
-use oni_render::{Paper, Stage47, cpu};
+use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Face, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
@@ -100,11 +100,13 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_and_the_ends_ar
         let p = k.paper.expect(label);
         let [black, white, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
         let shares = paper::layer_shares(&p, [0.0; 3]);
-        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), black {black:?} (Dmax {:?}), white {white:?} (paper {:?}); the base at {shares:?} of each layer's range", *GREY_PRINT, p.dmax, p.white);
+        let dmax = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
+        let dmax = if p.luma { [oni_render::LUMA.iter().zip(dmax).map(|(w, v)| w * v).sum(); 3] } else { dmax };
+        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), black {black:?} (Dmax {dmax:?}), white {white:?} (paper {:?}); the base at {shares:?} of each layer's range", *GREY_PRINT, p.white);
         // Measured within 3e-7: the solve's tolerance in log light.
         assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
         // The ends are the paper's: the base above its Dmax, the densest read at most its white, neither laid on 0 or 1.
-        assert!((0..3).all(|c| black[c] >= p.dmax[c] - 1e-6 && black[c] > 1e-3 && white[c] <= p.white[c] + 1e-6 && white[c] < 0.9), "{label}");
+        assert!((0..3).all(|c| black[c] >= dmax[c] - 1e-6 && black[c] > 1e-3 && white[c] <= p.white[c] + 1e-6 && white[c] < 0.9), "{label}");
         // Twin: the same enlarger through no filtration prints the grey off neutral.
         let bare = Stage47 { paper: Some(Paper { filters: [1.0; 3], ..p }), ..k };
         let unfiltered = cpu::stage47(grey_scan(&s), &bare);
@@ -124,7 +126,7 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_and_the_ends_ar
 }
 
 #[test]
-fn the_print_is_the_papers_own_and_the_colour_density_alone_follows() {
+fn the_print_is_the_papers_own_its_colour_density_included() {
     let stock = film::stock(VirtualStock::KodakPortra800);
     let pixels: Vec<V4> = noise(23, 17, 5, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let mut lit = prepared_negative();
@@ -148,13 +150,14 @@ fn the_print_is_the_papers_own_and_the_colour_density_alone_follows() {
         let stacked = worst(&Stage47 { print_on: 1.0, print_stops: Print::RESTING_EXPOSURE, ..k });
         assert!(stacked > 1e-2, "{label}: {stacked}");
     }
-    // The colour density follows the paper's print, as on ONI's.
+    // The colour density is the paper's own, laid on its print before its ends, as on ONI's print after its curve.
     let mut dense = prepared_negative();
     dense.density = 0.4;
     let k = conversion::stage47(&dense);
-    let (q, plain) = (pixels[7], Stage47 { density: 1.0, ..k });
+    let p = k.paper.unwrap();
+    let (q, plain) = (pixels[7], Stage47 { paper: Some(Paper { density: 1.0, ..p }), ..k });
     let (v, w) = (cpu::stage47(q, &k), cpu::stage47(q, &plain));
-    assert!(k.density > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
+    assert!(k.density == 1.0 && p.density > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
 }
 
 #[test]
@@ -210,7 +213,10 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let mut mono = PipelineSettings { print_paper: Some(PaperStock::KodakSupraEndura), ..mono() };
     (mono.print.contrast, mono.print.highlights, mono.print.white_point, mono.print.brightness, mono.print.true_blacks) = (0.3, -0.2, 0.04, -0.5, true);
     let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveTypeII), ..prepared_negative() };
-    for (label, s) in [("digital", digital()), ("lit negative", lit), ("black and white", mono), ("no unmix", unmixed_none)] {
+    let mut anchored = PipelineSettings { print: Print { true_blacks: false, brightness: -0.7, ..lit.print }, ..lit.clone() };
+    anchored.print.exposure -= 3.0;
+    let frames = [("digital", digital()), ("lit negative", lit), ("lit negative, its pick on its rest", anchored), ("black and white", mono), ("no unmix", unmixed_none)];
+    for (label, s) in frames {
         let k = conversion::stage47(&s);
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
         let reference = mapped(&pixels, |p| cpu::stage47(p, &k));

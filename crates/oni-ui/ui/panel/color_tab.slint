@@ -49,7 +49,7 @@ component PrintRows inherits VerticalLayout {
             alignment: center;
             HelpMark {
                 subject: @tr("True blacks");
-                note: @tr("The paper's deepest black laid on pure black, its white kept and the tones between stretched evenly, as a print is shown on a screen. Off, the print keeps the paper's own black, as the sheet shows it; brightened by Exposure, the blacks lift above either.");
+                note: @tr("The black picked in Prepare the Roll printed on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Off, that black prints where the paper lays it at rest, a hair above its own black. Lighting never lifts it; only Black point moves it.");
             }
         }
     }
@@ -239,7 +239,7 @@ export component ColorPane inherits Pane {
         news-note: News.lighting-note;
         news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
-        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the print keeping the paper's own black and white: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between them.");
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between that black and the white.");
         StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
         // A paper's print brightened between its own black and white; on ONI's print Exposure is that curve.
         if PanelState.paper-shown && PanelState.paper-on: StoreSlider { field: 56; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }

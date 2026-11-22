@@ -1,5 +1,5 @@
 //! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
-//! or the dye separation then the paper's print, its own, which only the colour density follows.
+//! or the dye separation then the paper's print, its own, colour density and ends included.
 
 use super::*;
 
@@ -232,13 +232,19 @@ fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
             density *= (-k.hunt * (shaped(g, ps, pc, pz) - g)).exp();
         }
     }
-    if density != 1.0 {
-        let pw = map(e, |_, x| x.max(0.0).powf(density));
-        let p = dot(pw, LUMA);
-        if p > 1e-12 {
-            let f = p.powf(1.0 / density - 1.0);
-            e = map(pw, |_, x| x * f);
-        }
+    coloured(e, density)
+}
+
+/// The colour density: each channel's light to the power `density`, the luma's own power undone.
+pub(super) fn coloured(e: V3, density: f32) -> V3 {
+    if density == 1.0 {
+        return e;
+    }
+    let pw = map(e, |_, x| x.max(0.0).powf(density));
+    let p = dot(pw, LUMA);
+    if p > 1e-12 {
+        let f = p.powf(1.0 / density - 1.0);
+        return map(pw, |_, x| x * f);
     }
     e
 }

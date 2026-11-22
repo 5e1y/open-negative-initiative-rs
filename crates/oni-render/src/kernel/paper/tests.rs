@@ -32,10 +32,11 @@ fn narrow() -> Paper {
         curve_step: 0.01,
         print: &PRINT,
         view: &VIEW,
-        dmax: [0.01, 0.02, 0.03],
+        density: 1.0,
+        pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
+        anchor: [0.01, 0.02, 0.03],
         brightness: 0.0,
-        true_blacks: false,
         luma: false,
     }
 }
@@ -113,24 +114,41 @@ fn the_tones_stretch_the_range_lay_the_zones_by_tone_and_hold_both_ends() {
 }
 
 #[test]
-fn brightness_and_true_blacks_hold_the_papers_white_and_lay_its_dmax() {
+fn the_ends_lay_the_pick_on_its_anchor_hold_the_white_and_brighten_between() {
     let k = narrow();
-    for (brightness, true_blacks) in [(1.0, false), (-1.0, false), (0.0, true), (2.0, true)] {
-        let p = Paper { brightness, true_blacks, ..k };
-        let floor = if true_blacks { [0.0; 3] } else { k.dmax };
-        let (black, white) = (p.ended(k.dmax), p.ended(k.white));
-        assert!((0..3).all(|c| (black[c] - floor[c]).abs() < 1e-7 && (white[c] - k.white[c]).abs() < 1e-6), "{black:?} {white:?}");
+    let anchors = [k.pick, [0.0; 3], [0.005, 0.03, 0.01]];
+    for (brightness, anchor) in [(1.0, anchors[0]), (-1.0, anchors[0]), (0.0, anchors[1]), (2.0, anchors[1]), (0.5, anchors[2])] {
+        let p = Paper { brightness, anchor, ..k };
+        let (black, white) = (p.ended(k.pick), p.ended(k.white));
+        assert!((0..3).all(|c| (black[c] - anchor[c]).abs() < 1e-7 && (white[c] - k.white[c]).abs() < 1e-6), "{black:?} {white:?}");
     }
     // Brightness: the odds gain between the ends, a stop lifting the middle of the range to two thirds.
     let bright = Paper { brightness: 1.0, ..k };
-    let mid = map(k.dmax, |c, b| b + 0.5 * (k.white[c] - b));
+    let mid = map(k.pick, |c, b| b + 0.5 * (k.white[c] - b));
     let lifted = bright.ended(mid);
-    assert!((0..3).all(|c| ((lifted[c] - k.dmax[c]) / (k.white[c] - k.dmax[c]) - 2.0 / 3.0).abs() < 1e-6), "{lifted:?}");
-    // True blacks: a straight line in light from pure black to the white, so the middle of the range lands at half the white.
-    let laid = Paper { true_blacks: true, ..k }.ended(mid);
-    assert!((0..3).all(|c| (laid[c] - 0.5 * k.white[c]).abs() < 1e-6), "{laid:?}");
-    // Twin: at rest the print's light passes as it is, its Dmax off black.
-    assert_eq!(k.ended(k.dmax), k.dmax);
+    assert!((0..3).all(|c| ((lifted[c] - k.pick[c]) / (k.white[c] - k.pick[c]) - 2.0 / 3.0).abs() < 1e-6), "{lifted:?}");
+    // On pure black: a straight line in light from no light to the white, so the middle of the range lands at half the
+    // white; under the pick a gain onto no light, past the white a straight line on.
+    let laid = Paper { anchor: [0.0; 3], ..k };
+    assert!((0..3).all(|c| (laid.ended(mid)[c] - 0.5 * k.white[c]).abs() < 1e-6), "{:?}", laid.ended(mid));
+    assert_eq!(laid.ended(map(k.pick, |_, v| v * 0.5)), [0.0; 3]);
+    let past = map(k.white, |_, v| v + 0.1);
+    assert!((0..3).all(|c| laid.ended(past)[c] > k.white[c]), "{:?}", laid.ended(past));
+    // Twin: at rest the print's light passes as it is, the pick its own.
+    assert_eq!(k.ended(k.pick), k.pick);
+    assert_eq!(k.ended(mid), mid);
+}
+
+#[test]
+fn the_colour_density_raises_each_channel_and_undoes_the_lumas_power() {
+    let k = Paper { density: 2.0, ..narrow() };
+    let light = [0.2, 0.3, 0.5];
+    let out = k.coloured(light);
+    let p: V3 = light.map(|v| v * v);
+    let f = (LUMA[0] * p[0] + LUMA[1] * p[1] + LUMA[2] * p[2]).powf(-0.5);
+    assert!((0..3).all(|c| (out[c] - p[c] * f).abs() < 1e-7), "{out:?}");
+    // Twin: at unit density the light passes to the bit.
+    assert_eq!(narrow().coloured(light), light);
 }
 
 #[test]

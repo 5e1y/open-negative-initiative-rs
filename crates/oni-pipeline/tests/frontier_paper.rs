@@ -75,7 +75,7 @@ fn the_rest_prints_the_reference_grey_neutral_with_no_offset_of_the_machines() {
         let p = k.paper.expect(label);
         let grey = cpu::stage47(grey_scan(&s), &k);
         let filtration = conversion::printing(&s).unwrap().filtration;
-        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), filtration {filtration:?} CC, Dmax {:?}, white {:?}", *GREY_PRINT, p.dmax, p.white);
+        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), filtration {filtration:?} CC, pick {:?}, white {:?}", *GREY_PRINT, p.pick, p.white);
         assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
         // Twin: the same enlarger through no filtration prints the grey off neutral.
         if label != "black and white" {
@@ -155,10 +155,10 @@ fn the_gpu_prints_the_frontier_as_its_reference_does() {
         judge(&format!("Frontier, lit {label}, True blacks on"), &out, &reference, &twin);
         let (e, t) = (error(&out, &reference), error(&out, &twin));
         assert!(e < 1.5e-5 && t > 4e-2, "{label}: {e:.2e}, twin {t:.2e}");
-        // True blacks lays the print's Dmax, its own light near none already, on pure black.
+        // True blacks lays the pick on pure black.
         let dark = conversion::stage47(&PipelineSettings { print: Print { true_blacks: false, ..lit.print }, ..lit.clone() });
         let lifted = error(&reference, &mapped(&pixels, |p| cpu::stage47(p, &dark)));
-        println!("{label}: True blacks moves the print {lifted:.1e}, its Dmax {:?}", k.paper.unwrap().dmax);
+        println!("{label}: True blacks moves the print {lifted:.1e}, its pick printed at {:?}", dark.paper.unwrap().anchor);
         assert!(lifted > 0.0, "{label}");
     }
 }

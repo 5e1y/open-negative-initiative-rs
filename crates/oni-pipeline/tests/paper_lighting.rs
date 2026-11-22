@@ -1,6 +1,6 @@
 //! Lighting on the paper in density: Exposure a stop of the enlarger's light, ungeared; Temperature and Tint its filtration,
-//! 30.1 CC a stop, the grey's luma held and the ends left where the paper prints them; Contrast the paper's grade about
-//! the grey; no colour compensation on the paper; ONI's print to the bit. Each verdict has a twin.
+//! 30.1 CC a stop, the grey's luma held as the print shows it, the densest read tinted with it; Contrast the paper's
+//! grade about the grey; no colour compensation on the paper; ONI's print to the bit. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -45,17 +45,22 @@ fn exposure_is_a_stop_of_the_enlargers_light_ungeared() {
             let shift: Vec<f32> = anchors.iter().flat_map(|a| (0..3).map(move |c| (a, c))).map(|(a, c)| p.exposed(*a)[c] - rest.exposed(*a)[c]).collect();
             let off = shift.iter().map(|d| (d + stops * std::f32::consts::LOG10_2).abs()).fold(0.0f32, f32::max);
             let [b, _, g] = lit(&s, |u| u.print.exposure += stops);
-            let (lifted, was, dmax) = (luma(rgb(b)), luma(rgb(black)), luma(p.dmax));
+            let raw = unanchored(&s, |u| u.print.exposure += stops)[0];
+            let dmax = dmax_of(&p);
+            let (lifted, was) = (luma(rgb(raw)), luma(rgb(black)));
             let (step, now, rest_grey) = (shift[0], luma(rgb(g)), luma(rgb(grey)));
-            println!("{label}, Exposure {stops:+}: log exposure {step:+.5} (off a stop's by {off:.1e}), black {lifted:.5} from {was:.5} (Dmax {dmax:.5}), grey {now:.4} from {rest_grey:.4}");
+            let dark = luma(dmax);
+            println!("{label}, Exposure {stops:+}: log exposure {step:+.5} (off a stop's by {off:.1e}), base {lifted:.5} from {was:.5} (Dmax {dark:.5}), grey {now:.4} from {rest_grey:.4}");
             // A stop on the slider is a stop less light on the paper, every layer, every tone.
             assert!(off < 2e-6, "{label}, {stops}: {shift:?}");
-            // Brightening lifts the base off the paper's Dmax; darkening takes it toward the Dmax, never past.
+            // On the paper, brightening lifts the base off its Dmax, darkening takes it toward the Dmax, never past;
+            // the print then lays it back where the rest prints it.
             if stops > 0.0 {
-                assert!(luma(rgb(b)) > luma(rgb(black)) * 1.2 && luma(rgb(g)) > luma(rgb(grey)), "{label}, {stops}");
+                assert!(luma(rgb(raw)) > luma(rgb(black)) * 1.2 && luma(rgb(g)) > luma(rgb(grey)), "{label}, {stops}");
             } else {
-                assert!(luma(rgb(b)) < luma(rgb(black)) && (0..3).all(|c| b[c] >= p.dmax[c] - 1e-6), "{label}, {stops}");
+                assert!(luma(rgb(raw)) < luma(rgb(black)) && (0..3).all(|c| raw[c] >= dmax[c] - 1e-6), "{label}, {stops}");
             }
+            assert!((0..3).all(|c| (b[c] - black[c]).abs() < 1e-6), "{label}, {stops}: the base held");
             // Twin: ONI's gear, twice the stops, moves the paper two stops.
             let geared = Paper { scale: rest.scale * (-Print::EXPOSURE_GEAR * stops).exp2(), ..rest };
             assert!((geared.exposed(anchors[2])[1] - p.exposed(anchors[2])[1]).abs() > 0.29, "{label}, {stops}");
@@ -63,9 +68,24 @@ fn exposure_is_a_stop_of_the_enlargers_light_ungeared() {
         // Twin: ONI's window, laid on each print's own base and densest read, holds the base on black either way, so the
         // lift the check reads is gone.
         let windowed = |[b, _, w]: [V4; 3]| luma(std::array::from_fn(|c| (b[c] - b[c]) / (w[c] - b[c])));
-        let (up, at_rest) = (windowed(lit(&s, |u| u.print.exposure += 1.0)), windowed(lit(&s, |_| {})));
+        let (up, at_rest) = (windowed(unanchored(&s, |u| u.print.exposure += 1.0)), windowed(lit(&s, |_| {})));
         assert!(up <= at_rest * 1.2 + 1e-9, "{label}: {up} {at_rest}");
     }
+}
+
+/// `s` moved by `f`, its anchors printed on the paper's light alone, its ends off.
+fn unanchored(s: &PipelineSettings, f: impl Fn(&mut PipelineSettings)) -> [V4; 3] {
+    let mut t = s.clone();
+    f(&mut t);
+    let k = conversion::stage47(&t);
+    let k = Stage47 { paper: k.paper.map(|p| Paper { anchor: p.pick, brightness: 0.0, ..p }), ..k };
+    anchor_scans(s).map(|q| cpu::stage47(q, &k))
+}
+
+/// The paper's own Dmax as its print shows it.
+fn dmax_of(p: &Paper) -> [f32; 3] {
+    let v = p.viewed(p.curves[oni_render::PAPER_CURVE_NODES - 1]);
+    if p.luma { [luma(v); 3] } else { v }
 }
 
 fn rgb(v: V4) -> [f32; 3] {
@@ -103,9 +123,9 @@ fn temperature_and_tint_move_the_enlargers_filtration_and_hold_the_greys_luma() 
         let ((warmth, tint), (was_warmth, was_tint)) = (axes(grey), axes(rest_grey));
         let (dt, dn) = (f[0] - f[2], (f[0] + f[2]) / 2.0 - f[1]);
         assert!(if dt != 0.0 { (warmth - was_warmth) / dt > 0.05 } else { (tint - was_tint) / dn > 0.05 }, "{label}: {grey:?}");
-        // The ends move with the filtration, as on an enlarger: the paper's base and the densest read tinted too.
+        // The densest read moves with the filtration, as on an enlarger; the pick stays where the rest prints it.
         let moved_end = |a: V4, b: V4| ((a[0] / a[2]).ln() - (b[0] / b[2]).ln()).abs() + ((a[1] / a[0]).ln() - (b[1] / b[0]).ln()).abs();
-        assert!(moved_end(white, rest_white) > 1e-3 || moved_end(black, rest_black) > 1e-3, "{label}");
+        assert!(moved_end(white, rest_white) > 1e-3 && moved_end(black, rest_black) < 1e-4, "{label}");
         // Twin: a window re-anchoring each print's densest read on white leaves no tint there for the check to read.
         let anchored = |w: V4, b: V4| -> V4 { std::array::from_fn(|c| if c < 3 { (w[c] - b[c]) / (w[c] - b[c]) } else { 1.0 }) };
         assert!(moved_end(anchored(white, black), anchored(rest_white, rest_black)) < 1e-6, "{label}");

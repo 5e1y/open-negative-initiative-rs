@@ -144,11 +144,11 @@ pub struct Print {
     /// curves and the points' colour hold; off, the sliders bend each channel's tone alone.
     #[serde(rename = "colourCompensation", skip_serializing_if = "is_on")]
     pub colour_compensation: bool,
-    /// A paper's print brightened between its own Dmax and white, both held: an odds gain at `EXPOSURE_GEAR` times its
-    /// stops, as ONI's print takes Exposure; none on ONI's print, whose Exposure is that curve.
+    /// A paper's print brightened between the frame's printed pick and the paper's white, both held: an odds gain at
+    /// `EXPOSURE_GEAR` times its stops, as ONI's print takes Exposure; none on ONI's print, whose Exposure is that curve.
     #[serde(skip_serializing_if = "at_zero")]
     pub brightness: f32,
-    /// A paper's Dmax laid on pure black, its white kept: black point compensation, for a print on a screen's black.
+    /// A paper's print with the frame's pick on pure black, its white kept, for a print on a screen's black.
     #[serde(rename = "trueBlacks", skip_serializing_if = "is_off")]
     pub true_blacks: bool,
     /// Off for a measurement upstream; never serialised.

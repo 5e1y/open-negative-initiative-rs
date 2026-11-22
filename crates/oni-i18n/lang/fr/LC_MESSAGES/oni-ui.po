@@ -1994,8 +1994,8 @@ msgid "True blacks"
 msgstr "Vrais noirs"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The paper's deepest black laid on pure black, its white kept and the tones between stretched evenly, as a print is shown on a screen. Off, the print keeps the paper's own black, as the sheet shows it; brightened by Exposure, the blacks lift above either."
-msgstr "Le noir le plus profond du papier ramené au noir pur, son blanc gardé et les tons entre les deux étirés régulièrement, comme un tirage se montre sur un écran. Désactivé, le tirage garde le noir propre du papier, comme la feuille le montre ; éclaircis par Exposition, les noirs se lèvent au-dessus de l’un comme de l’autre."
+msgid "The black picked in Prepare the Roll printed on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Off, that black prints where the paper lays it at rest, a hair above its own black. Lighting never lifts it; only Black point moves it."
+msgstr "Le noir choisi dans Préparer la pellicule tiré sur le noir pur, le blanc du papier gardé et les tons entre les deux étirés régulièrement, comme un tirage se montre sur un écran. Désactivé, ce noir se tire là où le papier le pose au repos, un rien au-dessus de son propre noir. Lumière ne le lève jamais ; seul Point noir le déplace."
 
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Scanner: a minilab's density and colour, in steps"
@@ -2186,8 +2186,8 @@ msgid "Blue contrast"
 msgstr "Contraste bleu"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the print keeping the paper's own black and white: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between them."
-msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même.\n\nSur papier, les curseurs agissent comme en chambre noire, le tirage gardant le noir et le blanc propres du papier : Exposition est la lumière de l’agrandisseur, Température et Teinte ses filtres, Contraste la gradation du papier. Luminosité éclaircit le tirage entre les deux."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between that black and the white."
+msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même.\n\nSur papier, les curseurs agissent comme en chambre noire, le noir choisi dans Préparer la pellicule tenu : Exposition est la lumière de l’agrandisseur, Température et Teinte ses filtres, Contraste la gradation du papier. Luminosité éclaircit le tirage entre ce noir et le blanc."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Brightness"

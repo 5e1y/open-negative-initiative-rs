@@ -1,9 +1,9 @@
 //! The paper: Lighting's tones laid on the negative's density, the enlarger's light through its dyes exposes a colour
-//! paper's layers, which develop on their curves turned by the grade; the print's dyes are read under D50, then
-//! Brightness and True blacks between the paper's own Dmax and white.
+//! paper's layers, which develop on their curves turned by the grade; the print's dyes are read under D50, its colour
+//! density laid, then its ends: the frame's pick on its anchor, the paper's white held, Brightness between them.
 
 use super::*;
-use super::stage47::{midded, quartered};
+use super::stage47::{coloured, midded, quartered};
 
 /// Most wavelengths either sum runs over: every sample of 380 to 780 nm by 5.
 pub const PAPER_BANDS: usize = 81;
@@ -18,7 +18,7 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// A negative printed on a paper: how its pixel is read as dye amounts and toned, the enlarger's light, the paper's
-/// curves and grade, its print seen under D50 in Rec. 2020, and the print's ends.
+/// curves and grade, its print seen under D50 in Rec. 2020, its colour density, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
@@ -55,13 +55,16 @@ pub struct Paper {
     pub print: &'static [V4],
     /// Per wavelength the print reflects: D50 read by the 1931 observer, adapted to D65, in Rec. 2020.
     pub view: &'static [V3],
-    /// The paper's own Dmax and white as the print shows them: the ends Brightness and True blacks hold.
-    pub dmax: V3,
+    /// Saturation, the colour density: each channel's light to this power, the luma undone, as ONI's print lays it.
+    pub density: f32,
+    /// The print, at its colour density, of the frame's pick without Lighting's points, and the paper's own white:
+    /// the ends the print's light is read between.
+    pub pick: V3,
     pub white: V3,
-    /// Brightness, an odds gain of this many stops on the print's light between its ends.
+    /// Where the pick lands: where the enlarger's rest prints it, or pure black for True blacks.
+    pub anchor: V3,
+    /// Brightness, an odds gain of this many stops on the print's light between the anchor and the white.
     pub brightness: f32,
-    /// The paper's Dmax laid on pure black, its white kept: black point compensation.
-    pub true_blacks: bool,
     /// A black and white print reads its luma on its three channels.
     pub luma: bool,
 }
@@ -85,8 +88,9 @@ impl Paper {
             v3(self.pivot, 0.0),
             v3(self.slope, 0.0),
             [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
-            v3(self.dmax, flag(self.true_blacks)),
+            v3(self.pick, self.density),
             v3(self.white, 0.0),
+            v3(self.anchor, 0.0),
         ];
         let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
         rows.extend(self.negative.iter().copied().chain(pad(self.negative.len())));
@@ -169,24 +173,38 @@ impl Paper {
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 
-    /// The print's light between the paper's Dmax and white: Brightness's odds gain, both ends held, and True blacks
-    /// stretching the Dmax onto pure black, a straight line in light, the white kept.
+    /// The print's light at its colour density.
+    pub fn coloured(&self, light: V3) -> V3 {
+        coloured(light, self.density)
+    }
+
+    /// Each channel read from the printed pick K to the white W, u = (v − K) / (W − K), laid from the anchor A to W by
+    /// Brightness's odds gain g·u / (1 + (g − 1)·u), straight past W; under K by v·A / K, so it stays above no light.
     pub fn ended(&self, light: V3) -> V3 {
-        if self.brightness == 0.0 && !self.true_blacks {
+        if self.brightness == 0.0 && self.anchor == self.pick {
             return light;
         }
         let g = self.brightness.exp2();
         map(light, |c, v| {
-            let u = ((v - self.dmax[c]) / (self.white[c] - self.dmax[c])).max(0.0);
-            let floor = if self.true_blacks { 0.0 } else { self.dmax[c] };
-            floor + (self.white[c] - floor) * (g * u / (1.0 + (g - 1.0) * u))
+            let (k, a, w) = (self.pick[c], self.anchor[c], self.white[c]);
+            if v <= k {
+                return v * a / k;
+            }
+            let u = (v - k) / (w - k);
+            let t = u.min(1.0);
+            a + (w - a) * (g * t / (1.0 + (g - 1.0) * t) + (u - t))
         })
+    }
+
+    /// What the print shows of a negative holding `amounts`: its light, its colour density, its ends.
+    pub fn shown(&self, amounts: V3) -> V3 {
+        self.ended(self.coloured(self.printed(amounts)))
     }
 }
 
 /// One negative pixel printed on the paper, in linear Rec. 2020; alpha kept.
 pub fn paper(s: V4, k: &Paper) -> V4 {
-    with_alpha(k.ended(k.printed(k.amounts(s))), s[3])
+    with_alpha(k.shown(k.amounts(s)), s[3])
 }
 
 #[cfg(test)]
