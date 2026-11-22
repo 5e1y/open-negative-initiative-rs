@@ -11,24 +11,26 @@ What each part of a profile is:
   last point each layer falls on at the slope of its last 15 nm, at least 0.02 log per nm (the sheet stops where
   the curve leaves its chart). Their levels are left as printed: the bake scales each layer so a grey under the
   stock's light exposes it at log 0, which is what the characteristic curves' common log H axis states.
-- density_curves: the sheet's Status M curves less each channel's least density, on log H less the grey's; the
-  grey sits 1.03 log above the ISO 5800 speed point of the curves themselves, the place Kodak's one printed
+- sheet_density_curves: the sheet's Status M curves less each channel's least density, on log H less the grey's;
+  the grey sits 1.03 log above the ISO 5800 speed point of the curves themselves, the place Kodak's one printed
   "Log H Ref" (Gold 200, E-7022) holds over that sheet's speed point; a push sits n x 0.30 log under its stock's.
+- density_curves: the dyes' amounts the bake develops, the sheet's curves unmixed: a Status M curve is a neutral's
+  integral density, each dye's absorption in the other bands in it, so at each node the amounts are solved whose
+  spectral density over the base Status M reads as the sheet prints.
 - channel_density: the dyes. A Vision3 sheet prints its cyan, magenta and yellow: their shapes are kept and their
   amounts fitted to the printed mid-scale neutral. Every other sheet prints only the mid-scale neutral and D-min:
   the Vision3 sheets' mean dyes are shifted and widened per dye (within 40 nm and 0.8-1.25, each held at its
   sheet's last value for 40 nm past it) to fit that neutral
-  less D-min. Each dye is then scaled to a Status M density of 1 in its own channel, the curves' unit; Status M
-  is approximated by normal bands at 650, 535 and 440 nm, 35, 40 and 40 nm wide at half height.
+  less D-min. Each dye is then scaled to a Status M density of 1 in its own channel, the amounts' unit.
 - base_density: the sheet's D-min, printed.
 
-A colour paper's profile holds the same parts, its densities Status A (approximated by normal bands at 620, 540 and
-440 nm, 30, 40 and 40 nm wide); only a paper whose sheet prints its characteristic curves is taken, and a display
-material viewed by transmission is written as a paper, its densities read as its transmittance under the viewing
-light. A sheet prints no base spectrum: the base is the paper's own dyes in the amounts that read the curves' least
-densities. Each layer's level is as printed: Kodak's absolute, Fujifilm's on one relative axis for all three; the
-curves' log H origin is set where green prints an 18 % grey, the enlarger's time absorbing it. A dye's or a layer's
-points hidden on its sheet are filled by its end slope.
+Status M and Status A are ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), on the dyes' known
+wavelengths. A colour paper's profile holds the same parts, its densities Status A; only a paper whose sheet prints
+its characteristic curves is taken, and a display material viewed by transmission is written as a paper, its
+densities read as its transmittance under the viewing light. A sheet prints no base spectrum: the base is the
+paper's own dyes in the amounts that read the curves' least densities. Each layer's level is as printed: Kodak's
+absolute, Fujifilm's on one relative axis for all three; the curves' log H origin is set where green prints an 18 %
+grey, the enlarger's time absorbing it. A dye's or a layer's points hidden on its sheet are filled by its end slope.
 """
 
 import json
@@ -153,16 +155,71 @@ def vision3_basis():
     return np.mean(sets, axis=0)
 
 
-# Status M's red, green and blue bands, approximated: centre and full width at half height, in nm.
-STATUS_M = [(650.0, 35.0), (535.0, 40.0), (440.0, 40.0)]
+# ISO 5-3's Status M and Status A spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), red, green and blue: the
+# first wavelength, the log10 products every 10 nm normalised to a 5.000 peak, and the log slopes past either end.
+STATUS_M = [
+    (620.0, [2.109, 4.479, 5.000, 4.899, 4.578, 4.252, 3.875, 3.491, 3.099, 2.687, 2.269, 1.859, 1.449, 1.054, 0.654, 0.254], 0.260, -0.040),
+    (470.0, [1.152, 2.207, 3.156, 3.804, 4.272, 4.626, 4.872, 5.000, 4.995, 4.818, 4.458, 3.915, 3.172, 2.239, 1.070], 0.106, -0.120),
+    (410.0, [2.103, 4.111, 4.632, 4.871, 5.000, 4.955, 4.743, 4.343, 3.743, 2.990, 1.852], 0.250, -0.220),
+]
+STATUS_A = [
+    (600.0, [2.568, 4.638, 5.000, 4.871, 4.604, 4.286, 3.900, 3.551, 3.165, 2.776, 2.383, 1.970, 1.551, 1.141, 0.741, 0.341], 0.270, -0.040),
+    (500.0, [1.650, 3.822, 4.782, 5.000, 4.906, 4.644, 4.221, 3.609, 2.766, 1.579], 0.220, -0.170),
+    (420.0, [3.602, 4.819, 5.000, 4.912, 4.620, 4.040, 2.989, 1.566, 0.165], 0.380, -0.140),
+]
 
 
-def status_m(dye, channel):
-    """A dye's density as Status M's band `channel` reads it, on the wavelengths the dye is known."""
-    centre, width = STATUS_M[channel]
-    w = np.exp(-0.5 * ((WAVELENGTHS - centre) / (width / 2.3548)) ** 2)
-    ok = ~np.isnan(dye)
-    return -math.log10(float((10.0 ** -dye[ok] * w[ok]).sum() / w[ok].sum()))
+def products(status):
+    """A status's three spectral products on the grid, linear in log between the table's points, peak 1."""
+    out = []
+    for first, logs, before, after in status:
+        nodes = first + 10.0 * np.arange(len(logs))
+        v = np.interp(WAVELENGTHS, nodes, logs)
+        v = np.where(WAVELENGTHS < nodes[0], logs[0] + before * (WAVELENGTHS - nodes[0]), v)
+        v = np.where(WAVELENGTHS > nodes[-1], logs[-1] + after * (WAVELENGTHS - nodes[-1]), v)
+        out.append(10.0 ** (v - 5.0))
+    return np.array(out)
+
+
+def read(spectral, status):
+    """The three densities `status` reads of `spectral` density, on the wavelengths it is known."""
+    w = products(status)
+    ok = ~np.isnan(spectral)
+    return -np.log10((w[:, ok] * 10.0 ** -spectral[ok]).sum(axis=1) / w[:, ok].sum(axis=1))
+
+
+def unit(dyes, status):
+    """Each dye scaled so `status` reads a density of 1 in its own channel."""
+    out = dyes.copy()
+    for c in range(3):
+        for _ in range(50):
+            out[:, c] /= read(out[:, c], status)[c]
+    return out
+
+
+def unmixed(net, base, dyes, status):
+    """The dyes' amounts over `base` that `status` reads as `net` above the base's own reading, node by node: a
+    printed curve is a neutral's integral density, each dye's unwanted absorptions in it. Newton's method on the
+    band integrals, exact where a linear crosstalk matrix is not."""
+    w = products(status)
+    ok = ~np.isnan(base) & ~np.isnan(dyes).any(axis=1)
+    w, base, dyes = w[:, ok], base[ok], dyes[ok]
+    own = -np.log10((w * 10.0 ** -base).sum(axis=1) / w.sum(axis=1))
+    out = []
+    a = np.zeros(3)
+    for target in np.asarray(net) + own:
+        for _ in range(50):
+            t = 10.0 ** -(base + dyes @ a)
+            seen = w * t
+            r = -np.log10(seen.sum(axis=1) / w.sum(axis=1)) - target
+            if np.abs(r).max() < 1e-10:
+                break
+            jacobian = (seen @ dyes) / seen.sum(axis=1)[:, None]
+            a = a - np.linalg.solve(jacobian, r)
+        else:
+            raise SystemExit(f"the unmix does not converge on {target}")
+        out.append(a.copy())
+    return np.array(out)
 
 
 def deformed(basis, shift, stretch):
@@ -251,11 +308,14 @@ def convert(stock_id, push, reference_offset, basis):
         moves = ", ".join(f"{n} {s:+.1f} nm x{w:.2f}" for n, (s, w) in zip("CMY", params))
         inferred.append(f"the three dyes: the Vision3 sheets' mean dyes moved and widened ({moves}) to fit the "
                         f"mid-scale neutral less D-min (rms {residual:.4f} D)")
-    channel = dyes / np.array([status_m(dyes[:, c], c) for c in range(3)])
-    inferred.append("each dye's unit: a Status M density of 1 in its own channel, Status M approximated by normal bands")
-    band = ~np.isnan(base) & ~np.isnan(channel).any(axis=1)
-    channel[~band] = np.nan
+    band = ~np.isnan(base) & ~np.isnan(dyes).any(axis=1)
+    dyes[~band] = np.nan
     base = np.where(band, base, np.nan)
+    channel = unit(dyes, STATUS_M)
+    inferred.append("each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products")
+    amounts_ = unmixed(density, base, channel, STATUS_M)
+    inferred.append("the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M "
+                    "densities over D-min through every dye's absorption in each band")
 
     name = file_name(stock_id, push)
     source = stock["source"]
@@ -284,7 +344,8 @@ def convert(stock_id, push, reference_offset, basis):
             "channel_density": [nulls(row) for row in channel],
             "base_density": nulls(base),
             "log_exposure": [round(float(v), 6) for v in le],
-            "density_curves": [[round(float(v), 6) for v in row] for row in density],
+            "density_curves": [[round(float(v), 6) for v in row] for row in amounts_],
+            "sheet_density_curves": [[round(float(v), 6) for v in row] for row in density],
         },
     }
     (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
@@ -303,10 +364,6 @@ PAPERS = [
     "fujifilm_crystal_archive_digital_pearl_paper",
     "fujifilm_fujiclear_display_material_for_digital_printers",
 ]
-
-# Status A's red, green and blue bands, approximated: centre and full width at half height, in nm.
-STATUS_A = [(620.0, 30.0), (540.0, 40.0), (440.0, 40.0)]
-
 
 def tailed(x, y, floor):
     """`y` on the grid, linear between its points, past them falling at its last 15 nm's slope in log, at least
@@ -342,10 +399,10 @@ def convert_paper(stock_id):
         logged = tailed(x, np.log10(np.maximum(y / y.max(), 1e-4)), -4.0)
         dyes.append(np.where((WAVELENGTHS >= 400.0) & (WAVELENGTHS <= top), 10.0 ** logged, np.nan))
     dyes = np.array(dyes).T
-    channel = dyes / np.array([status_a(dyes[:, c], c) for c in range(3)])
+    channel = unit(dyes, STATUS_A)
     measured.append(f"cyan, magenta and yellow dye shapes ({dye_chart['confidence']} confidence)")
     inferred.append("each dye past its sheet's points (hidden under another curve), falling at its end slope in log")
-    inferred.append("each dye's unit: a Status A density of 1 in its own channel, Status A approximated by normal bands")
+    inferred.append("each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products")
 
     curves_chart = chart(stock, "characteristic_curves")
     raw = {k: series(curves_chart, k) for k in "RGB"}
@@ -364,10 +421,15 @@ def convert_paper(stock_id):
     le = le - origin
     channels = {k: (le, d) for k, (_, d) in channels.items()}
     inferred.append("the curves' log H origin: where green prints an 18 % grey; the enlarger's time absorbs it")
-    base = channel @ np.array(lows)
+    bare = np.where(np.isnan(channel).any(axis=1), np.nan, 0.0)
+    base = channel @ unmixed([lows], bare, channel, STATUS_A)[0]
+    sheet = np.array([np.interp(le, *channels[k]) for k in "RGB"]).T
+    amounts_ = unmixed(sheet, base, channel, STATUS_A)
     measured.append(f"characteristic curves, Status A, as printed ({curves_chart['confidence']} confidence), each less its D-min")
     inferred.append("densities held at the sheet's last point past the curves' printed range")
-    inferred.append("the base's spectrum: the paper's own dyes in the amounts of the curves' least densities")
+    inferred.append("the base's spectrum: the paper's own dyes in the amounts that read the curves' least densities")
+    inferred.append("the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status A "
+                    "densities over the base through every dye's absorption in each band")
     name = stock_id.removesuffix("_paper").removesuffix("_printing_material")
     source = stock["source"]
     profile = {
@@ -388,7 +450,8 @@ def convert_paper(stock_id):
             "channel_density": [nulls(row) for row in channel],
             "base_density": nulls(base),
             "log_exposure": [round(float(v), 6) for v in le],
-            "density_curves": [[round(float(v), 6) for v in row] for row in np.array([np.interp(le, *channels[k]) for k in "RGB"]).T],
+            "density_curves": [[round(float(v), 6) for v in row] for row in amounts_],
+            "sheet_density_curves": [[round(float(v), 6) for v in row] for row in sheet],
         },
     }
     (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
@@ -565,13 +628,6 @@ def convert_bw(stock_id, name, prefix, spectrum_of):
     }
     (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
     return name, inferred, len(others)
-
-
-def status_a(dye, channel):
-    centre, width = STATUS_A[channel]
-    w = np.exp(-0.5 * ((WAVELENGTHS - centre) / (width / 2.3548)) ** 2)
-    ok = ~np.isnan(dye)
-    return -math.log10(float((10.0 ** -dye[ok] * w[ok]).sum() / w[ok].sum()))
 
 
 def main():
