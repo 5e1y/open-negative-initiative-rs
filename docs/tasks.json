@@ -12429,5 +12429,21 @@
     "title": "The dye sets' and virtual stocks' tables in files of their own",
     "status": "done",
     "detail": "The datasheet stocks took oni-settings' dyes.rs to 527 lines and virtual_film.rs to 513, past the 400-line file ceiling. The catalogue's dye-set table moves to dyes/stocks.rs, the virtual stocks' entries to virtual_film/entries.rs, and each file's tests to a tests.rs beside it; nothing else moves."
+  },
+  {
+    "id": 3400,
+    "type": "feature",
+    "title": "Lighting on the negative: a kernel reading each layer's log exposure back through its stock's development",
+    "status": "done",
+    "detail": "oni-render's negative kernel (CPU reference and WGSL): a pixel's density above the bare film read back to each layer's log exposure through the stock's two curves and its DIR couplers (Newton's steps), Exposure and Contrast laid there before the couplers pull, each channel's contrast and filter on what its layer develops on after they pull, the film developed again, then the points, zones and mids on its density and the print's tone. Under the toe's foot a density takes the foot's move, less the nearer the fog, which no move leaves; over the shoulder the shoulder's.",
+    "outcome": ""
+  },
+  {
+    "id": 3401,
+    "type": "feature",
+    "title": "Lighting on the negative in every pipe, each print at its rest",
+    "status": "done",
+    "detail": "conversion::stage47 prints with Lighting at rest (Print::unlit) and lays crate::negative's Negative before the windows or the paper: ONI's print (its windows unreached, its print curve, Hunt and colour density at rest), the enlarger on a paper or the neutral paper, digital photos, scanned colour negatives, black and white, slides on ONI's print and slides through their internegative. The film developed again is the virtual stock's (digital), the dye set's profile (scans), the C-41 profiles' mean (generic), its mean layer uncoupled (black and white), the slide's own light (a positive). The paper keeps its rest's time and filtration; the print's pick is the bare film as Lighting develops it, anchored as before. The points' and Contrast's saturation curves and the points reaching the windows go: their colour is the negative's own.",
+    "outcome": ""
   }
 ]

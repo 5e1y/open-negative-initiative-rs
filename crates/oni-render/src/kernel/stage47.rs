@@ -1,5 +1,5 @@
-//! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
-//! or the dye separation then the paper's print, its own, colour density and ends included.
+//! The fused conversion kernel (`pipeline.metal`): the dye separation, Lighting on the negative, then inversion, levels,
+//! the print curve; or the paper's print in their place, its own colour density and ends included.
 
 use super::*;
 
@@ -32,6 +32,8 @@ pub struct Stage47 {
     pub film_share: f32,
     /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
     pub dyes: Option<super::dye_separation::DyeSeparation>,
+    /// Lighting on the negative, in the pass the print reads; none while Lighting rests.
+    pub negative: Option<super::negative::Negative>,
     /// The negative printed on a paper in place of the windows and the print curve, laid in the same GPU pass.
     pub paper: Option<super::paper::Paper>,
 }
@@ -64,16 +66,18 @@ impl Stage47 {
             balance_span: [1.0; 3],
             film_share: 0.0,
             dyes: None,
+            negative: None,
             paper: None,
         }
     }
 
-    /// What stage 4 reads past the dye separation's pass: its dye amounts as light, at unit gain and no pedestal.
+    /// What stage 4 reads past the dye separation's pass and Lighting on the negative: density as light, at unit gain
+    /// and no pedestal.
     pub fn after_dyes(&self) -> Self {
-        match self.dyes {
-            Some(_) => Self { gain: [1.0; 3], pedestal: 0.0, dyes: None, ..*self },
-            None => *self,
+        if self.dyes.is_none() && self.negative.is_none() {
+            return *self;
         }
+        Self { gain: [1.0; 3], pedestal: 0.0, dyes: None, negative: None, ..*self }
     }
 
     /// The uniform block, every vector padded to four lanes as WGSL lays it out.
@@ -167,12 +171,18 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_con
     midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them, then its paper.
+/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them, Lighting on the negative,
+/// then its paper.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
-    let (s, k) = match &k.dyes {
-        Some(d) => (super::dye_separation::dye_separation(s, k, d), k.after_dyes()),
-        None => (s, *k),
+    let s = match &k.dyes {
+        Some(d) => super::dye_separation::dye_separation(s, k, d),
+        None => s,
     };
+    let s = match &k.negative {
+        Some(n) => super::negative::negative(s, n),
+        None => s,
+    };
+    let k = k.after_dyes();
     let s = match &k.paper {
         Some(p) => super::paper::paper(s, p),
         None => s,

@@ -1,6 +1,7 @@
 //! The paper's ends: whatever Lighting moves, the frame's pick prints on pure black, or where the enlarger's rest prints
 //! it with Paper blacks; the whites stay free, the points move the ends, Brightness holds the pick, barely moves the
-//! deep shadows and moves the mids as Exposure does, the print continuous and monotone. Each verdict has a twin.
+//! deep shadows and moves the mids as the enlarger's time does, the print continuous and monotone. Each verdict has a
+//! twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -60,6 +61,17 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a paper")
 }
 
+/// The paper's print of `amounts` through Lighting on the negative, its tones included.
+fn lit_shown(k: &Stage47, amounts: [f32; 3]) -> [f32; 3] {
+    let a = k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts)));
+    k.paper.expect("a paper").shown(a)
+}
+
+/// The negative's range on each dye, the frame's densest read above its bare film.
+fn span_of(s: &PipelineSettings) -> [f32; 3] {
+    paper::anchors(s, conversion::stage47(s).dyes.as_ref())[1]
+}
+
 /// The frame's anchors printed on `k`: its pick, its densest read and its reference grey.
 fn printed_on(s: &PipelineSettings, k: &Stage47) -> [[f32; 3]; 3] {
     anchor_scans(s).map(|q| rgb(cpu::stage47(q, k)))
@@ -98,10 +110,10 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
             assert!(held < 1e-6, "{label}, {name}: {now:?} {rest:?}");
             lifted += usize::from(lift > 1e-4);
         }
-        // Twin: unanchored, the time, the filters, the grade and the colour density lift or sink the pick (on black and
-        // white the time and the grade); the zones and the mids lay no density on the bare film, so they leave it too.
+        // Twin: unanchored, the colour density lifts or sinks the pick; Lighting's moves on the negative leave the bare film
+        // at its fog, which no exposure moves, and black and white lays no colour density.
         println!("{label}: {lifted} moves of {} lift the unanchored pick", SLIDERS.len());
-        assert!(lifted >= if label == "black and white" { 6 } else { 14 }, "{label}: {lifted}");
+        assert!(lifted == if label == "black and white" { 0 } else { 3 }, "{label}: {lifted}");
     }
 }
 
@@ -157,7 +169,7 @@ fn neutral(s: &PipelineSettings, t: f32) -> [f32; 3] {
 
 /// How far a tone's mean log exposure lies from the pick's toward the light on `p`.
 fn under_pick(p: &Paper, amounts: [f32; 3]) -> f32 {
-    p.toward_light(p.pick_log, p.exposed(p.toned(amounts)))
+    p.toward_light(p.pick_log, p.exposed(amounts))
 }
 
 /// The light `p` prints for `amounts` above its pick, its pick laid on black and its white the paper's.
@@ -169,10 +181,10 @@ fn on_black(p: &Paper, amounts: [f32; 3]) -> f32 {
 
 /// What `p` shows of `amounts` with the tone's mean log exposure from the pick moved by `f` in Brightness's place.
 fn shown_moved(p: &Paper, amounts: [f32; 3], f: impl Fn(f32) -> f32) -> [f32; 3] {
-    let log = p.exposed(p.toned(amounts));
+    let log = p.exposed(amounts);
     let x = p.toward_light(p.pick_log, log);
     let moved = f(x) - x;
-    let light = p.viewed(p.developed(p.graded(log.map(|v| v - moved))));
+    let light = p.viewed(p.developed(log.map(|v| v - moved)));
     let light = if p.luma { [0.2627 * light[0] + 0.678 * light[1] + 0.0593 * light[2]; 3] } else { light };
     p.ended(p.coloured(light))
 }
@@ -191,18 +203,21 @@ fn brightnesss_reach_lies_where_the_neutral_prints_l_25_over_the_pick_whatever_l
                 f(u);
                 u.print.brightness = 0.5;
             });
-            let p = paper_of(&t);
+            let k = conversion::stage47(&t);
+            let p = k.paper.unwrap();
+            // The neutral from the pick to the grey as Lighting develops them.
+            let [pick, _, grey] = paper::anchors(&t, k.dyes.as_ref()).map(|a| k.negative.map_or(a, |n| n.redeveloped(a)));
+            let lit = |x: f32| -> [f32; 3] { std::array::from_fn(|c| pick[c] + x * (grey[c] - pick[c])) };
             // The neutral's tone whose exposure lies at the reach prints the reach's light.
             let (mut low, mut high) = (0.0f32, 8.0f32);
             for _ in 0..60 {
                 let mid = 0.5 * (low + high);
-                if under_pick(&p, neutral(&s, mid)) < p.reach { low = mid } else { high = mid }
+                if under_pick(&p, lit(mid)) < p.reach { low = mid } else { high = mid }
             }
             // Read at rest: Brightness itself moves that tone.
-            let light = on_black(&Paper { brightness: 0.0, ..p }, neutral(&s, low));
+            let light = on_black(&Paper { brightness: 0.0, ..p }, lit(low));
             assert!(p.reach > 0.0 && (light / BRIGHTNESS_REACH_LIGHT - 1.0).abs() < 1e-3, "{label}, {name}: reach {} at {light}", p.reach);
             // The anchor leaves the reach where it is: it is read on the print's own range.
-            let [pick, _, grey] = paper::anchors(&t, conversion::stage47(&t).dyes.as_ref());
             assert_eq!(paper::ended(&p, pick, grey, [0.0; 3], 0.5).reach, p.reach, "{label}, {name}");
         }
         let p = paper_of(&moved(&s, |u| u.print.brightness = 0.5));
@@ -227,7 +242,8 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
             let t = moved(&s, |u| (u.print.brightness, u.print.paper_blacks) = (brightness, paper_blacks));
             let p = paper_of(&t);
             let at_rest = Paper { brightness: 0.0, ..p };
-            let exposure = paper_of(&moved(&t, |u| (u.print.exposure, u.print.brightness) = (u.print.exposure + brightness, 0.0)));
+            // The enlarger's time, as many stops: Exposure's move on the print.
+            let exposure = Paper { scale: p.scale * (-brightness).exp2(), brightness: 0.0, ..p };
             // The pick and the tones beyond it print as at rest, to the bit.
             let mut beyond = 0;
             for i in 0..=100 {
@@ -280,9 +296,8 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
             }
             // Past the reach and what a darkening folds under it, each tone prints as Exposure's light would, the ends
             // kept.
-            let exposed = Paper { scale: exposure.scale, brightness: 0.0, ..p };
-            let geared = paper_of(&moved(&s, |u| u.print.exposure += Print::EXPOSURE_GEAR * brightness));
-            let twice = Paper { scale: geared.scale, brightness: 0.0, ..p };
+            let exposed = exposure;
+            let twice = Paper { scale: p.scale * (-2.0 * brightness).exp2(), brightness: 0.0, ..p };
             for i in 0..=40 {
                 let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
                 if under_pick(&p, a) < width + lift {
@@ -310,15 +325,15 @@ fn the_points_still_move_the_ends() {
             let t = moved(&s, |u| (u.print.black_point, u.print.white_point) = (black, white));
             let k = conversion::stage47(&t);
             let [pick, densest, _] = printed_on(&s, &k);
-            let (p, at_rest) = (k.paper.unwrap(), paper_of(&s));
-            let (high, rest_high) = (p.shown(p.span.map(|a| a * 0.8)), at_rest.shown(at_rest.span.map(|a| a * 0.8)));
+            let (p, at_rest, span) = (k.paper.unwrap(), paper_of(&s), span_of(&s));
+            let (high, rest_high) = (lit_shown(&k, span.map(|a| a * 0.8)), at_rest.shown(span.map(|a| a * 0.8)));
             let (sank, lightened) = (worst(pick, rest_pick), worst(high, rest_high));
             println!("{label}, {name}: the pick {pick:?} from {rest_pick:?}, the densest read {densest:?} from {rest_white:?}, 0.8 of the range {high:?} from {rest_high:?}");
             if black != 0.0 {
                 // A black point crushes the pick below where the rest prints it; a negative one lifts it.
                 assert!(sank > 1e-4 && (0..3).all(|c| (pick[c] < rest_pick[c]) == (black > 0.0)), "{label}, {name}");
                 // Twin: the pick anchored through the points stays where the rest prints it.
-                let through = Paper { pick: p.coloured(p.printed(paper::anchors(&t, k.dyes.as_ref())[0])), ..p };
+                let through = Paper { pick: p.coloured(p.printed(k.negative.unwrap().toned([0.0; 3]))), ..p };
                 let held = rgb(cpu::stage47(anchor_scans(&s)[0], &Stage47 { paper: Some(through), ..k }));
                 assert!(worst(held, rest_pick) < 1e-6, "{label}, {name}: {held:?}");
             } else {
@@ -343,8 +358,8 @@ fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
     ];
     for (label, s) in frames() {
         for (name, f) in settings {
-            let p = paper_of(&moved(&s, f));
-            let print = |u: f32| p.shown(p.span.map(|a| a * u));
+            let (k, span) = (conversion::stage47(&moved(&s, f)), span_of(&s));
+            let print = |u: f32| lit_shown(&k, span.map(|a| a * u));
             let (coarse, fine) = (steps(&print, 2000), steps(&print, 4000));
             let (falls_by, lowest) = (fall(&print, 4000), least(&print, 4000));
             println!("{label}, {name}: the largest step {coarse:.2e} over 2000 tones, {fine:.2e} over 4000; its largest fall {falls_by:.1e}, its least light {lowest:.1e}");
@@ -382,5 +397,6 @@ fn fall(print: &dyn Fn(f32) -> [f32; 3], n: usize) -> f32 {
 fn least(print: &dyn Fn(f32) -> [f32; 3], n: usize) -> f32 {
     tones(print, n).iter().flatten().copied().fold(f32::INFINITY, f32::min)
 }
+
 
 

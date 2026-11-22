@@ -1,10 +1,10 @@
-//! The paper: Lighting's tones laid on the negative's density, the enlarger's light through its dyes exposes a colour
-//! paper's layers, which develop on their curves turned by the grade; the print's dyes are read under D50, its colour
-//! density laid, then its ends: the frame's pick on its anchor, the paper's white held. Brightness moves the enlarger's
-//! light as Exposure does, faded in from the pick over the deep shadows: the blacks stay, the mids move as Exposure.
+//! The paper: the enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
+//! curves; the print's dyes are read under D50, its colour density laid, then its ends: the frame's pick on its anchor,
+//! the paper's white held. Brightness moves the enlarger's light as a time does, faded in from the pick over the deep
+//! shadows: the blacks stay, the mids move. Lighting's other sliders act on the negative before it (`negative`).
 
 use super::*;
-use super::stage47::{coloured, midded, quartered};
+use super::stage47::coloured;
 
 /// Most wavelengths either sum runs over: every sample of 380 to 780 nm by 5.
 pub const PAPER_BANDS: usize = 81;
@@ -19,8 +19,8 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_2: f32 = std::f32::consts::LOG10_2;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
-/// A negative printed on a paper: how its pixel is read as dye amounts and toned, the enlarger's light, the paper's
-/// curves and grade, its print seen under D50 in Rec. 2020, its colour density, and the print's ends.
+/// A negative printed on a paper: how its pixel is read as dye amounts, the enlarger's light, the paper's curves, its
+/// print seen under D50 in Rec. 2020, its colour density, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
@@ -28,14 +28,6 @@ pub struct Paper {
     pub pedestal: f32,
     pub log_guard: f32,
     pub black: V3,
-    /// Each dye's amount at the densest the frame's windows read: the negative's range, its bare film at 0.
-    pub span: V3,
-    /// Lighting's points on that range, each channel's share read as bare film and as the densest.
-    pub points_black: V3,
-    pub points_white: V3,
-    /// Shadows and Highlights, density laid along the range by its mean tone; each channel's mids by its own.
-    pub zones: V2,
-    pub mids: V3,
     /// Per wavelength the negative passes: its three dyes' density at unit amount, then its base's.
     pub negative: &'static [V4],
     /// Per wavelength the negative passes: the lamp's light read by each of the paper's three layers.
@@ -46,10 +38,7 @@ pub struct Paper {
     pub filters: V3,
     /// The print's exposure as a factor of the light: the enlarger's time.
     pub scale: f32,
-    /// Each layer's log exposure the grade turns about, and its slope's factor there.
-    pub pivot: V3,
-    pub slope: V3,
-    /// Brightness, in stops of the enlarger's light; the pick's mean log exposure untoned; the reach, how far from it
+    /// Brightness, in stops of the enlarger's light; the pick's mean log exposure; the reach, how far from it
     /// toward the light a tone's mean log exposure lies when Brightness moves it as far as Exposure would.
     pub brightness: f32,
     pub pick_log: f32,
@@ -79,19 +68,14 @@ impl Paper {
         [self.negative.len() as u32, self.print.len() as u32, 0, 0]
     }
 
-    /// The uniform: the reading and its tones, the enlarger, the grade, the print's ends, then the bands and the curves.
+    /// The uniform: the reading, the enlarger, Brightness, the print's ends, then the bands and the curves.
     pub fn rows(&self) -> Vec<V4> {
         let flag = |on: bool| if on { 1.0 } else { 0.0 };
         let mut rows = vec![
             v3(self.gain, self.pedestal),
             v3(self.black, self.log_guard),
-            v3(self.span, self.zones[0]),
-            v3(self.points_black, self.zones[1]),
-            v3(self.points_white, 0.0),
-            v3(self.mids, 0.0),
             v3(self.filters, self.scale),
-            v3(self.pivot, self.pick_log),
-            v3(self.slope, self.reach),
+            [self.pick_log, self.reach, 0.0, 0.0],
             [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
             v3(self.pick, self.density),
             v3(self.white, 0.0),
@@ -110,27 +94,6 @@ impl Paper {
     /// The dye amounts above the bare film a pixel holds, as the paper reads it.
     pub fn amounts(&self, s: V4) -> V3 {
         map(rgb(s), |c, v| -((v + self.pedestal) * self.gain[c]).max(self.log_guard).ln() * LOG10_E - self.black[c])
-    }
-
-    /// Whether Lighting's points, zones or mids lay any density.
-    pub fn tones(&self) -> bool {
-        self.points_black != [0.0; 3] || self.points_white != [0.0; 3] || self.zones != [0.0; 2] || self.mids != [0.0; 3]
-    }
-
-    /// The amounts Lighting's tones leave on the film, each read on its range from the bare film (0) to the densest (1):
-    /// the points stretch that range, the zones lay one density by the mean tone, the mids each channel's own.
-    pub fn toned(&self, amounts: V3) -> V3 {
-        if !self.tones() {
-            return amounts;
-        }
-        let u = map(amounts, |c, a| (a / self.span[c] - self.points_black[c]) / (1.0 - self.points_black[c] - self.points_white[c]));
-        let tone = (u[0] + u[1] + u[2]) / 3.0;
-        let lift = if self.zones != [0.0; 2] && (0.0..=1.0).contains(&tone) {
-            quartered(quartered(tone, self.zones[0], false), self.zones[1], true) - tone
-        } else {
-            0.0
-        };
-        map(u, |c, v| midded(v + lift, self.mids[c]) * self.span[c])
     }
 
     /// Each layer's log exposure under the negative holding `amounts`, before the grade turns it.
@@ -160,14 +123,6 @@ impl Paper {
         log.map(|v| v - moved)
     }
 
-    /// Each layer's log exposure turned about its pivot by its slope: the paper's grade.
-    pub fn graded(&self, log: V3) -> V3 {
-        if self.slope == [1.0; 3] {
-            return log;
-        }
-        map(log, |c, v| self.pivot[c] + (v - self.pivot[c]) * self.slope[c])
-    }
-
     /// Each layer's density at log exposure `log`.
     pub fn developed(&self, log: V3) -> V3 {
         map(log, |c, v| {
@@ -188,9 +143,9 @@ impl Paper {
         out
     }
 
-    /// The print of a negative holding `amounts`, its tones laid, a black and white print on its luma; before its ends.
+    /// The print of a negative holding `amounts`, a black and white print on its luma; before its ends.
     pub fn printed(&self, amounts: V3) -> V3 {
-        let light = self.viewed(self.developed(self.graded(self.brightened(self.exposed(self.toned(amounts))))));
+        let light = self.viewed(self.developed(self.brightened(self.exposed(amounts))));
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 

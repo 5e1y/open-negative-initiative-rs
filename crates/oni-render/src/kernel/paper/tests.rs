@@ -15,18 +15,11 @@ fn narrow() -> Paper {
         pedestal: 0.0,
         log_guard: 1e-12,
         black: [0.0; 3],
-        span: [1.0, 1.2, 1.4],
-        points_black: [0.0; 3],
-        points_white: [0.0; 3],
-        zones: [0.0; 2],
-        mids: [0.0; 3],
         negative: &NEGATIVE,
         exposure: &EXPOSURE,
         dichroic: &DICHROIC,
         filters: [1.0; 3],
         scale: 1.0,
-        pivot: [0.0; 3],
-        slope: [1.0; 3],
         brightness: 0.0,
         pick_log: -0.5,
         reach: 0.1,
@@ -67,52 +60,6 @@ fn the_curves_hold_their_ends_and_run_between_their_nodes() {
     assert!((mid[0] - 0.505).abs() < 1e-5 && (mid[2] - 1.515).abs() < 1e-4, "between two nodes: {mid:?}");
     // Twin: the node below read alone misses the half step.
     assert!((k.developed([-1.5; 3])[0] - 0.505).abs() > 4e-3);
-}
-
-#[test]
-fn the_grade_turns_each_layer_about_its_pivot() {
-    let k = Paper { pivot: [-1.0, -0.5, 0.0], slope: [2.0, 0.5, 1.5], ..narrow() };
-    assert_eq!(k.graded([-1.0, -0.5, 0.0]), [-1.0, -0.5, 0.0], "the pivot stays");
-    let turned = k.graded([-0.8, -0.3, 0.2]);
-    let expected = [-0.6, -0.4, 0.3];
-    assert!((0..3).all(|c| (turned[c] - expected[c]).abs() < 1e-6), "{turned:?}");
-    // Twin: the plain slope leaves every exposure where it is.
-    assert_eq!(narrow().graded([-0.8, -0.3, 0.2]), [-0.8, -0.3, 0.2]);
-}
-
-#[test]
-fn the_tones_stretch_the_range_lay_the_zones_by_tone_and_hold_both_ends() {
-    let k = narrow();
-    let ends = |p: &Paper| (p.toned([0.0; 3]), p.toned(p.span));
-    // The points: a black point of 0.1 reads a tenth of the range as bare film, a white point the top tenth as the densest.
-    let pointed = Paper { points_black: [0.1; 3], points_white: [0.1; 3], ..k };
-    let at = pointed.toned([0.1, 0.12, 0.14]);
-    assert!(at.iter().all(|v| v.abs() < 1e-6), "the black point's density reads as bare film: {at:?}");
-    let top = pointed.toned([0.9, 1.08, 1.26]);
-    assert!((0..3).all(|c| (top[c] - k.span[c]).abs() < 1e-5), "the white point's as the densest: {top:?}");
-    // The zones: no density at the bare film or at the densest, Shadows lifting the lower range most, Highlights the upper.
-    for zones in [[0.25, 0.0], [-0.25, 0.0], [0.0, 0.25], [0.0, -0.4]] {
-        let z = Paper { zones, ..k };
-        let (low, high) = ends(&z);
-        assert!(low.iter().all(|v| v.abs() < 1e-7) && (0..3).all(|c| (high[c] - k.span[c]).abs() < 1e-6), "{zones:?}");
-    }
-    let shadows = Paper { zones: [0.25, 0.0], ..k };
-    let lifted = |p: &Paper, u: f32| p.toned(k.span.map(|s| s * u))[0] / k.span[0] - u;
-    assert!(lifted(&shadows, 0.25) > lifted(&shadows, 0.75) && lifted(&shadows, 0.25) > 0.1, "{}", lifted(&shadows, 0.25));
-    let highlights = Paper { zones: [0.0, 0.25], ..k };
-    assert!(lifted(&highlights, 0.75) > lifted(&highlights, 0.25) && lifted(&highlights, 0.75) > 0.1);
-    // One density by the mean tone: a coloured amount moves on every channel by the same share of its range.
-    let colour = shadows.toned([0.2, 0.36, 0.7]);
-    let moved: V3 = map(colour, |c, v| v / k.span[c] - [0.2, 0.3, 0.5][c]);
-    assert!((moved[0] - moved[2]).abs() < 1e-6 && moved[0] > 0.0, "{moved:?}");
-    // The mids: a channel's own, ends held.
-    let mids = Paper { mids: [0.2, 0.0, 0.0], ..k };
-    let (low, high) = ends(&mids);
-    assert!(low == [0.0; 3] && (high[0] - k.span[0]).abs() < 1e-6);
-    let half = mids.toned(k.span.map(|s| s * 0.5));
-    assert!((half[0] / k.span[0] - 0.7).abs() < 1e-6 && (half[1] / k.span[1] - 0.5).abs() < 1e-6, "{half:?}");
-    // Twin: at rest nothing moves, to the bit.
-    assert_eq!(k.toned([0.2, 0.36, 0.7]), [0.2, 0.36, 0.7]);
 }
 
 #[test]

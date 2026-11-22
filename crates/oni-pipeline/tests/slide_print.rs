@@ -253,9 +253,9 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             let lit = moved(&s, |t| t.print.brightness = brightness);
             let p = conversion::stage47(&lit).paper.unwrap();
             let k = conversion::stage47(&lit);
-            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts and Lighting's tones.
+            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts.
             let read = |q: V4| k.dyes.as_ref().map_or(negative(&s, q), |d| cpu::dye_separation(negative(&s, q), &k, d));
-            let amounts = |q: V4| p.toned(p.amounts(read(q)));
+            let amounts = |q: V4| p.amounts(read(q));
             let toward = |q: V4| p.toward_light(p.pick_log, p.exposed(amounts(q)));
             let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
             let lift = brightness * std::f32::consts::LOG10_2;
@@ -271,10 +271,10 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             } else {
                 assert!(moved_by(grey) / lift > 0.5 && moved_by(grey) / lift <= 1.0 + 1e-4, "{label}, {brightness}");
             }
-            // Twin: Exposure's stops move the densest read as much as the grey.
-            let exposure = conversion::stage47(&moved(&s, |t| t.print.exposure += brightness)).paper.unwrap();
-            let by_exposure = exposure.toward_light(p.pick_log, exposure.exposed(amounts(densest))) - toward(densest);
-            assert!((by_exposure - lift).abs() < 1e-3, "{label}, {brightness}: {by_exposure}");
+            // Twin: the enlarger's time, as many stops, moves the densest read as much as the grey.
+            let timed = Paper { scale: p.scale * (-brightness).exp2(), ..p };
+            let by_time = timed.toward_light(p.pick_log, timed.exposed(amounts(densest))) - toward(densest);
+            assert!((by_time - lift).abs() < 1e-3, "{label}, {brightness}: {by_time}");
         }
     }
 }
