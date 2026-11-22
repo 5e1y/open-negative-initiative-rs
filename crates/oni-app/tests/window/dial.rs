@@ -2,7 +2,6 @@
 //! carries the scale with the hand, a drag right bringing the lower degrees under the index.
 
 use oni_app::PanelTab;
-use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::PanelState;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
@@ -22,8 +21,8 @@ pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Crop);
     rig.settle();
     let angle = || ctl.state.borrow().store().settings().geometry.angle;
-    // The ring is the slider's lower part, under its name and value, as wide as the slider.
-    let slider = common::the(w, Role::Slider, "Angle");
+    // The ring is the slider's lower part, under its name and value, between its − and + keys.
+    let slider = common::rail(w, "Angle");
     let (middle, y) = (slider.x + slider.width / 2.0, slider.y + slider.height * 0.75);
     let start = LogicalPosition::new(middle + 40.0, y);
     rig.shot("dial-rest");

@@ -4,7 +4,6 @@ import { Icons, Slider, SliderFill, Section, Scroller, Button, ButtonSize, Space
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
-import { KeyWords } from "../key_words.slint";
 
 export component LabBlock inherits Section {
     modified: Lab.modified[self.block];
@@ -12,11 +11,10 @@ export component LabBlock inherits Section {
 }
 
 // A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects,
-// each resting at its zero step; its use site tells what its − and + keys move.
+// each resting at its zero step; its use site tells which way its − and + keys move.
 export component LabSlider inherits Slider {
     in property <int> index;
     stepped: true;
-    help: @tr("Double-click to bring it back to rest; {} with − or + moves three steps.", KeyWords.shift);
     fill: SliderFill.bipolar;
     value: Lab.steps[root.index];
     lowest: Lab.lows[root.index];

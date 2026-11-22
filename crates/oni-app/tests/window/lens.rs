@@ -19,7 +19,7 @@ use crate::film_effects::{opened, photo, press_rail};
 
 /// A drag along the rail of the slider named `label`, from `from` to `to` of its travel.
 fn drag_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, from: f32, to: f32) {
-    let slider = common::the(w, AccessibleRole::Slider, label);
+    let slider = common::rail(w, label);
     let at = |share: f32| LogicalPosition::new(slider.x + 10.0 + share * (slider.width - 20.0), slider.y + slider.height - 13.0);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: at(from) });
     rig.window.dispatch_event(WindowEvent::PointerPressed { position: at(from), button: PointerEventButton::Left });

@@ -229,16 +229,19 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.pump();
     // The rail slid by the hand leaves the keyboard with the photos, whose arrows walk the frames.
     assert!(w.get_keys_focused(), "the photos hold the keyboard after the slide");
-    // D's keys stand at its rail's ends, grey keycaps: a press steps once, ⇧ three times.
-    let (minus, plus) = (common::the(w, Role::Button, "D −: toward dark"), common::the(w, Role::Button, "D +: toward light"));
+    // D's keys stand at its rail's ends, grey keycaps, each naming its way and its press: three steps,
+    // ⇧ or not, a point and a half.
+    let (minus, plus) = (common::the(w, Role::Button, "D \u{2212}: toward dark, by 1.5"), common::the(w, Role::Button, "D +: toward light, by 1.5"));
     let row = |k: &common::Placed| (k.middle().1 - y).abs() < 1.0;
     assert!(row(&minus) && row(&plus) && (minus.x - d.x).abs() < 1.0 && (plus.x + plus.width - d.x - d.width).abs() < 1.0, "{minus:?} {plus:?} {d:?}");
     let sunk = caps_drawn(&rig, || press(&rig, w, minus, false));
-    assert_eq!(settings().scanner.d, -1, "a press is one step");
+    assert_eq!(settings().scanner.d, -3, "a press is three steps");
     press(&rig, w, plus, true);
-    assert_eq!(settings().scanner.d, 2, "⇧ makes a press three steps");
-    // Twin: a press deaf to ⇧ would stand back at zero.
-    assert_ne!(settings().scanner.d, -1 + 1);
+    assert_eq!(settings().scanner.d, 0, "⇧ changes nothing on a key");
+    // Twin: a press of the value editor's own step would stand at a step from zero.
+    assert_ne!(settings().scanner.d, -3 + 1);
+    press(&rig, w, plus, false);
+    assert_eq!(settings().scanner.d, 3);
     assert!(sunk > 2, "the key is a keycap, its cap drawn as it sinks: {sunk} renders");
     // Twin: the Density block's flat Reset, the hand resting on it first, clears D and draws no cap.
     let reset = common::placed(w, Role::Button, "Reset").into_iter().filter(|r| r.y < d.y).max_by(|a, b| a.y.total_cmp(&b.y)).expect("Density's Reset");

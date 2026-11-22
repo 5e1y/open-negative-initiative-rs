@@ -188,7 +188,8 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     std::thread::sleep(past_a_double);
     dragged(&rig, x, y - 4.0, 0.0);
     let landed = d.get_sensitivity();
-    assert!((moved - landed - 40.0 / 308.0).abs() < 0.02, "by the drag's share of the track: {moved} from {landed}");
+    let track = common::rail(w, "Sensitivity").width;
+    assert!((moved - landed - 40.0 / track).abs() < 0.02, "by the drag's share of the track: {moved} from {landed} over {track}");
     std::thread::sleep(past_a_double);
     dragged(&rig, x, y - 4.0, -20.0);
     let back = d.get_sensitivity();

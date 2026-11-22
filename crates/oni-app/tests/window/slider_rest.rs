@@ -59,7 +59,7 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     assert!((rest - 0.5).abs() < 1e-6, "Temperature rests mid-track: {rest}");
     let temperature = || Knob::Temperature.get(ctl.state.borrow().store().settings());
     assert_eq!(temperature(), 0.0);
-    let slider = common::the(w, AccessibleRole::Slider, "Temperature");
+    let slider = common::rail(w, "Temperature");
     // The rail runs inside the knob's half width either side, the knob on the slider's lowest row.
     let (left, travel) = (slider.x + 10.0, slider.width - 20.0);
     let y = slider.y + slider.height - 13.0;
@@ -108,7 +108,7 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     // Twin: the track's middle, a tick at zero, is not where it rests.
     assert!((tick - 0.5).abs() > 0.1, "Exposure ticked mid-track: {tick}");
     // A press on its rail moves it and the Reset shows; a double click on its name lands back on the tick.
-    let rail = common::the(w, AccessibleRole::Slider, "Exposure");
+    let rail = common::rail(w, "Exposure");
     let on_rail = LogicalPosition::new(rail.x + rail.width * 0.95, rail.y + rail.height - 13.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     press(&rig, on_rail);

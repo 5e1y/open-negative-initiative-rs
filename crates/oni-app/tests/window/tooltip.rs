@@ -197,7 +197,7 @@ pub(crate) fn a_slider_s_tooltip_covers_no_neighbour() {
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FaceScanner);
     rig.settle();
     let three = sliders(["C", "M", "Y"]);
-    for help in ["M −: toward green", "M +: toward magenta"] {
+    for help in ["M −: toward green, by 1.5", "M +: toward magenta, by 1.5"] {
         moved(&rig, 0.0, 0.0);
         let key = common::the(w, Role::Button, help);
         clear(&rig, w, key.middle(), help, key.y + key.height, three);

@@ -45,7 +45,7 @@ fn editor(name: &str) -> Option<(common::Rig, Shell, PathBuf, (f32, f32))> {
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
     // Exposure's rail, the knob's row at the slider's foot.
-    let slider = common::the(w, Role::Slider, "Exposure");
+    let slider = common::rail(w, "Exposure");
     let (x, y) = (slider.x + slider.width / 3.0, slider.y + slider.height - 13.0);
     moved(&rig, x, y);
     Some((rig, shell, root, (x, y)))

@@ -55,8 +55,8 @@ glyph and word on it; two keys side by side read apart by the ground between the
 is its glyph and word alone, its ground shown only under the hand. A `Keycap` stands only where the use site sets
 `keycap: true`: the mode switch (EDIT, BACK), a screen's or a sheet's commit (EXPORT, ADD FOLDER…,
 PREPARE ROLL, the prepare footer's NEXT, every DONE, GOT IT, GET STARTED, SEND), the
-automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the Scanner
-face's step keys, − and + beside each of its rails. A choice holding one keycap holds keycaps alone: its
+automatic actions run on a click (AUTO WHITE BALANCE, AUTO PAPER CORRECTION, DETECT, REMOVE) and the sliders'
+step keys, − and + beside every slider's rail. A choice holding one keycap holds keycaps alone: its
 Cancel, its step back and its other answers are keycaps on the face of the ground they stand on (`ground`),
 the commit alone standing out; a choice with none, as a passing notice's OK or a question of options, stays
 flat. Tabs are not keys: their one raised pill slides under the tab taken. The cap is a raster of Swift's `KeycapStyle` that Rust draws when the window asks
@@ -182,9 +182,11 @@ fade and the chrome stays. The picker's field wears the same face.
   the on-light ink on a light cap (`grip-turn`). It grows by
   a scale on the rise spring, so its raster is drawn once, its edge darkening from `idle-relief` to whole.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
-  the hand; the stepped slider's knob carries its grip too, its − and + keycaps as tall as the knob
-  (`SliderStyle.step-key`), in the interface's keycap grey and neutral ink, a step a press and three with ⇧;
-  a continuous slider has none. AppKit's press, continuous or stepped: the knob pressed is
+  the hand; the stepped slider's knob carries its grip too. Every slider, continuous or stepped, stands between
+  a − and a + keycap as tall as the knob (`SliderStyle.step-key`), in the interface's keycap grey and neutral
+  ink, never on Tab's path: a press is `SliderStyle.press` (three) of its value editor's steps, so three shown
+  units, one undo step, no repeat while held; its tooltip names the slider, the way and the press
+  (`press-reads`, from `Readouts.pressed`), a Scanner key its colour's way. AppKit's press, continuous or stepped: the knob pressed is
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field

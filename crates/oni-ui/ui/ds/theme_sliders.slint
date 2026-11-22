@@ -58,8 +58,10 @@ export global SliderStyle {
     out property <length> grab: DS.control-grab-size;
     // The hand's travel a drag holds at rest: felt under a slow hand, a third of the knob.
     in-out property <length> detent: 6px;
-    // A stepped slider's − and + keycaps as tall as its knob, their sign larger than a word.
+    // Every slider's − and + keycaps as tall as its knob, their sign larger than a word; a press is
+    // `press` steps of the value editor's own − and +, so three shown units.
     in-out property <length> step-key: SliderStyle.knob-height;
+    out property <int> press: DS.control-slider-press;
     // A value typed between its minus and plus: room for its widest figure alone, as −100.0.
     out property <length> figure: 52px;
     in-out property <length> step-legend: Type.section;

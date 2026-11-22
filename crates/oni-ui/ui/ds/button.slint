@@ -134,8 +134,6 @@ export component Button inherits Rectangle {
     // tells it itself: Slint 1.18's interpreter drops the `accessible-*` a use site sets on a nested key.
     in property <bool> expandable;
     in property <bool> expanded;
-    // Whether ⇧ held the last press, which a stepper reads as three steps.
-    out property <bool> shift;
     // `KeycapPress`: the key is down from the press until the release, and `Depth.min-hold` at least.
     out property <bool> down;
     // The hand on the key, which a key showing what its press will do reads.
@@ -281,9 +279,6 @@ export component Button inherits Rectangle {
         clicked => { if (root.live) { root.clicked(); } }
         pointer-event(event) => {
             if (!root.live) { return; }
-            if (event.kind == PointerEventKind.down) {
-                root.shift = event.modifiers.shift;
-            }
             // A ghost is a mark, not a key: it neither presses nor sounds.
             if (root.ghost || event.button != PointerEventButton.left) { return; }
             if (event.kind == PointerEventKind.down) {
@@ -307,7 +302,6 @@ export component Button inherits Rectangle {
                 return reject;
             }
             if (!event.repeat) {
-                root.shift = event.modifiers.shift;
                 if (!root.ghost) {
                     root.sink();
                     root.waiting = true;
