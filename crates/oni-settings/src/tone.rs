@@ -140,6 +140,10 @@ pub struct Print {
     /// Each channel's own contrast, turned about Lighting's pivot after its curve.
     #[serde(rename = "channelContrast", skip_serializing_if = "at_rest")]
     pub channel_contrast: V3,
+    /// The colour the print lays in answer to Lighting's tones: Hunt's density, the points' and Contrast's saturation
+    /// curves and the points' colour hold; off, the sliders bend each channel's tone alone.
+    #[serde(rename = "colourCompensation", skip_serializing_if = "is_on")]
+    pub colour_compensation: bool,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -161,6 +165,7 @@ impl Default for Print {
             channel_black: [0.0; 3],
             channel_mid: [0.0; 3],
             channel_contrast: [0.0; 3],
+            colour_compensation: true,
             bypassed: false,
         }
     }
@@ -168,6 +173,10 @@ impl Default for Print {
 
 fn at_rest(points: &V3) -> bool {
     *points == [0.0; 3]
+}
+
+fn is_on(on: &bool) -> bool {
+    *on
 }
 
 impl Print {
@@ -343,7 +352,8 @@ impl Print {
             }
         }
         let g = (n[0] + n[1] + n[2]) / 3.0;
-        let power = color_density::factor(travel) * self.hunt_factor(g);
+        let hunt = if self.colour_compensation { self.hunt_factor(g) } else { 1.0 };
+        let power = color_density::factor(travel) * hunt;
         color_density::rendered(after, libm::log2f(power) / libm::log2f(color_density::FULL_POWER))
     }
 }

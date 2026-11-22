@@ -43,6 +43,18 @@ fn lighting_leaves_the_filters_and_color_carries_them() {
 }
 
 #[test]
+fn lightings_colour_compensation_rides_with_lighting_on_a_preset_and_a_paste() {
+    let mut donor = PipelineSettings::default();
+    donor.print.colour_compensation = false;
+    let target = PipelineSettings::default();
+    assert!(!apply(&BTreeSet::from(["levelsGlobal".to_string()]), &donor, &target).print.colour_compensation);
+    assert!(!oni_settings::settings::look_settings::copied(&donor, &target).print.colour_compensation);
+    assert!(changed(&donor).contains("levelsGlobal"));
+    // Twin: Colour's row leaves it where the target had it.
+    assert!(apply(&BTreeSet::from(["curves".to_string()]), &donor, &target).print.colour_compensation);
+}
+
+#[test]
 fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.geometry.angle = 2.5;

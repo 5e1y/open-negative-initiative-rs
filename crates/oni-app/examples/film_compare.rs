@@ -5,7 +5,8 @@
 //! the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
 //! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`), and Temperature half its
 //! track either way (`paper-cool`, `paper-warm`), and Lighting's Black point and White point at +0.05 on the paper and on ONI's
-//! print on the Pro face (`paper-points`; `oni-pro`, `oni-points`). Each as `w h` then f32 RGB, linear Rec. 2020.
+//! print on the Pro face (`paper-points`; `oni-pro`, `oni-points`), at rest, at Exposure +1 and at Contrast +0.3 on both with
+//! Lighting's colour compensation on and off (`paper-rest`, `oni-contrast-off`, ...). Each as `w h` then f32 RGB, linear Rec. 2020.
 
 use oni_app::render::{self, Device, Engine, Linear, Reading};
 use oni_graph::Image;
@@ -86,6 +87,17 @@ fn main() {
         let mut lit = pro.clone();
         lit.print.exposure += stops;
         write(out, &format!("B-{tag}"), &e.render(&negative, &lit, Some(side)).unwrap());
+    }
+    for ((print, s), (slider, lit)) in [("paper", &pro), ("oni", &oni_pro)].into_iter().flat_map(|p| {
+        let moves: [(&str, fn(&mut Print)); 3] = [("rest", |_| {}), ("exposure", |p| p.exposure += 1.0), ("contrast", |p| p.contrast += 0.3)];
+        moves.map(|m| (p, m))
+    }) {
+        for (tag, on) in [("", true), ("-off", false)] {
+            let mut moved = s.clone();
+            lit(&mut moved.print);
+            moved.print.colour_compensation = on;
+            write(out, &format!("B-{print}-{slider}{tag}"), &e.render(&negative, &moved, Some(side)).unwrap());
+        }
     }
     for (tag, travel) in [("paper-cool", -1.0), ("paper-warm", 1.0)] {
         let mut lit = pro.clone();

@@ -141,6 +141,8 @@ impl Ctl {
         let p = me.clone();
         panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(PaperStock::default)));
         let p = me.clone();
+        panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
+        let p = me.clone();
         panel.on_paper_chosen(move |i| {
             if let Some(&paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)) {
                 p.write_settings(|s| s.print_paper = Some(paper));
@@ -195,8 +197,10 @@ impl Ctl {
         }
     }
 
-    /// The Colour tab's paper: shown where one can print the photo, its name, and the filtration it prints through.
+    /// The Colour tab's print switches: Lighting's colour compensation, and the paper where one can print the photo, its
+    /// name and the filtration it prints through.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
+        panel.set_colour_compensation(settings.print.colour_compensation);
         panel.set_paper_shown(settings.takes_paper());
         panel.set_paper_on(settings.paper().is_some());
         let chosen = settings.print_paper.unwrap_or_default();

@@ -72,6 +72,9 @@ pub const STOCK_SPLIT_VERSION: i64 = 40;
 pub const PAPER_VERSION: i64 = 41;
 /// The version the print's curve came to take Exposure's distance from its rest twice: each value's distance halved.
 pub const EXPOSURE_GEAR_VERSION: i64 = 42;
+/// The version Lighting's colour compensation came to be switched off, a key a build before it cannot read: no step,
+/// as every older document reads it on.
+pub const COLOUR_COMPENSATION_VERSION: i64 = 43;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

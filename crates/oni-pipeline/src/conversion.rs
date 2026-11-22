@@ -102,7 +102,7 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         own_stops: print.filters(),
         own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
-        hunt: if mono { 0.0 } else { 1.0 },
+        hunt: if mono || !s.print.colour_compensation { 0.0 } else { 1.0 },
         hunt_contrast: 1.0,
         decompression,
         balance_low: unreached.map(|w| w.black),

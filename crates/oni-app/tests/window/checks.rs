@@ -190,6 +190,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
     ("paper::the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_slide", paper::the_paper_switch_prints_a_negative_on_its_paper_and_hides_on_a_slide),
+    ("colour_compensation::the_switch_renders_again_without_the_dashed_guide", colour_compensation::the_switch_renders_again_without_the_dashed_guide),
     ("digital::digital_shows_a_negatives_blocks_on_its_film", digital::digital_shows_a_negatives_blocks_on_its_film),
     ("digital::a_digital_folders_sidebar_names_no_film_stock", digital::a_digital_folders_sidebar_names_no_film_stock),
     ("digital_scanner::a_digital_photo_turns_to_the_scanner_face_and_keeps_its_other_blocks", digital_scanner::a_digital_photo_turns_to_the_scanner_face_and_keeps_its_other_blocks),

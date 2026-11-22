@@ -75,9 +75,10 @@ pub fn sauce(amount: f32) -> SaturationCurve {
 }
 
 /// `Print.pointsCurve`: the black and white points' saturation, a line from the black's to the white's.
-/// A positive's white point moves its print the other way, so its saturation is mirrored (owner's call).
+/// A positive's white point moves its print the other way, so its saturation is mirrored (owner's call); none without
+/// Lighting's colour compensation.
 pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
-    if print.bypassed || (print.black_point == 0.0 && print.white_point == 0.0) {
+    if print.bypassed || !print.colour_compensation || (print.black_point == 0.0 && print.white_point == 0.0) {
         return SaturationCurve::default();
     }
     let (black, white) = print.held_points();
@@ -110,10 +111,11 @@ pub fn contrast_curve(s: &PipelineSettings) -> SaturationCurve {
     contrast_curve_held(s, if s.paper().is_some() { PAPER_CONTRAST_HOLD } else { 1.0 })
 }
 
-/// Contrast's saturation giving back `share` of the colour Contrast's slope takes, as a power of its ratio.
+/// Contrast's saturation giving back `share` of the colour Contrast's slope takes, as a power of its ratio; none
+/// without Lighting's colour compensation.
 pub fn contrast_curve_held(s: &PipelineSettings, share: f32) -> SaturationCurve {
     let print = &s.print;
-    if print.bypassed || print.contrast == 0.0 || s.mode.is_monochrome() {
+    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.mode.is_monochrome() {
         return SaturationCurve::default();
     }
     let stops = conversion::print_stops(s);
