@@ -12251,7 +12251,7 @@
     "type": "feature",
     "title": "The sidecar keeps Print on paper as `paperless`, the paper kept as chosen; format 60",
     "status": "done",
-    "detail": "crates/oni-settings/src/settings.rs: `paperless: bool`, unwritten while false, beside `printPaper` (the enlarger on with its paper; none on ONI's print). No migration step: an older sidecar has none, so every paper print reads on its paper and nothing moves; the format moves to 60 so an older build opens a paperless print read-only. A paste and Lighting's preset row carry it with the paper; a Prepare prints on its fitting paper with Print on paper on (`PipelineSettings::on_paper`, used by the roll's reference, a digital roll and a slide's measure)."
+    "detail": "crates/oni-settings/src/settings.rs: `paperless: bool`, unwritten while false, beside `printPaper` (the enlarger on with its paper; none on ONI's print). No migration step: an older sidecar has none, so every paper print reads on its paper and nothing moves; the format moves to 60 so an older build opens a paperless print read-only. A paste and Lighting's preset row carry it with the paper; a Prepare prints on its fitting paper with Print on paper on (`PipelineSettings::on_paper`, used by the roll's reference, a digital roll and a slide's measure). The corpus's readings carry `paperless: false`, its newer file is now version 61, the field counts are 47."
   },
   {
     "id": 3342,
