@@ -13,7 +13,7 @@ pub fn separation_dose(s: &PipelineSettings) -> f32 {
 
 /// The measured dyes a frame unmixes: its stock's, where the separation runs at all.
 pub fn stock_dyes(s: &PipelineSettings) -> Option<&'static Dyes> {
-    (!s.mode.is_monochrome() && separation_dose(s) > 0.0).then(|| dyes::dyes(s.dye_set))
+    (!s.is_monochrome() && separation_dose(s) > 0.0).then(|| dyes::dyes(s.dye_set))
 }
 
 /// The kernel's arguments for the frame's measured dyes: above the bare film its windows open on, at its dose,

@@ -12538,5 +12538,61 @@
     "status": "done",
     "detail": "paper.rs: the default is kodak-royal-digital, its twin Endura Premier's key another paper; Portra Endura's and Radiance III's keys read as the default and never Endura Premier, Supra, Ultra and the former datasheet key as Endura Premier. Tests that used Royal Digital as a chosen, non-default paper (paperless, one_face, migrate::paper, slide_paper) take Ektacolor Edge so a fall back to the default still fails them; the GPU paper frames print the black and white frame on Endura Premier so every paper stays covered. Format 46's legacy fingerprints: the two cases on Portra Endura (oni-digital-on-paper, oni-paper-keys-temp) re-drawn on Royal Digital, every other case to the bit. Virtual stocks on the default paper: widest C*ab 13.4 on Pro 160NH (CPU and GPU, ceiling 14 kept), lights' 4.7 on Verita 200D, its bound 4.5 raised to 5.0; the window checks' paper switch takes Royal Digital.",
     "outcome": ""
+  },
+  {
+    "id": 3490,
+    "type": "data",
+    "title": "Black and white negatives' profiles from their makers' data sheets",
+    "status": "done",
+    "detail": "scripts/datasheet-profiles.py writes 27 black and white negatives (Foma 8, Fujifilm 4, Ilford 9, Kodak 6) into resources/film/datasheet/: one layer's log sensitivity as printed (Kodak's 0.3 criterion; Ilford's and Foma's wedge heights read as log, one axis unit a log; Tri-X 320's taken from Tri-X 400, same sheet), its visual density curve less base and fog, smoothed over 0.05 log H (raster traces climb in pixel steps), on log H less the grey's. Development: the sheet's reference developer (D-76 where printed, else the sheet's own) at the time whose ISO 6 average gradient is nearest 0.62, among the curves traced from their foot; grey 1.01 log over its ISO 6 speed point (ISO 6 speed and ISO 2720's meter), which holds on a relative axis; checked on the absolute sheets against the box speed within about 0.1 log. Every other development kept in `developments`, unread (developer choice to come). Left out: ADOX HR-50 (no log exposure scale), Neopan SS (toe untraced, a 0.13 D jump), Rollei's 8 (no curve).",
+    "outcome": "Colour profiles written unchanged."
+  },
+  {
+    "id": 3491,
+    "type": "feat",
+    "title": "A black and white virtual negative: the colour kernel on one layer, neutral silver",
+    "status": "done",
+    "detail": "film.rs bakes a silver stock as the colour negative's sibling: profile::Silver read, its layer on the three channels of the light table (balanced to a grey), its curve before and after with no coupler, the silver neutral in one scanned band carrying the camera's whole D50 weight, each channel a third of its density. The kernel, its WGSL and CPU reference are unchanged; on_reference reads a silver stock as a monochrome roll. Every reference derived: stops 0, black and white neutral.",
+    "outcome": ""
+  },
+  {
+    "id": 3492,
+    "type": "feat",
+    "title": "A digital photo on a black and white film is read as a monochrome roll",
+    "status": "done",
+    "detail": "PipelineSettings::is_monochrome (mode Monochrome, or a digital photo's film silver) replaces mode.is_monochrome in every settings-based branch: stage 4-7, decompression, separation, the paper's Film::Silver enlarger and its time-only rest, finishing's luma, colour compensation, knob ranges, the balance's filters, the panel's mono levels and separation key, the link. The mode stays Digital (set by hand only). Switching back to a colour stock restores colour: on_stock writes gains, windows, dyes and the stock, nothing else holds the state.",
+    "outcome": ""
+  },
+  {
+    "id": 3493,
+    "type": "feat",
+    "title": "27 black and white virtual films in the stock menu, each on its roll stock",
+    "status": "done",
+    "detail": "VirtualStock gains 27 silver stocks (keys foma-fomapan-100 ... kodak-tri-x-400), each mapped to its catalogue stock: existing canisters for HP5, FP4, Delta 100/400/3200, Pan F, SFX, XP2, Ortho, Acros, Fomapan 200/400, Tri-X 400; 14 new catalogue stocks drawn with the generic black and white canister until their SVG arrives (foma-fomapan100, foma-fomapan-cine100, foma-fomapan-cine400, foma-ortho400, foma-cine-ortho400, foma-retropan320, fujifilm-neopan400, fujifilm-neopan1600, fujifilm-neopan-ortho, kodak-320txp, kodak-tmax100, kodak-tmax400, kodak-tmax-p3200, kodak-double-x). A silver stock rests on the generic dye set, as a black and white roll does.",
+    "outcome": ""
+  },
+  {
+    "id": 3494,
+    "type": "migration",
+    "title": "Format 56's own-film catch-up ignores the black and white films",
+    "status": "done",
+    "detail": "own_film::caught_up matched a photo against every stock's gains and dyes; a silver stock's neutral gains on the generic set would have moved an older hand-made state. Silver stocks, absent then, are left out; twin in its test.",
+    "outcome": ""
+  },
+  {
+    "id": 3495,
+    "type": "check",
+    "title": "The black and white virtual negative's checks, each with its twin",
+    "status": "done",
+    "detail": "tests/virtual_silver.rs: every scan neutral (twin Portra's mask); ortho vs pan on sRGB red at a grey's luma: ortho at least 0.35 D thinner, prints under 0.2 of the grey (0.14-0.18), pan at most 0.15 thinner and over 0.7 (twin Ortho Plus against HP5); monotone ramp over 20 stops, rising across the grey's 3 stops (twin a dipped curve); GPU against CPU on Ortho Plus and Tri-X 400 (twins exposure 1 % and another film's layer); a digital photo on HP5 is its scan read as a monochrome roll pixel for pixel, paper and paperless (twin read as a colour negative), back on Portra prints colour. virtual_film.rs, virtual_stocks.rs, datasheet_stocks.rs, settings tests take the silver stocks.",
+    "outcome": ""
+  },
+  {
+    "id": 3496,
+    "type": "check",
+    "title": "Window check: a black and white film lit and picked in the stock menu",
+    "status": "done",
+    "detail": "tests/window/bw_film.rs: on a digital photo, HP5 then Ortho Plus under the pointer show the canvas grey, nothing written, the ortho reds darker; Escape the colour film again; a click writes HP5 with its canister, one Undo takes Portra back, colour again.",
+    "outcome": ""
   }
 ]

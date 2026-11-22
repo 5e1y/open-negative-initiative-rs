@@ -73,7 +73,7 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
 /// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
 fn unprinted(s: &PipelineSettings) -> Stage47 {
     let print = &s.print.on_curve(Print::resting_exposure(s.mode));
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);

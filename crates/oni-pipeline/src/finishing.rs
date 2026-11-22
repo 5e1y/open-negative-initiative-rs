@@ -92,7 +92,7 @@ pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
 /// The saturation ONI's print lays by itself, the points' then Contrast's: the render's passes and the plot's guide; a
 /// paper's print lays none, its colour its own.
 pub fn print_saturation(s: &PipelineSettings) -> [SaturationCurve; 2] {
-    if s.mode.is_monochrome() || on_paper(s) {
+    if s.is_monochrome() || on_paper(s) {
         return [SaturationCurve::default(), SaturationCurve::default()];
     }
     [points_curve(&s.print, s.mode), contrast_curve(s)]
@@ -106,7 +106,7 @@ const CONTRAST_REACH: f32 = 0.01;
 /// it; none on a paper or without Lighting's colour compensation.
 pub fn contrast_curve(s: &PipelineSettings) -> SaturationCurve {
     let print = &s.print;
-    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.mode.is_monochrome() || on_paper(s) {
+    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.is_monochrome() || on_paper(s) {
         return SaturationCurve::default();
     }
     let stops = print.on_curve(Print::resting_exposure(s.mode)).exposure;

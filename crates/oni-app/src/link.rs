@@ -58,7 +58,7 @@ pub fn screen(store: &EditorStore, frame: Option<(u16, u16)>) -> State {
         clicks: oni_link::Clicks::default(),
         contrast: s.print.contrast,
         vignette: s.vignette.stops,
-        chrome: (!s.mode.is_monochrome()).then_some(s.secret_sauce),
+        chrome: (!s.is_monochrome()).then_some(s.secret_sauce),
         remeasure: false,
         can_undo: store.can_undo(),
         can_redo: store.can_redo(),

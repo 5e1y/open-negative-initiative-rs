@@ -395,6 +395,178 @@ def convert_paper(stock_id):
     return name, inferred
 
 
+# The black and white negatives taken: the dataset's id, the file ONI names, the chart-id prefix of the developer the
+# stock rests on (the sheet's own, D-76 where the sheet prints it), and the stock whose spectrum stands for a missing one.
+BW_STOCKS = [
+    ("foma_fomapan_100_classic", "foma_fomapan_100", "characteristic_curves_dev", None),
+    ("foma_fomapan_200_creative", "foma_fomapan_200", "characteristic_curves_dev", None),
+    ("foma_fomapan_400_action", "foma_fomapan_400", "characteristic_curves_dev", None),
+    ("foma_fomapan_cine_100", "foma_fomapan_cine_100", "characteristic_curves_dev", None),
+    ("foma_fomapan_cine_400", "foma_fomapan_cine_400", "characteristic_curves_dev", None),
+    ("foma_ortho_400", "foma_ortho_400", "characteristic_curves_dev", None),
+    ("foma_cine_ortho_400", "foma_cine_ortho_400", "characteristic_curves_dev", None),
+    ("foma_retropan_320_soft", "foma_retropan_320", "characteristic_curves_dev", None),
+    ("fujifilm_neopan_100_acros_ii", "fujifilm_acros_ii", "characteristic_curves_d76", None),
+    ("fujifilm_neopan_400_presto", "fujifilm_neopan_400", "characteristic_curves_d76", None),
+    ("fujifilm_neopan_1600_super_presto", "fujifilm_neopan_1600", "characteristic_curves_d76", None),
+    ("fujifilm_neopan_ortho", "fujifilm_neopan_ortho", "characteristic_curves_artdol", None),
+    ("ilford_delta_100", "ilford_delta_100", "characteristic_curves", None),
+    ("ilford_delta_400", "ilford_delta_400", "characteristic_curves", None),
+    ("ilford_delta_3200", "ilford_delta_3200", "characteristic_curves_ddx", None),
+    ("ilford_fp4_plus", "ilford_fp4_plus", "characteristic_curves", None),
+    ("ilford_hp5_plus", "ilford_hp5_plus", "characteristic_curves", None),
+    ("ilford_ortho_plus", "ilford_ortho_plus", "characteristic_curves_id11", None),
+    ("ilford_pan_f_plus", "ilford_pan_f_plus", "characteristic_curves", None),
+    ("ilford_sfx_200", "ilford_sfx_200", "characteristic_curves", None),
+    ("ilford_xp2_super", "ilford_xp2_super", "characteristic_curves", None),
+    ("kodak_eastman_double_x_negative_5222", "kodak_double_x", "characteristic_curves_dev", None),
+    ("kodak_t_max_100", "kodak_t_max_100", "characteristic_curves_d76", None),
+    ("kodak_t_max_400", "kodak_t_max_400", "characteristic_curves_d76", None),
+    ("kodak_t_max_p3200", "kodak_t_max_p3200", "characteristic_curves_tmax_dev_small_tank", None),
+    ("kodak_tri_x_320", "kodak_tri_x_320", "characteristic_curves_hc110b", "kodak_tri_x_400"),
+    ("kodak_tri_x_400", "kodak_tri_x_400", "characteristic_curves_d76_35mm", None),
+]
+
+# The black and white negatives left out, each with why.
+BW_LEFT_OUT = {
+    "adox_hr_50": "its curve's log exposure axis prints no scale",
+    "fujifilm_neopan_ss": "its toe is not traced: its five curves merge there and each trace jumps 0.13 density at log H -2.10",
+    "rollei_infrared_400": "no curve and no spectrum on its sheet",
+    "rollei_retro_400s": "no curve and no spectrum on its sheet",
+    "rollei_retro_80s": "no characteristic curve on its sheet",
+    "rollei_rpx_25": "no characteristic curve on its sheet",
+    "rollei_rpx_100": "no characteristic curve on its sheet",
+    "rollei_rpx_400": "no characteristic curve on its sheet",
+    "rollei_superpan_200": "no characteristic curve on its sheet",
+    "rollei_ortho_25_plus": "no characteristic curve on its sheet",
+}
+
+# ISO 6: the speed point 0.10 over base and fog, and the development whose density climbs 0.80 over the 1.30 log H past it.
+ISO6_RISE, ISO6_SPAN, ISO6_GRADIENT = 0.10, 1.30, 0.80 / 1.30
+# ISO 6's speed 0.8 / H_m and ISO 2720's meter (K 12.5, q 0.65) set a metered grey 1.01 log over the speed point.
+ISO6_GREY = math.log10(0.65 * 12.5 / 0.8)
+
+
+# A raster trace climbs in steps of its pixels, a few hundredths of log H wide: a curve is smoothed over 0.05 log H
+# (one sigma, a sixth of a stop), well under its toe's and shoulder's bends.
+SMOOTHING, FINE = 0.05, 0.005
+
+
+def neutral(chart_):
+    """A black and white curve's density on a fine log H grid, smoothed, held at its ends and at a point already
+    reached where the trace dips."""
+    x, y = series(chart_, "neutral")
+    fine = np.arange(x[0], x[-1] + FINE / 2, FINE)
+    taps = np.arange(-4 * SMOOTHING, 4 * SMOOTHING + FINE / 2, FINE)
+    w = np.exp(-0.5 * (taps / SMOOTHING) ** 2)
+    held = np.pad(np.interp(fine, x, y), len(taps) // 2, mode="edge")
+    return fine, np.maximum.accumulate(np.convolve(held, w / w.sum(), mode="valid"))
+
+
+def iso6(chart_):
+    """The curve's ISO 6 speed point in log H and its average gradient from there over 1.30 log H."""
+    x, y = neutral(chart_)
+    target = y.min() + ISO6_RISE
+    i = int(np.argmax(y >= target))
+    speed = float(np.interp(target, y[: i + 1], x[: i + 1]))
+    return speed, (float(np.interp(speed + ISO6_SPAN, x, y)) - target) / ISO6_SPAN
+
+
+def development(stock, prefix):
+    """The developer's curves traced from their foot (from within 0.10 log H of the first: a curve whose toe hides
+    under another's is traced from where they part), and among them the one nearest ISO 6's gradient."""
+    charts = [c for c in stock["charts"] if c["kind"] == "characteristic_curves" and c["chart_id"].startswith(prefix)]
+    first = min(neutral(c)[0][0] for c in charts)
+    traced = [c for c in charts if neutral(c)[0][0] <= first + 0.10]
+    return min(traced, key=lambda c: abs(iso6(c)[1] - ISO6_GRADIENT))
+
+
+def bw_sensitivity(stock):
+    """The one layer's log sensitivity on the grid, its sheet's gaps filled, and its chart; Kodak's at the 0.3
+    criterion where the sheet prints two."""
+    charts = [c for c in stock["charts"] if c["kind"] == "spectral_sensitivity"]
+    c = next((c for c in charts if c["chart_id"].endswith(("_0p3", "_d03"))), charts[0])
+    channel = next(ch for ch in ("panchromatic", "orthochromatic") if ch in c["channels"])
+    x, y = series(c, channel)
+    return tailed(x, y, y.max() - 8.0), c, channel
+
+
+def convert_bw(stock_id, name, prefix, spectrum_of):
+    stock = STOCK[stock_id]
+    measured, inferred = [], []
+    layer, sens_chart, channel = bw_sensitivity(STOCK[spectrum_of or stock_id])
+    unit = sens_chart["y"]["unit"]
+    measured.append(f"spectral sensitivity, one {channel} layer, as printed ({sens_chart['confidence']} confidence)")
+    if spectrum_of:
+        inferred.append(f"the spectral sensitivity: {STOCK[spectrum_of]['name']}'s, which the same sheet prints for both")
+    if not unit.startswith("log10"):
+        inferred.append("the sensitivity's printed height read as log sensitivity, one unit of its axis a log: a wedge "
+                        "spectrogram's envelope stands on log exposure")
+    inferred.append("the layer's sensitivity past the sheet's first and last point, falling at its end slope")
+    inferred.append("the layer's level: set by the bake so a grey under daylight exposes it at log 0")
+
+    chosen = development(stock, prefix)
+    speed, gradient = iso6(chosen)
+    grey = speed + ISO6_GREY
+    x, y = neutral(chosen)
+    le = np.linspace(x[0], x[-1], CURVE_NODES)
+    density = np.interp(le, x, y) - y.min()
+    measured.append(f"characteristic curve, visual density, as printed ({chosen['confidence']} confidence), less its base and fog")
+    inferred.append(f"the curve smoothed over {SMOOTHING:.2f} log H, lifting a raster trace's steps")
+    inferred.append(f"the development: {chosen['chart_id'].removeprefix('characteristic_curves_') or 'the sheet\'s one curve'}, "
+                    f"its ISO 6 average gradient {gradient:.2f} the nearest the sheet's developer prints to ISO 6's 0.62")
+    inferred.append(f"the grey's exposure: ISO 6 speed point + {ISO6_GREY:.2f} log, where ISO 6's speed and ISO 2720's meter put a metered grey")
+    inferred.append("densities held at the sheet's last point past the curve's printed range")
+
+    others = []
+    for c in stock["charts"]:
+        if c["kind"] != "characteristic_curves" or c is chosen:
+            continue
+        cx, cy = neutral(c)
+        node = np.linspace(cx[0], cx[-1], CURVE_NODES)
+        others.append({
+            "chart": c["chart_id"],
+            "condition": c["condition"],
+            "average_gradient": round(iso6(c)[1], 4),
+            "log_exposure": [round(float(v), 5) for v in node - grey],
+            "density_curve": [round(float(v), 5) for v in np.interp(node, cx, cy) - cy.min()],
+        })
+    if others:
+        inferred.append("every other development on the default's log H axis, less its grey: one sheet's axis is shared")
+    source = stock["source"]
+    profile = {
+        "info": {
+            "stock": name,
+            "name": stock["name"],
+            "manufacturer": stock["manufacturer"],
+            "type": "bw_negative",
+            "densitometer": "visual",
+            "sensitisation": channel,
+            "reference_illuminant": "D55",
+        },
+        "provenance": {
+            "data_sheet": source.get("doc_id"),
+            "url": source.get("url"),
+            "sha256": source.get("sha256"),
+            "retrieved": source.get("retrieved"),
+            "dataset_id": stock_id,
+            "charts": [sens_chart["chart_id"], chosen["chart_id"]],
+            "measured": measured,
+            "inferred": inferred,
+        },
+        "data": {
+            "wavelengths": [float(w) for w in WAVELENGTHS],
+            "log_sensitivity": [round(float(v), 6) for v in layer],
+            "development": {"chart": chosen["chart_id"], "condition": chosen["condition"], "average_gradient": round(gradient, 4)},
+            "log_exposure": [round(float(v), 6) for v in le - grey],
+            "density_curve": [round(float(v), 6) for v in density],
+            "developments": others,
+        },
+    }
+    (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
+    return name, inferred, len(others)
+
+
 def status_a(dye, channel):
     centre, width = STATUS_A[channel]
     w = np.exp(-0.5 * ((WAVELENGTHS - centre) / (width / 2.3548)) ** 2)
@@ -419,6 +591,15 @@ def main():
         name, inferred = convert_paper(stock_id)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred))
+    for stock_id, name, prefix, spectrum_of in BW_STOCKS:
+        name, inferred, others = convert_bw(stock_id, name, prefix, spectrum_of)
+        names.append(name)
+        print(f"{name}: " + "; ".join(i for i in inferred if i.startswith(("the development", "the spectral", "the sensitivity's")))
+              + f"; {others} other development{'s' if others != 1 else ''} kept")
+    taken = {s for s, *_ in BW_STOCKS}
+    for s in STOCK.values():
+        if s["type"] == "bw_negative" and s["id"] not in taken:
+            print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
     arms = "\n".join(f'    ("{n}", include_bytes!("../../resources/film/datasheet/{n}.json")),' for n in names)
     TABLE.write_text(
         "//! Every profile scripts/datasheet-profiles.py writes from the makers' data sheets, by its file's name; the\n"

@@ -93,7 +93,7 @@ fn main() {
         let k = conversion::stage47(&s);
         let p = conversion::printing(&s).expect("a paper").paper;
         let bare = Paper { scale: 1.0, filters: [1.0; 3], ..p };
-        let mono = s.mode.is_monochrome();
+        let mono = s.is_monochrome();
         let separation = oni_pipeline::conversion::stock_amounts(&s);
         let anchors = paper::anchors(&s, separation.as_ref());
         let (time, pack) = paper::resting(&bare, anchors[2], mono);

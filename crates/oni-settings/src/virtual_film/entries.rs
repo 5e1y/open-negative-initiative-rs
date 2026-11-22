@@ -21,7 +21,8 @@ const fn reference(stops: [f32; 3], black: [f32; 3], white: [f32; 3]) -> StockRe
     StockReference { stops, black, white }
 }
 
-/// Every stock in `VirtualStock::ALL`'s order, which is the enum's. A push develops Portra 800's own dyes on its curves.
+/// Every stock in `VirtualStock::ALL`'s order, which is the enum's. A push develops Portra 800's own dyes on its curves; a
+/// black and white film rests on the generic set, as a black and white roll does: its silver unmixes nothing.
 pub(super) const ENTRIES: [Entry; VirtualStock::ALL.len()] = {
     use Balance::*;
     [
@@ -121,5 +122,59 @@ pub(super) const ENTRIES: [Entry; VirtualStock::ALL.len()] = {
             [-0.5557344, 0.0, 0.5149134], [0.30773997, 0.3076771, 0.3075928], [0.9609211, 1.0723351, 0.9655603])),
         entry("Kodak Portra 400VC", "kodak-portra400vc", DyeSet::KodakPortra400VC, "kodak_portra_400vc", Daylight, reference(
             [-0.5713503, 0.0, 0.5229958], [0.30710933, 0.30704534, 0.3069599], [0.98488104, 1.0995827, 0.9914603])),
+        entry("Foma Fomapan 100", "foma-fomapan100", DyeSet::GenericC41, "foma_fomapan_100", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.641245, 0.641245, 0.641245])),
+        entry("Foma Fomapan 200", "foma-fomapan200", DyeSet::GenericC41, "foma_fomapan_200", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.6508648, 0.6508648, 0.6508648])),
+        entry("Foma Fomapan 400", "foma-fomapan400", DyeSet::GenericC41, "foma_fomapan_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.6400596, 0.6400596, 0.6400596])),
+        entry("Foma Fomapan Cine 100", "foma-fomapan-cine100", DyeSet::GenericC41, "foma_fomapan_cine_100", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.64884645, 0.64884645, 0.64884645])),
+        entry("Foma Fomapan Cine 400", "foma-fomapan-cine400", DyeSet::GenericC41, "foma_fomapan_cine_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.6525161, 0.6525161, 0.6525161])),
+        entry("Foma Ortho 400", "foma-ortho400", DyeSet::GenericC41, "foma_ortho_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.6923136, 0.6923136, 0.6923136])),
+        entry("Foma Cine Ortho 400", "foma-cine-ortho400", DyeSet::GenericC41, "foma_cine_ortho_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.70480514, 0.70480514, 0.70480514])),
+        entry("Foma Retropan 320", "foma-retropan320", DyeSet::GenericC41, "foma_retropan_320", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.4840337, 0.4840337, 0.4840337])),
+        entry("Fujifilm Acros", "fujifilm-acros", DyeSet::GenericC41, "fujifilm_acros_ii", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.55640346, 0.55640346, 0.55640346])),
+        entry("Fujifilm Neopan 400", "fujifilm-neopan400", DyeSet::GenericC41, "fujifilm_neopan_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5011924, 0.5011924, 0.5011924])),
+        entry("Fujifilm Neopan 1600", "fujifilm-neopan1600", DyeSet::GenericC41, "fujifilm_neopan_1600", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5704813, 0.5704813, 0.5704813])),
+        entry("Fujifilm Neopan Ortho", "fujifilm-neopan-ortho", DyeSet::GenericC41, "fujifilm_neopan_ortho", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5318679, 0.5318679, 0.5318679])),
+        entry("Ilford Delta 100", "ilford-delta100", DyeSet::GenericC41, "ilford_delta_100", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5453998, 0.5453998, 0.5453998])),
+        entry("Ilford Delta 400", "ilford-delta400", DyeSet::GenericC41, "ilford_delta_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5495109, 0.5495109, 0.5495109])),
+        entry("Ilford Delta 3200", "ilford-delta3200", DyeSet::GenericC41, "ilford_delta_3200", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.50518507, 0.50518507, 0.50518507])),
+        entry("Ilford FP4", "ilford-fp4", DyeSet::GenericC41, "ilford_fp4_plus", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5620778, 0.5620778, 0.5620778])),
+        entry("Ilford HP5", "ilford-hp5", DyeSet::GenericC41, "ilford_hp5_plus", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.529545, 0.529545, 0.529545])),
+        entry("Ilford Ortho", "ilford-ortho", DyeSet::GenericC41, "ilford_ortho_plus", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5154966, 0.5154966, 0.5154966])),
+        entry("Ilford Pan F", "ilford-panf", DyeSet::GenericC41, "ilford_pan_f_plus", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.59475046, 0.59475046, 0.59475046])),
+        entry("Ilford SFX", "ilford-sfx", DyeSet::GenericC41, "ilford_sfx_200", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5630885, 0.5630885, 0.5630885])),
+        entry("Ilford XP2", "ilford-xp2", DyeSet::GenericC41, "ilford_xp2_super", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.58853966, 0.58853966, 0.58853966])),
+        entry("Kodak Double-X", "kodak-double-x", DyeSet::GenericC41, "kodak_double_x", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5464296, 0.5464296, 0.5464296])),
+        entry("Kodak T-Max 100", "kodak-tmax100", DyeSet::GenericC41, "kodak_t_max_100", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5124685, 0.5124685, 0.5124685])),
+        entry("Kodak T-Max 400", "kodak-tmax400", DyeSet::GenericC41, "kodak_t_max_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.47859788, 0.47859788, 0.47859788])),
+        entry("Kodak T-Max P3200", "kodak-tmax-p3200", DyeSet::GenericC41, "kodak_t_max_p3200", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.65690064, 0.65690064, 0.65690064])),
+        entry("Kodak Tri-X 320", "kodak-320txp", DyeSet::GenericC41, "kodak_tri_x_320", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.49478894, 0.49478894, 0.49478894])),
+        entry("Kodak Tri-X 400", "kodak-400tx", DyeSet::GenericC41, "kodak_tri_x_400", Daylight, reference(
+            [0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5753634, 0.5753634, 0.5753634])),
     ]
 };

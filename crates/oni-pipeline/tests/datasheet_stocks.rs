@@ -58,10 +58,11 @@ fn rendered(g: &mut Graph, s: &PipelineSettings) -> Vec<V4> {
 fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     let (stocks, papers) = (sheet_stocks(), sheet_papers());
     println!("{} films and {} papers from their data sheets", stocks.len(), papers.len());
-    assert_eq!((stocks.len(), papers.len()), (48, 8));
+    assert_eq!((stocks.len(), papers.len()), (75, 8));
     for stock in &stocks {
         let json = film::dyes::source(stock.profile()).expect("shipped");
-        assert!(film::profile::Profile::read(json).is_ok(), "{stock:?}");
+        let read = if stock.is_silver() { film::profile::Silver::read(json).err() } else { film::profile::Profile::read(json).err() };
+        assert!(read.is_none(), "{stock:?}: {read:?}");
     }
     for p in &papers {
         assert!(paper::validate(paper::source(*p).expect("shipped")).is_ok(), "{p:?}");
@@ -76,6 +77,8 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     };
     let film_json = film::dyes::source(stocks[0].profile()).unwrap();
     assert!(film::profile::Profile::read(&spoiled(film_json, "\"density_curves\"")).is_err());
+    let silver_json = film::dyes::source(VirtualStock::IlfordHP5Plus.profile()).unwrap();
+    assert!(film::profile::Silver::read(&spoiled(silver_json, "\"density_curve\"")).is_err());
     let paper_json = paper::source(papers[0]).unwrap();
     assert!(paper::validate(&spoiled(paper_json, "\"density_curves\"")).is_err());
 }

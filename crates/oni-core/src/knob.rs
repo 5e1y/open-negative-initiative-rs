@@ -147,7 +147,7 @@ impl Knob {
 
     /// The slider's range on these settings; the levels' handles keep their own order instead.
     pub fn range(self, s: &PipelineSettings) -> Option<(f32, f32)> {
-        let mono = s.mode.is_monochrome();
+        let mono = s.is_monochrome();
         Some(match self {
             Knob::Gain(_) | Knob::GainTemperature | Knob::GainTint => Gains::RANGE,
             Knob::DensityCeiling => {

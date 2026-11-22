@@ -212,7 +212,7 @@ mod tests {
         assert_eq!(listed.len(), virtual_ids.len());
         assert!(virtual_ids.iter().all(|id| listed.contains(id) && virtual_stock(id).is_some()), "{listed:?}");
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
-        assert!(!listed.contains(&"ilford-hp5") && virtual_stock("ilford-hp5").is_none());
+        assert!(!listed.contains(&"agfaphoto-apx") && virtual_stock("agfaphoto-apx").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
     }
 
@@ -226,7 +226,7 @@ mod tests {
         assert!(portra.as_slice().iter().any(|p| p.a > 0), "the artwork's pixels are drawn");
         // Twin: another side is drawn apart, another stock draws other pixels, an unknown one none.
         assert_eq!(row_icon("kodak-portra", 22).unwrap().size().width, 22);
-        assert_ne!(row_icon("ilford-hp5", 44).unwrap().to_rgba8().unwrap().as_slice(), portra.as_slice());
+        assert_ne!(row_icon("agfaphoto-apx", 44).unwrap().to_rgba8().unwrap().as_slice(), portra.as_slice());
         assert!(row_icon("no-such-stock", 44).is_none());
         ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
@@ -265,7 +265,7 @@ mod tests {
         ("ilford-delta3200", 0x0f5f3013545801d7),
         ("ilford-delta400", 0xa710f3c955ca8430),
         ("ilford-fp4", 0x3130019319f259de),
-        ("ilford-hp5", 0x24cc54097b67dd73),
+        ("agfaphoto-apx", 0x24cc54097b67dd73),
         ("ilford-ortho", 0x7ea35ce2af4e399e),
         ("ilford-panf", 0xbec50c93f7a944c8),
         ("ilford-sfx", 0xd2217db2be5d78ca),

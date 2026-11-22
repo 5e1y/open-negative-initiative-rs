@@ -195,7 +195,7 @@ impl Film {
 
     /// What a frame lays in the enlarger: its silver or its negative's measured dyes.
     pub fn of(s: &PipelineSettings) -> Film {
-        if s.mode.is_monochrome() { Film::Silver } else { Film::Negative(s.dye_set) }
+        if s.is_monochrome() { Film::Silver } else { Film::Negative(s.dye_set) }
     }
 
     fn index(self) -> usize {

@@ -54,7 +54,7 @@ pub fn field(param: Param) -> Field {
 /// Slint panes lay them; a contact sheet's grain blocks are out of reach there.
 pub fn rows(s: &PipelineSettings, on_paper: bool) -> Vec<Row> {
     use Param::*;
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let flat = &s.flat_field;
     // `FlatFieldBlock`: the sliders act once a mask is chosen.
     let masked = flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none());

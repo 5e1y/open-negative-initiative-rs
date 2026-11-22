@@ -222,7 +222,7 @@ impl Ctl {
         };
         let panel = w.global::<PanelState>();
         panel.set_filtration_cmy(cmy);
-        panel.set_separation_shown(!settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source);
+        panel.set_separation_shown(!settings.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source);
         panel.set_slide(settings.mode.is_slide());
         panel.set_digital(settings.mode.is_digital());
         self.publish_paper(&panel, &settings);
@@ -257,7 +257,7 @@ impl Ctl {
         let panel = w.global::<PanelState>();
         self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
-        panel.set_monochrome(settings.mode.is_monochrome());
+        panel.set_monochrome(settings.is_monochrome());
         panel.set_stock(self.open_canister());
         let [white, gains, black, ends] = film_lines(&settings);
         panel.set_film_white(white.into());

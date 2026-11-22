@@ -290,6 +290,12 @@ impl PipelineSettings {
         self.mode.is_digital().then(|| self.virtual_film.unwrap_or_default())
     }
 
+    /// A black and white picture: a monochrome roll's, or a digital photo's on a black and white film, whose
+    /// negative holds silver alone and is read as a monochrome roll's is.
+    pub fn is_monochrome(&self) -> bool {
+        self.mode.is_monochrome() || self.film().is_some_and(|f| f.stock.is_silver())
+    }
+
     /// Every neighbourhood stage off, for thumbnails and per-pixel checks.
     pub fn per_pixel_only(&self) -> PipelineSettings {
         let mut out = self.clone();

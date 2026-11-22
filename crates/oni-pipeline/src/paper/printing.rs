@@ -194,7 +194,7 @@ fn spanned(v: f32) -> f32 {
 /// film and the enlarger, the grade on the paper, the colour density and the ends on the print. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let film = Film::of(s);
     let (table, sheet) = if s.paperless {
         (neutral::enlarger(film == Film::Silver), neutral::sheet())
