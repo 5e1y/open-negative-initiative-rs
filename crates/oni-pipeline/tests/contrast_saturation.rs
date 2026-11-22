@@ -1,5 +1,5 @@
-//! Contrast's colour: the whole render lays the saturation curve the Saturation Curve's plot shows, on ONI's print and
-//! on a paper, and nothing at Contrast's rest.
+//! Contrast's colour: the whole render lays the saturation curve the Saturation Curve's plot shows on ONI's print, nothing
+//! at Contrast's rest, and nothing on a paper, whose Contrast is its grade.
 
 mod common;
 use common::{TOLERANCE, V4, error, graph, noise, whole};
@@ -79,12 +79,13 @@ fn the_render_lays_contrasts_saturation_as_the_plot_shows_it() {
         for travel in [-0.3, 0.3] {
             let s = settled(paper, travel);
             let shown = finishing::print_saturation(&s);
-            assert!(!shown[1].is_neutral(), "{paper} {travel}: Contrast lays a curve");
+            assert_eq!(shown[1].is_neutral(), paper, "{paper} {travel}: Contrast lays a curve on ONI's print alone");
+            let onis = finishing::print_saturation(&settled(false, travel));
             let render = centres(&mut g, &mut pipeline, &source, &s);
             let e = error(&render, &expected(&scan, &s, &shown));
-            // Twin: the curve not applied.
-            let bare = error(&render, &expected(&scan, &s, &[]));
-            println!("paper {paper}, Contrast {travel:+}: {e:.2e} off the shown curve, {bare:.2e} off the print without it");
+            // Twin: on ONI's print the curve not applied; on the paper ONI's curve laid.
+            let bare = error(&render, &expected(&scan, &s, if paper { &onis } else { &[] }));
+            println!("paper {paper}, Contrast {travel:+}: {e:.2e} off the shown curve, {bare:.2e} off its twin");
             assert!(e < TOLERANCE, "{paper} {travel}: {e}");
             assert!(bare > 1e-2, "{paper} {travel}: the check sees no curve ({bare})");
         }
@@ -129,22 +130,10 @@ fn contrasts_curve_on_the_gpu_is_its_reference() {
 }
 
 #[test]
-fn a_paper_gives_back_half_of_contrasts_colour() {
+fn a_paper_lays_no_contrast_curve() {
     for travel in [-0.3, 0.3] {
-        let s = settled(true, travel);
-        let (laid, whole) = (finishing::contrast_curve(&s), finishing::contrast_curve_held(&s, 1.0));
-        for (half, full) in laid.points.iter().zip(&whole.points) {
-            // A share is a power of the ratio the slope gives: the paper's ratio is the whole one's square root,
-            // past the plot's top where the whole one is held at 1.
-            if full.y < 1.0 {
-                assert!(((2.0 * half.y) - (2.0 * full.y).sqrt()).abs() < 1e-6, "{travel}: {half:?} {full:?}");
-            } else {
-                assert!(2.0 * half.y >= 2f64.sqrt() - 1e-6, "{travel}: {half:?}");
-            }
-        }
-        // Twin: the whole hold is not what a paper lays.
-        assert!(laid.points.iter().zip(&whole.points).any(|(h, f)| (h.y - f.y).abs() > 1e-2), "{travel}");
+        assert!(finishing::contrast_curve(&settled(true, travel)).is_neutral(), "{travel}");
+        // Twin: ONI's print lays one.
+        assert!(!finishing::contrast_curve(&settled(false, travel)).is_neutral(), "{travel}");
     }
-    // ONI's print keeps the whole hold.
-    assert_eq!(finishing::contrast_curve(&settled(false, 0.3)), finishing::contrast_curve_held(&settled(false, 0.3), 1.0));
 }

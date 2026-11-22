@@ -77,6 +77,7 @@ pub enum Field {
     GrainColourBlack,
     GrainColourWhite,
     FilmExposure,
+    Brightness,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -93,7 +94,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 56] = [
+    pub const ALL: [Field; 57] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -150,6 +151,7 @@ impl Field {
         Field::GrainColourBlack,
         Field::GrainColourWhite,
         Field::FilmExposure,
+        Field::Brightness,
     ];
 
     pub fn index(self) -> i32 {
@@ -164,14 +166,16 @@ impl Field {
         Block::ALL.into_iter().find(|b| b.fields().contains(&self))
     }
 
-    /// Whether the panel shows this value in `mode`: a digital photo's film, its effects and its lens
-    /// on it alone, so a block's reset and its key read only what it shows.
-    pub fn shown_in(self, mode: oni_settings::ConversionMode) -> bool {
+    /// Whether the panel shows this value for `settings`: a digital photo's film, its effects and its lens on it alone,
+    /// Brightness on a paper alone, so a block's reset and its key read only what it shows.
+    pub fn shown_in(self, settings: &oni_settings::PipelineSettings) -> bool {
+        let mode = settings.mode;
         match self {
             Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => mode.is_digital(),
             Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => mode.is_digital(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
             Field::FilmExposure => mode.is_digital(),
+            Field::Brightness => settings.paper().is_some(),
             _ => true,
         }
     }
@@ -254,6 +258,8 @@ impl Field {
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
             // The stops of light a virtual film takes over the scene's own.
             Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
+            // A paper's print brightened between its own Dmax and white, in the stops of ONI's Exposure.
+            Field::Brightness => s("Brightness", Print::BRIGHTNESS_RANGE, Readout::Stops),
         }
     }
 

@@ -8,7 +8,6 @@ use oni_settings::curves::{Curve, CurveSet, SaturationCurve};
 use oni_settings::spectrogram::{Band, Spectrogram};
 use oni_settings::{ConversionMode, PipelineSettings};
 use oni_settings::tone::{Print, Tone, contrast};
-use crate::conversion;
 
 /// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags; `None` when all five curves rest.
 pub fn curves(set: &CurveSet) -> Option<Curves> {
@@ -90,9 +89,10 @@ pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
     SaturationCurve { points }
 }
 
-/// The saturation the print lays by itself, the points' then Contrast's: the render's passes and the plot's guide.
+/// The saturation ONI's print lays by itself, the points' then Contrast's: the render's passes and the plot's guide; a
+/// paper's print lays none, its colour its own.
 pub fn print_saturation(s: &PipelineSettings) -> [SaturationCurve; 2] {
-    if s.mode.is_monochrome() {
+    if s.mode.is_monochrome() || on_paper(s) {
         return [SaturationCurve::default(), SaturationCurve::default()];
     }
     [points_curve(&s.print, s.mode), contrast_curve(s)]
@@ -101,30 +101,25 @@ pub fn print_saturation(s: &PipelineSettings) -> [SaturationCurve; 2] {
 /// How far either side of a window value its slope is read, as a share of that value.
 const CONTRAST_REACH: f32 = 0.01;
 
-/// The share of Contrast's colour a paper's print gives back: half, so its Contrast keeps some of a paper grade's
-/// bite (owner's call); ONI's print gives it all.
-pub const PAPER_CONTRAST_HOLD: f32 = 0.5;
-
-/// Contrast's saturation: at each tone the print shows, the inverse of the colour Contrast's slope gives it there, so
-/// every tone keeps the colour of the print without Contrast; drawn on the Saturation Curve's plot as the render lays it.
+/// Contrast's saturation on ONI's print: at each tone it shows, the inverse of the colour Contrast's slope gives it there,
+/// so every tone keeps the colour of the print without Contrast; drawn on the Saturation Curve's plot as the render lays
+/// it; none on a paper or without Lighting's colour compensation.
 pub fn contrast_curve(s: &PipelineSettings) -> SaturationCurve {
-    contrast_curve_held(s, if s.paper().is_some() { PAPER_CONTRAST_HOLD } else { 1.0 })
-}
-
-/// Contrast's saturation giving back `share` of the colour Contrast's slope takes, as a power of its ratio; none
-/// without Lighting's colour compensation.
-pub fn contrast_curve_held(s: &PipelineSettings, share: f32) -> SaturationCurve {
     let print = &s.print;
-    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.mode.is_monochrome() {
+    if print.bypassed || !print.colour_compensation || print.contrast == 0.0 || s.mode.is_monochrome() || on_paper(s) {
         return SaturationCurve::default();
     }
-    let stops = conversion::print_stops(s);
+    let stops = print.on_curve(Print::resting_exposure(s.mode)).exposure;
     let bent = print.master();
     let points = SaturationCurve::resting()
         .into_iter()
-        .map(|p| Point::new(p.x, f64::from((0.5 * held(&bent, stops, p.x as f32).powf(share)).clamp(0.0, 1.0))))
+        .map(|p| Point::new(p.x, f64::from((0.5 * held(&bent, stops, p.x as f32)).clamp(0.0, 1.0))))
         .collect();
     SaturationCurve { points }
+}
+
+fn on_paper(s: &PipelineSettings) -> bool {
+    s.paper().is_some() && !s.print.bypassed
 }
 
 /// The colour kept at printed tone `t`: the slope without Contrast over the slope with it, on logarithmic light; whole

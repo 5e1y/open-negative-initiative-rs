@@ -48,11 +48,12 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 }
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: the windows, dyes and print of every mode; a
-/// black and white print, no channel's own tone; the frame's paper, windowed, in place of the scan's windows.
+/// black and white print, no channel's own tone; the frame's paper in place of the windows and the print, its own print
+/// followed by the colour density alone.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let k = unprinted(s);
     match crate::paper::printing(s, &k, k.dyes.as_ref()) {
-        Some(p) => printed_on(k, s, p.paper),
+        Some(p) => Stage47 { print_on: 0.0, hunt: 0.0, paper: Some(p.paper), ..k },
         None => k,
     }
 }
@@ -61,14 +62,6 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
 pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     let k = unprinted(s);
     crate::paper::printing(s, &k, k.dyes.as_ref())
-}
-
-/// The stops ONI's print curve takes: Exposure, or on a paper its distance from its mode's rest.
-pub fn print_stops(s: &PipelineSettings) -> f32 {
-    let on_paper = s.paper().is_some() && !s.print.bypassed;
-    let rest = Print::resting_exposure(s.mode);
-    let stops = Print::curve_stops(s.print.exposure, rest);
-    if on_paper { stops - rest } else { stops }
 }
 
 /// Stage 4-7's arguments before any paper: the reading, its dyes, the windows and ONI's print.
@@ -103,37 +96,12 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         own_contrast: if mono { [0.0; 3] } else { print.channel_contrast },
         own_mid: if mono { [0.0; 3] } else { print.channel_mid },
         hunt: if mono || !s.print.colour_compensation { 0.0 } else { 1.0 },
-        hunt_contrast: 1.0,
         decompression,
         balance_low: unreached.map(|w| w.black),
         balance_span: unreached.map(|w| signed_span(&w)),
         film_share,
         dyes,
         paper: None,
-    }
-}
-
-/// Stage 4-7 printing on `paper`, windowed on its anchors, in place of the scan's windows: its print read on the display
-/// gamma, Lighting's points moving its ends, the colour they stretch held as on ONI's print, then ONI's print curve from
-/// its mode's rest, which is none, its filters, Hunt blind to Contrast, and the colour density.
-fn printed_on(k: Stage47, s: &PipelineSettings, paper: oni_render::Paper) -> Stage47 {
-    let points = s.print.channel_points(s.mode.is_monochrome());
-    let window = |c: usize| [points[c].0, 1.0 - points[c].1, 1.0];
-    let (decompression, film_share) = paper_hold(s);
-    Stage47 {
-        red: window(0),
-        green: window(1),
-        blue: window(2),
-        low_points: [0.25; 3],
-        high_points: [0.75; 3],
-        print_stops: print_stops(s),
-        hunt_contrast: 0.0,
-        decompression,
-        balance_low: [0.0; 3],
-        balance_span: [1.0; 3],
-        film_share,
-        paper: Some(paper),
-        ..k
     }
 }
 

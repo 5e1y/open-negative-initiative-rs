@@ -144,6 +144,13 @@ pub struct Print {
     /// curves and the points' colour hold; off, the sliders bend each channel's tone alone.
     #[serde(rename = "colourCompensation", skip_serializing_if = "is_on")]
     pub colour_compensation: bool,
+    /// A paper's print brightened between its own Dmax and white, both held: an odds gain at `EXPOSURE_GEAR` times its
+    /// stops, as ONI's print takes Exposure; none on ONI's print, whose Exposure is that curve.
+    #[serde(skip_serializing_if = "at_zero")]
+    pub brightness: f32,
+    /// A paper's Dmax laid on pure black, its white kept: black point compensation, for a print on a screen's black.
+    #[serde(rename = "trueBlacks", skip_serializing_if = "is_off")]
+    pub true_blacks: bool,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -166,6 +173,8 @@ impl Default for Print {
             channel_mid: [0.0; 3],
             channel_contrast: [0.0; 3],
             colour_compensation: true,
+            brightness: 0.0,
+            true_blacks: false,
             bypassed: false,
         }
     }
@@ -179,8 +188,17 @@ fn is_on(on: &bool) -> bool {
     *on
 }
 
+fn is_off(on: &bool) -> bool {
+    !*on
+}
+
+fn at_zero(v: &f32) -> bool {
+    *v == 0.0
+}
+
 impl Print {
     pub const EXPOSURE_RANGE: (f32, f32) = (-4.0, 4.0);
+    pub const BRIGHTNESS_RANGE: (f32, f32) = (-4.0, 4.0);
     pub const FILTER_RANGE: (f32, f32) = (-1.5, 1.5);
     pub const TEMPERATURE_AXIS: V3 = [0.5, 0.0, -0.5];
     pub const TINT_AXIS: V3 = [1.0 / 3.0, -2.0 / 3.0, 1.0 / 3.0];

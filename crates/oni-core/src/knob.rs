@@ -58,6 +58,8 @@ pub enum Knob {
     BalanceStrength,
     Level(Channel, Handle),
     Exposure,
+    /// A paper's print brightened between its own ends.
+    Brightness,
     Contrast,
     Shadows,
     Highlights,
@@ -112,6 +114,7 @@ impl Knob {
             Knob::BalanceStrength => Field::BalanceStrength,
             Knob::Level(..) => Field::Levels,
             Knob::Exposure
+            | Knob::Brightness
             | Knob::Contrast
             | Knob::Shadows
             | Knob::Highlights
@@ -155,6 +158,7 @@ impl Knob {
             Knob::Level(_, Handle::Highlights) => Levels::HIGHLIGHT_RANGE,
             Knob::Level(..) => return None,
             Knob::Exposure => Print::EXPOSURE_RANGE,
+            Knob::Brightness => Print::BRIGHTNESS_RANGE,
             Knob::Contrast if mono => Print::MONOCHROME_CONTRAST_RANGE,
             Knob::Contrast => Print::CONTRAST_RANGE,
             Knob::Shadows | Knob::Highlights => Print::QUARTER_RANGE,
@@ -201,6 +205,7 @@ impl Knob {
             Knob::BalanceStrength => s.balance_strength,
             Knob::Level(c, h) => handle(levels(s, c), h),
             Knob::Exposure => p.exposure,
+            Knob::Brightness => p.brightness,
             Knob::Contrast => p.contrast,
             Knob::Shadows => p.shadows,
             Knob::Highlights => p.highlights,
@@ -263,6 +268,7 @@ impl Knob {
             Knob::BalanceStrength => {}
             Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
             Knob::Exposure => out.print.exposure = v,
+            Knob::Brightness => out.print.brightness = v,
             Knob::Contrast => out.print.contrast = v,
             Knob::Shadows => out.print.shadows = v,
             Knob::Highlights => out.print.highlights = v,

@@ -1,9 +1,9 @@
-//! Each frame's enlarger on its paper: set so the grey its windows print as a plain RAW's prints there too, neutral,
-//! frozen there, and the frame's three anchors printed through it to lay ONI's window on the print.
+//! Each frame's enlarger on its paper at rest: the time and filtration that print the reference grey at a plain RAW's
+//! grey, neutral, on the bare print, its ends the paper's own; Lighting then moves it (`lighting`).
 
 use super::*;
 use crate::film::bake::{self, M3};
-use oni_render::{DYE_LIGHT_FLOOR, DyeSeparation, Paper, Stage47, cpu};
+use oni_render::{DYE_LIGHT_FLOOR, DyeSeparation, PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
 use oni_settings::PipelineSettings;
@@ -28,11 +28,11 @@ pub struct Printing {
 /// What a plain RAW's render at rest prints a scene grey at: where the paper prints the frame's reference grey.
 pub static GREY_PRINT: LazyLock<f32> = LazyLock::new(crate::film::plain_grey);
 
-fn filters(cc: V3) -> V3 {
+pub(super) fn filters(cc: V3) -> V3 {
     cc.map(|v| 10f32.powf(-v / CC_PER_DENSITY))
 }
 
-fn luma(v: V3) -> f32 {
+pub(super) fn luma(v: V3) -> f32 {
     oni_render::LUMA.iter().zip(v).map(|(w, x)| w * x).sum()
 }
 
@@ -78,7 +78,7 @@ fn bisected(mut low: f32, mut high: f32, target: f32, f: impl Fn(f32) -> f32) ->
 }
 
 /// The frame's three anchors as the paper reads them, dye amounts above the bare film through the separation where
-/// one runs: each window's black (the dark pick), its white, and the reference grey.
+/// one runs: each window's black (the dark pick, the film's base), its white (the densest it reads), and the reference grey.
 pub fn anchors(s: &PipelineSettings, separation: Option<&DyeSeparation>) -> [V3; 3] {
     let w = s.levels.windows();
     let grey = reference_grey(s);
@@ -86,27 +86,8 @@ pub fn anchors(s: &PipelineSettings, separation: Option<&DyeSeparation>) -> [V3;
     above.map(|a| separation.map_or(a, |d| d.separated(a)))
 }
 
-/// Each channel's black, white and grey as `p` prints its anchors.
-fn printed_anchors(p: &Paper, anchors: &[V3; 3]) -> [V3; 3] {
-    [&anchors[0], &anchors[1], &anchors[2]].map(|a| p.printed(*a))
-}
-
-/// `p` laid through the window its anchors print on it: each channel's black on 0, its white on 1; a black and white
-/// print reads one window on its luma.
-pub fn anchored(p: Paper, anchors: &[V3; 3], mono: bool) -> Paper {
-    let [black, white, _] = printed_anchors(&p, anchors).map(|light| if mono { [luma(light); 3] } else { light });
-    Paper { window_black: black, window_white: white, window_luma: mono, ..p }
-}
-
-/// Where each channel's window puts the grey `p` prints, in log: the grey's share of its black-to-white span, a black
-/// and white print's on its luma.
-fn grey_shares(p: &Paper, anchors: &[V3; 3], mono: bool) -> V3 {
-    let [black, white, grey] = printed_anchors(p, anchors).map(|light| if mono { [luma(light); 3] } else { light });
-    std::array::from_fn(|c| ((grey[c] - black[c]) / (white[c] - black[c])).max(1e-12).ln())
-}
-
 /// The `x` from `start` where `f` crosses zero, by Newton's steps in the enlarger's log exposure.
-fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
+pub(super) fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
     let mut x = start;
     for _ in 0..ITERATIONS {
         let here = f(x);
@@ -145,8 +126,33 @@ fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
     x
 }
 
-/// The frame's paper, its enlarger set where its window prints the reference grey at a plain RAW's grey, neutral, frozen
-/// there whatever Lighting moves, Temperature and Tint included. None on ONI's print.
+/// Each layer's density under a negative holding `amounts`, as a share of its curve's range.
+pub fn layer_shares(p: &Paper, amounts: V3) -> V3 {
+    let (low, high) = (p.curves[0], p.curves[PAPER_CURVE_NODES - 1]);
+    let density = p.developed(p.graded(p.exposed(p.toned(amounts))));
+    std::array::from_fn(|c| (density[c] - low[c]) / (high[c] - low[c]))
+}
+
+/// The enlarger at rest on the bare paper `p`, as its log time and its magenta and yellow (cyan at none): the reference
+/// `grey` printed at a plain RAW's grey, neutral; black and white by the time alone, on its luma.
+pub fn resting(p: &Paper, grey: V3, mono: bool) -> V3 {
+    let at = |x: V3| Paper { scale: x[0].exp(), filters: filters([0.0, x[1], x[2]]), ..*p };
+    let target = GREY_PRINT.ln();
+    let miss = |x: V3| at(x).printed(grey).map(|v| v.max(1e-12).ln() - target);
+    let start = -(p.exposed(grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
+    if mono {
+        return [root(start, |e| miss([e, 0.0, 0.0])[0]), 0.0, 0.0];
+    }
+    neutral_on(miss, [start, START_CC[0], START_CC[1]])
+}
+
+/// A dye's range on the negative, never empty: a window's span holds at least 1e-4 of density, as ONI's print reads it.
+fn spanned(v: f32) -> f32 {
+    if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
+}
+
+/// The frame's paper, its enlarger at rest, then Lighting in density on the negative and the enlarger, the
+/// grade on the paper, Brightness and True blacks on the print. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSeparation>) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.mode.is_monochrome();
@@ -157,34 +163,35 @@ pub fn printing(s: &PipelineSettings, k: &Stage47, separation: Option<&DyeSepara
         Some(_) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
         None => (k.gain, k.pedestal, k.log_guard, black),
     };
-    let paper = Paper {
+    let anchors = anchors(s, separation);
+    let bare = Paper {
         gain,
         pedestal,
         log_guard,
         black: read_black,
+        span: anchors[1].map(spanned),
+        points_black: [0.0; 3],
+        points_white: [0.0; 3],
+        zones: [0.0; 2],
+        mids: [0.0; 3],
         negative: &table.negative,
         exposure: &table.exposure,
         dichroic: &table.dichroic,
         filters: [1.0; 3],
         scale: 1.0,
+        pivot: [0.0; 3],
+        slope: [1.0; 3],
         curves: &sheet.curves,
         curve_low: sheet.curve_low,
         curve_step: sheet.curve_step,
         print: &sheet.print,
         view: &sheet.view,
-        window_black: [0.0; 3],
-        window_white: [1.0; 3],
-        window_luma: false,
+        dmax: [0.0; 3],
+        white: [1.0; 3],
+        brightness: 0.0,
+        true_blacks: false,
+        luma: mono,
     };
-    let anchors = anchors(s, separation);
-    let grey = anchors[2];
-    let target = GREY_PRINT.ln();
-    // The grey solved on the windowed print, where the paper's white is laid on 1: solved on the bare print, its white at
-    // 0.81, the window would lift it to 0.49. Black and white sets the exposure alone, on its luma, through no filter.
-    let at = |x: V3| Paper { scale: x[0].exp(), filters: filters([0.0, x[1], x[2]]), ..paper };
-    let miss = |x: V3| grey_shares(&at(x), &anchors, mono).map(|v| v - target);
-    let raw = paper.exposed(grey);
-    let start = -(raw.iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
-    let x = if mono { [root(start, |e| miss([e, 0.0, 0.0])[0]), 0.0, 0.0] } else { neutral_on(miss, [start, START_CC[0], START_CC[1]]) };
-    Some(Printing { paper: anchored(at(x), &anchors, mono), filtration: [0.0, x[1], x[2]] })
+    let rest = resting(&bare, anchors[2], mono);
+    Some(super::lighting::lit(&bare, rest, &anchors, s))
 }

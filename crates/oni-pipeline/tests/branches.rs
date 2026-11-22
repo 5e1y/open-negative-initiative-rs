@@ -69,7 +69,6 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
     let flattened = Stage47 { print_contrast: -0.5, print_zones: [0.6, -0.7], ..dense };
     let toned = Stage47 { own_contrast: [0.4, -0.3, 0.0], own_mid: [0.2, -0.25, 0.1], ..printed };
     let toned_alone = Stage47 { own_stops: [0.0; 3], ..toned };
-    let hunt_blind = Stage47 { hunt_contrast: 0.0, ..printed };
     let resting = Print::RESTING_EXPOSURE;
     let over = Stage47 { print_stops: Print::curve_stops(resting + 2.0, resting), ..printed };
     let under = Stage47 { print_stops: Print::curve_stops(resting - 2.0, resting), ..printed };
@@ -85,7 +84,6 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
         ("negative contrast, double quarters", flattened),
         ("channel tone with filters", toned),
         ("channel tone", toned_alone),
-        ("Hunt blind to Contrast", hunt_blind),
         ("Exposure +2", over),
         ("Exposure -2", under),
     ]

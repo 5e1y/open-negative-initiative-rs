@@ -1973,6 +1973,14 @@ msgstr "Positivar en papel"
 msgid "Paper"
 msgstr "Papel"
 
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "True blacks"
+msgstr "Negros verdaderos"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The paper's deepest black laid on pure black, its white kept and the tones between stretched evenly, as a print is shown on a screen. Off, the print keeps the paper's own black, as the sheet shows it; brightened by Exposure, the blacks lift above either."
+msgstr "El negro más profundo del papel llevado al negro puro, su blanco conservado y los tonos intermedios estirados de forma regular, como se muestra una copia en una pantalla. Desactivado, la copia conserva el negro propio del papel, como lo muestra la hoja; aclarados por Exposición, los negros se elevan por encima de uno y otro."
+
 #: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Scanner: a minilab's density and colour, in steps"
 msgstr "Escáner: densidad y color de un minilab, por pasos"
@@ -2162,8 +2170,12 @@ msgid "Blue contrast"
 msgstr "Contraste azul"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself, on paper the ends of the print.\n\nOn paper, the enlarger rests where the scan's grey prints neutral, the paper's black and white laid on pure black and pure white: the sliders act on that print as above, Temperature and Tint included, the enlarger's filtration left at its rest."
-msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo, en papel los de la copia.\n\nEn papel, la ampliadora queda donde el gris del escaneo se imprime neutro, con el negro y el blanco del papel llevados al negro puro y al blanco puro: los reguladores actúan sobre esa copia como arriba, Temperatura y Matiz incluidos, con el filtrado de la ampliadora en su reposo."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn paper the sliders act as in a darkroom, the print keeping the paper's own black and white: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness lightens the print between them."
+msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo.\n\nEn papel, los reguladores actúan como en un cuarto oscuro, la copia conservando el negro y el blanco propios del papel: Exposición es la luz de la ampliadora, Temperatura y Matiz sus filtros, Contraste el grado del papel. Luminosidad aclara la copia entre ambos."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Brightness"
+msgstr "Luminosidad"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper Correction"

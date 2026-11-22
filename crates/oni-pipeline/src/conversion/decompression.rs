@@ -45,20 +45,6 @@ fn weighted(s: &PipelineSettings, factor: f32) -> (f32, f32) {
     (dose * factor, 1.0 - dose)
 }
 
-/// The weights on a paper's display window: the colour Lighting's points stretch held as ONI's print holds it, relative
-/// to the points at rest, the film's share scaled from density to the window's mean span; none while the points rest or
-/// without Lighting's colour compensation.
-pub fn paper_hold(s: &PipelineSettings) -> (f32, f32) {
-    if s.print.points_at_rest(s.mode.is_monochrome()) || !s.print.colour_compensation {
-        return (1.0, 0.0);
-    }
-    let (windows, film) = decompression_weights(s);
-    let (rest, _) = weighted(s, factor_reaching(s, [(0.0, 0.0); 3]));
-    let span = s.levels.windows().iter().map(|w| signed_span(w).abs()).sum::<f32>() / 3.0;
-    let whole = rest + film * span;
-    (windows / whole, film * span / whole)
-}
-
 /// `ChromaDecompression.signedSpan`.
 pub fn signed_span(w: &Levels) -> f32 {
     let span = w.white - w.black;

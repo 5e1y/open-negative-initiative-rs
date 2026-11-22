@@ -1,5 +1,5 @@
 //! A colour paper printing the negative in place of ONI's print: each paper's tables baked once from its spektrafilm
-//! profile, and each frame's enlarger and window on it (`printing`).
+//! profile, each frame's enlarger at rest on it (`printing`) and Lighting on the enlarger and the paper (`lighting`).
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
@@ -12,7 +12,9 @@ use std::sync::OnceLock;
 type V3 = [f32; 3];
 type V4 = [f32; 4];
 
+mod lighting;
 mod printing;
+pub use lighting::*;
 pub use printing::*;
 
 /// The enlarger's lamp, spektrafilm's TH-KG3: a 3400 K tungsten halogen behind a Schott KG3 heat filter.

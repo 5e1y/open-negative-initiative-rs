@@ -1,5 +1,5 @@
 //! The fused conversion kernel (`pipeline.metal`): the dye separation then inversion, levels, the print curve;
-//! or the dye separation then the paper's windowed print, read on the display gamma for Lighting's points and curve.
+//! or the dye separation then the paper's print, its own, which only the colour density follows.
 
 use super::*;
 
@@ -26,15 +26,13 @@ pub struct Stage47 {
     pub own_contrast: [f32; 3],
     pub own_mid: [f32; 3],
     pub hunt: f32,
-    /// The share of Contrast Hunt reads: whole on ONI's print, none on a paper, whose Contrast keeps its colour density.
-    pub hunt_contrast: f32,
     pub decompression: f32,
     pub balance_low: [f32; 3],
     pub balance_span: [f32; 3],
     pub film_share: f32,
     /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
     pub dyes: Option<super::dye_separation::DyeSeparation>,
-    /// The negative printed on a paper in place of the windows and the print curve, laid with them in one GPU pass.
+    /// The negative printed on a paper in place of the windows and the print curve, laid in the same GPU pass.
     pub paper: Option<super::paper::Paper>,
 }
 
@@ -61,7 +59,6 @@ impl Stage47 {
             own_contrast: [0.0; 3],
             own_mid: [0.0; 3],
             hunt: 0.0,
-            hunt_contrast: 1.0,
             decompression: 1.0,
             balance_low: [0.0; 3],
             balance_span: [1.0; 3],
@@ -91,7 +88,7 @@ impl Stage47 {
                 v3(self.high_points, self.print_on),
                 [self.print_stops, self.print_contrast, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }],
                 v3(self.own_stops, self.film_share),
-                v3(self.balance_low, self.hunt_contrast),
+                v3(self.balance_low, 0.0),
                 v3(self.balance_span, self.decompression),
                 v22(self.print_zones, [0.0; 2]),
                 v3(self.own_contrast, 0.0),
@@ -132,7 +129,7 @@ fn quarter_pass(p: f32, t: f32, high: bool) -> f32 {
     }
 }
 
-fn quartered(p: f32, travel: f32, high: bool) -> f32 {
+pub(super) fn quartered(p: f32, travel: f32, high: bool) -> f32 {
     if travel.abs() <= 0.25 {
         return quarter_pass(p, travel, high);
     }
@@ -157,7 +154,7 @@ fn shaped(p_in: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
 }
 
 /// Lighting's mids bend on the display value, held inside 0 to 1.
-fn midded(p: f32, mids: f32) -> f32 {
+pub(super) fn midded(p: f32, mids: f32) -> f32 {
     if mids == 0.0 || !(0.0..=1.0).contains(&p) {
         return p;
     }
@@ -184,14 +181,14 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     [e[0], e[1], e[2], s[3]]
 }
 
-/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's windowed print on the
-/// display gamma, its windows Lighting's points.
+/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print passes as it is.
 fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
+    if k.paper.is_some() {
+        return rgb(s);
+    }
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
-    let mut e = if k.paper.is_some() {
-        map(rgb(s), |_, x| x.max(0.0).powf(1.0 / DISPLAY_GAMMA))
-    } else if k.invert > 0.5 {
+    let mut e = if k.invert > 0.5 {
         d
     } else {
         map(d, |_, x| k.window - x)
@@ -232,7 +229,7 @@ fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
         }
         if k.hunt > 0.0 {
             let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;
-            density *= (-k.hunt * (shaped(g, ps, pc * k.hunt_contrast, pz) - g)).exp();
+            density *= (-k.hunt * (shaped(g, ps, pc, pz) - g)).exp();
         }
     }
     if density != 1.0 {
