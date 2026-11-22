@@ -1,7 +1,7 @@
 //! Every profile scripts/datasheet-profiles.py writes from the makers' data sheets, by its file's name; the
 //! script writes this table too.
 
-pub const PROFILES: [(&str, &[u8]); 56] = [
+pub const PROFILES: [(&str, &[u8]); 83] = [
     ("fujifilm_160nc", include_bytes!("../../resources/film/datasheet/fujifilm_160nc.json")),
     ("fujifilm_160nl", include_bytes!("../../resources/film/datasheet/fujifilm_160nl.json")),
     ("fujifilm_160npc", include_bytes!("../../resources/film/datasheet/fujifilm_160npc.json")),
@@ -58,4 +58,31 @@ pub const PROFILES: [(&str, &[u8]); 56] = [
     ("fujifilm_crystal_archive_digital_paper_type_dpii", include_bytes!("../../resources/film/datasheet/fujifilm_crystal_archive_digital_paper_type_dpii.json")),
     ("fujifilm_crystal_archive_digital_pearl", include_bytes!("../../resources/film/datasheet/fujifilm_crystal_archive_digital_pearl.json")),
     ("fujifilm_fujiclear_display_material_for_digital_printers", include_bytes!("../../resources/film/datasheet/fujifilm_fujiclear_display_material_for_digital_printers.json")),
+    ("foma_fomapan_100", include_bytes!("../../resources/film/datasheet/foma_fomapan_100.json")),
+    ("foma_fomapan_200", include_bytes!("../../resources/film/datasheet/foma_fomapan_200.json")),
+    ("foma_fomapan_400", include_bytes!("../../resources/film/datasheet/foma_fomapan_400.json")),
+    ("foma_fomapan_cine_100", include_bytes!("../../resources/film/datasheet/foma_fomapan_cine_100.json")),
+    ("foma_fomapan_cine_400", include_bytes!("../../resources/film/datasheet/foma_fomapan_cine_400.json")),
+    ("foma_ortho_400", include_bytes!("../../resources/film/datasheet/foma_ortho_400.json")),
+    ("foma_cine_ortho_400", include_bytes!("../../resources/film/datasheet/foma_cine_ortho_400.json")),
+    ("foma_retropan_320", include_bytes!("../../resources/film/datasheet/foma_retropan_320.json")),
+    ("fujifilm_acros_ii", include_bytes!("../../resources/film/datasheet/fujifilm_acros_ii.json")),
+    ("fujifilm_neopan_400", include_bytes!("../../resources/film/datasheet/fujifilm_neopan_400.json")),
+    ("fujifilm_neopan_1600", include_bytes!("../../resources/film/datasheet/fujifilm_neopan_1600.json")),
+    ("fujifilm_neopan_ortho", include_bytes!("../../resources/film/datasheet/fujifilm_neopan_ortho.json")),
+    ("ilford_delta_100", include_bytes!("../../resources/film/datasheet/ilford_delta_100.json")),
+    ("ilford_delta_400", include_bytes!("../../resources/film/datasheet/ilford_delta_400.json")),
+    ("ilford_delta_3200", include_bytes!("../../resources/film/datasheet/ilford_delta_3200.json")),
+    ("ilford_fp4_plus", include_bytes!("../../resources/film/datasheet/ilford_fp4_plus.json")),
+    ("ilford_hp5_plus", include_bytes!("../../resources/film/datasheet/ilford_hp5_plus.json")),
+    ("ilford_ortho_plus", include_bytes!("../../resources/film/datasheet/ilford_ortho_plus.json")),
+    ("ilford_pan_f_plus", include_bytes!("../../resources/film/datasheet/ilford_pan_f_plus.json")),
+    ("ilford_sfx_200", include_bytes!("../../resources/film/datasheet/ilford_sfx_200.json")),
+    ("ilford_xp2_super", include_bytes!("../../resources/film/datasheet/ilford_xp2_super.json")),
+    ("kodak_double_x", include_bytes!("../../resources/film/datasheet/kodak_double_x.json")),
+    ("kodak_t_max_100", include_bytes!("../../resources/film/datasheet/kodak_t_max_100.json")),
+    ("kodak_t_max_400", include_bytes!("../../resources/film/datasheet/kodak_t_max_400.json")),
+    ("kodak_t_max_p3200", include_bytes!("../../resources/film/datasheet/kodak_t_max_p3200.json")),
+    ("kodak_tri_x_320", include_bytes!("../../resources/film/datasheet/kodak_tri_x_320.json")),
+    ("kodak_tri_x_400", include_bytes!("../../resources/film/datasheet/kodak_tri_x_400.json")),
 ];

@@ -288,7 +288,7 @@ mod tests {
         assert_eq!(lit, roll_tab_pick(&digital, next));
         assert_eq!((lit.film().map(|f| f.stock), lit.gains.stops, lit.dye_set), (Some(next), next.reference().stops, next.dye_set()));
         assert_eq!(picked(&digital, kind(own.catalogue_id()), Some(own.catalogue_id())), digital, "its own film writes nothing");
-        assert_eq!(picked(&digital, kind("ilford-hp5"), Some(own.catalogue_id())), digital, "no virtual film, nothing");
+        assert_eq!(picked(&digital, kind("agfaphoto-apx"), Some(own.catalogue_id())), digital, "no virtual film, nothing");
         // Twin: lit on another film, the photo is no longer as it was.
         assert_ne!(lit, digital);
     }
@@ -302,7 +302,7 @@ mod tests {
         assert_eq!(lit.dye_set, DyeSet::FujifilmC200);
         assert_eq!(PipelineSettings { dye_set: negative.dye_set, ..lit.clone() }, negative, "its dyes alone move");
         assert_eq!(picked(&negative, kind("fujifilm-c200"), Some("fujifilm-c200")), negative, "the roll's own stock, nothing");
-        assert_eq!(picked(&negative, kind("ilford-hp5"), None), negative, "a stock naming no dyes, nothing");
+        assert_eq!(picked(&negative, kind("agfaphoto-apx"), None), negative, "a stock naming no dyes, nothing");
         // Twin: the dyes did move from the photo's own.
         assert_ne!(negative.dye_set, DyeSet::FujifilmC200);
     }

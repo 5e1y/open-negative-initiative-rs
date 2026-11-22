@@ -72,7 +72,7 @@ pub fn shades(r: &mut Reader, copy: Copy, s: &PipelineSettings, filters: [f32; 3
 
 /// `FilterBalance.filters`: Newton on the frame as it renders, Lighting at rest but for its filters.
 pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f32; 3]) -> bool) -> Option<[f32; 3]> {
-    if s.mode.is_monochrome() {
+    if s.is_monochrome() {
         return Some([0.0; 3]);
     }
     let base = unlit(s);

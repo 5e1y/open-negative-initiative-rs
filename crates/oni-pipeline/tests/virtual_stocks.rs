@@ -76,7 +76,8 @@ impl Ramp {
 }
 
 /// The table: every stock's neutral ramp, grey and white, each checked; its twin, the red gain a fifth of a stop off
-/// the stock's reference, prints the grey off neutral.
+/// the stock's reference, prints the grey off neutral. A black and white film's ramp prints without a hue, its twin
+/// Lighting's exposure off, which moves its grey.
 #[test]
 fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s() {
     let plain = film::plain_grey();
@@ -91,6 +92,13 @@ fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s
         println!("{:<28} {} · {:.4} · {:.4} · {:.1}", stock.name(), steps.join(" "), held.grey, held.white, twin.steps[GREY_AT].1);
         assert!(held.steps[GREY_AT].1 < GREY_CHROMA, "{stock:?}: its grey prints at C*ab {}", held.steps[GREY_AT].1);
         assert!((held.grey - plain).abs() < GREY_GAP, "{stock:?}: its grey prints {}, a plain RAW's {plain}", held.grey);
+        if stock.is_silver() {
+            // Silver prints its ramp without a hue, its white on its own curve's contrast; twin, Lighting's exposure off.
+            assert!(held.chroma() < 0.01, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
+            let darker = ramp(stock, &PipelineSettings { print: oni_settings::tone::Print { exposure: s.print.exposure + 0.2, ..s.print }, ..s.clone() });
+            assert!((darker.grey - plain).abs() > 10.0 * GREY_GAP, "{stock:?}: twin, Lighting moved, its grey at {}", darker.grey);
+            continue;
+        }
         assert!((held.white / portra).log2().abs() < WHITE_SPREAD, "{stock:?}: its white {}, Portra 800's {portra}", held.white);
         assert!(held.chroma() < CHROMA && held.light_chroma() < LIGHT_CHROMA, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
         assert!(twin.steps[GREY_AT].1 > 4.0 * GREY_CHROMA, "{stock:?}: twin, the red gain off its reference, its grey at C*ab {} only", twin.steps[GREY_AT].1);
@@ -151,8 +159,8 @@ fn each_stock_bakes_at_its_first_use_and_holds_one_table() {
 }
 
 /// The GPU chain on every stock: a neutral scene ramp lit at the stock's white, rendered as the editor renders a
-/// digital photo, prints within the CPU references' chroma (13.4 at most, on Pro 160NH). Twin: the same scene lit at
-/// the other light is coloured.
+/// digital photo, prints within the CPU references' chroma (13.4 at most, on Pro 160NH), a black and white film's
+/// without a hue. Twin: on a colour stock, the same scene lit at the other light is coloured.
 #[test]
 fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
     let Some(mut g) = graph("the_gpu_prints_every_stocks_neutral_ramp_neutral") else { return };
@@ -179,6 +187,11 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
         };
         let twin = render(&mut g, &mut pipeline, &scene(other)).iter().map(|p| lab([p[0], p[1], p[2]]).1).fold(0.0, f32::max);
         println!("{:<28} GPU widest C*ab {worst:.2}, lit at the other light {twin:.1}", stock.name());
+        if stock.is_silver() {
+            // Silver prints any light without a hue; the colour stocks' twins show the check sees one.
+            assert!(worst < 0.01 && twin < 0.01, "{stock:?}: {lit:?}");
+            continue;
+        }
         assert!(worst < CHROMA, "{stock:?}: {lit:?}");
         assert!(twin > 4.0 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
     }

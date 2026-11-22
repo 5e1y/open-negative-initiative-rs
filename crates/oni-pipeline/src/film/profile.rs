@@ -53,6 +53,42 @@ impl Profile {
     }
 }
 
+#[derive(Deserialize)]
+struct SilverFile {
+    data: SilverData,
+}
+
+#[derive(Deserialize)]
+struct SilverData {
+    wavelengths: Vec<f64>,
+    log_sensitivity: Vec<f64>,
+    log_exposure: Vec<f64>,
+    density_curve: Vec<f64>,
+}
+
+/// What the bake reads of a black and white profile: its one layer's sensitivity at its sheet's level, and its
+/// development's curve above base and fog on log H less a grey's. The other developments its file keeps are not read.
+pub struct Silver {
+    pub log_sensitivity: Vec<f64>,
+    pub log_exposure: Vec<f64>,
+    pub density_curve: Vec<f64>,
+}
+
+impl Silver {
+    pub fn read(json: &[u8]) -> Result<Silver, String> {
+        let d = serde_json::from_slice::<SilverFile>(json).map_err(|e| e.to_string())?.data;
+        let on_grid = d.wavelengths.len() == WAVELENGTHS
+            && d.wavelengths.iter().enumerate().all(|(i, w)| *w == super::cie::FIRST_NM + super::cie::STEP_NM * i as f64);
+        if !on_grid || d.log_sensitivity.len() != WAVELENGTHS || d.log_exposure.len() != d.density_curve.len() || d.log_exposure.len() < 2 {
+            return Err("a black and white profile off the 380 to 780 nm grid or with mismatched curves".into());
+        }
+        if !d.log_sensitivity.iter().chain(&d.log_exposure).chain(&d.density_curve).all(|v| v.is_finite()) {
+            return Err("a profile holding a number that is not finite".into());
+        }
+        Ok(Silver { log_sensitivity: d.log_sensitivity, log_exposure: d.log_exposure, density_curve: d.density_curve })
+    }
+}
+
 /// An IEEE half to a double.
 fn half(bits: u16) -> f64 {
     let sign = if bits >> 15 == 1 { -1.0 } else { 1.0 };

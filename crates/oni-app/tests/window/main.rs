@@ -152,6 +152,7 @@ mod space_chip;
 mod states;
 mod stock_hero;
 mod stock_menu;
+mod bw_film;
 mod stocks;
 mod tab_bar;
 mod text_fields;

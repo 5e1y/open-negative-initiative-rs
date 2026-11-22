@@ -8,8 +8,8 @@ use crate::modes::ConversionMode;
 use crate::white::{self, White};
 use serde::{Deserialize, Serialize};
 
-/// The stocks a digital photo can be shot on, by the key a sidecar stores: every colour negative profiled from its
-/// maker's data sheet, Portra 800's pushed developments included. A data-sheet twin's key, which a document before
+/// The stocks a digital photo can be shot on, by the key a sidecar stores: every colour and black and white negative
+/// profiled from its maker's data sheet, Portra 800's pushed developments included. A data-sheet twin's key, which a document before
 /// format 60 may store, reads as its stock's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum VirtualStock {
@@ -110,6 +110,60 @@ pub enum VirtualStock {
     KodakPortra400NC,
     #[serde(rename = "kodak-portra-400vc")]
     KodakPortra400VC,
+    #[serde(rename = "foma-fomapan-100")]
+    FomaFomapan100,
+    #[serde(rename = "foma-fomapan-200")]
+    FomaFomapan200,
+    #[serde(rename = "foma-fomapan-400")]
+    FomaFomapan400,
+    #[serde(rename = "foma-fomapan-cine-100")]
+    FomaFomapanCine100,
+    #[serde(rename = "foma-fomapan-cine-400")]
+    FomaFomapanCine400,
+    #[serde(rename = "foma-ortho-400")]
+    FomaOrtho400,
+    #[serde(rename = "foma-cine-ortho-400")]
+    FomaCineOrtho400,
+    #[serde(rename = "foma-retropan-320")]
+    FomaRetropan320,
+    #[serde(rename = "fujifilm-acros-ii")]
+    FujifilmAcrosII,
+    #[serde(rename = "fujifilm-neopan-400")]
+    FujifilmNeopan400,
+    #[serde(rename = "fujifilm-neopan-1600")]
+    FujifilmNeopan1600,
+    #[serde(rename = "fujifilm-neopan-ortho")]
+    FujifilmNeopanOrtho,
+    #[serde(rename = "ilford-delta-100")]
+    IlfordDelta100,
+    #[serde(rename = "ilford-delta-400")]
+    IlfordDelta400,
+    #[serde(rename = "ilford-delta-3200")]
+    IlfordDelta3200,
+    #[serde(rename = "ilford-fp4-plus")]
+    IlfordFP4Plus,
+    #[serde(rename = "ilford-hp5-plus")]
+    IlfordHP5Plus,
+    #[serde(rename = "ilford-ortho-plus")]
+    IlfordOrthoPlus,
+    #[serde(rename = "ilford-pan-f-plus")]
+    IlfordPanFPlus,
+    #[serde(rename = "ilford-sfx-200")]
+    IlfordSFX200,
+    #[serde(rename = "ilford-xp2-super")]
+    IlfordXP2Super,
+    #[serde(rename = "kodak-double-x")]
+    KodakDoubleX,
+    #[serde(rename = "kodak-tmax-100")]
+    KodakTMax100,
+    #[serde(rename = "kodak-tmax-400")]
+    KodakTMax400,
+    #[serde(rename = "kodak-tmax-p3200")]
+    KodakTMaxP3200,
+    #[serde(rename = "kodak-tri-x-320")]
+    KodakTriX320,
+    #[serde(rename = "kodak-tri-x-400")]
+    KodakTriX400,
 }
 
 /// The light a stock is balanced for, its profile's reference illuminant.
@@ -160,7 +214,7 @@ use entries::{ENTRIES, Entry};
 
 impl VirtualStock {
     /// Portra 800 first, the default a digital photo opens on.
-    pub const ALL: [VirtualStock; 48] = [
+    pub const ALL: [VirtualStock; 75] = [
         VirtualStock::KodakPortra800,
         VirtualStock::KodakPortra800Push1,
         VirtualStock::KodakPortra800Push2,
@@ -209,6 +263,33 @@ impl VirtualStock {
         VirtualStock::KodakPortra160VC,
         VirtualStock::KodakPortra400NC,
         VirtualStock::KodakPortra400VC,
+        VirtualStock::FomaFomapan100,
+        VirtualStock::FomaFomapan200,
+        VirtualStock::FomaFomapan400,
+        VirtualStock::FomaFomapanCine100,
+        VirtualStock::FomaFomapanCine400,
+        VirtualStock::FomaOrtho400,
+        VirtualStock::FomaCineOrtho400,
+        VirtualStock::FomaRetropan320,
+        VirtualStock::FujifilmAcrosII,
+        VirtualStock::FujifilmNeopan400,
+        VirtualStock::FujifilmNeopan1600,
+        VirtualStock::FujifilmNeopanOrtho,
+        VirtualStock::IlfordDelta100,
+        VirtualStock::IlfordDelta400,
+        VirtualStock::IlfordDelta3200,
+        VirtualStock::IlfordFP4Plus,
+        VirtualStock::IlfordHP5Plus,
+        VirtualStock::IlfordOrthoPlus,
+        VirtualStock::IlfordPanFPlus,
+        VirtualStock::IlfordSFX200,
+        VirtualStock::IlfordXP2Super,
+        VirtualStock::KodakDoubleX,
+        VirtualStock::KodakTMax100,
+        VirtualStock::KodakTMax400,
+        VirtualStock::KodakTMaxP3200,
+        VirtualStock::KodakTriX320,
+        VirtualStock::KodakTriX400,
     ];
 
     fn entry(self) -> &'static Entry {
@@ -248,6 +329,11 @@ impl VirtualStock {
 
     pub fn name(self) -> &'static str {
         self.entry().name
+    }
+
+    /// A black and white film, its negative silver alone: its catalogue stock is one.
+    pub fn is_silver(self) -> bool {
+        crate::film::film_stock(Some(self.catalogue_id())).is_some_and(|k| k.kind == crate::film::FilmType::BlackAndWhite)
     }
 }
 

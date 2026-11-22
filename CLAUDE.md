@@ -64,13 +64,15 @@ the code; a costly trap keeps its constraint and its number in two lines.
   profile from the official sheet's curves (`resources/film/datasheet`); no spektrafilm profile ships. ONI's bake follows spektrafilm's
   model (couplers, gamut compression, TH-KG3 lamp, dichroic filters). The default paper is Kodak Royal Digital, Kodak's softest
   sheet (owner's call, 2026-11-22); a photo left on the former default, Portra Endura, lands on it.
+- **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
+  coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
   table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
 - **A paper prints in true density with its black anchored** (owner's call, 2026-11-22): no ONI window and no colour compensation; the
   picked black never lifts and lies on pure black (Paper blacks keeps the paper's own), the whites stay free.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
   through the stock's curves, and the film is developed again (`negative`); ONI's print and the enlarger print it at their rest. A
-  digital photo's negative is the model's own (three coupled layers: Lighting's Exposure is the Film section's); a scan is read on
+  digital photo's negative is the model's own (three coupled layers, a black and white film's one uncoupled: Lighting's Exposure is the Film section's); a scan is read on
   its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
 - **The virtual enlarger may print on no paper** (owner's call, 2026-11-22): Print on paper off swaps the paper for a neutral one,
   ONI's print curve over the frame's range on each layer alone, to show what the paper brings (`paper::neutral`).

@@ -257,7 +257,7 @@ impl Pipeline {
     /// Curves to the output clip.
     fn finishing(&mut self, graph: &mut Graph, toned: Image, s: &PipelineSettings, scale: f64, reference: f64, measuring: bool) -> Result<Image> {
         let sheet = s.sheet.is_some();
-        let mono = s.mode.is_monochrome();
+        let mono = s.is_monochrome();
         let graded = self.curves(graph, toned, &s.manual_curves)?;
         // The spectrogram, the hand's saturation and the vignette in one pass.
         let extent = graded.extent();

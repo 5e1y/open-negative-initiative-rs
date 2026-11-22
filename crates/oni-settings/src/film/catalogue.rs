@@ -71,7 +71,7 @@ const CINE: FilmType = FilmType::CineNegative;
 const SLIDE: FilmType = FilmType::ColourSlide;
 const BW: FilmType = FilmType::BlackAndWhite;
 
-pub const FILM_STOCKS: [FilmStockKind; 90] = [
+pub const FILM_STOCKS: [FilmStockKind; 104] = [
     stock("generic-azure", "Generic Azure", "Generic", None, CN),
     stock("generic-black-and-white", "Generic Black & White", "Generic", None, BW),
     stock("generic-color-negative", "Generic Colour Negative", "Generic", None, CN),
@@ -81,10 +81,19 @@ pub const FILM_STOCKS: [FilmStockKind; 90] = [
     stock("cinestill-400d", "CineStill 400D", "CineStill", Some(400), CN),
     stock("cinestill-50d", "CineStill 50D", "CineStill", Some(50), CN),
     stock("cinestill-800t", "CineStill 800T", "CineStill", Some(800), CN),
+    undrawn("foma-fomapan100", "Foma Fomapan 100", "Foma", 100, BW),
     stock("foma-fomapan200", "Foma Fomapan 200", "Foma", Some(200), BW),
     stock("foma-fomapan400", "Foma Fomapan 400", "Foma", Some(400), BW),
     withdrawn("foma-fomapan401", "Foma Fomapan 401", "Foma", Some(400), BW),
+    undrawn("foma-fomapan-cine100", "Foma Fomapan Cine 100", "Foma", 100, BW),
+    undrawn("foma-fomapan-cine400", "Foma Fomapan Cine 400", "Foma", 400, BW),
+    undrawn("foma-ortho400", "Foma Ortho 400", "Foma", 400, BW),
+    undrawn("foma-cine-ortho400", "Foma Cine Ortho 400", "Foma", 400, BW),
+    undrawn("foma-retropan320", "Foma Retropan 320", "Foma", 320, BW),
     stock("fujifilm-acros", "Fujifilm Acros", "Fujifilm", Some(100), BW),
+    undrawn("fujifilm-neopan400", "Fujifilm Neopan 400", "Fujifilm", 400, BW),
+    undrawn("fujifilm-neopan1600", "Fujifilm Neopan 1600", "Fujifilm", 1600, BW),
+    undrawn("fujifilm-neopan-ortho", "Fujifilm Neopan Ortho", "Fujifilm", 20, BW),
     of_line("fujifilm-c200", "Fujifilm C200", "Fujifilm", 200, CN, "fujifilm-fujicolor"),
     line("fujifilm-fujicolor", "Fujifilm Fujicolor", "Fujifilm", CN),
     line("fujifilm-fujicolor-pro", "Fujifilm Fujicolor Pro", "Fujifilm", CN),
@@ -135,6 +144,11 @@ pub const FILM_STOCKS: [FilmStockKind; 90] = [
     stock("ilford-sfx", "Ilford SFX", "Ilford", Some(200), BW),
     stock("ilford-xp2", "Ilford XP2", "Ilford", Some(400), BW),
     stock("kodak-400tx", "Kodak Tri-X 400", "Kodak", Some(400), BW),
+    undrawn("kodak-320txp", "Kodak Tri-X 320", "Kodak", 320, BW),
+    undrawn("kodak-tmax100", "Kodak T-Max 100", "Kodak", 100, BW),
+    undrawn("kodak-tmax400", "Kodak T-Max 400", "Kodak", 400, BW),
+    undrawn("kodak-tmax-p3200", "Kodak T-Max P3200", "Kodak", 3200, BW),
+    undrawn("kodak-double-x", "Kodak Double-X", "Kodak", 250, BW),
     stock("kodak-colorplus", "Kodak ColorPlus", "Kodak", Some(200), CN),
     stock("kodak-ektachrome", "Kodak Ektachrome", "Kodak", Some(100), SLIDE),
     undrawn("kodak-ektar100", "Kodak Ektar 100", "Kodak", 100, CN),

@@ -194,7 +194,7 @@ pub(crate) fn spanned(v: f32) -> f32 {
 /// the colour density and the ends on the print of the negative as Lighting develops it. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let film = Film::of(s);
     let (table, sheet) = if s.paperless {
         (neutral::enlarger(film == Film::Silver), neutral::sheet())

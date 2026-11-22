@@ -2,7 +2,7 @@ Film and paper profiles written from the makers' data sheets
 ============================================================
 
 Each .json here is written by scripts/datasheet-profiles.py from the curves traced off one official data sheet
-(Kodak, Kodak Alaris, Fujifilm), as the emulsion dataset of the Open Negative Initiative contributors records them.
+(Kodak, Kodak Alaris, Fujifilm, Ilford/Harman, Foma), as the emulsion dataset of the Open Negative Initiative contributors records them.
 Each file names its sheet in "provenance": the sheet's reference, its official URL, the SHA-256 of the PDF it was
 traced from, the charts read, what is measured and what is inferred. No PDF and no image of a sheet is shipped, and
 no number here comes from spektrafilm.
@@ -21,6 +21,16 @@ What the files hold:
   (its own dyes at its curves' least densities); a paper's curve under its first printed point, where its sheet
   hides it under the others (their mean). The fourth, cyan-sensitive layer some Fujifilm sheets print is left
   out.
+
+- A black and white negative's file holds one layer and one development: its sensitivity as printed (Kodak's at
+  the 0.3 criterion; Ilford's and Foma's wedge-spectrogram heights read as log sensitivity, one unit of their axis a
+  log; Tri-X 320's taken from Tri-X 400 on their shared sheet), its visual density curve less base and fog, smoothed
+  over 0.05 log H to lift a raster trace's steps. Its development is the sheet's reference developer (D-76 where
+  the sheet prints it) at the time whose ISO 6 average gradient is nearest 0.62, among the curves traced from their
+  foot; its grey sits 1.01 log over the curve's ISO 6 speed point (ISO 6's speed and ISO 2720's meter), which holds
+  on a relative log exposure axis as on an absolute one. Every other development the sheet prints is kept in
+  "developments", on the same axis, unread. Left out: ADOX HR-50 (no log exposure scale), Fujifilm Neopan SS (its toe
+  untraced), and Rollei's (no characteristic curve).
 
 Licence. The files are measurements: the numbers the makers publish about their products, read off their public
 technical sheets, with each sheet credited and linked. Such facts are not a work their makers' copyright covers, and

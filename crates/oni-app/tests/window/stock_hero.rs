@@ -298,7 +298,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     }
     // Twin: a stock no digital photo is shot on, chosen anyway, leaves the film as it is.
     let before = film();
-    stocks.invoke_picked(stock("ilford-hp5"));
+    stocks.invoke_picked(stock("agfaphoto-apx"));
     rig.settle();
     assert_eq!(film(), before);
     drop(shell);

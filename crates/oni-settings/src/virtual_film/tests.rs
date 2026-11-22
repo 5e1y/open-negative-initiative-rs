@@ -11,10 +11,21 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
         assert_eq!(levels.green.black, graduation::value(r.black[1], ConversionMode::Negative));
         assert!(levels.windows().iter().all(|w| w.white > w.black), "{stock:?}: {levels:?}");
         let kind = crate::film::film_stock(Some(stock.catalogue_id())).expect("in the catalogue");
-        assert_eq!((kind.display_name, crate::dyes::dye_set(kind.id)), (stock.name(), Some(stock.dye_set())), "{stock:?}");
         assert!(!kind.line && kind.offered, "{stock:?}: a precise stock the picker lists, never its line");
-        assert!(stock.dye_set().profile().is_some_and(|p| stock.profile().starts_with(p)), "{stock:?} develops its own dyes");
+        assert_eq!(kind.display_name, stock.name(), "{stock:?}");
+        if stock.is_silver() {
+            // Silver unmixes nothing: the stock rests on the generic set, as a black and white roll does.
+            assert_eq!((crate::dyes::dye_set(kind.id), stock.dye_set()), (None, DyeSet::GenericC41), "{stock:?}");
+            assert!(r.stops == [0.0; 3] && r.black.iter().chain(&r.white).all(|v| *v == r.black[0] || *v == r.white[0]), "{stock:?}: a neutral reference");
+        } else {
+            assert_eq!(crate::dyes::dye_set(kind.id), Some(stock.dye_set()), "{stock:?}");
+            assert!(stock.dye_set().profile().is_some_and(|p| stock.profile().starts_with(p)), "{stock:?} develops its own dyes");
+        }
     }
+    let silver = VirtualStock::ALL.iter().filter(|s| s.is_silver()).count();
+    assert_eq!(silver, 27, "every black and white film profiled");
+    // Twin: a colour stock is no silver one, and its reference is not neutral.
+    assert!(!VirtualStock::KodakPortra800.is_silver() && VirtualStock::KodakPortra800.reference().stops != [0.0; 3]);
     assert_eq!(VirtualStock::ALL[0], VirtualStock::default(), "Portra 800 opens first");
     let r = VirtualStock::KodakPortra800.reference();
     // Twin: read on a slide's axis the same shares land elsewhere.

@@ -5,7 +5,7 @@
 use crate::conversion;
 use crate::film::bake;
 use crate::film::dyes::{self, C41};
-use crate::film::profile::Profile;
+use crate::film::profile::{Profile, Silver};
 use crate::paper::{self, bisected, film_ends, spanned};
 use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LUMA, NEGATIVE_CURVE_NODES, Negative, Stage47};
 use oni_settings::tone::Print;
@@ -30,11 +30,12 @@ const LIGHT_SPAN: f64 = 8.0;
 /// The film a frame's Lighting develops again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Film {
-    /// A digital photo's virtual stock, its own curves, pushed ones included.
+    /// A digital photo's virtual stock, its own curves, pushed ones included; a black and white one's single layer
+    /// uncoupled.
     Stock(VirtualStock),
     /// A scanned colour negative's stock, by its dyes, read on its mean layer; the generic set on the C-41 profiles'.
     Dyes(DyeSet),
-    /// A black and white negative: the C-41 profiles' mean curve on its one layer, no couplers.
+    /// A scanned black and white negative: the C-41 profiles' mean curve on its one layer, no couplers.
     Silver,
     /// A positive: its own light, each layer's density its log exposure turned over.
     Light,
@@ -45,10 +46,10 @@ impl Film {
     pub fn of(s: &PipelineSettings) -> Film {
         if s.mode.reads_positive() {
             Film::Light
-        } else if s.mode.is_monochrome() {
-            Film::Silver
         } else if let Some(f) = s.film() {
             Film::Stock(f.stock)
+        } else if s.mode.is_monochrome() {
+            Film::Silver
         } else {
             Film::Dyes(s.dye_set)
         }
@@ -120,6 +121,11 @@ fn developing(le: &[f64], density: &[[f64; 3]], coupled: bool) -> Development {
 
 fn developed(film: Film) -> Development {
     match film {
+        Film::Stock(stock) if stock.is_silver() => {
+            let p = Silver::read(dyes::source(stock.profile()).expect("a shipped profile")).expect("a shipped profile reads");
+            let curve: Vec<[f64; 3]> = p.density_curve.iter().map(|d| [*d; 3]).collect();
+            developing(&p.log_exposure, &curve, false)
+        }
         Film::Stock(stock) => {
             let p = read(stock.profile());
             developing(&p.log_exposure, &p.density_curves, true)
@@ -178,7 +184,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     if print.rests_on_negative(s.mode) {
         return None;
     }
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let positive = s.mode.reads_positive();
     let sense = if positive { -1.0 } else { 1.0 };
     // A paper reads the dyes' amounts, and so does a digital photo, its negative the model's own; ONI's print reads a
@@ -202,10 +208,12 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let anchors = paper::anchors(s, amounts);
     let development = development(film);
     // A colour negative's layers developed so its reference grey is the stock's neutral at the speed's exposure, so
-    // every common move on that neutral stays neutral; a positive's and silver's layers are one already.
+    // every common move on that neutral stays neutral; a positive's and silver's layers are one already, a black and
+    // white film's density its own curve's.
     let grey = anchors[2].map(|v| sense * v);
     let speed = development.normal[development.at_speed()];
     let scale = match film {
+        Film::Stock(stock) if stock.is_silver() => [1.0; 3],
         Film::Stock(_) | Film::Dyes(_) => std::array::from_fn(|c| grey[c] / speed[c]),
         Film::Silver | Film::Light => [1.0; 3],
     };

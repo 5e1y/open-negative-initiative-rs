@@ -5,7 +5,7 @@ use super::*;
 /// `RollReference.colourFactor`: the spans each channel's points reach over the roll's, on their
 /// geometric mean; 1 on no roll.
 pub fn colour_factor(s: &PipelineSettings) -> f32 {
-    factor_reaching(s, s.print.channel_points(s.mode.is_monochrome()))
+    factor_reaching(s, s.print.channel_points(s.is_monochrome()))
 }
 
 /// The colour factor with each channel's window reached by `points`, which it answers only under Lighting's colour
@@ -31,7 +31,7 @@ pub fn decompression_weights(s: &PipelineSettings) -> (f32, f32) {
 
 /// The points' reach over each channel's window, on their geometric mean: 1 while they rest.
 fn points_reach(s: &PipelineSettings) -> f32 {
-    let points = s.print.channel_points(s.mode.is_monochrome());
+    let points = s.print.channel_points(s.is_monochrome());
     let product: f32 = points.iter().map(|(black, white)| ((1.0 - black - white) / (1.0 - Print::RESTING_BLACK_POINT)).max(1e-4)).product();
     product.powf(1.0 / 3.0)
 }
@@ -40,7 +40,7 @@ fn weighted(s: &PipelineSettings, factor: f32) -> (f32, f32) {
     if s.roll_reference.is_some() {
         return (factor, 0.0);
     }
-    let colour_negative = s.mode.invert_flag() > 0.5 && !s.mode.is_monochrome();
+    let colour_negative = s.mode.invert_flag() > 0.5 && !s.is_monochrome();
     let dose = if colour_negative { s.chroma_decompression.clamp(0.0, 1.0) } else { 1.0 };
     (dose * factor, 1.0 - dose)
 }

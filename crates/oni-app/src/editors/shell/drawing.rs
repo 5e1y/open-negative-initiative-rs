@@ -45,7 +45,7 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         *drawn = Drawn::default();
     }
     let sizes = gestures.sizes;
-    let monochrome = view.mode.is_monochrome();
+    let monochrome = view.is_monochrome();
     g.set_monochrome(monochrome);
     g.set_low_precision(ctl.editors.low_precision(path.as_deref()));
 

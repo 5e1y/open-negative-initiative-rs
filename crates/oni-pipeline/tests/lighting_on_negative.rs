@@ -292,7 +292,7 @@ fn contrast_turns_about_the_grey_and_the_filters_tint_holding_its_weight() {
             let twin = luma(rgb(cpu::stage47(grey, &about_base))) / luma(at_rest) - 1.0;
             assert!(twin * travel > 0.02, "{label}, {travel}: {twin}");
         }
-        if s.mode.is_monochrome() {
+        if s.is_monochrome() {
             continue;
         }
         let k = conversion::stage47(&lit(&s, |p| p.set_filters(Print::TEMPERATURE_AXIS)));

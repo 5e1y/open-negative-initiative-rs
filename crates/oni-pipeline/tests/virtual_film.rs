@@ -102,6 +102,11 @@ impl Reference {
     }
 }
 
+/// The colour negatives, whose three layers and couplers this reference develops; silver has checks of its own.
+fn colour_stocks() -> impl Iterator<Item = VirtualStock> {
+    VirtualStock::ALL.into_iter().filter(|s| !s.is_silver())
+}
+
 /// The ColorChecker's patches as their sRGB code is usually given, decoded and laid in Rec. 2020.
 fn chart() -> Vec<[f64; 3]> {
     let code: [[f64; 3]; 24] = [
@@ -158,7 +163,7 @@ fn worst(kernel: &VirtualNegative, table: &[[f32; 4]], reference: &Reference, sc
 #[test]
 fn the_kernel_reads_the_negative_the_reference_develops() {
     let (inside, locus) = (scenes(), primaries());
-    for kind in VirtualStock::ALL {
+    for kind in colour_stocks() {
         let reference = Reference::new(kind);
         let stock = film::stock(kind);
         let (gap, edge) = (worst(&stock.kernel, &stock.table, &reference, &inside), worst(&stock.kernel, &stock.table, &reference, &locus));
@@ -176,7 +181,7 @@ fn the_kernel_reads_the_negative_the_reference_develops() {
 /// curves. Twins: a grey a stop over is off log 0, and couplers acting on the data sheet's own curves move the ramp off it.
 #[test]
 fn a_grey_exposes_and_develops_on_the_data_sheet() {
-    let held: Vec<(VirtualStock, f64)> = VirtualStock::ALL.into_iter().map(|kind| (kind, grey_on(kind))).collect();
+    let held: Vec<(VirtualStock, f64)> = colour_stocks().map(|kind| (kind, grey_on(kind))).collect();
     for (kind, gap) in held {
         // A grey's layers take log exposures a few hundredths apart, which the neighbours' inhibition reads, more on
         // a push's steeper curves (0.028 on Portra 800 Push 2).

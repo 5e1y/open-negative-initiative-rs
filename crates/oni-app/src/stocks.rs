@@ -140,7 +140,7 @@ mod tests {
         // Twin: Foma 400 stays among Foma's stocks.
         let foma = by_brand(None).into_iter().find(|(b, _)| *b == "Foma").map(|(_, l)| l).unwrap_or_default();
         let names: Vec<&str> = foma.iter().map(|&i| oni_settings::film::FILM_STOCKS[i].display_name).collect();
-        assert_eq!(names, ["Foma Fomapan 200", "Foma Fomapan 400"]);
+        assert_eq!(names, ["Foma Fomapan 100", "Foma Fomapan 200", "Foma Fomapan 400", "Foma Fomapan Cine 100", "Foma Fomapan Cine 400", "Foma Ortho 400", "Foma Cine Ortho 400", "Foma Retropan 320"]);
     }
 
     /// The sheet lists a line's stocks in its place, and a roll still on the line finds it shown among them.
@@ -212,7 +212,7 @@ mod tests {
         assert_eq!(listed.len(), virtual_ids.len());
         assert!(virtual_ids.iter().all(|id| listed.contains(id) && virtual_stock(id).is_some()), "{listed:?}");
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
-        assert!(!listed.contains(&"ilford-hp5") && virtual_stock("ilford-hp5").is_none());
+        assert!(!listed.contains(&"agfaphoto-apx") && virtual_stock("agfaphoto-apx").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
     }
 

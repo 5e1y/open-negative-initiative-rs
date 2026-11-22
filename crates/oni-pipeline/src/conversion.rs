@@ -77,7 +77,7 @@ fn lit(s: &PipelineSettings) -> Stage47 {
 /// amounts read as they are on a paper or where Lighting reads them before their tone (`amounts`).
 fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
     let print = &s.print;
-    let mono = s.mode.is_monochrome();
+    let mono = s.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
