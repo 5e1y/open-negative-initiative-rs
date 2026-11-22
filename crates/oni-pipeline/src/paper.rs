@@ -1,6 +1,6 @@
-//! A colour paper printing the negative in place of ONI's print: each paper's tables baked once from its spektrafilm
-//! profile or the Frontier's fit (`frontier`), each frame's enlarger at rest on it (`printing`) and Lighting on the
-//! enlarger and the paper (`lighting`).
+//! A colour paper printing the film in place of ONI's print: each paper's tables baked once from its profile or the
+//! Frontier's fit (`frontier`), each frame's enlarger at rest on it (`printing`) and Lighting on the enlarger and the
+//! paper (`lighting`). A negative prints on a negative paper, a slide on a reversal paper.
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
@@ -55,7 +55,8 @@ impl Model {
     }
 }
 
-/// A spektrafilm paper's profile file, shipped unchanged; none for the Frontier.
+/// A paper's profile file: spektrafilm's, shipped unchanged, or Radiance III's read off Kodak's data sheet
+/// (`docs/research/positive-paper`); none for the Frontier.
 pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
     match paper {
         PaperStock::KodakPortraEndura => Some(include_bytes!("../resources/film/kodak_portra_endura.json")),
@@ -64,6 +65,7 @@ pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
         PaperStock::KodakEnduraPremier => Some(include_bytes!("../resources/film/kodak_endura_premier.json")),
         PaperStock::FujifilmCrystalArchiveTypeII => Some(include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json")),
         PaperStock::FujifilmFrontierSp3000 => None,
+        PaperStock::KodakEktachromeRadianceIII => Some(include_bytes!("../resources/film/kodak_ektachrome_radiance_iii.json")),
     }
 }
 
@@ -77,7 +79,7 @@ pub struct Sheet {
 }
 
 fn read(paper: PaperStock) -> Data {
-    let file: File = serde_json::from_slice(source(paper).expect("a spektrafilm paper")).expect("a shipped paper reads");
+    let file: File = serde_json::from_slice(source(paper).expect("a profiled paper")).expect("a shipped paper reads");
     let d = file.data;
     let on_grid = d.wavelengths.len() == WAVELENGTHS && d.wavelengths.iter().enumerate().all(|(i, w)| *w == bake::wavelength(i));
     assert!(on_grid && d.log_sensitivity.len() == WAVELENGTHS && d.channel_density.len() == WAVELENGTHS, "a paper on the 380 to 780 nm grid");
@@ -180,16 +182,40 @@ pub struct Enlarger {
     pub dichroic: Vec<V3>,
 }
 
+/// What the enlarger holds: a black and white negative's silver, a colour negative's dyes, or a slide's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Film {
+    Silver,
+    Negative(DyeSet),
+    Slide,
+}
+
+impl Film {
+    const COUNT: usize = DyeSet::ALL.len() + 2;
+
+    fn index(self) -> usize {
+        match self {
+            Film::Silver => 0,
+            Film::Slide => 1,
+            Film::Negative(d) => 2 + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"),
+        }
+    }
+}
+
 /// A black and white negative's silver: neutral at every wavelength, its density the mean of its three readings.
 fn silver() -> Vec<(usize, [f64; 4])> {
     (0..WAVELENGTHS).map(|l| (l, [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 0.0])).collect()
 }
 
-fn enlarging(set: Option<DyeSet>, paper: PaperStock) -> Enlarger {
+fn enlarging(film: Film, paper: PaperStock) -> Enlarger {
     if paper == PaperStock::FujifilmFrontierSp3000 {
-        return frontier::enlarger(set.is_none());
+        return frontier::enlarger(film == Film::Silver);
     }
-    let bands = set.map_or_else(silver, dyes::measured);
+    let bands = match film {
+        Film::Silver => silver(),
+        Film::Negative(set) => dyes::measured(set),
+        Film::Slide => dyes::slide(),
+    };
     let lamp = lamp();
     let s: Vec<[f64; 3]> = read(paper).log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();
     Enlarger {
@@ -199,14 +225,11 @@ fn enlarging(set: Option<DyeSet>, paper: PaperStock) -> Enlarger {
     }
 }
 
-/// The enlarger for a negative's dyes, or a black and white's silver, on `paper`, baked at first use; the Frontier's
-/// scanner reads the dye amounts themselves.
-pub fn enlarger(set: Option<DyeSet>, paper: PaperStock) -> &'static Enlarger {
-    const NEGATIVES: usize = DyeSet::ALL.len() + 1;
-    static TABLES: [OnceLock<Enlarger>; NEGATIVES * PaperStock::ALL.len()] = [const { OnceLock::new() }; NEGATIVES * PaperStock::ALL.len()];
-    let negative = set.map_or(0, |d| 1 + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"));
+/// The enlarger for `film` on `paper`, baked at first use; the Frontier's scanner reads the dye amounts themselves.
+pub fn enlarger(film: Film, paper: PaperStock) -> &'static Enlarger {
+    static TABLES: [OnceLock<Enlarger>; Film::COUNT * PaperStock::ALL.len()] = [const { OnceLock::new() }; Film::COUNT * PaperStock::ALL.len()];
     let at = PaperStock::ALL.iter().position(|p| *p == paper).expect("every paper is listed");
-    TABLES[at * NEGATIVES + negative].get_or_init(|| enlarging(set, paper))
+    TABLES[at * Film::COUNT + film.index()].get_or_init(|| enlarging(film, paper))
 }
 
 #[cfg(test)]

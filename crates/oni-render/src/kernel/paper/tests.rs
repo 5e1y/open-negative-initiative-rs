@@ -38,6 +38,7 @@ fn narrow() -> Paper {
         anchor: [0.01, 0.02, 0.03],
         brightness: 0.0,
         luma: false,
+        reversal: false,
     }
 }
 
@@ -111,6 +112,28 @@ fn the_tones_stretch_the_range_lay_the_zones_by_tone_and_hold_both_ends() {
     assert!((half[0] / k.span[0] - 0.7).abs() < 1e-6 && (half[1] / k.span[1] - 0.5).abs() < 1e-6, "{half:?}");
     // Twin: at rest nothing moves, to the bit.
     assert_eq!(k.toned([0.2, 0.36, 0.7]), [0.2, 0.36, 0.7]);
+}
+
+#[test]
+fn a_reversal_paper_reads_the_tones_from_the_densest_film_its_print_s_black() {
+    let k = Paper { reversal: true, ..narrow() };
+    assert_eq!(k.toned([0.2, 0.36, 0.7]), [0.2, 0.36, 0.7], "at rest nothing moves");
+    // A black point of 0.1 reads the densest tenth of the range as the densest film, the bare film held.
+    let pointed = Paper { points_black: [0.1; 3], ..k };
+    let top = pointed.toned([0.9, 1.08, 1.26]);
+    assert!((0..3).all(|c| (top[c] - k.span[c]).abs() < 1e-5), "{top:?}");
+    assert!(pointed.toned([0.0; 3]).iter().all(|v| v.abs() < 1e-6));
+    // Shadows lift the dense end, a slide's shadows: less density there, the bare end barely moved.
+    let shadows = Paper { zones: [0.25, 0.0], ..k };
+    let at = |u: f32| shadows.toned(k.span.map(|s| s * u))[0] / k.span[0];
+    assert!(at(0.75) < 0.65 && 0.75 - at(0.75) > (at(0.25) - 0.25).abs(), "{} {}", at(0.75), at(0.25));
+    // A channel's mids take density away from its middle, as they brighten it.
+    let mids = Paper { mids: [0.2, 0.0, 0.0], ..k };
+    assert!((mids.toned(k.span.map(|s| s * 0.5))[0] / k.span[0] - 0.3).abs() < 1e-6);
+    // Twin: on a negative paper the same black point reads the bare end as black.
+    let negative = Paper { points_black: [0.1; 3], ..narrow() };
+    assert!(negative.toned([0.1, 0.12, 0.14]).iter().all(|v| v.abs() < 1e-6));
+    assert!(pointed.toned([0.1, 0.12, 0.14]).iter().all(|v| v.abs() > 1e-2));
 }
 
 #[test]

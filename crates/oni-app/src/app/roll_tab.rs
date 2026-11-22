@@ -155,7 +155,7 @@ impl Ctl {
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
-        panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(PaperStock::default)));
+        panel.on_paper_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(|| s.fitting_paper())));
         let p = me.clone();
         panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
         let p = me.clone();
@@ -170,9 +170,11 @@ impl Ctl {
         });
         let p = me.clone();
         panel.on_paper_chosen(move |i| {
-            if let Some(&paper) = usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)) {
-                p.write_settings(|s| s.print_paper = Some(paper));
-            }
+            p.write_settings(|s| {
+                if let Some(paper) = usize::try_from(i).ok().and_then(|i| PaperStock::listed(s.mode.reads_positive()).get(i).copied()) {
+                    s.print_paper = Some(paper);
+                }
+            })
         });
         let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));
@@ -246,10 +248,12 @@ impl Ctl {
         panel.set_true_blacks(settings.print.true_blacks);
         panel.set_paper_shown(settings.takes_paper());
         panel.set_paper_on(settings.paper().is_some());
-        let chosen = settings.print_paper.unwrap_or_default();
-        panel.set_paper_title(chosen.name().into());
-        if panel.get_paper_lines().row_count() != PaperStock::ALL.len() {
-            let lines: Vec<MenuLine> = PaperStock::ALL.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
+        panel.set_paper_title(settings.fitting_paper().name().into());
+        // The papers that print the frame's film: a slide's reversal paper, a negative's every other.
+        let listed = PaperStock::listed(settings.mode.reads_positive());
+        let shown = panel.get_paper_lines();
+        if shown.row_count() != listed.len() || shown.row_data(0).is_none_or(|l| l.text != listed[0].name()) {
+            let lines: Vec<MenuLine> = listed.iter().map(|p| MenuLine { text: p.name().into(), enabled: true, ..MenuLine::default() }).collect();
             panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         }
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
