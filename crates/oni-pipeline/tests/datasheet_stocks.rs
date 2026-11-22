@@ -1,5 +1,5 @@
-//! Every stock and paper, each written from its maker's data sheet, bakes and prints finite on the CPU and the GPU.
-//! Twins: a profile holding a number not finite is refused, and a NaN in a print is seen.
+//! Every stock and paper, each written from its maker's data sheet, bakes and prints finite on the CPU and the GPU, and
+//! its dyes' amounts build a neutral its sheet's densitometer reads as printed. Each has a twin.
 
 mod common;
 
@@ -121,3 +121,78 @@ fn every_sheet_film_and_paper_renders_finite_on_the_gpu() {
     assert!(!finite(&out));
 }
 
+
+/// ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), red, green and blue: the first wavelength, the log10
+/// products every 10 nm to a 5.000 peak, and the log slopes past either end.
+type Status = [(f64, &'static [f64], f64, f64); 3];
+const STATUS_M: Status = [
+    (620.0, &[2.109, 4.479, 5.000, 4.899, 4.578, 4.252, 3.875, 3.491, 3.099, 2.687, 2.269, 1.859, 1.449, 1.054, 0.654, 0.254], 0.260, -0.040),
+    (470.0, &[1.152, 2.207, 3.156, 3.804, 4.272, 4.626, 4.872, 5.000, 4.995, 4.818, 4.458, 3.915, 3.172, 2.239, 1.070], 0.106, -0.120),
+    (410.0, &[2.103, 4.111, 4.632, 4.871, 5.000, 4.955, 4.743, 4.343, 3.743, 2.990, 1.852], 0.250, -0.220),
+];
+const STATUS_A: Status = [
+    (600.0, &[2.568, 4.638, 5.000, 4.871, 4.604, 4.286, 3.900, 3.551, 3.165, 2.776, 2.383, 1.970, 1.551, 1.141, 0.741, 0.341], 0.270, -0.040),
+    (500.0, &[1.650, 3.822, 4.782, 5.000, 4.906, 4.644, 4.221, 3.609, 2.766, 1.579], 0.220, -0.170),
+    (420.0, &[3.602, 4.819, 5.000, 4.912, 4.620, 4.040, 2.989, 1.566, 0.165], 0.380, -0.140),
+];
+
+/// Channel `c`'s product at `nm`, linear in log between the table's points.
+fn product(status: &Status, c: usize, nm: f64) -> f64 {
+    let (first, logs, before, after) = status[c];
+    let last = first + 10.0 * (logs.len() - 1) as f64;
+    let log = if nm < first {
+        logs[0] + before * (nm - first)
+    } else if nm >= last {
+        logs[logs.len() - 1] + after * (nm - last)
+    } else {
+        let k = ((nm - first) / 10.0) as usize;
+        let t = (nm - first) / 10.0 - k as f64;
+        logs[k] + t * (logs[k + 1] - logs[k])
+    };
+    10f64.powf(log - 5.0)
+}
+
+/// What `status` reads of the spectral density `at(l)` on the wavelengths it is known.
+fn reading(status: &Status, known: &[usize], at: impl Fn(usize) -> f64) -> [f64; 3] {
+    std::array::from_fn(|c| {
+        let w = |l: usize| product(status, c, 380.0 + 5.0 * l as f64);
+        let seen: f64 = known.iter().map(|&l| w(l) * 10f64.powf(-at(l))).sum();
+        -(seen / known.iter().map(|&l| w(l)).sum::<f64>()).log10()
+    })
+}
+
+/// The worst gap, in density, between the sheet's curves and the neutral `amounts` builds over the base, as `status` reads it.
+fn neutral_gap(json: &[u8], status: &Status, amounts: &str) -> f64 {
+    let v: serde_json::Value = serde_json::from_slice(json).unwrap();
+    let d = &v["data"];
+    let number = |x: &serde_json::Value| x.as_f64();
+    let dyes: Vec<[Option<f64>; 3]> = d["channel_density"].as_array().unwrap().iter().map(|r| std::array::from_fn(|j| number(&r[j]))).collect();
+    let base: Vec<Option<f64>> = d["base_density"].as_array().unwrap().iter().map(number).collect();
+    let known: Vec<usize> = (0..base.len()).filter(|&l| base[l].is_some() && dyes[l].iter().all(Option::is_some)).collect();
+    let rows = |key: &str| -> Vec<[f64; 3]> { d[key].as_array().unwrap().iter().map(|r| std::array::from_fn(|j| r[j].as_f64().unwrap())).collect() };
+    let (a, sheet) = (rows(amounts), rows("sheet_density_curves"));
+    let bare = reading(status, &known, |l| base[l].unwrap());
+    let mut worst = 0.0f64;
+    for (a, want) in a.iter().zip(&sheet) {
+        let read = reading(status, &known, |l| base[l].unwrap() + (0..3).map(|j| a[j] * dyes[l][j].unwrap()).sum::<f64>());
+        worst = (0..3).map(|c| (read[c] - bare[c] - want[c]).abs()).fold(worst, f64::max);
+    }
+    worst
+}
+
+#[test]
+fn every_colour_sheets_neutral_of_its_dye_amounts_reads_its_printed_curves() {
+    let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), film::dyes::source(s.profile()).unwrap(), &STATUS_M));
+    let papers = sheet_papers().into_iter().map(|p| (p.name(), paper::source(p).unwrap(), &STATUS_A));
+    let (mut worst, mut least_miss) = (0.0f64, f64::INFINITY);
+    for (name, json, status) in films.chain(papers) {
+        let (gap, miss) = (neutral_gap(json, status, "density_curves"), neutral_gap(json, status, "sheet_density_curves"));
+        println!("{name}: the neutral within {gap:.1e} of its sheet; the printed curves taken as amounts miss it by {miss:.3}");
+        // Within 0.02 D: where the traces disagree, on a shoulder, the unmix draws a dip, held as an amount never falls.
+        assert!(gap < 0.02, "{name}: {gap}");
+        // Twin: the printed curves as the dyes' amounts read a neutral denser than its sheet's.
+        assert!(miss > 0.05, "{name}: {miss}");
+        (worst, least_miss) = (worst.max(gap), least_miss.min(miss));
+    }
+    println!("worst {worst:.1e}, least miss {least_miss:.3}");
+}

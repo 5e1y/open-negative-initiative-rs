@@ -1,19 +1,23 @@
-//! The ramps' and charts' pixels: luminance, L*, sRGB, PNG, patches laid and read back.
+//! The patches a ramp or a chart is laid in, read back, measured and saved as sRGB.
 
-use super::{COLUMNS, PATCH, V3, V4};
 use oni_app::render::Linear;
 use std::path::Path;
 
-pub(super) fn luminance(v: &[f32]) -> f32 {
+use super::{V3, V4};
+
+pub const PATCH: usize = 16;
+pub const COLUMNS: usize = 16;
+
+pub fn luminance(v: &[f32]) -> f32 {
     0.2627 * v[0] + 0.6780 * v[1] + 0.0593 * v[2]
 }
 
-pub(super) fn lstar(y: f32) -> f32 {
+pub fn lstar(y: f32) -> f32 {
     let f = if y > 0.008856 { y.cbrt() } else { 7.787 * y + 16.0 / 116.0 };
     116.0 * f - 16.0
 }
 
-pub(super) fn srgb(p: &[f32; 4]) -> [u8; 3] {
+pub fn srgb(p: &[f32; 4]) -> [u8; 3] {
     let m = [[1.6605, -0.5876, -0.0728], [-0.1246, 1.1329, -0.0083], [-0.0182, -0.1006, 1.1187]];
     let encode = |v: f32| {
         let v = v.clamp(0.0, 1.0);
@@ -23,7 +27,7 @@ pub(super) fn srgb(p: &[f32; 4]) -> [u8; 3] {
     std::array::from_fn(|r| encode(m[r][0] * p[0] + m[r][1] * p[1] + m[r][2] * p[2]))
 }
 
-pub(super) fn save_png(path: &Path, l: &Linear) {
+pub fn save_png(path: &Path, l: &Linear) {
     let file = std::io::BufWriter::new(std::fs::File::create(path).unwrap());
     let mut enc = png::Encoder::new(file, l.width as u32, l.height as u32);
     enc.set_color(png::ColorType::Rgb);
@@ -33,7 +37,7 @@ pub(super) fn save_png(path: &Path, l: &Linear) {
 }
 
 /// The classic chart's 24 patches, sRGB 8-bit, as linear Rec. 2020.
-pub(super) fn chart() -> Vec<V4> {
+pub fn chart() -> Vec<V4> {
     let srgb: [[u8; 3]; 24] = [
         [115, 82, 68], [194, 150, 130], [98, 122, 157], [87, 108, 67], [133, 128, 177], [103, 189, 170],
         [214, 126, 44], [80, 91, 166], [193, 90, 99], [94, 60, 108], [157, 188, 64], [224, 163, 46],
@@ -54,7 +58,7 @@ pub(super) fn chart() -> Vec<V4> {
 }
 
 /// Patches laid in rows as an image the engine decodes.
-pub(super) fn patches(values: &[V4]) -> Linear {
+pub fn patches(values: &[V4]) -> Linear {
     let rows = values.len().div_ceil(COLUMNS);
     let (w, h) = (COLUMNS * PATCH, rows * PATCH);
     let mut pixels = vec![[0.0, 0.0, 0.0, 1.0]; w * h];
@@ -70,7 +74,7 @@ pub(super) fn patches(values: &[V4]) -> Linear {
 }
 
 /// Each patch's centre read back, its median per channel.
-pub(super) fn read_back(l: &Linear, count: usize) -> Vec<V3> {
+pub fn read_back(l: &Linear, count: usize) -> Vec<V3> {
     (0..count)
         .map(|i| {
             let (px, py) = ((i % COLUMNS) * PATCH, (i / COLUMNS) * PATCH);

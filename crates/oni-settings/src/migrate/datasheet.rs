@@ -1,7 +1,9 @@
-//! A digital photo before format 60 stood on spektrafilm's reference of its stock: it moves onto the data sheet's, every
-//! hand's move kept (owner's call); a twin's key stood there already, and every other key reads its data sheet by itself.
+//! A digital photo before format 60 stood on spektrafilm's reference of its stock: it moves onto the data sheet's as
+//! formats 60 to 65 derived it, every hand's move kept (owner's call); a twin's key stood there already, and every other
+//! key reads its data sheet by itself.
 
 use super::chain::DATASHEET_VERSION;
+use super::unmixed::mixed;
 use crate::PipelineSettings;
 use crate::levels::Levels;
 use crate::virtual_film::{StockReference, VirtualStock};
@@ -37,9 +39,10 @@ const SPEKTRAFILM: [(VirtualStock, StockReference); 16] = {
     ]
 };
 
-/// The reference a document before format 60 laid for `stock`: spektrafilm's where it profiled the stock, else its own.
+/// The reference a document before format 60 laid for `stock`: spektrafilm's where it profiled the stock, else its data
+/// sheet's as formats 60 to 65 derived it.
 pub fn former(stock: VirtualStock) -> StockReference {
-    SPEKTRAFILM.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    SPEKTRAFILM.iter().find(|(s, _)| *s == stock).map_or_else(|| mixed(stock), |(_, r)| *r)
 }
 
 /// `settings` shot on `stock` as a document before format 60 placed it, on its former reference.
@@ -60,7 +63,7 @@ fn moved_window(window: Levels, was: Levels, now: Levels) -> Levels {
     Levels { black: moved(window.black, was.black, now.black), white: moved(window.white, was.white, now.white), ..window }
 }
 
-/// `settings` of `version`, read from the stored `raw` settings, on its stock's data-sheet reference.
+/// `settings` of `version`, read from the stored `raw` settings, on its stock's data-sheet reference of formats 60 to 65.
 pub fn caught_up(version: i64, settings: PipelineSettings, raw: Option<&Value>) -> PipelineSettings {
     if version >= DATASHEET_VERSION {
         return settings;
@@ -70,7 +73,11 @@ pub fn caught_up(version: i64, settings: PipelineSettings, raw: Option<&Value>) 
     if key.is_some_and(|k| k.ends_with("-datasheet")) {
         return settings;
     }
-    let (was, now) = (former(film.stock), film.stock.reference());
+    onto(settings, former(film.stock), mixed(film.stock))
+}
+
+/// `settings` laid on reference `was` moved onto `now`, the hand's distance from it kept.
+pub(super) fn onto(settings: PipelineSettings, was: StockReference, now: StockReference) -> PipelineSettings {
     let mut out = settings;
     out.gains.stops = std::array::from_fn(|c| moved(out.gains.stops[c], was.stops[c], now.stops[c]));
     let ([red, green, blue], [was_red, was_green, was_blue], [now_red, now_green, now_blue]) =
@@ -121,10 +128,16 @@ mod tests {
         // Twins: the gains really moved, a twin's key stood on the data sheet already, a stock spektrafilm never
         // profiled and a file of this format stay as they are.
         assert_ne!(gold.gains, own.gains);
-        let twin = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::KodakPortra800);
-        assert_eq!(read(&stored(&twin, older, Some("kodak-portra-800-datasheet"))), twin);
-        let reala = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::FujifilmSuperiaReala);
-        assert_eq!(read(&stored(&reala, older, None)), reala);
+        let on_mixed = |stock: VirtualStock| {
+            let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+            (s.gains.stops, s.levels) = (mixed(stock).stops, mixed(stock).levels());
+            s
+        };
+        let own = |stock: VirtualStock| PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+        let twin = on_mixed(VirtualStock::KodakPortra800);
+        assert_eq!(read(&stored(&twin, older, Some("kodak-portra-800-datasheet"))), own(VirtualStock::KodakPortra800));
+        let reala = on_mixed(VirtualStock::FujifilmSuperiaReala);
+        assert_eq!(read(&stored(&reala, older, None)), own(VirtualStock::FujifilmSuperiaReala));
         assert_eq!(read(&stored(&gold, VERSION, None)), gold);
     }
 

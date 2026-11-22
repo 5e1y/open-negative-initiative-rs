@@ -5,7 +5,12 @@
 //! above its least along log exposure from its grey). `STOCK`, `DYES`, `PAPER` (a key, `oni` or `neutral`), `BLACKS`
 //! (Paper blacks on) and `DERIVED` (a digital photo on its stock's derived reference) override.
 
+mod curve;
+mod patches;
+
+use curve::Curve;
 use oni_app::render::{Decoded, Device, Engine, Reading};
+use patches::*;
 use oni_pipeline::{conversion, film, paper};
 use oni_render::{PAPER_CURVE_NODES, Paper, cpu};
 use oni_settings::axis::density_axis;
@@ -14,14 +19,9 @@ use oni_settings::{ConversionMode, PipelineSettings, sidecar};
 use std::io::Write;
 use std::path::Path;
 
-mod image;
-use image::*;
-
 type V3 = [f32; 3];
 type V4 = [f32; 4];
 
-const PATCH: usize = 16;
-const COLUMNS: usize = 16;
 /// The ramp, in stops from the scene's grey.
 const LOW: f32 = -8.0;
 const HIGH: f32 = 6.0;
@@ -30,41 +30,6 @@ const STEP: f32 = 0.25;
 fn stops() -> Vec<f32> {
     let n = ((HIGH - LOW) / STEP).round() as usize;
     (0..=n).map(|i| LOW + STEP * i as f32).collect()
-}
-
-/// A relative curve `m(x)`, density above its least along log exposure from the grey, read from a JSON file.
-struct Curve {
-    x: Vec<f32>,
-    m: Vec<f32>,
-}
-
-impl Curve {
-    /// The mean of a stock's three layers above its least, as Lighting reads a scan's.
-    fn of_stock(profile: &str) -> Curve {
-        let p = oni_pipeline::film::profile::Profile::read(oni_pipeline::film::dyes::source(profile).expect("a shipped profile")).expect("a profile");
-        let mean: Vec<f32> = p.density_curves.iter().map(|d| ((d[0] + d[1] + d[2]) / 3.0) as f32).collect();
-        let least = mean.iter().copied().fold(f32::MAX, f32::min);
-        Curve { x: p.log_exposure.iter().map(|v| *v as f32).collect(), m: mean.iter().map(|v| v - least).collect() }
-    }
-
-    fn read(path: &str) -> Curve {
-        let v: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-        let get = |k: &str| v[k].as_array().unwrap().iter().map(|n| n.as_f64().unwrap() as f32).collect();
-        Curve { x: get("x"), m: get("m") }
-    }
-
-    fn at(&self, x: f32) -> f32 {
-        let n = self.x.len();
-        if x <= self.x[0] {
-            return self.m[0];
-        }
-        if x >= self.x[n - 1] {
-            return self.m[n - 1];
-        }
-        let hi = self.x.partition_point(|v| *v <= x).min(n - 1);
-        let t = (x - self.x[hi - 1]) / (self.x[hi] - self.x[hi - 1]);
-        self.m[hi - 1] + t * (self.m[hi] - self.m[hi - 1])
-    }
 }
 
 /// A frame's scan of the neutral ramp under its own measure: each channel's density above its bare film scaled so the
@@ -123,9 +88,14 @@ fn measures(st: &[f32], l: &[f32], y: &[f32]) -> String {
     let clip = st.iter().zip(l).find(|(_, v)| **v >= lmax - 1.0).map_or(f32::NAN, |(s, _)| *s);
     let toe = st.iter().zip(l).find(|(_, v)| **v >= l[0] + 1.0).map_or(f32::NAN, |(s, _)| *s);
     format!(
-        "L*0 {:.1} | slope@0 {:.2} sh(-3..-1) {:.2} hl(+1..+3) {:.2} L*/stop | L*-3 {:.1} L*-2 {:.1} L*+2 {:.1} | \
-         black {:.1} @{toe:+.2} white {lmax:.1} clip@{clip:+.2} | gamma@0 {:.2} sh {:.2} hl {:.2}",
-        at(0.0).0, slope(-0.5, 0.5), slope(-3.0, -1.0), slope(1.0, 3.0), at(-3.0).0, at(-2.0).0, at(2.0).0, l[0], gamma(-0.5, 0.5), gamma(-3.0, -1.0), gamma(1.0, 3.0)
+        concat!(
+            "L*0 {:.1} | slope@0 {:.2} sh(-3..-1) {:.2} hl(+1..+3) {:.2} L*/stop | L*-3 {:.1} L*-2 {:.1} L*+2 {:.1} | ",
+            "black {:.1} @{toe:+.2} white {lmax:.1} clip@{clip:+.2} | gamma@0 {:.2} sh {:.2} hl {:.2}"
+        ),
+        at(0.0).0, slope(-0.5, 0.5), slope(-3.0, -1.0), slope(1.0, 3.0), at(-3.0).0, at(-2.0).0, at(2.0).0, l[0], gamma(-0.5, 0.5), gamma(-3.0, -1.0), gamma(1.0, 3.0),
+        toe = toe,
+        lmax = lmax,
+        clip = clip
     )
 }
 
@@ -150,7 +120,7 @@ fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
 
 fn rest_lighting(s: &PipelineSettings) -> PipelineSettings {
     let mut s = s.clone();
-    s.print = Print { exposure: 0.0, paper_blacks: std::env::var("BLACKS").is_ok(), ..Print::default() };
+    s.print = Print { paper_blacks: std::env::var("BLACKS").is_ok(), ..Print::default() };
     s
 }
 
@@ -258,9 +228,13 @@ impl Run<'_> {
             let (m4, p4, z) = (at(-4.0), at(4.0), at(0.0));
             for (c, ch) in ["R", "G", "B"].iter().enumerate() {
                 self.line(format!(
-                    "    paper {ch}: curve range D {:.2}, 10-90% at logH {:+.3}..{:+.3} ({:.3} wide), steepest {:.2}, slope>0.1 {:+.3}..{:+.3} | \
-                     ramp lands: -4st {:+.3}, grey {:+.3}, +4st {:+.3} -> span(-4..+4) {:.3} logH (scene 2.408), paper-in gamma {:.3}",
-                    f[c][0], f[c][1], f[c][2], f[c][2] - f[c][1], f[c][3], f[c][4], f[c][5], m4[c], z[c], p4[c], m4[c] - p4[c], (m4[c] - p4[c]) / 2.408
+                    concat!(
+                        "    paper {ch}: curve range D {:.2}, 10-90% at logH {:+.3}..{:+.3} ({:.3} wide), steepest {:.2}, ",
+                        "slope>0.1 {:+.3}..{:+.3} | ramp lands: -4st {:+.3}, grey {:+.3}, +4st {:+.3} -> span(-4..+4) {:.3} logH ",
+                        "(scene 2.408), paper-in gamma {:.3}"
+                    ),
+                    f[c][0], f[c][1], f[c][2], f[c][2] - f[c][1], f[c][3], f[c][4], f[c][5], m4[c], z[c], p4[c], m4[c] - p4[c], (m4[c] - p4[c]) / 2.408,
+                    ch = ch
                 ));
             }
         }

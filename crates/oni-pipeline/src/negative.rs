@@ -69,8 +69,8 @@ fn read(name: &str) -> Profile {
     Profile::read(dyes::source(name).expect("a shipped profile")).expect("a shipped profile reads")
 }
 
-/// The C-41 profiles' mean density over the log exposures they all hold, on the development's nodes.
-fn generic() -> (Vec<f64>, Vec<[f64; 3]>) {
+/// The C-41 profiles' mean of `curves` over the log exposures they all hold, on the development's nodes.
+fn generic(curves: fn(&Profile) -> &Vec<[f64; 3]>) -> (Vec<f64>, Vec<[f64; 3]>) {
     let profiles = C41.map(read);
     let low = profiles.iter().map(|p| p.log_exposure[0]).fold(f64::NEG_INFINITY, f64::max);
     let high = profiles.iter().map(|p| p.log_exposure[p.log_exposure.len() - 1]).fold(f64::INFINITY, f64::min);
@@ -78,7 +78,7 @@ fn generic() -> (Vec<f64>, Vec<[f64; 3]>) {
     let n = profiles.len() as f64;
     let mean = le
         .iter()
-        .map(|e| std::array::from_fn(|c| profiles.iter().map(|p| bake::interpolate(*e, &p.log_exposure, &p.density_curves, c)).sum::<f64>() / n))
+        .map(|e| std::array::from_fn(|c| profiles.iter().map(|p| bake::interpolate(*e, &p.log_exposure, curves(p), c)).sum::<f64>() / n))
         .collect();
     (le, mean)
 }
@@ -137,12 +137,13 @@ fn developed(film: Film) -> Development {
                     let p = read(name);
                     (p.log_exposure, p.density_curves)
                 }
-                None => generic(),
+                None => generic(|p| &p.density_curves),
             };
             developing(&le, &one_layer(&density), false)
         }
+        // Silver is neutral: its scan reads a density, the sheets' own curves, no dye's amount.
         Film::Silver => {
-            let (le, mean) = generic();
+            let (le, mean) = generic(|p| &p.sheet_density_curves);
             developing(&le, &one_layer(&mean), false)
         }
         Film::Light => {
