@@ -191,8 +191,8 @@ pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
 /// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
 pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
     let clicks = MACHINE.offset(&s.scanner);
-    // The Frontier's look rests where the owner set its neutral; a hand's look rests on zero.
-    let rests = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none();
+    // The Frontier's look rests where the owner set its neutral; a hand's look and a paper, the look's cube left out, on zero.
+    let rests = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none() && s.paper().is_none();
     let rest = if rests { frontier_rest() } else { [0.0; 3] };
     stops_of(std::array::from_fn(|c| clicks[c] + rest[c]), s)
 }

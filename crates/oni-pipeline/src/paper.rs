@@ -1,5 +1,6 @@
 //! A colour paper printing the negative in place of ONI's print: each paper's tables baked once from its spektrafilm
-//! profile, each frame's enlarger at rest on it (`printing`) and Lighting on the enlarger and the paper (`lighting`).
+//! profile or the Frontier's fit (`frontier`), each frame's enlarger at rest on it (`printing`) and Lighting on the
+//! enlarger and the paper (`lighting`).
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
@@ -12,6 +13,7 @@ use std::sync::OnceLock;
 type V3 = [f32; 3];
 type V4 = [f32; 4];
 
+pub mod frontier;
 mod lighting;
 mod printing;
 pub use lighting::*;
@@ -53,20 +55,20 @@ impl Model {
     }
 }
 
-/// A paper's profile file, shipped unchanged.
-pub fn source(paper: PaperStock) -> &'static [u8] {
+/// A spektrafilm paper's profile file, shipped unchanged; none for the Frontier.
+pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
     match paper {
-        PaperStock::KodakPortraEndura => include_bytes!("../resources/film/kodak_portra_endura.json"),
-        PaperStock::KodakSupraEndura => include_bytes!("../resources/film/kodak_supra_endura.json"),
-        PaperStock::KodakUltraEndura => include_bytes!("../resources/film/kodak_ultra_endura.json"),
-        PaperStock::KodakEnduraPremier => include_bytes!("../resources/film/kodak_endura_premier.json"),
-        PaperStock::FujifilmCrystalArchiveTypeII => include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json"),
+        PaperStock::KodakPortraEndura => Some(include_bytes!("../resources/film/kodak_portra_endura.json")),
+        PaperStock::KodakSupraEndura => Some(include_bytes!("../resources/film/kodak_supra_endura.json")),
+        PaperStock::KodakUltraEndura => Some(include_bytes!("../resources/film/kodak_ultra_endura.json")),
+        PaperStock::KodakEnduraPremier => Some(include_bytes!("../resources/film/kodak_endura_premier.json")),
+        PaperStock::FujifilmCrystalArchiveTypeII => Some(include_bytes!("../resources/film/fujifilm_crystal_archive_typeii.json")),
+        PaperStock::FujifilmFrontierSp3000 => None,
     }
 }
 
-/// A paper as the stage reads it: its layers' sensitivities, its curves, its print's dyes and how D50 shows them.
+/// A paper as the stage reads it: its curves, its print's dyes and how they are shown.
 pub struct Sheet {
-    pub sensitivity: Vec<[f64; 3]>,
     pub curves: [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
     pub curve_step: f32,
@@ -75,7 +77,7 @@ pub struct Sheet {
 }
 
 fn read(paper: PaperStock) -> Data {
-    let file: File = serde_json::from_slice(source(paper)).expect("a shipped paper reads");
+    let file: File = serde_json::from_slice(source(paper).expect("a spektrafilm paper")).expect("a shipped paper reads");
     let d = file.data;
     let on_grid = d.wavelengths.len() == WAVELENGTHS && d.wavelengths.iter().enumerate().all(|(i, w)| *w == bake::wavelength(i));
     assert!(on_grid && d.log_sensitivity.len() == WAVELENGTHS && d.channel_density.len() == WAVELENGTHS, "a paper on the 380 to 780 nm grid");
@@ -86,6 +88,9 @@ fn read(paper: PaperStock) -> Data {
 }
 
 fn baked(paper: PaperStock) -> Sheet {
+    if paper == PaperStock::FujifilmFrontierSp3000 {
+        return frontier::sheet();
+    }
     let d = read(paper);
     let to_rgb = bake::view_matrix(&cie::D50);
     let norm: f64 = (0..WAVELENGTHS).map(|l| cie::D50[l] * cie::Y[l]).sum();
@@ -99,7 +104,6 @@ fn baked(paper: PaperStock) -> Sheet {
         .unzip();
     let le = &d.log_exposure;
     Sheet {
-        sensitivity: d.log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect(),
         curves: std::array::from_fn(|i| std::array::from_fn(|c| d.density_curves_model.density(c, le[i]) as f32)),
         curve_low: le[0] as f32,
         curve_step: ((le[PAPER_CURVE_NODES - 1] - le[0]) / (PAPER_CURVE_NODES - 1) as f64) as f32,
@@ -182,9 +186,12 @@ fn silver() -> Vec<(usize, [f64; 4])> {
 }
 
 fn enlarging(set: Option<DyeSet>, paper: PaperStock) -> Enlarger {
+    if paper == PaperStock::FujifilmFrontierSp3000 {
+        return frontier::enlarger(set.is_none());
+    }
     let bands = set.map_or_else(silver, dyes::measured);
     let lamp = lamp();
-    let s = &sheet(paper).sensitivity;
+    let s: Vec<[f64; 3]> = read(paper).log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();
     Enlarger {
         negative: bands.iter().map(|(_, d)| d.map(|v| v as f32)).collect(),
         exposure: bands.iter().map(|(l, _)| s[*l].map(|v| (v * lamp[*l]) as f32)).collect(),
@@ -192,7 +199,8 @@ fn enlarging(set: Option<DyeSet>, paper: PaperStock) -> Enlarger {
     }
 }
 
-/// The enlarger for a negative's dyes, or a black and white's silver, on `paper`, baked at first use.
+/// The enlarger for a negative's dyes, or a black and white's silver, on `paper`, baked at first use; the Frontier's
+/// scanner reads the dye amounts themselves.
 pub fn enlarger(set: Option<DyeSet>, paper: PaperStock) -> &'static Enlarger {
     const NEGATIVES: usize = DyeSet::ALL.len() + 1;
     static TABLES: [OnceLock<Enlarger>; NEGATIVES * PaperStock::ALL.len()] = [const { OnceLock::new() }; NEGATIVES * PaperStock::ALL.len()];
