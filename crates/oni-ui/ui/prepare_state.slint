@@ -1,5 +1,6 @@
 // Prepare the Roll's state: every value Rust sets and every callback the panel, the card and the bar raise.
 import { MenuLine, CrtCurve, CrtEcho } from "ds/ds.slint";
+import { Canister } from "stocks.slint";
 
 // One frame of the roll as a cell shows it.
 export struct RollCell { picture: image, marked: bool, flagged: bool, apart: bool, ticked: bool, rgb: bool }
@@ -24,11 +25,8 @@ export global Preparing {
     in property <string> differ;
     in property <string> left-out;
     in-out property <int> film;
-    // The roll's film stock, its artwork and what its dyes are: measured, generic, or none to unmix.
-    in property <string> stock;
-    in property <image> stock-artwork;
-    in property <bool> stock-has-artwork;
-    in property <string> stock-note;
+    // The roll's film stock, its line saying what its dyes are: measured, generic, or none to unmix.
+    in property <Canister> stock;
     // A digital roll walks the film step alone and is digitised with nothing to choose.
     in property <bool> digital;
     in-out property <int> capture: 1;

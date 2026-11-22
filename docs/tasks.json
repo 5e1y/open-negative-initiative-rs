@@ -12120,5 +12120,40 @@
     "title": "A canister arrives by dropping its SVG in the stocks' folder: the artwork table is listed by the build script",
     "status": "done",
     "detail": "oni-app's build.rs lists crates/oni-ui/ui/stocks/*.svg into ARTWORK (rerun when the folder changes); the owner's hashes stay checked for the 41 shipped canisters, and any other SVG must name a catalogue stock. A dropped SVG then asks its catalogue line to read stock(…) (a_stock_with_its_own_artwork_draws_it names it), the one line it takes."
+  },
+  {
+    "id": 3200,
+    "type": "fix",
+    "title": "A stock's canister is drawn by the stock's own key everywhere: a roll on a stock of a line or a stock still undrawn shows its canister in the tree's rows",
+    "status": "done",
+    "detail": "crates/oni-app/src/stocks.rs: icon and row_icon took the artwork's key, yet the tree's rows (library::default_stock, the navigator's stocks) passed the stock's key, so a roll on Kodak Portra 400, Gold 200, Fujifilm C200 or an undrawn Vision3 drew no mini canister. Both now resolve the stock through the catalogue to the canister its icon_name names (its own, its line's, or its kind's generic one, as `undrawn` lays the colour negative's), so every caller passes the stock's key. Group.stock and the archive's second writer of Library.stock, which the info sidebar overwrote, are gone. Check: library::tests a roll on kodak-portra400 draws its row icon (twin: an unknown key draws none, stocks::tests)."
+  },
+  {
+    "id": 3201,
+    "type": "feature",
+    "title": "One stock hero, the canister large over its name, its line and the key to the sheet, in the gallery's sidebar, Prepare the Roll and the editor",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/stocks.slint: struct Canister (name, note, artwork) and component StockHero, the info sidebar's heroStock made a component with a slot for what a place adds (the sidebar's dyes warning and fix). Library.stock, Preparing.stock and PanelState.stock are each one Canister built by stocks::canister; the gallery's and the editor's roll note by info_sidebar::roll_canister (picked, line unstated, or the mode's default said so). Prepare the Roll's Film step shows the hero in place of the small row, its line still naming the dyes the stock separates on."
+  },
+  {
+    "id": 3202,
+    "type": "feature",
+    "title": "The editor's Roll tab changes the roll's film stock: every photo of the roll follows as one undoable step",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/roll_tab.slint: a Film Stock block under Film Type for every photo but a digital one, the hero on PanelState.stock. Its key is Act::SelectRollType through Ctl::act, which in the editor opens the sheet on the open photo's roll (StockTarget::OpenRoll), the gallery's roll else; a pick runs set_stock_of_roll_at on the open photo, the same path as Prepare's measure and the sidebar's update_roll_of: the folder's marker and the stock's measured dyes on every frame, the open one included, one history step labelled Set Film Stock. The hero, the Dye Separation block and the render follow at once."
+  },
+  {
+    "id": 3203,
+    "type": "feature",
+    "title": "A digital photo's virtual film is picked from the Colour tab's Film block, among the virtual films alone, its white always in sight",
+    "status": "done",
+    "detail": "crates/oni-ui/ui/panel/film_block.slint: the one-tab stock row gives way to the hero and its key, which opens the sheet on the stocks VirtualStock::ALL names (stocks::virtual_by_brand, StockTarget::Film), so a stock added there is listed with no interface change; a pick writes picked_film (the stock's own reference, the exposure kept) as one step of the editor's history, the pipeline baking the stock's negative on first use. The white the stock locks the scene to moves out from behind the settings key to the key's row, so a change of film shows where its light moved; the key keeps the reference. Help in English, French and Spanish."
+  },
+  {
+    "id": 3204,
+    "type": "check",
+    "title": "Window checks: Prepare's hero picks the stock, the Roll tab's pick is one undoable roll step, the Film block lists the virtual films alone",
+    "status": "done",
+    "detail": "crates/oni-app/tests/window/stock_hero.rs (new, three checks, shots stock-hero-prepare, stock-hero-roll-tab, stock-hero-film), driven by clicks on the hero's key and Ctl::act: Prepare's default then Kodak Portra 400 named with its dyes (twin: Done changes nothing); in the editor Fujifilm C200 laid on the marker and on both photos' dyes, the render, the hero and Dye Separation following, one Undo taking all back and Redo laying them again (twin: Done writes nothing; the gallery's sidebar shows the editor's pick); a digital photo's sheet lists exactly VirtualStock::ALL (twin: fewer than a roll's), each film picked placing its reference and white, one Undo back (twin: a stock no digital photo is shot on, chosen anyway, changes nothing). stocks.rs, row_marks.rs and virtual_film.rs read the Canister; the hero taller than the old row, film_effects opens at 2160 px and panel_bindings at 1080 px so the rows they press stay in sight; fields::tests lays Film Stock in the Roll tab's order."
   }
 ]

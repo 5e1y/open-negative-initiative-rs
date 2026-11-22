@@ -28,7 +28,7 @@ mod projects;
 mod oni_trash;
 mod members;
 mod status_bar;
-mod info_sidebar;
+pub(in crate::app) mod info_sidebar;
 mod gear;
 mod kit;
 mod resolving;

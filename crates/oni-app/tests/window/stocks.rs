@@ -42,18 +42,18 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     // None picked: the first photo's mode's default, said so.
-    assert_eq!(lib.get_stock().as_str(), "Generic Colour Negative");
-    assert!(lib.get_stock_note().starts_with("Default, from this roll's"), "{}", lib.get_stock_note());
+    assert_eq!(lib.get_stock().name.as_str(), "Generic Colour Negative");
+    assert!(lib.get_stock().note.starts_with("Default, from this roll's"), "{}", lib.get_stock().note);
     // In French the mode is named as its tabs name it, never in English inside a French sentence.
     let settings = w.global::<AppSettings>();
     settings.invoke_language_picked(2);
     rig.pump();
-    assert_eq!(lib.get_stock_note().as_str(), "Par défaut, d’après le mode Négatif de cette pellicule");
+    assert_eq!(lib.get_stock().note.as_str(), "Par défaut, d’après le mode Négatif de cette pellicule");
     // Twin: the mode's English name inside the French sentence.
-    assert!(!lib.get_stock_note().contains("Negative"));
+    assert!(!lib.get_stock().note.contains("Negative"));
     settings.invoke_language_picked(1);
     rig.pump();
-    assert_eq!(lib.get_stock_note().as_str(), "Default, from this roll's Negative mode", "English again");
+    assert_eq!(lib.get_stock().note.as_str(), "Default, from this roll's Negative mode", "English again");
 
     // The sheet: the brands in the catalogue's order, nothing marked.
     lib.invoke_select_roll_type();
@@ -81,7 +81,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(-1);
     rig.pump();
-    assert!(lib.get_stock_note().starts_with("Default"), "twin: Done picks nothing");
+    assert!(lib.get_stock().note.starts_with("Default"), "twin: Done picks nothing");
 
     // A roll on the Portra line, as one set before the split: its name and canister, its stock said unstated.
     let line = FILM_STOCKS.iter().position(|k| k.id == "kodak-portra").unwrap();
@@ -89,8 +89,8 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     stocks.invoke_chosen(line as i32);
     rig.pump();
     assert!(!stocks.get_shown());
-    assert_eq!((lib.get_stock().as_str(), lib.get_stock_note().as_str()), ("Kodak Portra", "Stock not specified"));
-    assert!(lib.get_stock_has_artwork());
+    assert_eq!((lib.get_stock().name.as_str(), lib.get_stock().note.as_str()), ("Kodak Portra", "Stock not specified"));
+    assert!(lib.get_stock().has_artwork);
     // Reopened, the line is shown marked among its stocks, at its catalogue place.
     lib.invoke_select_roll_type();
     rig.pump();
@@ -109,7 +109,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     let precise = FILM_STOCKS.iter().position(|k| k.id == "kodak-portra160").unwrap();
     stocks.invoke_chosen(precise as i32);
     rig.pump();
-    assert_eq!((lib.get_stock().as_str(), lib.get_stock_note().as_str()), ("Kodak Portra 160", ""));
+    assert_eq!((lib.get_stock().name.as_str(), lib.get_stock().note.as_str()), ("Kodak Portra 160", ""));
     lib.invoke_select_roll_type();
     rig.pump();
     let cells = every_cell(&stocks);

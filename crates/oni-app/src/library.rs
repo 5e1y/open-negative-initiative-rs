@@ -60,7 +60,6 @@ pub struct Group {
     /// The heading's trail, the folders above it, and the name its band is headed by.
     pub caption: String,
     pub header: String,
-    pub stock: String,
     /// The roll a folder's marker names, the one a click on the band writes.
     pub film: Option<oni_settings::Film>,
     /// The folder the band lays, which renaming its heading renames.
@@ -83,14 +82,13 @@ pub struct Archive {
 
 fn band(g: FilmGroup) -> Group {
     let title = g.film.as_ref().map(|f| f.name.clone()).or(g.heading.clone()).unwrap_or_default();
-    let stock = g.film.as_ref().and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.display_name.to_string()).unwrap_or_default();
     // `RollHeaderContent`: the folders above the roll, then its own name.
     let (caption, header) = (g.trail().unwrap_or_default(), g.heading_title());
     let folder = match g.id {
         oni_library::film_group::FilmKey::Folder(path) => Some(path),
         _ => None,
     };
-    Group { caption, header, title, stock, film: g.film, folder, entries: g.entries }
+    Group { caption, header, title, film: g.film, folder, entries: g.entries }
 }
 
 impl Archive {

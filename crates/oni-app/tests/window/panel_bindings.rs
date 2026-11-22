@@ -156,7 +156,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
 
     // Scan Profile's RESET writes no encoding, the file read as sRGB again; the window taller, so
     // the keys above leave the block in sight.
-    rig.window.set_size(slint::PhysicalSize::new(1280, 900));
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1080));
     tab(PanelTab::Roll);
     panel.invoke_encoding_picked(1);
     rig.settle();

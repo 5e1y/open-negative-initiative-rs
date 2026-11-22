@@ -110,16 +110,11 @@ pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
 }
 
 /// The Film block's tab for a photo: its stock's place.
-pub fn film_tab(s: &PipelineSettings) -> i32 {
-    s.film().and_then(|f| VirtualStock::ALL.iter().position(|k| *k == f.stock)).unwrap_or(0) as i32
-}
-
-/// The photo shot on the stock of tab `i`: the one it stands on kept, another placed on its own reference,
-/// as Prepare the Roll places a roll's.
-pub fn picked_film(s: &PipelineSettings, i: i32) -> PipelineSettings {
-    let Some(stock) = usize::try_from(i).ok().and_then(|i| VirtualStock::ALL.get(i)) else { return s.clone() };
+/// The photo shot on `stock`: the one it stands on kept, another placed on its own reference, as Prepare the
+/// Roll places a roll's; a photo shot on no film left as it is.
+pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSettings {
     match s.film() {
-        Some(f) if f.stock != *stock => s.on_stock(*stock),
+        Some(f) if f.stock != stock => s.on_stock(stock),
         _ => s.clone(),
     }
 }
@@ -151,7 +146,7 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
-        panel.on_virtual_film_picked(move |i| p.write_settings(|s| *s = picked_film(s, i)));
+        panel.on_select_stock(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
@@ -277,7 +272,7 @@ impl Ctl {
         self.publish_dyes();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
-        panel.set_virtual_film(film_tab(&settings));
+        panel.set_stock(self.open_canister());
         let [white, gains, black, ends] = film_lines(&settings);
         panel.set_film_white(white.into());
         panel.set_film_gains(gains.into());

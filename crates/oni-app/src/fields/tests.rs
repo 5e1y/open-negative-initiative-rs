@@ -164,7 +164,7 @@ fn follows(shown: &[String], order: &[String]) -> bool {
 #[test]
 fn the_roll_tab_lays_its_blocks_in_its_order() {
     let order: Vec<String> =
-        ["Prepared Roll", "Film Type", "Flat-Field", "Scan Profile", "Lens Corrections", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
+        ["Prepared Roll", "Film Type", "Film Stock", "Flat-Field", "Scan Profile", "Lens Corrections", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
         .map(String::from)
         .to_vec();
     let shown = pane_titles(&panel_source(), "RollPane");
