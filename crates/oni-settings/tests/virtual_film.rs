@@ -139,8 +139,9 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
         assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
         assert_eq!(read(&stored).settings, s, "{stock:?}");
     }
-    // A photo of 46 on its paper keeps the paper's own black it printed, Paper blacks on.
-    let portra = PipelineSettings::rest(ConversionMode::Digital, true);
+    // A photo of 46 on its paper, grain off as every photo of then, keeps the paper's own black it printed.
+    let mut portra = PipelineSettings::rest(ConversionMode::Digital, true);
+    portra.grain.amount = 0.0;
     let kept = PipelineSettings { print: Print { paper_blacks: true, ..portra.print }, ..portra.clone() };
     assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);
     let newer = at(&portra, VERSION + 1);
