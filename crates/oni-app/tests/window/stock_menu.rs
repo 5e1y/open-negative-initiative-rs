@@ -1,10 +1,10 @@
 //! The stocks' menu under the hand on a digital photo: each stock it lights shown on the photo with nothing written.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::{Menus, PanelState, PanelTab, Stocks};
+use oni_app::{Menus, PanelState, PanelTab};
 use oni_settings::VirtualStock;
 use oni_settings::film::FILM_STOCKS;
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::ComponentHandle;
 use std::path::PathBuf;
 use std::time::Duration;
