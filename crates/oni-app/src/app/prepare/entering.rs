@@ -85,7 +85,7 @@ impl Ctl {
             r.draftless.clear();
             r.draft_waiting = false;
             r.tutorial_hidden = false;
-            r.shown = true;
+            r.set_shown(true);
             if let Some(p) = &r.previews {
                 p.reset(r.session);
             }
@@ -235,7 +235,7 @@ impl Ctl {
         let back = {
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
-            r.shown = false;
+            r.set_shown(false);
             r.session += 1;
             rgb_passes::release();
             r.tiles.clear();

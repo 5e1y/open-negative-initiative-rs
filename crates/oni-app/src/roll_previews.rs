@@ -74,7 +74,7 @@ struct Queue {
     large: Option<(String, Arc<Source>)>,
     large_at: Option<(String, Instant)>,
     scan: Option<String>,
-    /// The full resolution asked, and whether it is a neighbour's, decoded as background work.
+    /// The full resolution asked, and whether it is a neighbour's, decoded as the roll's work.
     full: Option<(String, bool)>,
 }
 
@@ -199,14 +199,14 @@ impl Previews {
         self.with(|q| q.scan = path.map(str::to_string));
     }
 
-    /// The loupe's full resolution of `path`, the last asked winning; a neighbour's yields to the hand's decodes.
+    /// The loupe's full resolution of `path`, the last asked winning; a neighbour's yields to the hand's decodes, never to the gallery's.
     pub fn full(&self, path: &str, neighbour: bool) {
         self.with(|q| q.full = Some((path.to_string(), neighbour)));
     }
 }
 
 fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
-    crate::decode_gate::in_background();
+    crate::decode_gate::for_the_roll();
     let mut engine: Option<(Graph, Pipeline, Resident)> = None;
     let mut seed = 0u32;
     loop {
@@ -249,7 +249,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 let ticket = crate::decode_gate::ROLL_FULL.ask();
                 std::thread::spawn(move || {
                     if neighbour {
-                        crate::decode_gate::in_background();
+                        crate::decode_gate::for_the_roll();
                     }
                     let decode = || render::decode_full(Path::new(&path), reading(&path)).ok().map(|d| encoded(&d.linear, seed));
                     let Some(full) = crate::decode_gate::ROLL_FULL.run(ticket, decode) else { return };

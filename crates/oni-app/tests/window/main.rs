@@ -112,6 +112,7 @@ mod prepare_masks;
 mod prepare_measure;
 mod prepare_loupe;
 mod prepare_frames;
+mod prepare_first;
 mod prepare_ending;
 mod prepare_walk;
 mod prepare_parts;

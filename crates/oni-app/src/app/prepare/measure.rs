@@ -197,7 +197,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.last_change = Some(Instant::now());
             s.prepare.draft_id = None;
-            s.prepare.shown = false;
+            s.prepare.set_shown(false);
         }
         self.drop_drafts();
         let open = self.state.borrow().open_path().map(str::to_string);
