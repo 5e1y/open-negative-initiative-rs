@@ -86,7 +86,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0xb8b7_1608_b14d_d599;
+    const BEFORE: u64 = 0xc6fc_c9ab_e528_fe15;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
@@ -125,7 +125,9 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         // On a paper whose print is its dyes' own light, its pick and white on their anchors, every colour at the track's ends lies
         // within what its dyes print; the former print-side Saturation, the twin, laid colours past them.
         let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && p.white_anchor == p.white && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
-        if let Some(p) = conversion::stage47(&s).paper.filter(dyed) {
+        // The Frontier prints its fitted table, not its dyes' own light.
+        let fitted = s.paper().and_then(|p| oni_settings::stocks::current().paper(p).map(|e| matches!(e.print, oni_settings::stocks::Print::Frontier(_))));
+        if let Some(p) = conversion::stage47(&s).paper.filter(dyed).filter(|_| fitted != Some(true)) {
             checked += 1;
             for t in [-1.0f32, 1.0] {
                 let past = at(t).iter().map(|v| past_the_dyes(&p, *v)).fold(0.0, f64::max);

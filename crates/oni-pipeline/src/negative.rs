@@ -105,11 +105,11 @@ fn rising(le: &[f64], table: &[[f64; 3]]) -> [V3; NEGATIVE_CURVE_NODES] {
     out
 }
 
-fn developing(le: &[f64], density: &[[f64; 3]], coupled: bool) -> Development {
-    let (normal, after) = bake::curves_of(le, density);
+fn developing(le: &[f64], density: &[[f64; 3]], coupled: Option<&bake::M3>) -> Development {
+    let (normal, after) = bake::curves_through(le, density, coupled.unwrap_or(&bake::COUPLERS));
     let (low, high) = (le[0], le[le.len() - 1]);
-    let couplers = if coupled { bake::COUPLERS.map(|r| r.map(|v| v as f32)) } else { [[0.0; 3]; 3] };
-    let after = if coupled { after } else { normal.clone() };
+    let couplers = coupled.map_or([[0.0; 3]; 3], |m| m.map(|r| r.map(|v| v as f32)));
+    let after = if coupled.is_some() { after } else { normal.clone() };
     let after = rising(le, &after);
     let step = (high - low) / (NEGATIVE_CURVE_NODES - 1) as f64;
     // The toe's foot where the curve first rises READABLE a log, the shoulder's end where it last does.
@@ -124,11 +124,12 @@ fn developed(film: Film) -> Development {
         Film::Stock(stock) if stock.is_silver() => {
             let p = Silver::read(stock.entry().profile.as_bytes()).expect("a profile reads once its file is taken");
             let curve: Vec<[f64; 3]> = p.density_curve.iter().map(|d| [*d; 3]).collect();
-            developing(&p.log_exposure, &curve, false)
+            developing(&p.log_exposure, &curve, None)
         }
         Film::Stock(stock) => {
-            let p = dyes::profile(&stock.entry().profile);
-            developing(&p.log_exposure, &p.density_curves, true)
+            let entry = stock.entry();
+            let p = dyes::profile(&entry.profile);
+            developing(&p.log_exposure, &p.density_curves, Some(&crate::film::couplers(&entry)))
         }
         // A scan's three layers are read on one curve, its stock's mean layer, each scaled to the frame's own: its windows
         // print the frame's neutral, which every common move then keeps; the model's own neutral is a virtual film's alone.
@@ -140,12 +141,12 @@ fn developed(film: Film) -> Development {
                 }
                 DyeSource::Mean(_) => generic(set, |p| &p.density_curves),
             };
-            developing(&le, &one_layer(&density), false)
+            developing(&le, &one_layer(&density), None)
         }
         // Silver is neutral: its scan reads a density, the sheets' own curves, no dye's amount.
         Film::Silver => {
             let (le, mean) = generic(DyeSet::default(), |p| &p.sheet_density_curves);
-            developing(&le, &one_layer(&mean), false)
+            developing(&le, &one_layer(&mean), None)
         }
         Film::Light => {
             let (le, line) = ([-LIGHT_SPAN, LIGHT_SPAN], [[-LIGHT_SPAN; 3], [LIGHT_SPAN; 3]]);

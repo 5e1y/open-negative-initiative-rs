@@ -202,11 +202,16 @@ pub fn curves(p: &Profile) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
 
 /// `curves` of the density curves `density` along the log exposures `le`.
 pub fn curves_of(le: &[f64], density: &[[f64; 3]]) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
+    curves_through(le, density, &COUPLERS)
+}
+
+/// `curves_of` through the coupler matrix `couplers` in place of the common one.
+pub fn curves_through(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
     let low: [f64; 3] = std::array::from_fn(|c| density.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
     let normal: Vec<[f64; 3]> = density.iter().map(|d| std::array::from_fn(|c| d[c] - low[c])).collect();
     let before = (0..3)
         .map(|c| {
-            let shifted: Vec<f64> = (0..le.len()).map(|i| le[i] - (0..3).map(|k| normal[i][k] * COUPLERS[k][c]).sum::<f64>()).collect();
+            let shifted: Vec<f64> = (0..le.len()).map(|i| le[i] - (0..3).map(|k| normal[i][k] * couplers[k][c]).sum::<f64>()).collect();
             le.iter().map(|&e| interpolate(e, &shifted, &normal, c)).collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();

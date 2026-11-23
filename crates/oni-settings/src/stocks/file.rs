@@ -75,6 +75,10 @@ pub struct FilmBlock {
     pub reference: Option<StockReference>,
     /// The data sheet's profile as `scripts/datasheet-profiles.py` writes it: `info`, `provenance` and `data`.
     pub profile: Box<RawValue>,
+    /// Its own DIR coupler matrix, row the donor layer's density, column the receiving layer's log exposure; the common
+    /// one where left out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub couplers: Option<[[f64; 3]; 3]>,
     /// A `.cube` file's look, which a digital photo on this film is read through in place of its negative.
     #[serde(skip)]
     pub look: Option<super::cube::Look>,

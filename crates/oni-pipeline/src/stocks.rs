@@ -187,7 +187,10 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
             let blocks: Vec<&FilmBlock> = f.film.iter().chain(f.developments.iter().filter_map(|d| d.film.as_ref())).collect();
             blocks
                 .into_iter()
-                .map(|b| film::derive(b.profile.get(), b.balance, silver, DyeSet::of(stocks::intern(&b.dyes))).map_err(|e| format!("the film \"{}\": {e}", b.key)))
+                .map(|b| {
+                    let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
+                    film::derive(b.profile.get(), b.balance, silver, DyeSet::of(stocks::intern(&b.dyes)), couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
+                })
                 .collect()
         }
         File::Paper(p) => {

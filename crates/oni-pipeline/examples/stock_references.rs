@@ -14,7 +14,7 @@ fn main() {
         let silver = f.kind == FilmType::BlackAndWhite;
         let mut films = Map::new();
         for b in f.film.iter().chain(f.developments.iter().filter_map(|d| d.film.as_ref())) {
-            let r = film::derive(b.profile.get(), b.balance, silver, DyeSet::of(stocks::intern(&b.dyes))).unwrap_or_else(|e| panic!("{path}: {e}"));
+            let r = film::derive(b.profile.get(), b.balance, silver, DyeSet::of(stocks::intern(&b.dyes)), b.couplers.unwrap_or(film::bake::COUPLERS)).unwrap_or_else(|e| panic!("{path}: {e}"));
             films.insert(b.key.clone(), json!({"stops": r.stops, "black": r.black, "white": r.white}));
         }
         let name = std::path::Path::new(&path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();

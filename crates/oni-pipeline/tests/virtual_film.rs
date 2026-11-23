@@ -56,6 +56,7 @@ struct Reference {
     n: usize,
     to_film: bake::M3,
     curves: (Vec<[f64; 3]>, Vec<[f64; 3]>),
+    couplers: bake::M3,
 }
 
 impl Reference {
@@ -65,8 +66,9 @@ impl Reference {
         let white = film::reference_light(stock);
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
-        let curves = bake::curves(&profile);
-        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile }
+        let couplers = film::couplers(&stock.entry());
+        let curves = bake::curves_through(&profile.log_exposure, &profile.density_curves, &couplers);
+        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile, couplers }
     }
 
     /// The film's log exposure per channel for a scene pixel, at `stops`.
@@ -82,7 +84,7 @@ impl Reference {
         let le = &self.profile.log_exposure;
         let log = self.log_raw(rgb, stops);
         let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &self.curves.0, c));
-        let inhibited: [f64; 3] = std::array::from_fn(|m| log[m] - (0..3).map(|k| first[k] * bake::COUPLERS[k][m]).sum::<f64>());
+        let inhibited: [f64; 3] = std::array::from_fn(|m| log[m] - (0..3).map(|k| first[k] * self.couplers[k][m]).sum::<f64>());
         std::array::from_fn(|c| bake::interpolate(inhibited[c], le, &self.curves.1, c))
     }
 
@@ -194,7 +196,7 @@ fn grey_on(kind: VirtualStock) -> f64 {
             let log = reference.log_raw([f64::from(GREY) * 2f64.powf(f64::from(h) / 2.0); 3], 0.0);
             let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &reference.curves.0, c));
             for m in 0..3 {
-                let inhibited = log[m] - (0..3).map(|k| first[k] * bake::COUPLERS[k][m]).sum::<f64>();
+                let inhibited = log[m] - (0..3).map(|k| first[k] * reference.couplers[k][m]).sum::<f64>();
                 gap = gap.max((bake::interpolate(inhibited, le, second, m) - first[m]).abs());
             }
         }

@@ -59,10 +59,10 @@ struct Layers {
     couplers: M3,
 }
 
-/// A colour negative: three layers developed through the couplers.
-fn colour(profile: Profile) -> Layers {
-    let (before, after) = bake::curves(&profile);
-    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers: bake::COUPLERS }
+/// A colour negative: three layers developed through `couplers`.
+fn colour(profile: Profile, couplers: M3) -> Layers {
+    let (before, after) = bake::curves_through(&profile.log_exposure, &profile.density_curves, &couplers);
+    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers }
 }
 
 /// A black and white negative: its one layer on the three channels, no coupler.
@@ -77,9 +77,23 @@ fn silver(profile: Silver) -> Layers {
     }
 }
 
-/// A film's layers as its profile holds them, or why the profile does not read.
-fn layers(profile: &str, is_silver: bool) -> Result<Layers, String> {
-    Ok(if is_silver { silver(Silver::read(profile.as_bytes())?) } else { colour(Profile::read(profile.as_bytes())?) })
+/// A film's layers as its profile holds them, a colour one's developed through `couplers`, or why the profile does not
+/// read.
+fn layers(profile: &str, is_silver: bool, couplers: M3) -> Result<Layers, String> {
+    Ok(if is_silver { silver(Silver::read(profile.as_bytes())?) } else { colour(Profile::read(profile.as_bytes())?, couplers) })
+}
+
+/// The coupler matrix a film develops through: its file's own, else the common one.
+pub fn couplers(entry: &VirtualEntry) -> M3 {
+    entry.couplers.unwrap_or(bake::COUPLERS)
+}
+
+/// `entry` baked through `couplers` in place of its own, its reference derived again.
+pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
+    let layers = layers(&entry.profile, entry.silver, couplers)?;
+    let (kernel, table) = baked(&layers, entry.balance);
+    let reference = derived(entry.silver, entry.dyes, &kernel, &table);
+    Ok(Stock { kernel, table, reference, revision: entry.revision })
 }
 
 /// The kernel and table of a film's `layers` lit at `balance`.
@@ -117,7 +131,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 }
 
 fn bake(entry: &VirtualEntry) -> Stock {
-    let layers = layers(&entry.profile, entry.silver).expect("a stock's profile reads once its file is taken");
+    let layers = layers(&entry.profile, entry.silver, couplers(entry)).expect("a stock's profile reads once its file is taken");
     let (kernel, table) = baked(&layers, entry.balance);
     let reference = derived(entry.silver, entry.dyes, &kernel, &table);
     Stock { kernel, table, reference, revision: entry.revision }
@@ -133,8 +147,8 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
 
 /// The reference a film's `profile` derives at `balance`, as a stock's file leaving it out takes; or why the profile
 /// does not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, dyes: DyeSet) -> Result<StockReference, String> {
-    let layers = layers(profile, is_silver)?;
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, dyes: DyeSet, couplers: M3) -> Result<StockReference, String> {
+    let layers = layers(profile, is_silver, couplers)?;
     let (kernel, table) = baked(&layers, balance);
     let r = derived(is_silver, dyes, &kernel, &table);
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {

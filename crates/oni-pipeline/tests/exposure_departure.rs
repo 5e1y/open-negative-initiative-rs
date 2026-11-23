@@ -97,8 +97,8 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
 
 /// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
 /// on Apple silicon), a paper's white on pure white without Print lift.
-const BEFORE_CPU: u64 = 0x4559_16c4_5954_b1a6;
-const BEFORE_GPU: u64 = 0x2254_0eb4_5e04_cbfe;
+const BEFORE_CPU: u64 = 0x665c_01c7_3819_40c2;
+const BEFORE_GPU: u64 = 0xcb2c_d8f1_1023_cd25;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {

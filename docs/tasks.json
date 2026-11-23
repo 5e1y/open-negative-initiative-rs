@@ -12920,5 +12920,13 @@
     "status": "done",
     "detail": "oni_settings::stocks::cube reads a .cube (size 2-128, domain 0-1, nodes red fastest) into a Look; the Stocks loader makes each one a film file on the default film's data under the key lut-<name>, brand LUT, offered to digital photos alone; the chain reads its scene through exposure, scanner_encode, color_cube and scanner_output, no scene white, then the internegative and the paper where one is laid (internegative::copy at unit light). No format change: the photo stores the film's key as before; a missing cube renders on the default film. ONI ships no look.",
     "outcome": "tests/looks.rs: a photo through its look against the kernels' references 1.95e-7 (twin 1.36e-1, the film's exposure left out); printed on its paper 5.97e-7 (twin 2.85e-1, no paper)."
+  },
+  {
+    "id": 3728,
+    "type": "change",
+    "title": "Portra 800, Portra 400 and UltraMax 400 develop through their own DIR coupler matrices, fitted on the reference charts of each stock",
+    "status": "done",
+    "detail": "A film block's optional couplers field (stock file and catalogue) is read by the bake (film::couplers, layers, derive) and by Lighting's development (negative::developing); a file without one reads the common matrix. The six cross terms of each matrix fitted by examples/coupler_fit.rs: a digital render's colour crosstalk (a colour against its channels each sent alone through the grey response, in Oklab) matched to the reference's on 88 chart colours, the diagonal and the data sheets' curves kept. The derived references move by 4e-5 at most, so no photo's gains or windows move.",
+    "outcome": "Crosstalk error (Oklab² mean) common to fitted: Portra 800 0.00127 to 0.00038, Portra 400 0.00141 to 0.00035, UltraMax 400 0.00119 to 0.00031; implied interimage ratios 1.0-1.33, Kodak's band for negatives made to be scanned. tests/couplers.rs: grey 6.6e-6 apart, a red 0.26 (twin). Owner's verdict on the sheet: the fitted renders are the best."
   }
 ]
