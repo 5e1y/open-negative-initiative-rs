@@ -11,7 +11,7 @@ use oni_graph::Image;
 use oni_pipeline::film::{self, GREY, bake, cie, dyes};
 use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_render::{Negative, PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, DyeSet, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
@@ -189,14 +189,14 @@ fn the_print_is_the_papers_own_its_colour_density_included() {
         let stacked = worst(&Stage47 { print_on: 1.0, print_stops: oni_pipeline::conversion::NEGATIVE_PRINT_STOPS, ..k });
         assert!(stacked > 1e-2, "{label}: {stacked}");
     }
-    // The colour density is the paper's own, laid on its print before its ends, as on ONI's print after its curve.
+    // Saturation lays on the negative, the paper printing what it spreads.
     let mut dense = prepared_negative();
     dense.density = 0.4;
     let k = conversion::stage47(&dense);
-    let p = k.paper.unwrap();
-    let (q, plain) = (pixels[7], Stage47 { paper: Some(Paper { density: 1.0, ..p }), ..k });
+    let n = k.negative.unwrap();
+    let (q, plain) = (pixels[7], Stage47 { negative: Some(Negative { spread: 1.0, ..n }), ..k });
     let (v, w) = (cpu::stage47(q, &k), cpu::stage47(q, &plain));
-    assert!(k.density == 1.0 && p.density > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
+    assert!(n.spread > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
 }
 
 #[test]

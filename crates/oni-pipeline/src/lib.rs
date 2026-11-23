@@ -259,13 +259,9 @@ impl Pipeline {
         let sheet = s.sheet.is_some();
         let mono = s.is_monochrome();
         let graded = self.curves(graph, toned, &s.manual_curves)?;
-        // The spectrogram, the hand's saturation and the vignette in one pass.
         let extent = graded.extent();
-        let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
-        run.extend(saturation(&s.saturation));
-        if s.vignette.stops != 0.0 {
-            run.push(stages::vignette(extent, s.vignette.stops, if mono { 0.0 } else { Print::HUNT_EXPONENT }));
-        }
+        let hunt = if mono { 0.0 } else { Print::HUNT_EXPONENT };
+        let run: Vec<_> = (s.vignette.stops != 0.0).then(|| stages::vignette(extent, s.vignette.stops, hunt)).into_iter().collect();
         let vignetted = stages::laid(graded, run);
         // One two-pass stage when Texture rests between them, else denoise and sharpening on either side.
         let joint = s.texture.amount == 0.0;

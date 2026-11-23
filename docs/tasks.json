@@ -12721,5 +12721,61 @@
     "status": "done",
     "detail": "Measured on the profiles, nothing changed. 25 Fujifilm sheets print their curves to +1.5..+1.7 log over the grey (Pro 800 +1.27), still rising at 0.4-0.85 a log, and the converter holds them flat past it: a hard clip 5 to 5.6 stops over the grey, under Royal Digital's own (+3 stops) but reached on ONI's print, the neutral paper and with Exposure on the negative. Portra 800 Push 2's chart starts at -4.85 stops; at -4 its layers stand 0.015-0.025 over D-min at a slope of 0.05-0.09 (Portra 800 0.09 and 0.29-0.37), the push's real loss of shadow speed.",
     "outcome": "Options for the owner: Fujifilm, keep the hold (honest, a clip only far over), extend each layer at its last slope to a ceiling (inferred, unbounded guess), or graft a measured Kodak shoulder matched in slope (inferred, labelled so in the profile); Push 2, keep (the sheet's physics), or re-check that Kodak plots its push curves on the normal exposure axis, the one thing that could double the 0.6 log offset."
+  },
+  {
+    "id": 3610,
+    "type": "feature",
+    "title": "Saturation on the negative: the layers spread about their neutral, the paper bounding every colour",
+    "status": "done",
+    "detail": "Negative::coloured_on (CPU reference) and wgsl/negative_colour.wgsl: each layer's density, Lighting's moves and filters laid, is read as the log exposure a grey develops it at (Development::as_grey, equal on the three layers where they print a neutral); Saturation spreads its chroma about the luma-weighted neutral by 2^travel, the scene's luminance held, then it is read back (from_grey) and developed. Stage47's and the paper's print-side colour density are gone, so the print, ONI's or a paper, bounds every colour. Hunt's colour stays on ONI's print. Black and white takes none. A slide on a paper carries it to its internegative.",
+    "outcome": "0 changes nothing to the bit (every pipe, Lighting at rest or moved, CPU fold and the GPU folds of exposure_departure and legacy_print). Mean Oklab chroma of 144 colour patches at -100/-50/0/+50/+100 % against the former print-side Saturation: ONI's print digital 0.100 0.132 0.164 0.191 0.207 (0.110 0.136 0.164 0.193 0.217), paper digital 0.049 0.068 0.092 0.114 0.130 (0.051 0.070 0.092 0.118 0.146); at +100 % the former Saturation laid colours 0.6 to 5.0 of density past Endura's dyes, now none."
+  },
+  {
+    "id": 3611,
+    "type": "feature",
+    "title": "Colour Mixer on the negative: hue, saturation and luma per hue range on the grey-equivalent exposures",
+    "status": "done",
+    "detail": "The eight bands' hue, weights and doses read on the negative's chroma (log exposure), faded in over PRESENCE = 0.1 log; the turn about the grey axis, the boost and the luma's lift in stops (LUMA_STOPS 2) laid there, the luminance held before the lift. The print-side spectrogram pass, its WGSL and CPU reference are removed.",
+    "outcome": "A Blue move changes Blue's range only: every other colour and grey within 2e-5 on eight pipes; its twin (Aqua) reaches past it. On the strips a cast no longer counts as a colour, so a blue move turns the blues, not a cyan-cast wall."
+  },
+  {
+    "id": 3612,
+    "type": "feature",
+    "title": "Saturation Curve on the negative, read on the print's own lightness of a grey",
+    "status": "done",
+    "detail": "The curve spreads the negative's chroma by the spline at x, the print's luma on a display gamma of a neutral at the pixel's neutral exposure: a 128-node table (LIGHTNESS, -4..+4 log about the reference grey) baked per frame by conversion::printed on the frame's print without the curve (a grey takes no colour tool), so x is the histogram's axis.",
+    "outcome": "A grey's x within 6e-3 of its print's (1.1e-2 for a slide's internegative), twin two nodes off 6e-2 or more; greyer shadows keep 0.26-0.52 of their chroma, the highlights 0.99-1.01."
+  },
+  {
+    "id": 3613,
+    "type": "refactor",
+    "title": "Lighting alone keeps its own shader: the colour tools a second variant of the negative's pass",
+    "status": "done",
+    "detail": "wgsl::NEGATIVE (negative.wgsl + negative_plain.wgsl, negative_scene the identity) and NEGATIVE_COLOURED (+ negative_colour.wgsl), chosen by Negative::colours(): any colour code in the one shader moved Metal's bits on Lighting-only renders.",
+    "outcome": "exposure_departure's GPU fold unchanged to the bit."
+  },
+  {
+    "id": 3614,
+    "type": "test",
+    "title": "Colour tools on the negative: rest to the bit, the paper's gamut, a band alone, the curve's lightness, ramps, black and white, GPU",
+    "status": "done",
+    "detail": "oni-pipeline/tests/colour_on_negative.rs (+ colour_on_negative/scenes.rs), kernel tests in kernel/negative/tests.rs; each with its twin. Fixtures moved by the owner's call: legacy_print's 7 documents with Saturation off rest redrawn, lighting_on_negative's rest fold re-derived on the base code with Saturation at rest, paper_ends' pick check (nothing lifts the unanchored pick now; twin the enlarger's time), kernel_oracle judged at Saturation's rest.",
+    "outcome": "Colour ramps up to one stop over the grey stay monotone within 5e-3 under Saturation, the mixer and a moderate curve; a curve swinging 0 to 1.8 within a fifth of the lightness, or everything with Lighting, turns a strong colour's ramp back by up to 2.4e-2 on a paper (its dyes darken a strong colour more than a grey of its luminance)."
+  },
+  {
+    "id": 3615,
+    "type": "research",
+    "title": "The owner's sidecars per colour tool, read only",
+    "status": "done",
+    "detail": "Every ONI sidecar under /Volumes/T7/Scans, /Volumes/T7/Photos Digitales, the reference roll and its test copy.",
+    "outcome": "Scans: 1672 sidecars (538 black and white), 129 colour photos with Saturation off rest (-0.57 to +1.0), none with the mixer or the curve. Digital photos: 162, 1 with Saturation (+0.07). Roll #8 and its copy: none. These 130 move."
+  },
+  {
+    "id": 3616,
+    "type": "interface",
+    "title": "Saturation's and the Colour Mixer's help say they act on the negative",
+    "status": "done",
+    "detail": "color_tab.slint, French and Spanish written.",
+    "outcome": ""
   }
 ]

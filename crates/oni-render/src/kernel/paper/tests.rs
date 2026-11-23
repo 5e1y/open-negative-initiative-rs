@@ -28,7 +28,6 @@ fn narrow() -> Paper {
         curve_step: 0.01,
         print: &PRINT,
         view: &VIEW,
-        density: 1.0,
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
@@ -179,18 +178,6 @@ fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_unde
     // Twin: each layer moved by its own distance under the pick lays different shifts on them.
     let own: V3 = map(between, |_, v| v - (lifted(k.pick_log - v, std::f32::consts::LOG10_2, k.reach) - (k.pick_log - v)));
     assert!((between[0] - own[0] - (between[2] - own[2])).abs() > 1e-3, "{own:?}");
-}
-
-#[test]
-fn the_colour_density_raises_each_channel_and_undoes_the_lumas_power() {
-    let k = Paper { density: 2.0, ..narrow() };
-    let light = [0.2, 0.3, 0.5];
-    let out = k.coloured(light);
-    let p: V3 = light.map(|v| v * v);
-    let f = (LUMA[0] * p[0] + LUMA[1] * p[1] + LUMA[2] * p[2]).powf(-0.5);
-    assert!((0..3).all(|c| (out[c] - p[c] * f).abs() < 1e-7), "{out:?}");
-    // Twin: at unit density the light passes to the bit.
-    assert_eq!(narrow().coloured(light), light);
 }
 
 #[test]

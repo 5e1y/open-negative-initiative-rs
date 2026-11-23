@@ -1,5 +1,6 @@
 // Lighting on the negative, operation for operation as `cpu::negative`: the density above the bare film read back to
-// each layer's log exposure through the couplers, moved, developed again, toned, then coded as the print's light.
+// each layer's log exposure through the couplers, moved, its colour moved, developed again, toned, then coded as the
+// print's light. `negative_plain` or `negative_colour` follows with `negative_scene`.
 
 struct Params {
     head: vec4<u32>,
@@ -21,6 +22,17 @@ struct Params {
     own_slope: vec4<f32>,
     own_shift: vec4<f32>,
     scale: vec4<f32>,
+    colour: vec4<f32>,
+    hue_low: vec4<f32>,
+    hue_high: vec4<f32>,
+    sat_low: vec4<f32>,
+    sat_high: vec4<f32>,
+    luma_low: vec4<f32>,
+    luma_high: vec4<f32>,
+    knots_high: vec4<f32>,
+    lows: vec4<f32>,
+    bends: vec4<f32>,
+    lightness: array<vec4<f32>, 32>,
     normal: array<vec4<f32>, 256>,
     after: array<vec4<f32>, 256>,
     tone: array<vec4<f32>, 128>,
@@ -29,7 +41,6 @@ struct Params {
 const NEGATIVE_CURVE_NODES: u32 = 256u;
 const NEGATIVE_STEPS: u32 = 4u;
 const NEGATIVE_TONE_NODES: f32 = 128.0;
-
 // Channel `c` of the normal curve (`after` false) or the pulled one, and its slope: held at its first node under it,
 // straight on past its last.
 fn negative_at(after: bool, e: f32, c: u32) -> vec2<f32> {
@@ -105,7 +116,7 @@ fn negative_exposures(density: vec3<f32>) -> vec3<f32> {
 // Each layer's density from its log exposure, the couplers' pull taken, then its own moves laid.
 fn negative_developed(e: vec3<f32>) -> vec3<f32> {
     let pulled = e - negative_pull(negative_normal(e));
-    let x = P.own_pivot.xyz + (pulled - P.own_pivot.xyz) * P.own_slope.xyz + P.own_shift.xyz;
+    let x = negative_scene(P.own_pivot.xyz + (pulled - P.own_pivot.xyz) * P.own_slope.xyz + P.own_shift.xyz);
     return vec3<f32>(negative_at(true, x.x, 0u).x, negative_at(true, x.y, 1u).x, negative_at(true, x.z, 2u).x);
 }
 
@@ -154,7 +165,7 @@ fn negative_px(s: vec4<f32>) -> vec4<f32> {
     let slope = P.slope_low.xyz;
     let shift = P.shift_step.xyz;
     let own = any(P.own_slope.xyz != vec3<f32>(1.0)) || any(P.own_shift.xyz != vec3<f32>(0.0));
-    if (any(slope != vec3<f32>(1.0)) || any(shift != vec3<f32>(0.0)) || own) {
+    if (any(slope != vec3<f32>(1.0)) || any(shift != vec3<f32>(0.0)) || own || NEGATIVE_COLOURS) {
         // On the stock's own development; over the shoulder a density takes the shoulder's move, under the toe's foot the
         // foot's, less the nearer the fog.
         let own_density = density / scale;

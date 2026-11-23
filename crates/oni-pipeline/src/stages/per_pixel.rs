@@ -34,6 +34,7 @@ impl Stage for PerPixel {
 
 kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
 kernel!(NEGATIVE, wgsl::NEGATIVE, call "negative_px(v)");
+kernel!(NEGATIVE_COLOURED, wgsl::NEGATIVE_COLOURED, call "negative_px(v)");
 kernel!(PAPER, wgsl::PAPER, call "paper_px(v)");
 kernel!(DYE_SEPARATION, [wgsl::DYE_SEPARATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return dye_separation_px(load(p)); }");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
@@ -41,7 +42,6 @@ kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
 kernel!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { return flat_field_px(load(p), load1(p)); }");
 kernel!(SATURATION, wgsl::SATURATION_CURVE, call "saturation_curve_px(v)");
-kernel!(SPECTROGRAM, wgsl::SPECTROGRAM, call "spectrogram_px(v)");
 kernel!(MATRIX, wgsl::COLOR_MATRIX, call "color_matrix_px(v)");
 kernel!(MOMENTS, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_MOMENTS], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_moments_px(load(p)); }");
 kernel!(COEFF, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_COEFF], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_coeff_px(load(p)); }");
@@ -63,9 +63,11 @@ pub fn dye_separation(k: &Stage47, d: &DyeSeparation) -> PerPixel {
     PerPixel { name: "dye-separation", kernel: &DYE_SEPARATION, params: uniform(d.head(), &d.rows(k.gain, k.pedestal, k.log_guard)) }
 }
 
-/// Lighting on the negative, in the pass stage 4-7 reads.
+/// Lighting and the colour tools on the negative, in the pass stage 4-7 reads.
 pub fn negative(k: &Negative) -> PerPixel {
-    PerPixel { name: "negative", kernel: &NEGATIVE, params: uniform(k.head(), &k.rows()) }
+    // Lighting alone takes the pass without the colour tools, its bits as they were.
+    let (name, kernel) = if k.colours() { ("negative-coloured", &NEGATIVE_COLOURED) } else { ("negative", &NEGATIVE) };
+    PerPixel { name, kernel, params: uniform(k.head(), &k.rows()) }
 }
 
 /// The negative printed on its paper, in the pass stage 4-7 reads.
@@ -106,10 +108,6 @@ pub fn flat_field(k: &FlatField) -> PerPixel {
 
 pub fn saturation(k: &SaturationCurve) -> PerPixel {
     PerPixel { name: "saturation-curve", kernel: &SATURATION, params: uniform(HEAD, &k.rows()) }
-}
-
-pub fn spectrogram(k: &Spectrogram) -> PerPixel {
-    PerPixel { name: "spectrogram", kernel: &SPECTROGRAM, params: uniform(HEAD, &k.rows()) }
 }
 
 pub fn color_matrix(k: &ColorMatrix) -> PerPixel {

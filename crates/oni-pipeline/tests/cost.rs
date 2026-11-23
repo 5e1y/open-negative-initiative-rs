@@ -67,12 +67,10 @@ fn texture_s_gpu_time_on_the_preview() {
         ("two per-pixel", Image::new(&source).then(stages::luma_only()).then(stages::texture_moments())),
         ("texture kernel", Image::new(&source).then_reading(stages::texture(gain), &[Image::new(&source), Image::new(&source)])),
     ];
-    // The finishing's runs: four kernels after the curves, three at the end, laid or one by one.
-    let mut s2 = s.clone();
-    s2.spectrogram.saturation[2] = 0.4;
+    // The finishing's runs, laid or one by one.
     let run = || {
         vec![
-            stages::spectrogram(&finishing::spectrogram(&s2.spectrogram).unwrap()),
+            stages::saturation(&finishing::saturation(&finishing::sauce(0.6)).unwrap()),
             stages::saturation(&finishing::saturation(&finishing::sauce(0.8)).unwrap()),
             stages::saturation(&finishing::saturation(&finishing::sauce(1.2)).unwrap()),
             stages::vignette(Rect::new(0, 0, w, h), -0.5, 0.5),

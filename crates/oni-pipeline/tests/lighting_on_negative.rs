@@ -36,13 +36,13 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut unmixed = onis(prepared_negative());
     unmixed.separation = 0.0;
     let mut uncompensated = onis(prepared_negative());
-    (uncompensated.print.colour_compensation, uncompensated.density) = (false, -0.3);
+    uncompensated.print.colour_compensation = false;
     let mut legacy = onis(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     // At its machine's entry, as format 58 stored it.
     legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode) - oni_settings::migrate::departure::former_rest(legacy.mode);
     let mut bright = prepared_negative();
-    (bright.print.brightness, bright.print.paper_blacks, bright.density) = (0.7, false, 0.4);
+    (bright.print.brightness, bright.print.paper_blacks) = (0.7, false);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
     let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
     vec![
@@ -96,7 +96,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets.
-    const BEFORE: u64 = 0x0684_d428_f168_9e0b;
+    const BEFORE: u64 = 0x928f_c686_2249_00f8;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }

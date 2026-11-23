@@ -22,20 +22,20 @@ pub fn ended(p: &Paper, pick: V3, grey: V3, anchor: V3, brightness: f32) -> Pape
     let white = if p.luma { [luma(white); 3] } else { white };
     let mean = |v: V3| (v[0] + v[1] + v[2]) / 3.0;
     let pick_log = mean(plain.exposed(pick));
-    let ended = Paper { pick: p.coloured(plain.printed(pick)), white: p.coloured(white), anchor, brightness: 0.0, ..*p };
+    let ended = Paper { pick: plain.printed(pick), white, anchor, brightness: 0.0, ..*p };
     let (k, w) = (luma(ended.pick), luma(ended.white));
     let neutral = |t: f32| std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]));
-    let light = |t: f32| (luma(ended.coloured(ended.printed(neutral(t)))) - k) / (w - k) * w;
+    let light = |t: f32| (luma(ended.printed(neutral(t))) - k) / (w - k) * w;
     let t = bisected(0.0, SOUGHT, BRIGHTNESS_REACH_LIGHT, light);
     let reach = ended.toward_light(pick_log, ended.exposed(neutral(t)));
     Paper { brightness, pick_log, reach, ..ended }
 }
 
-/// `bare` at its `rest` (log time, filtration) with colour `density`, its `anchors` the pick, the densest read and the
-/// reference grey as the bare film holds them: the pick printed where the rest prints it whatever Lighting moves.
-pub(super) fn lit(bare: &Paper, rest: (f32, V3), anchors: &[V3; 3], density: f32, s: &PipelineSettings, negative: Option<&Negative>) -> Printing {
+/// `bare` at its `rest` (log time, filtration), its `anchors` the pick, the densest read and the reference grey as the
+/// bare film holds them: the pick printed where the rest prints it whatever Lighting moves.
+pub(super) fn lit(bare: &Paper, rest: (f32, V3), anchors: &[V3; 3], s: &PipelineSettings, negative: Option<&Negative>) -> Printing {
     let (time, rest_cc) = rest;
-    let at_rest = Paper { scale: time.exp(), filters: filters(rest_cc), density, ..*bare };
+    let at_rest = Paper { scale: time.exp(), filters: filters(rest_cc), ..*bare };
     let [pick, _, grey] = *anchors;
     // The neutral paper's own black is ONI's print's, pure black: Paper blacks, hidden there, lays nothing.
     let anchor = if s.print.paper_blacks && !s.paperless { at_rest.printed(pick) } else { [0.0; 3] };

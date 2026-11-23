@@ -15,7 +15,6 @@ use oni_render::{
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet};
 use oni_settings::frame::{FlatFieldMask, Geometry};
-use oni_settings::spectrogram::Spectrogram;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 /// A per-pixel stage on `input` against `f`, refusing `twin`.
@@ -68,15 +67,6 @@ fn per_pixel_kernels_match_their_references() {
     let sauce = finishing::saturation(&finishing::sauce(1.0)).unwrap();
     let less = finishing::saturation(&finishing::sauce(0.9)).unwrap();
     per_pixel(&mut g, "saturation", &input, &pixels, stages::saturation(&sauce), |p| cpu::saturation_curve(p, &sauce), |p| cpu::saturation_curve(p, &less));
-
-    let mut mixer = Spectrogram::default();
-    mixer.saturation[5] = 0.5;
-    mixer.hue[1] = 0.4;
-    mixer.luma[3] = -0.3;
-    let spectrogram = finishing::spectrogram(&mixer).unwrap();
-    mixer.luma[3] = -0.25;
-    let near = finishing::spectrogram(&mixer).unwrap();
-    per_pixel(&mut g, "spectrogram", &input, &pixels, stages::spectrogram(&spectrogram), |p| cpu::spectrogram(p, &spectrogram), |p| cpu::spectrogram(p, &near));
 
     let l = oni_settings::axis::pipeline::LUMA_WEIGHTS;
     let luma = |p: V4| {

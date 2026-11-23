@@ -8,7 +8,7 @@ use oni_graph::{Graph, Image, Source};
 use oni_pipeline::stages::{self, DetailColumns, DetailRows};
 use oni_pipeline::scanner;
 use oni_render::cpu;
-use oni_render::{Curves, Detail, FlatField, LUT_SIZE, SaturationCurve, ScannerDensity, ScannerOutput, Spectrogram, Stage47, Texture};
+use oni_render::{Curves, Detail, FlatField, LUT_SIZE, SaturationCurve, ScannerDensity, ScannerOutput, Stage47, Texture};
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
 
 /// Every mix of the values a kernel bends at: below zero, zero, a denormal's neighbour, one, past one.
@@ -61,7 +61,7 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
         hunt: 0.4,
         ..separated
     };
-    let dense = Stage47 { density: 1.3, ..printed };
+    let dense = Stage47 { hunt: 1.0, ..printed };
     let positive = Stage47 { invert: 0.0, window: 3.0, ..dense };
     let flattened = Stage47 { print_contrast: -0.5, print_zones: [0.6, -0.7], ..dense };
     let toned = Stage47 { own_contrast: [0.4, -0.3, 0.0], own_mid: [0.2, -0.25, 0.1], ..printed };
@@ -216,36 +216,6 @@ fn saturation_texture_and_scanner_reach_their_other_branches() {
         let stage = stages::scanner_output(k.warmth_share, k.lift, k.contrast);
         two(&mut g, &format!("scanner output, {name}"), (&input, &pixels), (&warm, &warmth), stage, |c, m| cpu::scanner_output(c, m, &k), |c, m| cpu::scanner_output(c, m, &wrong));
     }
-}
-
-/// Saturated colours all around the hue circle, at three levels.
-fn hue_wheel() -> Vec<V4> {
-    (0..3)
-        .flat_map(|y| (0..360).map(move |x| (x, y)))
-        .map(|(x, y)| {
-            let a = (x as f32).to_radians();
-            let level = [0.05, 0.3, 0.8][y];
-            [level * (1.0 + 0.8 * a.cos()), level * (1.0 + 0.8 * (a - 2.094).cos()), level * (1.0 + 0.8 * (a + 2.094).cos()), 1.0]
-        })
-        .collect()
-}
-
-#[test]
-fn the_spectrogram_turns_every_band_around_the_hue_circle() {
-    let Some(mut g) = graph("the_spectrogram_turns_every_band_around_the_hue_circle") else { return };
-    let pixels = hue_wheel();
-    let input = g.upload(360, 3, &pixels).unwrap();
-    let scaled = |f: f32| Spectrogram {
-        hue_low: [12.0, -8.0, 0.0, 20.0].map(|v| v * f),
-        hue_high: [-15.0, 5.0, 0.0, -30.0].map(|v| v * f),
-        sat_low: [0.3, -0.4, 0.0, 0.5].map(|v| v * f),
-        sat_high: [-0.6, 0.2, 1.0, 0.0].map(|v| v * f),
-        luma_low: [0.2, 0.0, -0.3, 0.1].map(|v| v * f),
-        luma_high: [0.0, -0.5, 0.4, 0.0].map(|v| v * f),
-    };
-    let (k, wrong) = (scaled(1.0), scaled(1.05));
-    let out = whole(&mut g, &Image::new(&input).then(stages::spectrogram(&k)));
-    judge("spectrogram, hue wheel", &out, &mapped(&pixels, |p| cpu::spectrogram(p, &k)), &mapped(&pixels, |p| cpu::spectrogram(p, &wrong)));
 }
 
 /// Detail through its two stages, as the pipeline lays them.

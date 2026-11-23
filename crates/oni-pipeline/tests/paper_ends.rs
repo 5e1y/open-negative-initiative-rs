@@ -75,15 +75,15 @@ fn printed_on(s: &PipelineSettings, k: &Stage47) -> [[f32; 3]; 3] {
     anchor_scans(s).map(|q| rgb(cpu::stage47(q, k)))
 }
 
-/// The same print with no ends: the paper's light at its colour density, as before the pick was anchored.
+/// The same print with no ends: the paper's light, as before the pick was anchored.
 fn unanchored(k: Stage47) -> Stage47 {
     Stage47 { paper: k.paper.map(|p| Paper { anchor: p.pick, brightness: 0.0, ..p }), ..k }
 }
 
-/// The paper's own Dmax as its print shows it, at its colour density.
+/// The paper's own Dmax as its print shows it.
 fn dmax(p: &Paper) -> [f32; 3] {
     let v = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
-    p.coloured(if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v })
+    if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v }
 }
 
 fn rgb(v: V4) -> [f32; 3] {
@@ -108,9 +108,9 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
             assert!(held < 1e-6, "{label}, {name}: {now:?} {rest:?}");
             lifted += usize::from(lift > 1e-4);
         }
-        // Twin: unanchored, the colour density lifts or sinks the pick; Lighting on the negative leaves the bare film at its fog.
-        println!("{label}: {lifted} moves of {} lift the unanchored pick", SLIDERS.len());
-        assert!(lifted == if label == "black and white" { 0 } else { 3 }, "{label}: {lifted}");
+        // On the negative every move leaves the bare film at its fog; twin: the enlarger's time doubled lifts it, unanchored.
+        let timed = |p: Paper| unanchored(Stage47 { paper: Some(Paper { scale: p.scale * 2.0, ..p }), ..conversion::stage47(&s) });
+        assert!(lifted == 0 && worst(printed_on(&s, &timed(paper_of(&s)))[0], rest) > 1e-4, "{label}: {lifted} of {} moves lift the pick", SLIDERS.len());
     }
 }
 
@@ -174,7 +174,7 @@ fn under_pick(p: &Paper, amounts: [f32; 3]) -> f32 {
 fn on_black(p: &Paper, amounts: [f32; 3]) -> f32 {
     let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
     let (k, w) = (luma(p.pick), luma(p.white));
-    (luma(p.coloured(p.printed(amounts))) - k) / (w - k) * w
+    (luma(p.printed(amounts)) - k) / (w - k) * w
 }
 
 /// What `p` shows of `amounts` with the tone's mean log exposure from the pick moved by `f` in Brightness's place.
@@ -184,7 +184,7 @@ fn shown_moved(p: &Paper, amounts: [f32; 3], f: impl Fn(f32) -> f32) -> [f32; 3]
     let moved = f(x) - x;
     let light = p.viewed(p.developed(log.map(|v| v - moved)));
     let light = if p.luma { [0.2627 * light[0] + 0.678 * light[1] + 0.0593 * light[2]; 3] } else { light };
-    p.ended(p.coloured(light))
+    p.ended(light)
 }
 
 /// CIE L* of a print's light, its luma read on D65's white.
@@ -331,7 +331,7 @@ fn the_points_still_move_the_ends() {
                 // A black point crushes the pick below where the rest prints it; a negative one lifts it.
                 assert!(sank > 1e-4 && (0..3).all(|c| (pick[c] < rest_pick[c]) == (black > 0.0)), "{label}, {name}");
                 // Twin: the pick anchored through the points stays where the rest prints it.
-                let through = Paper { pick: p.coloured(p.printed(k.negative.unwrap().toned([0.0; 3]))), ..p };
+                let through = Paper { pick: p.printed(k.negative.unwrap().toned([0.0; 3])), ..p };
                 let held = rgb(cpu::stage47(anchor_scans(&s)[0], &Stage47 { paper: Some(through), ..k }));
                 assert!(worst(held, rest_pick) < 1e-6, "{label}, {name}: {held:?}");
             } else {

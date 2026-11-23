@@ -192,14 +192,14 @@ fn a_digital_photo_unmixes_its_stocks_own_dyes_from_its_bare_film() {
     // The bare film opens every window: its dyes are none.
     let stock = film::stock(VirtualStock::KodakPortra800);
     let bare = cpu::virtual_negative([0.0, 0.0, 0.0, 1.0], &stock.kernel, &stock.table);
-    let windowed = Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, ..k };
+    let windowed = Stage47 { print_on: 0.0, hunt: 0.0, ..k };
     let open = cpu::stage47(bare, &windowed);
     assert!(open[..3].iter().all(|v| v.abs() < 1e-4), "{open:?}");
     let after = cpu::dye_separation(bare, &k, &d);
     assert!((0..3).all(|c| (-after[c].log10() - d.black[c]).abs() < 1e-3), "the bare film reads its own density: {after:?}");
     // Twin: at no dose the photo reads its scan's own densities, which lie above the bare film too.
     let plain = conversion::stage47(&PipelineSettings { separation: 0.0, ..s.clone() });
-    assert!(plain.dyes.is_none() && cpu::stage47(bare, &Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, ..plain })[..3].iter().all(|v| v.abs() < 1e-4));
+    assert!(plain.dyes.is_none() && cpu::stage47(bare, &Stage47 { print_on: 0.0, hunt: 0.0, ..plain })[..3].iter().all(|v| v.abs() < 1e-4));
 }
 
 #[test]

@@ -1,6 +1,6 @@
 // The paper, operation for operation as `cpu::paper`: the enlarger's light through the negative's dyes on the paper's
-// layers, Brightness faded in from the pick, its curves, its dyes seen under D50 in Rec. 2020, its colour density, then its
-// ends: the pick on its anchor, the white held; alpha kept.
+// layers, Brightness faded in from the pick, its curves, its dyes seen under D50 in Rec. 2020, then its ends: the pick on
+// its anchor, the white held; alpha kept.
 
 struct Params {
     head: vec4<u32>,
@@ -9,7 +9,7 @@ struct Params {
     filters_scale: vec4<f32>,
     pick_reach: vec4<f32>,
     curve_axis: vec4<f32>,
-    pick_density: vec4<f32>,
+    pick: vec4<f32>,
     white: vec4<f32>,
     anchor: vec4<f32>,
     negative: array<vec4<f32>, 81>,
@@ -75,13 +75,7 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
     if (P.curve_axis.w > 0.5) {
         out = vec3<f32>(dot(out, LUMA));
     }
-    let colour = P.pick_density.w;
-    if (colour != 1.0) {
-        let pw = pow(max(out, vec3<f32>(0.0)), vec3<f32>(colour));
-        let p = dot(pw, LUMA);
-        if (p > 1e-12) { out = pw * pow(p, (1.0 / colour) - 1.0); }
-    }
-    let pick = P.pick_density.xyz;
+    let pick = P.pick.xyz;
     let anchor = P.anchor.xyz;
     if (any(anchor != pick)) {
         let white = P.white.xyz;
