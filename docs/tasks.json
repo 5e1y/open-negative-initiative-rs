@@ -12887,7 +12887,7 @@
     "title": "A neutral negative prints neutral: one filtration per paper, one time per frame; black and white alike",
     "status": "done",
     "detail": "The window aligns the three channels at black, grey and white; each paper's filtration is solved once on its own layers where they print a grey neutral on its white (one for Print lift, which shows that white), shown in the paper block; a frame's time shows its reference grey at a plain RAW's grey. Black and white takes the same filtration and prints its luma.",
-    "outcome": "Grey ramps neutral on every paper and stock; black and white on Royal Digital goes from 18.6 to 32.5 L*/stop at the grey (its window spans 2.37 of density against colour's 1.44)."
+    "outcome": "Grey ramps neutral on the paper's own white on every paper and stock (grey C*ab 0.0, Royal Digital's scan ramp spread 0.23 to 0.14); with Print lift the grey takes the paper's white, laid on pure white it is neutral within a thousandth. Black and white on Royal Digital goes from 18.6 to 32.3 L*/stop at the grey: balanced, its layers print the negative's own density, and its roll's window spans 2.37 of density against colour's 1.44."
   },
   {
     "id": 3724,
@@ -12903,6 +12903,14 @@
     "title": "Contrast before and after the density pipe",
     "status": "done",
     "detail": "tone_response on roll #8 (DSC_6440, 6452, 6464), a black and white roll (P1071630, 6135), a digital photo (P1073289) on Portra 800 and HP5, ONI's print and Royal Digital; logs in the scratch folder.",
-    "outcome": "Royal Digital at the grey: scans 23.6 to 20.1 L*/stop, digital 20.8 to 17.6, black and white 18.6 to 32.5; ONI's print unchanged (10.9)."
+    "outcome": "Royal Digital at the grey: scans 23.6 to 20.0 L*/stop, digital Portra 800 20.8 to 17.5, black and white 18.6 to 32.3, digital HP5 16.4 to 24.1; ONI's print unchanged (10.9, digital 10.2 to 10.6)."
+  },
+  {
+    "id": 3726,
+    "type": "chore",
+    "title": "The Look Lab's neutral set fitted again to Pro at rest, the separation gone",
+    "status": "done",
+    "detail": "examples/look_lab_fit.rs run on the density pipe; the Frontier set's fit is unchanged.",
+    "outcome": "Neutral set against Pro at rest: median dE 0.56 to 0.19 on 9948 negatives; the check's bound 0.3."
   }
 ]

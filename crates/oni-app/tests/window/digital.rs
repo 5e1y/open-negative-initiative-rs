@@ -11,7 +11,7 @@ use slint::ComponentHandle;
 use crate::common;
 
 /// The negative's blocks a digital photo keeps on its film.
-const NEGATIVE_BLOCKS: [&str; 4] = ["Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation"];
+const NEGATIVE_BLOCKS: [&str; 3] = ["Filtration", "Highlight Detail", "Per-Channel Levels"];
 /// The blocks of a scanned roll alone: its preparation and its copy stand's light.
 const SCAN_BLOCKS: [&str; 2] = ["Prepared Roll", "Flat-Field"];
 

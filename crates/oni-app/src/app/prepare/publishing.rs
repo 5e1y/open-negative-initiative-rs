@@ -305,3 +305,18 @@ pub(super) fn stock_note(stock: Option<oni_settings::film::FilmStockKind>) -> St
         _ => String::new(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::stock_note;
+    use oni_settings::film::film_stock;
+
+    #[test]
+    fn the_film_step_names_the_curve_a_line_or_an_unmeasured_stock_is_read_through() {
+        assert_eq!(stock_note(film_stock(Some("kodak-portra400"))), "", "a stock its own profile measures needs no word");
+        assert!(stock_note(film_stock(Some("kodak-portra"))).contains("Kodak Portra 400"), "a line names its stand-in");
+        assert!(stock_note(film_stock(Some("lucky-color200"))).starts_with("No profile measures"));
+        // Twin: no stock, no word.
+        assert_eq!(stock_note(None), "");
+    }
+}

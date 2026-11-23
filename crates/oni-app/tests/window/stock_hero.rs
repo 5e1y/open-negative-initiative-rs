@@ -110,7 +110,7 @@ pub(crate) fn prepare_picks_the_stock_on_its_hero() {
     assert!(!stocks.get_shown());
     let hero = p.get_stock();
     assert_eq!(hero.name.as_str(), "Kodak Portra 400");
-    assert!(hero.has_artwork && hero.note.contains("Kodak Portra 400"), "its line names its dyes: {}", hero.note);
+    assert!(hero.has_artwork && hero.note.is_empty(), "a stock its own profile measures needs no word: {}", hero.note);
     println!("shot {}", rig.shot("stock-hero-prepare").display());
     // Twin: Done changes nothing.
     common::click(&rig, w, key.middle());
