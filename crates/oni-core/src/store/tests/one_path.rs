@@ -68,16 +68,16 @@ fn dyed(id: Id, set: DyeSet) -> PipelineSettings {
 #[test]
 fn a_stock_reset_lays_the_open_roll_s_stock_on_its_roll_alone() {
     let (portra, fuji) = (Id::new(), Id::new());
-    let laid = vec![("a.tif", dyed(portra, DyeSet::KodakPortra400)), ("b.tif", dyed(fuji, DyeSet::FujifilmXtra400)), ("c.tif", dyed(portra, DyeSet::KodakPortra400))];
+    let laid = vec![("a.tif", dyed(portra, DyeSet::of("kodak-portra-400"))), ("b.tif", dyed(fuji, DyeSet::of("fujifilm-xtra-400"))), ("c.tif", dyed(portra, DyeSet::of("kodak-portra-400")))];
     let (mut store, dir, p) = frames("dyes", laid);
     store.set_together(vec![p[1].clone()]);
-    let rest = |s: &PipelineSettings| PipelineSettings { dye_set: DyeSet::KodakPortra400, ..s.clone() };
+    let rest = |s: &PipelineSettings| PipelineSettings { dye_set: DyeSet::of("kodak-portra-400"), ..s.clone() };
     store.apply_at(Command::Each(Each::new(rest)), 0.0);
-    assert_eq!(read(&p[2]).dye_set, DyeSet::KodakPortra400, "the Portra roll's frame left out takes its stock");
-    assert_eq!(read(&p[1]).dye_set, DyeSet::FujifilmXtra400, "the Fuji frame keeps its own stock");
+    assert_eq!(read(&p[2]).dye_set, DyeSet::of("kodak-portra-400"), "the Portra roll's frame left out takes its stock");
+    assert_eq!(read(&p[1]).dye_set, DyeSet::of("fujifilm-xtra-400"), "the Fuji frame keeps its own stock");
     // Twin: one stock laid on every frame shown gives the Fuji frame Kodak's.
     store.reset_each(&[p[1].clone()], rest);
-    assert_eq!(read(&p[1]).dye_set, DyeSet::KodakPortra400);
+    assert_eq!(read(&p[1]).dye_set, DyeSet::of("kodak-portra-400"));
     let _ = std::fs::remove_dir_all(&dir);
 }
 

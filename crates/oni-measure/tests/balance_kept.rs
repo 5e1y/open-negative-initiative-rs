@@ -35,7 +35,7 @@ const INPUTS: [Change; 24] = [
     ("quarter_turns", |s| s.geometry.quarter_turns = 1),
     ("gains", |s| s.gains.stops[0] += 0.4),
     ("density_ceiling", |s| s.density_ceiling += 0.3),
-    ("dye_set", |s| s.dye_set = oni_settings::DyeSet::FujifilmC200),
+    ("dye_set", |s| s.dye_set = oni_settings::DyeSet::of("fujifilm-c200")),
     ("flat_field", |s| {
         s.flat_field.mask = FlatFieldMask::ValoiEasy35V1;
         s.flat_field.amount = 1.0;

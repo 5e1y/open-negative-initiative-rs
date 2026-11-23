@@ -12835,6 +12835,29 @@
     "outcome": "Window checks with a counting vault: the launch reads no vault and asks the service nothing; the search sheet reads it once, off the interface thread, and a search after reads nothing; sign-out erases once off the interface, sign-in writes once and marks the copy; a sign-out never read reads once to revoke. Twins: a read on the interface thread is counted as the interface's; the Kit never read on a lone sign-out. The copy's mark round trip and its older-copy reading in oni-tldb, each with its twin."
   },
   {
+    "id": 3680,
+    "type": "feature",
+    "title": "Every film stock and paper is one file: crates/oni-settings/stocks/<key>.json, read into a catalogue keyed by the keys sidecars store",
+    "status": "done",
+    "detail": "One JSON file a stock (identity, aliases, brand, type, ISO, canister, offered, line, dyes, the virtual film's key, light, dyes, reference and data-sheet profile, its pushes as developments, the generic C-41 set as a mean) and one a paper (a data sheet's profile, or the Frontier SP-3000's fit with its provenance), 111 in all, built into the binary by oni-settings' build script; the SVG canisters moved beside them. FILM_STOCKS, STOCK_DYE_SETS, the VirtualStock, DyeSet and PaperStock enums, entries.rs, datasheet.rs and the include_bytes profiles are gone: the three are key types (`of`, `key`, `all()`, `entry()`) read through `oni_settings::stocks::current()`, serialised as the same keys, retired keys read through each file's aliases. A key no file defines is kept as stored (a sidecar holding one no longer fails to read) and renders on the default stock, paper or generic set. The defaults stay the app's constants (Portra 800, Royal Digital, generic-c41): a photo storing none reads them, so no file may move them. The menus list stocks by generic first, brand, then name read as a person reads it (50D before 200T), papers by brand and name. Sidecar format unchanged.",
+    "outcome": "Every shipped stock, dye set and paper renders bit for bit as before on the CPU and the GPU: 753 fingerprints (each film with and without the default paper, each dye set on every paper and none, silver and a slide on every paper, every catalogue line) equal before and after (examples/preset_fingerprints.rs)."
+  },
+  {
+    "id": 3681,
+    "type": "feature",
+    "title": "The person's own stock files, in the support folder's Stocks, read at the shell's start and watched while the app runs",
+    "status": "done",
+    "detail": "oni_pipeline::stocks::Loader reads the folder (every .json a stock or a paper, every .svg a canister), checks each film's profile by baking it, derives a reference a file leaves out, and builds the catalogue: a file of the person's with a shipped key stands in for it and must keep every key the shipped one defined; one that does not read, clashes, names missing dyes or does not bake is refused with why, the version of it taken before staying in use. The app (app/stock_files.rs) reads it before any photo renders, then watches it (FSEvents, polling on Windows), and on a quiet burst installs the new catalogue on the interface thread: menus and the picker sheet laid again, any lit stock let go, the heroes and the open photo shown again; bakes are keyed by key and file content (baked.rs), so an edit bakes anew and a table lent to a kernel stays valid. Refusals are told once by file name, masked in the log; a missing key is shown as such in the film hero and the paper title. Generic stocks' names and brand are translated where shown, trade names never.",
+    "outcome": "Proven by tests/stock_files.rs (add, derive, edit re-renders, broken edit told with the last version kept, removal) and the window check stock_files::a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_photo."
+  },
+  {
+    "id": 3682,
+    "type": "tooling",
+    "title": "scripts/datasheet-profiles.py and frontier_print_fit.py write into the stock files",
+    "status": "done",
+    "detail": "The converter lays each profile into the file holding the profile of its name, every other field kept, and has the reference of a film whose profile moved derived again by examples/stock_references.rs; a profile no file holds yet gets a file of its own to check. The Frontier fit writes the SP-3000 paper file's frontier block, its provenance kept. The dye-spill research reads the profiles out of the stock files. stocks/README.md tells how to add or edit a stock or a paper without building the app."
+  },
+  {
     "id": 3720,
     "type": "feature",
     "title": "Dye separation removed from both pipes",

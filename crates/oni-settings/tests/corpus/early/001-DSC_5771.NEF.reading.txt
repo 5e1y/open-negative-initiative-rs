@@ -54,7 +54,7 @@ settings: PipelineSettings {
         ],
     },
     density_ceiling: 2.3767507,
-    dye_set: GenericC41,
+    dye_set: generic-c41,
     flat_field: FlatField {
         mask: None,
         custom: None,

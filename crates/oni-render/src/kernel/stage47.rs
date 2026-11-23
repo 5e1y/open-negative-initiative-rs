@@ -104,8 +104,11 @@ pub struct Packed {
     count: [u32; 4],
 }
 
+/// The window's share of density `e`, through its mid's power over the black, straight on under it: a paper reads a
+/// density under the bare film as one.
 fn apply_levels(e: f32, lv: V3) -> f32 {
-    ((e - lv[0]) / (lv[1] - lv[0]).max(1e-4)).max(0.0).powf(lv[2])
+    let n = (e - lv[0]) / (lv[1] - lv[0]).max(1e-4);
+    if n > 0.0 { n.powf(lv[2]) } else { n }
 }
 
 fn apply_window(e: f32, lv: V3, c1: f32, c3: f32) -> f32 {
@@ -113,7 +116,7 @@ fn apply_window(e: f32, lv: V3, c1: f32, c3: f32) -> f32 {
     if c1 == 0.25 && c3 == 0.75 {
         return t;
     }
-    let u = t.min(1.0);
+    let u = t.clamp(0.0, 1.0);
     let v = 1.0 - u;
     let curve = c1 * (4.0 * u * v * v * v) + 0.5 * (6.0 * u * u * v * v) + c3 * (4.0 * u * u * u * v) + u * u * u * u;
     curve + (t - u)

@@ -1505,7 +1505,7 @@ msgstr "«Preparar rollo», en la barra superior, mide el rollo antes de editar 
 msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
 msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
 
-#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Film Stock"
 msgstr "Emulsión"
 
@@ -1514,8 +1514,8 @@ msgid "What this roll was shot on — never guessed, only ever what a hand picks
 msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige una mano."
 
 #: crates/oni-ui/ui/info_sidebar.slint
-msgid "Sets every frame of this roll to the film stock's dyes, leaving each frame's Dye separation amount as it is."
-msgstr "Ajusta todos los fotogramas de este rollo a los tintes de la emulsión, sin tocar la Separación de tintes de cada uno."
+msgid "Sets every frame of this roll to this film stock, the curve Lighting reads each one back through."
+msgstr "Ajusta todos los fotogramas de este rollo a esta emulsión, la curva por la que Luz relee cada uno."
 
 #: crates/oni-ui/ui/info_sidebar.slint
 msgid "Shot Date"
@@ -2474,8 +2474,8 @@ msgid "Digital"
 msgstr "Digital"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What this roll was shot on. It names the dyes Dye Separation unmixes on every photo of the roll: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back."
-msgstr "En qué se fotografió este rollo. Nombra los tintes que Separación de tintes separa en cada foto del rollo: elegida aquí, cambia para todo el rollo, como en Preparar el rollo y en la galería, y Deshacer la devuelve."
+msgid "What this roll was shot on. Lighting reads every photo of the roll back through this stock's curve: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back."
+msgstr "En qué se fotografió este rollo. Luz relee cada foto del rollo por la curva de esta emulsión: elegida aquí, cambia para todo el rollo, como en Preparar el rollo y en la galería, y Deshacer la devuelve."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
 msgid "Flat-Field"
@@ -2636,26 +2636,6 @@ msgstr "El rango propio de cada canal del escaneo, elegido con R, G o B: sus ext
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
 msgstr "Origen de 8 bits: 256 niveles por canal"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Dye Separation"
-msgstr "Separación de tintes"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Turns the scan's colours back into the amounts of the film's three dyes, from the spectra its stock's profile measures, so each dye's spill into the other channels leaves while greys stay put. The stock picked for the roll names the dyes."
-msgstr "Devuelve los colores del escaneo a las cantidades de los tres tintes de la película, según los espectros que mide el perfil de su emulsión: el derrame de cada tinte en los otros canales desaparece y los grises se quedan en su sitio. La emulsión elegida para el rollo designa los tintes."
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Dyes"
-msgstr "Tintes"
-
-#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/panel/roll_tab.slint
-msgid "No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate."
-msgstr "Ningún perfil mide los tintes de esta emulsión: los sustituye un juego genérico de negativo en color, la media de los medidos, así que sus colores son aproximados."
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Dye separation"
-msgstr "Separación de tintes"
 
 #: crates/oni-ui/ui/panel/state.slint
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
@@ -2974,8 +2954,8 @@ msgid "Credits"
 msgstr "Créditos"
 
 #: crates/oni-ui/ui/settings.slint
-msgid "The virtual films, the measured dyes of the dye separation and the papers are made from each film's and paper's data sheet, which ONI develops, scans, unmixes and prints its own way after spektrafilm's model by Andrea Volpato, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence, shipped unchanged with its licence."
-msgstr "Las películas virtuales, los tintes medidos de la separación de tintes y los papeles se hacen con la ficha técnica de cada película y de cada papel, que ONI revela, escanea, separa y positiva a su manera según el modelo de spektrafilm de Andrea Volpato, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas, distribuidos sin cambios con su licencia."
+msgid "The virtual films and the papers are made from each film's and paper's data sheet, which ONI develops and prints its own way after spektrafilm's model by Andrea Volpato, and from the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling, under the BSD 2-clause licence, shipped unchanged with its licence."
+msgstr "Las películas virtuales y los papeles se hacen con la ficha técnica de cada película y de cada papel, que ONI revela y positiva a su manera según el modelo de spektrafilm de Andrea Volpato, y con los espectros del sobremuestreo espectral de Wenzel Jakob y Johannes Hanika, bajo la licencia BSD de 2 cláusulas, distribuidos sin cambios con su licencia."
 
 #: crates/oni-ui/ui/settings.slint
 msgid "spektrafilm"
@@ -4460,16 +4440,16 @@ msgstr[0] "{n} original no encontrado"
 msgstr[1] "{n} originales no encontrados"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Frames set to {family} dyes, but this film stock has {named} dyes"
-msgstr "Fotogramas con tintes {family}, pero esta emulsión tiene tintes {named}"
+msgid "Frames read as {family}, but this film stock is {named}"
+msgstr "Fotogramas leídos como {family}, pero esta emulsión es {named}"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Use {named} Dyes"
-msgstr "Usar tintes {named}"
+msgid "Read as {named}"
+msgstr "Leer como {named}"
 
 #: crates/oni-app/src/app/organising/roll_card.rs
-msgid "Measured dyes: {dyes}"
-msgstr "Tintes medidos: {dyes}"
+msgid "Frames read as {stocks}"
+msgstr "Fotogramas leídos como {stocks}"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -4596,8 +4576,8 @@ msgid "A digital photo has no film to measure: PREPARE ROLL sets every photo of 
 msgstr "Una foto digital no tiene película que medir: PREPARAR ROLLO marca cada foto del rollo como digital; su color lo fijan después Temperatura y Matiz."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Choose the film type, the film stock and what the roll was digitised with. The wrong film type converts every frame of the roll wrong, and the stock matters as much: its measured dyes separate the colours of every frame."
-msgstr "Elija el tipo de película, la emulsión y con qué se digitalizó el rollo. Un tipo de película equivocado convierte mal todos los fotogramas del rollo, y la emulsión importa igual: sus tintes medidos separan los colores de cada fotograma."
+msgid "Choose the film type, the film stock and what the roll was digitised with. The wrong film type converts every frame of the roll wrong; the stock sets the curve Lighting reads every frame back through."
+msgstr "Elija el tipo de película, la emulsión y con qué se digitalizó el rollo. Un tipo de película equivocado convierte mal todos los fotogramas del rollo; la emulsión fija la curva por la que Luz relee cada fotograma."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Click the shot of the empty light panel, or pick one you loaded before. If your light is even, go on with NEXT; otherwise uneven light darkens or tints the corners of every frame."
@@ -4662,6 +4642,10 @@ msgid "No base picked yet."
 msgstr "Aún no se ha elegido ninguna base."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
+msgid "No profile measures this film stock: Lighting reads it back on the mean curve of the measured colour negatives."
+msgstr "Ningún perfil mide esta emulsión: Luz la relee sobre la curva media de los negativos en color medidos."
+
+#: crates/oni-app/src/app/prepare/publishing.rs
 msgid "Measuring the roll · {done} of {total}"
 msgstr "Midiendo el rollo · {done} de {total}"
 
@@ -4686,12 +4670,8 @@ msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
 
 #: crates/oni-app/src/app/prepare/publishing.rs
-msgid "The precise stock is not specified: its colours are separated on {stock}'s measured dyes until one is picked."
-msgstr "La emulsión precisa no está especificada: sus colores se separan sobre los tintes medidos de {stock} hasta que se elija una."
-
-#: crates/oni-app/src/app/prepare/publishing.rs
-msgid "Its colours are separated on {stock}'s measured dyes."
-msgstr "Sus colores se separan sobre los tintes medidos de {stock}."
+msgid "The precise stock is not specified: Lighting reads it back on {stock}'s curve until one is picked."
+msgstr "La emulsión precisa no está especificada: Luz la relee sobre la curva de {stock} hasta que se elija una."
 
 #: crates/oni-app/src/app/prepare/trace.rs
 msgid "Reading the first frame…"
@@ -5008,6 +4988,18 @@ msgstr "Cargando la resolución completa"
 #: crates/oni-app/src/app/state_read.rs
 msgid "Auto white balance"
 msgstr "Balance de blancos automático"
+
+#: crates/oni-app/src/app/stock_files.rs
+msgid "Stock files"
+msgstr "Archivos de emulsiones"
+
+#: crates/oni-app/src/app/stock_files.rs
+msgid "{file} is not used as it stands, its last version that read stays in use: {why}"
+msgstr "{file} no se usa tal cual, su última versión legible sigue en uso: {why}"
+
+#: crates/oni-app/src/app/stock_files.rs
+msgid "{file} is not used: {why}"
+msgstr "{file} no se usa: {why}"
 
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
@@ -5360,6 +5352,34 @@ msgstr "Compilando los núcleos de imagen"
 #: crates/oni-app/src/stocks.rs
 msgid "Stock not specified"
 msgstr "Emulsión no especificada"
+
+#: crates/oni-app/src/stocks.rs
+msgid "{key} (file missing)"
+msgstr "{key} (falta el archivo)"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic"
+msgstr "Genérica"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Azure"
+msgstr "Azul genérica"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Black & White"
+msgstr "Blanco y negro genérica"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Colour Negative"
+msgstr "Negativo color genérico"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Colour Positive"
+msgstr "Positivo color genérico"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Redscale"
+msgstr "Redscale genérica"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

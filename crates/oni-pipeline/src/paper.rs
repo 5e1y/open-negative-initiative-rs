@@ -5,11 +5,12 @@
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
-use crate::film::dyes;
+use crate::baked::Baked;
 use oni_render::PAPER_CURVE_NODES;
+use oni_settings::stocks::Print;
 use oni_settings::{PaperStock, PipelineSettings};
 use serde::Deserialize;
-use std::sync::OnceLock;
+use std::sync::Arc;
 
 type V3 = [f32; 3];
 type V4 = [f32; 4];
@@ -43,9 +44,12 @@ struct Data {
     density_curves: Vec<[f64; 3]>,
 }
 
-/// A paper's profile file; none for the Frontier.
-pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
-    dyes::source(paper.profile()?)
+/// A paper's profile as its file holds it; none for the Frontier.
+pub fn source(paper: PaperStock) -> Option<Arc<str>> {
+    match paper.entry().print {
+        Print::Profile(json) => Some(json),
+        Print::Frontier(_) => None,
+    }
 }
 
 /// A paper's profile, refused off the grid, off its curves' uniform nodes or holding a number not finite.
@@ -99,15 +103,16 @@ pub fn validate(json: &[u8]) -> Result<(), String> {
     parse(json).map(|_| ())
 }
 
-fn read(paper: PaperStock) -> Data {
-    parse(source(paper).expect("a profiled paper")).expect("a shipped paper reads")
+fn read(json: &str) -> Data {
+    parse(json.as_bytes()).expect("a paper reads once its file is taken")
 }
 
-fn baked(paper: PaperStock) -> Sheet {
-    if paper == PaperStock::FujifilmFrontierSp3000 {
-        return frontier::sheet();
-    }
-    let d = read(paper);
+fn baked(print: &Print) -> Sheet {
+    let json = match print {
+        Print::Frontier(fit) => return frontier::sheet(&frontier::read(fit).expect("a fit reads once its file is taken")),
+        Print::Profile(json) => json,
+    };
+    let d = read(json);
     let to_rgb = bake::view_matrix(&cie::D50);
     let norm: f64 = (0..WAVELENGTHS).map(|l| cie::D50[l] * cie::Y[l]).sum();
     let (print, view) = (0..WAVELENGTHS)
@@ -129,11 +134,11 @@ fn baked(paper: PaperStock) -> Sheet {
     )
 }
 
-/// The paper's tables, baked at first use.
+/// The paper's tables, baked at first use and again once its file changes.
 pub fn sheet(paper: PaperStock) -> &'static Sheet {
-    static SHEETS: [OnceLock<Sheet>; PaperStock::ALL.len()] = [const { OnceLock::new() }; PaperStock::ALL.len()];
-    let at = PaperStock::ALL.iter().position(|p| *p == paper).expect("every paper is listed");
-    SHEETS[at].get_or_init(|| baked(paper))
+    static SHEETS: Baked<(PaperStock, u64), Sheet> = Baked::new();
+    let entry = paper.entry();
+    SHEETS.get((entry.paper, entry.revision), || baked(&entry.print))
 }
 
 /// The sheet `s` prints on: its paper's, or the neutral one with Print on paper off.

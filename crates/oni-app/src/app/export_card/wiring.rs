@@ -179,16 +179,16 @@ impl Ctl {
                 let mut c = p.export.borrow_mut();
                 c.film_row = Some(row.max(0) as usize);
                 let film = c.rows.get(row.max(0) as usize).cloned().flatten().map(|r| r.row.metadata.film).unwrap_or_default();
-                FILM_STOCKS.iter().position(|k| k.display_name == film).map_or(-1, |i| i as i32)
+                stocks().iter().position(|k| k.display_name == film).map_or(-1, |i| i as i32)
             };
             // This frame alone: the stock is the frame's, not the roll's.
-            let id = usize::try_from(current).ok().map(|i| FILM_STOCKS[i].id);
+            let id = usize::try_from(current).ok().map(|i| stocks()[i].id);
             p.open_stock_picker(crate::app::StockTarget::Export, id);
         });
         let p = me.clone();
         e.on_stock_chosen(move |i| {
             let row = p.export.borrow_mut().film_row.take();
-            if let (Some(row), Some(kind)) = (row, usize::try_from(i).ok().and_then(|i| FILM_STOCKS.get(i)))
+            if let (Some(row), Some(kind)) = (row, usize::try_from(i).ok().and_then(|i| stocks().get(i).copied()))
                 && let Some(Some(r)) = p.export.borrow_mut().rows.get_mut(row)
             {
                 r.row.metadata.film = kind.display_name.to_owned();

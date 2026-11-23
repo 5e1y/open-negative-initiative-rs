@@ -57,23 +57,23 @@ pub(crate) fn a_paper_under_the_pointer_shows_on_the_photo_unwritten() {
     // The menu lists every paper of the catalogue once, under its maker, the one in use checked.
     drop_menu(&rig, w);
     let laid = lines(&panel);
-    let order: Vec<PaperStock> = laid.iter().filter(|(i, _)| *i >= 0).map(|(i, _)| PaperStock::ALL[*i as usize]).collect();
-    let mut sorted = order.iter().map(|p| PaperStock::ALL.iter().position(|q| q == p).unwrap()).collect::<Vec<_>>();
+    let order: Vec<PaperStock> = laid.iter().filter(|(i, _)| *i >= 0).map(|(i, _)| PaperStock::all()[*i as usize]).collect();
+    let mut sorted = order.iter().map(|p| PaperStock::all().iter().position(|q| q == p).unwrap()).collect::<Vec<_>>();
     sorted.sort();
-    assert_eq!(sorted, (0..PaperStock::ALL.len()).collect::<Vec<_>>(), "every paper once");
+    assert_eq!(sorted, (0..PaperStock::all().len()).collect::<Vec<_>>(), "every paper once");
     let makers: Vec<&str> = laid.iter().filter(|(i, _)| *i < 0).map(|(_, n)| n.as_str()).collect();
     let mut maker = "";
     for (i, name) in &laid {
         if *i < 0 {
             maker = name;
         } else {
-            assert!(PaperStock::ALL[*i as usize].name().starts_with(maker), "{name} under {maker}");
+            assert!(PaperStock::all()[*i as usize].name().starts_with(maker), "{name} under {maker}");
         }
     }
     let in_use = laid.get(panel.get_paper_in_use() as usize).map(|(i, _)| *i);
-    assert_eq!(in_use.map(|i| PaperStock::ALL[i as usize]), Some(own_paper), "the paper in use checked");
+    assert_eq!(in_use.map(|i| PaperStock::all()[i as usize]), Some(own_paper), "the paper in use checked");
     // Twin: a maker's line names no paper and is listed once.
-    assert!(makers.iter().all(|m| PaperStock::ALL.iter().all(|p| p.name() != *m)));
+    assert!(makers.iter().all(|m| PaperStock::all().iter().all(|p| p.name() != *m)));
     assert_eq!(makers.len(), makers.iter().collect::<std::collections::BTreeSet<_>>().len());
     let others: Vec<PaperStock> = order.iter().copied().filter(|p| *p != own_paper).collect();
     let (next, third) = (others[0], others[others.len() - 1]);

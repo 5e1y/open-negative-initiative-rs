@@ -1,6 +1,7 @@
 //! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
 //! Portra 800, with the scene the film reads and the film's scan; then the same photo with its chroma decompression at
-//! rest, to weigh it; then on its stock, a scan's on its roll's stock; then printed on the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
+//! rest, to weigh it; then on its stock, a scan's on its roll's stock; then printed on the default paper (`paper`) and
+//! on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
 //! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`), and Temperature half its
 //! track either way (`paper-cool`, `paper-warm`), and Lighting's Black point and White point at +0.05 on the paper and on ONI's
 //! print on the Pro face (`paper-points`; `oni-pro`, `oni-points`), at rest, at Exposure +1 and at Contrast +0.3 on both with

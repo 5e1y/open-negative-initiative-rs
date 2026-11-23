@@ -1,20 +1,19 @@
-//! The stock profiles ONI ships, each written from its maker's data sheet, and the C-41 profiles whose mean stands for a
-//! stock no profile measures.
+//! Each dye set's profiles, from the files its stocks hold: the profile a stock's own set names, or the sources a mean
+//! set such as the generic one averages.
 
-/// The C-41 profiles the generic set averages: the nine still colour negatives most shot today.
-pub const C41: [&str; 9] = [
-    "kodak_portra_160",
-    "kodak_portra_400",
-    "kodak_portra_800",
-    "kodak_ektar_100",
-    "kodak_gold_200",
-    "kodak_ultra_max_400",
-    "fujifilm_c200",
-    "fujifilm_pro_400h",
-    "fujifilm_superia_x_tra_400",
-];
+use super::profile::Profile;
+use oni_settings::DyeSet;
+use oni_settings::stocks::DyeSource;
 
-/// A profile's file, written from its maker's data sheet.
-pub fn source(name: &str) -> Option<&'static [u8]> {
-    super::datasheet::PROFILES.iter().find(|(n, _)| *n == name).map(|(_, json)| *json)
+/// The colour profiles a mean set averages, the generic set's the nine still colour negatives most shot today.
+pub fn sources(set: DyeSet) -> Vec<Profile> {
+    match set.entry().source {
+        DyeSource::Profile(json) => vec![profile(&json)],
+        DyeSource::Mean(sets) => sets.into_iter().flat_map(sources).collect(),
+    }
+}
+
+/// A profile of a file the catalogue took, which read when it was taken.
+pub fn profile(json: &str) -> Profile {
+    Profile::read(json.as_bytes()).expect("a profile reads once its file is taken")
 }

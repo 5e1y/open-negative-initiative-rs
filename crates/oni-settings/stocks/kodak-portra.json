@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "kodak-portra",
+ "name": "Kodak Portra",
+ "brand": "Kodak",
+ "type": "colour-negative",
+ "canister": "kodak-portra.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "kodak-portra-400"
+}

@@ -1,0 +1,10 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "kodak-ektachrome",
+ "name": "Kodak Ektachrome",
+ "brand": "Kodak",
+ "type": "colour-slide",
+ "iso": 100,
+ "canister": "kodak-ektachrome.svg"
+}

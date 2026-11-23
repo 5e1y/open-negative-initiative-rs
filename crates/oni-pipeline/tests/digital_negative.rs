@@ -33,7 +33,7 @@ fn a_digital_photo_decompresses_as_an_unprepared_negative() {
     // On ONI's print, where the decompression acts: a paper owns the print's colour.
     let s = PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let k = conversion::stage47(&s);
-    assert_eq!(s.dye_set, VirtualStock::KodakPortra800.dye_set());
+    assert_eq!(s.dye_set, VirtualStock::of("kodak-portra-800").dye_set());
     assert_eq!((k.decompression, k.film_share), (0.5, 0.5));
     assert_eq!((k.invert, k.own_stops), (1.0, s.print.filters()));
     // Twin: a slide on the same settings keeps its film's colour.
@@ -45,7 +45,7 @@ fn a_digital_photo_decompresses_as_an_unprepared_negative() {
 fn a_digital_photos_scene_is_lit_at_its_stocks_white_and_a_films_never() {
     let s = digital();
     let m = conversion::scene_white(&s).expect("a digital photo's scene is lit");
-    let want = oni_settings::white::relative(oni_settings::white::uv(VirtualStock::KodakPortra800.white()), oni_settings::white::anchor(true));
+    let want = oni_settings::white::relative(oni_settings::white::uv(VirtualStock::of("kodak-portra-800").white()), oni_settings::white::anchor(true));
     assert_eq!([&m.r_vector[..3], &m.g_vector[..3], &m.b_vector[..3]], [&want[0][..], &want[1][..], &want[2][..]]);
     // A plain file's decode stands on D65, so its matrix is another.
     let plain = PipelineSettings { decoded_from_mosaic: false, ..s.clone() };

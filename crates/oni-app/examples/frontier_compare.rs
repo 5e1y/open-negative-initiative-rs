@@ -42,13 +42,13 @@ fn main() {
     };
     let mut today = on(None, 0.0);
     today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
-    let frontier = Some(PaperStock::FujifilmFrontierSp3000);
+    let frontier = Some(PaperStock::of("fujifilm-frontier-sp-3000"));
     let renders = [
         ("scanner-frontier", today),
         ("frontier", on(frontier, 0.0)),
         ("frontier-under", on(frontier, -1.0)),
         ("frontier-over", on(frontier, 1.0)),
-        ("endura", on(Some(PaperStock::KodakEnduraPremier), 0.0)),
+        ("endura", on(Some(PaperStock::of("kodak-endura-premier")), 0.0)),
     ];
     for (name, s) in &renders {
         if let Some(p) = oni_pipeline::conversion::printing(s) {

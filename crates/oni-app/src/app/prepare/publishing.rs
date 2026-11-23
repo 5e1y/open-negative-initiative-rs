@@ -295,7 +295,7 @@ fn sentence(why: &str) -> String {
 
 /// What the Film step says of the curve a stock's frames are read back through: a line's the one it stood for, the
 /// measured colour negatives' mean for a stock no profile measures; nothing for a stock measured on its own.
-pub(super) fn stock_note(stock: Option<&oni_settings::film::FilmStockKind>) -> String {
+pub(super) fn stock_note(stock: Option<oni_settings::film::FilmStockKind>) -> String {
     match stock.and_then(|k| oni_settings::dyes::dye_set(k.id)) {
         Some(set) if set.is_generic() => tr("No profile measures this film stock: Lighting reads it back on the mean curve of the measured colour negatives.").to_string(),
         Some(set) if stock.is_some_and(|k| k.line) => tr!(

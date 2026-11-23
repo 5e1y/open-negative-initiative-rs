@@ -227,7 +227,8 @@ impl Ctl {
         panel.set_paper_shown(settings.takes_paper());
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);
-        panel.set_paper_title(settings.fitting_paper().name().into());
+        let paper = settings.fitting_paper();
+        panel.set_paper_title(if paper.is_known() { paper.name().into() } else { crate::stocks::missing(paper.key()).into() });
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;
@@ -281,9 +282,9 @@ mod tests {
 
     #[test]
     fn a_dye_set_goes_by_its_stocks_name_and_the_generic_set_by_its_own() {
-        assert_eq!(dye_set_name(DyeSet::KodakPortra400), "Kodak Portra 400");
+        assert_eq!(dye_set_name(DyeSet::of("kodak-portra-400")), "Kodak Portra 400");
         // Twin: the generic set names no stock.
-        assert_eq!(dye_set_name(DyeSet::GenericC41), "Generic C-41");
+        assert_eq!(dye_set_name(DyeSet::of("generic-c41")), "Generic C-41");
     }
 
     #[test]

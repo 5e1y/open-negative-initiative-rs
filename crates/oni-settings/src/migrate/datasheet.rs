@@ -18,24 +18,23 @@ const fn reference(stops: [f32; 3], black: [f32; 3], white: [f32; 3]) -> StockRe
 
 /// Each stock spektrafilm profiled, with the reference formats 54 to 59 derived from that profile.
 const SPEKTRAFILM: [(VirtualStock, StockReference); 16] = {
-    use VirtualStock::*;
     [
-        (KodakPortra800, reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.64768046, 0.7268683, 0.7630561])),
-        (KodakPortra800Push1, reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.6494186, 0.7278812, 0.75367403])),
-        (KodakPortra800Push2, reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.6495546, 0.7270855, 0.74462855])),
-        (KodakPortra160, reference([-1.0279491, 0.0, 0.77555937], [0.2723183, 0.27224207, 0.27213567], [0.61698914, 0.68821293, 0.8399785])),
-        (KodakPortra400, reference([-0.98707014, 0.0, 0.7491194], [0.27438924, 0.27431393, 0.2742105], [0.62938607, 0.7078299, 0.8256584])),
-        (KodakEktar100, reference([-0.8816751, 0.0, 0.77718276], [0.27767417, 0.27760288, 0.2774917], [0.61034083, 0.6918498, 0.8607544])),
-        (KodakGold200, reference([-0.82962483, 0.0, 1.0129256], [0.27911428, 0.2790453, 0.278885], [0.6387663, 0.72390294, 0.81404686])),
-        (KodakUltraMax400, reference([-0.82562864, 0.0, 1.1634097], [0.26399082, 0.2639297, 0.26375595], [0.6370392, 0.72782284, 0.77483225])),
-        (KodakVerita200D, reference([-1.0170532, 0.0, 0.9371615], [0.29557034, 0.2954798, 0.29531628], [0.7012342, 0.734775, 0.78206813])),
-        (KodakVision3_50D, reference([-0.90168256, 0.0, 0.9253492], [0.2607587, 0.2606951, 0.26057217], [0.6738153, 0.73703754, 0.7914196])),
-        (KodakVision3_200T, reference([-0.82313, 0.0, 0.88816845], [0.26512843, 0.2650669, 0.26494658], [0.67345315, 0.75740576, 0.80266327])),
-        (KodakVision3_250D, reference([-0.7476403, 0.0, 1.0219592], [0.26277408, 0.26271784, 0.26257473], [0.6620739, 0.7465552, 0.7985428])),
-        (KodakVision3_500T, reference([-0.7838841, 0.0, 0.92112136], [0.26567653, 0.26561692, 0.26549003], [0.68338394, 0.76721215, 0.7902225])),
-        (FujifilmC200, reference([-0.8304623, 0.0, 0.95183784], [0.27410483, 0.27403846, 0.27389687], [0.7544914, 0.755274, 0.69163656])),
-        (FujifilmPro400H, reference([-1.1333568, 0.0, 1.0707351], [0.3005907, 0.3004895, 0.300285], [0.69857633, 0.7685451, 0.8476269])),
-        (FujifilmXtra400, reference([-0.76884884, 0.0, 0.8751772], [0.2673272, 0.26726773, 0.26714772], [0.7469927, 0.7451898, 0.6953603])),
+        (VirtualStock::of("kodak-portra-800"), reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.64768046, 0.7268683, 0.7630561])),
+        (VirtualStock::of("kodak-portra-800-push-1"), reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.6494186, 0.7278812, 0.75367403])),
+        (VirtualStock::of("kodak-portra-800-push-2"), reference([-0.84404904, 0.0, 1.1973134], [0.2667488, 0.2666853, 0.2665002], [0.6495546, 0.7270855, 0.74462855])),
+        (VirtualStock::of("kodak-portra-160"), reference([-1.0279491, 0.0, 0.77555937], [0.2723183, 0.27224207, 0.27213567], [0.61698914, 0.68821293, 0.8399785])),
+        (VirtualStock::of("kodak-portra-400"), reference([-0.98707014, 0.0, 0.7491194], [0.27438924, 0.27431393, 0.2742105], [0.62938607, 0.7078299, 0.8256584])),
+        (VirtualStock::of("kodak-ektar-100"), reference([-0.8816751, 0.0, 0.77718276], [0.27767417, 0.27760288, 0.2774917], [0.61034083, 0.6918498, 0.8607544])),
+        (VirtualStock::of("kodak-gold-200"), reference([-0.82962483, 0.0, 1.0129256], [0.27911428, 0.2790453, 0.278885], [0.6387663, 0.72390294, 0.81404686])),
+        (VirtualStock::of("kodak-ultramax-400"), reference([-0.82562864, 0.0, 1.1634097], [0.26399082, 0.2639297, 0.26375595], [0.6370392, 0.72782284, 0.77483225])),
+        (VirtualStock::of("kodak-verita-200d"), reference([-1.0170532, 0.0, 0.9371615], [0.29557034, 0.2954798, 0.29531628], [0.7012342, 0.734775, 0.78206813])),
+        (VirtualStock::of("kodak-vision3-50d"), reference([-0.90168256, 0.0, 0.9253492], [0.2607587, 0.2606951, 0.26057217], [0.6738153, 0.73703754, 0.7914196])),
+        (VirtualStock::of("kodak-vision3-200t"), reference([-0.82313, 0.0, 0.88816845], [0.26512843, 0.2650669, 0.26494658], [0.67345315, 0.75740576, 0.80266327])),
+        (VirtualStock::of("kodak-vision3-250d"), reference([-0.7476403, 0.0, 1.0219592], [0.26277408, 0.26271784, 0.26257473], [0.6620739, 0.7465552, 0.7985428])),
+        (VirtualStock::of("kodak-vision3-500t"), reference([-0.7838841, 0.0, 0.92112136], [0.26567653, 0.26561692, 0.26549003], [0.68338394, 0.76721215, 0.7902225])),
+        (VirtualStock::of("fujifilm-c200"), reference([-0.8304623, 0.0, 0.95183784], [0.27410483, 0.27403846, 0.27389687], [0.7544914, 0.755274, 0.69163656])),
+        (VirtualStock::of("fujifilm-pro-400h"), reference([-1.1333568, 0.0, 1.0707351], [0.3005907, 0.3004895, 0.300285], [0.69857633, 0.7685451, 0.8476269])),
+        (VirtualStock::of("fujifilm-xtra-400"), reference([-0.76884884, 0.0, 0.8751772], [0.2673272, 0.26726773, 0.26714772], [0.7469927, 0.7451898, 0.6953603])),
     ]
 };
 
@@ -114,9 +113,9 @@ mod tests {
     #[test]
     fn a_digital_photo_on_spektrafilms_reference_lands_on_the_data_sheets_its_hand_kept() {
         let older = DATASHEET_VERSION - 1;
-        let gold = photo(VirtualStock::KodakGold200);
+        let gold = photo(VirtualStock::of("kodak-gold-200"));
         let landed = read(&stored(&gold, older, None));
-        let own = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::KodakGold200);
+        let own = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-gold-200"));
         assert_eq!((landed.gains, landed.levels, landed.dye_set), (own.gains, own.levels, own.dye_set), "a reference laid whole lands whole");
         assert_eq!(PipelineSettings { gains: gold.gains, levels: gold.levels, ..landed.clone() }, gold, "nothing else moves");
         let mut hand = gold.clone();
@@ -134,10 +133,10 @@ mod tests {
             s
         };
         let own = |stock: VirtualStock| PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
-        let twin = on_mixed(VirtualStock::KodakPortra800);
-        assert_eq!(read(&stored(&twin, older, Some("kodak-portra-800-datasheet"))), own(VirtualStock::KodakPortra800));
-        let reala = on_mixed(VirtualStock::FujifilmSuperiaReala);
-        assert_eq!(read(&stored(&reala, older, None)), own(VirtualStock::FujifilmSuperiaReala));
+        let twin = on_mixed(VirtualStock::of("kodak-portra-800"));
+        assert_eq!(read(&stored(&twin, older, Some("kodak-portra-800-datasheet"))), own(VirtualStock::of("kodak-portra-800")));
+        let reala = on_mixed(VirtualStock::of("fujifilm-superia-reala"));
+        assert_eq!(read(&stored(&reala, older, None)), own(VirtualStock::of("fujifilm-superia-reala")));
         assert_eq!(read(&stored(&gold, VERSION, None)), gold);
     }
 
@@ -145,28 +144,28 @@ mod tests {
     fn a_document_through_every_step_lands_once_on_the_data_sheets_reference() {
         // A photo before its film's own gains, on another stock's spektrafilm reference: moved onto its own, then onto
         // its data sheet's, never twice.
-        let mut laid = photo(VirtualStock::KodakVerita200D);
-        (laid.gains.stops, laid.dye_set) = (former(VirtualStock::KodakVision3_200T).stops, DyeSet::KodakVision3_200T);
+        let mut laid = photo(VirtualStock::of("kodak-verita-200d"));
+        (laid.gains.stops, laid.dye_set) = (former(VirtualStock::of("kodak-vision3-200t")).stops, DyeSet::of("kodak-vision3-200t"));
         let landed = read(&stored(&laid, super::super::chain::OWN_FILM_VERSION - 1, None));
-        assert_eq!(landed.gains.stops, VirtualStock::KodakVerita200D.reference().stops);
+        assert_eq!(landed.gains.stops, VirtualStock::of("kodak-verita-200d").reference().stops);
         // Twin: its spektrafilm reference is another.
-        assert_ne!(landed.gains.stops, former(VirtualStock::KodakVerita200D).stops);
+        assert_ne!(landed.gains.stops, former(VirtualStock::of("kodak-verita-200d")).stops);
     }
 
     #[test]
     fn every_retired_key_reads_as_its_data_sheet_stock_and_paper() {
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-        s.print_paper = Some(PaperStock::KodakEnduraPremier);
+        s.print_paper = Some(PaperStock::of("kodak-endura-premier"));
         let mut stored: Value = serde_json::from_slice(&stored(&s, DATASHEET_VERSION - 1, Some("kodak-ultramax-400-datasheet"))).unwrap();
         stored["settings"]["dyeSet"] = json!("kodak-ultramax-400-datasheet");
         stored["settings"]["printPaper"] = json!("fujifilm-crystal-archive-type-ii");
         let read = read(&serde_json::to_vec(&stored).unwrap());
         assert_eq!(
             (read.film().map(|f| f.stock), read.dye_set, read.print_paper),
-            (Some(VirtualStock::KodakUltraMax400), DyeSet::KodakUltraMax400, Some(PaperStock::FujifilmCrystalArchiveDigitalDPII))
+            (Some(VirtualStock::of("kodak-ultramax-400")), DyeSet::of("kodak-ultramax-400"), Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")))
         );
-        // Twin: a key no stock carries is refused, never read as another.
+        // Twin: a key no stock carries is kept as stored, never read as another, so its file brought back finds it.
         stored["settings"]["dyeSet"] = json!("kodak-ultramax-900-datasheet");
-        assert!(super::super::document(&serde_json::to_vec(&stored).unwrap()).is_err());
+        assert_eq!(super::super::document(&serde_json::to_vec(&stored).unwrap()).map(|d| d.document.settings.dye_set.key()).ok(), Some("kodak-ultramax-900-datasheet"));
     }
 }

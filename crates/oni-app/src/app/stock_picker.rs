@@ -5,7 +5,7 @@
 
 use super::Ctl;
 use crate::{Exporting, PanelState, StockBrand, StockCell, StockLine, StockRow, Stocks};
-use oni_settings::film::{FILM_STOCKS, FilmStockKind, film_stock};
+use oni_settings::film::{FilmStockKind, film_stock, stocks};
 use oni_settings::{PaperStock, PipelineSettings};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
@@ -22,7 +22,7 @@ impl Lit {
     /// A paper changes the one the enlarger prints on, never turns the enlarger on.
     pub(super) fn picked(self, settings: &PipelineSettings, own: Option<&str>) -> PipelineSettings {
         match self {
-            Lit::Stock(i) => FILM_STOCKS.get(i).map_or_else(|| settings.clone(), |kind| picked(settings, kind, own)),
+            Lit::Stock(i) => stocks().get(i).map_or_else(|| settings.clone(), |kind| picked(settings, kind, own)),
             Lit::Paper(paper) if settings.print_paper.is_some() => PipelineSettings { print_paper: Some(paper), ..settings.clone() },
             Lit::Paper(_) => settings.clone(),
         }
@@ -30,7 +30,7 @@ impl Lit {
 
     /// The paper at `i` in the catalogue, -1 none.
     fn paper(i: i32) -> Option<Lit> {
-        usize::try_from(i).ok().and_then(|i| PaperStock::ALL.get(i)).map(|p| Lit::Paper(*p))
+        usize::try_from(i).ok().and_then(|i| PaperStock::all().get(i).copied()).map(Lit::Paper)
     }
 
     fn stock(i: i32) -> Option<Lit> {
@@ -87,7 +87,7 @@ impl Ctl {
 
     /// The editor's menu on the open photo's film: a digital photo's virtual films alone, else every stock a roll
     /// takes, its line shown among them; each with its canister at a tree row's side, the stock in use checked.
-    fn lay_stock_menu(&self) {
+    pub(super) fn lay_stock_menu(&self) {
         let Some(w) = self.window() else { return };
         let (film, own) = {
             let s = self.state.borrow();
@@ -95,16 +95,17 @@ impl Ctl {
         };
         let side = crate::stocks::row_side(&w);
         let listed = if film { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(own) };
+        let all = stocks();
         let mut lines = Vec::new();
         for (brand, kinds) in listed {
             lines.push(StockLine { index: -1, name: brand.into(), brand: true, ..Default::default() });
             for i in kinds {
-                let kind = &FILM_STOCKS[i];
+                let kind = all[i];
                 let artwork = crate::stocks::row_icon(kind.id, side);
-                lines.push(StockLine { index: i as i32, name: kind.display_name.into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false });
+                lines.push(StockLine { index: i as i32, name: crate::stocks::shown_name(&kind).into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false });
             }
         }
-        let in_use = lines.iter().position(|l| !l.brand && Some(FILM_STOCKS[l.index as usize].id) == own).map_or(-1, |i| i as i32);
+        let in_use = lines.iter().position(|l| !l.brand && Some(all[l.index as usize].id) == own).map_or(-1, |i| i as i32);
         let g = w.global::<Stocks>();
         g.set_lines(ModelRc::new(VecModel::from(lines)));
         g.set_in_use(in_use);
@@ -112,15 +113,16 @@ impl Ctl {
     }
 
     /// The Colour tab's menu on the open photo's paper: every paper of the catalogue by maker, the one in use checked.
-    fn lay_paper_menu(&self) {
+    pub(super) fn lay_paper_menu(&self) {
         let Some(w) = self.window() else { return };
         let own = self.state.borrow().store.settings().fitting_paper();
+        let papers = PaperStock::all();
         let mut lines = Vec::new();
-        for (maker, papers) in crate::stocks::papers_by_maker() {
+        for (maker, listed) in crate::stocks::papers_by_maker() {
             lines.push(StockLine { index: -1, name: maker.into(), brand: true, ..Default::default() });
-            lines.extend(papers.into_iter().map(|i| StockLine { index: i as i32, name: PaperStock::ALL[i].name().into(), ..Default::default() }));
+            lines.extend(listed.into_iter().map(|i| StockLine { index: i as i32, name: papers[i].name().into(), ..Default::default() }));
         }
-        let in_use = lines.iter().position(|l| !l.brand && PaperStock::ALL[l.index as usize] == own).map_or(-1, |i| i as i32);
+        let in_use = lines.iter().position(|l| !l.brand && papers[l.index as usize] == own).map_or(-1, |i| i as i32);
         let panel = w.global::<PanelState>();
         panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         panel.set_paper_in_use(in_use);
@@ -166,7 +168,7 @@ impl Ctl {
                     let listed = if base.film().is_some() { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(own) };
                     listed.into_iter().flat_map(|(_, l)| l).map(Lit::Stock).collect()
                 }
-                Lit::Paper(_) => PaperStock::ALL.into_iter().map(Lit::Paper).collect(),
+                Lit::Paper(_) => PaperStock::all().into_iter().map(Lit::Paper).collect(),
             };
             listed.into_iter().map(|l| l.picked(&base, own)).collect()
         };
@@ -189,7 +191,7 @@ impl Ctl {
         };
         match lit {
             Some(Lit::Stock(i)) if !film => {
-                if let (Some(kind), Some(path)) = (FILM_STOCKS.get(i), open) {
+                if let (Some(kind), Some(path)) = (stocks().get(i).copied(), open) {
                     self.set_stock_of_roll_at(&path, kind.id);
                 }
             }
@@ -205,18 +207,19 @@ impl Ctl {
         let g = w.global::<Stocks>();
         let columns = g.get_columns().max(1) as usize;
         let listed = crate::stocks::by_brand(current);
+        let all = stocks();
         let brands: Vec<StockBrand> = listed
             .into_iter()
             .map(|(brand, kinds)| {
                 let cells: Vec<StockCell> = kinds
                     .into_iter()
                     .map(|i| {
-                        let kind = &FILM_STOCKS[i];
+                        let kind = all[i];
                         let artwork = crate::stocks::icon(kind.id);
                         StockCell {
                             index: i as i32,
-                            name: kind.display_name.into(),
-                            note: crate::stocks::unspecified(kind).into(),
+                            name: crate::stocks::shown_name(&kind).into(),
+                            note: crate::stocks::unspecified(&kind).into(),
                             has_artwork: artwork.is_some(),
                             artwork: artwork.unwrap_or_default(),
                             picked: current == Some(kind.id),
@@ -228,8 +231,21 @@ impl Ctl {
             })
             .collect();
         g.set_brands(ModelRc::new(VecModel::from(brands)));
-        self.state.borrow_mut().stock_target = Some(target);
+        let mut s = self.state.borrow_mut();
+        (s.stock_target, s.stock_current) = (Some(target), current.map(str::to_owned));
         g.set_shown(true);
+    }
+
+    /// The sheet, where it is open, laid again on the catalogue in use, its target and pick kept.
+    pub(super) fn stock_picker_again(&self) {
+        let Some(w) = self.window() else { return };
+        let (target, current) = {
+            let s = self.state.borrow();
+            (s.stock_target, s.stock_current.clone())
+        };
+        if let (true, Some(target)) = (w.global::<Stocks>().get_shown(), target) {
+            self.open_stock_picker(target, current.as_deref());
+        }
     }
 
     /// Never a stock taken away: a roll was shot on some film, so Done only closes.
@@ -238,7 +254,7 @@ impl Ctl {
         w.global::<Stocks>().set_shown(false);
         w.invoke_refocus();
         let target = self.state.borrow_mut().stock_target.take();
-        let kind = i.and_then(|i| FILM_STOCKS.get(i));
+        let kind = i.and_then(|i| stocks().get(i).copied());
         match (target, kind) {
             (Some(StockTarget::Roll), Some(kind)) => self.set_roll_stock(kind.id),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
@@ -262,6 +278,7 @@ impl Ctl {
         let s = self.state.borrow();
         let settings = s.store.settings();
         match settings.film() {
+            Some(f) if !f.stock.is_known() => crate::stocks::missing_canister(f.stock.key()),
             Some(f) => crate::stocks::canister(film_stock(Some(f.stock.catalogue_id())), String::new()),
             None => super::organising::info_sidebar::roll_canister(s.open_stock(), Some(settings.mode)),
         }
@@ -273,7 +290,7 @@ mod tests {
     use super::*;
     use oni_settings::{ConversionMode, DyeSet, VirtualStock};
 
-    fn kind(id: &str) -> &'static FilmStockKind {
+    fn kind(id: &str) -> FilmStockKind {
         film_stock(Some(id)).unwrap()
     }
 
@@ -283,12 +300,12 @@ mod tests {
     fn a_digital_photo_lit_on_a_stock_is_what_its_pick_writes() {
         let digital = PipelineSettings { mode: ConversionMode::Digital, ..PipelineSettings::default() };
         let own = digital.film().unwrap().stock;
-        let next = VirtualStock::ALL.iter().copied().find(|v| *v != own).unwrap();
-        let lit = picked(&digital, kind(next.catalogue_id()), Some(own.catalogue_id()));
+        let next = VirtualStock::all().iter().copied().find(|v| *v != own).unwrap();
+        let lit = picked(&digital, &kind(next.catalogue_id()), Some(own.catalogue_id()));
         assert_eq!(lit, roll_tab_pick(&digital, next));
         assert_eq!((lit.film().map(|f| f.stock), lit.gains.stops, lit.dye_set), (Some(next), next.reference().stops, next.dye_set()));
-        assert_eq!(picked(&digital, kind(own.catalogue_id()), Some(own.catalogue_id())), digital, "its own film writes nothing");
-        assert_eq!(picked(&digital, kind("agfaphoto-apx"), Some(own.catalogue_id())), digital, "no virtual film, nothing");
+        assert_eq!(picked(&digital, &kind(own.catalogue_id()), Some(own.catalogue_id())), digital, "its own film writes nothing");
+        assert_eq!(picked(&digital, &kind("agfaphoto-apx"), Some(own.catalogue_id())), digital, "no virtual film, nothing");
         // Twin: lit on another film, the photo is no longer as it was.
         assert_ne!(lit, digital);
     }
@@ -298,13 +315,13 @@ mod tests {
     fn a_negative_lit_on_a_stock_takes_its_dyes() {
         let negative = PipelineSettings::default();
         assert!(negative.film().is_none());
-        let lit = picked(&negative, kind("fujifilm-c200"), None);
-        assert_eq!(lit.dye_set, DyeSet::FujifilmC200);
+        let lit = picked(&negative, &kind("fujifilm-c200"), None);
+        assert_eq!(lit.dye_set, DyeSet::of("fujifilm-c200"));
         assert_eq!(PipelineSettings { dye_set: negative.dye_set, ..lit.clone() }, negative, "its dyes alone move");
-        assert_eq!(picked(&negative, kind("fujifilm-c200"), Some("fujifilm-c200")), negative, "the roll's own stock, nothing");
-        assert_eq!(picked(&negative, kind("agfaphoto-apx"), None), negative, "a stock naming no dyes, nothing");
+        assert_eq!(picked(&negative, &kind("fujifilm-c200"), Some("fujifilm-c200")), negative, "the roll's own stock, nothing");
+        assert_eq!(picked(&negative, &kind("agfaphoto-apx"), None), negative, "a stock naming no dyes, nothing");
         // Twin: the dyes did move from the photo's own.
-        assert_ne!(negative.dye_set, DyeSet::FujifilmC200);
+        assert_ne!(negative.dye_set, DyeSet::of("fujifilm-c200"));
     }
 
     /// A photo lit on a paper prints on it and moves nothing else; lit on its own paper, it is as it was.
@@ -312,14 +329,14 @@ mod tests {
     fn a_photo_lit_on_a_paper_is_what_its_pick_writes() {
         let digital = PipelineSettings { mode: ConversionMode::Digital, ..PipelineSettings::default() }.on_paper();
         let own = digital.paper().unwrap();
-        let other = PaperStock::ALL.into_iter().find(|p| *p != own).unwrap();
+        let other = PaperStock::all().into_iter().find(|p| *p != own).unwrap();
         let lit = Lit::Paper(other).picked(&digital, None);
         assert_eq!(lit, PipelineSettings { print_paper: Some(other), ..digital.clone() });
         assert_eq!(Lit::Paper(own).picked(&digital, None), digital, "its own paper writes nothing");
         let unprinted = PipelineSettings { print_paper: None, ..digital.clone() };
         assert_eq!(Lit::Paper(other).picked(&unprinted, None), unprinted, "the enlarger off stays off");
-        let at = PaperStock::ALL.iter().position(|p| *p == other).unwrap() as i32;
-        assert_eq!((Lit::paper(at), Lit::paper(-1), Lit::paper(PaperStock::ALL.len() as i32)), (Some(Lit::Paper(other)), None, None));
+        let at = PaperStock::all().iter().position(|p| *p == other).unwrap() as i32;
+        assert_eq!((Lit::paper(at), Lit::paper(-1), Lit::paper(PaperStock::all().len() as i32)), (Some(Lit::Paper(other)), None, None));
         // Twin: lit on another paper, the photo is no longer as it was.
         assert_ne!(lit, digital);
     }

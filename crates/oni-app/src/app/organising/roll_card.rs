@@ -23,7 +23,7 @@ impl Frames {
                 out.sets.push(set);
             }
         }
-        out.sets.sort_by_key(|s| DyeSet::ALL.iter().position(|t| t == s));
+        out.sets.sort_by_key(|s| DyeSet::all().iter().position(|t| t == s));
         out
     }
 }
@@ -205,15 +205,15 @@ mod tests {
     #[test]
     fn the_card_reads_the_stocks_the_frames_are_read_through_in_their_order() {
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
-        let grey = PipelineSettings { dye_set: DyeSet::FujifilmC200, ..PipelineSettings::rest(ConversionMode::Monochrome, true) };
-        let read = Frames::read([negative(DyeSet::KodakGold200), negative(DyeSet::GenericC41), negative(DyeSet::GenericC41), slide, grey].into_iter());
-        assert_eq!(read.sets, [DyeSet::GenericC41, DyeSet::KodakGold200], "a slide and a grey are read through none");
+        let grey = PipelineSettings { dye_set: DyeSet::of("fujifilm-c200"), ..PipelineSettings::rest(ConversionMode::Monochrome, true) };
+        let read = Frames::read([negative(DyeSet::of("kodak-gold-200")), negative(DyeSet::of("generic-c41")), negative(DyeSet::of("generic-c41")), slide, grey].into_iter());
+        assert_eq!(read.sets, [DyeSet::of("generic-c41"), DyeSet::of("kodak-gold-200")], "a slide and a grey are read through none");
         assert!(read.measured, "a slide asks for no measure");
         // Twin: a digital photo reads its own virtual film, whatever stock it names.
-        let digital = PipelineSettings { dye_set: DyeSet::FujifilmC200, ..PipelineSettings::rest(ConversionMode::Digital, true) };
-        assert_eq!(Frames::read([digital, negative(DyeSet::KodakGold200)].into_iter()).sets, [DyeSet::KodakGold200]);
+        let digital = PipelineSettings { dye_set: DyeSet::of("fujifilm-c200"), ..PipelineSettings::rest(ConversionMode::Digital, true) };
+        assert_eq!(Frames::read([digital, negative(DyeSet::of("kodak-gold-200"))].into_iter()).sets, [DyeSet::of("kodak-gold-200")]);
         // Twin: no slide, the negatives unmeasured, leaves the roll unmeasured.
-        assert!(!Frames::read([negative(DyeSet::KodakGold200)].into_iter()).measured);
+        assert!(!Frames::read([negative(DyeSet::of("kodak-gold-200"))].into_iter()).measured);
     }
 
     #[test]
@@ -221,23 +221,23 @@ mod tests {
         let fujicolor = Some("fujifilm-fujicolor");
         let quiet = |text: &str| (text.to_string(), String::new());
         let on = |sets: &[DyeSet]| Frames { sets: sets.to_vec(), ..Frames::default() };
-        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::FujifilmC200]))), quiet("Frames read as Fujifilm C200"));
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::of("fujifilm-c200")]))), quiet("Frames read as Fujifilm C200"));
         // Twin: frames on Gold under a Fujicolor stock warn, naming both, and offer the stock's.
         let warned = ("Frames read as Kodak Gold 200, but this film stock is Fujifilm C200".to_string(), "Read as Fujifilm C200".to_string());
-        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200]))), warned);
-        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200, DyeSet::FujifilmC200]))), warned, "only the frames off the stock's are named");
-        assert_eq!(dyes_note(None, Some(&on(&[DyeSet::GenericC41]))), quiet("Frames read as Generic C-41"));
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::of("kodak-gold-200")]))), warned);
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::of("kodak-gold-200"), DyeSet::of("fujifilm-c200")]))), warned, "only the frames off the stock's are named");
+        assert_eq!(dyes_note(None, Some(&on(&[DyeSet::of("generic-c41")]))), quiet("Frames read as Generic C-41"));
         assert_eq!(dyes_note(fujicolor, None), quiet(""), "nothing is said while the frames read");
         assert_eq!(dyes_note(fujicolor, Some(&on(&[]))), quiet(""), "nor when no frame is read through a stock");
     }
 
     #[test]
     fn a_stock_writes_its_measured_dyes_and_black_and_white_none() {
-        let mut s = negative(DyeSet::KodakGold200);
+        let mut s = negative(DyeSet::of("kodak-gold-200"));
         super::dyed(&mut s, Some("fujifilm-superia"));
-        assert_eq!(s.dye_set, DyeSet::FujifilmXtra400);
+        assert_eq!(s.dye_set, DyeSet::of("fujifilm-xtra-400"));
         super::dyed(&mut s, Some("lucky-color200"));
-        assert_eq!(s.dye_set, DyeSet::GenericC41, "a stock no profile measures lays the generic set");
+        assert_eq!(s.dye_set, DyeSet::of("generic-c41"), "a stock no profile measures lays the generic set");
         // Twin: a black-and-white stock leaves the set as it was.
         let before = s.clone();
         super::dyed(&mut s, Some("ilford-hp5"));

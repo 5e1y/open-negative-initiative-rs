@@ -23,7 +23,7 @@ fn scene(l: f64, c: f64, h: f64) -> V3 {
 
 /// The print of `colour` on settings `s`, in Oklab, as the display clips it.
 fn printed(colour: V3, s: &PipelineSettings) -> V3 {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let lit = conversion::scene_white(s).map_or([colour[0] as f32, colour[1] as f32, colour[2] as f32, 1.0], |m| {
         cpu::color_matrix([colour[0] as f32, colour[1] as f32, colour[2] as f32, 1.0], &m)
     });
@@ -45,9 +45,9 @@ fn prints() -> Vec<(&'static str, PipelineSettings)> {
     let mut today = on(None);
     today.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
     vec![
-        ("Frontier SP-3000 paper", on(Some(PaperStock::FujifilmFrontierSp3000))),
+        ("Frontier SP-3000 paper", on(Some(PaperStock::of("fujifilm-frontier-sp-3000")))),
         ("Frontier legacy print", today),
-        ("Endura Premier", on(Some(PaperStock::KodakEnduraPremier))),
+        ("Endura Premier", on(Some(PaperStock::of("kodak-endura-premier")))),
         ("ONI's print", on(None)),
     ]
 }

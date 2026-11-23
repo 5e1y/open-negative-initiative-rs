@@ -5,6 +5,7 @@ use super::printing::{GREY_PRINT, bisected};
 use super::*;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
+use std::sync::OnceLock;
 
 /// The neutral paper's deepest black as light, a density of 5: ONI's print lays none at its black, past any a screen shows.
 pub const NEUTRAL_DEEPEST: f32 = 1e-5;

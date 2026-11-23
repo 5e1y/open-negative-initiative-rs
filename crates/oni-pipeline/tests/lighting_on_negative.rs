@@ -42,7 +42,7 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
-    let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
+    let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
         ("ONI's print, uncompensated", uncompensated),
@@ -62,7 +62,7 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
 
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
@@ -94,7 +94,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets, a
     // paper's white on pure white without Print lift.
-    const BEFORE: u64 = 0x3dc5_2f11_b37c_0d55;
+    const BEFORE: u64 = 0xe82a_50bb_bd7a_8cbc;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -179,7 +179,7 @@ fn printed(pixels: &[V4], k: &Stage47) -> Vec<[f32; 3]> {
 
 #[test]
 fn exposure_on_a_scanned_negative_is_that_negative_shot_a_stop_over() {
-    for stock in [VirtualStock::KodakPortra400, VirtualStock::KodakEktar100, VirtualStock::FujifilmXtra400] {
+    for stock in [VirtualStock::of("kodak-portra-400"), VirtualStock::of("kodak-ektar-100"), VirtualStock::of("fujifilm-xtra-400")] {
         for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
             let s = PipelineSettings { print_paper: paper, ..shot_on(stock) };
             for stops in [-1.0f32, 1.0] {
@@ -206,7 +206,7 @@ fn exposure_on_a_scanned_negative_is_that_negative_shot_a_stop_over() {
 
 #[test]
 fn on_a_digital_photo_lightings_exposure_is_the_films() {
-    for stock in [VirtualStock::KodakPortra800, VirtualStock::KodakPortra800Push2, VirtualStock::KodakGold200] {
+    for stock in [VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-portra-800-push-2"), VirtualStock::of("kodak-gold-200")] {
         for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
             let s = PipelineSettings { print_paper: paper, ..digital().on_stock(stock) };
             let baked = film::stock(stock);
@@ -247,9 +247,9 @@ fn timed_to(scan: &[V4], k: &Stage47, target: f32) -> Stage47 {
 
 #[test]
 fn brightening_on_the_negative_keeps_the_films_colour() {
-    let negative = PipelineSettings { print_paper: Some(PaperStock::default()), ..shot_on(VirtualStock::KodakPortra400) };
+    let negative = PipelineSettings { print_paper: Some(PaperStock::default()), ..shot_on(VirtualStock::of("kodak-portra-400")) };
     let photo = PipelineSettings { print_paper: Some(PaperStock::default()), ..digital() };
-    for (label, s, stock) in [("negative", negative, VirtualStock::KodakPortra400), ("digital", photo, VirtualStock::KodakPortra800)] {
+    for (label, s, stock) in [("negative", negative, VirtualStock::of("kodak-portra-400")), ("digital", photo, VirtualStock::of("kodak-portra-800"))] {
         let scan = scanned(stock, 0.0);
         let rest = conversion::stage47(&s);
         for stops in [1.0f32, 2.0] {

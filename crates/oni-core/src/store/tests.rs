@@ -173,7 +173,7 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_measured_dyes_and_undoes
     std::fs::create_dir_all(&roll).unwrap();
     let frames: Vec<String> = ["a.tif", "b.tif", "c.tif"].iter().map(|n| roll.join(n).to_string_lossy().into_owned()).collect();
     let outside = dir.join("d.tif").to_string_lossy().into_owned();
-    let fuji = PipelineSettings { dye_set: DyeSet::FujifilmXtra400, ..PipelineSettings::default() };
+    let fuji = PipelineSettings { dye_set: DyeSet::of("fujifilm-xtra-400"), ..PipelineSettings::default() };
     for p in frames.iter().chain([&outside]) {
         std::fs::write(p, b"").unwrap();
         sidecar::write(&fuji, Path::new(p), WriteOptions::default()).unwrap();
@@ -189,13 +189,13 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_measured_dyes_and_undoes
     let dyes = oni_settings::dyes::dye_set("kodak-portra");
     let laid = store.lay_roll(&frames, Some(marker), |s| s.dye_set = dyes.unwrap_or(s.dye_set), "Make a Roll");
     assert_eq!(laid, 3);
-    assert!(frames.iter().all(|p| family(p) == DyeSet::KodakPortra400), "Portra writes its dyes on every frame");
-    assert_eq!(family(&outside), DyeSet::FujifilmXtra400, "twin: a frame outside the roll keeps its own");
+    assert!(frames.iter().all(|p| family(p) == DyeSet::of("kodak-portra-400")), "Portra writes its dyes on every frame");
+    assert_eq!(family(&outside), DyeSet::of("fujifilm-xtra-400"), "twin: a frame outside the roll keeps its own");
     assert_eq!(oni_library::folders::roll(&folder), Some(film.clone()));
     assert_eq!(store.marked.take(), Some((folder.clone(), Some(film.clone()))));
     assert_eq!(store.history().undo_label(), Some("Make a Roll"));
     store.undo();
-    assert!(frames.iter().all(|p| family(p) == DyeSet::FujifilmXtra400), "one undo gives every set back");
+    assert!(frames.iter().all(|p| family(p) == DyeSet::of("fujifilm-xtra-400")), "one undo gives every set back");
     assert_eq!(oni_library::folders::roll(&folder), None, "and takes the marker away");
     assert_eq!(store.marked.take(), Some((folder.clone(), None)));
     assert!(!store.history().can_undo(), "one step");
@@ -208,7 +208,7 @@ fn a_roll_made_with_its_stock_writes_the_marker_and_the_measured_dyes_and_undoes
     let dyes = oni_settings::dyes::dye_set("ilford-hp5");
     let marker = Marker { folder: folder.clone(), before: Some(film.clone()), after: Some(hp5.clone()) };
     assert_eq!(store.lay_roll(&frames, Some(marker), |s| s.dye_set = dyes.unwrap_or(s.dye_set), "Set Film Stock"), 0);
-    assert!(frames.iter().all(|p| family(p) == DyeSet::KodakPortra400));
+    assert!(frames.iter().all(|p| family(p) == DyeSet::of("kodak-portra-400")));
     assert_eq!(oni_library::folders::roll(&folder), Some(hp5));
     store.undo();
     assert_eq!(oni_library::folders::roll(&folder), Some(film), "the marker alone is a step too");

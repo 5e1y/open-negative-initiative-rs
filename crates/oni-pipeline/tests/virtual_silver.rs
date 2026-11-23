@@ -11,7 +11,7 @@ use oni_render::{VirtualNegative, cpu};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 
 fn silver() -> impl Iterator<Item = VirtualStock> {
-    VirtualStock::ALL.into_iter().filter(|s| s.is_silver())
+    VirtualStock::all().into_iter().filter(|s| s.is_silver())
 }
 
 fn scan(stock: VirtualStock, rgb: [f32; 3]) -> [f32; 3] {
@@ -53,7 +53,7 @@ fn a_silver_negative_scans_neutral() {
         let worst = worst.fold(0.0f32, f32::max);
         assert!(worst < 1e-5, "{stock:?}: a scan {worst:.1e} off neutral");
     }
-    let portra = scan(VirtualStock::KodakPortra800, [GREY; 3]);
+    let portra = scan(VirtualStock::of("kodak-portra-800"), [GREY; 3]);
     assert!((portra[0] - portra[2]).abs() / portra[1] > 0.1, "twin: a colour negative's orange mask: {portra:?}");
 }
 
@@ -64,7 +64,7 @@ fn a_silver_negative_scans_neutral() {
 #[test]
 fn an_orthochromatic_film_holds_red_thin_and_a_panchromatic_one_does_not() {
     let [red, green, blue, grey] = patches();
-    let ortho = |s: VirtualStock| s.profile().contains("ortho");
+    let ortho = |s: VirtualStock| s.key().contains("ortho");
     let thin = |s: VirtualStock, c| density(s, grey) - density(s, c);
     for stock in silver() {
         let (r, g, b) = (thin(stock, red), thin(stock, green), thin(stock, blue));
@@ -84,7 +84,7 @@ fn an_orthochromatic_film_holds_red_thin_and_a_panchromatic_one_does_not() {
         println!("{:<24} its red printed at {share:.3} of its grey", stock.name());
         assert!(if ortho(stock) { share < 0.2 } else { share > 0.7 }, "{stock:?}: {share:.3}");
     }
-    let (o, p) = (VirtualStock::IlfordOrthoPlus, VirtualStock::IlfordHP5Plus);
+    let (o, p) = (VirtualStock::of("ilford-ortho-plus"), VirtualStock::of("ilford-hp5-plus"));
     assert!(thin(o, red) > thin(p, red) + 0.3, "twin: {} against {}", thin(o, red), thin(p, red));
 }
 
@@ -103,7 +103,7 @@ fn a_silver_negative_densifies_monotonically_along_a_ramp() {
         let baked = film::stock(stock);
         assert!(rising(&baked.kernel, &baked.table), "{stock:?}");
     }
-    let baked = film::stock(VirtualStock::IlfordHP5Plus);
+    let baked = film::stock(VirtualStock::of("ilford-hp5-plus"));
     let (w, _) = baked.kernel.table_size();
     let mut dipped = baked.table.clone();
     let row = (baked.kernel.tc_nodes + 1) * w;
@@ -131,7 +131,7 @@ fn the_gpu_develops_the_silver_negative_its_reference_does() {
     ];
     pixels[..edges.len()].copy_from_slice(&edges);
     let input = g.upload(w, h, &pixels).unwrap();
-    for (stock, other) in [(VirtualStock::IlfordOrthoPlus, VirtualStock::IlfordFP4Plus), (VirtualStock::KodakTriX400, VirtualStock::FomaOrtho400)] {
+    for (stock, other) in [(VirtualStock::of("ilford-ortho-plus"), VirtualStock::of("ilford-fp4-plus")), (VirtualStock::of("kodak-tri-x-400"), VirtualStock::of("foma-ortho-400"))] {
         let baked = film::stock(stock);
         let (tw, th) = baked.kernel.table_size();
         let table = g.upload(tw as u32, th as u32, &baked.table).unwrap();
@@ -166,7 +166,7 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
     let source = g.upload(w, h, &scene).unwrap();
     let mut pipeline = Pipeline::new();
     for paperless in [false, true] {
-        let s = PipelineSettings { paperless, ..shot(VirtualStock::IlfordHP5Plus) };
+        let s = PipelineSettings { paperless, ..shot(VirtualStock::of("ilford-hp5-plus")) };
         assert!(s.is_monochrome() && s.mode == ConversionMode::Digital);
         let on = pipeline.render(&mut g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1;
         assert!(on.iter().all(|p| (p[0] - p[1]).abs() < 1e-5 && (p[2] - p[1]).abs() < 1e-5), "a black and white print");
@@ -178,11 +178,12 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
             let r = PipelineSettings { mode, ..s.clone() };
             pipeline.render(&mut g, &scan, &r, &Request::default(), &Default::default(), None).unwrap().1
         };
-        let (mono, colour) = (read(ConversionMode::Monochrome), read(ConversionMode::Negative));
-        judge(&format!("a photo on a black and white film read as a monochrome roll, paperless {paperless}"), &on, &mono, &colour);
+        // Twin: read as a slide, another picture; as a colour negative its equal layers print alike, neutral either way.
+        let (mono, slide) = (read(ConversionMode::Monochrome), read(ConversionMode::Positive));
+        judge(&format!("a photo on a black and white film read as a monochrome roll, paperless {paperless}"), &on, &mono, &slide);
     }
-    let back = shot(VirtualStock::IlfordHP5Plus).on_stock(VirtualStock::KodakPortra800);
-    assert_eq!(back, shot(VirtualStock::KodakPortra800), "nothing of the black and white film stays");
+    let back = shot(VirtualStock::of("ilford-hp5-plus")).on_stock(VirtualStock::of("kodak-portra-800"));
+    assert_eq!(back, shot(VirtualStock::of("kodak-portra-800")), "nothing of the black and white film stays");
     assert!(!back.is_monochrome());
     let coloured = pipeline.render(&mut g, &source, &back, &Request::default(), &Default::default(), None).unwrap().1;
     let chroma = coloured.iter().map(|p| (p[0] - p[2]).abs()).fold(0.0f32, f32::max);
@@ -196,14 +197,14 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
 fn lighting_develops_a_black_and_white_films_own_curve() {
     use oni_pipeline::negative::{self, Film};
     use oni_settings::tone::Print;
-    let stock = VirtualStock::IlfordHP5Plus;
+    let stock = VirtualStock::of("ilford-hp5-plus");
     let s = shot(stock);
     assert_eq!(negative::Film::of(&s), Film::Stock(stock));
     let roll = PipelineSettings::rest(ConversionMode::Monochrome, true);
     assert_eq!(negative::Film::of(&roll), Film::Silver);
     let (own, mean) = (negative::development(Film::Stock(stock)), negative::development(Film::Silver));
     assert_eq!(own.couplers, [[0.0; 3]; 3]);
-    let profile = film::profile::Silver::read(film::dyes::source(stock.profile()).unwrap()).unwrap();
+    let profile = film::profile::Silver::read(stock.entry().profile.as_bytes()).unwrap();
     let curve: Vec<[f64; 3]> = profile.density_curve.iter().map(|d| [*d; 3]).collect();
     let sheet = |e: f32| film::bake::interpolate(f64::from(e), &profile.log_exposure, &curve, 0) as f32;
     let off = (0..own.after.len()).map(|i| (own.after[i][1] - sheet(own.log_low + i as f32 * own.log_step)).abs()).fold(0.0f32, f32::max);

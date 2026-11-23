@@ -89,7 +89,8 @@ fn without_print_lift_the_rest_shows_the_grey_where_a_plain_raw_does_neutral() {
             off_by(linear),
             off_by(density)
         );
-        assert!((0..3).all(|c| (grey[c] - grey_print).abs() < 2e-6), "{label}: {grey:?}");
+        // Within the thousandth the pick's light laid on black takes off the paper's own neutral.
+        assert!((0..3).all(|c| (grey[c] - grey_print).abs() < 1e-3), "{label}: {grey:?}");
         // Twin: either stretch on Print lift's rest shows the grey lighter, by 0.28 and 0.24 stop on Royal Digital, by
         // 0.016 and 0.010 on the Frontier, whose white lies at 0.98.
         assert!(off_by(linear) > 0.012 && off_by(density) > 0.008, "{label}");

@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "fujifilm-superia",
+ "name": "Fujifilm Superia",
+ "brand": "Fujifilm",
+ "type": "colour-negative",
+ "canister": "fujifilm-superia.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "fujifilm-xtra-400"
+}

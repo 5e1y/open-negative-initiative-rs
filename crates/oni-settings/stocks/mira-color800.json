@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "mira-color800",
+ "name": "Mira Color 800",
+ "brand": "Mira",
+ "type": "colour-negative",
+ "iso": 800,
+ "canister": "mira-color800.svg",
+ "dyes": "generic-c41"
+}

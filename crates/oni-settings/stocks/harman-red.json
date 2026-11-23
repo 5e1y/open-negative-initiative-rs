@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "harman-red",
+ "name": "Harman Red",
+ "brand": "Harman",
+ "type": "colour-negative",
+ "iso": 125,
+ "canister": "harman-red.svg",
+ "dyes": "generic-c41"
+}

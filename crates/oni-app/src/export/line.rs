@@ -94,7 +94,7 @@ pub fn keep_line(path: &Path, typed: &ExifLine) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oni_settings::film::FILM_STOCKS;
+    use oni_settings::film::stocks;
     use std::path::PathBuf;
 
     fn frame(name: &str) -> PathBuf {
@@ -113,7 +113,7 @@ mod tests {
     }
 
     fn roll(stock: usize, body: &str) -> Film {
-        Film { stock: Some(FILM_STOCKS[stock].id.into()), camera_body: Some(body.into()), ..Film::new("roll") }
+        Film { stock: Some(stocks()[stock].id.into()), camera_body: Some(body.into()), ..Film::new("roll") }
     }
 
     #[test]
@@ -126,11 +126,11 @@ mod tests {
 
         let (b, c) = (roll(1, "Nikon FM2"), roll(2, "Leica M6"));
         let mut line = opening_line(&path, Some(&b), "", "", &Defaults::default());
-        assert_eq!((line.row.metadata.film.as_str(), line.row.metadata.camera.as_str()), (FILM_STOCKS[1].display_name, "Nikon FM2"));
-        line.row.metadata.film = FILM_STOCKS[3].display_name.into();
+        assert_eq!((line.row.metadata.film.as_str(), line.row.metadata.camera.as_str()), (stocks()[1].display_name, "Nikon FM2"));
+        line.row.metadata.film = stocks()[3].display_name.into();
         keep_line(&path, &line.typed("", "", false));
         let later = opening_line(&path, Some(&c), "", "", &Defaults::default());
-        assert_eq!(later.row.metadata.film, FILM_STOCKS[3].display_name, "the film a hand picked stays");
+        assert_eq!(later.row.metadata.film, stocks()[3].display_name, "the film a hand picked stays");
         assert_eq!(later.row.metadata.camera, "Leica M6", "the camera follows the roll");
 
         // Twin: the whole line kept, the roll's body frozen in it, no longer follows the roll.

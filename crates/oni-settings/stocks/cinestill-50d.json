@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "cinestill-50d",
+ "name": "CineStill 50D",
+ "brand": "CineStill",
+ "type": "colour-negative",
+ "iso": 50,
+ "canister": "cinestill-50d.svg",
+ "dyes": "kodak-vision3-50d"
+}

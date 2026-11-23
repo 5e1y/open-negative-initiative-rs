@@ -55,7 +55,7 @@ fn main() {
     let (w, h, input) = read(Path::new(&args[1]));
     let out = Path::new(&args[2]);
     std::fs::create_dir_all(out).unwrap();
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let reference = stock.reference;
     let scan: Vec<[f32; 4]> = if args[3] == "scene" {
         let k = stock.kernel_at(0.0);
@@ -63,7 +63,7 @@ fn main() {
     } else {
         input.clone()
     };
-    s.virtual_film = Some(VirtualFilm { stock: VirtualStock::KodakPortra800, exposure: 0.0 });
+    s.virtual_film = Some(VirtualFilm { stock: VirtualStock::of("kodak-portra-800"), exposure: 0.0 });
     let k = conversion::stage47(&s);
     let mut info = std::fs::File::create(out.join("params.txt")).unwrap();
     writeln!(info, "reference: {reference:?}\nstage47: {k:?}\nceiling {}", film::CEILING).unwrap();

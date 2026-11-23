@@ -1,0 +1,25 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-color-negative",
+ "name": "Generic Colour Negative",
+ "brand": "Generic",
+ "generic": true,
+ "type": "colour-negative",
+ "canister": "generic-color-negative.svg",
+ "dyes": "generic-c41",
+ "dye_set": {
+  "key": "generic-c41",
+  "mean_of": [
+   "kodak-portra-160",
+   "kodak-portra-400",
+   "kodak-portra-800",
+   "kodak-ektar-100",
+   "kodak-gold-200",
+   "kodak-ultramax-400",
+   "fujifilm-c200",
+   "fujifilm-pro-400h",
+   "fujifilm-xtra-400"
+  ]
+ }
+}

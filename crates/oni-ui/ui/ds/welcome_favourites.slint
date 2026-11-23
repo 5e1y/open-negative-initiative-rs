@@ -160,7 +160,7 @@ export component FavouritesScene inherits Rectangle {
         }
         Line {
             x: root.inset; y: root.fav-roll-y; width: root.row-width; shown: root.joined;
-            Row { y: 0; width: parent.width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../stocks/kodak-gold.svg"); starrable: true; favourite: true; }
+            Row { y: 0; width: parent.width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../../../oni-settings/stocks/kodak-gold.svg"); starrable: true; favourite: true; }
         }
         // Computer: the same tree 1.5 showed under its header.
         Line {
@@ -169,13 +169,13 @@ export component FavouritesScene inherits Rectangle {
         }
         Row { x: root.inset; y: root.home-y; width: root.row-width; form: RowForm.navigator; kind: RowKind.folder; title: @tr("Home"); depth: 0; expandable: true; expanded: true; starrable: root.section(3) > 0.5; }
         Row { x: root.inset; y: root.home-y + RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.folder; title: @tr("Scans"); depth: 1; expandable: true; expanded: true; starrable: root.section(3) > 0.5; favourite: root.section(3) > 0.5; }
-        Row { x: root.inset; y: root.home-y + 2 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 1); has-stock: true; stock: @image-url("../stocks/kodak-portra.svg"); depth: 2; starrable: root.section(3) > 0.5; }
+        Row { x: root.inset; y: root.home-y + 2 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 1); has-stock: true; stock: @image-url("../../../oni-settings/stocks/kodak-portra.svg"); depth: 2; starrable: root.section(3) > 0.5; }
         Row {
-            x: root.inset; y: root.roll-y; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../stocks/kodak-gold.svg"); depth: 2;
+            x: root.inset; y: root.roll-y; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 2); has-stock: true; stock: @image-url("../../../oni-settings/stocks/kodak-gold.svg"); depth: 2;
             starrable: root.section(3) > 0.5; favourite: root.starred;
             look: root.pressing ? Look.pressed : root.on-roll ? Look.hover : Look.live;
         }
-        Row { x: root.inset; y: root.home-y + 4 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 3); has-stock: true; stock: @image-url("../stocks/generic-black-and-white.svg"); depth: 2; starrable: root.section(3) > 0.5; }
+        Row { x: root.inset; y: root.home-y + 4 * RowStyle.height; width: root.row-width; form: RowForm.navigator; kind: RowKind.roll; title: @tr("Roll {}", 3); has-stock: true; stock: @image-url("../../../oni-settings/stocks/generic-black-and-white.svg"); depth: 2; starrable: root.section(3) > 0.5; }
         Arrow {
             x: root.hand-x;
             y: root.hand-y;

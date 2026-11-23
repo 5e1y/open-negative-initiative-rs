@@ -232,7 +232,7 @@ fn the_grain_is_a_texture_in_stops_its_spread_by_tone_its_curve_s() {
         let whole_grain = spread(&stops(&whole(&mut g, &grain::grained(image.clone(), &k, 0.0)), grey));
         let curved = spread(&stops(&whole(&mut g, &grain::grained(image, &by_tone, 0.0)), grey));
         // A digital photo's light crosses its film before its tone is read.
-        let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+        let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
         let shown = cpu::stage47(cpu::virtual_negative([grey, grey, grey, 1.0], &stock.kernel_at(0.0), &stock.table), &picture);
         let tone = (shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2]).powf(1.0 / 2.2);
         let want = strength.at(f64::from(tone)) as f32;

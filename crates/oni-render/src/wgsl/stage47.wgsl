@@ -18,15 +18,16 @@ struct Params {
     count: vec4<u32>,
 }
 
+// The window's share of density `e`, through its mid's power over the black, straight on under it.
 fn apply_levels(e: f32, lv: vec3<f32>) -> f32 {
-    let n = max((e - lv.x) / max(lv.y - lv.x, 1e-4), 0.0);
-    return pow(n, lv.z);
+    let n = (e - lv.x) / max(lv.y - lv.x, 1e-4);
+    return select(n, pow(max(n, 0.0), lv.z), n > 0.0);
 }
 
 fn apply_window(e: f32, lv: vec3<f32>, c1: f32, c3: f32) -> f32 {
     let t = apply_levels(e, lv);
     if (c1 == 0.25 && c3 == 0.75) { return t; }
-    let u = min(t, 1.0);
+    let u = clamp(t, 0.0, 1.0);
     let v = 1.0 - u;
     let curve = c1 * (4.0 * u * v * v * v) + 0.5 * (6.0 * u * u * v * v)
               + c3 * (4.0 * u * u * u * v) + u * u * u * u;

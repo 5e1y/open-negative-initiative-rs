@@ -30,6 +30,7 @@ pub const BLOCKS: [Block; 4] = [
         entries: &[
             entry("sourceEncoding", marked("Scan Profile"), &["sourceEncoding"]),
             entry("flatField", marked("Flat-Field"), &["flatField"]),
+            entry("dyeSet", marked("Film Stock"), &["dyeSet"]),
             entry("lensCorrection", marked("Lens Corrections"), &["lensCorrection"]),
         ],
     },

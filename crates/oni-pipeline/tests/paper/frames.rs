@@ -24,7 +24,7 @@ pub fn prepared_negative() -> PipelineSettings {
     for (w, (black, white, mid)) in [&mut s.levels.red, &mut s.levels.green, &mut s.levels.blue].into_iter().zip(windows) {
         (w.black, w.white, w.mid) = (black, white, mid);
     }
-    s.dye_set = DyeSet::KodakPortra400;
+    s.dye_set = DyeSet::of("kodak-portra-400");
     s.print_paper = Some(PaperStock::default());
     on_print_lift(s)
 }

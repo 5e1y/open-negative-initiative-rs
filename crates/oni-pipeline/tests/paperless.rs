@@ -57,10 +57,10 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
         let on_paper = conversion::stage47(&PipelineSettings { paperless: false, ..s.clone() }).paper.expect(label);
         assert!(on_paper.anchor.iter().all(|a| *a > 1e-3), "{label}: {:?}", on_paper.anchor);
     }
-    // Twin: the prepared negative through no filtration prints its grey off neutral.
+    // Twin: the prepared negative through ten CC of yellow prints its grey off neutral.
     let s = paperless(prepared_negative());
     let k = conversion::stage47(&s);
-    let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0; 3], ..p }), ..k };
+    let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0, 1.0, 10f32.powf(-0.1)], ..p }), ..k };
     let unfiltered = cpu::stage47(grey_scan(&s), &bare);
     assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2, "{unfiltered:?}");
     // A slide prints its internegative on the neutral paper: the copy's base black, its grey a plain RAW's.
@@ -111,7 +111,7 @@ fn the_neutral_papers_curve_is_onis_print_at_rest_on_each_layer() {
     }
     assert!(sheet.print.len() == 3 && sheet.view.len() == 3);
     // Twin: a paper's own layers each run their own curve.
-    let portra = paper::sheet(PaperStock::KodakEnduraPremier);
+    let portra = paper::sheet(PaperStock::of("kodak-endura-premier"));
     assert!(portra.curves.iter().any(|d| (d[0] - d[1]).abs() > 0.05 || (d[1] - d[2]).abs() > 0.05));
 }
 
@@ -152,7 +152,7 @@ fn lightings_grade_turns_the_neutral_paper_about_its_grey() {
 #[test]
 fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_prints_on_the_neutral_paper_as_its_reference_does") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (31, 19);
     let mut pixels: Vec<V4> = noise(w, h, 11, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];
@@ -171,7 +171,7 @@ fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     let frames = [
         ("digital", paperless(digital())),
         ("lit negative", lit_negative),
-        ("frontier chosen", paperless(PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..prepared_negative() })),
+        ("frontier chosen", paperless(PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..prepared_negative() })),
         ("black and white", lit_mono),
         ("slide", paperless(slide())),
         ("lit slide", lit_slide),

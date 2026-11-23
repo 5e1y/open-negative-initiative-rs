@@ -174,8 +174,8 @@ pub(crate) mod tests {
         let reference = |id| Some(oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
         let (portra, fuji) = (oni_settings::Id::new(), oni_settings::Id::new());
         let dyed = |id, set| PipelineSettings { dye_set: set, roll_reference: reference(id), ..PipelineSettings::rest(ConversionMode::Negative, false) };
-        let kodak = DyeSet::KodakPortra400;
-        let mut beside = dyed(fuji, DyeSet::FujifilmXtra400);
+        let kodak = DyeSet::of("kodak-portra-400");
+        let mut beside = dyed(fuji, DyeSet::of("fujifilm-xtra-400"));
         beside.print.exposure = 0.4;
         let laid = [("a.tif", dyed(portra, kodak)), ("b.tif", beside), ("c.tif", dyed(portra, kodak))];
         let paths: Vec<String> = laid.iter().map(|(n, _)| dir.join(n).to_string_lossy().into_owned()).collect();
@@ -190,7 +190,7 @@ pub(crate) mod tests {
         let beside = |s: &EditorStore| s.together_where(oni_core::Field::Print, |b| is_modified(b, Block::Lighting));
         assert!(!is_modified(s.settings(), Block::Lighting) && beside(&s), "the key shows for the frame beside");
         s.apply(reset(Block::Lighting));
-        assert_eq!(read(&paths[1]).dye_set, DyeSet::FujifilmXtra400, "the Fuji frame keeps its own stock");
+        assert_eq!(read(&paths[1]).dye_set, DyeSet::of("fujifilm-xtra-400"), "the Fuji frame keeps its own stock");
         assert_eq!(read(&paths[1]).print.exposure, Field::Exposure.knob().get(&rest(&read(&paths[1]))), "and its Lighting at its own rest");
         // Twin: once every frame stands at rest, the key no longer shows.
         assert!(!beside(&s));

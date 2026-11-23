@@ -29,6 +29,8 @@ oni-graph = { path = "../oni-graph" }
 oni-i18n = { path = "../oni-i18n" }
 oni-keycap = { path = "../oni-keycap" }
 oni-library = { path = "../oni-library" }
+# The person's stock files watched: FSEvents on macOS, polling on Windows.
+notify = { version = "8.2", default-features = false, features = ["macos_fsevent"] }
 oni-tldb = { path = "../oni-tldb" }
 oni-link = { path = "../oni-link" }
 oni-measure = { path = "../oni-measure" }

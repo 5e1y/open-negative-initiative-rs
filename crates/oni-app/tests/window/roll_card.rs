@@ -10,7 +10,6 @@ use oni_app::{Library, Menus, Stocks};
 use oni_core::{Archive, EditorStore};
 use oni_library::paths;
 use oni_settings::DyeSet;
-use oni_settings::film::FILM_STOCKS;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::PipelineSettings;
 use slint::ComponentHandle;
@@ -34,7 +33,7 @@ fn family(path: &Path) -> DyeSet {
 }
 
 fn stock(id: &str) -> i32 {
-    FILM_STOCKS.iter().position(|k| k.id == id).unwrap() as i32
+    oni_settings::film::stocks().iter().position(|k| k.id == id).unwrap() as i32
 }
 
 pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes() {
@@ -176,8 +175,8 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     stocks.invoke_chosen(stock("kodak-portra400"));
     rig.landed(&ctl);
     assert_eq!(marker().and_then(|f| f.stock), Some("kodak-portra400".to_string()));
-    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "Portra writes its dyes on every frame");
-    assert_eq!(family(&other.join("D.tif")), DyeSet::GenericC41, "twin: a frame outside the roll keeps its own");
+    assert_eq!(families(), vec![DyeSet::of("kodak-portra-400"); 3], "Portra writes its dyes on every frame");
+    assert_eq!(family(&other.join("D.tif")), DyeSet::of("generic-c41"), "twin: a frame outside the roll keeps its own");
     rig.until("the card reads Portra's dyes off the frames", Duration::from_secs(10), || {
         rig.pump();
         lib.get_stock_dyes().as_str() == "Frames read as Kodak Portra 400"
@@ -186,18 +185,18 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     println!("shot {}", rig.shot("roll-card-made").display());
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
-    assert_eq!(families(), vec![DyeSet::GenericC41; 3], "one undo gives the dyes back");
+    assert_eq!(families(), vec![DyeSet::of("generic-c41"); 3], "one undo gives the dyes back");
     assert_eq!(marker().map(|f| (f.name, f.stock)), Some(("Portra Trip".to_string(), None)), "and the stock");
     ctl.act(oni_app::Act::Redo);
     rig.landed(&ctl);
-    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3]);
+    assert_eq!(families(), vec![DyeSet::of("kodak-portra-400"); 3]);
 
     // A black-and-white stock leaves every frame's dyes alone, and the card says the dyes the frames
     // still unmix under a stock naming none.
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("ilford-hp5"));
     rig.landed(&ctl);
-    assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "black and white writes no dyes");
+    assert_eq!(families(), vec![DyeSet::of("kodak-portra-400"); 3], "black and white writes no dyes");
     rig.pump();
     assert_eq!(lib.get_stock_dyes().as_str(), "Frames read as Kodak Portra 400");
 
@@ -228,7 +227,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("fujifilm-superia-xtra400"));
     rig.landed(&ctl);
-    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::of("fujifilm-xtra-400"));
     rig.until("the card reads Superia", Duration::from_secs(10), || {
         rig.pump();
         lib.get_stock_dyes().as_str() == "Frames read as Fujifilm Superia X-TRA 400"
@@ -238,12 +237,12 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     stocks.invoke_chosen(stock("lucky-color200"));
     rig.landed(&ctl);
     rig.pump();
-    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::GenericC41);
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::of("generic-c41"));
     // Twin: one undo gives the open photo Superia back.
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
     rig.pump();
-    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::of("fujifilm-xtra-400"));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -23,9 +23,9 @@ impl State {
 
     /// The stock of the open photo's roll: a digital photo's film, else its folder's marker, else the roll
     /// its sidecar names.
-    pub(in crate::app) fn open_stock(&self) -> Option<&'static FilmStockKind> {
+    pub(in crate::app) fn open_stock(&self) -> Option<FilmStockKind> {
         if let Some(film) = self.store.settings().film() {
-            return film_stock(Some(film.stock.catalogue_id()));
+            return film_stock(Some(film.stock.catalogue_id())).filter(|_| film.stock.is_known());
         }
         let folder = oni_library::paths::parent(self.open_path()?);
         let rolls = &self.survey().rolls;

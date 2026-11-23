@@ -170,7 +170,7 @@ The rule each stage follows comes from `ConversionMode::is_film` (everything but
 ```mermaid
 flowchart LR
   SCENE["Digital scene after White, halation, grain<br/>chain.rs:56-68"]
-  STOCK["film::stock: data-sheet profile baked once<br/>film.rs, resources/film/datasheet/kodak_portra_800.json"]
+  STOCK["film::stock: data-sheet profile baked once<br/>film.rs, oni-settings/stocks/kodak-portra800.json"]
   TBL["table uploaded once per graph<br/>Pipeline.films, lib.rs:157"]
   VN["virtual_negative: to_film, exposure, couplers, curves, dyes, scan weights<br/>kernel/virtual_negative.rs"]
   REF["VirtualFilm: stock, exposure, stops, black, white<br/>oni-settings/src/virtual_film.rs:27"]

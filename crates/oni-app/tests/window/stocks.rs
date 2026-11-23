@@ -6,7 +6,6 @@ use oni_app::app::{Options, Shell};
 use oni_app::{AppSettings, Library, Stocks};
 use oni_core::{Archive, EditorStore};
 use oni_settings::Film;
-use oni_settings::film::FILM_STOCKS;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::PathBuf;
@@ -64,7 +63,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     assert_eq!(&names[..3], ["Generic", "AgfaPhoto", "CineStill"]);
     let cells = every_cell(&stocks);
     // Every stock offered: no Foma 401, no line its stocks replace.
-    assert_eq!(cells.len(), oni_settings::film::offered_stocks().count());
+    assert_eq!(cells.len(), oni_settings::film::offered_stocks().len());
     assert!(!cells.iter().any(|c| c.name == "Foma Fomapan 401"), "Foma 401 is not offered");
     assert!(cells.iter().any(|c| c.name == "Foma Fomapan 400"), "twin: Foma 400 still is");
     for name in ["Kodak Portra 160", "Kodak Portra 400", "Kodak Portra 800", "Kodak Gold 200", "Kodak Vision3 500T", "Fujifilm C200", "Fujifilm Superia X-TRA 400"] {
@@ -84,7 +83,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     assert!(lib.get_stock().note.starts_with("Default"), "twin: Done picks nothing");
 
     // A roll on the Portra line, as one set before the split: its name and canister, its stock said unstated.
-    let line = FILM_STOCKS.iter().position(|k| k.id == "kodak-portra").unwrap();
+    let line = oni_settings::film::stocks().iter().position(|k| k.id == "kodak-portra").unwrap();
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(line as i32);
     rig.pump();
@@ -95,7 +94,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     lib.invoke_select_roll_type();
     rig.pump();
     let cells = every_cell(&stocks);
-    assert_eq!(cells.len(), oni_settings::film::offered_stocks().count() + 1, "the roll's line shown beside the offered stocks");
+    assert_eq!(cells.len(), oni_settings::film::offered_stocks().len() + 1, "the roll's line shown beside the offered stocks");
     let at = cells.iter().position(|c| c.name == "Kodak Portra").expect("the roll's line is shown");
     assert!(cells[at].picked && cells[at].has_artwork && cells[at].note == "Stock not specified", "{:?}", cells[at].note);
     assert_eq!(cells[at + 1].name, "Kodak Portra 160");
@@ -106,7 +105,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     println!("shot {}", rig.shot("stock-picker-line").display());
 
     // Portra 160 picked: the precise stock named, nothing left to say, the line gone from the sheet.
-    let precise = FILM_STOCKS.iter().position(|k| k.id == "kodak-portra160").unwrap();
+    let precise = oni_settings::film::stocks().iter().position(|k| k.id == "kodak-portra160").unwrap();
     stocks.invoke_chosen(precise as i32);
     rig.pump();
     assert_eq!((lib.get_stock().name.as_str(), lib.get_stock().note.as_str()), ("Kodak Portra 160", ""));

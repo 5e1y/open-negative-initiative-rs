@@ -139,16 +139,16 @@ mod tests {
 
     #[test]
     fn foma_401_is_no_longer_offered_yet_a_roll_on_it_still_reads() {
-        let offered: Vec<&str> = offered_stocks().map(|(_, k)| k.id).collect();
+        let offered: Vec<&str> = offered_stocks().into_iter().map(|(_, k)| k.id).collect();
         assert!(!offered.contains(&"foma-fomapan401"), "the picker no longer lists Foma 401");
-        let lines = FILM_STOCKS.iter().filter(|k| k.line).count();
-        assert_eq!(offered.len(), FILM_STOCKS.len() - 1 - lines, "every other stock but the lines is still offered");
+        let lines = stocks().iter().filter(|k| k.line).count();
+        assert_eq!(offered.len(), stocks().len() - 1 - lines, "every other stock but the lines is still offered");
         assert!(offered.contains(&"foma-fomapan400") && offered.contains(&"foma-fomapan200"), "twin: the other Fomapans stay");
         for (i, kind) in offered_stocks() {
-            assert_eq!(FILM_STOCKS[i].id, kind.id, "a pick names the stock's place in the catalogue");
+            assert_eq!(stocks()[i].id, kind.id, "a pick names the stock's place in the catalogue");
         }
         let kept = film_stock(Some("foma-fomapan401")).expect("a roll on Foma 401 still finds its stock");
-        assert_eq!((kept.display_name, kept.icon_name, kept.brand), ("Foma Fomapan 401", "foma-fomapan401", "Foma"));
+        assert_eq!((kept.display_name, kept.canister, kept.brand), ("Foma Fomapan 401", Some("foma-fomapan401.svg"), "Foma"));
         let mut film = Film::new("Roll 401");
         film.stock = Some("foma-fomapan401".into());
         let back = roll_folder::decode(roll_folder::encode(&film).as_bytes()).unwrap();
@@ -171,11 +171,12 @@ mod tests {
             ("fujifilm-superia", &["fujifilm-superia-xtra400"]),
         ] {
             let kept = film_stock(Some(line)).expect("a line still reads");
-            assert!(kept.line && !kept.offered && kept.icon_name == line, "{line}");
+            let canister = format!("{line}.svg");
+            assert!(kept.line && !kept.offered && kept.canister == Some(canister.as_str()), "{line}");
             for id in stocks {
                 let kind = film_stock(Some(id)).expect("a line's stock is in the catalogue");
                 assert!(kind.offered && !kind.line, "{id}");
-                assert_eq!((kind.icon_name, kind.brand), (line, kept.brand), "{id} draws its line's canister");
+                assert_eq!((kind.canister, kind.brand), (kept.canister, kept.brand), "{id} draws its line's canister");
                 assert_ne!(kind.display_name, kept.display_name, "{id} is named as the precise stock");
             }
             let mut film = Film::new("Roll");

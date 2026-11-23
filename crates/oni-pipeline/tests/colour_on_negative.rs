@@ -30,7 +30,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
-    let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
+    let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
         ("ONI's print, uncompensated", uncompensated),
@@ -86,7 +86,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0x3743_8c54_99a7_b5fc;
+    const BEFORE: u64 = 0xb8b7_1608_b14d_d599;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }

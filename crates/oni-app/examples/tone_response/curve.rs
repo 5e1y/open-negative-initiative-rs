@@ -7,9 +7,10 @@ pub struct Curve {
 }
 
 impl Curve {
-    /// The mean of a stock's three printed curves above its least: the density a scan reads, its dyes' amounts mixed.
+    /// The mean of a stock's three printed curves above its least, its `profile` as its file holds it: the density a
+    /// scan reads, its dyes' amounts mixed.
     pub fn of_stock(profile: &str) -> Curve {
-        let json: serde_json::Value = serde_json::from_slice(oni_pipeline::film::dyes::source(profile).expect("a shipped profile")).expect("a profile");
+        let json: serde_json::Value = serde_json::from_str(profile).expect("a profile");
         let numbers = |v: &serde_json::Value| v.as_array().expect("an array").iter().map(|x| x.as_f64().expect("a number")).collect::<Vec<f64>>();
         let rows = json["data"]["sheet_density_curves"].as_array().expect("the sheet's curves");
         let mean: Vec<f32> = rows.iter().map(|r| (numbers(r).iter().sum::<f64>() / 3.0) as f32).collect();

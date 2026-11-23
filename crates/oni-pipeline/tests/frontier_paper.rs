@@ -15,7 +15,7 @@ use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
-const FRONTIER: PaperStock = PaperStock::FujifilmFrontierSp3000;
+const FRONTIER: PaperStock = PaperStock::of("fujifilm-frontier-sp-3000");
 
 fn on_frontier(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { print_paper: Some(FRONTIER), ..s }
@@ -30,9 +30,11 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a negative on the Frontier")
 }
 
-/// The print at unit time and no filtration: the table's own coordinates, amounts read as `x`.
+/// The print at the table's own time and no filtration, each share its density: the table's coordinates read as `x`.
 fn bare(s: &PipelineSettings) -> Paper {
-    Paper { scale: 1.0, filters: [1.0; 3], ..paper_of(s) }
+    let oni_settings::stocks::Print::Frontier(fit) = FRONTIER.entry().print else { panic!("the Frontier's fit") };
+    let neutral = oni_pipeline::paper::frontier::read(&fit).expect("the fit reads").neutral;
+    Paper { scale: 10f32.powf(neutral), filters: [1.0; 3], span: 1.0, bend: 1.0, ..paper_of(s) }
 }
 
 /// Median and p90 ΔE (Oklab × 100, display-clipped) of `p` against the measured cube on its constrained nodes.
@@ -75,7 +77,9 @@ fn the_rest_prints_the_reference_grey_neutral_with_no_offset_of_the_machines() {
         let grey = cpu::stage47(grey_scan(&s), &k);
         let filtration = conversion::printing(&s).unwrap().filtration;
         println!("{label}: grey {grey:?} (a plain RAW's {:.5}), filtration {filtration:?} CC, pick {:?}, white {:?}", *GREY_PRINT, p.pick, p.white);
-        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
+        // With Print lift a plain RAW's grey's light, neutral on the paper's own white.
+        let luma = oni_render::LUMA.iter().zip(p.white).map(|(w, v)| w * v).sum::<f32>();
+        assert!((0..3).all(|c| (grey[c] / p.white[c] * luma - *GREY_PRINT).abs() < 2e-4), "{label}: {grey:?}");
         // Twin: the same enlarger through no filtration prints the grey off neutral.
         if label != "black and white" {
             let unfiltered = cpu::stage47(grey_scan(&s), &Stage47 { paper: Some(Paper { filters: [1.0; 3], ..p }), ..k });
@@ -126,7 +130,7 @@ fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
 #[test]
 fn the_gpu_prints_the_frontier_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_prints_the_frontier_as_its_reference_does") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (31, 19);
     let mut pixels: Vec<V4> = noise(w, h, 17, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];

@@ -45,7 +45,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, negative", prepared_negative()),
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
-        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() }),
+        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
         ("neutral paper", PipelineSettings { paperless: true, ..prepared_negative() }),
         ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
     ]
@@ -72,7 +72,7 @@ fn read(value: &Value) -> PipelineSettings {
 
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let mut pixels: Vec<V4> = common::noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(common::noise(17, 13, 8, 0.0, 1.0));
     pixels
@@ -95,10 +95,10 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
     hash
 }
 
-/// The fold of every pipe's print as format 61 stored it, on the unmixed sheets' amounts, on the CPU and on the GPU (Metal
+/// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
 /// on Apple silicon), a paper's white on pure white without Print lift.
-const BEFORE_CPU: u64 = 0x5ae7_f3f6_feb7_d3ce;
-const BEFORE_GPU: u64 = 0xd094_a8fd_274d_4a92;
+const BEFORE_CPU: u64 = 0x4559_16c4_5954_b1a6;
+const BEFORE_GPU: u64 = 0x2254_0eb4_5e04_cbfe;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {

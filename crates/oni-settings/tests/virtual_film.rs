@@ -54,9 +54,9 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     let before: PipelineSettings = serde_json::from_value(stored["settings"].clone()).unwrap();
     let doc = read(&stored);
     let s = &doc.settings;
-    let reference = VirtualStock::KodakPortra800.reference();
-    assert_eq!((s.mode, s.virtual_film.map(|f| (f.stock, f.exposure))), (ConversionMode::Digital, Some((VirtualStock::KodakPortra800, 0.0))));
-    assert_eq!((s.gains.stops, s.levels, s.dye_set), (reference.stops, reference.levels(), VirtualStock::KodakPortra800.dye_set()));
+    let reference = VirtualStock::of("kodak-portra-800").reference();
+    assert_eq!((s.mode, s.virtual_film.map(|f| (f.stock, f.exposure))), (ConversionMode::Digital, Some((VirtualStock::of("kodak-portra-800"), 0.0))));
+    assert_eq!((s.gains.stops, s.levels, s.dye_set), (reference.stops, reference.levels(), VirtualStock::of("kodak-portra-800").dye_set()));
     assert!((s.print.exposure - 0.2).abs() < 1e-6, "Lighting's move kept on the negative's rest, on its curve: {}", s.print.exposure);
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
     let grain = oni_settings::blocks::Grain { size: migrate::grain_size::microns(0.5, 1.0), ..before.grain };
@@ -87,7 +87,7 @@ fn a_filmed_photo_of_format_37_keeps_its_hand_moves_on_the_stocks_reference() {
         "white": former.white,
     });
     let s = read(&doc).settings;
-    let reference = VirtualStock::KodakPortra800.reference();
+    let reference = VirtualStock::of("kodak-portra-800").reference();
     assert_eq!(s.film().map(|f| f.exposure), Some(0.7));
     for c in 0..3 {
         assert!((s.gains.stops[c] - reference.stops[c] - 0.1).abs() < 1e-6, "{:?}", s.gains.stops);
@@ -132,7 +132,7 @@ fn a_film_writes_its_stock_by_key_and_a_build_before_refuses_the_file_as_newer()
 #[test]
 fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     assert!(VERSION >= chain::VIRTUAL_STOCKS_VERSION && chain::VIRTUAL_STOCKS_VERSION > chain::ONE_FACE_VERSION);
-    for stock in VirtualStock::ALL {
+    for stock in VirtualStock::all() {
         let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
         let stored = at(&s, VERSION);
         assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
@@ -143,7 +143,7 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     portra.grain.amount = 0.0;
     let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, ..portra.clone() };
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
-    let portra = migrate::datasheet::on_former(&portra, VirtualStock::KodakPortra800);
+    let portra = migrate::datasheet::on_former(&portra, VirtualStock::of("kodak-portra-800"));
     assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);
     let newer = at(&portra, VERSION + 1);
     let refused = migrate::reading(&serde_json::to_vec(&newer).unwrap(), &Facts::bare(true), false).err();
