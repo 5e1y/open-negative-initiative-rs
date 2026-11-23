@@ -14,7 +14,7 @@ impl Ctl {
         let kit = &s.org.kit;
         k.set_link(if kit.signing.is_some() {
             KitLink::Waiting
-        } else if kit.token.is_some() {
+        } else if kit.linked() {
             KitLink::In
         } else {
             KitLink::Out

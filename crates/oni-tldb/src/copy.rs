@@ -1,5 +1,5 @@
 //! The Kit as last read, kept in the support folder's `kit.json`: ONI works from it offline and asks the
-//! service only at sign-in, at launch and after a change.
+//! service only at sign-in, at the first use that needs the account and after a change.
 
 use crate::piece::{Kind, Piece};
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,10 @@ pub struct Kept {
     pub items: Vec<Piece>,
     #[serde(default)]
     pub etag: Option<String>,
+    /// A token kept in the vault, so a launch shows the link without reading it; absent from a copy written
+    /// before the field, where an account read stands for one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signed: Option<bool>,
 }
 
 impl Kept {
@@ -30,6 +34,11 @@ impl Kept {
         std::fs::create_dir_all(support)?;
         let bytes = serde_json::to_vec(self).map_err(std::io::Error::other)?;
         oni_library::replace_readable(&Kept::file_path(support), &bytes)
+    }
+
+    /// Whether a token lies in the vault as far as the copy knows; the vault itself says at the first use.
+    pub fn signed_in(&self) -> bool {
+        self.signed.unwrap_or(self.account.is_some())
     }
 
     /// The pieces of one kind, in the Kit's order.

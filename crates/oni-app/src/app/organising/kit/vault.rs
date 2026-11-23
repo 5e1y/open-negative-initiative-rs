@@ -1,31 +1,80 @@
 //! Where the token lies: the macOS Keychain, the Windows Credential Manager, never a file of the support
 //! folder; the simulated service's token, worth nothing, lies in that folder so a check never meets a keychain.
 
-use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::mpsc::{Sender, channel};
 
 const SERVICE: &str = "Open Negative Initiative — The Lens DB";
 const ACCOUNT: &str = "kit";
 const FAKE_FILE: &str = "tldb-fake-token";
 
-pub fn read(support: &Path, fake: bool) -> Option<String> {
-    if fake {
-        return std::fs::read_to_string(support.join(FAKE_FILE)).ok().filter(|t| !t.is_empty());
-    }
-    system::read()
+/// A store of the Kit's one token; a check hands its own to count what is asked of it.
+pub trait Vault: Send + Sync {
+    fn read(&self) -> Option<String>;
+    fn write(&self, token: &str) -> Result<(), String>;
+    fn erase(&self);
 }
 
-pub fn write(support: &Path, fake: bool, token: &str) -> Result<(), String> {
-    if fake {
-        return std::fs::create_dir_all(support).and_then(|_| std::fs::write(support.join(FAKE_FILE), token)).map_err(|e| format!("{:?}", e.kind()));
-    }
-    system::write(token)
-}
+/// The system's keychain, which may hold a call on its prompt for as long as the person takes to answer.
+pub struct Keychain;
 
-pub fn erase(support: &Path, fake: bool) {
-    if fake {
-        let _ = std::fs::remove_file(support.join(FAKE_FILE));
-    } else {
+impl Vault for Keychain {
+    fn read(&self) -> Option<String> {
+        system::read()
+    }
+
+    fn write(&self, token: &str) -> Result<(), String> {
+        system::write(token)
+    }
+
+    fn erase(&self) {
         system::erase();
+    }
+}
+
+/// The simulated service's token, in a file of the support folder.
+pub struct Folder(pub PathBuf);
+
+impl Vault for Folder {
+    fn read(&self) -> Option<String> {
+        std::fs::read_to_string(self.0.join(FAKE_FILE)).ok().filter(|t| !t.is_empty())
+    }
+
+    fn write(&self, token: &str) -> Result<(), String> {
+        std::fs::create_dir_all(&self.0).and_then(|_| std::fs::write(self.0.join(FAKE_FILE), token)).map_err(|e| format!("{:?}", e.kind()))
+    }
+
+    fn erase(&self) {
+        let _ = std::fs::remove_file(self.0.join(FAKE_FILE));
+    }
+}
+
+type Job = Box<dyn FnOnce(&dyn Vault) + Send>;
+
+/// The vault's calls on one thread of their own, in the order asked: a keychain's prompt never holds the
+/// interface, and a write then an erase land in that order. The thread starts at the first call.
+pub struct Worker {
+    vault: Arc<dyn Vault>,
+    jobs: std::cell::OnceCell<Sender<Job>>,
+}
+
+impl Worker {
+    pub fn new(vault: Arc<dyn Vault>) -> Worker {
+        Worker { vault, jobs: Default::default() }
+    }
+
+    pub fn run(&self, job: impl FnOnce(&dyn Vault) + Send + 'static) {
+        let jobs = self.jobs.get_or_init(|| {
+            let (send, receive) = channel::<Job>();
+            let vault = self.vault.clone();
+            std::thread::Builder::new()
+                .name("oni-vault".into())
+                .spawn(move || receive.into_iter().for_each(|job| job(&*vault)))
+                .expect("a thread for the vault");
+            send
+        });
+        let _ = jobs.send(Box::new(job));
     }
 }
 

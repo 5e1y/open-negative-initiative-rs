@@ -17,7 +17,8 @@ impl KitState {
 
 impl Ctl {
     /// The gear sheet opened bare, on `kind` (0 both, 1 bodies, 2 lenses): a body's field opens it on the bodies.
-    pub(super) fn kit_open_search(&self, kind: i32) {
+    /// The account's first use: the token is read as it opens, so the words typed find it there.
+    pub(super) fn kit_open_search(self: &Rc<Self>, kind: i32) {
         {
             let mut s = self.state.borrow_mut();
             s.org.kit.clear_search();
@@ -25,6 +26,7 @@ impl Ctl {
             s.org.kit.picking = true;
         }
         self.publish_kit();
+        self.kit_with_client(|_, _| {});
     }
 
     fn kit_close_search(&self) {
@@ -61,7 +63,7 @@ impl Ctl {
             }
             (s.org.kit.picks.iter().map(Piece::key).collect::<Vec<_>>(), s.org.kit.held())
         };
-        if picks.is_empty() || self.client().is_none() {
+        if picks.is_empty() || !self.state.borrow().org.kit.linked() {
             return self.kit_close_search();
         }
         if let Some(left) = held {
@@ -73,7 +75,7 @@ impl Ctl {
 
     /// A removal erases what the person noted of the piece on The Lens DB: asked first, then sent at once.
     /// A pick, listed after the service's pieces, goes at once: nothing of it was sent.
-    pub(super) fn kit_remove(&self, kind: GearKind, at: usize) {
+    pub(super) fn kit_remove(self: &Rc<Self>, kind: GearKind, at: usize) {
         let kind = if kind == GearKind::Body { Kind::Camera } else { Kind::Lens };
         let held = self.state.borrow().org.kit.kept.of(kind).count();
         if at >= held {
@@ -91,19 +93,21 @@ impl Ctl {
     }
 
     /// One change sent; `closing` the sheet's Done, which closes it once the service answers.
-    fn kit_change(&self, add: Vec<Key>, remove: Vec<Key>, closing: bool) {
-        let Some(client) = self.client() else { return };
+    fn kit_change(self: &Rc<Self>, add: Vec<Key>, remove: Vec<Key>, closing: bool) {
         {
             let mut s = self.state.borrow_mut();
-            if s.org.kit.sending {
+            if s.org.kit.sending || !s.org.kit.linked() {
                 return;
             }
             s.org.kit.sending = true;
         }
         self.publish_kit();
-        std::thread::spawn(move || {
-            let answer = client.change(&add, &remove);
-            with_shell(move |c| c.kit_changed(answer, closing));
+        self.kit_with_client(move |_, client| {
+            let Some(client) = client else { return };
+            std::thread::spawn(move || {
+                let answer = client.change(&add, &remove);
+                with_shell(move |c| c.kit_changed(answer, closing));
+            });
         });
     }
 
