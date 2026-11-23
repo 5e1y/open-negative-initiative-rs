@@ -1,5 +1,5 @@
 //! The fused conversion kernel (`pipeline.metal`): the dye separation, Lighting on the negative, then inversion, levels,
-//! the print curve; or the paper's print in their place, its own colour density and ends included.
+//! the print curve; or the paper's print in their place, its own ends included.
 
 use super::*;
 
@@ -11,7 +11,6 @@ pub struct Stage47 {
     pub green: [f32; 3],
     pub blue: [f32; 3],
     pub invert: f32,
-    pub density: f32,
     pub pedestal: f32,
     pub log_guard: f32,
     pub window: f32,
@@ -47,7 +46,6 @@ impl Stage47 {
             green: [0.0, 2.0, 1.0],
             blue: [0.0, 2.0, 1.0],
             invert: 1.0,
-            density: 1.0,
             pedestal: 0.0,
             log_guard: 1e-6,
             window: 3.0,
@@ -85,7 +83,7 @@ impl Stage47 {
         Packed {
             rows: [
                 v3(self.gain, self.invert),
-                v3(self.red, self.density),
+                v3(self.red, 0.0),
                 v3(self.green, self.pedestal),
                 v3(self.blue, self.log_guard),
                 v3(self.low_points, self.window),
@@ -219,10 +217,10 @@ fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
     e
 }
 
-/// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density; Contrast's colour is
-/// held downstream by its saturation curve.
+/// Stages 6 and 7 on a windowed pixel: the print, its filters and Hunt's colour, each channel's light to a power and
+/// the luma's own power undone.
 fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
-    let mut density = k.density;
+    let mut density = 1.0f32;
     let mut e = windowed_in;
     if k.print_on > 0.5 {
         let (ps, pc, pz) = (k.print_stops, k.print_contrast, k.print_zones);
@@ -245,8 +243,8 @@ fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
     coloured(e, density)
 }
 
-/// The colour density: each channel's light to the power `density`, the luma's own power undone.
-pub(super) fn coloured(e: V3, density: f32) -> V3 {
+/// Each channel's light to the power `density`, the luma's own power undone.
+fn coloured(e: V3, density: f32) -> V3 {
     if density == 1.0 {
         return e;
     }

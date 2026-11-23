@@ -9,7 +9,9 @@ pub const DETAIL_TAPS: &str = include_str!("wgsl/detail_taps.wgsl");
 /// `dye_separation_px(s)`.
 pub const DYE_SEPARATION: &str = include_str!("wgsl/dye_separation.wgsl");
 /// `negative_px(s)`.
-pub const NEGATIVE: &str = include_str!("wgsl/negative.wgsl");
+pub const NEGATIVE: &str = concat!(include_str!("wgsl/negative.wgsl"), include_str!("wgsl/negative_plain.wgsl"));
+/// `negative_px(s)` with the colour tools on its scene.
+pub const NEGATIVE_COLOURED: &str = concat!(include_str!("wgsl/negative.wgsl"), include_str!("wgsl/negative_colour.wgsl"));
 /// `paper_px(s)`.
 pub const PAPER: &str = include_str!("wgsl/paper.wgsl");
 /// `stage47_px(s)`.
@@ -26,8 +28,6 @@ pub const FLAT_FIELD: &str = include_str!("wgsl/flat_field.wgsl");
 pub const CURVES: &str = include_str!("wgsl/curves.wgsl");
 /// `saturation_curve_px(s)`.
 pub const SATURATION_CURVE: &str = include_str!("wgsl/saturation_curve.wgsl");
-/// `spectrogram_px(s)`.
-pub const SPECTROGRAM: &str = include_str!("wgsl/spectrogram.wgsl");
 /// `vignette_px(s, at)`.
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
 /// `grain_px(s, at)`.

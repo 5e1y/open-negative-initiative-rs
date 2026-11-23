@@ -1,5 +1,6 @@
 //! The print replica and the Lighting catch-up judged by the fused kernel's own scalar reference,
-//! so a fit that leans on a wrong replica cannot pass by agreeing with itself.
+//! so a fit that leans on a wrong replica cannot pass by agreeing with itself. The kernel lays no colour density on
+//! its print, Saturation acting on the negative, so the replica is judged at Saturation's rest.
 
 use oni_render::{Stage47, cpu};
 use oni_settings::axis::density_axis;
@@ -13,14 +14,13 @@ use serde_json::{Value, json};
 type V3 = [f32; 3];
 
 /// The kernel's print block on window outputs `n`, as `Print.arguments` hands it over in colour.
-fn kernel_print(print: &Print, n: V3, travel: f32) -> V3 {
+fn kernel_print(print: &Print, n: V3) -> V3 {
     let k = Stage47 {
         // Windows reading `n = D` straight: black 0, white 1, gamma 1.
         red: [0.0, 1.0, 1.0],
         green: [0.0, 1.0, 1.0],
         blue: [0.0, 1.0, 1.0],
         log_guard: 1e-30,
-        density: color_density::factor(travel),
         print_on: 1.0,
         print_stops: print.exposure,
         print_contrast: print.contrast,
@@ -46,7 +46,7 @@ fn samples() -> Vec<V3> {
     out
 }
 
-fn prints() -> Vec<(Print, f32)> {
+fn prints() -> Vec<Print> {
     let bent = Print { exposure: 0.7, contrast: 0.23, shadows: -0.11, highlights: 0.37, ..Print::default() };
     let filtered = Print {
         red: Tone::exposure(0.31),
@@ -57,15 +57,15 @@ fn prints() -> Vec<(Print, f32)> {
     let darker = Print { exposure: -0.9, contrast: -0.3, ..filtered };
     let toned = Print { channel_contrast: [0.35, -0.2, 0.1], channel_mid: [-0.15, 0.2, 0.05], ..filtered };
     let toned_alone = Print { channel_contrast: [-0.4, 0.0, 0.3], channel_mid: [0.25, -0.1, 0.0], ..bent };
-    vec![(Print::default(), 0.0), (bent, 0.0), (filtered, 0.35), (darker, -0.6), (toned, 0.2), (toned_alone, 0.0)]
+    vec![Print::default(), bent, filtered, darker, toned, toned_alone]
 }
 
 fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
     let mut worst: f32 = 0.0;
-    for (print, travel) in prints() {
+    for print in prints() {
         for n in samples() {
-            let want = kernel_print(&print, n, travel);
-            let got = replica(&print, n, travel);
+            let want = kernel_print(&print, n);
+            let got = replica(&print, n, 0.0);
             for c in 0..3 {
                 worst = worst.max((display(got[c]) - display(want[c])).abs());
             }
@@ -78,7 +78,7 @@ fn worst_gap(replica: impl Fn(&Print, V3, f32) -> V3) -> f32 {
 fn the_print_replica_is_the_kernel_s_print() {
     let worst = worst_gap(|p, n, t| p.rendered(n, t));
     assert!(worst < 1e-6, "the replica parts from the kernel by {worst}");
-    // Twins: a replica dropping the filters, laying the colour density apart from Hunt or dropping each channel's
+    // Twins: a replica dropping the filters, laying a colour density the kernel does not, or dropping each channel's
     // own tone is seen.
     let unfiltered = worst_gap(|p, n, t| {
         let mut bare = *p;
@@ -86,7 +86,7 @@ fn the_print_replica_is_the_kernel_s_print() {
         bare.rendered(n, t)
     });
     assert!(unfiltered > 1e-2, "{unfiltered}");
-    let apart = worst_gap(|p, n, t| color_density::rendered(p.rendered(n, 0.0), t));
+    let apart = worst_gap(|p, n, _| color_density::rendered(p.rendered(n, 0.0), 0.35));
     assert!(apart > 1e-3, "{apart}");
     let untoned = worst_gap(|p, n, t| Print { channel_contrast: [0.0; 3], channel_mid: [0.0; 3], ..*p }.rendered(n, t));
     assert!(untoned > 1e-2, "{untoned}");
@@ -117,7 +117,6 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
         blue: [0.0, 2.0, 1.0],
         pedestal: density_axis::pedestal(ceiling),
         log_guard: density_axis::log_guard(ceiling),
-        density: color_density::factor(settings.density),
         print_on: 1.0,
         print_stops: print.exposure,
         print_contrast: print.contrast,

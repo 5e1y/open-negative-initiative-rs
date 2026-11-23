@@ -74,10 +74,10 @@ pub fn unanchored(k: Stage47) -> Stage47 {
     Stage47 { paper: k.paper.map(|p| Paper { anchor: p.pick, brightness: 0.0, ..p }), ..k }
 }
 
-/// The paper's own Dmax as its print shows it, at its colour density.
+/// The paper's own Dmax as its print shows it.
 pub fn dmax(p: &Paper) -> [f32; 3] {
     let v = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
-    p.coloured(if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v })
+    if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v }
 }
 
 pub fn rgb(v: V4) -> [f32; 3] {

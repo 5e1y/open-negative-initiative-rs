@@ -1,10 +1,9 @@
 //! The paper: the enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
-//! curves; the print's dyes are read under D50, its colour density laid, then its ends: the frame's pick and the paper's
-//! white each on its anchor. Brightness moves the enlarger's light as a time does, faded in from the pick over the deep
-//! shadows: the blacks stay, the mids move. Lighting's other sliders act on the negative before it (`negative`).
+//! curves; the print's dyes are read under D50, then its ends: the frame's pick and the paper's white each on its anchor.
+//! Brightness moves the enlarger's light as a time does, faded in from the pick over the deep shadows: the blacks stay,
+//! the mids move. Lighting's other sliders and the colour tools act on the negative before it (`negative`).
 
 use super::*;
-use super::stage47::coloured;
 
 /// Most wavelengths either sum runs over: every sample of 380 to 780 nm by 5.
 pub const PAPER_BANDS: usize = 81;
@@ -20,7 +19,7 @@ const LOG10_2: f32 = std::f32::consts::LOG10_2;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// A negative printed on a paper: how its pixel is read as dye amounts, the enlarger's light, the paper's curves, its
-/// print seen under D50 in Rec. 2020, its colour density, and the print's ends.
+/// print seen under D50 in Rec. 2020, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
@@ -51,10 +50,8 @@ pub struct Paper {
     pub print: &'static [V4],
     /// Per wavelength the print reflects: D50 read by the 1931 observer, adapted to D65, in Rec. 2020.
     pub view: &'static [V3],
-    /// Saturation, the colour density: each channel's light to this power, the luma undone, as ONI's print lays it.
-    pub density: f32,
-    /// The print, at its colour density, of the frame's pick without Lighting's points, and the paper's own white:
-    /// the ends the print's light is read between.
+    /// The print of the frame's pick without Lighting's points, and the paper's own white: the ends the print's light is
+    /// read between.
     pub pick: V3,
     pub white: V3,
     /// Where the pick and the paper's white land: pure black and pure white, or for Print lift where the enlarger's
@@ -79,7 +76,7 @@ impl Paper {
             v3(self.filters, self.scale),
             [self.pick_log, self.reach, 0.0, 0.0],
             [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
-            v3(self.pick, self.density),
+            v3(self.pick, 0.0),
             v3(self.white, 0.0),
             v3(self.anchor, 0.0),
             v3(self.white_anchor, 0.0),
@@ -152,11 +149,6 @@ impl Paper {
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 
-    /// The print's light at its colour density.
-    pub fn coloured(&self, light: V3) -> V3 {
-        coloured(light, self.density)
-    }
-
     /// Each channel laid from the printed pick K on its anchor A and the paper's white W on its anchor T: a straight
     /// line in light through both, under K one onto no light, so the print stays above none.
     pub fn ended(&self, light: V3) -> V3 {
@@ -169,9 +161,9 @@ impl Paper {
         })
     }
 
-    /// What the print shows of a negative holding `amounts`: its light, its colour density, its ends.
+    /// What the print shows of a negative holding `amounts`: its light between its ends.
     pub fn shown(&self, amounts: V3) -> V3 {
-        self.ended(self.coloured(self.printed(amounts)))
+        self.ended(self.printed(amounts))
     }
 }
 

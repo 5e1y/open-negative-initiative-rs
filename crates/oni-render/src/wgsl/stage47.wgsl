@@ -3,7 +3,7 @@
 
 struct Params {
     gain_invert: vec4<f32>,
-    red_density: vec4<f32>,
+    red: vec4<f32>,
     green_pedestal: vec4<f32>,
     blue_guard: vec4<f32>,
     low_window: vec4<f32>,
@@ -76,7 +76,7 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     if (P.print_contrast_hunt.w > 0.5) { return s.rgb; }
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
-    let red = P.red_density.xyz;
+    let red = P.red.xyz;
     let green = P.green_pedestal.xyz;
     let pedestal = P.green_pedestal.w;
     let blue = P.blue_guard.xyz;
@@ -109,9 +109,9 @@ fn stage47_windowed(s: vec4<f32>) -> vec3<f32> {
     return e;
 }
 
-// Stages 6 and 7 on a windowed pixel: the print, its filters, Hunt and the colour density.
+// Stages 6 and 7 on a windowed pixel: the print, its filters and Hunt's colour.
 fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
-    var density = P.red_density.w;
+    var density = 1.0;
     let print_on = P.high_print.w;
     let print_stops = P.print_contrast_hunt.x;
     let print_contrast = P.print_contrast_hunt.y;

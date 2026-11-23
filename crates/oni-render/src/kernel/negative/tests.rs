@@ -44,6 +44,10 @@ fn at_rest() -> Negative {
         own_pivot: [0.0; 3],
         own_slope: [1.0; 3],
         own_shift: [0.0; 3],
+        spread: 1.0,
+        mixer: None,
+        curve: None,
+        lightness: [0.0; LIGHTNESS_NODES],
         span: [2.0, 2.0, 2.2],
         origin: 0.0,
         points_black: [0.0; 3],
@@ -186,4 +190,40 @@ fn the_tones_stretch_the_range_lay_the_zones_by_tone_and_hold_both_ends() {
     assert!((half[0] / k.span[0] - 0.7).abs() < 1e-6 && (half[1] / k.span[1] - 0.5).abs() < 1e-6, "{half:?}");
     // Twin: at rest nothing moves, to the bit.
     assert_eq!(k.toned([0.2, 0.36, 0.7]), [0.2, 0.36, 0.7]);
+}
+
+#[test]
+fn saturation_spreads_the_scenes_chroma_about_its_neutral_and_holds_its_luminance() {
+    let rest = at_rest();
+    let log = [0.3, -0.2, -0.4];
+    assert_eq!(rest.coloured(log), log);
+    let spread = Negative { spread: 2.0, ..rest };
+    let out = spread.coloured(log);
+    let neutral = |v: V3| dot(v, LUMA);
+    let chroma = |v: V3| map(v, |_, x| x - neutral(v));
+    let (was, now) = (chroma(log), chroma(out));
+    assert!((0..3).all(|c| (now[c] - 2.0 * was[c]).abs() < 1e-5), "{was:?} {now:?}");
+    let luminance = |v: V3| dot(v.map(|x| 10f32.powf(x)), LUMA);
+    assert!((luminance(out) / luminance(log) - 1.0).abs() < 1e-5, "{out:?}");
+    // A grey takes none.
+    assert_eq!(spread.coloured([0.4; 3]).map(|v| (v * 1e5).round()), [0.4f32 * 1e5; 3].map(f32::round));
+    // Twin: the spread about the plain mean, not the luma's, leaves another chroma.
+    let mean = (log[0] + log[1] + log[2]) / 3.0;
+    let plain = log.map(|v| mean + 2.0 * (v - mean));
+    assert!((0..3).any(|c| (chroma(plain)[c] - now[c]).abs() > 1e-2 || (plain[c] - out[c]).abs() > 1e-2));
+}
+
+#[test]
+fn a_mixer_band_moves_its_own_hues_alone() {
+    let rest = at_rest();
+    let blue = Spectrogram { hue_low: [0.0; 4], hue_high: [0.0, 20.0, 0.0, 0.0], sat_low: [0.0; 4], sat_high: [0.0, 0.5, 0.0, 0.0], luma_low: [0.0; 4], luma_high: [0.0; 4] };
+    let k = Negative { mixer: Some(blue), ..rest };
+    // Red at 0°, far from Blue's 240°, keeps its exposures; blue moves.
+    let red = [0.4, -0.2, -0.2];
+    let blueish = [-0.3, -0.1, 0.5];
+    assert!((0..3).all(|c| (k.coloured(red)[c] - red[c]).abs() < 1e-6), "{:?}", k.coloured(red));
+    assert!((0..3).any(|c| (k.coloured(blueish)[c] - blueish[c]).abs() > 1e-2), "{:?}", k.coloured(blueish));
+    // Twin: the same dose on Red's band moves red.
+    let on_red = Negative { mixer: Some(Spectrogram { hue_low: [20.0, 0.0, 0.0, 0.0], sat_low: [0.5, 0.0, 0.0, 0.0], hue_high: [0.0; 4], sat_high: [0.0; 4], ..blue }), ..rest };
+    assert!((0..3).any(|c| (on_red.coloured(red)[c] - red[c]).abs() > 1e-2));
 }

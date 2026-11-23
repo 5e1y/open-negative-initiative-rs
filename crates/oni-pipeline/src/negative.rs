@@ -1,13 +1,17 @@
 //! Lighting on the negative, the one operation every pipe takes: a frame's density read back to each layer's log
-//! exposure through its stock's development, Exposure, Contrast and the filters laid there as a shot exposed otherwise,
-//! the film developed again, then its points, zones and mids on its density; the print, ONI's or a paper, at its rest.
+//! exposure through its stock's development, Exposure, Contrast, the colour tools and the filters laid there as a shot
+//! exposed otherwise, the film developed again, then its points, zones and mids on its density; the print, ONI's or a
+//! paper, at its rest, so it bounds every colour the tools lay.
 
 use crate::conversion;
+use crate::finishing;
 use crate::film::bake;
 use crate::film::dyes::{self, C41};
 use crate::film::profile::{Profile, Silver};
 use crate::paper::{self, bisected, film_ends, spanned};
-use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LUMA, NEGATIVE_CURVE_NODES, Negative, Stage47};
+use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, LUMA, NEGATIVE_CURVE_NODES};
+use oni_render::{Negative, Stage47, cpu};
+use oni_settings::tone::color_density;
 use oni_settings::{DyeSet, PipelineSettings, VirtualStock};
 use std::sync::OnceLock;
 
@@ -169,6 +173,27 @@ pub fn reads_amounts(s: &PipelineSettings) -> bool {
     s.paper().is_some() || s.film().is_some()
 }
 
+/// Whether nothing lays on `s`'s negative: its print bypassed, or Lighting there and every colour tool at rest; a black
+/// and white print has no colour for the tools to move.
+pub fn rests(s: &PipelineSettings) -> bool {
+    s.print.bypassed || (s.print.rests_on_negative() && (s.is_monochrome() || colour_rests(s)))
+}
+
+fn colour_rests(s: &PipelineSettings) -> bool {
+    s.density == color_density::BASE && finishing::spectrogram(&s.spectrogram).is_none() && finishing::saturation(&s.saturation).is_none()
+}
+
+/// The print's lightness, its luma on a display gamma, of a grey at each of the negative's lightness nodes, as `k`
+/// prints it: the saturation curve's axis, the one the picture's histogram is drawn on.
+pub fn lightness(n: &Negative, k: &Stage47) -> [f32; LIGHTNESS_NODES] {
+    let print = k.after_dyes();
+    let step = (LIGHTNESS_HIGH - LIGHTNESS_LOW) / (LIGHTNESS_NODES - 1) as f32;
+    std::array::from_fn(|i| {
+        let v = cpu::stage47(n.grey(LIGHTNESS_LOW + step * i as f32), &print);
+        (0..3).map(|c| LUMA[c] * v[c]).sum::<f32>().max(0.0).powf(1.0 / oni_settings::tone::Print::DISPLAY_GAMMA).clamp(0.0, 1.0)
+    })
+}
+
 /// The tone reading each density above the bare film as `offset` more, straight on: what a print reading the density
 /// itself takes.
 fn straight(offset: V3) -> ([V3; DYE_TONE_NODES], V3, V3) {
@@ -181,7 +206,7 @@ fn straight(offset: V3) -> ([V3; DYE_TONE_NODES], V3, V3) {
 /// The moves turn about the reference grey's exposure, so Contrast holds the grey and the print's rest is the bare film's.
 pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let print = &s.print;
-    if print.rests_on_negative() {
+    if rests(s) {
         return None;
     }
     let mono = s.is_monochrome();
@@ -243,6 +268,10 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         own_pivot,
         own_slope,
         own_shift,
+        spread: if mono { 1.0 } else { color_density::factor(s.density) },
+        mixer: finishing::spectrogram(&s.spectrogram).filter(|_| !mono),
+        curve: finishing::saturation(&s.saturation).filter(|_| !mono),
+        lightness: [0.0; LIGHTNESS_NODES],
         span: if positive { span.map(|v| -v) } else { span },
         origin: if positive { 1.0 } else { 0.0 },
         points_black: points.map(|p| p.0),
@@ -254,7 +283,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         tone_step,
     };
     // Moves a black and white print reads none of lay nothing.
-    if !at.moves() && !at.tones() {
+    if !at.moves() && !at.tones() && !at.colours() {
         return None;
     }
     if filters == [0.0; 3] {

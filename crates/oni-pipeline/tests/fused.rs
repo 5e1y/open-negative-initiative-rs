@@ -79,12 +79,9 @@ fn kernels_in_one_pass_are_the_kernels_one_after_the_other() {
     let extent = Rect::new(-3, 5, 64, 40);
     let pixels = noise(extent.w, extent.h, 23, 0.0, 1.3);
     let input = g.upload_at(extent, &pixels).unwrap();
-    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.spectrogram.saturation[2] = 0.4;
-    s.spectrogram.hue[5] = -0.3;
     let kernels = || {
         vec![
-            stages::spectrogram(&finishing::spectrogram(&s.spectrogram).unwrap()),
+            stages::saturation(&finishing::saturation(&finishing::sauce(0.6)).unwrap()),
             stages::saturation(&finishing::saturation(&finishing::sauce(0.8)).unwrap()),
             stages::vignette(extent, -0.6, 0.5),
             stages::exposure(0.3),

@@ -202,8 +202,8 @@ pub(crate) fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper, or the neutral one with Print on paper off, its enlarger at rest on the bare film, then Brightness,
-/// the colour density and the ends on the print of the negative as Lighting develops it. None on ONI's print.
+/// The frame's paper, or the neutral one with Print on paper off, its enlarger at rest on the bare film, then Brightness
+/// and the ends on the print of the negative as Lighting develops it. None on ONI's print.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let mono = s.is_monochrome();
@@ -239,7 +239,6 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         curve_step: sheet.curve_step * axis,
         print: &sheet.print,
         view: &sheet.view,
-        density: 1.0,
         pick: [0.0; 3],
         white: [1.0; 3],
         anchor: [0.0; 3],
@@ -250,5 +249,5 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         luma: mono,
     };
     let rest = resting(&bare, anchors[0], anchors[2], mono, lifted(s));
-    Some(super::lighting::lit(&bare, rest, &anchors, k.density, s, k.negative.as_ref()))
+    Some(super::lighting::lit(&bare, rest, &anchors, s, k.negative.as_ref()))
 }

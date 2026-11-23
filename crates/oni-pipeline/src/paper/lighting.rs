@@ -14,13 +14,13 @@ pub const BRIGHTNESS_REACH_LIGHT: f32 = 0.044155;
 /// How far past the grey, in its own amounts, the reach is sought: a print that never gets there takes the end.
 const SOUGHT: f32 = 8.0;
 
-/// `p`'s print of `pick` and the paper's white, at its colour density, laid on pure black and pure white, or for Print
-/// lift the pick on `lift` and the white its own.
+/// `p`'s print of `pick` and the paper's white, laid on pure black and pure white, or for Print lift the pick on `lift`
+/// and the white its own.
 pub fn laid(p: &Paper, pick: V3, lift: Option<V3>) -> Paper {
     let white = p.viewed(p.curves[0]);
-    let white = p.coloured(if p.luma { [luma(white); 3] } else { white });
+    let white = if p.luma { [luma(white); 3] } else { white };
     let (anchor, white_anchor) = lift.map_or(([0.0; 3], [1.0; 3]), |a| (a, white));
-    Paper { pick: p.coloured(p.printed(pick)), white, anchor, white_anchor, ..*p }
+    Paper { pick: p.printed(pick), white, anchor, white_anchor, ..*p }
 }
 
 /// `p` with its ends, `laid` from `pick` and `lift`, and Brightness's stops faded in up to its reach: where the neutral
@@ -32,17 +32,17 @@ pub fn ended(p: &Paper, pick: V3, grey: V3, lift: Option<V3>, brightness: f32) -
     let ended = laid(&plain, pick, lift);
     let (k, w) = (luma(ended.pick), luma(ended.white));
     let neutral = |t: f32| std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]));
-    let light = |t: f32| (luma(ended.coloured(ended.printed(neutral(t)))) - k) / (w - k) * w;
+    let light = |t: f32| (luma(ended.printed(neutral(t))) - k) / (w - k) * w;
     let t = bisected(0.0, SOUGHT, BRIGHTNESS_REACH_LIGHT, light);
     let reach = ended.toward_light(pick_log, ended.exposed(neutral(t)));
     Paper { brightness, pick_log, reach, ..ended }
 }
 
-/// `bare` at its `rest` (log time, filtration) with colour `density`, its `anchors` the pick, the densest read and the
-/// reference grey as the bare film holds them: the pick printed where the rest prints it whatever Lighting moves.
-pub(super) fn lit(bare: &Paper, rest: (f32, V3), anchors: &[V3; 3], density: f32, s: &PipelineSettings, negative: Option<&Negative>) -> Printing {
+/// `bare` at its `rest` (log time, filtration), its `anchors` the pick, the densest read and the reference grey as the
+/// bare film holds them: the pick printed where the rest prints it whatever Lighting moves.
+pub(super) fn lit(bare: &Paper, rest: (f32, V3), anchors: &[V3; 3], s: &PipelineSettings, negative: Option<&Negative>) -> Printing {
     let (time, rest_cc) = rest;
-    let at_rest = Paper { scale: time.exp(), filters: filters(rest_cc), density, ..*bare };
+    let at_rest = Paper { scale: time.exp(), filters: filters(rest_cc), ..*bare };
     let [pick, _, grey] = *anchors;
     let lift = super::lifted(s).then(|| at_rest.printed(pick));
     // An enlarger's filters read the least at none: a rest under none sheds that neutral density, the time then holding
