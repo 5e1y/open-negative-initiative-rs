@@ -1,23 +1,18 @@
 use super::*;
 
-static NEGATIVE: [V4; 3] = [[1.0, 0.2, 0.05, 0.1], [0.1, 1.0, 0.2, 0.2], [0.02, 0.1, 1.0, 0.4]];
-static EXPOSURE: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
-static DICHROIC: [V3; 3] = [[0.0, 1.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0]];
 static PRINT: [V4; 3] = [[1.0, 0.0, 0.0, 0.05], [0.0, 1.0, 0.0, 0.05], [0.0, 0.0, 1.0, 0.05]];
 static VIEW: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 static CURVES: std::sync::LazyLock<[V3; PAPER_CURVE_NODES]> =
     std::sync::LazyLock::new(|| std::array::from_fn(|i| { let d = 0.01 * i as f32; [d, 2.0 * d, 3.0 * d] }));
 
-/// Three narrow bands, each alone in a layer and in a viewing channel, a linear curve on each layer.
+const IDENTITY: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
+/// A unit window on each layer, each print dye alone in a viewing channel, a linear curve on each layer.
 fn narrow() -> Paper {
     Paper {
-        gain: [1.0; 3],
-        pedestal: 0.0,
-        log_guard: 1e-12,
-        black: [0.0; 3],
-        negative: &NEGATIVE,
-        exposure: &EXPOSURE,
-        dichroic: &DICHROIC,
+        span: 1.0,
+        bend: 1.0,
+        mix: IDENTITY,
         filters: [1.0; 3],
         scale: 1.0,
         brightness: 0.0,
@@ -37,17 +32,38 @@ fn narrow() -> Paper {
 }
 
 #[test]
-fn a_narrow_paper_exposes_each_layer_through_its_band_and_a_filter_dims_its_own() {
+fn each_layer_is_exposed_by_its_own_channels_density_and_a_filter_dims_its_own() {
     let k = narrow();
     let log = k.exposed([0.3, 0.6, 0.9]);
-    let expected = [-(0.3 + 0.12 + 0.045 + 0.1), -(0.03 + 0.6 + 0.18 + 0.2), -(0.006 + 0.06 + 0.9 + 0.4)];
-    assert!((0..3).all(|c| (log[c] - expected[c]).abs() < 1e-5), "{log:?}");
-    // A yellow filter at 30 CC dims the blue band by 0.3 in density, the others not at all.
+    assert!((0..3).all(|c| (log[c] + [0.3, 0.6, 0.9][c]).abs() < 1e-6), "{log:?}");
+    // A yellow filter at 30 CC lowers the blue-sensitive layer's exposure by 0.3, the others not at all.
     let yellow = Paper { filters: [1.0, 1.0, 10f32.powf(-0.3)], ..k }.exposed([0.3, 0.6, 0.9]);
-    assert!((yellow[2] - (expected[2] - 0.3)).abs() < 1e-5 && (yellow[0] - expected[0]).abs() < 1e-6, "{yellow:?}");
+    assert!((yellow[2] - (log[2] - 0.3)).abs() < 1e-5 && (yellow[0] - log[0]).abs() < 1e-6, "{yellow:?}");
     // Twin: the same filter read as a magenta one dims green instead.
     let magenta = Paper { filters: [1.0, 10f32.powf(-0.3), 1.0], ..k }.exposed([0.3, 0.6, 0.9]);
-    assert!((magenta[2] - expected[2]).abs() < 1e-6 && (magenta[1] - expected[1]).abs() > 0.29);
+    assert!((magenta[2] - log[2]).abs() < 1e-6 && (magenta[1] - log[1]).abs() > 0.29);
+    // Twice the time lifts every layer's exposure by log10 2.
+    let longer = Paper { scale: 2.0, ..k }.exposed([0.3, 0.6, 0.9]);
+    assert!((0..3).all(|c| (longer[c] - log[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{longer:?}");
+}
+
+#[test]
+fn a_share_lies_back_on_the_mean_span_through_its_bend_and_the_mix_reads_the_three() {
+    let k = Paper { span: 1.4, bend: 0.8, ..narrow() };
+    let d = k.density([0.0, 0.5, 1.0]);
+    assert!(d[0] == 0.0 && (d[1] - 1.4 * 0.5f32.powf(0.8)).abs() < 1e-6 && (d[2] - 1.4).abs() < 1e-6, "{d:?}");
+    // Under none, the power turned over: odd about the bare film, so a share just under it reads just under none.
+    let under = k.density([-0.5, -1e-3, 1e-3]);
+    assert!((under[0] + 1.4 * 0.5f32.powf(0.8)).abs() < 1e-6 && under[1] < 0.0 && (under[1] + under[2]).abs() < 1e-7, "{under:?}");
+    // A mix whose rows sum to one keeps a neutral neutral and moves a colour.
+    let mixed = Paper { mix: [[0.8, 0.2, 0.0], [0.1, 0.8, 0.1], [0.0, 0.3, 0.7]], ..k };
+    let grey = mixed.density([0.4; 3]);
+    assert!((grey[0] - grey[1]).abs() < 1e-6 && (grey[1] - grey[2]).abs() < 1e-6, "{grey:?}");
+    let colour = mixed.density([0.9, 0.2, 0.2]);
+    assert!((colour[0] - k.density([0.9, 0.2, 0.2])[0]).abs() > 0.05, "{colour:?}");
+    // Twin: the bend at one lays each share straight on the span.
+    let straight = Paper { bend: 1.0, ..k }.density([0.5; 3]);
+    assert!((straight[0] - 0.7).abs() < 1e-6 && (straight[0] - d[1]).abs() > 0.1);
 }
 
 #[test]
@@ -192,8 +208,8 @@ fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_unde
     assert!(by[0] < std::f32::consts::LOG10_2 - 0.01, "{by:?}");
     // The pick and the tones beyond it print where they did.
     let rest = narrow();
-    for amounts in [[0.0; 3], [-0.2, -0.1, -0.3]] {
-        assert_eq!(k.shown(amounts), rest.shown(amounts), "{amounts:?}");
+    for shares in [[0.0; 3], [-0.2, -0.1, -0.3]] {
+        assert_eq!(k.shown(shares), rest.shown(shares), "{shares:?}");
     }
     // Twin: each layer moved by its own distance under the pick lays different shifts on them.
     let own: V3 = map(between, |_, v| v - (lifted(k.pick_log - v, std::f32::consts::LOG10_2, k.reach) - (k.pick_log - v)));
@@ -201,15 +217,13 @@ fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_unde
 }
 
 #[test]
-fn the_print_reads_its_dyes_and_base_and_the_reading_lies_above_the_black() {
+fn the_print_reads_its_dyes_and_base_and_a_black_and_white_print_its_luma() {
     let k = narrow();
     let out = k.viewed([0.5, 1.0, 2.0]);
     let expected = [0.55, 1.05, 2.05].map(|d: f32| 10f32.powf(-d));
     assert!((0..3).all(|c| (out[c] - expected[c]).abs() < 1e-6), "{out:?}");
-    let read = Paper { black: [0.2; 3], gain: [2.0, 1.0, 1.0], ..k }.amounts([0.01, 0.01, 1e-20, 1.0]);
-    assert!((read[0] - (-(0.02f32).log10() - 0.2)).abs() < 1e-5 && (read[2] - 11.8).abs() < 1e-4, "held at the guard: {read:?}");
-    // Twin: no black reads the full density.
-    assert!((k.amounts([0.01, 0.01, 0.01, 1.0])[1] - 2.0).abs() < 1e-5);
+    // Twin: no base reads every channel lighter.
+    assert!((out[0] - 10f32.powf(-0.5)).abs() > 1e-2);
     // A black and white print reads its luma on every channel.
     let mono = Paper { luma: true, ..k }.printed([0.3, 0.6, 0.9]);
     assert!(mono[0] == mono[1] && mono[1] == mono[2]);

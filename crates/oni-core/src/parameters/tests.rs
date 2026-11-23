@@ -62,7 +62,6 @@ fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     s.geometry.measure_window = Some(oni_settings::cg::Rect::new(0.2, 0.2, 0.5, 0.5));
     s.flat_field.amount = 0.4;
     s.dye_set = oni_settings::DyeSet::FujifilmC200;
-    s.separation = 1.3;
     s.print.exposure = 0.2;
     s.sharpen.amount = 2.5;
     let blank = reset_blank(&s);
@@ -71,7 +70,7 @@ fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     assert_eq!(blank.dye_set, s.dye_set);
     // Twin: the look goes back to rest, so the check sees a reset that kept too much.
     let rest = PipelineSettings::rest(ConversionMode::Negative, true);
-    assert_eq!((blank.separation, blank.print.exposure, blank.sharpen), (rest.separation, rest.print.exposure, rest.sharpen));
+    assert_eq!((blank.print.exposure, blank.sharpen), (rest.print.exposure, rest.sharpen));
     assert_ne!(blank, s);
     // The conversion stays: a slide read as a negative is reset as one.
     let mut slide = PipelineSettings::rest(ConversionMode::Negative, true);

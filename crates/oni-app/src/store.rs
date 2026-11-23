@@ -3,7 +3,7 @@
 
 use crate::fields::{Block, Field};
 use oni_core::{Command, Each, EditorStore};
-use oni_settings::{DyeSet, PipelineSettings};
+use oni_settings::PipelineSettings;
 
 /// The sliders whose store field moved since the last call, drained; a field holds several
 /// sliders, so the shell compares each value with the one it shows.
@@ -28,17 +28,14 @@ pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
     PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic)
 }
 
-/// Whether the block's reset key shows: its value differs from what its reset writes. `dyes` are the
-/// measured dyes the stock names, which the dyes rest on; none rests on the frame's own.
-pub fn is_modified(settings: &PipelineSettings, block: Block, dyes: Option<DyeSet>) -> bool {
+/// Whether the block's reset key shows: its value differs from what its reset writes.
+pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
     // `FlatField()`: the block's value is the whole flat-field, its mask included.
     if block == Block::FlatField {
         return settings.flat_field != Default::default();
     }
     let shown = block.fields().iter().filter(|f| f.shown_in(settings));
-    let off = shown.into_iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6);
-    // The block's value is the dose, the dyes and the hand's mark together.
-    off || (block == Block::DyeSeparation && (dyes.is_some_and(|d| settings.dye_set != d) || settings.separation_by_hand))
+    shown.into_iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6)
 }
 
 /// Which of red, green and blue More Color Settings shows moved: any of its tab's values off its rest.
@@ -53,18 +50,17 @@ pub fn channel_marked(settings: &PipelineSettings) -> [bool; 3] {
 
 /// The block's sliders at their rest, one step: each frame shown with the open one at its own, and the
 /// open frame's roll with it where the block is the roll's.
-pub fn reset(block: Block, dyes: Option<DyeSet>) -> Command {
-    Command::Each(rest_of(block, dyes))
+pub fn reset(block: Block) -> Command {
+    Command::Each(rest_of(block))
 }
 
 /// The block's rest, read off each frame it lands on.
-pub fn rest_of(block: Block, dyes: Option<DyeSet>) -> Each {
-    Each::new(move |s| rested(s, block, dyes))
+pub fn rest_of(block: Block) -> Each {
+    Each::new(move |s| rested(s, block))
 }
 
-/// The settings with the block's sliders at the rest of the frame's own mode, decode and measure; the
-/// dyes land on the measured ones the stock names.
-pub fn rested(settings: &PipelineSettings, block: Block, dyes: Option<DyeSet>) -> PipelineSettings {
+/// The settings with the block's sliders at the rest of the frame's own mode, decode and measure.
+pub fn rested(settings: &PipelineSettings, block: Block) -> PipelineSettings {
     let mut next = settings.clone();
     if block == Block::FlatField {
         next.flat_field = Default::default();
@@ -73,12 +69,6 @@ pub fn rested(settings: &PipelineSettings, block: Block, dyes: Option<DyeSet>) -
     for f in block.fields().iter().filter(|f| f.shown_in(settings)) {
         next = f.knob().set(&next, f.base(settings));
     }
-    if block == Block::DyeSeparation {
-        // The dose at its base and the stock's dyes, which the dose's knob alone would mark by hand.
-        next.separation = rest(settings).separation;
-        next.dye_set = dyes.unwrap_or(next.dye_set);
-        next.separation_by_hand = false;
-    }
     next
 }
 
@@ -86,8 +76,7 @@ pub fn rested(settings: &PipelineSettings, block: Block, dyes: Option<DyeSet>) -
 pub(crate) mod tests {
     use super::*;
     use oni_core::Archive;
-    use oni_settings::ConversionMode;
-    use oni_settings::blocks::separation;
+    use oni_settings::{ConversionMode, DyeSet};
     use std::path::{Path, PathBuf};
 
     /// A store opened on a frame with no sidecar in a fresh folder, read as a RAW mosaic.
@@ -135,7 +124,7 @@ pub(crate) mod tests {
         let red = Field::RedWhitePoint.knob().set(&rest, 0.1);
         assert_eq!(channel_marked(&red), [true, false, false]);
         // The block's reset clears every tab's mark at once.
-        assert_eq!(channel_marked(&rested(&s, Block::ChannelPoints, None)), [false; 3]);
+        assert_eq!(channel_marked(&rested(&s, Block::ChannelPoints)), [false; 3]);
     }
 
     #[test]
@@ -143,12 +132,12 @@ pub(crate) mod tests {
         let (mut s, dir) = fresh("reset");
         s.apply(Command::Set { knob: Field::Chrome.knob(), value: 0.5 });
         s.apply(Command::Set { knob: Field::Vignette.knob(), value: -1.0 });
-        assert!(is_modified(s.settings(), Block::Effects, None) && !is_modified(s.settings(), Block::Lighting, None));
+        assert!(is_modified(s.settings(), Block::Effects) && !is_modified(s.settings(), Block::Lighting));
         let revision = s.revision();
-        let command = reset(Block::Effects, None);
+        let command = reset(Block::Effects);
         s.apply(command);
         assert_eq!(s.revision(), revision + 1);
-        assert!(!is_modified(s.settings(), Block::Effects, None));
+        assert!(!is_modified(s.settings(), Block::Effects));
         s.apply(Command::Undo);
         assert_eq!(get(&s, Field::Chrome), 0.5, "the reset is one step, undone whole");
         assert_eq!(get(&s, Field::Vignette), -1.0);
@@ -161,19 +150,19 @@ pub(crate) mod tests {
         s.apply(Command::Mode(ConversionMode::Positive));
         s.apply(Command::Set { knob: Field::Exposure.knob(), value: 0.7 });
         s.apply(Command::Set { knob: Field::DensityCeiling.knob(), value: 2.9 });
-        let command = reset(Block::Lighting, None);
+        let command = reset(Block::Lighting);
         s.apply(command);
-        let command = reset(Block::DensityCeiling, None);
+        let command = reset(Block::DensityCeiling);
         s.apply(command);
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
         assert_eq!(get(&s, Field::Exposure), Field::Exposure.knob().get(&slide));
         assert_eq!(get(&s, Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
-        assert!(!is_modified(s.settings(), Block::Lighting, None) && !is_modified(s.settings(), Block::DensityCeiling, None));
+        assert!(!is_modified(s.settings(), Block::Lighting) && !is_modified(s.settings(), Block::DensityCeiling));
         // Twin: a negative's ceiling rests elsewhere, so a reset to it would fail above; Exposure rests at 0 on both.
         let negative = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_eq!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
         assert_ne!(Field::DensityCeiling.knob().get(&negative), Field::DensityCeiling.knob().get(&slide));
-        assert!(is_modified(&negative_on(s.settings()), Block::DensityCeiling, None), "a negative's rest reads as moved on a slide");
+        assert!(is_modified(&negative_on(s.settings()), Block::DensityCeiling), "a negative's rest reads as moved on a slide");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -184,7 +173,7 @@ pub(crate) mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let reference = |id| Some(oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
         let (portra, fuji) = (oni_settings::Id::new(), oni_settings::Id::new());
-        let dyed = |id, set| PipelineSettings { separation: 1.1, dye_set: set, separation_by_hand: true, roll_reference: reference(id), ..PipelineSettings::rest(ConversionMode::Negative, false) };
+        let dyed = |id, set| PipelineSettings { dye_set: set, roll_reference: reference(id), ..PipelineSettings::rest(ConversionMode::Negative, false) };
         let kodak = DyeSet::KodakPortra400;
         let mut beside = dyed(fuji, DyeSet::FujifilmXtra400);
         beside.print.exposure = 0.4;
@@ -198,13 +187,10 @@ pub(crate) mod tests {
         let mut s = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
         s.open(&paths[0]).unwrap();
         s.set_together(vec![paths[1].clone()]);
-        let beside = |s: &EditorStore| s.together_where(oni_core::Field::Print, |b| is_modified(b, Block::Lighting, Some(kodak)));
-        assert!(!is_modified(s.settings(), Block::Lighting, Some(kodak)) && beside(&s), "the key shows for the frame beside");
-        s.apply(reset(Block::DyeSeparation, Some(kodak)));
-        s.apply(reset(Block::Lighting, Some(kodak)));
-        let dyes = |s: PipelineSettings| (s.separation, s.dye_set, s.separation_by_hand);
-        assert_eq!(dyes(read(&paths[2])), (separation::BASE, kodak, false), "the roll's frame left out takes its stock's dyes");
-        assert_eq!(dyes(read(&paths[1])), (1.1, DyeSet::FujifilmXtra400, true), "the Fuji frame keeps its own");
+        let beside = |s: &EditorStore| s.together_where(oni_core::Field::Print, |b| is_modified(b, Block::Lighting));
+        assert!(!is_modified(s.settings(), Block::Lighting) && beside(&s), "the key shows for the frame beside");
+        s.apply(reset(Block::Lighting));
+        assert_eq!(read(&paths[1]).dye_set, DyeSet::FujifilmXtra400, "the Fuji frame keeps its own stock");
         assert_eq!(read(&paths[1]).print.exposure, Field::Exposure.knob().get(&rest(&read(&paths[1]))), "and its Lighting at its own rest");
         // Twin: once every frame stands at rest, the key no longer shows.
         assert!(!beside(&s));
@@ -215,31 +201,5 @@ pub(crate) mod tests {
     fn negative_on(settings: &PipelineSettings) -> PipelineSettings {
         let negative = PipelineSettings::rest(ConversionMode::Negative, true);
         PipelineSettings { print: negative.print, density_ceiling: negative.density_ceiling, ..settings.clone() }
-    }
-
-    #[test]
-    fn the_dye_separation_reset_lands_on_the_stocks_dyes_and_clears_the_dose_and_the_hand() {
-        let (mut s, dir) = fresh("dyes");
-        let fuji = Some(DyeSet::FujifilmXtra400);
-        let mut picked = s.settings().clone();
-        picked.dye_set = DyeSet::KodakGold200;
-        s.apply(Command::Write(Box::new(picked)));
-        // The dyes alone, the dose at its base, off the stock's show the block's reset key.
-        assert_eq!(get(&s, Field::DyeSeparation), separation::BASE);
-        assert!(!is_modified(s.settings(), Block::DyeSeparation, None) && is_modified(s.settings(), Block::DyeSeparation, fuji));
-        s.apply(Command::Set { knob: Field::DyeSeparation.knob(), value: 1.1 });
-        assert!(s.settings().separation_by_hand);
-        s.apply(reset(Block::DyeSeparation, fuji));
-        let after = s.settings().clone();
-        assert_eq!((after.separation, after.dye_set, after.separation_by_hand), (separation::BASE, DyeSet::FujifilmXtra400, false));
-        assert!(!is_modified(&after, Block::DyeSeparation, fuji), "the stock's dyes are the block's rest");
-        // With no stock naming dyes, the reset keeps the frame's own.
-        s.apply(reset(Block::DyeSeparation, None));
-        assert_eq!(s.settings().dye_set, DyeSet::FujifilmXtra400);
-        assert!(is_modified(s.settings(), Block::DyeSeparation, Some(DyeSet::KodakGold200)), "twin: off the stock's dyes is a pick");
-        // Twin: the dose's knob alone lands on the base yet marks it by hand.
-        let by_knob = Field::DyeSeparation.knob().set(&after, separation::BASE);
-        assert!(by_knob.separation_by_hand && is_modified(&by_knob, Block::DyeSeparation, fuji));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

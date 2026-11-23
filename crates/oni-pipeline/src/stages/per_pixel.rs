@@ -2,7 +2,7 @@
 
 use super::*;
 use oni_graph::Image;
-use oni_render::{DyeSeparation, Negative, Paper};
+use oni_render::{Negative, Paper};
 
 /// A kernel's composed shader; for one reading only its input, its source and its call on `v`, the
 /// input at `p`, so `laid` may run several in one pass.
@@ -36,7 +36,6 @@ kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
 kernel!(NEGATIVE, wgsl::NEGATIVE, call "negative_px(v)");
 kernel!(NEGATIVE_COLOURED, wgsl::NEGATIVE_COLOURED, call "negative_px(v)");
 kernel!(PAPER, wgsl::PAPER, call "paper_px(v)");
-kernel!(DYE_SEPARATION, [wgsl::DYE_SEPARATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return dye_separation_px(load(p)); }");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
@@ -53,14 +52,9 @@ kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
 kernel!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(load(p), load1(p), vec2<f32>(p) + 0.5); }");
 kernel!(HALATION, [wgsl::HALATION_SOURCE, wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
-/// The fused stages 4 to 7 past the dye separation's pass, which `converted` lays before them.
+/// The fused stages 4 to 7 past Lighting on the negative, which `converted` lays before them.
 pub fn stage47(k: &Stage47) -> PerPixel {
-    PerPixel { name: "stage47", kernel: &STAGE47, params: bytemuck::bytes_of(&k.after_dyes().packed(0)).to_vec() }
-}
-
-/// The stock's dyes unmixed on the scan, a pass of its own: a print notch starts past it, from the cache.
-pub fn dye_separation(k: &Stage47, d: &DyeSeparation) -> PerPixel {
-    PerPixel { name: "dye-separation", kernel: &DYE_SEPARATION, params: uniform(d.head(), &d.rows(k.gain, k.pedestal, k.log_guard)) }
+    PerPixel { name: "stage47", kernel: &STAGE47, params: bytemuck::bytes_of(&k.after_negative().packed(0)).to_vec() }
 }
 
 /// Lighting and the colour tools on the negative, in the pass stage 4-7 reads.
@@ -70,21 +64,17 @@ pub fn negative(k: &Negative) -> PerPixel {
     PerPixel { name, kernel, params: uniform(k.head(), &k.rows()) }
 }
 
-/// The negative printed on its paper, in the pass stage 4-7 reads.
+/// The window's shares printed on the paper, in the pass past stage 4-7's window.
 pub fn paper(k: &Paper) -> PerPixel {
     PerPixel { name: "paper", kernel: &PAPER, params: uniform(k.head(), &k.rows()) }
 }
 
-/// Stages 4 to 7 on `image` as `cpu::stage47` runs them: the dye separation's pass first where `k` names it, then
-/// Lighting on the negative and the paper laid with the rest of the print in one pass.
+/// Stages 4 to 7 on `image` as `cpu::stage47` runs them, in one pass: Lighting on the negative, the windows and ONI's
+/// print, or the windows and the paper.
 pub fn converted(image: Image, k: &Stage47) -> Image {
-    let image = match &k.dyes {
-        Some(d) => image.then(dye_separation(k, d)),
-        None => image,
-    };
     let lit = k.negative.as_ref().map(negative);
     let printed = k.paper.as_ref().map(paper);
-    laid(image, lit.into_iter().chain(printed).chain([stage47(k)]).collect())
+    laid(image, lit.into_iter().chain([stage47(k)]).chain(printed).collect())
 }
 
 /// `CIExposureAdjust` by `ev` stops.

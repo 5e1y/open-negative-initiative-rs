@@ -12,7 +12,6 @@ fn every_readout_writes_its_number_one_way() {
     assert_eq!(Field::BalanceStrength.spec().readout.format(0.67), "67%");
     assert_eq!(Field::SharpenRadius.spec().readout.format(2.092), "2.1 px");
     assert_eq!(Field::Angle.spec().readout.format(-1.0), "\u{2212}1.00°");
-    assert_eq!(Field::DyeSeparation.readout(0.6), "60%");
     // Every slider names what its number counts, the ceiling's bare density and a lens correction's share of
     // its slider aside.
     let bare = |text: &str| text.ends_with(|c: char| c.is_ascii_digit());
@@ -164,14 +163,14 @@ fn follows(shown: &[String], order: &[String]) -> bool {
 #[test]
 fn the_roll_tab_lays_its_blocks_in_its_order() {
     let order: Vec<String> =
-        ["Prepared Roll", "Film Type", "Film Stock", "Flat-Field", "Scan Profile", "Lens Corrections", "Filtration", "Highlight Detail", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
+        ["Prepared Roll", "Film Type", "Film Stock", "Flat-Field", "Scan Profile", "Lens Corrections", "Filtration", "Highlight Detail", "Per-Channel Levels", "Balance Strength"]
         .map(String::from)
         .to_vec();
     let shown = pane_titles(&panel_source(), "RollPane");
     assert!(shown.len() >= 6, "{shown:?}");
     assert!(follows(&shown, &order), "the Roll tab shows {shown:?}, laid as {order:?}");
-    // Twin: Dye Separation and Balance Strength ahead of the ceiling break the order.
-    let early: Vec<String> = ["Prepared Roll", "Film Type", "Flat-Field", "Dye Separation", "Balance Strength", "Highlight Detail"].map(String::from).to_vec();
+    // Twin: Per-Channel Levels and Balance Strength ahead of the ceiling break the order.
+    let early: Vec<String> = ["Prepared Roll", "Film Type", "Flat-Field", "Per-Channel Levels", "Balance Strength", "Highlight Detail"].map(String::from).to_vec();
     assert!(!follows(&early, &order));
 }
 
@@ -298,7 +297,6 @@ fn each_blocks_reset_key_clears_the_block_it_shows() {
         (Block::Lighting, "lighting"),
         (Block::Effects, "effects"),
         (Block::DensityCeiling, "density-ceiling"),
-        (Block::DyeSeparation, "dye-separation"),
         (Block::Sharpening, "sharpening"),
         (Block::ChromaDenoise, "chroma-denoise"),
         (Block::Texture, "texture"),

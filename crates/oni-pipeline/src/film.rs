@@ -8,7 +8,7 @@ pub mod dyes;
 pub mod profile;
 
 use bake::M3;
-use oni_render::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative, cpu};
+use oni_render::{VirtualNegative, cpu};
 use oni_settings::axis::{density_axis, graduation};
 use oni_settings::virtual_film::{Balance, StockReference};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
@@ -44,39 +44,32 @@ pub fn reference_light(stock: VirtualStock) -> &'static [f64; cie::WAVELENGTHS] 
 }
 
 /// What a profile lays on the bake: each layer's sensitivity, the curves before and after the couplers on their log H
-/// axis, the couplers, and the scanned wavelengths, each with its dyes' and base's densities and the camera's weight.
+/// axis, and the couplers.
 struct Layers {
     sensitivity: Vec<[f64; 3]>,
     log_exposure: Vec<f64>,
     before: Vec<[f64; 3]>,
     after: Vec<[f64; 3]>,
     couplers: M3,
-    scanned: Vec<([f64; 4], [f64; 3])>,
 }
 
-/// A colour negative: three layers developed through the couplers, scanned through its dyes on every wavelength
-/// its profile measures them.
+/// A colour negative: three layers developed through the couplers.
 fn colour(json: &[u8]) -> Layers {
     let profile = Profile::read(json).expect("a shipped profile reads");
     let (before, after) = bake::curves(&profile);
-    let weights = bake::scan_weights(&cie::D50);
-    let scanned = bake::scanned(&profile).into_iter().map(|(l, d)| (d, weights[l])).collect();
-    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers: bake::COUPLERS, scanned }
+    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers: bake::COUPLERS }
 }
 
-/// A black and white negative: its one layer on the three channels, no coupler, and its silver neutral at every
-/// wavelength, so the scan reads it in one band holding the camera's whole weight, each channel a third of its density.
+/// A black and white negative: its one layer on the three channels, no coupler.
 fn silver(json: &[u8]) -> Layers {
     let profile = Silver::read(json).expect("a shipped profile reads");
     let curve: Vec<[f64; 3]> = profile.density_curve.iter().map(|d| [*d; 3]).collect();
-    let weight = bake::scan_weights(&cie::D50).iter().fold([0.0; 3], |sum, w| std::array::from_fn(|c| sum[c] + w[c]));
     Layers {
         sensitivity: profile.log_sensitivity.iter().map(|v| [10f64.powf(*v); 3]).collect(),
         log_exposure: profile.log_exposure,
         before: curve.clone(),
         after: curve,
         couplers: [[0.0; 3]; 3],
-        scanned: vec![([1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 0.0], weight)],
     }
 }
 
@@ -87,7 +80,6 @@ fn bake(stock: VirtualStock) -> Stock {
     let white = reference_light(stock);
     let light = bake::light_table(&spectra, &layers.sensitivity, white);
     let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
-    assert!(layers.scanned.len() <= VIRTUAL_NEGATIVE_BANDS, "the uniform holds every scanned wavelength");
     let n = spectra.nodes;
     let le = &layers.log_exposure;
     let m = le.len();
@@ -99,8 +91,6 @@ fn bake(stock: VirtualStock) -> Stock {
         log_span: (le[m - 1] - le[0]) as f32,
         tc_nodes: n,
         curve_nodes: m,
-        dyes: layers.scanned.iter().map(|(d, _)| d.map(|v| v as f32)).collect(),
-        weights: layers.scanned.iter().map(|(_, w)| w.map(|v| v as f32)).collect(),
     };
     let (w, h) = kernel.table_size();
     let mut table = vec![[0.0f32; 4]; w * h];
@@ -143,8 +133,8 @@ pub fn plain_grey() -> f32 {
     cpu::stage47([GREY, GREY, GREY, 1.0], &k)[1]
 }
 
-/// The negative at rest read on `reference`, its stock's dyes unmixed, as a digital photo on that stock opens; a black
-/// and white film's read as a monochrome roll's is.
+/// The negative at rest read on `reference`, as a digital photo on that stock opens; a black and white film's read as a
+/// monochrome roll's is.
 pub fn on_reference(stock: VirtualStock, reference: &StockReference) -> PipelineSettings {
     let mode = if stock.is_silver() { ConversionMode::Monochrome } else { ConversionMode::Negative };
     let mut s = PipelineSettings::rest(mode, true);
@@ -168,8 +158,7 @@ fn derived(stock: VirtualStock, kernel: &VirtualNegative, table: &[[f32; 4]]) ->
         let white = std::array::from_fn(|c| black[c] + (fraction(density(grey[c], stops[c])) - black[c]) / share);
         StockReference { stops, black, white }
     };
-    // Placed with no unmix, as Prepare the Roll measures a roll: the dyes' tones keep its greys.
-    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&PipelineSettings { separation: 0.0, ..on_reference(stock, &at(share)) }))[1];
+    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&on_reference(stock, &at(share))))[1];
     let target = plain_grey();
     let (mut low, mut high) = (0.05f32, 1.0f32);
     let rising = printed(high) > printed(low);

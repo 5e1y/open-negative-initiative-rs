@@ -256,9 +256,11 @@ fn brightness_on_a_slide_holds_its_densest_read_and_moves_its_grey_as_exposure_d
             let lit = moved(&s, |t| t.print.brightness = brightness);
             let p = conversion::stage47(&lit).paper.unwrap();
             let k = conversion::stage47(&lit);
-            // What the paper reads of the copy's scan: its dyes unmixed, then its amounts.
-            let read = |q: V4| k.dyes.as_ref().map_or(negative(&s, q), |d| cpu::dye_separation(negative(&s, q), &k, d));
-            let amounts = |q: V4| p.amounts(read(q));
+            // What the paper reads of the copy's scan: its window's shares laid back on density.
+            let amounts = |q: V4| {
+                let read = k.negative.as_ref().map_or(negative(&s, q), |n| cpu::negative(negative(&s, q), n));
+                p.density(cpu::windowed(read, &k.after_negative()))
+            };
             let toward = |q: V4| p.toward_light(p.pick_log, p.exposed(amounts(q)));
             let moved_by = |q: V4| p.toward_light(p.pick_log, p.brightened(p.exposed(amounts(q)))) - toward(q);
             let lift = brightness * std::f32::consts::LOG10_2;

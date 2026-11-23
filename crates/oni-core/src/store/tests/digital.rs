@@ -112,14 +112,14 @@ fn a_film_picked_on_one_digital_photo_leaves_the_folders_others_on_their_own_fil
 }
 
 #[test]
-fn a_dye_dose_moved_on_one_digital_photo_still_reaches_its_folder_on_each_films_dyes() {
+fn a_roll_dose_moved_on_one_digital_photo_still_reaches_its_folder_on_each_films_own() {
     let (mut store, dir, [_, b, _]) = on_stocks("dose", VirtualStock::KodakPortra800, VirtualStock::KodakUltraMax400);
     let mut next = store.settings().clone();
-    next.separation = 0.7;
+    next.chroma_decompression = 0.7;
     store.apply_at(Command::Write(Box::new(next)), 0.0);
     store.flush();
     let s = read(&b);
-    assert_eq!(s.separation, 0.7, "the folder's roll shares the dose");
+    assert_eq!(s.chroma_decompression, 0.7, "the folder's roll shares the dose");
     assert!(on_own_reference(&s), "{:?}", s.dye_set);
     // Twin: the open photo's own dyes are another stock's.
     assert_ne!(store.settings().dye_set, s.dye_set);

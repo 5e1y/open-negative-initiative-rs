@@ -1,10 +1,10 @@
-//! The measured dye sets the dye separation unmixes: one per stock profile ONI ships, each written from its maker's
-//! data sheet, and a generic colour-negative set, their mean, for a stock no profile measures.
+//! The stocks a scanned roll names, by the key a sidecar stores: one per stock profile ONI ships, each written from its
+//! maker's data sheet, and a generic colour negative, their mean, for a stock no profile measures.
 
 use serde::{Deserialize, Serialize};
 
-/// A dye set by the key a sidecar stores: its stock's spectral dye densities and base. A stock's data-sheet twin's key,
-/// which a document before format 60 may store, reads as the stock's own.
+/// A scanned stock by the key a sidecar stores, whose curve Lighting reads the negative back through. A stock's
+/// data-sheet twin's key, which a document before format 60 may store, reads as the stock's own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub enum DyeSet {
     #[default]

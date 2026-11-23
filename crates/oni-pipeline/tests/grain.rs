@@ -374,10 +374,10 @@ fn a_print_notch_through_the_frontier_reruns_no_grain() {
     // Twins: with no cache the notch writes more; a grain notch reruns the grain's pass as well as the print's.
     assert!(notches(&mut g, &grained, false, &exposure).1 > with_grain.1, "the cache keeps nothing");
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount += d;
-    // A grain notch reruns its own pass, the film's that reads it and the dye separation's that reads the film.
-    assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 3, "a grain notch skips its own pass");
+    // A grain notch reruns its own pass and the film's that reads it.
+    assert_eq!(notches(&mut g, &grained, true, &amount).0, with_grain.0 + 2, "a grain notch skips its own pass");
     let colour = |t: &mut PipelineSettings, d: f32| t.grain.colour.black += d;
-    assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 3, "a colour notch skips the grain's pass");
+    assert_eq!(notches(&mut g, &grained, true, &colour).0, with_grain.0 + 2, "a colour notch skips the grain's pass");
     // A legacy print's key is a gain the grain's tone never reads.
     let key = |t: &mut PipelineSettings, d: f32| t.legacy_print = Some(LegacyPrint { d: (d * 200.0) as i64, ..LegacyPrint::default() });
     assert_eq!(notches(&mut g, &keyed, true, &key), notches(&mut g, &scanner, true, &key), "a key notch reruns the grain");

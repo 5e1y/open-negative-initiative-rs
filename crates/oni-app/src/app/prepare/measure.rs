@@ -53,7 +53,7 @@ impl Ctl {
                     };
                     let mut start = roll::start(&before, film, window, mask.as_ref(), stops(path));
                     start.inverted_source = false;
-                    // A roll prepared now unmixes its stock's measured dyes.
+                    // A roll prepared now is read through its stock's curve.
                     crate::app::organising::roll_card::dyed(&mut start, stock.as_deref());
                     if let Some(passes) = rgb_passes::named_by(path) {
                         let passes = registrar.registered(path, passes);

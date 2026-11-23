@@ -119,7 +119,7 @@ impl Ctl {
         let mut film = roll.film.clone();
         mutate(&mut film);
         if film != roll.film {
-            // A stock picked writes the measured dyes it names on every frame: one step with the marker.
+            // A stock picked is written on every frame: one step with the marker.
             let named = film.stock.clone().filter(|k| film.stock != roll.film.stock && dye_set(k).is_some());
             match roll.marker {
                 Some(folder) => {

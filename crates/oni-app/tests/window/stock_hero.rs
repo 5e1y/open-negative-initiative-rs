@@ -200,7 +200,6 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     assert_eq!(marker().as_deref(), Some("fujifilm-c200"), "the roll's stock");
     assert_eq!((open_dyes(), family(&other)), (DyeSet::FujifilmC200, DyeSet::FujifilmC200), "every photo of the roll on its dyes");
     assert_eq!(panel.get_stock().name.as_str(), "Fujifilm C200");
-    assert_eq!(panel.get_dye_set().as_str(), "Fujifilm C200", "Dye Separation names them");
     assert!(menus.get_live().undo, "one step");
     println!("shot {}", rig.shot("stock-hero-roll-tab").display());
 

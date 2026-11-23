@@ -1,6 +1,5 @@
 //! The Roll tab's settings blocks (`SettingsPane`): the flat-field's toggle, mask and sliders, the
-//! Scan Profile a file naming no profile is read by, Source Balance's named ends, and the measured dyes
-//! the separation runs.
+//! Scan Profile a file naming no profile is read by, and Source Balance's named ends.
 
 use super::Ctl;
 use crate::{MenuLine, PanelState};
@@ -11,7 +10,7 @@ use oni_settings::{ConversionMode, DyeSet, LegacyMachine, LegacyPrint, PipelineS
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
-/// The name a measured dye set goes by: its stock's, the generic set's own.
+/// The name a scanned stock goes by: its own, the generic one's.
 pub(super) fn dye_set_name(set: DyeSet) -> String {
     set.stock_name().map_or_else(|| tr("Generic C-41").to_string(), str::to_string)
 }
@@ -195,25 +194,18 @@ impl Ctl {
         self.write_settings(|s| s.flat_field = chose(&s.flat_field, line));
     }
 
-    /// The Dye Separation block on the measured dyes the open frame unmixes.
-    pub(super) fn publish_dyes(&self) {
-        let Some(w) = self.window() else { return };
-        let (set, stale) = {
+    /// The roll card again where it read its frames on another state of the open photo.
+    fn publish_frames(&self) {
+        let stale = {
             let s = self.state.borrow();
-            // The roll card read its frames on another state of the open photo: it reads them again.
-            let stale = s.org.frames.as_ref().is_some_and(|((_, bearing), _)| *bearing != s.open_bearing());
-            (s.store.settings().dye_set, stale)
+            s.org.frames.as_ref().is_some_and(|((_, bearing), _)| *bearing != s.open_bearing())
         };
-        let panel = w.global::<PanelState>();
-        panel.set_dye_set(dye_set_name(set).into());
-        panel.set_dye_set_generic(set.is_generic());
         if stale {
             self.publish_info();
         }
     }
 
-    /// What the panel shows of the open frame's mode: the dye separation's block, a slide's and a digital photo's, and
-    /// the print's switches.
+    /// What the panel shows of the open frame's mode: a slide's and a digital photo's blocks, and the print's switches.
     pub(super) fn publish_mode(&self) {
         let Some(w) = self.window() else { return };
         let (settings, cmy) = {
@@ -222,7 +214,6 @@ impl Ctl {
         };
         let panel = w.global::<PanelState>();
         panel.set_filtration_cmy(cmy);
-        panel.set_separation_shown(!settings.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source);
         panel.set_slide(settings.mode.is_slide());
         panel.set_digital(settings.mode.is_digital());
         self.publish_paper(&panel, &settings);
@@ -255,7 +246,7 @@ impl Ctl {
             (s.store.settings().clone(), undeclared, s.masks.clone(), picked)
         };
         let panel = w.global::<PanelState>();
-        self.publish_dyes();
+        self.publish_frames();
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.is_monochrome());
         panel.set_stock(self.open_canister());

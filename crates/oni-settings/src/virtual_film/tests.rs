@@ -14,7 +14,7 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
         assert!(!kind.line && kind.offered, "{stock:?}: a precise stock the picker lists, never its line");
         assert_eq!(kind.display_name, stock.name(), "{stock:?}");
         if stock.is_silver() {
-            // Silver unmixes nothing: the stock rests on the generic set, as a black and white roll does.
+            // Silver is neutral: the stock rests on the generic set, as a black and white roll does.
             assert_eq!((crate::dyes::dye_set(kind.id), stock.dye_set()), (None, DyeSet::GenericC41), "{stock:?}");
             assert!(r.stops == [0.0; 3] && r.black.iter().chain(&r.white).all(|v| *v == r.black[0] || *v == r.white[0]), "{stock:?}: a neutral reference");
         } else {
@@ -24,8 +24,9 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
     }
     let silver = VirtualStock::ALL.iter().filter(|s| s.is_silver()).count();
     assert_eq!(silver, 27, "every black and white film profiled");
-    // Twin: a colour stock is no silver one, and its reference is not neutral.
-    assert!(!VirtualStock::KodakPortra800.is_silver() && VirtualStock::KodakPortra800.reference().stops != [0.0; 3]);
+    // Twin: a colour stock is no silver one, and its layers' whites part.
+    let portra = VirtualStock::KodakPortra800.reference();
+    assert!(!VirtualStock::KodakPortra800.is_silver() && portra.white[0] != portra.white[2]);
     assert_eq!(VirtualStock::ALL[0], VirtualStock::default(), "Portra 800 opens first");
     let r = VirtualStock::KodakPortra800.reference();
     // Twin: read on a slide's axis the same shares land elsewhere.

@@ -1,7 +1,7 @@
 //! The steps run on a stored document's raw JSON at its stored names, before any typed read, each
 //! for the versions written before its change, in the order the format moved.
 
-use crate::blocks::{chroma_decompression, separation};
+use crate::blocks::chroma_decompression;
 use crate::settings::PipelineSettings;
 use crate::tolerant::{self, Object};
 use serde_json::Value;
@@ -11,10 +11,6 @@ use std::sync::OnceLock;
 pub const DECOMPRESSION_MID_VERSION: i64 = 14;
 /// The version a file outside the RAW engine came to keep the channels it holds.
 pub const PRIMARIES_HELD_VERSION: i64 = 15;
-/// The version the dye separation came back to rest on the whole spill, a key writing it.
-pub const SEPARATION_BY_HAND_VERSION: i64 = 14;
-/// The version the dye separation came to rest on the literature's dose.
-pub const SEPARATION_LITERATURE_VERSION: i64 = 16;
 /// The version a scanner click became half the machine's measured step.
 pub const SCANNER_HALF_STEP_VERSION: i64 = 17;
 /// The version ONI's own machine came to rest on the Scanner face.
@@ -116,6 +112,10 @@ pub const UNMIXED_VERSION: i64 = 66;
 /// The version Paper blacks came to be Print lift, keeping the paper's white with its black, off laying that white on pure
 /// white: its stored key renamed, a key a build before it cannot read.
 pub const PRINT_LIFT_VERSION: i64 = 67;
+/// The version the dye separation left both prints, each reading the negative's own per-channel density: a digital
+/// photo's virtual negative codes each layer's density on its own channel, its gains and windows moving onto its stock's
+/// new reference; the dose and its key dropped, as no print reads them.
+pub const LAYER_DENSITIES_VERSION: i64 = 69;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
@@ -124,12 +124,6 @@ pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Obje
     } else {
         document
     };
-    if version < SEPARATION_BY_HAND_VERSION {
-        aged = keeping_former_separation(aged);
-    }
-    if version < SEPARATION_LITERATURE_VERSION {
-        aged = off_previous_separation_rest(aged);
-    }
     if version < DECOMPRESSION_MID_VERSION {
         aged = off_former_key_decompression(aged);
     }
@@ -221,24 +215,3 @@ fn on_half_steps(document: Object) -> Object {
     })
 }
 
-fn off_previous_separation_rest(document: Object) -> Object {
-    with_settings(document, |s| {
-        if tolerant::number_f32(s.get("separation")) == Some(separation::PREVIOUS_BASE)
-            && !is_true(s.get("separationByHand"))
-        {
-            s.insert("separation".into(), number(separation::FAMILY_REST));
-        }
-    })
-}
-
-/// A frame from before renders on at its dose until a key balances it; a dose off the former rest was the hand's.
-fn keeping_former_separation(document: Object) -> Object {
-    with_settings(document, |s| match tolerant::number_f32(s.get("separation")) {
-        Some(stored) => {
-            s.insert("separationByHand".into(), Value::Bool(stored != separation::FORMER_REST));
-        }
-        None => {
-            s.insert("separation".into(), number(separation::FORMER_REST));
-        }
-    })
-}

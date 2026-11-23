@@ -1,14 +1,13 @@
-//! The info sidebar's roll card, beyond Swift: a folder of photos is a roll, its stock writes the
-//! measured dyes it names on every frame, the card reads the dyes its frames unmix, and an unmeasured
-//! roll says so.
+//! The info sidebar's roll card, beyond Swift: a folder of photos is a roll, its stock is written on every frame, the
+//! card reads the stock its frames' negatives are read through, and an unmeasured roll says so.
 
 use super::*;
 use crate::app::roll_tab::dye_set_name;
 use oni_settings::dyes::dye_set;
 use oni_settings::{DyeSet, PipelineSettings};
 
-/// What the roll card reads off its frames: whether one is measured, and the measured dyes they unmix in the
-/// sets' order.
+/// What the roll card reads off its frames: whether one is measured, and the stocks their negatives are read through,
+/// in the stocks' order.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(in crate::app) struct Frames {
     pub measured: bool,
@@ -20,7 +19,7 @@ impl Frames {
         let mut out = Frames::default();
         for s in settings {
             out.measured |= measured_or_slide(&s);
-            if let Some(set) = unmixed(&s).filter(|set| !out.sets.contains(set)) {
+            if let Some(set) = read_through(&s).filter(|set| !out.sets.contains(set)) {
                 out.sets.push(set);
             }
         }
@@ -29,18 +28,21 @@ impl Frames {
     }
 }
 
-/// The measured dyes a frame's render unmixes, as the pipeline runs it: none in black and white, on a slide,
-/// on RGB passes or at a dose of zero.
-fn unmixed(s: &PipelineSettings) -> Option<DyeSet> {
-    oni_pipeline::conversion::stock_dyes(s).map(|_| s.dye_set)
+/// The scanned stock Lighting reads a frame's negative back through, as the pipeline runs it: a colour negative's, none
+/// in black and white, on a slide or on a digital photo, whose virtual film is its own.
+fn read_through(s: &PipelineSettings) -> Option<DyeSet> {
+    match oni_pipeline::negative::Film::of(s) {
+        oni_pipeline::negative::Film::Dyes(set) => Some(set),
+        _ => None,
+    }
 }
 
 impl State {
-    /// What of the open photo the roll card reads, in memory: its dyes and whether it is measured.
+    /// What of the open photo the roll card reads, in memory: its stock and whether it is measured.
     /// A hand moving them moves its roll's with them.
     pub(in crate::app) fn open_bearing(&self) -> String {
         let s = self.store.settings();
-        format!("{:?}", self.open_path().map(|p| (p, s.dye_set, unmixed(s), measured_or_slide(s))))
+        format!("{:?}", self.open_path().map(|p| (p, s.dye_set, read_through(s), measured_or_slide(s))))
     }
 
     /// The photos a folder's marker gathers: every frame lying in it, passes and trashed photos aside.
@@ -53,35 +55,35 @@ impl State {
     }
 }
 
-/// The measured dyes a stock names written on a frame; a black-and-white stock or a slide's leaves them alone.
+/// The scanned stock a roll's stock names written on a frame; a black-and-white stock or a slide's leaves it alone.
 pub(in crate::app) fn dyed(settings: &mut PipelineSettings, stock: Option<&str>) {
     if let Some(set) = stock.and_then(dye_set) {
         settings.dye_set = set;
     }
 }
 
-/// The card's words under a roll's stock, then its fix key's: the dyes the frames unmix, else a warning
-/// and the stock's dyes offered when they differ; both empty while the frames read or none unmixes.
+/// The card's words under a roll's stock, then its fix key's: the stock the frames are read through, else a warning and
+/// the roll's stock offered when they differ; both empty while the frames read or none is read through a stock.
 pub(super) fn dyes_note(stock: Option<&str>, held: Option<&Frames>) -> (String, String) {
     let Some(held) = held.filter(|h| !h.sets.is_empty()) else { return Default::default() };
     let names = |sets: &mut dyn Iterator<Item = &DyeSet>| sets.map(|s| dye_set_name(*s)).collect::<Vec<_>>().join(", ");
     match stock.and_then(dye_set) {
         Some(named) if held.sets != [named] => (
-            tr!("Frames set to {family} dyes, but this film stock has {named} dyes", family = names(&mut held.sets.iter().filter(|s| **s != named)), named = dye_set_name(named)),
-            tr!("Use {named} Dyes", named = dye_set_name(named)),
+            tr!("Frames read as {family}, but this film stock is {named}", family = names(&mut held.sets.iter().filter(|s| **s != named)), named = dye_set_name(named)),
+            tr!("Read as {named}", named = dye_set_name(named)),
         ),
-        _ => (tr!("Measured dyes: {dyes}", dyes = names(&mut held.sets.iter())), String::new()),
+        _ => (tr!("Frames read as {stocks}", stocks = names(&mut held.sets.iter())), String::new()),
     }
 }
 
 impl Ctl {
-    /// `setFilmStock`, and beyond Swift the measured dyes it names on every frame of the roll: one gallery
-    /// step with the marker, the dose kept.
+    /// `setFilmStock`, and beyond Swift the stock it names on every frame of the roll: one gallery step with the
+    /// marker.
     pub(in crate::app) fn set_roll_stock(self: &Rc<Self>, id: &str) {
         self.update_roll(tr("Set Film Stock"), |f| f.stock = Some(id.to_string()));
     }
 
-    /// The stock of a roll New Roll just made writes its dyes on the frames moved in.
+    /// The stock of a roll New Roll just made is written on the frames moved in.
     pub(in crate::app) fn dyes_follow(self: &Rc<Self>, folder: &str, stock: &str) {
         if dye_set(stock).is_none() {
             return;
@@ -90,7 +92,7 @@ impl Ctl {
         self.lay_dyes(&members, stock, tr("Set Film Stock"));
     }
 
-    /// The card's fix: the dyes the roll's stock names written again on every frame of the roll.
+    /// The card's fix: the roll's stock written again on every frame of the roll.
     pub(in crate::app) fn stock_dyes_laid(self: &Rc<Self>) {
         let Some(roll) = self.state.borrow().roll() else { return };
         let Some(stock) = roll.film.stock.clone() else { return };
@@ -100,10 +102,10 @@ impl Ctl {
             Some(folder) => self.state.borrow().folder_frames(folder),
             None => roll.paths,
         };
-        self.lay_dyes(&members, &stock, &tr!("Use {named} Dyes", named = named));
+        self.lay_dyes(&members, &stock, &tr!("Read as {named}", named = named));
     }
 
-    /// The dyes `stock` names written on `members` as one gallery step, the dose kept.
+    /// The scanned stock `stock` names written on `members` as one gallery step.
     fn lay_dyes(self: &Rc<Self>, members: &[String], stock: &str, label: &str) {
         self.gesture_as(label, members, |store| store.lay_roll(members, None, |s| dyed(s, Some(stock)), label));
     }
@@ -201,30 +203,32 @@ mod tests {
     }
 
     #[test]
-    fn the_card_reads_the_dyes_the_frames_unmix_in_the_sets_order() {
+    fn the_card_reads_the_stocks_the_frames_are_read_through_in_their_order() {
         let slide = PipelineSettings::rest(ConversionMode::Positive, true);
         let grey = PipelineSettings { dye_set: DyeSet::FujifilmC200, ..PipelineSettings::rest(ConversionMode::Monochrome, true) };
         let read = Frames::read([negative(DyeSet::KodakGold200), negative(DyeSet::GenericC41), negative(DyeSet::GenericC41), slide, grey].into_iter());
-        assert_eq!(read.sets, [DyeSet::GenericC41, DyeSet::KodakGold200], "a slide and a grey unmix none");
+        assert_eq!(read.sets, [DyeSet::GenericC41, DyeSet::KodakGold200], "a slide and a grey are read through none");
         assert!(read.measured, "a slide asks for no measure");
-        // Twin: a frame dosed at zero by hand unmixes nothing, and no slide leaves the roll unmeasured.
-        let zero = PipelineSettings { separation: 0.0, separation_by_hand: true, ..negative(DyeSet::FujifilmC200) };
-        assert_eq!(Frames::read([zero, negative(DyeSet::KodakGold200)].into_iter()), Frames { measured: false, sets: vec![DyeSet::KodakGold200] });
+        // Twin: a digital photo reads its own virtual film, whatever stock it names.
+        let digital = PipelineSettings { dye_set: DyeSet::FujifilmC200, ..PipelineSettings::rest(ConversionMode::Digital, true) };
+        assert_eq!(Frames::read([digital, negative(DyeSet::KodakGold200)].into_iter()).sets, [DyeSet::KodakGold200]);
+        // Twin: no slide, the negatives unmeasured, leaves the roll unmeasured.
+        assert!(!Frames::read([negative(DyeSet::KodakGold200)].into_iter()).measured);
     }
 
     #[test]
-    fn the_card_warns_of_dyes_off_the_stocks_and_offers_the_stocks() {
+    fn the_card_warns_of_frames_off_the_rolls_stock_and_offers_it() {
         let fujicolor = Some("fujifilm-fujicolor");
         let quiet = |text: &str| (text.to_string(), String::new());
         let on = |sets: &[DyeSet]| Frames { sets: sets.to_vec(), ..Frames::default() };
-        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::FujifilmC200]))), quiet("Measured dyes: Fujifilm C200"));
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::FujifilmC200]))), quiet("Frames read as Fujifilm C200"));
         // Twin: frames on Gold under a Fujicolor stock warn, naming both, and offer the stock's.
-        let warned = ("Frames set to Kodak Gold 200 dyes, but this film stock has Fujifilm C200 dyes".to_string(), "Use Fujifilm C200 Dyes".to_string());
+        let warned = ("Frames read as Kodak Gold 200, but this film stock is Fujifilm C200".to_string(), "Read as Fujifilm C200".to_string());
         assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200]))), warned);
         assert_eq!(dyes_note(fujicolor, Some(&on(&[DyeSet::KodakGold200, DyeSet::FujifilmC200]))), warned, "only the frames off the stock's are named");
-        assert_eq!(dyes_note(None, Some(&on(&[DyeSet::GenericC41]))), quiet("Measured dyes: Generic C-41"));
+        assert_eq!(dyes_note(None, Some(&on(&[DyeSet::GenericC41]))), quiet("Frames read as Generic C-41"));
         assert_eq!(dyes_note(fujicolor, None), quiet(""), "nothing is said while the frames read");
-        assert_eq!(dyes_note(fujicolor, Some(&on(&[]))), quiet(""), "nor when no frame unmixes");
+        assert_eq!(dyes_note(fujicolor, Some(&on(&[]))), quiet(""), "nor when no frame is read through a stock");
     }
 
     #[test]

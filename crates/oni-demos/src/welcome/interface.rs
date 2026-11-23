@@ -93,7 +93,7 @@ fn publish(instance: &ComponentInstance, s: &PipelineSettings) {
     set("rests".into(), Value::Model(ModelRc::new(VecModel::from(shown))));
     let mut any = false;
     for (block, name) in [(Block::Color, "color"), (Block::Lighting, "lighting"), (Block::Effects, "effects")] {
-        let on = oni_app::store::is_modified(s, block, None);
+        let on = oni_app::store::is_modified(s, block);
         any |= on;
         set(format!("{name}-modified"), Value::Bool(on));
     }

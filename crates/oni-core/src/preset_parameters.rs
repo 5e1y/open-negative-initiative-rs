@@ -30,7 +30,6 @@ pub const BLOCKS: [Block; 4] = [
         entries: &[
             entry("sourceEncoding", marked("Scan Profile"), &["sourceEncoding"]),
             entry("flatField", marked("Flat-Field"), &["flatField"]),
-            entry("separation", marked("Dye Separation"), &["separation"]),
             entry("lensCorrection", marked("Lens Corrections"), &["lensCorrection"]),
         ],
     },
@@ -283,7 +282,7 @@ mod tests {
         assert_eq!(reached, look_settings::FIELDS.into_iter().collect(), "every field a paste lays has its box");
         assert!(offered.contains(&"colour") && offered.contains(&"sharpen") && offered.contains(&"lighting"));
         // Twin: the roll's own boxes, which a paste never lays, are not offered.
-        for roll in ["densityCeiling", "chromaDecompression", "sourceEncoding", "flatField", "separation"] {
+        for roll in ["densityCeiling", "chromaDecompression", "sourceEncoding", "flatField", "dyeSet"] {
             assert!(!offered.contains(&roll), "{roll} offered");
         }
     }

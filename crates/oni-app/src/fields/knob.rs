@@ -20,7 +20,6 @@ impl Field {
             Field::Chrome => Knob::Chrome,
             Field::BalanceStrength => Knob::BalanceStrength,
             Field::DensityCeiling => Knob::DensityCeiling,
-            Field::DyeSeparation => Knob::Separation,
             Field::Angle => Knob::Angle,
             Field::SharpenAmount => Knob::SharpenAmount,
             Field::SharpenRadius => Knob::SharpenRadius,

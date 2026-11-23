@@ -48,7 +48,6 @@ fn adaptation(m: &M3, from: [f64; 3], to: [f64; 3]) -> M3 {
 
 /// CAT16's cone space (Li et al. 2017), the adaptation spektrafilm exposes its films through.
 const CAT16: M3 = [[0.401288, 0.650173, -0.051461], [-0.250268, 1.204414, 0.045854], [-0.002079, 0.048952, 0.953127]];
-const BRADFORD: M3 = [[0.8951, 0.2664, -0.1614], [-0.7502, 1.7135, 0.0367], [0.0389, -0.0685, 1.0296]];
 /// CAT02's cone space (CIECAM02), the adaptation spektrafilm views its prints through.
 const CAT02: M3 = [[0.7328, 0.4296, -0.1624], [-0.7036, 1.6975, 0.0061], [0.0030, 0.0136, 0.9834]];
 
@@ -70,24 +69,6 @@ pub fn rec2020_to_xyz() -> M3 {
 /// The working space to XYZ adapted by CAT16 to the film's reference white: a working grey lands on it.
 pub fn to_film(reference: &[f64; WAVELENGTHS]) -> M3 {
     mul(&adaptation(&CAT16, xyz_of_xy(D65_XY), white_of(reference)), &rec2020_to_xyz())
-}
-
-/// The scan's weights: the light table's light through each wavelength, read on the 1931 observer, the
-/// table's white Bradford-adapted to the working D65 and its Y at 1, in Rec. 2020.
-pub fn scan_weights(light: &[f64; WAVELENGTHS]) -> Vec<[f64; 3]> {
-    let to_rgb = scan_matrix(light);
-    camera_weights(light).into_iter().map(|w| apply(&to_rgb, w)).collect()
-}
-
-/// The camera's own channels before its matrix: the 1931 observer under the light table's light, its Y at 1.
-pub fn camera_weights(light: &[f64; WAVELENGTHS]) -> Vec<[f64; 3]> {
-    let y: f64 = (0..WAVELENGTHS).map(|l| light[l] * cie::Y[l]).sum();
-    (0..WAVELENGTHS).map(|l| [cie::X[l], cie::Y[l], cie::Z[l]].map(|v| v * light[l] / y)).collect()
-}
-
-/// The camera's matrix: its channels, the table's white Bradford-adapted to the working D65, in Rec. 2020.
-pub fn scan_matrix(light: &[f64; WAVELENGTHS]) -> M3 {
-    mul(&inverse(&rec2020_to_xyz()), &adaptation(&BRADFORD, white_of(light), xyz_of_xy(D65_XY)))
 }
 
 /// A print seen under `light`: XYZ, the light's white CAT02-adapted to the working D65, in Rec. 2020.
@@ -245,15 +226,4 @@ pub fn interpolate(x: f64, xs: &[f64], ys: &[[f64; 3]], c: usize) -> f64 {
     let lo = hi - 1;
     let t = (x - xs[lo]) / (xs[hi] - xs[lo]);
     ys[lo][c] + t * (ys[hi][c] - ys[lo][c])
-}
-
-/// The scanned band: the wavelengths the profile measures both the dyes and the base on, each with
-/// the dyes' and base's densities; outside it the scan reads no light, as spektrafilm's does.
-pub fn scanned(p: &Profile) -> Vec<(usize, [f64; 4])> {
-    (0..WAVELENGTHS)
-        .filter_map(|l| {
-            let [c, m, y] = p.channel_density[l];
-            Some((l, [c?, m?, y?, p.base_density[l]?]))
-        })
-        .collect()
 }

@@ -47,13 +47,13 @@ fn luma(v: V3) -> f32 {
 
 // MARK: - DensityAxis.selfCheck
 
-/// `DensityAxis.rendered`: on the bare axis, decompression whole, no unmix, the RGB black at zero, Lighting at rest.
+/// `DensityAxis.rendered`: on the bare axis, decompression whole, the RGB black at zero, Lighting at rest.
 fn on_axis(rgb: V3, mode: ConversionMode, ceiling: f32) -> V3 {
     let mut s = PipelineSettings { mode, ..PipelineSettings::default() };
     s.chroma_decompression = 1.0;
     s.levels = LevelsSet { red: Levels::on_axis(), green: Levels::on_axis(), blue: Levels::on_axis() };
     s.density_ceiling = ceiling;
-    (s.separation, s.print.black_point) = (0.0, 0.0);
+    s.print.black_point = 0.0;
     stage47(rgb, &s)
 }
 
@@ -194,7 +194,7 @@ fn applied(d: V3, set: &LevelsSet, dose: f32) -> V3 {
 
 /// A thin negative on bent curves, every handle off a round value, on a mosaic's wide axis.
 fn thin() -> PipelineSettings {
-    let mut s = PipelineSettings { separation: 0.0, density_ceiling: density_axis::MOSAIC_REST, ..PipelineSettings::default() };
+    let mut s = PipelineSettings { density_ceiling: density_axis::MOSAIC_REST, ..PipelineSettings::default() };
     s.levels.red = Levels { black: 0.31, white: 0.78, mid: 0.46, shadows: 0.29, highlights: 0.71 };
     s.levels.green = Levels { black: 0.52, white: 0.99, mid: 0.53, shadows: 0.22, highlights: 0.77 };
     s.levels.blue = Levels { black: 0.83, white: 1.30, mid: 0.49, shadows: 0.27, highlights: 0.74 };
@@ -285,7 +285,7 @@ fn a_retired_colour_curve_renders_as_its_two_passes_did() {
         luma: curve(&[(0.0, 0.0), (0.5, 0.44), (1.0, 1.0)]),
         ..CurveSet::default()
     };
-    let mut hand = PipelineSettings::default(); // format 21's own separation
+    let mut hand = PipelineSettings::default();
     hand.manual_curves.linked = curve(&[(0.0, 0.0), (0.2, 0.26), (1.0, 1.0)]);
     hand.manual_curves.contrast = 0.2;
     let mut object = oni_settings::migrate::reshape::as_stored(&oni_settings::Document::of(hand.clone()), 21);
@@ -385,7 +385,6 @@ fn live(arm: &Arm) -> PipelineSettings {
     let mut s = PipelineSettings::default();
     s.gains.stops = arm.stops;
     s.density_ceiling = -FROZEN_PEDESTAL.log10();
-    s.separation = 0.0;
     s.levels = if arm.migrating { oni_settings::migrate::density::migrate(&arm.frozen) } else { arm.frozen };
     s.vignette = Default::default();
     s.chroma = oni_settings::blocks::ChromaDenoise::OFF;

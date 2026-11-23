@@ -12833,5 +12833,53 @@
     "status": "done",
     "detail": "The launch read the Keychain on the interface thread (Ctl::wire, wire_kit), and a new build's signature makes the Keychain ask the person first: the interface waited on that prompt and the window never settled. The vault (Keychain, Credential Manager, the simulated service's file) is now a trait behind one thread of its own that runs its calls in order, started at the first; no read, write or erase runs on the interface thread. Who is signed in at launch comes from a non-secret mark in the Kit's copy (kit.json, `signed`), written at sign-in and at a sign-out by the service, the file removed at the person's sign-out; a copy written before the mark presumes a token where it holds an account, which the first use settles. The token is read once, at the account's first use (the search sheet opening, Done, a removal, Disconnect), what waits on it running once it lands; the Kit is read again from the service then rather than at launch. A vault with no token turns the link out and marks the copy. Disconnect is out at once, the vault read on its thread only to revoke a token this run never read.",
     "outcome": "Window checks with a counting vault: the launch reads no vault and asks the service nothing; the search sheet reads it once, off the interface thread, and a search after reads nothing; sign-out erases once off the interface, sign-in writes once and marks the copy; a sign-out never read reads once to revoke. Twins: a read on the interface thread is counted as the interface's; the Kit never read on a lone sign-out. The copy's mark round trip and its older-copy reading in oni-tldb, each with its twin."
+  },
+  {
+    "id": 3720,
+    "type": "feature",
+    "title": "Dye separation removed from both pipes",
+    "status": "done",
+    "detail": "The owner's call (2026-11-23): the film's orange mask already removes most spill on a white-light scan, and the data-sheet dyes carry no mask, so the separation over-corrected about three times. Gone: the kernel and its WGSL, its pass, Stage47.dyes, the settings `separation` and `separationByHand` (dropped at format 69; the old steps that moved their rests removed), its block, knob, field, demo, preset entry and phone row (the wire index kept). The stock (`dyeSet`) stays: Lighting reads a scan back through its curve.",
+    "outcome": "ONI's print on roll #8 moves only by the separation: tone within 1 L* (mean dL* -0.8), mean chroma down a third (C* 13.5 to 8.6 on DSC_6440, mean dE76 5 to 8). Black and white and slides unchanged to the bit."
+  },
+  {
+    "id": 3721,
+    "type": "feature",
+    "title": "A digital photo's virtual negative codes each layer's density on its own channel",
+    "status": "done",
+    "detail": "No camera scan of the virtual dyes: each developed layer's density is read on its own channel, as a masked negative's scan reads it, so the print reads the film's own per-channel densities. Every stock's reference re-derived; a digital photo of formats 66 to 68 moves its gains and windows onto it, every hand's move kept (migrate::layer_densities, format 69).",
+    "outcome": "Digital photos on ONI's print move by mean dE76 1.9; the stocks' references read a clear bare film on every channel."
+  },
+  {
+    "id": 3722,
+    "type": "feature",
+    "title": "The paper prints the window's shares: each channel's density exposes its own layer",
+    "status": "done",
+    "detail": "One window for both prints: stage 5 reads each channel's density through Prepare's window (black, white, mid); ONI's print takes its decompression and print curve on the shares, the paper lays the shares back on density (the windows' mean span, a power that sets the mean grey on its own density) and exposes the matching layer (red the cyan-forming), the Frontier's scanner matrix on the densities, a seat for a 3x3 later. The spectral negative, the TH-KG3 lamp, the dichroic filters and schott_kg3.csv are gone.",
+    "outcome": "Kernel, WGSL and CPU reference with their checks; the neutral paper prints a frame exactly as ONI's print (DSC_6440 identical)."
+  },
+  {
+    "id": 3723,
+    "type": "feature",
+    "title": "A neutral negative prints neutral: one filtration per paper, one time per frame; black and white alike",
+    "status": "done",
+    "detail": "The window aligns the three channels at black, grey and white; each paper's filtration is solved once on its own layers where they print a grey neutral on its white (one for Print lift, which shows that white), shown in the paper block; a frame's time shows its reference grey at a plain RAW's grey. Black and white takes the same filtration and prints its luma.",
+    "outcome": "Grey ramps neutral on every paper and stock; black and white on Royal Digital goes from 18.6 to 32.5 L*/stop at the grey (its window spans 2.37 of density against colour's 1.44)."
+  },
+  {
+    "id": 3724,
+    "type": "feature",
+    "title": "Lighting re-seated on per-channel density",
+    "status": "done",
+    "detail": "The negative kernel reads each channel's density above its bare film and codes the result back on the bare film's own; the tone table is gone. A scan's channel reads back through its stock's mean layer curve, scaled so its reference grey lies on the curve's speed point; a digital photo through its stock's own three layers and couplers; black and white through the C-41 sheets' mean.",
+    "outcome": "Lighting's and the colour tools' checks hold on every pipe."
+  },
+  {
+    "id": 3725,
+    "type": "research",
+    "title": "Contrast before and after the density pipe",
+    "status": "done",
+    "detail": "tone_response on roll #8 (DSC_6440, 6452, 6464), a black and white roll (P1071630, 6135), a digital photo (P1073289) on Portra 800 and HP5, ONI's print and Royal Digital; logs in the scratch folder.",
+    "outcome": "Royal Digital at the grey: scans 23.6 to 20.1 L*/stop, digital 20.8 to 17.6, black and white 18.6 to 32.5; ONI's print unchanged (10.9)."
   }
 ]

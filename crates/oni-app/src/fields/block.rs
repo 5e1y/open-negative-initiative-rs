@@ -9,7 +9,6 @@ pub enum Block {
     Lighting,
     Effects,
     DensityCeiling,
-    DyeSeparation,
     Sharpening,
     ChromaDenoise,
     Texture,
@@ -23,12 +22,11 @@ pub enum Block {
 }
 
 impl Block {
-    pub const ALL: [Block; 15] = [
+    pub const ALL: [Block; 14] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
         Block::DensityCeiling,
-        Block::DyeSeparation,
         Block::Sharpening,
         Block::ChromaDenoise,
         Block::Texture,
@@ -52,7 +50,6 @@ impl Block {
             Block::Lighting => &[Exposure, Brightness, Contrast, Highlights, Shadows, WhitePoint, BlackPoint],
             Block::Effects => &[Vignette, Chrome],
             Block::DensityCeiling => &[DensityCeiling],
-            Block::DyeSeparation => &[DyeSeparation],
             Block::Sharpening => &[SharpenAmount, SharpenRadius, SharpenHalo],
             Block::ChromaDenoise => &[ChromaAmount, ChromaRadius],
             Block::Texture => &[Texture],

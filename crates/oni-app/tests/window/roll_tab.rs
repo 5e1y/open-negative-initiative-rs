@@ -1,5 +1,5 @@
 //! The Roll tab's settings blocks on the headless window: Scan Profile on a file naming no
-//! profile reads it again, the dye separation and Source Balance write and reset as their blocks do,
+//! profile reads it again, Source Balance writes and resets as its block does,
 //! and the flat-field's toggle, mask picker and Apply to Selection reach the frames.
 
 use oni_app::app::{Options, Shell};
@@ -62,20 +62,6 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     assert_eq!(settings().source_encoding, None, "twin: sRGB is no encoding written");
 
-    // The block names the measured dyes, the generic set flagged on a frame no stock names; a dose the hand
-    // moves marks the block, and its reset brings back the whole unmix.
-    assert_eq!((panel.get_dye_set().as_str(), panel.get_dye_set_generic()), ("Generic C-41", true));
-    assert!(!g.get_dye_separation_modified());
-    let field = oni_app::fields::Field::DyeSeparation.index();
-    g.invoke_press(field, false);
-    g.invoke_drag(field, -60.0, 300.0, false);
-    g.invoke_release(field);
-    rig.pump();
-    assert!(settings().separation < 1.0 && g.get_dye_separation_modified(), "{}", settings().separation);
-    g.invoke_reset(4);
-    rig.pump();
-    assert_eq!((settings().separation, g.get_dye_separation_modified()), (1.0, false));
-
     // Source Balance: a negative names each row hue first; a drag moves the gain; the reset lands home.
     assert!(panel.get_gains_inverted());
     let field = oni_app::fields::Field::GainRed.index();
@@ -85,7 +71,7 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     assert!(settings().gains.stops[0] > 0.1, "{:?}", settings().gains.stops);
     assert!(g.get_source_balance_modified());
-    g.invoke_reset(9);
+    g.invoke_reset(oni_app::fields::Block::ALL.iter().position(|b| *b == oni_app::fields::Block::SourceBalance).unwrap() as i32);
     rig.pump();
     assert_eq!(settings().gains.stops, [0.0; 3]);
     panel.invoke_film_type_picked(1);

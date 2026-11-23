@@ -293,18 +293,15 @@ fn sentence(why: &str) -> String {
     format!("{first}{}{end}", chars.as_str())
 }
 
-/// What the Film step says of a stock's dyes: measured on its own profile, a line's on the one it stood for, a
-/// generic set standing in, or none to unmix in black and white or on a slide.
+/// What the Film step says of the curve a stock's frames are read back through: a line's the one it stood for, the
+/// measured colour negatives' mean for a stock no profile measures; nothing for a stock measured on its own.
 pub(super) fn stock_note(stock: Option<&oni_settings::film::FilmStockKind>) -> String {
     match stock.and_then(|k| oni_settings::dyes::dye_set(k.id)) {
-        Some(set) if set.is_generic() => {
-            tr("No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate.").to_string()
-        }
+        Some(set) if set.is_generic() => tr("No profile measures this film stock: Lighting reads it back on the mean curve of the measured colour negatives.").to_string(),
         Some(set) if stock.is_some_and(|k| k.line) => tr!(
-            "The precise stock is not specified: its colours are separated on {stock}'s measured dyes until one is picked.",
+            "The precise stock is not specified: Lighting reads it back on {stock}'s curve until one is picked.",
             stock = crate::app::roll_tab::dye_set_name(set)
         ),
-        Some(set) => tr!("Its colours are separated on {stock}'s measured dyes.", stock = crate::app::roll_tab::dye_set_name(set)),
-        None => String::new(),
+        _ => String::new(),
     }
 }

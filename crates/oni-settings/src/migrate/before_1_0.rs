@@ -2,7 +2,7 @@
 //! their stored order by `from_before_1_0`; every release since writes version 14 or later.
 
 use crate::axis::{density_axis, pipeline};
-use crate::blocks::{ChromaDenoise, Gains, Sharpen, chroma_decompression, separation};
+use crate::blocks::{ChromaDenoise, Gains, Sharpen, chroma_decompression};
 use super::chain::{number, with_settings};
 use crate::document::RADIUS_REFERENCE_SIDE;
 use crate::levels::Levels;
@@ -20,8 +20,6 @@ pub const RADIUS_PIXELS_VERSION: i64 = 4;
 pub const POSITIVE_REST_VERSION: i64 = 5;
 /// The version the mosaic decode stopped assuming an orange base.
 pub const NEUTRAL_DECODE_GAINS_VERSION: i64 = 6;
-/// The version the dye separation's rest moved from a dose of one to `separation::FORMER_REST`.
-pub const SEPARATION_REST_VERSION: i64 = 7;
 /// The version the sharpening's rest moved from `Sharpen::FORMER_AMOUNT` to its new amount.
 pub const SHARPEN_REST_VERSION: i64 = 8;
 /// The version Lighting replaced the former windows and curves; older documents are fitted to it.
@@ -57,9 +55,6 @@ pub fn from_before_1_0(document: Object, stored_version: i64, mosaic_sourced: &d
     }
     if stored_version < NEUTRAL_DECODE_GAINS_VERSION && mosaic_sourced() {
         aged = neutral_decode_gains(aged);
-    }
-    if stored_version < SEPARATION_REST_VERSION {
-        aged = off_former_separation_rest(aged);
     }
     if stored_version < SHARPEN_REST_VERSION {
         aged = off_former_sharpen_rest(aged);
@@ -210,15 +205,6 @@ pub fn in_pixels(document: Object, retiring_chroma: bool) -> Object {
                 scaled(radius, Sharpen::radius_range())
             };
             sharpen.insert("radius".into(), value);
-        }
-    })
-}
-
-/// A dose written on the former rest moves to the new one; a hand's dose differs from it.
-pub fn off_former_separation_rest(document: Object) -> Object {
-    with_settings(document, |s| {
-        if number_f32(s.get("separation")) == Some(separation::FORMER_BASE) {
-            s.insert("separation".into(), number(separation::FORMER_REST));
         }
     })
 }

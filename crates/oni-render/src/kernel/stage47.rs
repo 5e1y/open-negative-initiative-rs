@@ -1,5 +1,5 @@
-//! The fused conversion kernel (`pipeline.metal`): the dye separation, Lighting on the negative, then inversion, levels,
-//! the print curve; or the paper's print in their place, its own ends included.
+//! The fused conversion kernel: Lighting on the negative, then each channel's density read through its window, then
+//! ONI's print curve, or the paper the window's shares expose in its place, its own ends included.
 
 use super::*;
 
@@ -29,16 +29,14 @@ pub struct Stage47 {
     pub balance_low: [f32; 3],
     pub balance_span: [f32; 3],
     pub film_share: f32,
-    /// The stock's dyes unmixed on the scan's densities before the windows, a pass of its own on the GPU.
-    pub dyes: Option<super::dye_separation::DyeSeparation>,
     /// Lighting on the negative, in the pass the print reads; none while Lighting rests.
     pub negative: Option<super::negative::Negative>,
-    /// The negative printed on a paper in place of the windows and the print curve, laid in the same GPU pass.
+    /// The window's shares printed on a paper in place of the print curve, laid in the same GPU pass.
     pub paper: Option<super::paper::Paper>,
 }
 
 impl Stage47 {
-    /// A negative at rest: no print, identity separation, no decompression.
+    /// A negative at rest: no print, no decompression.
     pub fn rest() -> Self {
         Self {
             gain: [1.0; 3],
@@ -63,19 +61,17 @@ impl Stage47 {
             balance_low: [0.0; 3],
             balance_span: [1.0; 3],
             film_share: 0.0,
-            dyes: None,
             negative: None,
             paper: None,
         }
     }
 
-    /// What stage 4 reads past the dye separation's pass and Lighting on the negative: density as light, at unit gain
-    /// and no pedestal.
-    pub fn after_dyes(&self) -> Self {
-        if self.dyes.is_none() && self.negative.is_none() {
+    /// What stage 4 reads past Lighting on the negative: density as light, at unit gain and no pedestal.
+    pub fn after_negative(&self) -> Self {
+        if self.negative.is_none() {
             return *self;
         }
-        Self { gain: [1.0; 3], pedestal: 0.0, dyes: None, negative: None, ..*self }
+        Self { gain: [1.0; 3], pedestal: 0.0, negative: None, ..*self }
     }
 
     /// The uniform block, every vector padded to four lanes as WGSL lays it out.
@@ -169,52 +165,52 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_con
     midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-/// Stages 4 to 7 on one pixel, the stock's dyes unmixed first where the frame names them, Lighting on the negative,
-/// then its paper.
+/// Stages 4 to 7 on one pixel: Lighting on the negative, each channel's window, then ONI's print, its chroma
+/// decompression first, or the paper.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
-    let s = match &k.dyes {
-        Some(d) => super::dye_separation::dye_separation(s, k, d),
-        None => s,
-    };
     let s = match &k.negative {
         Some(n) => super::negative::negative(s, n),
         None => s,
     };
-    let k = k.after_dyes();
-    let s = match &k.paper {
-        Some(p) => super::paper::paper(s, p),
-        None => s,
-    };
-    let e = printed3(windowed(s, &k), &k);
-    [e[0], e[1], e[2], s[3]]
+    let k = k.after_negative();
+    let film = density(s, &k);
+    let shares = window(film, &k);
+    match &k.paper {
+        Some(p) => super::paper::paper(with_alpha(shares, s[3]), p),
+        None => with_alpha(printed3(decompressed(film, shares, &k), &k), s[3]),
+    }
 }
 
-/// Stages 4 and 5: the film's density, its windows and the chroma decompression; a paper's print passes as it is.
-fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
-    if k.paper.is_some() {
-        return rgb(s);
-    }
+/// Stage 4: each channel's density, turned over on a positive.
+fn density(s: [f32; 4], k: &Stage47) -> V3 {
     let t = map([s[0], s[1], s[2]], |c, x| (x + k.pedestal) * k.gain[c]);
     let d = map(t, |_, x| -x.max(k.log_guard).log10());
-    let mut e = if k.invert > 0.5 {
-        d
-    } else {
-        map(d, |_, x| k.window - x)
-    };
-    let lv = [k.red, k.green, k.blue];
+    if k.invert > 0.5 { d } else { map(d, |_, x| k.window - x) }
+}
 
-    let film = e;
-    e = map(e, |c, x| apply_window(x, lv[c], k.low_points[c], k.high_points[c]));
-    if k.decompression != 1.0 || k.film_share != 0.0 {
-        let place = map(film, |c, x| (x - k.balance_low[c]) / k.balance_span[c]);
-        let mean = (place[0] + place[1] + place[2]) / 3.0;
-        let neutral = map(k.balance_low, |c, x| x + mean * k.balance_span[c]);
-        let toned = map(neutral, |c, x| apply_window(x, lv[c], k.low_points[c], k.high_points[c]));
-        let held = map(toned, |c, x| x + k.decompression * (e[c] - x) + k.film_share * (film[c] - neutral[c]));
-        let shift = dot(e, LUMA) - dot(held, LUMA);
-        e = map(held, |_, x| x + shift);
+fn window(film: V3, k: &Stage47) -> V3 {
+    let lv = [k.red, k.green, k.blue];
+    map(film, |c, x| apply_window(x, lv[c], k.low_points[c], k.high_points[c]))
+}
+
+/// Stages 4 and 5: each channel's density read through its window, the share both prints read.
+pub fn windowed(s: [f32; 4], k: &Stage47) -> V3 {
+    window(density(s, k), k)
+}
+
+/// ONI's print's chroma decompression on the window's shares `e` of the density `film`: the windows' colour and the
+/// film's own, the luma held.
+fn decompressed(film: V3, e: V3, k: &Stage47) -> V3 {
+    if k.decompression == 1.0 && k.film_share == 0.0 {
+        return e;
     }
-    e
+    let place = map(film, |c, x| (x - k.balance_low[c]) / k.balance_span[c]);
+    let mean = (place[0] + place[1] + place[2]) / 3.0;
+    let neutral = map(k.balance_low, |c, x| x + mean * k.balance_span[c]);
+    let toned = window(neutral, k);
+    let held = map(toned, |c, x| x + k.decompression * (e[c] - x) + k.film_share * (film[c] - neutral[c]));
+    let shift = dot(e, LUMA) - dot(held, LUMA);
+    map(held, |_, x| x + shift)
 }
 
 /// Stages 6 and 7 on a windowed pixel: the print, its filters and Hunt's colour, each channel's light to a power and

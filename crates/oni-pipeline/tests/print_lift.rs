@@ -22,12 +22,12 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_papers_white_on_pure_w
     for (label, s) in frames() {
         let off = moved(&s, |t| t.print.print_lift = false);
         let k = conversion::stage47(&off);
-        let (rest, white) = (printed_on(&s, &k)[0], lit_shown(&k, past_the_white(&s)));
+        let (rest, white) = (printed_on(&s, &k)[0], lit_shown(&s, &k, past_the_white(&s)));
         println!("{label}: pure black lays the pick at {rest:?}, pure white the paper's white at {white:?}");
         assert!(rest.iter().all(|v| v.abs() < 1e-6) && white.iter().all(|v| (v - 1.0).abs() < 1e-6), "{label}: {rest:?} {white:?}");
         for (name, f) in SLIDERS {
             let k = conversion::stage47(&moved(&off, f));
-            let (pick, white) = (printed_on(&s, &k)[0], lit_shown(&k, past_the_white(&s)));
+            let (pick, white) = (printed_on(&s, &k)[0], lit_shown(&s, &k, past_the_white(&s)));
             assert!(pick.iter().all(|v| v.abs() < 1e-6), "{label}, {name}: {pick:?}");
             // Exposure, Brightness and the filters move no layer off its curve's end there, so the white prints pure.
             assert!(white.iter().all(|v| (v - 1.0).abs() < 1e-6), "{label}, {name}: {white:?}");
@@ -42,7 +42,7 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_papers_white_on_pure_w
         assert!(on_dmax.iter().any(|v| *v > 1e-4), "{label}: {on_dmax:?}");
         // Twin: the paper's white held, as with Print lift, prints under 0.83 on Royal Digital, 0.99 on the Frontier.
         let held = Stage47 { paper: k.paper.map(|p| Paper { white_anchor: p.white, ..p }), ..k };
-        assert!(lit_shown(&held, past_the_white(&s)).iter().all(|v| *v < 0.99), "{label}");
+        assert!(lit_shown(&s, &held, past_the_white(&s)).iter().all(|v| *v < 0.99), "{label}");
     }
 }
 
@@ -51,12 +51,12 @@ fn print_lift_keeps_the_papers_own_ends() {
     for (label, s) in frames() {
         let k = conversion::stage47(&s);
         let p = k.paper.unwrap();
-        let (pick, white) = (printed_on(&s, &k)[0], lit_shown(&k, past_the_white(&s)));
+        let (pick, white) = (printed_on(&s, &k)[0], lit_shown(&s, &k, past_the_white(&s)));
         println!("{label}: Print lift prints the pick at {pick:?}, the paper's white at {white:?}");
         assert!(p.white_anchor == p.white && white == p.white, "{label}: {white:?} {:?}", p.white);
         // Twin: off, the same frame's white lies on pure white, 0.18 above on Royal Digital, 0.018 on the Frontier.
         let off = conversion::stage47(&moved(&s, |t| t.print.print_lift = false));
-        assert!((0..3).all(|c| lit_shown(&off, past_the_white(&s))[c] > white[c] + 0.015), "{label}");
+        assert!((0..3).all(|c| lit_shown(&s, &off, past_the_white(&s))[c] > white[c] + 0.015), "{label}");
     }
 }
 

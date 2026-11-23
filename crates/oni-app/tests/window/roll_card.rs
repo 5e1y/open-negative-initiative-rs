@@ -180,7 +180,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     assert_eq!(family(&other.join("D.tif")), DyeSet::GenericC41, "twin: a frame outside the roll keeps its own");
     rig.until("the card reads Portra's dyes off the frames", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Measured dyes: Kodak Portra 400"
+        lib.get_stock_dyes().as_str() == "Frames read as Kodak Portra 400"
     });
     rig.settle();
     println!("shot {}", rig.shot("roll-card-made").display());
@@ -199,7 +199,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     rig.landed(&ctl);
     assert_eq!(families(), vec![DyeSet::KodakPortra400; 3], "black and white writes no dyes");
     rig.pump();
-    assert_eq!(lib.get_stock_dyes().as_str(), "Measured dyes: Kodak Portra 400");
+    assert_eq!(lib.get_stock_dyes().as_str(), "Frames read as Kodak Portra 400");
 
     // A measured frame takes the banner away once the roll's frames are read again.
     let measured = frames[1].clone();
@@ -218,7 +218,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     pick(&["D.tif"]);
     assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (InfoKind::Roll, "Other"));
 
-    // The frame open in the editor takes the roll's new dyes at once, its Roll tab with it.
+    // The frame open in the editor takes the roll's new stock at once, the card with it.
     let renders = ctl.state.borrow().renders();
     lib.invoke_tile_opened(at("A.tif"));
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
@@ -229,24 +229,21 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     stocks.invoke_chosen(stock("fujifilm-superia-xtra400"));
     rig.landed(&ctl);
     assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
-    let (panel, g) = (w.global::<oni_app::PanelState>(), w.global::<oni_app::Store>());
-    assert_eq!((panel.get_dye_set().as_str(), panel.get_dye_set_generic()), ("Fujifilm Superia X-TRA 400", false), "the block reads the stock's dyes");
-    assert!(!g.get_dye_separation_modified(), "the stock's dyes are the block's rest: no reset key");
-    rig.until("the card reads Superia's dyes", Duration::from_secs(10), || {
+    rig.until("the card reads Superia", Duration::from_secs(10), || {
         rig.pump();
-        lib.get_stock_dyes().as_str() == "Measured dyes: Fujifilm Superia X-TRA 400"
+        lib.get_stock_dyes().as_str() == "Frames read as Fujifilm Superia X-TRA 400"
     });
-    // A stock no profile measures: the generic set, flagged in the block.
+    // A stock no profile measures: the generic one.
     lib.invoke_select_roll_type();
     stocks.invoke_chosen(stock("lucky-color200"));
     rig.landed(&ctl);
     rig.pump();
-    assert_eq!((panel.get_dye_set().as_str(), panel.get_dye_set_generic()), ("Generic C-41", true));
-    // Twin: one undo gives the open photo Superia's dyes back, unflagged.
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::GenericC41);
+    // Twin: one undo gives the open photo Superia back.
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
     rig.pump();
-    assert_eq!((ctl.state.borrow().store().settings().dye_set, panel.get_dye_set_generic()), (DyeSet::FujifilmXtra400, false));
+    assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::FujifilmXtra400);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

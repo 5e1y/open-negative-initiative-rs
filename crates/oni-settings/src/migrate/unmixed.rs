@@ -67,13 +67,13 @@ const MIXED: [(VirtualStock, StockReference); 48] = {
 
 /// The reference a document of formats 60 to 65 laid for `stock`; a black and white film's never moved.
 pub fn mixed(stock: VirtualStock) -> StockReference {
-    MIXED.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    MIXED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::layer_densities::scanned(stock), |(_, r)| *r)
 }
 
-/// `settings` of `version` on its stock's reference of the unmixed curves.
+/// `settings` of `version` on its stock's reference of the unmixed curves, as formats 66 to 68 read them.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
-        Some(film) if version < UNMIXED_VERSION => onto(settings, mixed(film.stock), film.stock.reference()),
+        Some(film) if version < UNMIXED_VERSION => onto(settings, mixed(film.stock), super::layer_densities::scanned(film.stock)),
         _ => settings,
     }
 }

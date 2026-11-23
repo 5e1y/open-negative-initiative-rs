@@ -23,7 +23,7 @@ pub use flat_field::FlatField;
 pub use measured_roll::MeasuredRoll;
 pub use paper::PaperCorrection;
 pub use slider::{OneSlider, Spec, View, pictured};
-pub use sliders::{chroma_denoise, density_ceiling, dye_separation, sharpening, texture};
+pub use sliders::{chroma_denoise, density_ceiling, sharpening, texture};
 pub use slides::{effects, lighting};
 pub use source_encoding::SourceEncodingDemo;
 pub use white_balance::WhiteBalance;
@@ -46,7 +46,6 @@ pub fn all() -> Result<Vec<Box<dyn Demo>>, String> {
         Box::new(FlatField::new()),
         Box::new(SourceEncodingDemo::new()),
         Box::new(density_ceiling()),
-        Box::new(dye_separation()),
         Box::new(PaperCorrection::new()),
         Box::new(lighting()),
         Box::new(effects()),

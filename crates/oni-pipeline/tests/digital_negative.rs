@@ -2,7 +2,6 @@
 //! its stock's measured dyes unmixed, its scene lit at its stock's white, its Scanner face a negative's.
 
 use oni_pipeline::{conversion, scanner};
-use oni_settings::blocks::separation;
 use oni_settings::{ConversionMode, LegacyPrint, PipelineSettings, VirtualStock};
 
 fn digital() -> PipelineSettings {
@@ -30,18 +29,15 @@ fn a_digital_photos_stage_4_to_7_is_a_colour_negatives_on_the_same_settings() {
 }
 
 #[test]
-fn a_digital_photo_unmixes_its_stocks_dyes_and_decompresses_as_an_unprepared_negative() {
+fn a_digital_photo_decompresses_as_an_unprepared_negative() {
     // On ONI's print, where the decompression acts: a paper owns the print's colour.
     let s = PipelineSettings { print_paper: None, ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let k = conversion::stage47(&s);
     assert_eq!(s.dye_set, VirtualStock::KodakPortra800.dye_set());
-    let d = k.dyes.expect("its stock's measured dyes");
-    assert_eq!((d.matrix, d.dose), (oni_pipeline::film::dyes::dyes(s.dye_set).matrix, separation::BASE));
     assert_eq!((k.decompression, k.film_share), (0.5, 0.5));
     assert_eq!((k.invert, k.own_stops), (1.0, s.print.filters()));
-    // Twin: a slide on the same settings unmixes nothing and keeps its film's colour.
+    // Twin: a slide on the same settings keeps its film's colour.
     let slide = conversion::stage47(&PipelineSettings { mode: ConversionMode::Positive, ..s.clone() });
-    assert!(slide.dyes.is_none());
     assert_eq!((slide.decompression, slide.film_share), (1.0, 0.0));
 }
 

@@ -317,7 +317,7 @@ impl VirtualStock {
         self.entry().catalogue
     }
 
-    /// The dyes its profile measures, which its negative's separation unmixes.
+    /// The scanned stock it is, which a roll shot on it names.
     pub fn dye_set(self) -> DyeSet {
         self.entry().dyes
     }

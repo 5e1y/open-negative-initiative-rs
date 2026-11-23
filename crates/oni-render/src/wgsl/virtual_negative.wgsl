@@ -1,12 +1,10 @@
 // A virtual negative: the scene exposed on the film's light per chromaticity, developed on its curves
-// with its DIR couplers, read through its dyes by a colorimetric camera; alpha kept.
+// with its DIR couplers, each layer's density coded as its own channel's light; alpha kept.
 
 struct Params {
     head: vec4<u32>,
     to_film: array<vec4<f32>, 3>,
     couplers: array<vec4<f32>, 3>,
-    dyes: array<vec4<f32>, 81>,
-    weights: array<vec4<f32>, 81>,
 }
 
 // The table is read through `negative_table(i, j)`, which the entry point defines: the light per
@@ -45,11 +43,5 @@ fn virtual_negative_px(s: vec4<f32>) -> vec4<f32> {
     let c = P.couplers;
     let inhibited = log - (first.x * c[0].xyz + first.y * c[1].xyz + first.z * c[2].xyz);
     let density = negative_curve(inhibited, 1u);
-    var out = vec3<f32>(0.0);
-    for (var k = 0u; k < P.head.z; k = k + 1u) {
-        let dye = P.dyes[k];
-        let t = exp2(-3.3219280948873623 * (dot(density, dye.xyz) + dye.w));
-        out = out + t * P.weights[k].rgb;
-    }
-    return vec4<f32>(out, s.a);
+    return vec4<f32>(exp2(-3.3219280948873623 * density), s.a);
 }

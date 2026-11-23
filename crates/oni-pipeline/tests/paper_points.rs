@@ -58,6 +58,11 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a paper")
 }
 
+/// The window's shares of a density `above` each channel's bare film, as the frame's window reads it.
+fn sh(s: &PipelineSettings, above: [f32; 3]) -> [f32; 3] {
+    oni_pipeline::paper::shares_of(s, &conversion::stage47(s), above)
+}
+
 fn negative_of(s: &PipelineSettings) -> Negative {
     conversion::stage47(s).negative.expect("Lighting on the negative")
 }
@@ -76,22 +81,23 @@ fn the_points_move_the_density_read_as_bare_film_and_as_the_densest() {
     for (frame, s) in frames() {
         let rest = paper_of(&s);
         let span = span_of(&s);
-        let (base, densest) = (rest.printed([0.0; 3]), rest.printed(span));
+        let (base, densest) = (rest.printed(sh(&s, [0.0; 3])), rest.printed(sh(&s, span)));
         for (label, f) in moves() {
             let (p, n) = (paper_of(&moved(&s, f)), negative_of(&moved(&s, f)));
             let (black, white) = (n.points_black, n.points_white);
             // Each channel's density at its black point prints as the bare film printed at rest, its white point's as the densest.
             let at_black: [f32; 3] = std::array::from_fn(|c| black[c] * span[c]);
             let at_white: [f32; 3] = std::array::from_fn(|c| (1.0 - white[c]) * span[c]);
-            let (b, w) = (apart(p.printed(n.toned(at_black)), base), apart(p.printed(n.toned(at_white)), densest));
+            let (b, w) = (apart(p.printed(sh(&s, n.toned(at_black))), base), apart(p.printed(sh(&s, n.toned(at_white))), densest));
             // The paper's light is read where it is exposed: the densest prints near the paper's white, its log exposure apart.
-            let exposure = |q: &Paper, a: [f32; 3]| q.exposed(n.toned(a));
+            let exposure = |q: &Paper, a: [f32; 3]| q.exposed(q.density(sh(&s, n.toned(a))));
+            let rest_at = |a: [f32; 3]| rest.exposed(rest.density(sh(&s, a)));
             let gap = |x: [f32; 3], y: [f32; 3]| (0..3).map(|c| (x[c] - y[c]).abs()).fold(0.0f32, f32::max);
-            let (eb, ew) = (gap(exposure(&p, at_black), rest.exposed([0.0; 3])), gap(exposure(&p, at_white), rest.exposed(span)));
+            let (eb, ew) = (gap(exposure(&p, at_black), rest_at([0.0; 3])), gap(exposure(&p, at_white), rest_at(span)));
             println!("{frame}, {label}: points {black:?} {white:?}; their densities print within {b:.1e} and {w:.1e} of the rest's ends, exposed within {eb:.1e} and {ew:.1e}");
             assert!(b < 1e-5 && w < 1e-5 && eb < 1e-5 && ew < 1e-5, "{frame}, {label}");
             // Twin: the rest's paper exposes the same densities elsewhere.
-            assert!(gap(rest.exposed(at_black), rest.exposed([0.0; 3])).max(gap(rest.exposed(at_white), rest.exposed(span))) > 1e-2, "{frame}, {label}");
+            assert!(gap(rest_at(at_black), rest_at([0.0; 3])).max(gap(rest_at(at_white), rest_at(span))) > 1e-2, "{frame}, {label}");
         }
         // A global pair moves the three channels alike; a channel's own its own alone.
         let red = negative_of(&moved(&s, |p| p.channel_white[0] += 0.05));
@@ -104,12 +110,12 @@ fn shadows_and_highlights_lay_density_by_tone_the_ends_held() {
     for (frame, s) in frames() {
         let rest = paper_of(&s);
         let span = span_of(&s);
-        let plain = |u: f32| rest.printed(span.map(|a| a * u));
+        let plain = |u: f32| rest.printed(sh(&s, span.map(|a| a * u)));
         let luma = |v: [f32; 3]| 0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2];
         for (label, zones) in [("Shadows +0.2", [0.2, 0.0]), ("Highlights +0.2", [0.0, 0.2]), ("Shadows -0.25", [-0.25, 0.0]), ("Highlights -0.4", [0.0, -0.4])] {
             let t = moved(&s, |q| (q.shadows, q.highlights) = (zones[0], zones[1]));
             let (p, n) = (paper_of(&t), negative_of(&t));
-            let along = |u: f32| p.printed(n.toned(span.map(|a| a * u)));
+            let along = |u: f32| p.printed(sh(&s, n.toned(span.map(|a| a * u))));
             let ends = apart(along(0.0), plain(0.0)).max(apart(along(1.0), plain(1.0)));
             // The density laid, as a share of the range, at a quarter and at three quarters of it.
             let laid = |u: f32| n.toned(span.map(|a| a * u))[1] / span[1] - u;
@@ -140,9 +146,9 @@ fn each_channels_mids_and_contrast_are_its_own_in_density() {
         let t = moved(&s, |q| q.channel_mid = [0.2, 0.0, 0.0]);
         let (p, n) = (paper_of(&t), negative_of(&t));
         let mid = span.map(|a| a * 0.5);
-        let (lit, was) = (p.printed(n.toned(mid)), rest.printed(mid));
+        let (lit, was) = (p.printed(sh(&s, n.toned(mid))), rest.printed(sh(&s, mid)));
         println!("{frame}, red mid +0.2: the middle {lit:?} from {was:?}");
-        let held = |a: [f32; 3]| apart(p.printed(n.toned(a)), rest.printed(a)) < 1e-6;
+        let held = |a: [f32; 3]| apart(p.printed(sh(&s, n.toned(a))), rest.printed(sh(&s, a))) < 1e-6;
         assert!(lit[0] > was[0] * 1.05 && held([0.0; 3]) && held(span), "{frame}");
         // Twin: the same mid on green moves green, not red.
         let green = negative_of(&moved(&s, |q| q.channel_mid = [0.0, 0.2, 0.0])).toned(mid);

@@ -46,9 +46,6 @@ export global PanelState {
     in property <int> targets: 1;
     callback film-type-picked(int);
     in property <bool> flat-field-on;
-    // The measured dyes the separation unmixes, by their stock's name, and whether a generic set stands for them.
-    in property <string> dye-set;
-    in property <bool> dye-set-generic;
     // `GainPanel`: the inversion swaps each row's ends, the hue then low.
     in property <bool> gains-inverted: true;
     // A file naming no profile, read as the hand says; a grey one offers two encodings.
@@ -80,8 +77,6 @@ export global PanelState {
     callback flat-apply-selection();
     // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
     in property <bool> crop-first;
-    // `SettingsPane`: no Dye Separation in black and white or on RGB passes.
-    in property <bool> separation-shown: true;
     // A positive is a plain RAW: no roll measure, dyes or ceiling, its cast in a temperature and a tint.
     in property <bool> slide;
     // A digital photo: shot on its virtual film, its negative read as any negative is; no flat-field or roll.

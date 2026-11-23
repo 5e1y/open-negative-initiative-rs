@@ -6,7 +6,7 @@ mod common;
 
 use common::{V4, graph, judge, mapped, noise, whole};
 use oni_graph::Image;
-use oni_pipeline::film::{self, GREY, bake, cie, profile::Profile};
+use oni_pipeline::film::{self, GREY, bake, profile::Profile};
 use oni_pipeline::{Pipeline, Request, stages};
 use oni_render::{VirtualNegative, cpu};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
@@ -56,7 +56,6 @@ struct Reference {
     n: usize,
     to_film: bake::M3,
     curves: (Vec<[f64; 3]>, Vec<[f64; 3]>),
-    weights: Vec<[f64; 3]>,
 }
 
 impl Reference {
@@ -67,7 +66,7 @@ impl Reference {
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
         let curves = bake::curves(&profile);
-        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, weights: bake::scan_weights(&cie::D50), profile }
+        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile }
     }
 
     /// The film's log exposure per channel for a scene pixel, at `stops`.
@@ -87,18 +86,9 @@ impl Reference {
         std::array::from_fn(|c| bake::interpolate(inhibited[c], le, &self.curves.1, c))
     }
 
+    /// Each layer's density as its own channel's light, as a masked negative's scan reads it.
     fn scan(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
-        let d = self.developed(rgb, stops);
-        let mut out = [0.0; 3];
-        for l in 0..cie::WAVELENGTHS {
-            let [c, m, y] = self.profile.channel_density[l];
-            let (Some(c), Some(m), Some(y), Some(base)) = (c, m, y, self.profile.base_density[l]) else { continue };
-            let t = 10f64.powf(-(d[0] * c + d[1] * m + d[2] * y + base));
-            for k in 0..3 {
-                out[k] += t * self.weights[l][k];
-            }
-        }
-        out
+        self.developed(rgb, stops).map(|d| 10f64.powf(-d))
     }
 }
 

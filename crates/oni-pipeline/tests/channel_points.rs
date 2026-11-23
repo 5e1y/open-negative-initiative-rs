@@ -34,7 +34,7 @@ fn shifts(a: &[V4], b: &[V4]) -> [f32; 3] {
 }
 
 /// Channel `c` moved, at least 1.3 times as far as either other on ONI's print: those follow through the stock's
-/// couplers, the dye separation, chroma decompression and light-dependent colour, which mix the channels.
+/// couplers, chroma decompression and light-dependent colour, which mix the channels.
 fn led_by(moved: [f32; 3], c: usize) -> bool {
     leads(moved, c, 1.3)
 }

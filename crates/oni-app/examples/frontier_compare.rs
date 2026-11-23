@@ -29,7 +29,7 @@ fn main() {
     let mut rest = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
     (rest.legacy_print, rest.density) = (None, 0.0);
     rest.print = Print::default();
-    println!("{:?}, dyes {:?}, separation {}", rest.mode, rest.dye_set, rest.separation);
+    println!("{:?}, stock {:?}", rest.mode, rest.dye_set);
 
     let device = Device::open().expect("a GPU");
     let engine = Engine::shared(&device);

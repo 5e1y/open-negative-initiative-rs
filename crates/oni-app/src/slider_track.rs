@@ -289,8 +289,8 @@ mod tests {
             }
             let ticks = rests(&moved);
             for block in Block::ALL.into_iter().filter(|b| *b != Block::FlatField) {
-                let reset = rested(&moved, block, None);
-                assert!(!is_modified(&reset, block, None), "{block:?} lit after its reset on {:?}", frame.mode);
+                let reset = rested(&moved, block);
+                assert!(!is_modified(&reset, block), "{block:?} lit after its reset on {:?}", frame.mode);
                 for f in block.fields().iter().filter(|f| f.shown_in(&moved)) {
                     let (at, landed) = (ticks[f.index() as usize], position_on(*f, f.knob().get(&reset), &track_on(*f, &moved)));
                     assert!((at - landed).abs() < 1e-5, "{f:?} ticked at {at}, reset to {landed} on {:?}", frame.mode);
@@ -304,10 +304,10 @@ mod tests {
         assert_eq!(exposure.readout(exposure.knob().get(negative)), "0.00 EV");
         assert_eq!(rests(negative)[exposure.index() as usize], position_on(exposure, 0.0, &track_on(exposure, negative)));
         assert!((rests(negative)[exposure.index() as usize] - 0.5).abs() < 1e-6);
-        assert!(!is_modified(negative, Block::Lighting, None));
+        assert!(!is_modified(negative, Block::Lighting));
         // Twin: the former rest's +1.50 EV stands off the rest the reset returns to.
         assert_ne!(rests(negative)[exposure.index() as usize], position_on(exposure, 1.5, &track_on(exposure, negative)));
-        assert!(is_modified(&exposure.knob().set(negative, 1.5), Block::Lighting, None));
+        assert!(is_modified(&exposure.knob().set(negative, 1.5), Block::Lighting));
     }
 
     #[test]

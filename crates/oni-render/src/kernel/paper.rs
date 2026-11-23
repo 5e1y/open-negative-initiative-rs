@@ -1,39 +1,32 @@
-//! The paper: the enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
-//! curves; the print's dyes are read under D50, then its ends: the frame's pick and the paper's white each on its anchor.
-//! Brightness moves the enlarger's light as a time does, faded in from the pick over the deep shadows: the blacks stay,
-//! the mids move. Lighting's other sliders and the colour tools act on the negative before it (`negative`).
+//! The paper: each channel's window share laid back on density, the negative's per-channel printing density, exposes the
+//! matching layer of a colour paper (red the cyan-forming, green the magenta, blue the yellow) through the enlarger's time
+//! and filtration; the layers develop on their curves, the print's dyes are read under D50, then its ends: the frame's
+//! pick and the paper's white each on its anchor. Brightness moves the enlarger's light as a time does, faded in from the
+//! pick over the deep shadows. Lighting's other sliders and the colour tools act on the negative before it (`negative`).
 
 use super::*;
 
-/// Most wavelengths either sum runs over: every sample of 380 to 780 nm by 5.
+/// Most wavelengths the print's sums run over: every sample of 380 to 780 nm by 5.
 pub const PAPER_BANDS: usize = 81;
 
 /// The nodes of each layer's characteristic curve, on a uniform log exposure axis.
 pub const PAPER_CURVE_NODES: usize = 256;
 
-/// The paper's raw exposure floor in its log, as its curves read a layer no light reached.
-pub const PAPER_EXPOSURE_FLOOR: f32 = 1e-10;
-
-const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_2: f32 = std::f32::consts::LOG10_2;
+const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
-/// A negative printed on a paper: how its pixel is read as dye amounts, the enlarger's light, the paper's curves, its
-/// print seen under D50 in Rec. 2020, and the print's ends.
+/// The window's shares printed on a paper: how a share is laid back on density, the enlarger's light, the paper's
+/// curves, its print seen under D50 in Rec. 2020, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
-    /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
-    pub gain: V3,
-    pub pedestal: f32,
-    pub log_guard: f32,
-    pub black: V3,
-    /// Per wavelength the negative passes: its three dyes' density at unit amount, then its base's.
-    pub negative: &'static [V4],
-    /// Per wavelength the negative passes: the lamp's light read by each of the paper's three layers.
-    pub exposure: &'static [V3],
-    /// Per wavelength the negative passes: the cyan, magenta and yellow dichroic filters' transmittance.
-    pub dichroic: &'static [V3],
-    /// Each dichroic filter's transmittance where it absorbs, `10^(−CC/100)`: the enlarger's filtration.
+    /// A share `t` of the window is the density `span · t^bend` above the bare film: the frame's mean window span, and
+    /// the power that lays the mean window's grey back where its density stands, so the grade on the mean is one.
+    pub span: f32,
+    pub bend: f32,
+    /// What each layer reads of the three densities, by rows summing to one: the identity on an enlarger.
+    pub mix: [V3; 3],
+    /// Each layer's filter where it absorbs, `10^(−CC/100)`: the enlarger's filtration.
     pub filters: V3,
     /// The print's exposure as a factor of the light: the enlarger's time.
     pub scale: f32,
@@ -64,50 +57,47 @@ pub struct Paper {
 
 impl Paper {
     pub fn head(&self) -> [u32; 4] {
-        [self.negative.len() as u32, self.print.len() as u32, 0, 0]
+        [self.print.len() as u32, 0, 0, 0]
     }
 
-    /// The uniform: the reading, the enlarger, Brightness, the print's ends, then the bands and the curves.
+    /// The uniform: the density, the enlarger, Brightness, the print's ends, then the bands and the curves.
     pub fn rows(&self) -> Vec<V4> {
         let flag = |on: bool| if on { 1.0 } else { 0.0 };
+        let m = &self.mix;
         let mut rows = vec![
-            v3(self.gain, self.pedestal),
-            v3(self.black, self.log_guard),
-            v3(self.filters, self.scale),
-            [self.pick_log, self.reach, 0.0, 0.0],
-            [self.curve_low, self.curve_step, self.brightness, flag(self.luma)],
+            [self.span, self.bend, self.scale, flag(self.luma)],
+            v3(self.filters, 0.0),
+            [self.pick_log, self.reach, self.brightness, 0.0],
+            [self.curve_low, self.curve_step, 0.0, 0.0],
+            v3(m[0], 0.0),
+            v3(m[1], 0.0),
+            v3(m[2], 0.0),
             v3(self.pick, 0.0),
             v3(self.white, 0.0),
             v3(self.anchor, 0.0),
             v3(self.white_anchor, 0.0),
         ];
         let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
-        rows.extend(self.negative.iter().copied().chain(pad(self.negative.len())));
-        rows.extend(self.exposure.iter().map(|w| v3(*w, 0.0)).chain(pad(self.exposure.len())));
-        rows.extend(self.dichroic.iter().map(|w| v3(*w, 0.0)).chain(pad(self.dichroic.len())));
         rows.extend(self.print.iter().copied().chain(pad(self.print.len())));
         rows.extend(self.view.iter().map(|w| v3(*w, 0.0)).chain(pad(self.view.len())));
         rows.extend(self.curves.iter().map(|c| v3(*c, 0.0)));
         rows
     }
 
-    /// The dye amounts above the bare film a pixel holds, as the paper reads it.
-    pub fn amounts(&self, s: V4) -> V3 {
-        map(rgb(s), |c, v| -((v + self.pedestal) * self.gain[c]).max(self.log_guard).ln() * LOG10_E - self.black[c])
+    /// The density above the bare film each layer reads for the window's `shares`, mixed by its rows; a share under
+    /// none reads its power turned over, so the curve passes zero smoothly.
+    pub fn density(&self, shares: V3) -> V3 {
+        let d = shares.map(|t| self.span * t.signum() * t.abs().powf(self.bend));
+        [dot(self.mix[0], d), dot(self.mix[1], d), dot(self.mix[2], d)]
     }
 
-    /// Each layer's log exposure under the negative holding `amounts`, before the grade turns it.
-    pub fn exposed(&self, amounts: V3) -> V3 {
-        let mut raw = [0.0f32; 3];
-        for ((dye, weight), filter) in self.negative.iter().zip(self.exposure).zip(self.dichroic) {
-            let dimmed = map(*filter, |c, f| 1.0 - (1.0 - f) * (1.0 - self.filters[c]));
-            let passed = (-LOG2_10 * (dot(amounts, rgb(*dye)) + dye[3])).exp2() * dimmed[0] * dimmed[1] * dimmed[2];
-            raw = map(raw, |c, v| v + passed * weight[c]);
-        }
-        map(raw, |_, v| (v.max(0.0) * self.scale + PAPER_EXPOSURE_FLOOR).ln() * LOG10_E)
+    /// Each layer's log exposure under the negative holding `density`, before Brightness turns it: the light through
+    /// the time and the layer's filter, less the density.
+    pub fn exposed(&self, density: V3) -> V3 {
+        map(density, |c, d| (self.scale * self.filters[c]).ln() * LOG10_E - d)
     }
 
-    /// How far the mean of `log` lies under the pick's `pick_log`, toward a lighter print.
+/// How far the mean of `log` lies under the pick's `pick_log`, toward a lighter print.
     pub fn toward_light(&self, pick_log: f32, log: V3) -> f32 {
         pick_log - (log[0] + log[1] + log[2]) / 3.0
     }
@@ -143,9 +133,9 @@ impl Paper {
         out
     }
 
-    /// The print of a negative holding `amounts`, a black and white print on its luma; before its ends.
-    pub fn printed(&self, amounts: V3) -> V3 {
-        let light = self.viewed(self.developed(self.brightened(self.exposed(amounts))));
+    /// The print of the window's `shares`, a black and white print on its luma; before its ends.
+    pub fn printed(&self, shares: V3) -> V3 {
+        let light = self.viewed(self.developed(self.brightened(self.exposed(self.density(shares)))));
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 
@@ -161,9 +151,9 @@ impl Paper {
         })
     }
 
-    /// What the print shows of a negative holding `amounts`: its light between its ends.
-    pub fn shown(&self, amounts: V3) -> V3 {
-        self.ended(self.printed(amounts))
+    /// What the print shows of the window's `shares`: its light between its ends.
+    pub fn shown(&self, shares: V3) -> V3 {
+        self.ended(self.printed(shares))
     }
 }
 
@@ -202,9 +192,9 @@ pub fn lifted(x: f32, lift: f32, reach: f32) -> f32 {
     0.5 * (low + high)
 }
 
-/// One negative pixel printed on the paper, in linear Rec. 2020; alpha kept.
-pub fn paper(s: V4, k: &Paper) -> V4 {
-    with_alpha(k.shown(k.amounts(s)), s[3])
+/// One pixel's window shares printed on the paper, in linear Rec. 2020; alpha kept.
+pub fn paper(t: V4, k: &Paper) -> V4 {
+    with_alpha(k.shown(rgb(t)), t[3])
 }
 
 #[cfg(test)]

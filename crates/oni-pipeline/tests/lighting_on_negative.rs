@@ -33,8 +33,6 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
 }
 
 fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut unmixed = onis(prepared_negative());
-    unmixed.separation = 0.0;
     let mut uncompensated = onis(prepared_negative());
     uncompensated.print.colour_compensation = false;
     let mut legacy = onis(prepared_negative());
@@ -47,7 +45,6 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, negative unmixed", unmixed),
         ("ONI's print, uncompensated", uncompensated),
         ("ONI's print, legacy Frontier at its entry", legacy),
         ("ONI's print, digital", onis(digital())),
@@ -284,7 +281,7 @@ fn contrast_turns_about_the_grey_and_the_filters_tint_holding_its_weight() {
             let now = rgb(cpu::stage47(grey, &k));
             // The grey's negative unmoved; its print within the hundredth the black's anchoring lays on a paper.
             let n = k.negative.unwrap();
-            let read = n.read(k.dyes.map_or(grey, |d| cpu::dye_separation(grey, &k, &d)));
+            let read = n.read(grey);
             let again = n.redeveloped(read);
             assert!((0..3).all(|c| (again[c] - read[c]).abs() < 2e-4), "{label}, Contrast {travel}: the grey's negative {again:?} from {read:?}");
             let off = (0..3).map(|c| (now[c] - at_rest[c]).abs() / at_rest[c].max(1e-3)).fold(0.0f32, f32::max);

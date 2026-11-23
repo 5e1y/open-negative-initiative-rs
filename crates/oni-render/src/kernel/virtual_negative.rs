@@ -1,12 +1,9 @@
-//! A virtual negative: a scene exposed on a film's spectral sensitivities, developed on its curves with
-//! its DIR couplers, and read on a light table by a colorimetric camera, as a scan of that negative.
+//! A virtual negative: a scene exposed on a film's spectral sensitivities, developed on its curves with its DIR
+//! couplers, each layer's density read on its own channel as a masked negative's scan reads it.
 
 use super::*;
 
-/// Most wavelengths the scan sums over, every one of a profile's 380 to 780 nm grid: a cine stock measures 76.
-pub const VIRTUAL_NEGATIVE_BANDS: usize = 81;
-
-/// The film's exposure, development and scan. The table beside the input is `tc_nodes` square, the
+/// The film's exposure and development. The table beside the input is `tc_nodes` square, the
 /// light per chromaticity, then two rows of `curve_nodes`: each channel's density before the couplers act, then after.
 #[derive(Clone, Debug, PartialEq)]
 pub struct VirtualNegative {
@@ -21,25 +18,17 @@ pub struct VirtualNegative {
     pub log_span: f32,
     pub tc_nodes: usize,
     pub curve_nodes: usize,
-    /// Per scanned wavelength: the three dyes' density at unit amount and the base's, then the camera's
-    /// Rec. 2020 weight of the light passed.
-    pub dyes: Vec<V4>,
-    pub weights: Vec<V3>,
 }
 
 impl VirtualNegative {
     pub fn head(&self) -> [u32; 4] {
-        [self.tc_nodes as u32, self.curve_nodes as u32, self.dyes.len() as u32, 0]
+        [self.tc_nodes as u32, self.curve_nodes as u32, 0, 0]
     }
 
     pub fn rows(&self) -> Vec<V4> {
         let t = &self.to_film;
         let c = &self.couplers;
-        let mut rows = vec![v3(t[0], self.exposure), v3(t[1], self.log_low), v3(t[2], self.log_span), v3(c[0], 0.0), v3(c[1], 0.0), v3(c[2], 0.0)];
-        let pad = |n: usize| std::iter::repeat_n([0.0; 4], VIRTUAL_NEGATIVE_BANDS - n);
-        rows.extend(self.dyes.iter().copied().chain(pad(self.dyes.len())));
-        rows.extend(self.weights.iter().map(|w| v3(*w, 0.0)).chain(pad(self.weights.len())));
-        rows
+        vec![v3(t[0], self.exposure), v3(t[1], self.log_low), v3(t[2], self.log_span), v3(c[0], 0.0), v3(c[1], 0.0), v3(c[2], 0.0)]
     }
 
     /// The table's width and height as one image.
@@ -79,18 +68,12 @@ fn curve(e: f32, c: usize, row: usize, k: &VirtualNegative, table: &[V4]) -> f32
     mix(table[base + lo][c], table[base + lo + 1][c], f - lo as f32)
 }
 
-/// One scene pixel to the light the camera reads through its negative; alpha kept.
+/// One scene pixel to the light its negative passes, each layer's density on its own channel; alpha kept.
 pub fn virtual_negative(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
-    let density = virtual_dyes(s, k, table);
-    let mut out = [0.0f32; 3];
-    for (dye, weight) in k.dyes.iter().zip(&k.weights) {
-        let t = 10f32.powf(-(density[0] * dye[0] + density[1] * dye[1] + density[2] * dye[2] + dye[3]));
-        out = map(out, |c, v| v + t * weight[c]);
-    }
-    with_alpha(out, s[3])
+    with_alpha(map(virtual_dyes(s, k, table), |_, d| (-std::f32::consts::LOG2_10 * d).exp2()), s[3])
 }
 
-/// The dye amounts one scene pixel develops on the negative, which its scan reads through the dyes.
+/// Each layer's density one scene pixel develops on the negative.
 pub fn virtual_dyes(s: V4, k: &VirtualNegative, table: &[V4]) -> V3 {
     let xyz = k.to_film.map(|row| dot(row, rgb(s)));
     let b = xyz[0] + xyz[1] + xyz[2];

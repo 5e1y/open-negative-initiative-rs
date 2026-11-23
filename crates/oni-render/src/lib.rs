@@ -11,7 +11,6 @@ pub use kernel::color_cube::ColorCube;
 pub use kernel::color_matrix::ColorMatrix;
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};
-pub use kernel::dye_separation::{DYE_LIGHT_FLOOR, DYE_STEP_BOUND, DYE_STEPS, DYE_TONE_NODES, DyeSeparation};
 pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;
@@ -20,7 +19,7 @@ pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, 
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
 pub use kernel::negative::{LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, NEGATIVE_CURVE_NODES, NEGATIVE_STEPS, Development, Negative};
 pub use kernel::orient::Orient;
-pub use kernel::paper::{PAPER_BANDS, PAPER_CURVE_NODES, PAPER_EXPOSURE_FLOOR, Paper, fade, lifted, share};
+pub use kernel::paper::{PAPER_BANDS, PAPER_CURVE_NODES, Paper, fade, lifted, share};
 pub use kernel::saturation_curve::SaturationCurve;
 pub use kernel::scanner::{ScannerDensity, ScannerOutput, SCANNER_LIFT, ScannerEncode};
 pub use kernel::spectrogram::Spectrogram;
@@ -28,7 +27,7 @@ pub use kernel::stage47::{Stage47, Packed};
 pub use kernel::stroke_mask::StrokeMask;
 pub use kernel::texture::{TextureCoeff, Texture};
 pub use kernel::vignette::{VIGNETTE_MIDPOINT, Vignette};
-pub use kernel::virtual_negative::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative};
+pub use kernel::virtual_negative::VirtualNegative;
 pub use prelude::{LUMA, uniform};
 
 /// An image as Core Image holds one: rows top first, `origin` its extent's lower-left corner in

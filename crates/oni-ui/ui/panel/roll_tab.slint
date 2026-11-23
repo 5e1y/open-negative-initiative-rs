@@ -58,14 +58,14 @@ export component RollPane inherits Pane {
     // The roll's stock, whichever of its photos is open: a pick reaches every photo of the roll, as Prepare the Roll's.
     if !PanelState.digital: Block {
         title: @tr("Film Stock");
-        help: @tr("What this roll was shot on. It names the dyes Dye Separation unmixes on every photo of the roll: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back.");
+        help: @tr("What this roll was shot on. Lighting reads every photo of the roll back through this stock's curve: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back.");
         StockHero { stock: PanelState.stock; drops: true; }
     }
     if !PanelState.digital: flat-block := Block {
         title: @tr("Flat-Field");
         demo: "flat-field";
         help: @tr("Evens out uneven lighting from the scanner, whatever you crop to.");
-        block: 10;
+        block: 9;
         modified: Store.flat-field-modified;
         folded-by-default: true;
         // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
@@ -90,17 +90,17 @@ export component RollPane inherits Pane {
             clicked => { PanelState.take-mask(); }
         }
         if root.flat-settings: StoreSlider {
-            field: 27; label: @tr("Amount"); fraction: Store.flat-amount-fraction; readout: Store.flat-amount-readout; value-text: Store.flat-amount-value;
+            field: 26; label: @tr("Amount"); fraction: Store.flat-amount-fraction; readout: Store.flat-amount-readout; value-text: Store.flat-amount-value;
             enabled: PanelState.masked;
         }
         if root.flat-settings && !PanelState.monochrome: StoreSlider {
             near: flat-block.hovered;
-            field: 28; label: @tr("Temperature"); fraction: Store.flat-temperature-fraction; readout: Store.flat-temperature-readout; value-text: Store.flat-temperature-value;
+            field: 27; label: @tr("Temperature"); fraction: Store.flat-temperature-fraction; readout: Store.flat-temperature-readout; value-text: Store.flat-temperature-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
         if root.flat-settings && !PanelState.monochrome: StoreSlider {
             near: flat-block.hovered;
-            field: 29; label: @tr("Tint"); fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
+            field: 28; label: @tr("Tint"); fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         if root.flat-settings: ButtonGroup {
@@ -137,52 +137,52 @@ export component RollPane inherits Pane {
     if PanelState.digital: lens-block := Block {
         title: @tr("Lens Corrections");
         help: @tr("Corrects what the lens did to the photo. Distortion straightens the lines a barrel lens bows outward, to the right, or a pincushion lens bows inward, to the left. Red fringe and Blue fringe scale those colours against green, taking off the coloured edges lateral chromatic aberration lays toward the corners. Vignetting lightens the corners the lens darkened.\n\nThe photo always fills its frame: a correction that would leave its edges empty enlarges it just enough; a barrel lens's never needs to.");
-        block: 13;
+        block: 12;
         modified: Store.lens-corrections-modified;
-        StoreSlider { field: 42; label: @tr("Distortion"); fraction: Store.distortion-fraction; readout: Store.distortion-readout; value-text: Store.distortion-value; }
+        StoreSlider { field: 41; label: @tr("Distortion"); fraction: Store.distortion-fraction; readout: Store.distortion-readout; value-text: Store.distortion-value; }
         StoreSlider {
             near: lens-block.hovered;
-            field: 43; label: @tr("Red fringe"); fraction: Store.fringe-red-fraction; readout: Store.fringe-red-readout; value-text: Store.fringe-red-value;
+            field: 42; label: @tr("Red fringe"); fraction: Store.fringe-red-fraction; readout: Store.fringe-red-readout; value-text: Store.fringe-red-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         StoreSlider {
             near: lens-block.hovered;
-            field: 44; label: @tr("Blue fringe"); fraction: Store.fringe-blue-fraction; readout: Store.fringe-blue-readout; value-text: Store.fringe-blue-value;
+            field: 43; label: @tr("Blue fringe"); fraction: Store.fringe-blue-fraction; readout: Store.fringe-blue-readout; value-text: Store.fringe-blue-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
-        StoreSlider { field: 45; label: @tr("Vignetting"); fraction: Store.lens-vignetting-fraction; readout: Store.lens-vignetting-readout; value-text: Store.lens-vignetting-value; }
+        StoreSlider { field: 44; label: @tr("Vignetting"); fraction: Store.lens-vignetting-fraction; readout: Store.lens-vignetting-readout; value-text: Store.lens-vignetting-value; }
     }
     filtration-block := Block {
         title: @tr("Filtration");
         help: @tr("The roll's colour filtration, as an enlarger's filters are dialled for a film: it reaches every photo of the roll, while Temperature and Tint stay each photo's own.");
-        block: 9;
+        block: 8;
         modified: Store.source-balance-modified;
         folded-by-default: true;
         // A slide's cast in two moves, each holding the other and the gains' mean; its three gains
         // stay underneath, unshown (owner's call).
         if PanelState.slide: StoreSlider {
             near: filtration-block.hovered;
-            field: 30; label: PanelState.gains-inverted ? @tr("Amber ↔ Blue") : @tr("Blue ↔ Amber"); fraction: Store.gain-temperature-fraction; readout: Store.gain-temperature-readout; value-text: Store.gain-temperature-value;
+            field: 29; label: PanelState.gains-inverted ? @tr("Amber ↔ Blue") : @tr("Blue ↔ Amber"); fraction: Store.gain-temperature-fraction; readout: Store.gain-temperature-readout; value-text: Store.gain-temperature-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue; high: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow;
         }
         if PanelState.slide: StoreSlider {
             near: filtration-block.hovered;
-            field: 31; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-tint-fraction; readout: Store.gain-tint-readout; value-text: Store.gain-tint-value;
+            field: 30; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-tint-fraction; readout: Store.gain-tint-readout; value-text: Store.gain-tint-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
         }
         if !PanelState.slide: StoreSlider {
             near: filtration-block.hovered;
-            field: 24; label: PanelState.gains-inverted ? @tr("Red ↔ Cyan") : @tr("Cyan ↔ Red"); fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
+            field: 23; label: PanelState.gains-inverted ? @tr("Red ↔ Cyan") : @tr("Cyan ↔ Red"); fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;
         }
         if !PanelState.slide: StoreSlider {
             near: filtration-block.hovered;
-            field: 25; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
+            field: 24; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
         }
         if !PanelState.slide: StoreSlider {
             near: filtration-block.hovered;
-            field: 26; label: PanelState.gains-inverted ? @tr("Blue ↔ Yellow") : @tr("Yellow ↔ Blue"); fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
+            field: 25; label: PanelState.gains-inverted ? @tr("Blue ↔ Yellow") : @tr("Yellow ↔ Blue"); fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
         }
     }
@@ -207,21 +207,5 @@ export component RollPane inherits Pane {
             alignment: start;
             Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }
         }
-    }
-    // On the stock's measured dyes, before the windows: a grey the windows print neutral is its fixed point.
-    // Monochrome and RGB passes run none.
-    if PanelState.separation-shown && !PanelState.slide: Block {
-        title: @tr("Dye Separation");
-        demo: "dye-separation";
-        help: @tr("Turns the scan's colours back into the amounts of the film's three dyes, from the spectra its stock's profile measures, so each dye's spill into the other channels leaves while greys stay put. The stock picked for the roll names the dyes.");
-        block: 4;
-        modified: Store.dye-separation-modified;
-        folded-by-default: true;
-        Field {
-            label: @tr("Dyes");
-            Label { text: PanelState.dye-set; }
-            if PanelState.dye-set-generic: Label { text: @tr("No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate."); role: TextRole.note; }
-        }
-        StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
 }

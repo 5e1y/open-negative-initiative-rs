@@ -23,8 +23,6 @@ use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings};
 
 /// Every pipe, each at the colour tools' rest, some with Lighting's other tools moved.
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut unmixed = onis(prepared_negative());
-    unmixed.separation = 0.0;
     let mut uncompensated = onis(prepared_negative());
     uncompensated.print.colour_compensation = false;
     let mut legacy = onis(prepared_negative());
@@ -35,7 +33,6 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, negative unmixed", unmixed),
         ("ONI's print, uncompensated", uncompensated),
         ("ONI's print, legacy Frontier", legacy),
         ("ONI's print, digital", onis(digital())),
@@ -120,7 +117,7 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         let k = conversion::stage47(&full);
         let n = k.negative.unwrap();
         let grey = as_read(&full, scan_of(&full, oni_pipeline::paper::reference_grey(&full)));
-        let read = n.read(k.dyes.map_or(grey, |d| cpu::dye_separation(grey, &k, &d)));
+        let read = n.read(grey);
         let off = |n: &Negative| (0..3).map(|c| (n.redeveloped(read)[c] - read[c]).abs()).fold(0.0f32, f32::max);
         let redder = Negative { pivot: [n.pivot[0] + 0.1, n.pivot[1], n.pivot[2]], ..n };
         // A slide's internegative reads its grey a thousandth of a log off neutral, which the spread doubles.
@@ -191,7 +188,7 @@ fn the_saturation_curve_reads_the_prints_own_lightness() {
         let rest = printed(&s, &scene);
         let x = |v: [f32; 3]| (0..3).map(|c| LUMA[c] * v[c]).sum::<f32>().max(0.0).powf(1.0 / 2.2).min(1.0);
         let lightness = |table: &[f32; oni_render::LIGHTNESS_NODES], q: V4| {
-            let about = as_grey(&n, &k, q);
+            let about = as_grey(&n, q);
             Negative { lightness: *table, ..n }.lightness_at((0..3).map(|c| LUMA[c] * about[c]).sum())
         };
         let scans = scanned(&curved, &scene);

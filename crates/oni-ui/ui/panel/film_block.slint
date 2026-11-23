@@ -10,7 +10,7 @@ export component FilmBlock inherits Block {
     // The stock's reference behind the settings key.
     property <bool> settings;
     title: @tr("Film");
-    block: 14;
+    block: 13;
     modified: Store.film-modified;
     help: @tr("Shoots the photo on a film: its scene, lit at the film's own white, exposes the film's three layers, develops on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab.\n\nFilm exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, its scene lit at that film's own white, shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there.");
     StockHero { stock: PanelState.stock; drops: true; }
@@ -21,7 +21,7 @@ export component FilmBlock inherits Block {
         hide-help: @tr("Hide the film's reference");
         Label { role: TextRole.note; text: PanelState.film-white; vertical-alignment: center; wrap: word-wrap; }
     }
-    StoreSlider { field: 55; label: @tr("Film exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
+    StoreSlider { field: 54; label: @tr("Film exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
     if root.settings: Field { label: @tr("Gains"); Label { role: TextRole.note; text: PanelState.film-gains; } }
     if root.settings: Field { label: @tr("Black"); Label { role: TextRole.note; text: PanelState.film-black; } }
     if root.settings: Field { label: @tr("White"); Label { role: TextRole.note; text: PanelState.film-ends; } }

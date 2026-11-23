@@ -14,7 +14,7 @@ fn a_frame_of_39_reads_its_dyes_unmoved_and_a_split_stocks_set_is_of_40() {
     assert!(VERSION >= chain::STOCK_SPLIT_VERSION);
     let stamped = |set: DyeSet, version: i64| {
         let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-        (s.dye_set, s.separation) = (set, 0.8);
+        s.dye_set = set;
         let mut object = serde_json::to_value(Document::of(s)).unwrap();
         object["version"] = json!(version);
         serde_json::to_vec(&object).unwrap()
@@ -24,7 +24,7 @@ fn a_frame_of_39_reads_its_dyes_unmoved_and_a_split_stocks_set_is_of_40() {
         let bytes = stamped(set, chain::STOCK_DYES_VERSION);
         assert_eq!(migrate::standing(&bytes), migrate::Standing::Older(chain::STOCK_DYES_VERSION));
         let doc = read(&bytes);
-        assert_eq!((doc.version, doc.settings.dye_set, doc.settings.separation), (VERSION, set, 0.8), "{set:?}");
+        assert_eq!((doc.version, doc.settings.dye_set), (VERSION, set), "{set:?}");
     }
     for set in DyeSet::ALL {
         assert_eq!(read(&stamped(set, VERSION)).settings.dye_set, set, "{set:?}");

@@ -15,9 +15,9 @@ pub struct PhoneSliders {
     pub on_paper: bool,
 }
 
-/// The panel's field a phone slider moves.
-pub fn field(param: Param) -> Field {
-    match param {
+/// The panel's field a phone slider moves; none for a slider the panel no longer has, its wire index kept.
+pub fn field(param: Param) -> Option<Field> {
+    Some(match param {
         Param::Temperature => Field::Temperature,
         Param::Tint => Field::Tint,
         Param::ColorDensity => Field::ColorDensity,
@@ -31,7 +31,7 @@ pub fn field(param: Param) -> Field {
         Param::Chrome => Field::Chrome,
         Param::BalanceStrength => Field::BalanceStrength,
         Param::DensityCeiling => Field::DensityCeiling,
-        Param::DyeSeparation => Field::DyeSeparation,
+        Param::DyeSeparation => return None,
         Param::SharpenAmount => Field::SharpenAmount,
         Param::SharpenRadius => Field::SharpenRadius,
         Param::SharpenHalo => Field::SharpenHalo,
@@ -47,7 +47,7 @@ pub fn field(param: Param) -> Field {
         Param::FlatAmount => Field::FlatAmount,
         Param::FlatTemperature => Field::FlatTemperature,
         Param::FlatTint => Field::FlatTint,
-    }
+    })
 }
 
 /// The panel's blocks of sliders in its order, each with the tab and title it stands under, as the
@@ -60,13 +60,11 @@ pub fn rows(s: &PipelineSettings, on_paper: bool) -> Vec<Row> {
     let masked = flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none());
     // A digital photo's scene lay under no copy stand's light.
     let scanned = !s.mode.is_digital();
-    let separation = !mono && s.rgb_passes.is_none();
     let sheet = s.sheet.is_some();
-    let blocks: [(Tab, &str, bool, &[Param]); 11] = [
+    let blocks: [(Tab, &str, bool, &[Param]); 10] = [
         (Tab::Roll, "Flat-Field", masked && scanned, if mono { &[FlatAmount] } else { &[FlatAmount, FlatTemperature, FlatTint] }),
         (Tab::Roll, "Filtration", true, &[GainRed, GainGreen, GainBlue]),
         (Tab::Roll, "Highlight Detail", true, &[DensityCeiling]),
-        (Tab::Roll, "Dye Separation", separation, &[DyeSeparation]),
         (Tab::Color, "Color", !mono, &[BalanceStrength, Temperature, Tint, ColorDensity]),
         (Tab::Color, "Lighting", true, &[Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint]),
         (Tab::Color, "Paper Correction", on_paper, &[PaperRed, PaperGreen, PaperBlue]),
@@ -81,8 +79,7 @@ pub fn rows(s: &PipelineSettings, on_paper: bool) -> Vec<Row> {
         if !shown {
             continue;
         }
-        for &param in params {
-            let f = field(param);
+        for (&param, f) in params.iter().filter_map(|p| field(*p).map(|f| (p, f))) {
             let v = f.knob().get(s);
             out.push(Row {
                 param,
@@ -110,11 +107,12 @@ fn label(f: Field, inverted: bool) -> String {
 }
 
 /// On the open frame's settings `s`: a step moves a hundredth of the track rightward per click, the shown
-/// sense, a place on the track is the panel's drag, both moves; a reset is the double click's.
-pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
-    let f = field(param);
+/// sense, a place on the track is the panel's drag, both moves; a reset is the double click's. None for a slider the
+/// panel no longer has.
+pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Option<Command> {
+    let f = field(param)?;
     let knob = f.knob();
-    match by {
+    Some(match by {
         Move::Step(by) => {
             let track = track_on(f, s);
             let at = position_on(f, knob.get(s), &track) + f32::from(by) / 100.0;
@@ -122,7 +120,7 @@ pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
         }
         Move::Reset => Command::Set { knob, value: f.base(s) },
         Move::To(at) => Command::Step { knob, by: stored_on(f, track::clamped(at), &track_on(f, s)) - knob.get(s) },
-    }
+    })
 }
 
 impl Sliders for PhoneSliders {
@@ -136,7 +134,7 @@ impl Sliders for PhoneSliders {
     /// Only a slider the panel shows now moves, as a hand finds only those.
     fn command(&self, store: &EditorStore, param: Param, by: Move) -> Option<Command> {
         let shown = self.rows(store).iter().any(|r| r.param == param);
-        shown.then(|| command(store.settings(), param, by))
+        shown.then(|| command(store.settings(), param, by)).flatten()
     }
 }
 
@@ -154,7 +152,7 @@ mod tests {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
         let pro = rows(&s, false);
         use Param::*;
-        assert_eq!(params(&pro, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling, DyeSeparation]);
+        assert_eq!(params(&pro, Tab::Roll), [GainRed, GainGreen, GainBlue, DensityCeiling]);
         assert_eq!(params(&pro, Tab::Color), [BalanceStrength, Temperature, Tint, ColorDensity, Exposure, Contrast, Highlights, Shadows, WhitePoint, BlackPoint, Vignette, Chrome]);
         assert_eq!(params(&pro, Tab::Details), [SharpenAmount, SharpenRadius, SharpenHalo, ChromaAmount, ChromaRadius, Texture]);
         let exposure = pro.iter().find(|r| r.param == Exposure).unwrap();
@@ -171,7 +169,7 @@ mod tests {
     fn black_and_white_drops_the_colour_sliders() {
         let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
         let rows = rows(&s, false);
-        for gone in [Param::Temperature, Param::Chrome, Param::ChromaAmount, Param::DyeSeparation] {
+        for gone in [Param::Temperature, Param::Chrome, Param::ChromaAmount] {
             assert!(!rows.iter().any(|r| r.param == gone), "{gone:?}");
         }
         // Twin: the sliders a monochrome frame keeps are still there.
@@ -191,17 +189,17 @@ mod tests {
     fn a_step_is_a_hundredth_of_the_track_rightward_and_a_reset_the_double_click() {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
         let (low, high) = Field::Exposure.spec().range;
-        let Command::Step { by, .. } = command(&s, Param::Exposure, Move::Step(3)) else { panic!() };
+        let Command::Step { by, .. } = command(&s, Param::Exposure, Move::Step(3)).unwrap() else { panic!() };
         assert!((by - 3.0 * (high - low) / 100.0).abs() < 1e-6);
         // The black point's track runs the other way: its plus lowers the stored value.
-        let Command::Step { by, .. } = command(&s, Param::BlackPoint, Move::Step(1)) else { panic!() };
+        let Command::Step { by, .. } = command(&s, Param::BlackPoint, Move::Step(1)).unwrap() else { panic!() };
         assert!(by < 0.0);
         let mut moved = s.clone();
         moved.print.exposure = 0.7;
-        let Command::Set { value, .. } = command(&moved, Param::Exposure, Move::Reset) else { panic!() };
+        let Command::Set { value, .. } = command(&moved, Param::Exposure, Move::Reset).unwrap() else { panic!() };
         assert_eq!(value, Field::Exposure.base(&moved));
         // Twin: a step on another slider leaves Exposure's knob, so the check reads the right one.
-        let Command::Step { knob, .. } = command(&s, Param::Texture, Move::Step(1)) else { panic!() };
+        let Command::Step { knob, .. } = command(&s, Param::Texture, Move::Step(1)).unwrap() else { panic!() };
         assert_ne!(knob, Field::Exposure.knob());
     }
 
@@ -209,15 +207,15 @@ mod tests {
     fn a_place_on_the_track_is_where_the_panel_s_drag_puts_the_knob() {
         let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
         for (s, param) in [(&mono, Param::Contrast), (&mono, Param::BlackPoint), (&mono, Param::Exposure)] {
-            let f = field(param);
-            let placed = command(s, param, Move::To(0.8));
+            let f = field(param).unwrap();
+            let placed = command(s, param, Move::To(0.8)).unwrap();
             assert!(matches!(placed, Command::Step { knob, .. } if knob == f.knob()));
             assert!((position_on(f, landed(s, placed), &track_on(f, s)) - 0.8).abs() < 1e-4, "{param:?}");
         }
         // Twin: a monochrome frame's contrast spans its own track, so the fixed range's place is another value.
-        let value = landed(&mono, command(&mono, Param::Contrast, Move::To(0.8)));
+        let value = landed(&mono, command(&mono, Param::Contrast, Move::To(0.8)).unwrap());
         assert!((value - crate::slider_track::stored_at(Field::Contrast, 0.8)).abs() > 1e-3);
-        let at = |p| landed(&mono, command(&mono, Param::Exposure, Move::To(p)));
+        let at = |p| landed(&mono, command(&mono, Param::Exposure, Move::To(p)).unwrap());
         assert_eq!(at(1.7), at(1.0), "past the end, the end");
     }
 
@@ -252,8 +250,9 @@ mod tests {
 
     #[test]
     fn every_slider_of_the_link_is_a_panel_field_of_its_own() {
-        let fields: std::collections::HashSet<Field> = Param::ALL.iter().map(|p| field(*p)).collect();
-        assert_eq!(fields.len(), Param::ALL.len());
+        let fields: std::collections::HashSet<Field> = Param::ALL.iter().filter_map(|p| field(*p)).collect();
+        assert_eq!(fields.len(), Param::ALL.len() - 1, "every slider but the retired Dye Separation's");
+        assert_eq!(field(Param::DyeSeparation), None);
         // Twin: the phone has no slider for the crop's angle, a slide's gains temperature and tint,
         // a channel's own points, the film effects, the lens corrections, a channel's own tone, a virtual film's
         // exposure nor a paper's Brightness.
@@ -269,7 +268,7 @@ mod tests {
         // A digital photo's Roll tab is a negative's but for the flat-field, its colour a negative's print's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
         let roll: Vec<_> = rows(&digital, false).into_iter().filter(|r| r.tab == Tab::Roll).map(|r| r.block).collect();
-        assert!(roll.contains(&"Filtration".to_string()) && roll.contains(&"Dye Separation".to_string()), "{roll:?}");
+        assert!(roll.contains(&"Filtration".to_string()) && roll.contains(&"Highlight Detail".to_string()), "{roll:?}");
         assert!(rows(&digital, false).iter().any(|r| r.param == Param::BalanceStrength));
         // Twin: a masked flat-field shows on a negative and never on a digital photo.
         let mut masked = PipelineSettings::rest(ConversionMode::Negative, true);

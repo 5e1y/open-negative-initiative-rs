@@ -1,8 +1,6 @@
 //! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
-//! Portra 800, with the scene the film reads and the film's scan; then the same photo with its negative's dye
-//! separation, its chroma decompression or both at rest, to weigh each; then on its stock's measured dyes, at each dose
-//! `ONI_COMPARE_DOSES` lists (comma-separated, the photo's own by default), a scan's on its roll's stock; then printed on
-//! the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
+//! Portra 800, with the scene the film reads and the film's scan; then the same photo with its chroma decompression at
+//! rest, to weigh it; then on its stock, a scan's on its roll's stock; then printed on the default paper (`paper`) and on ONI's own print (`oni`), then on the paper on the Pro face, where Lighting reads its
 //! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`), and Temperature half its
 //! track either way (`paper-cool`, `paper-warm`), and Lighting's Black point and White point at +0.05 on the paper and on ONI's
 //! print on the Pro face (`paper-points`; `oni-pro`, `oni-points`), at rest, at Exposure +1 and at Contrast +0.3 on both with
@@ -35,7 +33,7 @@ fn main() {
     // Read through the migration, as the editor opens it; the original's sidecar is never written.
     let owner = sidecar::read(raw, true).expect("a sidecar").settings;
     std::fs::write(out.join("settings-owner.json"), serde_json::to_string_pretty(&owner).unwrap()).unwrap();
-    println!("film {:?}, gains {:?}, separation {} {:?}, decompression {}", owner.film(), owner.gains.stops, owner.separation, owner.dye_set, owner.chroma_decompression);
+    println!("film {:?}, gains {:?}, stock {:?}, decompression {}", owner.film(), owner.gains.stops, owner.dye_set, owner.chroma_decompression);
 
     let device = Device::open().expect("a GPU");
     let engine = Engine::shared(&device);
@@ -44,21 +42,16 @@ fn main() {
     let (w, h) = negative.size();
     let scale = (side as f64 / f64::from(w.max(h))).min(1.0);
     println!("preview {w} x {h}, scale {scale:.4}, full width {}", negative.full_width);
-    let unmixed = PipelineSettings { separation: 0.0, ..owner.clone() };
     let undecompressed = PipelineSettings { chroma_decompression: 1.0, ..owner.clone() };
-    let neither = PipelineSettings { separation: 0.0, chroma_decompression: 1.0, ..owner.clone() };
-    // The measured dyes a switch lays: a digital photo's film's, else its roll marker's stock's.
+    // The stock a switch lays: a digital photo's film's, else its roll marker's.
     let marked = raw.parent().and_then(oni_settings::roll_folder::roll).and_then(|r| r.stock).and_then(|k| oni_settings::dyes::dye_set(&k));
-    let dyed = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
-    println!("measured dyes {:?}", dyed.dye_set);
-    let doses = std::env::var("ONI_COMPARE_DOSES").unwrap_or_else(|_| owner.separation.to_string());
-    let on_dyes: Vec<(String, PipelineSettings)> =
-        doses.split(',').map(|d| (format!("dyes-{d}"), PipelineSettings { separation: d.parse().unwrap(), ..dyed.clone() })).collect();
+    let stocked = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
+    println!("stock {:?}", stocked.dye_set);
     let papered = PipelineSettings { print_paper: Some(Default::default()), ..owner.clone() };
     let onis = PipelineSettings { print_paper: None, ..owner.clone() };
-    let plain = [("rest", &owner), ("nosep", &unmixed), ("nodecomp", &undecompressed), ("neither", &neither), ("paper", &papered), ("oni", &onis)]
+    let plain = [("rest", &owner), ("nodecomp", &undecompressed), ("stock", &stocked), ("paper", &papered), ("oni", &onis)]
         .map(|(t, s)| (t.to_string(), s.clone()));
-    for (tag, s) in plain.iter().chain(&on_dyes) {
+    for (tag, s) in &plain {
         let (tag, s) = (tag.as_str(), s);
         write(out, &format!("B-{tag}"), &e.render(&negative, s, Some(side)).unwrap());
         // The chain's own steps up to the film: framed, the scene lit at the film's white, then its scan.

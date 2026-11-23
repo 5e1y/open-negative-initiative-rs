@@ -56,8 +56,7 @@ impl Ctl {
         let beside = self.beside().blocks;
         let (modified, rests, marked) = {
             let s = self.state.borrow();
-            let dyes = s.open_dyes();
-            let shown = |i: usize| (Block::ALL[i], beside[i] || store::is_modified(s.store.settings(), Block::ALL[i], dyes));
+            let shown = |i: usize| (Block::ALL[i], beside[i] || store::is_modified(s.store.settings(), Block::ALL[i]));
             let marked = store::channel_marked(s.store.settings());
             (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), crate::slider_track::rests(s.store.settings()), marked)
         };
@@ -196,8 +195,7 @@ impl Ctl {
 
     /// A block's reset key: the open frame back to its rest, each frame shown with it to its own.
     pub(super) fn reset_block(self: &Rc<Self>, b: Block) {
-        let dyes = self.state.borrow().open_dyes();
-        self.write(store::reset(b, dyes));
+        self.write(store::reset(b));
     }
 
     /// `f` back to its rest on every frame shown, as a double click on its rail or on its name asks.

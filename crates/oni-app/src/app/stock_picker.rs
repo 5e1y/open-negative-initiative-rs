@@ -39,7 +39,7 @@ impl Lit {
 }
 
 /// What a pick of `kind` writes on the open photo, which the menu shows unwritten while it lights it: a digital
-/// photo shot on that virtual film, a roll's photo on the stock's measured dyes; `own`, the stock in use, nothing.
+/// photo shot on that virtual film, a roll's photo read through that stock; `own`, the stock in use, nothing.
 pub(super) fn picked(settings: &PipelineSettings, kind: &FilmStockKind, own: Option<&str>) -> PipelineSettings {
     if own == Some(kind.id) {
         return settings.clone();

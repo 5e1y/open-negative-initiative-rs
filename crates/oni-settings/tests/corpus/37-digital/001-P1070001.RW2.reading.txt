@@ -53,14 +53,12 @@ settings: PipelineSettings {
     },
     gains: Gains {
         stops: [
-            -0.8467025,
             0.0,
-            1.1942314,
+            0.0,
+            0.0,
         ],
     },
     density_ceiling: 3.5,
-    separation: 1.0,
-    separation_by_hand: false,
     dye_set: KodakPortra800,
     flat_field: FlatField {
         mask: None,
@@ -88,22 +86,22 @@ settings: PipelineSettings {
     ],
     levels: LevelsSet {
         red: Levels {
-            black: 0.54254854,
-            white: 1.572398,
+            black: -0.0001373291,
+            white: 1.2291752,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         green: Levels {
-            black: 0.542336,
-            white: 1.8401982,
+            black: -0.0001373291,
+            white: 1.2195816,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         blue: Levels {
-            black: 0.5417197,
-            white: 2.0757778,
+            black: -0.0001373291,
+            white: 1.4083437,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
