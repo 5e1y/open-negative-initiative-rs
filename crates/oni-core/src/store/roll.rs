@@ -2,6 +2,7 @@
 //! read, and Reset the Roll, its inverse, reaching whole rolls.
 
 use super::{EditorStore, Settings, Written, gather};
+use oni_library::history::Marker;
 use crate::parameters;
 use oni_i18n::trn;
 use oni_library::roll_membership::ResetReach;
@@ -54,9 +55,20 @@ pub fn reset_label(frames: usize) -> String {
 impl EditorStore {
     /// `landRoll`: the open frame in memory, the others written, a triplet's passes joined to their
     /// lead; one step.
-    pub fn land_roll(&mut self, written: &[WrittenFrame]) -> usize {
+    pub fn land_roll(&mut self, written: &[WrittenFrame], marker: Option<Marker>) -> usize {
         self.release();
         self.measured.clear();
+        // The folder marked its roll in the same step; a marker the disk refuses leaves the frames to land.
+        let mut marker = marker.filter(|m| m.before != m.after);
+        if let Some(m) = &marker {
+            match oni_library::folders::set_roll(m.after.as_ref(), &m.folder) {
+                Ok(()) => self.marked = Some((m.folder.clone(), m.after.clone())),
+                Err(e) => {
+                    self.failure = Some(oni_i18n::tr!("The roll could not be written in its folder: {error}", error = oni_library::refusal::cause(&e)));
+                    marker = None;
+                }
+            }
+        }
         let open = self.path().map(str::to_string);
         let mut before = Settings::new();
         let mut after = Settings::new();
@@ -104,7 +116,7 @@ impl EditorStore {
         let mut step = (before, after);
         gather(&mut step, beside);
         self.shown_together(&step.1);
-        self.history.record(&step.0, &step.1, &measure_label(frames), None);
+        self.history.record_marked(&step.0, &step.1, &measure_label(frames), marker);
         frames
     }
 

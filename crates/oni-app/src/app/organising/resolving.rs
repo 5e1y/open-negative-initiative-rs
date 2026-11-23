@@ -60,6 +60,17 @@ impl State {
         Self::roll_of(self.archive.as_ref()?.band(&oni_library::paths::parent(path))?)
     }
 
+    /// The marker that makes the folder holding `path` a roll on `stock`, the one it has if none; none for a roll its
+    /// frames alone name.
+    pub(in crate::app) fn roll_marker_at(&self, path: &str, stock: Option<&str>) -> Option<oni_library::history::Marker> {
+        let roll = self.roll_at(path)?;
+        let folder = roll.marker?;
+        let before = oni_library::folders::roll(&folder);
+        let mut film = before.clone().unwrap_or(roll.film);
+        film.stock = stock.map(str::to_string).or(film.stock);
+        Some(oni_library::history::Marker { folder, before, after: Some(film) })
+    }
+
     fn roll_of(group: library::Group) -> Option<Roll> {
         let paths: Vec<String> = group.entries.iter().map(|e| e.path.clone()).collect();
         let first = group.entries.first().cloned();

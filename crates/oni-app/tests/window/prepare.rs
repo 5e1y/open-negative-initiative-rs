@@ -327,6 +327,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(p.get_cells().row_data(2).unwrap().flagged);
 
     // MEASURE: off this thread, then the editor on the roll's first frame alone; one gallery step lands it.
+    let marked = || oni_library::folders::roll(&canonical("A.tif").parent().unwrap().to_string_lossy());
+    assert!(marked().is_none(), "the folder is no roll before its measure");
     let (x, y) = action();
     click(&rig, x, y);
     let advice = w.global::<oni_app::Advice>();
@@ -345,12 +347,15 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("the folder's draft dropped", Duration::from_secs(10), || drafted().is_none());
     assert_eq!(ctl.state.borrow().store().settings().roll_reference.as_ref().map(|r| r.id), ids[0], "A, open, landed in memory");
     assert!(loaded(&canonical("D.tif")).settings.roll_reference.map(|r| r.id) != ids[0], "twin: D keeps its own roll");
+    // The folder prepared with no stock picked is a roll all the same, its row the generic canister's.
+    assert!(marked().is_some_and(|f| f.stock.is_none()), "the measure marks its folder a roll: {:?}", marked());
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Prepare the roll of 3 photos");
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!(loaded(&canonical("B.tif")).settings.roll_reference.is_none(), "one undo takes the whole measure back");
+    assert!(marked().is_none(), "twin: the same undo takes the roll's marker back");
     rig.until("A back at rest", Duration::from_secs(5), || loaded(&canonical("A.tif")).settings.roll_reference.is_none());
 
     // A frame never measured, opened in the editor, goes to Prepare the Roll; Escape leaves for the gallery.

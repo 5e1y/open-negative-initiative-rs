@@ -12959,5 +12959,12 @@
     "title": "The RAW colour recalibration notice leaves",
     "status": "done",
     "detail": "The owner's call (2026-11-23): the notice a library holding a RAW raised once is gone, its sheet, global, preference key and texts; the window checks that leant on it as a sheet use the update notice instead."
+  },
+  {
+    "id": 3736,
+    "type": "bug",
+    "title": "A folder prepared with no stock picked is a roll, its row the generic canister's",
+    "status": "done",
+    "detail": "Prepare's measure marked the folder a roll only once a stock was picked, so a roll prepared without one stayed a plain folder with no canister. The measure now writes the folder's roll marker in its own step, on the stock picked if any: one undo takes the measure and the marker back; a roll its frames alone name keeps taking the stock through its frames. Checked in the Prepare window check, with its twin on the undo."
   }
 ]

@@ -145,9 +145,12 @@ impl Ctl {
             self.publish_bar();
             return;
         };
+        // The folder prepared is marked a roll in the measure's own step, on the stock picked if any.
+        let marker = written.first().and_then(|(first, _, _)| self.state.borrow().roll_marker_at(first, picked.as_deref()));
+        let marked = marker.is_some();
         let (failure, landed) = {
             let mut s = self.state.borrow_mut();
-            let landed = s.store.land_roll(&written);
+            let landed = s.store.land_roll(&written, marker);
             (s.store.failure.take(), landed)
         };
         let support = self.state.borrow().support.clone();
@@ -160,8 +163,8 @@ impl Ctl {
             .flat_map(|(lead, p)| rgb_passes::paths_beside(p, lead).into_iter().filter(move |f| f != lead))
             .collect();
         let touched: Vec<String> = frames.iter().chain(&passes).cloned().collect();
-        // The stock picked becomes the roll's, its dyes already on every frame the measure wrote.
-        if let (Some(first), Some(stock)) = (frames.first(), picked.as_deref()) {
+        // A roll its frames alone name takes the stock picked, its dyes already on every frame the measure wrote.
+        if let (false, Some(first), Some(stock)) = (marked, frames.first(), picked.as_deref()) {
             self.set_stock_of_roll_at(first, stock);
         }
         self.land_prepared(&frames, &touched, prepared, message, move |c| c.index_passes(&written, &passes));

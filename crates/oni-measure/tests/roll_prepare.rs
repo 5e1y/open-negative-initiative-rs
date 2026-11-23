@@ -109,7 +109,7 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
 
     // One frame left out of the measure; the open frame lands in memory.
     let measured: Vec<WrittenFrame> = written.iter().filter(|(f, _, _)| *f != kept).cloned().collect();
-    let frames = store.land_roll(&measured);
+    let frames = store.land_roll(&measured, None);
     assert_eq!(frames, roll.frames.len() - 1);
     assert_eq!(store.history().undo_label(), Some(measure_label(frames).as_str()));
     store.flush();
