@@ -156,6 +156,10 @@ pub struct Print {
     /// white; off, the pick on pure black and that white on pure white, for a print shown on a screen.
     #[serde(rename = "printLift", skip_serializing_if = "is_off")]
     pub print_lift: bool,
+    /// Projected blacks: a slide on its screen's own black, its film's densest under the room's veil, and its bare film's
+    /// white; off, that black on pure black and that white on pure white, for a slide shown on a display.
+    #[serde(rename = "projectedBlacks", skip_serializing_if = "is_off")]
+    pub projected_blacks: bool,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -180,6 +184,7 @@ impl Default for Print {
             colour_compensation: true,
             brightness: 0.0,
             print_lift: false,
+            projected_blacks: false,
             bypassed: false,
         }
     }

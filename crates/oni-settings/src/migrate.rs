@@ -30,6 +30,7 @@ mod on_disk;
 pub mod reshape;
 pub mod scan_line;
 pub mod slide_paper;
+pub mod slide_projector;
 pub mod measured_dyes;
 pub mod one_face;
 pub mod own_film;

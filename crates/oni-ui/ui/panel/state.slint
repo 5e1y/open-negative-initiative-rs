@@ -100,6 +100,12 @@ export global PanelState {
     // The frame's pick printed on the paper's own black; off, on pure black, its white kept.
     in property <bool> print-lift;
     callback print-lift-toggled(bool);
+    // A slide projected on a white screen in place of any print: the film and lamp it is shown by, and its screen's own
+    // black and white kept; off, on pure black and pure white.
+    in property <bool> projected;
+    in property <string> projector-note;
+    in property <bool> projected-blacks;
+    callback projected-blacks-toggled(bool);
     // ONI's print's colour compensation: Hunt's colour density as its curve brightens the picture.
     in property <bool> colour-compensation: true;
     callback colour-compensation-toggled(bool);

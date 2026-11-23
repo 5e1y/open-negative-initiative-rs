@@ -12,6 +12,7 @@ pub use kernel::projection::Projection;
 pub use kernel::color_matrix::ColorMatrix;
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};
+pub use kernel::dye_amounts::{DYE_FLOOR, DYE_HIGH, DYE_LOW, DYE_STEP_LIMIT, DYE_STEPS, DyeAmounts};
 pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;

@@ -44,7 +44,6 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
         ("neutral paper", paperless),
-        ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
     ]
 }
 
@@ -86,7 +85,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0xa49d_38ff_2ea4_0e9d;
+    const BEFORE: u64 = 0x9eb6_d6ae_7566_142b;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
@@ -116,11 +115,11 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         let full = with(&s, |u| u.density = 1.0);
         let k = conversion::stage47(&full);
         let n = k.negative.unwrap();
-        let grey = as_read(&full, scan_of(&full, oni_pipeline::paper::reference_grey(&full)));
+        let grey = scan_of(&full, oni_pipeline::paper::reference_grey(&full));
         let read = n.read(grey);
         let off = |n: &Negative| (0..3).map(|c| (n.redeveloped(read)[c] - read[c]).abs()).fold(0.0f32, f32::max);
         let redder = Negative { pivot: [n.pivot[0] + 0.1, n.pivot[1], n.pivot[2]], ..n };
-        // A slide's internegative reads its grey a thousandth of a log off neutral, which the spread doubles.
+        // A grey is read within a thousandth of a log of neutral, which the spread doubles.
         assert!(off(&n) < 4e-3 && off(&redder) > 2e-2, "{label}: the grey's negative moved by {}, {}", off(&n), off(&redder));
         // On a paper whose print is its dyes' own light, its pick and white on their anchors, every colour at the track's ends lies
         // within what its dyes print; the former print-side Saturation, the twin, laid colours past them.
@@ -138,8 +137,8 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
             assert!(former > 1e-2, "{label}: {former}");
         }
     }
-    // The Frontier's print is its fitted table's, the neutral paper's laid on pure black: three papers are read.
-    assert_eq!(checked, 3);
+    // The Frontier's print is its fitted table's, the neutral paper's laid on pure black: two papers are read.
+    assert_eq!(checked, 2);
 }
 
 #[test]
@@ -198,8 +197,8 @@ fn the_saturation_curve_reads_the_prints_own_lightness() {
         let shifted: [f32; oni_render::LIGHTNESS_NODES] = std::array::from_fn(|i| n.lightness[(i + 2).min(oni_render::LIGHTNESS_NODES - 1)]);
         let (held, twin) = (off(&n.lightness), off(&shifted));
         println!("{label}: a grey's lightness on the curve within {held:.1e} of its print's; two nodes off, {twin:.1e}");
-        // A slide's internegative prints its greys a hair off neutral, so their luma strays from a grey's by 1.2e-2.
-        assert!(held < 1.5e-2 && twin > 4e-2, "{label}: {held} {twin}");
+        // A paper prints its greys a hair off neutral, so their luma strays from a grey's by 4.4e-3.
+        assert!(held < 6e-3 && twin > 4e-2, "{label}: {held} {twin}");
         // Monotone along the greys: a lighter grey prints lighter.
         // The Frontier's table prints its greys a hair darker past its white, by 4e-4.
         assert!(n.lightness.windows(2).all(|w| w[1] - w[0] >= -1e-3), "{label}: {:?}", n.lightness);

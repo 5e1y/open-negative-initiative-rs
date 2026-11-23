@@ -133,7 +133,7 @@ fn printed_on_the_machine(settings: PipelineSettings, scanner: &Scanner) -> Pipe
     out.saturation = f.saturation.clone();
     out.vignette = f.vignette;
     out.secret_sauce = f.secret_sauce;
-    let exposure = if out.paper().is_some() { former_rest(out.mode) } else { look_entry_exposure(out.mode) };
+    let exposure = if super::chain::papered(&out) { former_rest(out.mode) } else { look_entry_exposure(out.mode) };
     let held = out.print;
     out.print = Print { contrast: f.contrast, exposure, colour_compensation: held.colour_compensation, print_lift: held.print_lift, ..Print::default() };
     out.density = 0.0;
@@ -143,7 +143,7 @@ fn printed_on_the_machine(settings: PipelineSettings, scanner: &Scanner) -> Pipe
         Machine::Frontier => LegacyMachine::Frontier,
     };
     let laid = LegacyPrint { machine, d: k.d, c: k.c, m: k.m, y: k.y, w: k.w, laid: true };
-    out.legacy_print = (out.paper().is_none() || !k.is_neutral()).then_some(laid);
+    out.legacy_print = (!super::chain::papered(&out) || !k.is_neutral()).then_some(laid);
     out
 }
 

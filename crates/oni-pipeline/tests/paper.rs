@@ -14,7 +14,7 @@ use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
 use oni_render::{Negative, PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
+use oni_settings::{LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
 
 fn luma(v: [f32; 3]) -> f32 {
@@ -231,14 +231,6 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     anchored.print.exposure -= 3.0;
     let darker = PipelineSettings { print: Print { brightness: -4.0, ..anchored.print }, ..anchored.clone() };
     let brighter = PipelineSettings { print: Print { brightness: 4.0, ..lit.print }, ..lit.clone() };
-    let mut slide = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
-    slide.gains.stops = [0.3, 0.0, -0.4];
-    let mut lit_slide = slide.clone();
-    (lit_slide.print.exposure, lit_slide.print.contrast, lit_slide.print.shadows, lit_slide.print.highlights) = (0.5, 0.3, 0.2, -0.1);
-    (lit_slide.print.black_point, lit_slide.print.white_point, lit_slide.print.channel_mid, lit_slide.print.brightness) = (0.04, 0.03, [0.1, 0.0, -0.1], 0.4);
-    lit_slide.print.set_filters([0.1, 0.0, -0.2]);
-    let darker_slide = PipelineSettings { print: Print { brightness: -3.0, ..lit_slide.print }, ..lit_slide.clone() };
-    let brighter_slide = PipelineSettings { print: Print { brightness: 3.0, ..lit_slide.print }, ..lit_slide.clone() };
     let frames = [
         ("digital", digital()),
         ("lit negative", lit),
@@ -248,10 +240,6 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
         ("black and white", mono),
         ("Crystal Archive DPII", dpii),
         ("Frontier, its scanner's mix", frontier),
-        ("slide", slide),
-        ("lit slide", lit_slide),
-        ("lit slide, Brightness -3", darker_slide),
-        ("lit slide, Brightness +3", brighter_slide),
     ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);
@@ -274,7 +262,7 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
 #[test]
 fn every_stock_rests_its_grey_neutral_on_every_paper() {
     let mut missed = Vec::new();
-    // A reversal film's projection reaches a paper through the internegative, whose own checks hold it.
+    // A reversal film is projected, never printed.
     for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
         for p in PaperStock::all().into_iter().filter(|p| *p != PaperStock::of("fujifilm-fujiclear")) {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };

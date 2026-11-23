@@ -187,7 +187,7 @@ export component RollPane inherits Pane {
         }
     }
     // Between the filtration that feeds it and the windows placed on it, where it acts.
-    if !PanelState.slide: Block {
+    if !PanelState.slide && !PanelState.projected: Block {
         title: @tr("Highlight Detail");
         demo: "density-ceiling";
         help: @tr("Reveals more detail in the brightest parts of the photo, the densest of the negative, at the cost of more visible noise there.");
@@ -196,7 +196,8 @@ export component RollPane inherits Pane {
         folded-by-default: true;
         StoreSlider { field: 12; label: @tr("Ceiling"); fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
-    EditorBlock {
+    // A projected slide reads its dyes, never a window.
+    if !PanelState.projected: EditorBlock {
         title: @tr("Per-Channel Levels");
         help: @tr("Each channel's own range on the scan, picked by R, G or B: its black and white ends, which Prepare the Roll places, its midpoint between them, and its shadows and highlights on either side of the midpoint, each handle following those beside it. Double-click a handle to bring it back alone.");
         block: 1;

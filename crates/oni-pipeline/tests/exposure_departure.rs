@@ -47,7 +47,6 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, black and white", mono()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
         ("neutral paper", PipelineSettings { paperless: true, ..prepared_negative() }),
-        ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
     ]
 }
 
@@ -96,9 +95,9 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
 }
 
 /// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
-/// on Apple silicon), a paper's white on pure white without Print lift.
-const BEFORE_CPU: u64 = 0x1a3f_b2c3_f9cc_34f9;
-const BEFORE_GPU: u64 = 0x97e5_f9dd_aaf4_b879;
+/// on Apple silicon), a paper's white on pure white without Print lift; a slide on the GPU on its projector since format 70.
+const BEFORE_CPU: u64 = 0xc4a6_a442_1e14_261c;
+const BEFORE_GPU: u64 = 0xfbc5_ff92_ab1c_cb60;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {
@@ -182,19 +181,3 @@ fn a_negative_at_exposure_zero_prints_its_grey_at_a_plain_raws() {
     }
 }
 
-/// Format 61 sent a slide's Exposure through its internegative on a negative's rest, 1.5 added then taken off again:
-/// where f32 holds that sum short, its print stood a rounding off the slide's own. Format 64 prints the slide's value.
-#[test]
-fn a_slide_through_its_internegative_prints_its_own_exposure() {
-    let s = PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() };
-    let print = |exposure: f32| {
-        let k = conversion::stage47(&PipelineSettings { print: oni_settings::tone::Print { exposure, ..s.print }, ..s.clone() });
-        pixels().iter().map(|p| cpu::stage47(*p, &k)).collect::<Vec<_>>()
-    };
-    let (own, former) = (0.6f32, (0.6f32 + 1.5) - 1.5);
-    let gap = common::error(&print(own), &print(former));
-    println!("a slide at +0.6 through its internegative: {gap:.1e} off format 61's print, its Exposure {former} there");
-    assert!(gap < 1e-5, "{gap}");
-    // Twin: the rounding is real, so format 61's print of +0.6 is not this one's.
-    assert!(former != own && gap > 0.0);
-}

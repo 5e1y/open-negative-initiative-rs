@@ -56,7 +56,6 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
         ("neutral paper", paperless),
-        ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
     ]
 }
 
@@ -94,7 +93,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets, a
     // paper's white on pure white without Print lift.
-    const BEFORE: u64 = 0x75eb_810c_0221_7584;
+    const BEFORE: u64 = 0x2edb_cba5_ebac_fb7a;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -160,17 +159,6 @@ fn scan_of(s: &PipelineSettings, d: [f32; 3]) -> V4 {
     let pedestal = oni_settings::axis::density_axis::pedestal(conversion::rendered_ceiling(s));
     let light: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-d[c]) / s.gains.stops[c].exp2() - pedestal);
     [light[0], light[1], light[2], 1.0]
-}
-
-/// What stage 4 reads of a scan pixel: a slide on a paper, its internegative's scan.
-fn as_read(s: &PipelineSettings, q: V4) -> V4 {
-    match oni_pipeline::paper::internegative::copy(s) {
-        Some(copy) => {
-            let baked = film::stock(oni_pipeline::paper::internegative::STOCK);
-            cpu::virtual_negative(cpu::color_matrix(q, &copy.light), &baked.kernel, &baked.table)
-        }
-        None => q,
-    }
 }
 
 fn printed(pixels: &[V4], k: &Stage47) -> Vec<[f32; 3]> {
@@ -274,7 +262,7 @@ fn brightening_on_the_negative_keeps_the_films_colour() {
 #[test]
 fn contrast_turns_about_the_grey_and_the_filters_tint_holding_its_weight() {
     for (label, s) in pipes() {
-        let grey = as_read(&s, scan_of(&s, oni_pipeline::paper::reference_grey(&s)));
+        let grey = scan_of(&s, oni_pipeline::paper::reference_grey(&s));
         let at_rest = rgb(cpu::stage47(grey, &conversion::stage47(&s)));
         for travel in [-0.5f32, 0.5] {
             let k = conversion::stage47(&lit(&s, |p| p.contrast = travel));
@@ -337,7 +325,7 @@ fn every_print_stays_finite_and_monotone_past_the_curves_ends() {
             for i in 0..=600 {
                 let t = -0.6 + 2.2 * i as f32 / 600.0;
                 let d: [f32; 3] = std::array::from_fn(|c| bare[c] + t * (densest[c] - bare[c]));
-                let out = cpu::stage47(as_read(&s, scan_of(&s, d)), &k);
+                let out = cpu::stage47(scan_of(&s, d), &k);
                 assert!(out.iter().all(|v| v.is_finite()), "{label}, {name}: {d:?} {out:?}");
                 let y = luma(rgb(out));
                 if last.is_finite() && (-0.2..=1.2).contains(&t) {
@@ -353,7 +341,7 @@ fn every_print_stays_finite_and_monotone_past_the_curves_ends() {
         // Twin: a slope under none on the negative turns the print over.
         let k = conversion::stage47(&lit(&s, |p| p.contrast = 0.2));
         let over = Stage47 { negative: k.negative.map(|n| Negative { slope: [-1.0; 3], ..n }), ..k };
-        let ends = [0.2f32, 0.8].map(|t| luma(rgb(cpu::stage47(as_read(&s, scan_of(&s, std::array::from_fn(|c| bare[c] + t * (densest[c] - bare[c])))), &over))));
+        let ends = [0.2f32, 0.8].map(|t| luma(rgb(cpu::stage47(scan_of(&s, std::array::from_fn(|c| bare[c] + t * (densest[c] - bare[c]))), &over))));
         assert!((ends[1] < ends[0]) != positive, "{label}: {ends:?}");
     }
 }

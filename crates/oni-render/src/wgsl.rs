@@ -58,6 +58,8 @@ pub const SCANNER_DENSITY: &str = include_str!("wgsl/scanner_density.wgsl");
 pub const SCANNER_OUTPUT: &str = include_str!("wgsl/scanner_output.wgsl");
 /// `scanner_encode_px(s)`.
 pub const SCANNER_ENCODE: &str = include_str!("wgsl/scanner_encode.wgsl");
+/// `dye_amounts_px(s)`, reading `dye_table(i, row)`.
+pub const DYE_AMOUNTS: &str = include_str!("wgsl/dye_amounts.wgsl");
 /// `projection_px(s)`, reading `projection_table(i, row)`.
 pub const PROJECTION: &str = include_str!("wgsl/projection.wgsl");
 /// `virtual_negative_px(s)`, reading `negative_table(i, j)`.

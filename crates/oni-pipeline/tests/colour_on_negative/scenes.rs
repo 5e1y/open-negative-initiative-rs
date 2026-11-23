@@ -53,12 +53,8 @@ pub fn shot_on() -> PipelineSettings {
 }
 
 /// What stage 4-7 reads of `scene` on `s`: a digital photo's virtual negative, a scanned negative shot on Portra 400, a
-/// slide's own light, a slide on a paper its internegative's.
+/// slide's own light.
 pub fn scanned(s: &PipelineSettings, scene: &[V4]) -> Vec<V4> {
-    if let Some(copy) = oni_pipeline::paper::internegative::copy(s) {
-        let baked = film::stock(oni_pipeline::paper::internegative::STOCK);
-        return scene.iter().map(|p| cpu::virtual_negative(cpu::color_matrix(*p, &copy.light), &baked.kernel, &baked.table)).collect();
-    }
     if let Some(f) = s.film() {
         let baked = film::stock(f.stock);
         let white = conversion::scene_white(s);
@@ -78,17 +74,6 @@ pub fn scan_of(s: &PipelineSettings, d: [f32; 3]) -> V4 {
     [light[0], light[1], light[2], 1.0]
 }
 
-/// What stage 4 reads of a scan pixel: a slide on a paper, its internegative's scan.
-pub fn as_read(s: &PipelineSettings, q: V4) -> V4 {
-    match oni_pipeline::paper::internegative::copy(s) {
-        Some(copy) => {
-            let baked = film::stock(oni_pipeline::paper::internegative::STOCK);
-            cpu::virtual_negative(cpu::color_matrix(q, &copy.light), &baked.kernel, &baked.table)
-        }
-        None => q,
-    }
-}
-
 /// The colour pipes, each with Print lift so a paper's print is its dyes' own light.
 pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let lifted = |mut s: PipelineSettings| {
@@ -104,7 +89,6 @@ pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
         ("paper, negative", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..negative.clone() })),
         ("neutral paper", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), paperless: true, ..negative })),
-        ("paper, slide", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() })),
     ]
 }
 

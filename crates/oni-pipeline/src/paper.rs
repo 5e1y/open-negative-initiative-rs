@@ -1,7 +1,7 @@
 //! A colour paper printing the window's shares in place of ONI's print: each paper's tables and its own filtration baked
 //! once from its profile or the Frontier's fit (`frontier`), each frame's enlarger time on it (`printing`) and Lighting on
-//! the enlarger and the paper (`lighting`). A slide prints through its internegative (`internegative`); with Print on
-//! paper off, any frame on a neutral paper carrying no paper's data (`neutral`).
+//! the enlarger and the paper (`lighting`). A film's look prints through its internegative (`internegative`); with Print
+//! on paper off, any frame on a neutral paper carrying no paper's data (`neutral`).
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};

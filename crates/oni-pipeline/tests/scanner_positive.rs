@@ -1,4 +1,4 @@
-//! A slide on a legacy print lands near its plain render, as a negative does, and a negative on one renders as before,
+//! A slide on a legacy print lands near the plain print its look was fitted on, as a negative does, and a negative on one renders as before,
 //! bit for bit.
 
 use oni_graph::{Graph, Image, Rect};
@@ -71,8 +71,9 @@ fn a_slide_on_a_legacy_print_lands_near_its_plain_render() {
     let Ok(mut g) = Graph::new() else { return println!("SKIPPED: no GPU") };
     let source = g.upload(W, H, &scene()).expect("the scene uploads");
     let mut bench = Bench { g, source };
-    let pro_frame = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
-    let pro = bench.render(None, &pro_frame, None);
+    // The slide's plain print its look was fitted on, ONI's print of a positive at rest; the projector shows it otherwise.
+    let k = conversion::stage47(&PipelineSettings::rest(ConversionMode::Positive, true));
+    let pro: Vec<[f32; 4]> = scene().iter().map(|p| oni_render::cpu::stage47(*p, &k).map(|v| v.clamp(0.0, 1.0))).collect();
     for machine in [LegacyMachine::Oni, LegacyMachine::Frontier] {
         let frame = at_rest(ConversionMode::Positive, machine);
         let scanned = bench.render(None, &frame, scanner::on_legacy_print(&frame).as_ref());

@@ -228,10 +228,10 @@ fn behind_the_settings_key(panel: &str, title: &str) -> Vec<i32> {
     out
 }
 
-/// Whether the Colour tab lays the colour with each channel's own points inside it, then the paper it prints on,
-/// the light, the proofing paper's correction and the effects.
+/// Whether the Colour tab lays the colour with each channel's own points inside it, then the paper it prints on or the
+/// projector a slide shows on, the light, the proofing paper's correction and the effects.
 fn colour_first(titles: &[String]) -> bool {
-    titles.windows(6).any(|w| w == ["Colour", "More Color Settings", "Paper", "Lighting", "Paper Correction", "Effects"])
+    titles.windows(7).any(|w| w == ["Colour", "More Color Settings", "Paper", "Projector", "Lighting", "Paper Correction", "Effects"])
 }
 
 #[test]
@@ -245,9 +245,9 @@ fn the_colour_tab_lays_the_colour_first_contrast_with_the_light() {
     assert_eq!(wired_in(&panel, "Effects"), indices(Block::Effects));
     assert_eq!(Field::Contrast.block(), Some(Block::Lighting));
     // Twin: the light ahead of the colour, and Contrast among the effects, are each caught.
-    let swapped = ["Lighting", "Colour", "More Color Settings", "Paper", "Paper Correction", "Effects"].map(String::from);
+    let swapped = ["Lighting", "Colour", "More Color Settings", "Paper", "Projector", "Paper Correction", "Effects"].map(String::from);
     assert!(!colour_first(&swapped));
-    let paper_last = ["Colour", "More Color Settings", "Lighting", "Paper", "Paper Correction", "Effects"].map(String::from);
+    let paper_last = ["Colour", "More Color Settings", "Projector", "Lighting", "Paper", "Paper Correction", "Effects"].map(String::from);
     assert!(!colour_first(&paper_last));
     let old = ": Block {\n        title: @tr(\"Effects\");\n        StoreSlider { field: 8; }\n        StoreSlider { field: 9; }\n        StoreSlider { field: 10; }\n";
     assert_ne!(wired_in(old, "Effects"), indices(Block::Effects));

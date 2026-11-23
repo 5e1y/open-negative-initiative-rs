@@ -53,6 +53,7 @@ impl<'de> Deserialize<'de> for Print {
             colour_compensation: tolerant::opt::<bool, D::Error>(&map, "colourCompensation")?.unwrap_or(true),
             brightness: f("brightness", 0.0)?.clamp(Print::BRIGHTNESS_RANGE.0, Print::BRIGHTNESS_RANGE.1),
             print_lift: tolerant::opt::<bool, D::Error>(&map, "printLift")?.unwrap_or(false),
+            projected_blacks: tolerant::opt::<bool, D::Error>(&map, "projectedBlacks")?.unwrap_or(false),
             bypassed: false,
         })
     }

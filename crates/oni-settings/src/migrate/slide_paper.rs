@@ -1,5 +1,5 @@
 //! A slide before format 58 printed on Kodak Ektachrome Radiance III alone: one naming a negative paper rendered on ONI's
-//! own print and stays there; one on the reversal paper, which left, prints on the default paper through its internegative.
+//! own print; one on the reversal paper, which left, came to name the default paper, kept since a slide is projected.
 
 use super::chain::SLIDE_INTERNEGATIVE_VERSION;
 use crate::{PaperStock, PipelineSettings};

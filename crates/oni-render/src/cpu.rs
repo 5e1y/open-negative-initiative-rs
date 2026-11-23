@@ -6,6 +6,7 @@ pub use crate::kernel::color_matrix::color_matrix;
 pub use crate::kernel::compositing::blend_with_mask;
 pub use crate::kernel::curves::curves;
 pub use crate::kernel::detail::{detail_rows, detail};
+pub use crate::kernel::dye_amounts::{amounts, dye_amounts};
 pub use crate::kernel::exposure_adjust::exposure_adjust;
 pub use crate::kernel::reciprocal::reciprocal;
 pub use crate::kernel::flat_field::flat_field;

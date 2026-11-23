@@ -4,7 +4,7 @@ use super::{Print, Tone};
 
 impl Print {
     /// This print with every slider Lighting lays on the negative at rest: Exposure, Contrast, the zones, the filters,
-    /// the points and each channel's own; Brightness, Print lift and the colour compensation kept.
+    /// the points and each channel's own; Brightness, Print lift, Projected blacks and the colour compensation kept.
     pub fn unlit(&self) -> Print {
         let unfiltered = |t: Tone| Tone { exposure: 0.0, ..t };
         Print {

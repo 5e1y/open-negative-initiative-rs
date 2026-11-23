@@ -46,13 +46,16 @@ impl Pipeline {
         let ((scale, reference), s) = (at, legacy.unwrap_or(frame));
         let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
+        // A scanned slide is projected; a measure upstream of the print reads its scan through the windows as any frame's.
+        if let Some(stock) = s.projector().filter(|_| !s.mode.is_digital() && !s.print.bypassed) {
+            let shown = self.slide(graph, framed, s, stock)?;
+            return self.finishing(graph, shown, s, scale, reference, measuring);
+        }
         // A digital photo's scene, lit at its film's white, takes its film's own light, then its grain, as the
-        // film does; a measure reads neither. A film mode renders neither effect (owner's call). A slide on a paper
-        // exposes its internegative with its light. A film's look reads the scene as it was shot, its own white.
-        let copy = crate::paper::internegative::copy(s);
+        // film does; a measure reads neither. A film mode renders neither effect (owner's call). A film's look reads
+        // the scene as it was shot, its own white.
         let has_look = s.film().is_some_and(|f| f.stock.look().is_some());
-        let light = if has_look { None } else { copy.as_ref().map(|c| c.light).or_else(|| conversion::scene_white(s)) };
-        let lit = match light {
+        let lit = match conversion::scene_white(s).filter(|_| !has_look) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
         };
@@ -63,25 +66,22 @@ impl Pipeline {
             Some(k) => grain::grained(haloed, &k.seeded(inputs.seed), grain::dissolve(s, scan)),
             None => haloed,
         };
-        // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is. A look or a
-        // projected slide gives a positive: printed on a paper through the internegative, as a slide is, else shown as it is.
-        let read = copy.as_ref().map_or(s, |c| &c.settings);
-        let positive = match self.looked(graph, grained.clone(), s)? {
-            Some(p) => Some(p),
-            None => self.projected(graph, grained.clone(), s)?,
-        };
-        let printed = match positive {
+        // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is. A look
+        // gives a positive, printed on a paper through the internegative or shown as it is; a slide is projected.
+        let copy = crate::paper::internegative::copy(s);
+        let read = copy.as_ref().unwrap_or(s);
+        let printed = match self.looked(graph, grained.clone(), s)? {
             Some(positive) => match &copy {
-                Some(c) => {
-                    let negative = self.filmed(graph, positive.then(stages::color_matrix(&c.light)), read)?;
-                    stages::converted(negative, &conversion::stage47(read))
-                }
+                Some(c) => stages::converted(self.filmed(graph, positive, c)?, &conversion::stage47(c)),
                 None => positive,
             },
-            None => {
-                let negative = self.filmed(graph, grained, read)?;
-                stages::converted(negative, &conversion::stage47(read))
-            }
+            None => match self.projected(graph, grained.clone(), s)? {
+                Some(shown) => shown,
+                None => {
+                    let negative = self.filmed(graph, grained, read)?;
+                    stages::converted(negative, &conversion::stage47(read))
+                }
+            },
         };
         // On a paper the legacy print lays its keys and TEMP alone: no look cube is laid over the paper's print.
         let looked = match legacy.and_then(PipelineSettings::legacy) {

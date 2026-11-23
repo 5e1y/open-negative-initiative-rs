@@ -67,12 +67,12 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
   canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
-  names no stock but the defaults (Portra 800, Royal Digital, the generic C-41 set) and the internegative (Vision3 50D); a key no
-  file defines is kept as stored and renders on the default until its file is back.
+  names no stock but the defaults (Portra 800, Royal Digital, the generic C-41 set, Ektachrome E100 for slides); a key no file defines is kept as stored and renders on the default until its file is back.
 - **A digital photo on a colour reversal film is projected** (owner's call, 2026-11-23): its scene exposes the slide on the film's
   sheet (curves falling, its couplers on the first developer's negative image), and the slide's dyes filter a 3200 K projector lamp
-  onto a white screen, seen adapted to the bare film's light with a 0.5 % veil (`film::projection`); on a paper it prints through
-  the internegative, as a scanned slide does. Velvia 50, Velvia 100 and Ektachrome E100 hold their sheets; Provia 100F's is traced short.
+  onto a white screen, seen adapted to the bare film's light with a 0.5 % veil (`film::projection`), a band the sheet leaves
+  unmeasured holding its neighbours'; it never prints on a paper, and shows as a scanned slide does (`projector`).
+  Velvia 50, Velvia 100 and Ektachrome E100 hold their sheets; Provia 100F's is traced short.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
@@ -86,9 +86,13 @@ the code; a costly trap keeps its constraint and its number in two lines.
   its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
 - **The virtual enlarger may print on no paper** (owner's call, 2026-11-22): Print on paper off swaps the paper for a neutral one,
   ONI's print curve over the frame's range on each layer alone, to show what the paper brings (`paper::neutral`).
-- **A slide prints through an internegative** (owner's verdict, 2026-11-22): on any colour paper, copied on a virtual Vision3 50D
-  (`paper::internegative`), as labs printed slides on negative paper; Kodak's reversal paper Radiance III, modelled from its data
-  sheet, held half a slide's chroma and left. The copy's grey and black are the film's own, its bare base as a negative's.
+- **A slide is projected, never printed** (owner's call, 2026-11-23): its scan over the backlight (its gains put a sprocket hole on 1)
+  and the bare base is solved, pixel by pixel, for its film's three dyes under a 5500 K scanner lamp (`dye_amounts`), then shown as a
+  projector shows it on a white screen; its film is its roll's reversal stock where the sheet is profiled, else Ektachrome E100.
+  Lighting re-exposes the slide through its stock's curve: each layer read as the neutral density holding it, back to log
+  exposure along the green layer's curve, so a grey stays grey. Projected blacks keeps the screen's own black and white, off at
+  rest, pure black and white as on a display. A measure upstream of the print reads the scan through the windows; a legacy print
+  keeps its render.
 - **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every
   older file migrates on its own (`oni_settings::migrate`, the launch's sweep or its first read), never lost; an older build opens it read-only.
 - **A dust stroke is kept on the scan, not on the frame** (sidecar format 21): the corrections are laid before the crop,
