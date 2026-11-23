@@ -121,7 +121,7 @@ fn a_persons_paper_is_listed_and_bakes() {
     // Twin: a fit that is no fit is refused.
     let mut fit = shipped("fujifilm-frontier-sp-3000.json");
     fit["key"] = "frontier-mine".into();
-    fit["frontier"]["dyes"] = Value::Array(vec![]);
+    fit["frontier"]["curves"][1] = Value::Array(vec![]);
     write(&dir, "fit.json", &fit);
     let refused = loader.reload().expect("read").refused;
     assert!(refused.iter().any(|r| r.refusal.name == "fit.json" && !r.earlier_kept), "{refused:?}");

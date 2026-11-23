@@ -20,7 +20,7 @@ pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, 
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
 pub use kernel::negative::{LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, NEGATIVE_CURVE_NODES, NEGATIVE_STEPS, Development, Negative};
 pub use kernel::orient::Orient;
-pub use kernel::paper::{PAPER_BANDS, PAPER_CURVE_NODES, Paper, fade, lifted, share};
+pub use kernel::paper::{PAPER_CURVE_NODES, Paper, fade, lifted, share, viewed};
 pub use kernel::saturation_curve::SaturationCurve;
 pub use kernel::scanner::{ScannerDensity, ScannerOutput, SCANNER_LIFT, ScannerEncode};
 pub use kernel::spectrogram::Spectrogram;

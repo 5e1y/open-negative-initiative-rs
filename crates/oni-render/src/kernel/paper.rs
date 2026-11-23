@@ -1,13 +1,11 @@
 //! The paper: each channel's window share laid back on density, the negative's per-channel printing density, exposes the
 //! matching layer of a colour paper (red the cyan-forming, green the magenta, blue the yellow) through the enlarger's time
-//! and filtration; the layers develop on their curves, the print's dyes are read under D50, then its ends: the frame's
-//! pick and the paper's white each on its anchor. Brightness moves the enlarger's light as a time does, faded in from the
-//! pick over the deep shadows. Lighting's other sliders and the colour tools act on the negative before it (`negative`).
+//! and filtration; the layers develop on their curves, each dye absorbing its own Rec. 2020 channel alone, then its ends:
+//! the frame's pick and the paper's white each on its anchor. Brightness moves the enlarger's light as a time does, faded
+//! in from the pick over the deep shadows. Lighting's other sliders and the colour tools act on the negative before it
+//! (`negative`).
 
 use super::*;
-
-/// Most wavelengths the print's sums run over: every sample of 380 to 780 nm by 5.
-pub const PAPER_BANDS: usize = 81;
 
 /// The nodes of each layer's characteristic curve, on a uniform log exposure axis.
 pub const PAPER_CURVE_NODES: usize = 256;
@@ -17,7 +15,7 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// The window's shares printed on a paper: how a share is laid back on density, the enlarger's light, the paper's
-/// curves, its print seen under D50 in Rec. 2020, and the print's ends.
+/// curves, read in Rec. 2020 through pure dyes, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// A share `t` of the window is the density `span · t^bend` above the bare film: the frame's mean window span, and
@@ -39,10 +37,6 @@ pub struct Paper {
     pub curves: &'static [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
     pub curve_step: f32,
-    /// Per wavelength the print reflects: its three dyes' density at unit amount, then its base's.
-    pub print: &'static [V4],
-    /// Per wavelength the print reflects: D50 read by the 1931 observer, adapted to D65, in Rec. 2020.
-    pub view: &'static [V3],
     /// The print of the frame's pick without Lighting's points, and the paper's own white: the ends the print's light is
     /// read between.
     pub pick: V3,
@@ -56,11 +50,7 @@ pub struct Paper {
 }
 
 impl Paper {
-    pub fn head(&self) -> [u32; 4] {
-        [self.print.len() as u32, 0, 0, 0]
-    }
-
-    /// The uniform: the density, the enlarger, Brightness, the print's ends, then the bands and the curves.
+    /// The uniform: the density, the enlarger, Brightness, the print's ends, then the curves.
     pub fn rows(&self) -> Vec<V4> {
         let flag = |on: bool| if on { 1.0 } else { 0.0 };
         let m = &self.mix;
@@ -77,9 +67,6 @@ impl Paper {
             v3(self.anchor, 0.0),
             v3(self.white_anchor, 0.0),
         ];
-        let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
-        rows.extend(self.print.iter().copied().chain(pad(self.print.len())));
-        rows.extend(self.view.iter().map(|w| v3(*w, 0.0)).chain(pad(self.view.len())));
         rows.extend(self.curves.iter().map(|c| v3(*c, 0.0)));
         rows
     }
@@ -123,14 +110,9 @@ impl Paper {
         })
     }
 
-    /// The print holding `density` of each dye, seen under D50, in linear Rec. 2020.
+    /// The print holding `density` of each dye, in linear Rec. 2020: each dye absorbs its own channel alone.
     pub fn viewed(&self, density: V3) -> V3 {
-        let mut out = [0.0f32; 3];
-        for (dye, weight) in self.print.iter().zip(self.view) {
-            let t = (-LOG2_10 * (dot(density, rgb(*dye)) + dye[3])).exp2();
-            out = map(out, |c, v| v + t * weight[c]);
-        }
-        out
+        viewed(density)
     }
 
     /// The print of the window's `shares`, a black and white print on its luma; before its ends.
@@ -155,6 +137,11 @@ impl Paper {
     pub fn shown(&self, shares: V3) -> V3 {
         self.ended(self.printed(shares))
     }
+}
+
+/// The light a print holding `density` of each pure dye reflects, in linear Rec. 2020.
+pub fn viewed(density: V3) -> V3 {
+    density.map(|d| (-LOG2_10 * d).exp2())
 }
 
 /// The share of Brightness's shift a tone takes `x` of log exposure from the pick toward the light: none at the pick,

@@ -92,9 +92,9 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
-    // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets, a
-    // paper's white on pure white without Print lift.
-    const BEFORE: u64 = 0x75eb_810c_0221_7584;
+    // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
+    // pure dyes, its white on pure white without Print lift.
+    const BEFORE: u64 = 0x834b_8d4f_b311_2178;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -189,8 +189,9 @@ fn exposure_on_a_scanned_negative_is_that_negative_shot_a_stop_over() {
                 let (worst, median) = apart(&moved, &over);
                 let (unmoved, _) = apart(&printed(&scanned(stock, 0.0), &conversion::stage47(&s)), &over);
                 println!("{stock:?} on {pipe}, Exposure {stops:+}: ΔE to the negative shot {stops:+} stop, worst {worst:.2}, median {median:.2}; unmoved {unmoved:.1}");
-                // The scan is read on its stock's mean layer, the shot negative developed on its three coupled ones.
-                assert!(worst < 5.0 && median < 1.5, "{stock:?}, {pipe}, {stops}");
+                // The scan is read on its stock's mean layer, the shot negative developed on its three coupled ones: the
+                // paper's pure dyes print that gap whole, 5.4 at worst on X-TRA 400 a stop under.
+                assert!(worst < 6.0 && median < 1.5, "{stock:?}, {pipe}, {stops}");
                 // Twin: the enlarger's time a stop the other way, the print-side Exposure, misses the shot negative.
                 if let Some(p) = k.paper {
                     let timed = Stage47 { negative: None, paper: Some(Paper { scale: p.scale * (-stops).exp2(), ..p }), ..k };

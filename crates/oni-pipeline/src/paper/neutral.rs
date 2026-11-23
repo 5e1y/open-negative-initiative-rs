@@ -1,5 +1,5 @@
-//! The neutral paper the enlarger prints on with Print on paper off: no paper's data, each layer exposed by its own
-//! channel and printing its own channel alone, its curve ONI's print at rest, the same on the three.
+//! The neutral paper the enlarger prints on with Print on paper off: a paper as any other, its curve ONI's print at rest,
+//! the same on the three layers.
 
 use super::printing::{GREY_PRINT, bisected};
 use super::*;
@@ -9,16 +9,6 @@ use std::sync::OnceLock;
 
 /// The neutral paper's deepest black as light, a density of 5: ONI's print lays none at its black, past any a screen shows.
 pub const NEUTRAL_DEEPEST: f32 = 1e-5;
-
-fn unit(c: usize) -> V3 {
-    std::array::from_fn(|k| if k == c { 1.0 } else { 0.0 })
-}
-
-/// Dye `c` alone at unit density, on no base.
-fn dye(c: usize) -> V4 {
-    let [r, g, b] = unit(c);
-    [r, g, b, 0.0]
-}
 
 /// ONI's print at rest as a characteristic curve, its log exposure in units of the frame's range: the range spans the
 /// print from black to white as a window spans it, the reference grey at 0, where its share prints a plain RAW's grey.
@@ -33,8 +23,6 @@ fn sheet_of() -> Sheet {
         std::array::from_fn(|i| [-light(share(i)).max(NEUTRAL_DEEPEST).log10(); 3]),
         grey - 1.0,
         1.0 / last,
-        (0..3).map(dye).collect(),
-        (0..3).map(unit).collect(),
         OWN_LAYERS,
     )
 }

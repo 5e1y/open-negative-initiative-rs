@@ -86,7 +86,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0xa49d_38ff_2ea4_0e9d;
+    const BEFORE: u64 = 0x0c0d_8905_ecc0_ac75;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
@@ -198,8 +198,8 @@ fn the_saturation_curve_reads_the_prints_own_lightness() {
         let shifted: [f32; oni_render::LIGHTNESS_NODES] = std::array::from_fn(|i| n.lightness[(i + 2).min(oni_render::LIGHTNESS_NODES - 1)]);
         let (held, twin) = (off(&n.lightness), off(&shifted));
         println!("{label}: a grey's lightness on the curve within {held:.1e} of its print's; two nodes off, {twin:.1e}");
-        // A slide's internegative prints its greys a hair off neutral, so their luma strays from a grey's by 1.2e-2.
-        assert!(held < 1.5e-2 && twin > 4e-2, "{label}: {held} {twin}");
+        // A slide's internegative prints its greys a hair off neutral, so their luma strays from a grey's by 1.6e-2.
+        assert!(held < 2e-2 && twin > 4e-2, "{label}: {held} {twin}");
         // Monotone along the greys: a lighter grey prints lighter.
         // The Frontier's table prints its greys a hair darker past its white, by 4e-4.
         assert!(n.lightness.windows(2).all(|w| w[1] - w[0] >= -1e-3), "{label}: {:?}", n.lightness);

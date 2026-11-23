@@ -1,7 +1,7 @@
-//! The Frontier SP-3000 as a print on the paper kernel: its measured table refitted into its paper's file by
-//! `docs/research/frontier/frontier_print_fit.py`, each of the kernel's sums run over bands of its own, not wavelengths.
+//! The Frontier SP-3000 as a paper: its measured table refitted into its paper's file by
+//! `docs/research/frontier/frontier_print_fit.py` as the scanner's matrix and three curves, read through pure dyes.
 
-use super::{Sheet, V3, V4};
+use super::{Sheet, V3};
 use crate::film::bake;
 use oni_render::PAPER_CURVE_NODES;
 use serde::Deserialize;
@@ -9,28 +9,22 @@ use serde::Deserialize;
 /// The log exposures the curves are laid over: past either end every layer sits on its own floor or Dmax.
 pub const CURVE_RANGE: [f32; 2] = [-2.5, 2.5];
 
-/// The fit as written: the table's neutral green density, the scanner's matrix (rows summing to one), each layer's
-/// normal integrals (amplitude, centre, spread), the print's dyes (density a layer, then the band's base) and lights.
+/// The fit as written: the table's neutral green density, the scanner's matrix (rows summing to one), and each layer's
+/// normal integrals (amplitude, centre, spread).
 #[derive(Deserialize)]
 pub struct Fit {
     pub neutral: f32,
     pub matrix: [V3; 3],
     pub curves: [Vec<[f64; 3]>; 3],
-    pub dyes: Vec<V4>,
-    pub view: Vec<V3>,
 }
 
-/// The fit a paper's file holds, or why it does not read: its curves and bands each finite, as many dyes as lights.
+/// The fit a paper's file holds, or why it does not read: every number finite, each layer a curve.
 pub fn read(json: &str) -> Result<Fit, String> {
     let fit: Fit = serde_json::from_str(json).map_err(|e| e.to_string())?;
-    let finite = std::iter::once(fit.neutral)
-        .chain(fit.matrix.iter().flatten().copied())
-        .chain(fit.dyes.iter().flatten().copied())
-        .chain(fit.view.iter().flatten().copied())
-        .all(f32::is_finite)
+    let finite = std::iter::once(fit.neutral).chain(fit.matrix.iter().flatten().copied()).all(f32::is_finite)
         && fit.curves.iter().flatten().flatten().all(|v| v.is_finite());
-    if !finite || fit.dyes.len() != fit.view.len() || fit.dyes.is_empty() || fit.curves.iter().any(Vec::is_empty) {
-        return Err("a fit holding a number that is not finite, or as many dyes as lights none".into());
+    if !finite || fit.curves.iter().any(Vec::is_empty) {
+        return Err("a fit holding a number that is not finite, or a layer with no curve".into());
     }
     Ok(fit)
 }
@@ -46,5 +40,5 @@ pub(super) fn sheet(fit: &Fit) -> Sheet {
     let step = (CURVE_RANGE[1] - CURVE_RANGE[0]) / (PAPER_CURVE_NODES - 1) as f32;
     let at = |i: usize| f64::from(CURVE_RANGE[0] + step * i as f32);
     let curves = std::array::from_fn(|i| std::array::from_fn(|c| density(fit, c, at(i)) as f32));
-    Sheet::new(curves, CURVE_RANGE[0], step, fit.dyes.clone(), fit.view.clone(), fit.matrix)
+    Sheet::new(curves, CURVE_RANGE[0], step, fit.matrix)
 }

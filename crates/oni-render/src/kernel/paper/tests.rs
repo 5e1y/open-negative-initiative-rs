@@ -1,13 +1,11 @@
 use super::*;
 
-static PRINT: [V4; 3] = [[1.0, 0.0, 0.0, 0.05], [0.0, 1.0, 0.0, 0.05], [0.0, 0.0, 1.0, 0.05]];
-static VIEW: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 static CURVES: std::sync::LazyLock<[V3; PAPER_CURVE_NODES]> =
     std::sync::LazyLock::new(|| std::array::from_fn(|i| { let d = 0.01 * i as f32; [d, 2.0 * d, 3.0 * d] }));
 
 const IDENTITY: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 
-/// A unit window on each layer, each print dye alone in a viewing channel, a linear curve on each layer.
+/// A unit window on each layer, a linear curve on each layer.
 fn narrow() -> Paper {
     Paper {
         span: 1.0,
@@ -21,8 +19,6 @@ fn narrow() -> Paper {
         curves: &CURVES,
         curve_low: -2.0,
         curve_step: 0.01,
-        print: &PRINT,
-        view: &VIEW,
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
@@ -217,13 +213,21 @@ fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_unde
 }
 
 #[test]
-fn the_print_reads_its_dyes_and_base_and_a_black_and_white_print_its_luma() {
+fn the_print_reads_each_dye_on_its_own_channel_and_a_black_and_white_print_its_luma() {
     let k = narrow();
     let out = k.viewed([0.5, 1.0, 2.0]);
-    let expected = [0.55, 1.05, 2.05].map(|d: f32| 10f32.powf(-d));
+    let expected = [0.5f32, 1.0, 2.0].map(|d| 10f32.powf(-d));
     assert!((0..3).all(|c| (out[c] - expected[c]).abs() < 1e-6), "{out:?}");
-    // Twin: no base reads every channel lighter.
-    assert!((out[0] - 10f32.powf(-0.5)).abs() > 1e-2);
+    // Each dye moves its own channel alone.
+    for c in 0..3 {
+        let mut denser = [0.5, 1.0, 2.0];
+        denser[c] += 0.3;
+        let moved = k.viewed(denser);
+        assert!((0..3).all(|i| (moved[i] == out[i]) == (i != c)), "dye {c}: {moved:?}");
+    }
+    // Twin: a dye absorbing a tenth in its neighbour's channel darkens that channel too.
+    let crossed = |d: V3| map(d, |c, v| 10f32.powf(-(v + 0.1 * d[(c + 1) % 3])));
+    assert!((crossed([0.5, 1.3, 2.0])[0] - out[0]).abs() > 1e-3);
     // A black and white print reads its luma on every channel.
     let mono = Paper { luma: true, ..k }.printed([0.3, 0.6, 0.9]);
     assert!(mono[0] == mono[1] && mono[1] == mono[2]);

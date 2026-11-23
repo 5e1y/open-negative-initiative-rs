@@ -27,12 +27,12 @@ What each part of a profile is:
 - base_density: the sheet's D-min, printed.
 
 Status M and Status A are ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), on the dyes' known
-wavelengths. A colour paper's profile holds the same parts, its densities Status A; only a paper whose sheet prints
-its characteristic curves is taken, and a display material viewed by transmission is written as a paper, its
-densities read as its transmittance under the viewing light. A sheet prints no base spectrum: the base is the
-paper's own dyes in the amounts that read the curves' least densities. Each layer's level is as printed: Kodak's
+wavelengths. A colour paper's profile is its curves alone: its sheet's Status A characteristic curves as printed, each
+on its own D-min, which ONI reads through pure dyes, each on its own channel; only a paper whose sheet prints them is
+taken, and a display material viewed by transmission is written as a paper. Each layer's level is as printed: Kodak's
 absolute, Fujifilm's on one relative axis for all three; the curves' log H origin is set where green prints an 18 %
-grey, the enlarger's time absorbing it. A dye's or a layer's points hidden on its sheet are filled by its end slope.
+grey over its D-min, the enlarger's time absorbing it. A dye's or a layer's points hidden on its sheet are filled by
+its end slope.
 """
 
 import json
@@ -381,32 +381,10 @@ def tailed(x, y, floor):
 
 
 def convert_paper(stock_id):
+    """A colour paper's profile: its sheet's Status A curves as printed, each on its own D-min, on log H less the
+    grey's. ONI reads each layer through a pure dye on its own channel, so a paper's dyes and sensitivities are not kept."""
     stock = STOCK[stock_id]
     measured, inferred = [], []
-    # A sheet edition printing the curves may print its sensitivities on a log axis the current one leaves unstated.
-    sens_chart = next((c for c in stock["charts"] if c["kind"] == "spectral_sensitivity" and "log10" in c["y"]["unit"]), None)
-    if sens_chart is None:
-        raise SystemExit(f"{stock_id}: no sensitivity on a stated log axis")
-    layers = []
-    for channel in ("red_sensitive", "green_sensitive", "blue_sensitive"):
-        x, y = series(sens_chart, channel)
-        layers.append(tailed(x, y, y.max() - 8.0))
-    measured.append(f"spectral sensitivity, three layers, as printed ({sens_chart['confidence']} confidence)")
-    inferred.append("each layer's sensitivity past the sheet's first and last point, falling at its end slope")
-
-    dye_chart = chart(stock, "spectral_dye_density")
-    top = max(series(dye_chart, ch)[0][-1] for ch in ("cyan", "magenta", "yellow"))
-    dyes = []
-    for channel in ("cyan", "magenta", "yellow"):
-        x, y = series(dye_chart, channel)
-        logged = tailed(x, np.log10(np.maximum(y / y.max(), 1e-4)), -4.0)
-        dyes.append(np.where((WAVELENGTHS >= 400.0) & (WAVELENGTHS <= top), 10.0 ** logged, np.nan))
-    dyes = np.array(dyes).T
-    channel = unit(dyes, STATUS_A)
-    measured.append(f"cyan, magenta and yellow dye shapes ({dye_chart['confidence']} confidence)")
-    inferred.append("each dye past its sheet's points (hidden under another curve), falling at its end slope in log")
-    inferred.append("each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products")
-
     curves_chart = chart(stock, "characteristic_curves")
     raw = {k: series(curves_chart, k) for k in "RGB"}
     le = np.linspace(min(v[0][0] for v in raw.values()), min(v[0][-1] for v in raw.values()), CURVE_NODES)
@@ -417,22 +395,14 @@ def convert_paper(stock_id):
         if hidden.any():
             inferred.append(f"the {k} curve under its first printed point, hidden on the sheet under the others: their mean")
         curves[k] = np.where(hidden, np.mean(others, axis=0) if others else cy[0], np.interp(le, cx, cy))
-    lows = [curves[k].min() for k in "RGB"]
-    channels = {k: (le, np.maximum.accumulate(curves[k]) - curves[k].min()) for k in "RGB"}
-    # The axis' origin where green prints an 18 % grey, so the enlarger's solve starts on the curves' slope.
-    origin = float(np.interp(-math.log10(0.18), channels["G"][1], le))
+    channels = {k: np.maximum.accumulate(curves[k]) for k in "RGB"}
+    # The axis' origin where green prints an 18 % grey over its D-min, so the enlarger's solve starts on the curves' slope.
+    origin = float(np.interp(-math.log10(0.18), channels["G"] - channels["G"].min(), le))
     le = le - origin
-    channels = {k: (le, d) for k, (_, d) in channels.items()}
-    inferred.append("the curves' log H origin: where green prints an 18 % grey; the enlarger's time absorbs it")
-    bare = np.where(np.isnan(channel).any(axis=1), np.nan, 0.0)
-    base = channel @ unmixed([lows], bare, channel, STATUS_A)[0]
-    sheet = np.array([np.interp(le, *channels[k]) for k in "RGB"]).T
-    amounts_ = unmixed(sheet, base, channel, STATUS_A)
-    measured.append(f"characteristic curves, Status A, as printed ({curves_chart['confidence']} confidence), each less its D-min")
+    inferred.append("the curves' log H origin: where green prints an 18 % grey over its D-min; the enlarger's time absorbs it")
+    sheet = np.array([channels[k] for k in "RGB"]).T
+    measured.append(f"characteristic curves, Status A, as printed ({curves_chart['confidence']} confidence), each on its D-min")
     inferred.append("densities held at the sheet's last point past the curves' printed range")
-    inferred.append("the base's spectrum: the paper's own dyes in the amounts that read the curves' least densities")
-    inferred.append("the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status A "
-                    "densities over the base through every dye's absorption in each band")
     name = stock_id.removesuffix("_paper").removesuffix("_printing_material")
     source = stock["source"]
     profile = {
@@ -443,18 +413,13 @@ def convert_paper(stock_id):
             "sha256": source.get("sha256"),
             "retrieved": source.get("retrieved"),
             "dataset_id": stock_id,
-            "charts": [c["chart_id"] for c in (sens_chart, dye_chart, curves_chart)],
+            "charts": [curves_chart["chart_id"]],
             "measured": measured,
             "inferred": inferred,
         },
         "data": {
-            "wavelengths": [float(w) for w in WAVELENGTHS],
-            "log_sensitivity": [[round(float(v), 6) for v in row] for row in np.array(layers).T],
-            "channel_density": [nulls(row) for row in channel],
-            "base_density": nulls(base),
             "log_exposure": [round(float(v), 6) for v in le],
-            "density_curves": [[round(float(v), 6) for v in row] for row in amounts_],
-            "sheet_density_curves": [[round(float(v), 6) for v in row] for row in sheet],
+            "density_curves": [[round(float(v), 6) for v in row] for row in sheet],
         },
     }
     place(profile)

@@ -66,7 +66,7 @@ pub fn negative(k: &Negative) -> PerPixel {
 
 /// The window's shares printed on the paper, in the pass past stage 4-7's window.
 pub fn paper(k: &Paper) -> PerPixel {
-    PerPixel { name: "paper", kernel: &PAPER, params: uniform(k.head(), &k.rows()) }
+    PerPixel { name: "paper", kernel: &PAPER, params: uniform(HEAD, &k.rows()) }
 }
 
 /// Stages 4 to 7 on `image` as `cpu::stage47` runs them, in one pass: Lighting on the negative, the windows and ONI's

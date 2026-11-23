@@ -1,4 +1,5 @@
-"""The Frontier SP-3000's table refitted as a print of ONI's paper kernel (frontier-paper.md), written into the
+"""The Frontier SP-3000's table refitted as a paper of ONI's paper kernel (frontier-paper.md): the scanner's matrix and three
+curves, each layer's density read through a pure dye on its own Rec. 2020 channel, written into the
 "frontier" block of its paper's file, crates/oni-settings/stocks/fujifilm-frontier-sp-3000.json, its provenance kept.
 Usage: python3 frontier_print_fit.py [rounds]."""
 
@@ -11,10 +12,10 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[3]
 SCANNER = REPO / 'crates/oni-pipeline/resources/scanner'
 TERMS = 3   # normal integrals a layer's curve
-BANDS = 9   # virtual print dyes
 ROUNDS = int(sys.argv[1]) if len(sys.argv) > 1 else 300
-# Fit weights: nodes every measurement reads (channel spread under 0.6), mostly read (under 1.0), the rest of the reach.
-WEIGHTS = (1.0, 0.5, 0.1)
+# Fit weights: the neutral axis (channel spread under 0.1), nodes every measurement reads (under 0.6), mostly read (under
+# 1.0), the rest of the reach. Without the axis' own weight the fit trades the greys' tone for the colours.
+WEIGHTS = (20.0, 1.0, 0.5, 0.1)
 
 cube = np.fromfile(SCANNER / 'frontier.cube', dtype='<f4').reshape(27, 27, 27, 4)[..., :3]  # [b, g, r]
 meta = json.loads((SCANNER / 'frontier.json').read_text())
@@ -66,11 +67,7 @@ def unpack(p):
         m[r, r] = 1 - (m[r].sum() - m[r, r])
     i = 6
     curves = p[i:i + 9 * TERMS].reshape(3, TERMS, 3)  # log amplitude, centre, log sigma
-    i += 9 * TERMS
-    dyes = p[i:i + 4 * BANDS].reshape(BANDS, 4)  # three densities a layer, then the band's base
-    i += 4 * BANDS
-    view = p[i:i + 3 * BANDS].reshape(BANDS, 3)
-    return m, curves, dyes, view
+    return m, curves
 
 
 def developed(e, curves):
@@ -81,38 +78,17 @@ def developed(e, curves):
     return d
 
 
-def viewed(d, dyes, view):
-    return (10 ** -(d @ dyes[:, :3].T + dyes[:, 3])) @ view
-
-
 def printed(p, x):
-    m, curves, dyes, view = unpack(p)
-    return viewed(developed(-(x - neutral) @ m.T, curves), dyes, view)
-
-
-# Every mix of the layers' densities between none and each one's Dmax, by sixths.
-SHARES = np.stack(np.meshgrid(*[np.linspace(0, 1, 7)] * 3, indexing='ij'), -1).reshape(-1, 3)
-
-
-def least_light(p):
-    m, curves, dyes, view = unpack(p)
-    dmax = developed(np.full((1, 3), 10.0), curves)
-    return float(viewed(SHARES * dmax, dyes, view).min())
+    m, curves = unpack(p)
+    return 10 ** -developed(-(x - neutral) @ m.T, curves)
 
 
 def start():
-    rng = np.random.default_rng(1)
     p = [0.0] * 6
     for _ in range(3):
         for k in range(TERMS):
             p += [np.log(3.6 / TERMS), -0.5 + (k + 0.5) / TERMS, np.log(0.35)]
-    dyes = np.zeros((BANDS, 4))
-    dyes[:3, :3] = np.eye(3)
-    dyes[3:, :3] = rng.normal(0, 0.5, (BANDS - 3, 3)) + 0.3
-    view = np.zeros((BANDS, 3))
-    view[:3] = TO2020.T
-    view[3:] = rng.normal(0, 0.02, (BANDS - 3, 3))
-    return np.concatenate([p, dyes.ravel(), view.ravel()])
+    return np.array(p)
 
 
 def levenberg_marquardt(p, x, target, w):
@@ -149,29 +125,26 @@ def figures(p, sel):
 
 def main():
     sel = inside
-    w = np.where(spread[sel] < 0.6, WEIGHTS[0], np.where(spread[sel] < 1.0, WEIGHTS[1], WEIGHTS[2]))
+    w = np.select([spread[sel] < 0.1, spread[sel] < 0.6, spread[sel] < 1.0], WEIGHTS[:3], WEIGHTS[3])
     p = levenberg_marquardt(start(), X[sel], TARGET[sel], w)
     p = np.round(p, 6)
-    m, curves, dyes, view = unpack(p)
-    sets = {'constrained': inside & (spread < 0.6), 'mostlyRead': inside & (spread < 1.0), 'reached': inside}
+    m, curves = unpack(p)
+    sets = {'neutral': inside & (spread < 0.1), 'constrained': inside & (spread < 0.6), 'mostlyRead': inside & (spread < 1.0), 'reached': inside}
     out = {
-        'about': 'The Frontier SP-3000 refitted from frontier.cube as a print on ONI paper kernel: x the negative density above its base; '
-                 'log exposure -(matrix (x - neutral)); each layer developed on a sum of normal integrals; shown through virtual dyes in linear Rec. 2020.',
+        'about': 'The Frontier SP-3000 refitted from frontier.cube as a paper of ONI paper kernel: x the negative density above its base; '
+                 'log exposure -(matrix (x - neutral)); each layer developed on a sum of normal integrals; each read through a pure dye on its own channel of linear Rec. 2020.',
         'neutral': neutral,
         'matrix': m.round(6).tolist(),
         'curves': [[[float(np.exp(a)), float(mu), float(np.exp(ls))] for a, mu, ls in c] for c in curves],
-        'dyes': dyes.tolist(),
-        'view': view.tolist(),
         'figures': {name: figures(p, s) for name, s in sets.items()},
-        'leastLight': least_light(p),
-        'fit': {'terms': TERMS, 'bands': BANDS, 'rounds': ROUNDS, 'weights': WEIGHTS, 'metric': 'Oklab distance x 100 of display-clipped code',
-                'nodes': 'frontier.cube inside its reach; constrained: channel spread under 0.6, every node read by a measurement'},
+        'fit': {'terms': TERMS, 'rounds': ROUNDS, 'weights': WEIGHTS, 'metric': 'Oklab distance x 100 of display-clipped code',
+                'nodes': 'frontier.cube inside its reach; neutral: channel spread under 0.1; constrained: under 0.6, every node read by a measurement'},
     }
     paper_file = REPO / 'crates/oni-settings/stocks/fujifilm-frontier-sp-3000.json'
     paper = json.loads(paper_file.read_text())
     paper['frontier'] = {'provenance': paper['frontier']['provenance'], **out}
     paper_file.write_text(json.dumps(paper, indent=1, ensure_ascii=False) + '\n')
-    print(json.dumps(out['figures'], indent=1), 'least light', out['leastLight'])
+    print(json.dumps(out['figures'], indent=1))
 
 
 if __name__ == '__main__':

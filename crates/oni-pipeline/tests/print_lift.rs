@@ -40,9 +40,15 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_papers_white_on_pure_w
         println!("{label}: on the Dmax's black the pick would print at {on_dmax:?} (Dmax {d:?})");
         // A hundred times the pick's own bound: Endura Premier lays a negative's bare film 9e-4 over its Dmax.
         assert!(on_dmax.iter().any(|v| *v > 1e-4), "{label}: {on_dmax:?}");
-        // Twin: the paper's white held, as with Print lift, prints under 0.83 on Royal Digital, 0.99 on the Frontier.
+        // Twin: the paper's white held, as with Print lift, prints under 0.87 on Royal Digital; the Frontier's own white
+        // is pure white, its fit's curves leaving no density past the table.
         let held = Stage47 { paper: k.paper.map(|p| Paper { white_anchor: p.white, ..p }), ..k };
-        assert!(lit_shown(&s, &held, past_the_white(&s)).iter().all(|v| *v < 0.99), "{label}");
+        let white = lit_shown(&s, &held, past_the_white(&s));
+        if label.starts_with("Frontier") {
+            assert!(white.iter().all(|v| (v - 1.0).abs() < 1e-4), "{label}: {white:?}");
+        } else {
+            assert!(white.iter().all(|v| *v < 0.87), "{label}: {white:?}");
+        }
     }
 }
 
@@ -54,9 +60,13 @@ fn print_lift_keeps_the_papers_own_ends() {
         let (pick, white) = (printed_on(&s, &k)[0], lit_shown(&s, &k, past_the_white(&s)));
         println!("{label}: Print lift prints the pick at {pick:?}, the paper's white at {white:?}");
         assert!(p.white_anchor == p.white && white == p.white, "{label}: {white:?} {:?}", p.white);
-        // Twin: off, the same frame's white lies on pure white, 0.18 above on Royal Digital, 0.018 on the Frontier.
+        // Twin: off, the same frame's pick lies on pure black and its white on pure white, 0.14 above on Royal Digital;
+        // the Frontier's own white is pure already.
         let off = conversion::stage47(&moved(&s, |t| t.print.print_lift = false));
-        assert!((0..3).all(|c| lit_shown(&s, &off, past_the_white(&s))[c] > white[c] + 0.015), "{label}");
+        assert!(pick.iter().all(|v| *v > 1e-3) && printed_on(&s, &off)[0].iter().all(|v| v.abs() < 1e-6), "{label}: {pick:?}");
+        if !label.starts_with("Frontier") {
+            assert!((0..3).all(|c| lit_shown(&s, &off, past_the_white(&s))[c] > white[c] + 0.1), "{label}");
+        }
     }
 }
 
@@ -91,9 +101,9 @@ fn without_print_lift_the_rest_shows_the_grey_where_a_plain_raw_does_neutral() {
         );
         // Within the thousandth the pick's light laid on black takes off the paper's own neutral.
         assert!((0..3).all(|c| (grey[c] - grey_print).abs() < 1e-3), "{label}: {grey:?}");
-        // Twin: either stretch on Print lift's rest shows the grey lighter, by 0.28 and 0.24 stop on Royal Digital, by
-        // 0.016 and 0.010 on the Frontier, whose white lies at 0.98.
-        assert!(off_by(linear) > 0.012 && off_by(density) > 0.008, "{label}");
+        // Twin: either stretch on Print lift's rest moves the grey, lighter by 0.28 and 0.24 stop on Royal Digital,
+        // darker by 0.009 on the Frontier, whose own white is pure: past the 0.004 stop the grey's bound allows.
+        assert!(off_by(linear).abs() > 5e-3 && off_by(density).abs() > 5e-3, "{label}");
     }
 }
 

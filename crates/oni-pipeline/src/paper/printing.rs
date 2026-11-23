@@ -188,14 +188,7 @@ pub fn own_grey(sheet: &Sheet, lift: bool) -> V3 {
         let at = i as usize;
         sheet.curves[at][c] + (f - i) * (sheet.curves[at + 1][c] - sheet.curves[at][c])
     };
-    let viewed = |density: V3| -> V3 {
-        let mut out = [0.0f32; 3];
-        for (dye, weight) in sheet.print.iter().zip(&sheet.view) {
-            let t = 10f32.powf(-(density[0] * dye[0] + density[1] * dye[1] + density[2] * dye[2] + dye[3]));
-            out = std::array::from_fn(|c| out[c] + t * weight[c]);
-        }
-        out
-    };
+    let viewed = oni_render::viewed;
     let white = viewed(sheet.curves[0]);
     let target = if lift { (*GREY_PRINT / luma(white)).ln() } else { GREY_PRINT.ln() };
     let miss = |log: V3| -> V3 {
@@ -253,8 +246,6 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         curves: &sheet.curves,
         curve_low: sheet.curve_low * axis,
         curve_step: sheet.curve_step * axis,
-        print: &sheet.print,
-        view: &sheet.view,
         pick: [0.0; 3],
         white: [1.0; 3],
         anchor: [0.0; 3],

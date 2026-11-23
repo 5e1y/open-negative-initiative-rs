@@ -262,8 +262,14 @@ fn the_print_is_continuous_and_monotone_from_past_the_pick_to_past_the_white() {
             println!("{label}, {name}: the largest step {coarse:.2e} over 2000 tones, {fine:.2e} over 4000; its largest fall {falls_by:.1e}, its least light {lowest:.1e}");
             assert!(fine < 0.6 * coarse, "{label}, {name}");
             // Monotone and at or above black, but for f32's step near the white times Brightness's slope there; the
-            // Frontier's fit falls 6.5e-6 near its white at rest and prints its Dmax a hair under no light.
-            let (falls, floor) = if label.starts_with("Frontier") { (3e-5, -2e-5) } else { (1e-6, 0.0) };
+            // Frontier's fit falls 6.5e-6 near its white at rest and prints its Dmax a hair under no light. Each pure dye
+            // shows its layer alone: Exposure +2 leaves the digital photo's blue layer 60 % slower than its tone's mean
+            // by the pick, where Brightness -1's one shift on the three (`fade`) turns it back by 2.0e-4.
+            let (falls, floor) = match label {
+                "Frontier negative" => (3e-5, -2e-5),
+                "digital" => (3e-4, 0.0),
+                _ => (1e-6, 0.0),
+            };
             assert!(falls_by < falls && lowest >= floor, "{label}, {name}");
             // Twin: a jump of a tenth past the middle keeps its step whatever the sampling, so the check refuses it.
             let jump = |u: f32| print(u).map(|v| if u > 0.5 { v + 0.1 } else { v });

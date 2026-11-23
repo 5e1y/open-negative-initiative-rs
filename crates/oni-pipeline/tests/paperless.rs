@@ -78,7 +78,7 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
 }
 
 #[test]
-fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone() {
+fn each_layer_of_the_neutral_paper_and_of_every_paper_prints_its_own_dye_alone() {
     let s = prepared_negative();
     let k = conversion::stage47(&s);
     let grey = paper::shares_of(&s, &k, paper::anchors(&s)[2]);
@@ -88,14 +88,19 @@ fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone() {
         let after = p.printed(more);
         std::array::from_fn::<f32, 3, _>(|i| after[i] - at[i])
     };
-    let neutral = conversion::stage47(&paperless(s.clone())).paper.unwrap();
-    let on_paper = k.paper.unwrap();
+    let on = |paper: PaperStock| conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper.unwrap();
+    let papers = PaperStock::all().into_iter().filter(|p| !p.is_machine()).map(|p| (p.name(), on(p)));
+    for (label, p) in std::iter::once(("neutral", conversion::stage47(&paperless(s.clone())).paper.unwrap())).chain(papers) {
+        for c in 0..3 {
+            let own = moved(&p, c);
+            assert!(own[c] > 1e-3 && (0..3).filter(|i| *i != c).all(|i| own[i] == 0.0), "{label}, dye {c}: {own:?}");
+        }
+    }
+    // Twin: the Frontier's layers read its scanner's matrix, so each share reaches the other layers too.
+    let frontier = on(PaperStock::of("fujifilm-frontier-sp-3000"));
     for c in 0..3 {
-        let own = moved(&neutral, c);
-        println!("dye {c}: the neutral paper moves {own:?}, the paper {:?}", moved(&on_paper, c));
-        assert!(own[c] > 1e-3 && (0..3).filter(|i| *i != c).all(|i| own[i] == 0.0), "dye {c}: {own:?}");
-        // Twin: on the paper each dye's light reaches the other layers too.
-        let crossed = moved(&on_paper, c);
+        let crossed = moved(&frontier, c);
+        println!("dye {c}: the Frontier moves {crossed:?}");
         assert!((0..3).filter(|i| *i != c).any(|i| crossed[i].abs() > 1e-4), "dye {c}: {crossed:?}");
     }
 }
@@ -109,7 +114,6 @@ fn the_neutral_papers_curve_is_onis_print_at_rest_on_each_layer() {
         let expected = -rest.output(1.0 - i as f32 / last, LevelsChannel::Linked).max(neutral::NEUTRAL_DEEPEST).log10();
         assert!(d.iter().all(|v| (v - expected).abs() < 1e-5), "node {i}: {d:?} for {expected}");
     }
-    assert!(sheet.print.len() == 3 && sheet.view.len() == 3);
     // Twin: a paper's own layers each run their own curve.
     let portra = paper::sheet(PaperStock::of("kodak-endura-premier"));
     assert!(portra.curves.iter().any(|d| (d[0] - d[1]).abs() > 0.05 || (d[1] - d[2]).abs() > 0.05));
@@ -178,7 +182,7 @@ fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);
-        assert!(k.paper.is_some_and(|p| p.mix == paper::OWN_LAYERS && p.print.len() == 3), "{label}: on the neutral paper");
+        assert!(k.paper.is_some_and(|p| p.mix == paper::OWN_LAYERS && p.curves == &neutral::sheet().curves), "{label}: on the neutral paper");
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
         let reference = mapped(&pixels, |p| cpu::stage47(p, &k));
         let twin = Stage47 { paper: k.paper.map(|p| Paper { scale: p.scale * 1.1, ..p }), ..k };

@@ -1,6 +1,6 @@
-//! The paper: each paper printing each layer's density as a double reading of its profile; the enlarger resting on the
-//! paper's own grey, neutral on its white, its ends the paper's; the print its own; a measure on none; the GPU on every
-//! branch. Each has a twin.
+//! The paper: each paper printing each layer's density through pure dyes as a double reading of its curves; the enlarger
+//! resting on the paper's own grey, neutral on its white, its ends the paper's; the print its own; a measure on none; the
+//! GPU on every branch. Each has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -9,7 +9,7 @@ mod frames;
 use common::{V4, graph, judge, mapped, noise, whole};
 use frames::*;
 use oni_graph::Image;
-use oni_pipeline::film::{self, bake, cie};
+use oni_pipeline::film;
 use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
 use oni_render::{Negative, PAPER_CURVE_NODES, Paper, Stage47, cpu};
@@ -24,8 +24,6 @@ fn luma(v: [f32; 3]) -> f32 {
 /// A paper's profile as its file holds it, read apart from the bake.
 #[derive(Deserialize)]
 struct Sheet {
-    channel_density: Vec<[Option<f64>; 3]>,
-    base_density: Vec<Option<f64>>,
     log_exposure: Vec<f64>,
     density_curves: Vec<[f64; 3]>,
 }
@@ -47,20 +45,12 @@ fn interp(sheet: &Sheet, c: usize, e: f64) -> f64 {
 }
 
 /// The print of a negative holding `density` over its bare film on each channel, in doubles off the profile: each
-/// layer exposed by its own channel through the time and its filter, developed on the sheet's curves, seen under D50.
+/// layer exposed by its own channel through the time and its filter, developed on the sheet's curves, each read
+/// through a pure dye on its own channel.
 fn read_off(sheet: &Sheet, filters: [f64; 3], scale: f64, density: [f64; 3]) -> ([f64; 3], [f64; 3], [f64; 3]) {
     let log: [f64; 3] = std::array::from_fn(|c| (scale * filters[c]).log10() - density[c]);
-    let developed = std::array::from_fn(|c| interp(sheet, c, log[c]));
-    let to_rgb = bake::view_matrix(&cie::D50);
-    let norm: f64 = (0..cie::WAVELENGTHS).map(|l| cie::D50[l] * cie::Y[l]).sum();
-    let mut light = [0.0; 3];
-    for l in 0..cie::WAVELENGTHS {
-        let ([Some(c), Some(m), Some(y)], Some(base)) = (sheet.channel_density[l], sheet.base_density[l]) else { continue };
-        let t = 10f64.powf(-(developed[0] * c + developed[1] * m + developed[2] * y + base));
-        let seen = bake::apply(&to_rgb, [cie::X[l], cie::Y[l], cie::Z[l]].map(|v| v * cie::D50[l] / norm));
-        light = std::array::from_fn(|k| light[k] + t * seen[k]);
-    }
-    (log, developed, light)
+    let developed: [f64; 3] = std::array::from_fn(|c| interp(sheet, c, log[c]));
+    (log, developed, developed.map(|d| 10f64.powf(-d)))
 }
 
 /// Densities from a bare film to past a negative's densest, and every mix of the three.
@@ -91,6 +81,12 @@ fn every_paper_prints_each_channels_density_on_its_own_layer_as_its_profile_read
         let magenta = [filters[0], filters[1] * 10f64.powf(-0.05), filters[2]];
         let off = densities().into_iter().map(|d| (f64::from(k.exposed(d)[1]) - read_off(&sheet, magenta, scale, d.map(f64::from)).0[1]).abs()).fold(0.0, f64::max);
         assert!(off > 1e-2, "{paper:?}: {off}");
+        // Twin: each dye absorbing a twentieth of its neighbour's density reads another light.
+        let crossed = densities().into_iter().map(|d| {
+            let (v, want) = (k.viewed(k.developed(k.exposed(d))), read_off(&sheet, filters, scale, d.map(f64::from)).1);
+            (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-(want[c] + 0.05 * want[(c + 1) % 3]))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
+        }).fold(0.0, f64::max);
+        assert!(crossed > 2e-2, "{paper:?}: {crossed}");
     }
 }
 
@@ -115,8 +111,8 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_on_the_papers_w
         assert!((0..3).all(|c| (on_white[c] - *GREY_PRINT).abs() < 2e-4), "{label}: {on_white:?}");
         // The ends are the paper's: the base above its Dmax, the densest read at most its white, neither laid on 0 or 1.
         assert!((0..3).all(|c| black[c] >= dmax[c] - 1e-6 && black[c] > 1e-3 && white[c] <= p.white[c] + 1e-6 && white[c] < 0.9), "{label}");
-        // Twin: the same time through no filtration prints the grey off neutral.
-        let bare = Stage47 { paper: Some(Paper { filters: [1.0; 3], ..p }), ..k };
+        // Twin: the same time through ten CC more yellow prints the grey off neutral.
+        let bare = Stage47 { paper: Some(Paper { filters: [p.filters[0], p.filters[1], p.filters[2] * 10f32.powf(-0.1)], ..p }), ..k };
         let unfiltered = cpu::stage47(grey_scan(&s), &bare);
         if label != "black and white" {
             assert!((unfiltered[0] / p.white[0] - unfiltered[2] / p.white[2]).abs() > 1e-2, "{label}: {unfiltered:?}");

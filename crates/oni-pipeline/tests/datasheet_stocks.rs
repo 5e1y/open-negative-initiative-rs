@@ -1,5 +1,5 @@
 //! Every stock and paper, each written from its maker's data sheet, bakes and prints finite on the CPU and the GPU, and
-//! its dyes' amounts build a neutral its sheet's densitometer reads as printed. Each has a twin.
+//! a film's dyes' amounts build a neutral its sheet's densitometer reads as printed. Each has a twin.
 
 mod common;
 
@@ -181,13 +181,12 @@ fn neutral_gap(json: &[u8], status: &Status, amounts: &str) -> f64 {
 }
 
 #[test]
-fn every_colour_sheets_neutral_of_its_dye_amounts_reads_its_printed_curves() {
+fn every_colour_films_neutral_of_its_dye_amounts_reads_its_printed_curves() {
     // A negative's sheet reads Status M, a reversal film's Status A.
     let status = |s: VirtualStock| if s.entry().reversal { &STATUS_A } else { &STATUS_M };
     let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), s.entry().profile, status(s)));
-    let papers = sheet_papers().into_iter().map(|p| (p.name(), paper::source(p).unwrap(), &STATUS_A));
     let (mut worst, mut least_miss) = (0.0f64, f64::INFINITY);
-    for (name, json, status) in films.chain(papers) {
+    for (name, json, status) in films {
         let json = json.as_bytes();
         let (gap, miss) = (neutral_gap(json, status, "density_curves"), neutral_gap(json, status, "sheet_density_curves"));
         println!("{name}: the neutral within {gap:.1e} of its sheet; the printed curves taken as amounts miss it by {miss:.3}");

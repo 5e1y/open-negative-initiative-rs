@@ -61,9 +61,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   (`virtual_negative`), then read by the negative pipeline unchanged; there is no film None. spektrafilm's full chain, on its own
   profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
-  profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. ONI's bake follows spektrafilm's
-  model (couplers, gamut compression, TH-KG3 lamp, dichroic filters). The default paper is Kodak Royal Digital, Kodak's softest
-  sheet (owner's call, 2026-11-22); a photo left on the former default, Portra Endura, lands on it.
+  profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
+  model (couplers, gamut compression); a paper's profile is its sheet's Status A curves alone, D-min included. The default paper is
+  Kodak Royal Digital, Kodak's softest sheet (owner's call, 2026-11-22); a photo left on the former default, Portra Endura, lands on it.
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
   canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
@@ -75,11 +75,15 @@ the code; a costly trap keeps its constraint and its number in two lines.
   the internegative, as a scanned slide does. Velvia 50, Velvia 100 and Ektachrome E100 hold their sheets; Provia 100F's is traced short.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
-- **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured
-  table; a photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
+- **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, its measured table
+  fitted as a paper (the scanner's matrix and three curves, pure dyes, `docs/research/frontier/frontier_print_fit.py`); a photo once
+  edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
+- **A paper is its curves** (owner's call, 2026-11-23): each layer develops on its own curve (contrast, shape, the layers' drift,
+  D-min and Dmax) and its density absorbs its own Rec. 2020 channel alone, as the neutral paper's. Real paper dyes' unwanted
+  absorptions cost a third of a scan's chroma and turned reds and skins yellow: a scan hands a paper no masked separation.
 - **A paper prints in true density with its ends anchored** (owner's calls, 2026-11-22 and 23): no ONI window and no colour compensation;
-  the picked black never lifts and lies on pure black, the paper's white on pure white, the rest showing the grey where a plain RAW
-  does (Print lift keeps the paper's own black and white); Lighting moves the whites freely.
+  the picked black never lifts and lies on pure black, the paper's white (its D-min) on pure white, the rest showing the grey where a
+  plain RAW does (Print lift keeps the paper's own black and white); Lighting moves the whites freely.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
   through the stock's curves, and the film is developed again (`negative`); ONI's print and the enlarger print it at their rest. A
   digital photo's negative is the model's own (three coupled layers, a black and white film's one uncoupled: Lighting's Exposure is the Film section's); a scan is read on
