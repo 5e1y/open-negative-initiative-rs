@@ -252,17 +252,18 @@ fn main() {
         let bare = loss(&Render::new(key, with(&[0.0; 6])), &targets);
         println!("{key}: one render {:.2} s", started.elapsed().as_secs_f64() / 2.0);
         let x0 = [COUPLERS[0][1], COUPLERS[0][2], COUPLERS[1][0], COUPLERS[1][2], COUPLERS[2][0], COUPLERS[2][1]];
-        let (best, fitted) = minimise(&|x| loss(&Render::new(key, with(x)), &targets), x0, 220);
+        // From the common matrix and from no cross term, the better kept: one start can stall where the other does not.
+        let fit = |start| minimise(&|x| loss(&Render::new(key, with(x)), &targets), start, 220);
+        let ((a, fa), (b, fb)) = (fit(x0), fit([0.0; 6]));
+        let (best, fitted) = if fa <= fb { (a, fa) } else { (b, fb) };
         let m = with(&best);
         let (gamma, ratio) = ratios(key, &m);
         let (_, common_ratio) = ratios(key, &COUPLERS);
+        let rounded = |v: f64| (v * 1000.0).round() / 1000.0;
         let line = format!(
-            concat!(
-                "{key}\n  crosstalk error (Oklab², mean): common {common:.6}, no cross term {bare:.6}, fitted {fitted:.6}\n",
-                "  fitted matrix (row donor, column receiver): {:?}\n",
-                "  layer gammas {:?}; interimage ratios R/G/B common {:?}, fitted {:?}\n"
-            ),
-            m.map(|r| r.map(|v| (v * 1000.0).round() / 1000.0)),
+            "{key}\n  crosstalk error (Oklab², mean): common {common:.6}, no cross term {bare:.6}, fitted {fitted:.6}\n  fitted {:?}\n  \
+             layer gammas {:?}; interimage ratios R/G/B common {:?}, fitted {:?}\n",
+            m.map(|r| r.map(rounded)),
             gamma.map(|v| (v * 100.0).round() / 100.0),
             common_ratio.map(|v| (v * 100.0).round() / 100.0),
             ratio.map(|v| (v * 100.0).round() / 100.0)

@@ -12,7 +12,7 @@ fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     let own = film::couplers(&v.entry());
     assert_ne!(own, COUPLERS, "Portra 800's file holds its own matrix");
     // Twin: a file holding none reads the common matrix.
-    assert_eq!(film::couplers(&VirtualStock::of("kodak-gold-200").entry()), COUPLERS);
+    assert_eq!(film::couplers(&VirtualStock::of("fujifilm-160nc").entry()), COUPLERS);
     let f32s = own.map(|r| r.map(|x| x as f32));
     assert_eq!((film::stock(v).kernel.couplers, negative::development(Film::Stock(v)).couplers), (f32s, f32s));
 

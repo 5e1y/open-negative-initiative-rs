@@ -12936,5 +12936,13 @@
     "status": "done",
     "detail": "Owner's call: in place of the enlarger's C, M and Y in CC from none (a view of Temperature and Tint), Knob::Filtration reads and writes one channel's filter in stops on Print::FILTER_RANGE, the same filters at the same place on the negative; Temperature and Tint keep reading their differences. The filters' shared move, which Temperature and Tint leave out, is told under Tint (Store.filters-shared). Readout::Cc and Print::filtration removed. No format change.",
     "outcome": "knob tests: one band moved leaves the others, the three a stop down move the mean a stop and leave Temperature and Tint (twin: Temperature shifts two bands)."
+  },
+  {
+    "id": 3730,
+    "type": "change",
+    "title": "Fifteen colour films develop through their own couplers fitted on the reference charts; a digital photo is offered a colour film only once its couplers are measured, and one on a film offered no more reads on the menu's first",
+    "status": "done",
+    "detail": "examples/coupler_fit.rs, now fitting from the common matrix and from no cross term and keeping the better, run on the reference charts of Fujicolor C200, Pro 400H, Superia 1600 and 200, Ektar 100, Gold 200, Portra 160, 160NC, 160VC, 400 and 800 (its pushes sharing its matrix), UltraMax 400 and Vision3 200T, 250D and 500T; references derived again (0.0011 at most). VirtualEntry::offered: a colour film holding its couplers, a black and white one or a look; the digital menus list those, and a photo on a film offered no more reads on the menu's first (PipelineSettings::on_offered_film at the sidecar's read; a key no file defines keeps its key). Vision3 50D keeps the common matrix: it is the slides' internegative, and its fitted one turned a slide's colour ramp back by 0.071 under the Red and Blue mixer (colour_on_negative). The neutral-ramp twin's bound lowered to 2.5 times the chroma, the weaker interimage tinting a mislit grey less (Portra 160 at 39.9).",
+    "outcome": "Crosstalk error, common to fitted (Oklab² mean): from 0.0007-0.0030 to 0.00017-0.00063, every fit under both the common matrix and no cross term; implied interimage ratios 1.00-1.38."
   }
 ]

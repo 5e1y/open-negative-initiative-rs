@@ -162,3 +162,21 @@ fn a_file_says_what_it_describes() {
     let both = String::from_utf8_lossy(paper).replacen("\"frontier\":", "\"profile\": {}, \"frontier\":", 1);
     assert!(file::read(both.as_bytes()).is_err());
 }
+
+/// A digital photo on a colour film its menu offers no more reads on the menu's first; an offered film, a black and white
+/// one and a key no file defines stay as stored.
+#[test]
+fn a_photo_on_a_film_offered_no_more_reads_on_the_first_offered() {
+    use crate::{ConversionMode, PipelineSettings, VirtualStock};
+    let on = |key: &'static str| PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of(key));
+    let first = super::current().films().iter().filter_map(|k| k.film).find(|v| v.entry().offered()).expect("one offered");
+    let moved = on("fujifilm-160nc").on_offered_film();
+    assert!(!VirtualStock::of("fujifilm-160nc").entry().offered());
+    assert_eq!(moved, on(first.key()), "on {first:?} whole, its gains, windows and dyes");
+    // Twins: an offered film, a black and white one and a key no file defines keep their settings.
+    for key in ["kodak-portra-400", "ilford-hp5-plus"] {
+        assert_eq!(on(key).on_offered_film(), on(key), "{key}");
+    }
+    let gone = PipelineSettings { virtual_film: Some(crate::VirtualFilm { stock: VirtualStock::of("lut-gone"), exposure: 0.0 }), ..on("kodak-portra-400") };
+    assert_eq!(gone.clone().on_offered_film(), gone);
+}

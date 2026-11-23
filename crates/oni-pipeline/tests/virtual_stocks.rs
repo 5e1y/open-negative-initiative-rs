@@ -205,6 +205,6 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             continue;
         }
         assert!(worst < CHROMA, "{stock:?}: {lit:?}");
-        assert!(twin > 3.5 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
+        assert!(twin > 2.5 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
     }
 }

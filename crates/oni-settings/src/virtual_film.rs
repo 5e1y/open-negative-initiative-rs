@@ -61,6 +61,14 @@ impl StockReference {
 #[cfg(test)]
 mod tests;
 
+impl VirtualEntry {
+    /// A digital photo is offered it: a colour film whose couplers are measured, a black and white one, which has none,
+    /// or a look.
+    pub fn offered(&self) -> bool {
+        self.silver || self.couplers.is_some() || self.look.is_some()
+    }
+}
+
 impl VirtualStock {
     /// Every stock a digital photo can be shot on, in the menus' order.
     pub fn all() -> Vec<VirtualStock> {

@@ -86,7 +86,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0xc6fc_c9ab_e528_fe15;
+    const BEFORE: u64 = 0xa49d_38ff_2ea4_0e9d;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }

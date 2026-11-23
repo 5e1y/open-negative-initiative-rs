@@ -124,9 +124,9 @@ pub fn by_brand(current: Option<&str>) -> Vec<(&'static str, Vec<usize>)> {
     among(|k| k.offered || (k.line && current == Some(k.id)))
 }
 
-/// The stocks a digital photo can be shot on, by brand as `by_brand` lists them.
+/// The stocks a digital photo is offered, by brand as `by_brand` lists them.
 pub fn virtual_by_brand() -> Vec<(&'static str, Vec<usize>)> {
-    among(|k| k.film.is_some())
+    among(|k| k.film.is_some_and(|v| v.entry().offered()))
 }
 
 /// The papers by maker, in the catalogue's order, as indices into it.
@@ -249,16 +249,19 @@ mod tests {
         assert_eq!(makers.len(), makers.iter().collect::<std::collections::BTreeSet<_>>().len(), "each maker once");
     }
 
-    /// A digital photo's sheet lists the stocks a virtual film stands for, every one of them, and no other.
+    /// A digital photo's sheet lists the stocks an offered virtual film stands for, every one of them, and no other.
     #[test]
-    fn the_virtual_films_are_listed_alone() {
+    fn the_offered_virtual_films_are_listed_alone() {
         let listed: Vec<&str> = virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].id).collect();
-        let virtual_ids: Vec<&str> = oni_settings::VirtualStock::all().iter().map(|v| v.catalogue_id()).collect();
+        let offered = oni_settings::VirtualStock::all().into_iter().filter(|v| v.entry().offered());
+        let virtual_ids: Vec<&str> = offered.map(|v| v.catalogue_id()).collect();
         assert_eq!(listed.len(), virtual_ids.len());
         assert!(virtual_ids.iter().all(|id| listed.contains(id) && virtual_stock(id).is_some()), "{listed:?}");
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
         assert!(!listed.contains(&"agfaphoto-apx") && virtual_stock("agfaphoto-apx").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
+        // A colour film whose couplers are not measured is not offered; a black and white one is.
+        assert!(!listed.contains(&"fujifilm-160nc") && listed.contains(&"kodak-portra400") && listed.contains(&"ilford-hp5"));
     }
 
     #[test]

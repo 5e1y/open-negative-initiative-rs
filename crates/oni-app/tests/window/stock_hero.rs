@@ -260,10 +260,11 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     let (names, _) = menu(&stocks);
     let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].display_name).collect();
     assert_eq!(names, by_brand);
-    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::all().iter().map(|v| v.name().to_string()).collect::<Vec<_>>());
+    let offered = VirtualStock::all().into_iter().filter(|v| v.entry().offered());
+    let (mut sorted, mut virtual_names) = (names.clone(), offered.map(|v| v.name().to_string()).collect::<Vec<_>>());
     sorted.sort();
     virtual_names.sort();
-    assert_eq!(sorted, virtual_names, "the virtual films alone, every one");
+    assert_eq!(sorted, virtual_names, "the offered virtual films alone, every one");
     assert!(names.len() < oni_settings::film::offered_stocks().len(), "twin: a roll's menu lists more");
     assert_eq!(stocks.get_lines().row_data(usize::try_from(stocks.get_in_use()).unwrap()).unwrap().name.as_str(), VirtualStock::of("kodak-portra-800").name(), "the film in use checked");
     assert!(stocks.get_lines().iter().filter(|l| !l.brand).all(|l| l.has_artwork), "each line with its canister");

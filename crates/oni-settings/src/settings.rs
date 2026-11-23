@@ -281,6 +281,18 @@ impl PipelineSettings {
         self.mode.is_digital().then(|| self.virtual_film.unwrap_or_default())
     }
 
+    /// A digital photo on a film it is offered no more reads on the first one its menu lists; a key no file defines keeps
+    /// its key until the file is back.
+    pub fn on_offered_film(self) -> PipelineSettings {
+        let Some(film) = self.film() else { return self };
+        let catalogue = crate::stocks::current();
+        if catalogue.virtual_film(film.stock).is_none_or(|e| e.offered()) {
+            return self;
+        }
+        let first = catalogue.films().iter().filter_map(|k| k.film).find(|v| catalogue.virtual_film(*v).is_some_and(|e| e.offered()));
+        first.map_or(self.clone(), |v| self.on_stock(v))
+    }
+
     /// A black and white picture: a monochrome roll's, or a digital photo's on a black and white film, whose
     /// negative holds silver alone and is read as a monochrome roll's is.
     pub fn is_monochrome(&self) -> bool {

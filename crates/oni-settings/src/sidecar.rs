@@ -168,7 +168,7 @@ impl Loaded {
         Loaded {
             writable: writable && document.version <= document::VERSION,
             is_new: false,
-            settings: document.settings,
+            settings: document.settings.on_offered_film(),
             imported_at: document.imported_at,
             label: document.label,
             exif: document.exif_line,

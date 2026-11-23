@@ -93,17 +93,17 @@ fn on_own_reference(s: &PipelineSettings) -> bool {
 
 #[test]
 fn a_film_picked_on_one_digital_photo_leaves_the_folders_others_on_their_own_film() {
-    let (mut store, dir, [a, b, c]) = on_stocks("picked", VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-verita-200d"));
+    let (mut store, dir, [a, b, c]) = on_stocks("picked", VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-gold-200"));
     let next = store.settings().on_stock(VirtualStock::of("kodak-vision3-200t"));
     store.apply_at(Command::Write(Box::new(next)), 0.0);
     store.flush();
     assert!(on_own_reference(&read(&a)) && read(&a).film().unwrap().stock == VirtualStock::of("kodak-vision3-200t"));
     for p in [&b, &c] {
         let s = read(p);
-        assert_eq!(s.film().unwrap().stock, VirtualStock::of("kodak-verita-200d"), "{p}");
+        assert_eq!(s.film().unwrap().stock, VirtualStock::of("kodak-gold-200"), "{p}");
         assert!(on_own_reference(&s), "{p}: {:?} {:?}", s.gains, s.dye_set);
     }
-    // Twin: Verita read on Vision3 200T's gains and dyes, what the folder's roll laid, is off its reference.
+    // Twin: Gold 200 read on Vision3 200T's gains and dyes, what the folder's roll laid, is off its reference.
     let mut laid = read(&b);
     laid.gains.stops = VirtualStock::of("kodak-vision3-200t").reference().stops;
     laid.dye_set = VirtualStock::of("kodak-vision3-200t").dye_set();
