@@ -110,40 +110,27 @@ fn the_film_exposure_moves_a_digital_photos_film_alone() {
     assert_eq!(Knob::FilmExposure.set(&negative, 1.0), negative);
 }
 
-/// C, M and Y read Temperature and Tint back to the bit, and an edit of either lands on the other exactly.
+/// C, M and Y are each band's filter alone, in stops either way: one moved leaves the others, the three moved together
+/// move the light and leave Temperature and Tint, which read their differences.
 #[test]
-fn c_m_and_y_read_temperature_and_tint_and_write_them_back_without_drift() {
+fn c_m_and_y_move_one_band_each_and_together_the_light() {
     let cmy = |s: &PipelineSettings| Channel::ALL.map(|c| Knob::Filtration(c).get(s));
-    let (mut worst, mut largest) = (0f32, 0f32);
-    for i in 0..=20 {
-        for j in 0..=20 {
-            let t = -2.0 + 0.2 * i as f32;
-            let tint = -1.5 + 0.15 * j as f32;
-            let s = Knob::Tint.set(&Knob::Temperature.set(&PipelineSettings::default(), t), tint);
-            let read = cmy(&s);
-            assert!(read.contains(&0.0) && read.iter().all(|v| *v >= 0.0), "the least at none: {read:?}");
-            largest = largest.max(read.iter().copied().fold(0.0, f32::max));
-            // Each value written back as read moves nothing, to the bit.
-            for c in Channel::ALL {
-                assert_eq!(Knob::Filtration(c).set(&s, read[c as usize]), s, "{c:?} at {t} {tint}");
-            }
-            // Six CC more of a filter above none reads six more, Temperature and Tint moving by its share inside their tracks.
-            let inside = t.abs() <= 1.6 && tint.abs() <= 1.2;
-            if let Some(c) = Channel::ALL.into_iter().find(|c| inside && read[*c as usize] > 0.0) {
-                let moved = Knob::Filtration(c).set(&s, read[c as usize] + 6.0);
-                let after = cmy(&moved);
-                worst = worst.max((after[c as usize] - read[c as usize] - 6.0).abs());
-                // And six back lands on the settings it left.
-                let back = Knob::Filtration(c).set(&moved, after[c as usize] - 6.0);
-                worst = worst.max((Knob::Temperature.get(&back) - t).abs().max((Knob::Tint.get(&back) - tint).abs()));
-            }
-        }
+    let s = Knob::Tint.set(&Knob::Temperature.set(&PipelineSettings::default(), 0.8), -0.3);
+    let before = cmy(&s);
+    let cyan = Knob::Filtration(Channel::Red).set(&s, before[0] - 0.4);
+    let after = cmy(&cyan);
+    assert!((after[0] - before[0] + 0.4).abs() < 1e-6 && after[1] == before[1] && after[2] == before[2], "{after:?}");
+    // The three a stop down: the light a stop down, Temperature and Tint where they were.
+    let darker = Channel::ALL.into_iter().fold(s.clone(), |t, c| Knob::Filtration(c).set(&t, Knob::Filtration(c).get(&t) - 1.0));
+    let mean = |s: &PipelineSettings| s.print.filters().iter().sum::<f32>() / 3.0;
+    assert!((mean(&darker) - mean(&s) + 1.0).abs() < 1e-6);
+    assert!((Knob::Temperature.get(&darker) - 0.8).abs() < 1e-6 && (Knob::Tint.get(&darker) + 0.3).abs() < 1e-6);
+    // Each read written back moves nothing, to the bit, and a value past the track is held at its end.
+    for c in Channel::ALL {
+        assert_eq!(Knob::Filtration(c).set(&s, before[c as usize]), s);
     }
-    println!("C, M and Y within {worst:.1e} of the edit, the largest filter {largest:.1} CC");
-    assert!(worst < 1e-5 && largest <= oni_settings::tone::Print::FILTRATION_RANGE.1, "{worst} {largest}");
-    // Twin: a mapping that writes Tint as the filters' plain mean, forgetting green's double weight, drifts.
-    let s = Knob::Tint.set(&PipelineSettings::default(), 0.6);
-    let c = cmy(&s);
-    let lossy = ((c[0] + c[2]) / 2.0 - c[1]) / oni_settings::tone::CC_PER_STOP * (2.0 / 3.0);
-    assert!((lossy - Knob::Tint.get(&s)).abs() > 0.1, "{lossy}");
+    assert_eq!(Knob::Filtration(Channel::Blue).range(&s), Some(oni_settings::tone::Print::FILTER_RANGE));
+    // Twin: Temperature moved instead shifts two bands at once.
+    let warmer = cmy(&Knob::Temperature.set(&s, 1.2));
+    assert!(warmer[0] != before[0] && warmer[2] != before[2]);
 }

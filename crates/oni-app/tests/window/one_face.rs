@@ -133,7 +133,7 @@ pub(crate) fn a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switch
     let _ = std::fs::remove_dir_all(&root);
 }
 
-pub(crate) fn settings_read_the_filters_as_c_m_and_y_with_the_same_values() {
+pub(crate) fn settings_read_the_filters_as_c_m_and_y_each_band_either_way() {
     let Some((rig, shell, root)) = launch("cmy", |_| {}) else { return };
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let store = w.global::<oni_app::Store>();
@@ -144,8 +144,8 @@ pub(crate) fn settings_read_the_filters_as_c_m_and_y_with_the_same_values() {
     ctl.act(oni_app::Act::FiltrationCmy);
     rig.settle();
     assert!(!shown(w, Role::Slider, "Temperature") && !shown(w, Role::Slider, "Tint"), "C, M and Y in their place");
-    // A stop of Temperature is the red's half a stop up and the blue's down: thirty CC of C over Y, M halfway.
-    assert_eq!([slider_value(w, "C"), slider_value(w, "M"), slider_value(w, "Y")], ["30 CC", "15 CC", "0 CC"]);
+    // A stop of Temperature is the red's half a stop up and the blue's down: C up half a stop, Y down, M at none.
+    assert_eq!([slider_value(w, "C"), slider_value(w, "M"), slider_value(w, "Y")], ["+0.50 EV", "0.00 EV", "\u{2212}0.50 EV"]);
     assert_eq!(ctl.state.borrow().store().settings().print.filters(), filters, "switching moves no value");
     println!("shot {}", rig.shot("after-colour-cmy").display());
     ctl.act(oni_app::Act::FiltrationCmy);
@@ -153,6 +153,18 @@ pub(crate) fn settings_read_the_filters_as_c_m_and_y_with_the_same_values() {
     // Twin: back on Temperature and Tint the same values read as they were typed.
     assert!(shown(w, Role::Slider, "Temperature") && !shown(w, Role::Slider, "C"));
     assert!(slider_value(w, "Temperature").contains("1.00"), "{}", slider_value(w, "Temperature"));
+    assert!(!shown(w, Role::Text, "C, M and Y move the light"), "a move of Temperature alone shares nothing");
+    // The three a stop down: the light a stop down, which Temperature and Tint leave out, told under Tint.
+    ctl.act(oni_app::Act::FiltrationCmy);
+    rig.settle();
+    for f in [oni_app::fields::Field::Cyan, oni_app::fields::Field::Magenta, oni_app::fields::Field::Yellow] {
+        store.invoke_typed(f.index(), -100);
+    }
+    rig.settle();
+    assert_eq!(ctl.state.borrow().store().settings().print.filters(), [-0.5, -1.0, -1.5], "each band a stop down from where it was");
+    ctl.act(oni_app::Act::FiltrationCmy);
+    rig.settle();
+    assert!(shown(w, Role::Text, "C, M and Y move the light by \u{2212}1.00 EV") && slider_value(w, "Temperature").contains("1.00"));
     drop(store);
     drop(ctl);
     drop(shell);

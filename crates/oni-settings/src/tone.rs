@@ -11,7 +11,6 @@ pub const CC_PER_STOP: f32 = 100.0 * std::f32::consts::LOG10_2;
 
 pub mod color_density;
 pub mod contrast;
-mod filtration;
 mod on_negative;
 mod read;
 
@@ -210,8 +209,6 @@ impl Print {
     pub const TINT_AXIS: V3 = [1.0 / 3.0, -2.0 / 3.0, 1.0 / 3.0];
     pub const TEMPERATURE_RANGE: (f32, f32) = (-2.0, 2.0);
     pub const TINT_RANGE: (f32, f32) = (-1.5, 1.5);
-    /// C, M and Y's track in CC: past the 2.5 stops Temperature's and Tint's ends reach together.
-    pub const FILTRATION_RANGE: (f32, f32) = (0.0, 80.0);
     pub const CONTRAST_RANGE: (f32, f32) = (-0.5, 0.5);
     pub const END_RANGE: (f32, f32) = (-1.0, 1.0);
     pub const ZONE_RANGE: (f32, f32) = (-0.25, 0.25);

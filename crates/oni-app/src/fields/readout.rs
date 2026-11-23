@@ -13,8 +13,6 @@ pub enum Unit {
     Times,
     Pixels,
     Microns,
-    /// Kodak colour-compensating units.
-    Cc,
 }
 
 impl Unit {
@@ -27,7 +25,6 @@ impl Unit {
             Unit::Times => "×",
             Unit::Pixels => " px",
             Unit::Microns => " µm",
-            Unit::Cc => " CC",
         }
     }
 }
@@ -97,8 +94,6 @@ pub enum Readout {
     Microns,
     /// Signed and whole: DNG's tint, a lens correction's share.
     SignedWhole,
-    /// A filter in CC, whole.
-    Cc,
 }
 
 impl Readout {
@@ -138,7 +133,6 @@ impl Readout {
             Readout::Pixels => (1, false, Unit::Pixels),
             Readout::Microns => (0, false, Unit::Microns),
             Readout::SignedWhole => (0, true, Unit::Bare),
-            Readout::Cc => (0, false, Unit::Cc),
         }
     }
 

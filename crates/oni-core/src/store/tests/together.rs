@@ -179,10 +179,10 @@ fn a_filter_moved_as_c_m_or_y_moves_each_frame_together_by_its_distance() {
     store.set_together(vec![b.clone()]);
     let knob = Knob::Filtration(crate::knob::Channel::Blue);
     let (open, theirs) = (knob.get(store.settings()), knob.get(&read(&b)));
-    store.apply_at(Command::Step { knob, by: 6.0 }, 0.0);
-    assert!((knob.get(&read(&b)) - theirs - 6.0).abs() < 1e-4, "six CC more Y on its own {theirs}");
+    store.apply_at(Command::Step { knob, by: 0.2 }, 0.0);
+    assert!((knob.get(&read(&b)) - theirs - 0.2).abs() < 1e-4, "a fifth of a stop more Y on its own {theirs}");
     // Twin: the open frame's own Y is another, which a value laid whole would have copied.
-    assert!((knob.get(store.settings()) - open - 6.0).abs() < 1e-4 && (open - theirs).abs() > 1.0);
+    assert!((knob.get(store.settings()) - open - 0.2).abs() < 1e-4 && (open - theirs).abs() > 0.1);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

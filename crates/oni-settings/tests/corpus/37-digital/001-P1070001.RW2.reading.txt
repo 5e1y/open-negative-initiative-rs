@@ -87,21 +87,21 @@ settings: PipelineSettings {
     levels: LevelsSet {
         red: Levels {
             black: -0.0001373291,
-            white: 1.2291752,
+            white: 1.229169,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         green: Levels {
             black: -0.0001373291,
-            white: 1.2195816,
+            white: 1.219581,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,
         },
         blue: Levels {
             black: -0.0001373291,
-            white: 1.4083437,
+            white: 1.4083453,
             mid: 0.5,
             shadows: 0.25,
             highlights: 0.75,

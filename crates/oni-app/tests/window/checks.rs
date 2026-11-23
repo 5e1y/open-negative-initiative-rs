@@ -6,7 +6,7 @@ use super::*;
 pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner", one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner),
     ("one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it", one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it),
-    ("one_face::settings_read_the_filters_as_c_m_and_y_with_the_same_values", one_face::settings_read_the_filters_as_c_m_and_y_with_the_same_values),
+    ("one_face::settings_read_the_filters_as_c_m_and_y_each_band_either_way", one_face::settings_read_the_filters_as_c_m_and_y_each_band_either_way),
     ("archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once", archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once),
     ("auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back", auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back),
     ("balance_kept::a_kept_balance_lands_at_once_alone_and_six_together", balance_kept::a_kept_balance_lands_at_once_alone_and_six_together),

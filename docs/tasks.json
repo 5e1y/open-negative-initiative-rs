@@ -12928,5 +12928,13 @@
     "status": "done",
     "detail": "A film block's optional couplers field (stock file and catalogue) is read by the bake (film::couplers, layers, derive) and by Lighting's development (negative::developing); a file without one reads the common matrix. The six cross terms of each matrix fitted by examples/coupler_fit.rs: a digital render's colour crosstalk (a colour against its channels each sent alone through the grey response, in Oklab) matched to the reference's on 88 chart colours, the diagonal and the data sheets' curves kept. The derived references move by 4e-5 at most, so no photo's gains or windows move.",
     "outcome": "Crosstalk error (Oklab² mean) common to fitted: Portra 800 0.00127 to 0.00038, Portra 400 0.00141 to 0.00035, UltraMax 400 0.00119 to 0.00031; implied interimage ratios 1.0-1.33, Kodak's band for negatives made to be scanned. tests/couplers.rs: grey 6.6e-6 apart, a red 0.26 (twin). Owner's verdict on the sheet: the fitted renders are the best."
+  },
+  {
+    "id": 3729,
+    "type": "change",
+    "title": "C, M and Y are each band's filter alone, in stops either way on bipolar tracks; moved together they move the photograph's light",
+    "status": "done",
+    "detail": "Owner's call: in place of the enlarger's C, M and Y in CC from none (a view of Temperature and Tint), Knob::Filtration reads and writes one channel's filter in stops on Print::FILTER_RANGE, the same filters at the same place on the negative; Temperature and Tint keep reading their differences. The filters' shared move, which Temperature and Tint leave out, is told under Tint (Store.filters-shared). Readout::Cc and Print::filtration removed. No format change.",
+    "outcome": "knob tests: one band moved leaves the others, the three a stop down move the mean a stop and leave Temperature and Tint (twin: Temperature shifts two bands)."
   }
 ]

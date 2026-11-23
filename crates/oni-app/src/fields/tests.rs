@@ -352,7 +352,7 @@ fn every_slider_names_one_field_twice() {
     assert_eq!(crossed(&shifted), [(4, "exposure".to_string())]);
 }
 
-/// On a paper C, M and Y lay their filter on the negative, a stop each 30.1 CC: the enlarger's dial stays at its rest.
+/// On a paper C, M and Y lay their filter on the negative, in stops: the enlarger's dial stays at its rest.
 #[test]
 fn on_a_paper_a_filter_moved_moves_the_negative_and_leaves_the_enlargers_dial() {
     use oni_core::knob::{Channel, Knob};
@@ -360,7 +360,7 @@ fn on_a_paper_a_filter_moved_moves_the_negative_and_leaves_the_enlargers_dial() 
     let dial = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::printing(s).expect("on its paper").filtration;
     let own = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::stage47(s).negative.map_or([0.0; 3], |n| n.own_shift);
     for c in [Channel::Red, Channel::Green, Channel::Blue] {
-        let moved = Knob::Filtration(c).set(&s, Knob::Filtration(c).get(&s) + 6.0);
+        let moved = Knob::Filtration(c).set(&s, Knob::Filtration(c).get(&s) + 0.2);
         assert_eq!(dial(&moved), dial(&s), "{c:?}: the enlarger at its rest");
         let stops = own(&moved).map(|v| v / std::f32::consts::LOG10_2);
         let filters = moved.print.filters();

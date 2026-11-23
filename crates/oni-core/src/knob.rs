@@ -169,7 +169,7 @@ impl Knob {
             Knob::ChannelContrast(_) => Print::CONTRAST_RANGE,
             Knob::Temperature => Print::TEMPERATURE_RANGE,
             Knob::Tint => Print::TINT_RANGE,
-            Knob::Filtration(_) => Print::FILTRATION_RANGE,
+            Knob::Filtration(_) => Print::FILTER_RANGE,
             Knob::Density => color_density::RANGE,
             Knob::Vignette => Vignette::RANGE,
             Knob::Texture => Texture::RANGE,
@@ -216,7 +216,7 @@ impl Knob {
             Knob::ChannelContrast(c) => p.channel_contrast[c.index()],
             Knob::Temperature => p.red.exposure - p.blue.exposure,
             Knob::Tint => (p.red.exposure + p.blue.exposure) / 2.0 - p.green.exposure,
-            Knob::Filtration(c) => p.filtration()[c.index()],
+            Knob::Filtration(c) => p.filters()[c.index()],
             Knob::Density => s.density,
             Knob::Vignette => s.vignette.stops,
             Knob::Texture => s.texture.amount,
@@ -283,13 +283,11 @@ impl Knob {
                 let by = v - Knob::Tint.get(s);
                 shift_filters(&mut out.print, Print::TINT_AXIS, by);
             }
-            // The filter's move lands as Temperature's and Tint's, each on its own axis and track.
+            // One band's filter alone, in stops of its light: the three moved together move the photograph's light.
             Knob::Filtration(c) => {
-                let mut cc = s.print.filtration();
-                cc[c.index()] = v;
-                let (warmer, pinker) = s.print.filtration_moves(cc);
-                let warmed = Knob::Temperature.set(s, Knob::Temperature.get(s) + warmer);
-                return Knob::Tint.set(&warmed, Knob::Tint.get(&warmed) + pinker);
+                let mut f = out.print.filters();
+                f[c.index()] = v;
+                out.print.set_filters(f);
             }
             Knob::Density => out.density = v,
             Knob::Vignette => out.vignette.stops = v,

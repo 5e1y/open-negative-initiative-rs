@@ -83,7 +83,7 @@ export component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         demo: "white-balance";
-        help: PanelState.filtration-cmy ? @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with the filters. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nC, M and Y are an enlarger's cyan, magenta and yellow filters in CC, each taking its own band of light, thirty CC a stop: more C prints redder, more M greener, more Y bluer. The least stays at none, as on an enlarger, and none changes how light the photograph is. Settings shows them as Temperature and Tint instead, the same values.\n\nSaturation makes every colour stronger or greyer at once, on the negative, so none goes past what the print can hold.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once, on the negative, so none goes past what the print can hold.");
+        help: PanelState.filtration-cmy ? @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with the filters. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nC, M and Y each move one band of light on the negative, in stops, either way: C between cyan and red, M between magenta and green, Y between yellow and blue. Moved together they move the photograph's light: all three a stop down darken it a stop. Temperature and Tint, which Settings shows instead, read the differences between them; what the three share is told under Tint.\n\nSaturation makes every colour stronger or greyer at once, on the negative, so none goes past what the print can hold.") : @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with Temperature and Tint. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nTemperature moves the colour between blue and yellow, Tint between green and magenta; neither changes how light the photograph is.\n\nSaturation makes every colour stronger or greyer at once, on the negative, so none goes past what the print can hold.");
         SettingsRow {
             open <=> root.balance-settings;
             show-help: @tr("Show Auto White Balance Strength");
@@ -128,21 +128,23 @@ export component ColorPane inherits Pane {
             field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        // The same filters as an enlarger's C, M and Y, each from none: its own colour's ramp.
+        // What C, M and Y move together, which Temperature and Tint do not read.
+        if !PanelState.filtration-cmy && Store.filters-shared != "": Label { role: TextRole.note; text: Store.filters-shared; }
+        // The same filters, each band's alone, in stops either way.
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
             field: 56; label: @tr("C"); fraction: Store.cyan-fraction; readout: Store.cyan-readout; value-text: Store.cyan-value;
-            fill: SliderFill.ramp; tint: Colour.channel-cyan;
+            fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
             field: 57; label: @tr("M"); fraction: Store.magenta-fraction; readout: Store.magenta-readout; value-text: Store.magenta-value;
-            fill: SliderFill.ramp; tint: Colour.channel-magenta;
+            fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
         }
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
             field: 58; label: @tr("Y"); fraction: Store.yellow-fraction; readout: Store.yellow-readout; value-text: Store.yellow-value;
-            fill: SliderFill.ramp; tint: Colour.channel-yellow;
+            fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
     }

@@ -53,6 +53,10 @@ impl Ctl {
             }
         }
         // A reset key shows while a frame shown stands off the rest it would take, the open one or one beside it.
+        // The filters' shared move, which Temperature and Tint leave out, told where they show.
+        let shared = self.state.borrow().store.settings().print.filters().iter().sum::<f32>() / 3.0;
+        let told = if shared.abs() < 0.005 { String::new() } else { oni_i18n::tr!("C, M and Y move the light by {stops}", stops = self.readout_at(Field::Cyan, shared)) };
+        g.set_filters_shared(told.into());
         let beside = self.beside().blocks;
         let (modified, rests, marked) = {
             let s = self.state.borrow();

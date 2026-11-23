@@ -265,10 +265,10 @@ impl Field {
             Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
             // A paper's print brightened between its anchored pick and its white, in the stops of ONI's Exposure.
             Field::Brightness => s("Brightness", Print::BRIGHTNESS_RANGE, Readout::Stops),
-            // The print's filters as an enlarger's, in CC from none.
-            Field::Cyan => s("C", Print::FILTRATION_RANGE, Readout::Cc),
-            Field::Magenta => s("M", Print::FILTRATION_RANGE, Readout::Cc),
-            Field::Yellow => s("Y", Print::FILTRATION_RANGE, Readout::Cc),
+            // Each band's filter on the negative, in stops either way: C on red's band, M on green's, Y on blue's.
+            Field::Cyan => s("C", Print::FILTER_RANGE, Readout::Stops),
+            Field::Magenta => s("M", Print::FILTER_RANGE, Readout::Stops),
+            Field::Yellow => s("Y", Print::FILTER_RANGE, Readout::Stops),
         }
     }
 
