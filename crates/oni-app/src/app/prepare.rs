@@ -60,7 +60,10 @@ const DRAFT_FLUSH: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// The roll being prepared: `mode == .roll` and every `roll…` value of the scene.
 pub(crate) struct Roll {
+    /// Written through `set_shown` alone, which holds the app's background decodes while it is set.
     pub shown: bool,
+    /// The background decodes held back while the roll is shown, so its own come first.
+    held: Option<crate::decode_gate::Held<'static>>,
     back_to_gallery: bool,
     frames: Vec<Frame>,
     /// `rollSources`: the files as they came, which a grouping of passes reads.
@@ -140,6 +143,7 @@ impl Default for Roll {
     fn default() -> Self {
         Roll {
             shown: false,
+            held: None,
             back_to_gallery: true,
             frames: Vec::new(),
             sources: Vec::new(),
@@ -203,6 +207,18 @@ impl Default for Roll {
 impl Roll {
     pub(super) fn new(require: bool) -> Roll {
         Roll { require, ..Roll::default() }
+    }
+
+    /// The roll shown or left: while shown, the gallery's thumbnails, measuring copies and every other
+    /// background decode stand still, so the roll's frames are decoded and rendered first.
+    pub(in crate::app) fn set_shown(&mut self, shown: bool) {
+        self.shown = shown;
+        if shown && self.held.is_none() {
+            self.held = Some(crate::decode_gate::hold_for_roll());
+            crate::timing::line("the background decodes stand still while the roll is prepared");
+        } else if !shown && self.held.take().is_some() {
+            crate::timing::line("the background decodes resume, the roll left");
+        }
     }
 
     /// The stock the roll is prepared on: the one picked or its marker's, else its film type's generic one.

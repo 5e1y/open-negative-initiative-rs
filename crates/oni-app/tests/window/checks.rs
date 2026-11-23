@@ -182,6 +182,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
     ("prepare_loupe::an_unreadable_scan_says_why_on_the_base_step", prepare_loupe::an_unreadable_scan_says_why_on_the_base_step),
     ("prepare_frames::the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scrub_dissolves", prepare_frames::the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scrub_dissolves),
+    ("prepare_first::the_roll_prepared_decodes_while_the_gallery_stands_still", prepare_first::the_roll_prepared_decodes_while_the_gallery_stands_still),
     ("prepare_ending::prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_settings_asks", prepare_ending::prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_settings_asks),
     ("prepare_walk::next_alone_passes_an_empty_step_and_a_pick_on_the_film_goes_straight_on", prepare_walk::next_alone_passes_an_empty_step_and_a_pick_on_the_film_goes_straight_on),
     ("dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up", dng::high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up),
