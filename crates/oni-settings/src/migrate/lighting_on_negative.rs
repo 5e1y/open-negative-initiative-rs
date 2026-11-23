@@ -9,7 +9,7 @@ use crate::tone::Print;
 
 /// `settings` of `version` with Exposure in this format's units, every step before this one done.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
-    if version >= LIGHTING_ON_NEGATIVE_VERSION || settings.legacy().is_none() || settings.paper().is_some() {
+    if version >= LIGHTING_ON_NEGATIVE_VERSION || settings.legacy().is_none() || super::chain::papered(&settings) {
         return settings;
     }
     let exposure = settings.print.exposure - look_entry_exposure(settings.mode) + former_rest(settings.mode);

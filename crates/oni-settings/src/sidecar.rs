@@ -135,11 +135,13 @@ fn standing(bytes: &[u8], original: &Path, mosaic: bool) -> Result<Loaded, Error
         Standing::Newer(_) => {
             let (mut c, _) = migrate::asked(original, Some(mosaic), |facts| migrate::reading(bytes, facts, true)).map_err(refused)?;
             c.document.settings = migrate::measured_dyes::marked(c.from, std::mem::take(&mut c.document.settings), original);
+            c.document.settings = migrate::slide_projector::marked(c.from, std::mem::take(&mut c.document.settings), original);
             Ok(Loaded::of(c.document, false, None))
         }
         Standing::Older(_) => {
             let (mut c, missing) = migrate::asked(original, Some(mosaic), |facts| migrate::reading(bytes, facts, false)).map_err(refused)?;
             c.document.settings = migrate::measured_dyes::marked(c.from, std::mem::take(&mut c.document.settings), original);
+            c.document.settings = migrate::slide_projector::marked(c.from, std::mem::take(&mut c.document.settings), original);
             Ok(Loaded::of(c.document, missing.is_none(), missing))
         }
     }

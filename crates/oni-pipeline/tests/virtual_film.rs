@@ -275,12 +275,10 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
     let lit = oni_settings::white::apply(&back, [f64::from(GREY); 3]).map(|v| v as f32);
     scene[0] = [lit[0], lit[1], lit[2], 1.0];
     let source = g.upload(w, h, &scene).unwrap();
-    let plain_grey = g.upload(1, 1, &[[GREY, GREY, GREY, 1.0]]).unwrap();
     let mut pipeline = Pipeline::new();
     let digital = filmed();
     let on = pipeline.render(&mut g, &source, &digital, &Request::default(), &Default::default(), None).unwrap().1;
-    let plain = PipelineSettings::rest(ConversionMode::Positive, true).per_pixel_only();
-    let raw = pipeline.render(&mut g, &plain_grey, &plain, &Request::default(), &Default::default(), None).unwrap().1[0];
+    let raw = [film::plain_grey(); 3];
     let pure = PipelineSettings { print: oni_settings::tone::Print { print_lift: false, ..digital.print }, ..digital.clone() };
     let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
     println!("a scene grey: the plain RAW {raw:?}, the film {:?}, on pure black {stretched:?}", on[0]);

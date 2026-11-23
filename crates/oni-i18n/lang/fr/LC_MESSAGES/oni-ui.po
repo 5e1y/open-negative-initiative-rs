@@ -1882,10 +1882,6 @@ msgid "Too wide and ONI reads everything; too narrow and photos stay out."
 msgstr "Trop large, ONI lit tout ; trop étroit, des photos restent à l’écart."
 
 #: crates/oni-ui/ui/notice.slint
-msgid "GOT IT"
-msgstr "COMPRIS"
-
-#: crates/oni-ui/ui/notice.slint
 msgid "Your Edits, Brought Up to Date"
 msgstr "Vos réglages mis à jour"
 
@@ -1904,6 +1900,10 @@ msgstr "Il n’y a pas de retour possible : une version antérieure d’ONI ouvr
 #: crates/oni-ui/ui/notice.slint
 msgid "A disk that is not connected is converted the next time ONI sees it."
 msgstr "Un disque non branché est converti la prochaine fois qu’ONI le voit."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "GOT IT"
+msgstr "COMPRIS"
 
 #: crates/oni-ui/ui/pairing.slint
 msgid "Pair Phone"
@@ -2056,6 +2056,22 @@ msgstr "Noirs et blancs du papier"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "On, the print keeps the paper's own ends: the black picked in Prepare the Roll a hair above the paper's black, and the paper's white, as on a print held in the hand. Off, that black lies on pure black and that white on pure white, the grey kept where it was, as a print shown on a screen."
 msgstr "Activé, le tirage garde les extrémités du papier : le noir choisi dans Préparer la pellicule un rien au-dessus du noir du papier, et le blanc du papier, comme sur un tirage tenu en main. Désactivé, ce noir repose sur le noir pur et ce blanc sur le blanc pur, le gris gardé à sa place, comme un tirage montré sur un écran."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Projector"
+msgstr "Projecteur"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "A slide is shown as a projector shows it on a white screen: its film's dyes, read back from the scan, filter a 3200 K projector lamp, seen by an eye adapted to the bare film's light, with the room's faint veil over every tone. Lighting exposes the slide again through its film's curve, so a brighter Exposure reaches into the shadows the film still holds.\n\nProjected blacks keeps the screen's own black, the film's densest under the veil, and the bare film's white; off, that black lies on pure black and that white on pure white."
+msgstr "Une diapositive est montrée comme un projecteur la montre sur une toile blanche : les colorants de son film, relus sur le scan, filtrent une lampe de projecteur à 3200 K, vue par un œil accommodé à la lumière du film nu, sous le léger voile de la pièce sur chaque ton. La Lumière expose à nouveau la diapositive à travers la courbe de son film : une Exposition plus claire va chercher les ombres que le film garde encore.\n\nNoirs projetés garde le noir propre de la toile, le plus dense du film sous le voile, et le blanc du film nu ; désactivé, ce noir se pose sur le noir pur et ce blanc sur le blanc pur."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Projected blacks"
+msgstr "Noirs projetés"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "On, the slide keeps its screen's own ends: its film's densest under the room's veil, a little above black, and the bare film's white, as in a darkened room. Off, that black lies on pure black and that white on pure white, as a slide shown on a display."
+msgstr "Activé, la diapositive garde les extrémités de sa toile : le plus dense de son film sous le voile de la pièce, un peu au-dessus du noir, et le blanc du film nu, comme dans une pièce obscure. Désactivé, ce noir se pose sur le noir pur et ce blanc sur le blanc pur, comme une diapositive montrée sur un écran."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThrough the virtual enlarger the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows."
@@ -4839,6 +4855,10 @@ msgstr "R {red} · V {green} · B {blue}"
 msgid "{kelvin} K, the light the stock is balanced for"
 msgstr "{kelvin} K, la lumière pour laquelle la pellicule est équilibrée"
 
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "{film} under a {kelvin} K projector lamp"
+msgstr "{film} sous une lampe de projecteur à {kelvin} K"
+
 #: crates/oni-app/src/app/rolls/balance_words.rs
 msgid "Balance Each of the {count}"
 msgstr "Équilibrer chacune des {count}"
@@ -5607,6 +5627,10 @@ msgid_plural "Paste crop to {n} photos"
 msgstr[0] "Coller le recadrage"
 msgstr[1] "Coller le recadrage sur {n} photos"
 
+#: crates/oni-core/src/store/roll.rs crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
+msgid "The roll could not be written in its folder: {error}"
+msgstr "La pellicule n’a pas pu être écrite dans son dossier : {error}"
+
 #: crates/oni-core/src/store/roll.rs
 msgid "Prepare the roll"
 msgid_plural "Prepare the roll of {n} photos"
@@ -5618,10 +5642,6 @@ msgid "Reset the Roll · {n} photo"
 msgid_plural "Reset the Roll · {n} photos"
 msgstr[0] "Réinitialiser la pellicule · {n} photo"
 msgstr[1] "Réinitialiser la pellicule · {n} photos"
-
-#: crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
-msgid "The roll could not be written in its folder: {error}"
-msgstr "La pellicule n’a pas pu être écrite dans son dossier : {error}"
 
 #: crates/oni-core/src/store/several.rs
 msgid "Reset {n} photo"

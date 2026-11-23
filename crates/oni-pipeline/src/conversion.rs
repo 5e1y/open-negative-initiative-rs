@@ -42,10 +42,10 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
 
 /// The fused kernel's arguments, in `Pipeline.apply`'s order: Lighting on the negative, the windows and the print at
 /// its rest of every mode; a black and white print, no channel's own tone; the frame's paper on the windows' shares in
-/// place of the print, the print's ends its own; a slide on a paper, its internegative's.
+/// place of the print, the print's ends its own; a look on a paper, its internegative's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     if let Some(copy) = crate::paper::internegative::copy(s) {
-        return stage47(&copy.settings);
+        return stage47(&copy);
     }
     printed(s).0
 }
@@ -53,7 +53,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
 /// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on ONI's own print.
 pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     if let Some(copy) = crate::paper::internegative::copy(s) {
-        return printing(&copy.settings);
+        return printing(&copy);
     }
     printed(s).1
 }

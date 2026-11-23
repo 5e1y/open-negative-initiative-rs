@@ -13,6 +13,7 @@ pub(crate) mod color_matrix;
 pub(crate) mod compositing;
 pub(crate) mod curves;
 pub(crate) mod detail;
+pub(crate) mod dye_amounts;
 pub(crate) mod exposure_adjust;
 pub(crate) mod reciprocal;
 pub(crate) mod flat_field;

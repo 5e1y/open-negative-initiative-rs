@@ -1,6 +1,6 @@
 //! The virtual enlarger with Print on paper off: the neutral paper rests its grey on a plain RAW's, its pick on pure black
 //! whatever Print lift says, each layer printing its own dye alone on ONI's print curve, the same on the three, so a frame
-//! whose windows agree prints as on ONI's print; a slide through its internegative; Lighting's grade turns about the grey;
+//! whose windows agree prints as on ONI's print; Lighting's grade turns about the grey;
 //! the GPU on every branch. Each verdict has a twin.
 
 mod common;
@@ -19,12 +19,6 @@ use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 fn paperless(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { paperless: true, ..s }
-}
-
-fn slide() -> PipelineSettings {
-    let mut s = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
-    s.gains.stops = [0.3, 0.0, -0.4];
-    s
 }
 
 /// A negative whose three windows agree: ONI's print and the neutral paper see the same tones.
@@ -63,18 +57,6 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
     let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0, 1.0, 10f32.powf(-0.1)], ..p }), ..k };
     let unfiltered = cpu::stage47(grey_scan(&s), &bare);
     assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2, "{unfiltered:?}");
-    // A slide prints its internegative on the neutral paper: the copy's base black, its grey a plain RAW's.
-    let s = paperless(slide());
-    let copy = paper::internegative::copy(&s).expect("a slide on the neutral paper is copied");
-    let k = conversion::stage47(&s);
-    let p = k.paper.expect("a slide on the neutral paper");
-    let [pick, _, grey] = paper::anchors(&copy.settings).map(|a| paper::shares_of(&copy.settings, &k, a));
-    let (shown_pick, rested) = (p.shown(pick), p.shown(grey));
-    assert!(copy.settings.paperless && p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{:?}", p.white);
-    assert!(shown_pick.iter().all(|v| v.abs() < 1e-6), "{shown_pick:?}");
-    assert!(rested.iter().all(|v| (v - *GREY_PRINT).abs() < 2e-4), "{rested:?}");
-    // Twin: the slide's copy on its own paper keeps the paper's white.
-    assert!(conversion::stage47(&slide()).paper.unwrap().white.iter().all(|w| *w < 0.95));
 }
 
 #[test]
@@ -169,16 +151,11 @@ fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     lit_negative.density = 0.3;
     let mut lit_mono = paperless(mono());
     (lit_mono.print.contrast, lit_mono.print.highlights, lit_mono.print.brightness) = (0.3, -0.2, -0.5);
-    let mut lit_slide = paperless(slide());
-    (lit_slide.print.exposure, lit_slide.print.contrast, lit_slide.print.brightness) = (0.5, 0.3, 0.4);
-    lit_slide.print.set_filters([0.1, 0.0, -0.2]);
     let frames = [
         ("digital", paperless(digital())),
         ("lit negative", lit_negative),
         ("frontier chosen", paperless(PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..prepared_negative() })),
         ("black and white", lit_mono),
-        ("slide", paperless(slide())),
-        ("lit slide", lit_slide),
     ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);

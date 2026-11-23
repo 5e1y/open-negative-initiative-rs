@@ -55,9 +55,18 @@ impl State {
     }
 }
 
-/// The scanned stock a roll's stock names written on a frame; a black-and-white stock or a slide's leaves it alone.
+/// The scanned stock a roll's stock names written on a frame; a black-and-white stock leaves it alone. A slide takes the
+/// profiled reversal film it is projected as; a stock no sheet profiles takes a former one's key off, for the default
+/// film, and leaves a negative's.
 pub(in crate::app) fn dyed(settings: &mut PipelineSettings, stock: Option<&str>) {
-    if let Some(set) = stock.and_then(dye_set) {
+    if settings.mode.is_slide() {
+        let reversal = |set: DyeSet| oni_settings::VirtualStock::of(set.key()).is_known() && oni_settings::VirtualStock::of(set.key()).entry().reversal;
+        match stock.and_then(oni_settings::dyes::slide_dyes) {
+            Some(set) => settings.dye_set = set,
+            None if reversal(settings.dye_set) => settings.dye_set = DyeSet::default(),
+            None => {}
+        }
+    } else if let Some(set) = stock.and_then(dye_set) {
         settings.dye_set = set;
     }
 }
@@ -242,6 +251,19 @@ mod tests {
         let before = s.clone();
         super::dyed(&mut s, Some("ilford-hp5"));
         assert_eq!(s, before);
+    }
+
+    #[test]
+    fn a_slide_takes_its_rolls_profiled_reversal_film_and_a_stock_no_sheet_profiles_the_default() {
+        let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        super::dyed(&mut s, Some("fujifilm-velvia100"));
+        assert_eq!(s.projector(), Some(oni_settings::VirtualStock::of("fujifilm-velvia-100")));
+        super::dyed(&mut s, Some("fujifilm-provia100"));
+        assert_eq!((s.dye_set, s.projector()), (DyeSet::default(), Some(oni_settings::VirtualStock::SLIDE)));
+        // Twin: a negative's key on a slide stays for its return to a negative.
+        s.dye_set = DyeSet::of("kodak-portra-400");
+        super::dyed(&mut s, Some("fujifilm-provia100"));
+        assert_eq!(s.dye_set, DyeSet::of("kodak-portra-400"));
     }
 
     #[test]

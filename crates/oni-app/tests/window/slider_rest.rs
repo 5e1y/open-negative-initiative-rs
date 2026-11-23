@@ -105,11 +105,12 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     let tick = g.get_rests().row_data(Field::Exposure.index() as usize).unwrap();
     let panel = w.global::<oni_app::PanelState>();
     let lighting = oni_app::fields::Block::ALL.iter().position(|b| *b == oni_app::fields::Block::Lighting).unwrap() as i32;
-    let rail = common::rail(w, "Exposure");
-    let on_rail = LogicalPosition::new(rail.x + rail.width * 0.95, rail.y + rail.height - 13.0);
     for (mode, index) in [(oni_settings::ConversionMode::Negative, 0), (oni_settings::ConversionMode::Positive, 1)] {
         panel.invoke_film_type_picked(index);
         rig.settle();
+        // A slide's Projector stands where a negative's Paper does, taller: the rail is found again.
+        let rail = common::rail(w, "Exposure");
+        let on_rail = LogicalPosition::new(rail.x + rail.width * 0.95, rail.y + rail.height - 13.0);
         assert_eq!(ctl.state.borrow().store().settings().mode, mode);
         assert!((oni_app::app::fraction(&g, Field::Exposure) - tick).abs() < 1e-4, "{mode:?}: the knob on its tick");
         assert!(exposure() == 0.0 && !g.get_lighting_modified(), "{mode:?}: the frame at its rest: {}", exposure());
@@ -130,6 +131,8 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
         println!("shot {}", rig.shot(&format!("exposure-rest-{mode:?}")).display());
     }
     // A double click on its name lands back on the tick.
+    let rail = common::rail(w, "Exposure");
+    let on_rail = LogicalPosition::new(rail.x + rail.width * 0.95, rail.y + rail.height - 13.0);
     press(&rig, on_rail);
     release(&rig, on_rail);
     rig.settle();

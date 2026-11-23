@@ -39,5 +39,12 @@ pub fn dye_set(stock_id: &str) -> Option<DyeSet> {
     crate::film::film_stock(Some(stock_id)).and_then(|k| k.dyes)
 }
 
+/// The reversal film `stock_id` names where its sheet is profiled, the key a slide's frames take and the projector reads
+/// them on; none for any other stock, whose slides project on the default slide film.
+pub fn slide_dyes(stock_id: &str) -> Option<DyeSet> {
+    let film = crate::film::film_stock(Some(stock_id)).filter(|k| k.kind == crate::film::FilmType::ColourSlide).and_then(|k| k.film);
+    film.filter(|f| f.is_known() && f.entry().reversal).map(|f| DyeSet::of(f.key()))
+}
+
 #[cfg(test)]
 mod tests;

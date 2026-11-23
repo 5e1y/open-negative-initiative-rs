@@ -183,12 +183,12 @@ impl PipelineSettings {
     }
 
     /// Whether a paper can print this frame: every one but a positive read as its own negative, whose light no
-    /// enlarger passes.
+    /// enlarger passes, and a slide, scanned or shot on a reversal film, which is projected.
     pub fn takes_paper(&self) -> bool {
-        !self.inverted_source
+        !self.inverted_source && !self.mode.is_slide() && self.projector().is_none()
     }
 
-    /// The paper the render prints on: the chosen one where the frame takes a paper, a slide through its internegative.
+    /// The paper the render prints on: the chosen one where the frame takes a paper.
     pub fn paper(&self) -> Option<PaperStock> {
         self.print_paper.filter(|_| self.takes_paper())
     }
@@ -385,4 +385,5 @@ pub mod look_settings {
 }
 
 /// What a roll shares: the Roll Settings pane's fields, one value on every frame of the roll.
+mod projector;
 pub mod roll_settings;

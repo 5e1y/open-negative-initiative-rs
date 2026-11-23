@@ -59,6 +59,7 @@ impl Ctl {
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, stop, session) = (r.window, r.mask(), r.base.clone(), r.stop.clone(), r.session);
+            let stock = r.stock_or_default();
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
                 let common = CaptureExposure::common(&paths.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
@@ -121,8 +122,8 @@ impl Ctl {
                 for (_, _, s) in &mut written {
                     *s = oni_core::balance::levelled(&balance.core(), s);
                     s.measured_gains = gains;
-                    // Printed on its paper, as a prepared negative is (owner's call).
-                    *s = std::mem::take(s).on_paper();
+                    // Projected as the roll's reversal film, where its sheet is profiled.
+                    crate::app::organising::roll_card::dyed(s, stock.as_deref());
                 }
                 let written = (!stopped).then_some(written);
                 with_shell(move |c| c.land_measure(session, written, stopped, &paths, &blank));

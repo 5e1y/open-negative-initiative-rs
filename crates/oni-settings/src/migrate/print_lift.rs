@@ -47,7 +47,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings, former: &Former) -> P
     let print_lift = match version {
         v if v >= PRINT_LIFT_VERSION => return settings,
         v if v >= PAPER_BLACKS_VERSION => former.paper_blacks(),
-        _ => settings.paper().is_some() && !former.true_blacks(),
+        _ => super::chain::papered(&settings) && !former.true_blacks(),
     };
     PipelineSettings { print: Print { print_lift, ..settings.print }, ..settings }
 }

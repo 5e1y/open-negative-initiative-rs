@@ -17,6 +17,7 @@ pub mod negative;
 pub mod oni_look;
 pub mod paper;
 pub mod frontier_look;
+pub mod projector;
 pub mod resident;
 pub mod scanner;
 pub mod stages;
@@ -32,6 +33,7 @@ use oni_settings::tone::Print;
 use oni_settings::{LegacyMachine, LegacyPrint, PipelineSettings};
 use stages::{Before, DetailColumns, DetailRows, OnGround};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 /// What a render is asked for.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,6 +83,8 @@ pub struct Pipeline {
     looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
     /// Each reversal film's projection table, uploaded once per graph and file content.
     projections: HashMap<(oni_settings::VirtualStock, u64), Source>,
+    /// Each reversal film's table reading its scans back to its dyes, uploaded once per graph and file content.
+    scanners: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
@@ -173,9 +177,9 @@ impl Pipeline {
     pub fn looked(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
         let Some((f, entry, look)) = s.film().and_then(|f| f.stock.look().map(|(e, l)| (f, e, l))) else { return Ok(None) };
         let key = (f.stock, entry.revision);
-        if !self.looks.contains_key(&key) {
+        if let Entry::Vacant(e) = self.looks.entry(key) {
             let n = look.size as u32;
-            self.looks.insert(key, (graph.upload(n * n, n, &look.nodes)?, look.size));
+            e.insert((graph.upload(n * n, n, &look.nodes)?, look.size));
         }
         let (table, n) = self.looks[&key].clone();
         let code = stages::laid(image, vec![stages::exposure(f.exposure), stages::scanner_encode(1.0)]);
@@ -183,18 +187,43 @@ impl Pipeline {
         Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0, 0.0), &[read])))
     }
 
-    /// A digital photo's scene shot on a reversal film and projected: the slide its virtual film develops, its dyes
-    /// filtering the projector's lamp, a positive; none on a negative film.
+    /// A digital photo's scene shot on a reversal film and projected: the slide its virtual film develops on the
+    /// projector's screen, a positive; none on a negative film.
     pub fn projected(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
-        let Some(f) = s.film().filter(|f| f.stock.entry().reversal) else { return Ok(None) };
-        let p = film::projection::projected(f.stock);
-        let key = (f.stock, p.revision);
-        if !self.projections.contains_key(&key) {
-            self.projections.insert(key, graph.upload(p.projection.bands as u32, 2, &p.table)?);
+        let Some(stock) = s.film().and(s.projector()) else { return Ok(None) };
+        let slide = self.filmed(graph, image, s)?;
+        self.on_screen(graph, slide, s, stock).map(Some)
+    }
+
+    /// A scanned slide on the projector's screen: its scan read back to its stock's dyes, then shown as any slide is.
+    pub fn slide(&mut self, graph: &mut Graph, framed: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
+        let scanned = film::projection::scanned(stock);
+        let key = (stock, scanned.revision);
+        if let Entry::Vacant(e) = self.scanners.entry(key) {
+            e.insert(graph.upload(scanned.kernel.bands as u32, 2, &scanned.table)?);
+        }
+        let table = Image::new(&self.scanners[&key]);
+        let amounts = framed.then_reading(stages::dye_amounts(&projector::scanned(s, stock)), &[table]);
+        self.on_screen(graph, amounts, s, stock)
+    }
+
+    /// A slide's dyes, coded as `10^-amount`, under Lighting, filtering the projector's lamp on the screen, its ends laid.
+    fn on_screen(&mut self, graph: &mut Graph, amounts: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
+        let p = film::projection::projected(stock);
+        let key = (stock, p.revision);
+        if let Entry::Vacant(e) = self.projections.entry(key) {
+            e.insert(graph.upload(p.projection.bands as u32, 2, &p.table)?);
         }
         let table = Image::new(&self.projections[&key]);
-        let slide = self.filmed(graph, image, s)?;
-        Ok(Some(slide.then_reading(stages::projection(&p.projection), &[table])))
+        let lit = match projector::lighting(s, stock) {
+            Some(n) => amounts.then(stages::negative(&n)),
+            None => amounts,
+        };
+        let shown = lit.then_reading(stages::projection(&p.projection), &[table]);
+        Ok(match projector::ends(s, stock) {
+            Some(m) => shown.then(stages::color_matrix(&m)),
+            None => shown,
+        })
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {
@@ -323,6 +352,11 @@ impl Pipeline {
 pub fn bake_ahead(s: &PipelineSettings) {
     if let Some(f) = s.film() {
         film::stock(f.stock);
+    }
+    if let Some(stock) = s.projector() {
+        film::projection::projected(stock);
+        film::projection::scanned(stock);
+        negative::development(negative::Film::Slide(stock));
     }
     if let Some(paper) = s.paper().filter(|_| !s.print.bypassed) {
         paper::sheet_of(s, paper);

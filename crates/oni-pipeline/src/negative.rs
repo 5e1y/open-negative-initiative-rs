@@ -42,10 +42,13 @@ pub enum Film {
     Silver,
     /// A positive: its own light, each layer's density its log exposure turned over.
     Light,
+    /// A slide projected: its stock's dyes' amounts, each layer read as the neutral density holding it and along the
+    /// green layer's curve, so a grey stays grey; falling with exposure, read turned over.
+    Slide(VirtualStock),
 }
 
 impl Film {
-    /// What `s`'s Lighting develops again: a slide on a paper is its internegative's digital photo, read before.
+    /// What `s`'s Lighting develops again on stage 4-7; a projected slide's is its stock's (`slide`).
     pub fn of(s: &PipelineSettings) -> Film {
         if s.mode.reads_positive() {
             Film::Light
@@ -65,6 +68,7 @@ impl Film {
             Film::Dyes(d) => d.entry().revision,
             Film::Silver => DyeSet::default().entry().revision,
             Film::Light => 0,
+            Film::Slide(v) => v.entry().revision,
         }
     }
 }
@@ -107,16 +111,21 @@ fn rising(le: &[f64], table: &[[f64; 3]]) -> [V3; NEGATIVE_CURVE_NODES] {
 
 fn developing(le: &[f64], density: &[[f64; 3]], coupled: Option<&bake::M3>) -> Development {
     let (normal, after) = bake::curves_through(le, density, coupled.unwrap_or(&bake::COUPLERS));
-    let (low, high) = (le[0], le[le.len() - 1]);
     let couplers = coupled.map_or([[0.0; 3]; 3], |m| m.map(|r| r.map(|v| v as f32)));
     let after = if coupled.is_some() { after } else { normal.clone() };
-    let after = rising(le, &after);
+    tabled(le, &normal, &after, couplers)
+}
+
+/// The development of the curves `normal` and `after` along `le`, through `couplers`.
+fn tabled(le: &[f64], normal: &[[f64; 3]], after: &[[f64; 3]], couplers: [V3; 3]) -> Development {
+    let (low, high) = (le[0], le[le.len() - 1]);
+    let after = rising(le, after);
     let step = (high - low) / (NEGATIVE_CURVE_NODES - 1) as f64;
     // The toe's foot where the curve first rises READABLE a log, the shoulder's end where it last does.
     let reads = |c: usize, i: usize| f64::from(after[i + 1][c] - after[i][c]) >= READABLE * step;
     let foot = std::array::from_fn(|c| (0..NEGATIVE_CURVE_NODES - 1).find(|i| reads(c, *i)).map_or(after[0][c], |i| after[i][c]));
     let top = std::array::from_fn(|c| (0..NEGATIVE_CURVE_NODES - 1).rev().find(|i| reads(c, *i)).map_or(after[NEGATIVE_CURVE_NODES - 1][c], |i| after[i + 1][c]));
-    Development { normal: rising(le, &normal), after, log_low: low as f32, log_step: step as f32, foot, top, couplers }
+    Development { normal: rising(le, normal), after, log_low: low as f32, log_step: step as f32, foot, top, couplers }
 }
 
 fn developed(film: Film) -> Development {
@@ -147,6 +156,11 @@ fn developed(film: Film) -> Development {
         Film::Silver => {
             let (le, mean) = generic(DyeSet::default(), |p| &p.sheet_density_curves);
             developing(&le, &one_layer(&mean), None)
+        }
+        Film::Slide(stock) => {
+            let (le, amounts) = crate::film::projection::tone(stock);
+            let turned: Vec<[f64; 3]> = amounts.iter().map(|a| a.map(|v| -v)).collect();
+            tabled(&le, &turned, &turned, [[0.0; 3]; 3])
         }
         Film::Light => {
             let (le, line) = ([-LIGHT_SPAN, LIGHT_SPAN], [[-LIGHT_SPAN; 3], [LIGHT_SPAN; 3]]);
@@ -188,16 +202,13 @@ pub fn lightness(n: &Negative, k: &Stage47) -> [f32; LIGHTNESS_NODES] {
 /// The frame's negative under its Lighting on `k`, stage 4-7's arguments with Lighting at rest; none while it rests.
 /// The moves turn about the reference grey's exposure, so Contrast holds the grey and the print's rest is the bare film's.
 pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
-    let print = &s.print;
     if rests(s) {
         return None;
     }
-    let mono = s.is_monochrome();
     let positive = s.mode.reads_positive();
     let sense = if positive { -1.0 } else { 1.0 };
     // Each channel's density above its bare film, as the window reads it: a scan's, or a digital photo's layers.
     let film = Film::of(s);
-    let black = film_ends(s).0;
     let anchors = paper::anchors(s);
     let development = development(film);
     // A colour negative's layers developed so its reference grey is the stock's neutral at the speed's exposure, so
@@ -208,9 +219,68 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let scale = match film {
         Film::Stock(stock) if stock.is_silver() => [1.0; 3],
         Film::Stock(_) | Film::Dyes(_) => std::array::from_fn(|c| grey[c] / speed[c]),
-        Film::Silver | Film::Light => [1.0; 3],
+        Film::Silver | Film::Light | Film::Slide(_) => [1.0; 3],
     };
-    let pivot = development.exposures(std::array::from_fn(|c| grey[c] / scale[c]));
+    let span = anchors[1].map(spanned);
+    let read = Read {
+        gain: k.gain,
+        pedestal: k.pedestal,
+        log_guard: k.log_guard,
+        black: film_ends(s).0,
+        sense,
+        development,
+        scale,
+        pivot: development.exposures(std::array::from_fn(|c| grey[c] / scale[c])),
+        span: if positive { span.map(|v| -v) } else { span },
+        origin: if positive { 1.0 } else { 0.0 },
+    };
+    moved(s, read)
+}
+
+/// A slide's dyes under the frame's Lighting, each layer's amount coded on its own channel as `10^-amount` in and out;
+/// none while it rests. The moves turn about the stock's speed, where its sheet exposes a grey, and the tones read each
+/// amount as a share of its layer's densest.
+pub fn slide(s: &PipelineSettings, stock: VirtualStock) -> Option<Negative> {
+    if rests(s) {
+        return None;
+    }
+    let development = development(Film::Slide(stock));
+    let densest = development.after[0].map(|v| -v);
+    let read = Read {
+        gain: [1.0; 3],
+        pedestal: 0.0,
+        log_guard: 10f32.powf(-oni_render::DYE_HIGH),
+        black: [0.0; 3],
+        sense: -1.0,
+        development,
+        scale: [1.0; 3],
+        pivot: [0.0; 3],
+        span: densest.map(|v| -spanned(v)),
+        origin: 1.0,
+    };
+    moved(s, read)
+}
+
+/// How Lighting reads a film: the light coding each layer's density, its development, each layer's density over the
+/// development's own, the log exposure the moves turn about, and the density's tone share, `origin + density / span`.
+struct Read {
+    gain: V3,
+    pedestal: f32,
+    log_guard: f32,
+    black: V3,
+    sense: f32,
+    development: &'static Development,
+    scale: V3,
+    pivot: V3,
+    span: V3,
+    origin: f32,
+}
+
+/// The frame's Lighting and colour tools laid on the film `r` reads; none where they lay nothing.
+fn moved(s: &PipelineSettings, r: Read) -> Option<Negative> {
+    let print = &s.print;
+    let mono = s.is_monochrome();
+    let Read { development, scale, pivot, .. } = r;
     let own = |v: V3| if mono { [0.0; 3] } else { v };
     let stops = print.exposure;
     let shift = |hold: f32| [stops * std::f32::consts::LOG10_2 + hold; 3];
@@ -221,13 +291,12 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let own_shift = filters.map(|f| f * std::f32::consts::LOG10_2);
     let own_slope = own(print.channel_contrast).map(|c| GRADE_BASE.powf(c));
     let points = print.channel_points(mono);
-    let span = anchors[1].map(spanned);
     let at = Negative {
-        gain: k.gain,
-        pedestal: k.pedestal,
-        log_guard: k.log_guard,
-        black,
-        sense,
+        gain: r.gain,
+        pedestal: r.pedestal,
+        log_guard: r.log_guard,
+        black: r.black,
+        sense: r.sense,
         development,
         scale,
         pivot,
@@ -240,8 +309,8 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         mixer: finishing::spectrogram(&s.spectrogram).filter(|_| !mono),
         curve: finishing::saturation(&s.saturation).filter(|_| !mono),
         lightness: [0.0; LIGHTNESS_NODES],
-        span: if positive { span.map(|v| -v) } else { span },
-        origin: if positive { 1.0 } else { 0.0 },
+        span: r.span,
+        origin: r.origin,
         points_black: points.map(|p| p.0),
         points_white: points.map(|p| p.1),
         zones: [print.shadows, print.highlights],

@@ -116,6 +116,10 @@ pub const PRINT_LIFT_VERSION: i64 = 67;
 /// photo's virtual negative codes each layer's density on its own channel, its gains and windows moving onto its stock's
 /// new reference; the dose and its key dropped, as no print reads them.
 pub const LAYER_DENSITIES_VERSION: i64 = 69;
+/// The version a slide came to be projected on a white screen, never printed: a scanned slide's paper and the paper a
+/// digital photo on a reversal film named dropped, its scan read back to its roll's reversal film, a key a build before
+/// it would read as another paper's print.
+pub const SLIDE_PROJECTOR_VERSION: i64 = 70;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
@@ -167,6 +171,12 @@ pub(crate) fn with_settings(mut document: Object, edit: impl FnOnce(&mut Object)
         edit(settings);
     }
     document
+}
+
+/// Whether `settings` printed on a paper as the formats before 70 read it: any frame naming one, a slide included, but a
+/// positive read as its own negative.
+pub(crate) fn papered(settings: &PipelineSettings) -> bool {
+    settings.print_paper.is_some() && !settings.inverted_source
 }
 
 pub(crate) fn number(value: f32) -> Value {

@@ -3,7 +3,8 @@
 //! Print lift, off at rest and rendering anew each way it turns, the paper and the enlarger's filtration, and Lighting
 //! Brightness in place of Colour compensation, each rendering again; Print on paper off prints on the neutral paper, the
 //! paper kept, its picker and Print lift hidden; another paper picked by its name, the Frontier SP-3000 among them; a slide
-//! on the same papers and the neutral one, through its internegative; a digital photo on its paper, its ends pure.
+//! projected, the Paper section gone and the Projector's Projected blacks in its place; a digital photo on its paper, its
+//! ends pure.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -18,7 +19,7 @@ use std::time::Duration;
 
 use crate::common;
 
-pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
+pub(crate) fn the_paper_switch_prints_a_negative_on_every_paper_and_a_slide_is_projected() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the paper's switch is not exercised"),
@@ -155,41 +156,38 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     panel.invoke_paper_chosen(crystal_archive as i32);
     rig.pump();
 
-    // A slide prints on the same papers through its internegative: switched to a slide, the frame keeps its paper.
+    // A slide is projected, never printed: switched to a slide, the Paper section and Colour compensation leave, the
+    // Projector section shows its film and lamp and Projected blacks, off at rest; the paper stays stored for a negative.
     let renders = ctl.state.borrow().renders();
     panel.invoke_film_type_picked(1);
     rig.pump();
-    assert!(panel.get_paper_shown() && panel.get_enlarger_on(), "the slide keeps its paper");
+    assert!(!panel.get_paper_shown() && !panel.get_enlarger_on() && panel.get_projected(), "a slide takes no paper");
     assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")));
-    assert_eq!(papers_listed(&panel).len(), PaperStock::all().len());
-    assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
-    rig.until("the slide printed through its internegative", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Print lift")), (1, 1));
+    assert!(settings().paper().is_none() && oni_pipeline::conversion::stage47(&settings()).paper.is_none());
+    rig.until("the slide projected", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.pump();
+    assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((0, 0, 0), 0, 0));
+    assert_eq!(count(Role::Checkbox, "Projected blacks"), 1);
+    assert!(!panel.get_projected_blacks() && !settings().print.projected_blacks, "off at rest");
+    assert_eq!(panel.get_projector_note(), "Kodak Ektachrome under a 3200 K projector lamp");
     rig.settle();
-    println!("shot {}", rig.shot("slide-on-paper").display());
-    // Off, then on again, it takes the default paper.
-    panel.invoke_enlarger_toggled(false);
-    rig.pump();
-    assert!(!panel.get_enlarger_on() && settings().print_paper.is_none());
-    panel.invoke_enlarger_toggled(true);
-    rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::of("kodak-royal-digital")));
-    assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Royal Digital");
-    // Print on paper off: the slide's copy prints on the neutral paper, then back on its own.
+    println!("shot {}", rig.shot("slide-projected").display());
+    // On, the screen's own black and white, rendered anew; off again, back on pure ends.
     let renders = ctl.state.borrow().renders();
-    panel.invoke_on_paper_toggled(false);
+    panel.invoke_projected_blacks_toggled(true);
     rig.pump();
-    assert!(settings().paperless && !panel.get_on_paper());
-    rig.until("the slide's copy on the neutral paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    panel.invoke_on_paper_toggled(true);
+    assert!(settings().print.projected_blacks && panel.get_projected_blacks());
+    rig.until("the slide on its screen's own black", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.settle();
+    println!("shot {}", rig.shot("slide-projected-blacks").display());
+    panel.invoke_projected_blacks_toggled(false);
     rig.pump();
-    assert!(!settings().paperless);
-    panel.invoke_enlarger_toggled(false);
+    assert!(!settings().print.projected_blacks);
+    // Twin: back on a negative, the Projector leaves and the paper it kept prints again.
+    panel.invoke_film_type_picked(0);
     rig.pump();
-    assert_eq!(settings().print_paper, None);
-    assert!(!panel.get_enlarger_on());
-    // On ONI's print Brightness, Print on paper and Print lift leave, Colour compensation returns.
-    assert_eq!((count(Role::Slider, "Brightness"), switches(), count(Role::Checkbox, "Colour compensation")), (0, (1, 0, 0), 1));
+    assert!(!panel.get_projected() && panel.get_paper_shown() && panel.get_enlarger_on());
+    assert_eq!(count(Role::Checkbox, "Projected blacks"), 0);
     let _ = std::fs::remove_dir_all(&root);
 }
 

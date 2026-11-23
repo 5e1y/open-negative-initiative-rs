@@ -155,6 +155,8 @@ impl Ctl {
         let p = me.clone();
         panel.on_print_lift_toggled(move |on| p.write_settings(|s| s.print.print_lift = on));
         let p = me.clone();
+        panel.on_projected_blacks_toggled(move |on| p.write_settings(|s| s.print.projected_blacks = on));
+        let p = me.clone();
         panel.on_legacy_toggled(move |on| {
             p.write_settings(|s| {
                 if let Some(l) = s.legacy_print.as_mut() {
@@ -220,10 +222,18 @@ impl Ctl {
     }
 
     /// The Colour tab's print switches: Lighting's colour compensation, and the enlarger where one can print the photo,
-    /// Print on paper, the paper's name, the filtration it prints through and Print lift.
+    /// Print on paper, the paper's name, the filtration it prints through and Print lift; a slide's projector and its
+    /// Projected blacks.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
         panel.set_colour_compensation(settings.print.colour_compensation);
         panel.set_print_lift(settings.print.print_lift);
+        let projector = settings.projector();
+        panel.set_projected(projector.is_some());
+        panel.set_projected_blacks(settings.print.projected_blacks);
+        let note = projector.map_or_else(String::new, |f| {
+            oni_i18n::tr!("{film} under a {kelvin} K projector lamp", film = f.entry().name, kelvin = oni_pipeline::film::projection::LAMP_KELVIN)
+        });
+        panel.set_projector_note(note.into());
         panel.set_paper_shown(settings.takes_paper());
         panel.set_enlarger_on(settings.paper().is_some());
         panel.set_on_paper(!settings.paperless);

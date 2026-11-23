@@ -70,6 +70,11 @@ impl VirtualEntry {
 }
 
 impl VirtualStock {
+    /// The film a scanned slide is projected as when its roll names no reversal film whose sheet is profiled: Kodak's
+    /// general-purpose slide film, its sheet whole, the one that kept the owner's Velvia slides closest to their former
+    /// render.
+    pub const SLIDE: VirtualStock = VirtualStock::of("kodak-ektachrome-e100");
+
     /// Every stock a digital photo can be shot on, in the menus' order.
     pub fn all() -> Vec<VirtualStock> {
         crate::stocks::current().virtuals().iter().map(|v| v.stock).collect()

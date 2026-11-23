@@ -1,7 +1,7 @@
 //! A colour paper printing the window's shares in place of ONI's print: a paper is its curves, each layer's density read
 //! through a pure dye on its own Rec. 2020 channel; its tables and its own filtration baked once from its profile or the
 //! Frontier's fit (`frontier`), each frame's enlarger time on it (`printing`) and Lighting on the enlarger and the paper
-//! (`lighting`). A slide prints through its internegative (`internegative`); with Print on paper off, any frame on a
+//! (`lighting`). A film's look prints through its internegative (`internegative`); with Print on paper off, any frame on a
 //! neutral paper, ONI's print as its curve (`neutral`).
 
 use crate::baked::Baked;

@@ -1,12 +1,12 @@
 //! A digital photo shot on a reversal film and projected: the GPU's projection against its scalar reference, the bare
 //! film projected as the screen's white, a slide's grey held on its sheet through its couplers, and the editor's chain
-//! laying the slide and its projection. Each verdict has a twin.
+//! laying the slide on the screen, never on a paper. Each verdict has a twin.
 
 mod common;
 
 use common::{V4, graph, judge, mapped, noise, whole};
 use oni_pipeline::film::{self, GREY, bake::COUPLERS, projection};
-use oni_pipeline::{Pipeline, Request, conversion, stages};
+use oni_pipeline::{Pipeline, Request, conversion, projector, stages};
 use oni_render::{Projection, cpu};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 
@@ -51,29 +51,33 @@ fn a_slides_couplers_move_its_colours_and_leave_its_grey_on_the_sheet() {
 }
 
 #[test]
-fn a_photo_on_a_slide_film_is_projected_and_printed_through_the_internegative_on_a_paper() {
+fn a_photo_on_a_slide_film_is_projected_on_the_screen_and_never_printed() {
     let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(SLIDE);
-    assert!(s.print_paper.is_none(), "a slide is projected, not printed");
+    assert!(s.print_paper.is_none() && s.projector() == Some(SLIDE), "a slide is projected, not printed");
     // A negative taken after it prints on the default paper again.
     assert!(s.on_stock(VirtualStock::of("kodak-portra-400")).print_paper.is_some());
-    let Some(mut g) = graph("a_photo_on_a_slide_film_is_projected_and_printed_through_the_internegative_on_a_paper") else { return };
+    // A paper named on it is never printed on: the slide takes no paper.
+    let named = PipelineSettings { print_paper: Some(Default::default()), ..s.clone() };
+    assert!(named.paper().is_none() && !named.takes_paper() && conversion::stage47(&named).paper.is_none());
+    let Some(mut g) = graph("a_photo_on_a_slide_film_is_projected_on_the_screen_and_never_printed") else { return };
     let (w, h) = (23, 11);
     let pixels: Vec<V4> = noise(w, h, 4, 0.0, 1.2).iter().map(|q| q.map(|v| v * v)).collect();
     let source = g.upload(w, h, &pixels).unwrap();
     let mut s = s.per_pixel_only();
     s.grain.amount = 0.0;
     let mut pipeline = Pipeline::new();
-    let out = pipeline.render(&mut g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1;
-    let (stock, p) = (film::stock(SLIDE), projection::projected(SLIDE));
+    let render = |p: &mut Pipeline, g: &mut oni_graph::Graph, s: &PipelineSettings| p.render(g, &source, s, &Request::default(), &Default::default(), None).unwrap().1;
+    let out = render(&mut pipeline, &mut g, &s);
+    let stock = film::stock(SLIDE);
     let light = conversion::scene_white(&s).unwrap();
-    let projected = |q: V4| cpu::projection(cpu::virtual_negative(cpu::color_matrix(q, &light), &stock.kernel_at(0.0), &stock.table), &p.projection, &p.table);
+    let developed = |q: V4| cpu::virtual_negative(cpu::color_matrix(q, &light), &stock.kernel_at(0.0), &stock.table);
     let clipped = |q: V4| q.map(|v| v.clamp(0.0, 1.0));
-    let expected = mapped(&pixels, |q| clipped(projected(q)));
+    let expected = mapped(&pixels, |q| clipped(projector::shown(developed(q), &s, SLIDE)));
     // Twin: the scene unlit at the film's daylight.
-    judge("a photo on a slide, projected", &out, &expected, &mapped(&pixels, |q| clipped(cpu::projection(cpu::virtual_negative(q, &stock.kernel_at(0.0), &stock.table), &p.projection, &p.table))));
-    // On a paper the projection prints through the internegative.
-    let on_paper = PipelineSettings { print_paper: Some(Default::default()), ..s.clone() };
-    assert!(oni_pipeline::paper::internegative::copy(&on_paper).is_some() && conversion::stage47(&on_paper).paper.is_some());
-    let printed = pipeline.render(&mut g, &source, &on_paper, &Request::default(), &Default::default(), None).unwrap().1;
-    assert!(printed.iter().zip(&out).any(|(a, b)| (a[1] - b[1]).abs() > 1e-2), "the paper prints otherwise");
+    judge("a photo on a slide, projected", &out, &expected, &mapped(&pixels, |q| clipped(projector::shown(cpu::virtual_negative(q, &stock.kernel_at(0.0), &stock.table), &s, SLIDE))));
+    // Projected blacks keep the screen's own ends, the projection as it is.
+    let veiled = PipelineSettings { print: oni_settings::tone::Print { projected_blacks: true, ..s.print }, ..s.clone() };
+    let p = projection::projected(SLIDE);
+    let shown = mapped(&pixels, |q| clipped(cpu::projection(developed(q), &p.projection, &p.table)));
+    judge("a photo on a slide, Projected blacks", &render(&mut pipeline, &mut g, &veiled), &shown, &expected);
 }
