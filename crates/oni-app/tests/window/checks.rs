@@ -215,6 +215,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand", lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand),
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
+    ("gallery_reveal::a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_the_column", gallery_reveal::a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_the_column),
     ("help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing", help_card::a_help_card_opens_left_of_the_panel_and_moves_nothing),
     ("help_card::a_help_card_closes_by_hand_and_goes_with_its_mark", help_card::a_help_card_closes_by_hand_and_goes_with_its_mark),
     ("help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column", help_card::a_help_card_stands_inside_a_short_window_and_beside_every_column),

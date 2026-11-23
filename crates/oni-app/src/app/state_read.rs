@@ -95,6 +95,11 @@ impl State {
         self.tree.size.1
     }
 
+    /// The projects' column's height, likewise.
+    pub fn project_tree_height(&self) -> f32 {
+        self.project_tree.size.1
+    }
+
     /// The thumbnails of the opened folder settled so far: held in the folder, drawn, or refused.
     pub fn loaded(&self) -> usize {
         self.painted.0

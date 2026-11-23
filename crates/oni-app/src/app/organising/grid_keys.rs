@@ -34,6 +34,9 @@ impl Ctl {
             let focus = current.as_deref().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
             let trash = s.trash_shown();
             let shift_held = shift && !matches!(key, GridKey::SelectAll);
+            if !trash {
+                s.chosen_in_gallery();
+            }
             (s.shown_picks_mut().key(key, shift_held, &shown, current.as_deref(), focus.as_deref()), trash)
         };
         let Some(outcome) = outcome else { return false };

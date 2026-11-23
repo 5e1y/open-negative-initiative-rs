@@ -113,6 +113,7 @@ impl Ctl {
             let trash = s.trash_shown();
             if !trash {
                 s.org.project_ring = None;
+                s.chosen_in_gallery();
             }
             (s.shown_picks_mut().click(index, &shown, command, shift, uptime(), interval), trash)
         };
