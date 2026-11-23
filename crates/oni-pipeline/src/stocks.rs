@@ -48,8 +48,8 @@ impl Loader {
         &self.folder
     }
 
-    /// The folder read again whole: every `.json` a stock or a paper, every `.svg` a canister, hidden files left out;
-    /// none where its files and their contents are as last read.
+    /// The folder read again whole: every `.json` a stock or a paper, every `.cube` a look, every `.svg` a canister,
+    /// hidden files left out; none where its files and their contents are as last read.
     pub fn reload(&mut self) -> Option<Reloaded> {
         let mut svgs = self.shipped_svgs.clone();
         let mut candidates: Vec<(PathBuf, Vec<u8>)> = Vec::new();
@@ -58,7 +58,7 @@ impl Loader {
         let mut seen = stocks::hash(b"");
         for path in entries {
             let name = file_name(&path);
-            if name.starts_with('.') || !(name.ends_with(".svg") || name.ends_with(".json")) {
+            if name.starts_with('.') || ![".svg", ".json", ".cube"].iter().any(|e| name.ends_with(e)) {
                 continue;
             }
             let Ok(bytes) = std::fs::read(&path) else { continue };
@@ -118,6 +118,9 @@ impl Loader {
 
     /// `bytes` read as the person's file at `path`, each film's profile baked and each paper's print read.
     fn check(&mut self, path: &Path, bytes: &[u8]) -> Result<Loaded, String> {
+        if file_name(path).ends_with(".cube") {
+            return self.look(path, bytes);
+        }
         let hash = stocks::hash(bytes);
         let mut file = file::read(bytes)?;
         let references = match self.checked.get(&hash) {
@@ -139,6 +142,44 @@ impl Loader {
 }
 
 /// The references a file's films derive, in their order, or why one of its profiles or its print does not read.
+impl Loader {
+    /// A `.cube` file as a virtual film of its own: the default film's file under the cube's key and title, its look the
+    /// cube's, offered to digital photos alone; its grain and its internegative's paper read that film.
+    fn look(&self, path: &Path, bytes: &[u8]) -> Result<Loaded, String> {
+        let (title, look) = oni_settings::stocks::cube::read(bytes)?;
+        let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let key = look_key(&stem);
+        let default = oni_settings::VirtualStock::default().key();
+        let mut f = self
+            .shipped
+            .iter()
+            .find_map(|l| match &l.file {
+                File::Film(f) if f.film.as_ref().is_some_and(|b| b.key == default) => Some(f.clone()),
+                _ => None,
+            })
+            .ok_or("the default film is not shipped")?;
+        (f.key, f.name, f.brand) = (key.clone(), title.unwrap_or(stem).chars().take(120).collect(), "LUT".into());
+        (f.aliases, f.generic, f.iso, f.canister, f.offered, f.line, f.developments, f.dye_set) = (vec![], false, None, None, false, false, vec![], None);
+        let b = f.film.as_mut().expect("found by its film");
+        (b.key, b.aliases, b.look) = (key, vec![], Some(look));
+        Ok(Loaded { name: file_name(path), origin: Origin::Own(path.to_owned()), file: File::Film(f), hash: stocks::hash(bytes) })
+    }
+}
+
+/// The key a look's file name gives: `lut-` and its letters and digits, lower case, any other run a hyphen, so no
+/// shipped stock's key is ever taken.
+pub fn look_key(stem: &str) -> String {
+    let mut key = String::from("lut-");
+    for c in stem.chars().flat_map(char::to_lowercase) {
+        match c {
+            'a'..='z' | '0'..='9' => key.push(c),
+            _ if !key.ends_with('-') => key.push('-'),
+            _ => {}
+        }
+    }
+    key.trim_end_matches('-').chars().take(80).collect()
+}
+
 fn checked(file: &File) -> Result<Vec<StockReference>, String> {
     match file {
         File::Film(f) => {

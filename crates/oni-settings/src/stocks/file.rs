@@ -75,6 +75,9 @@ pub struct FilmBlock {
     pub reference: Option<StockReference>,
     /// The data sheet's profile as `scripts/datasheet-profiles.py` writes it: `info`, `provenance` and `data`.
     pub profile: Box<RawValue>,
+    /// A `.cube` file's look, which a digital photo on this film is read through in place of its negative.
+    #[serde(skip)]
+    pub look: Option<super::cube::Look>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

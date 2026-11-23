@@ -13,6 +13,10 @@ Drop a `.json` file there to add a stock or a paper, and its canister's `.svg` b
 
 A file that does not read is refused with a notice saying why, and the version of it ONI last took stays in use. A file is refused when JSON does not parse, a field is missing or unknown (a misspelt one), its `format` is later than the app's, a key holds more than letters, digits and hyphens, a key or a retired key is another file's, it names dyes no file defines, its profile does not read or bake, or it stands for a shipped file yet drops a key that file defined (other stocks name it).
 
+## A look from a 3D LUT
+
+Drop a `.cube` file in the same folder and it is a film of its own for digital photos, listed under the brand LUT, named by its `TITLE` (else its file name) and stored as `lut-` and its file name in lower case. A photo on it is read through the cube in place of a negative: the film's exposure first, then the scene in display sRGB code, through the cube, back to linear light. On a paper that positive prints through the internegative, as a slide does; with no paper it is shown as the cube gives it. Its grain is the default film's. A cube is refused when it gives no `LUT_3D_SIZE` from 2 to 128, is a 1D table, has a domain other than 0 to 1, or holds a node more or less than its size needs. ONI ships no look.
+
 A photo keeps the key it was edited on even while no file defines it: it renders on the default stock or paper meanwhile, its key shown marked missing, and finds its stock again when the file comes back.
 
 ## A film stock

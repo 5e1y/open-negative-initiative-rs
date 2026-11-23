@@ -77,6 +77,8 @@ pub struct Pipeline {
     luts: Vec<(CurveSet, Source, Source)>,
     /// Each virtual film's table, uploaded once per graph and file content.
     films: HashMap<(oni_settings::VirtualStock, u64), Source>,
+    /// Each look's nodes, uploaded once per graph and file content.
+    looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
@@ -162,6 +164,21 @@ impl Pipeline {
             }
         };
         Ok(image.then_reading(stages::virtual_negative(&stock.kernel_at(f.exposure)), &[Image::new(&source)]))
+    }
+
+    /// A digital photo's scene read through its film's look in place of a negative: exposed at the film's stops, taken
+    /// to display sRGB code, through the cube and back to linear light, a positive; none on a film without a look.
+    pub fn looked(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
+        let Some((f, entry, look)) = s.film().and_then(|f| f.stock.look().map(|(e, l)| (f, e, l))) else { return Ok(None) };
+        let key = (f.stock, entry.revision);
+        if !self.looks.contains_key(&key) {
+            let n = look.size as u32;
+            self.looks.insert(key, (graph.upload(n * n, n, &look.nodes)?, look.size));
+        }
+        let (table, n) = self.looks[&key].clone();
+        let code = stages::laid(image, vec![stages::exposure(f.exposure), stages::scanner_encode(1.0)]);
+        let read = code.then_reading(stages::color_cube(n), &[Image::new(&table)]);
+        Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0, 0.0), &[read])))
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {

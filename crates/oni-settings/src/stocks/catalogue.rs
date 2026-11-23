@@ -32,6 +32,8 @@ pub struct VirtualEntry {
     pub reference: StockReference,
     pub profile: Arc<str>,
     pub silver: bool,
+    /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
+    pub look: Option<super::cube::Look>,
     /// Its file's content: a bake made of another is never served for it.
     pub revision: u64,
 }
@@ -301,6 +303,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             reference,
                             profile: profile.clone(),
                             silver: f.kind == FilmType::BlackAndWhite,
+                            look: b.look.clone(),
                             revision,
                         });
                         if b.dyes == b.key {

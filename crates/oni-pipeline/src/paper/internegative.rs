@@ -21,17 +21,22 @@ pub struct Copy {
     pub light: ColorMatrix,
 }
 
-/// `s`'s copy where it is a slide printed on a paper, none for any other frame: its reference grey exposes the film at
-/// the film's grey, each channel through the slide's gains; Lighting, the paper (or the neutral one) and the colour tools
-/// are the slide's.
+/// `s`'s copy where it is a slide or a digital photo's look printed on a paper, none for any other frame: a slide's
+/// reference grey exposes the film at the film's grey, each channel through the slide's gains, a look's display grey
+/// is the film's grey as it is; Lighting, the paper (or the neutral one) and the colour tools are the frame's.
 pub fn copy(s: &PipelineSettings) -> Option<Copy> {
-    if !s.mode.reads_positive() || s.paper().is_none() || s.print.bypassed {
+    let looked = s.film().is_some_and(|f| f.stock.look().is_some());
+    if !(s.mode.reads_positive() || looked) || s.paper().is_none() || s.print.bypassed {
         return None;
     }
-    let grey = reference_grey(s);
-    // The scan's light, read as stage 4 reads it, times this lands the reference grey on the film's grey.
-    let gain: [f32; 3] = std::array::from_fn(|c| s.gains.stops[c].exp2() * GREY * 10f32.powf(grey[c]));
-    let pedestal = density_axis::pedestal(conversion::rendered_ceiling(s));
+    let (gain, pedestal) = if looked {
+        ([1.0; 3], 0.0)
+    } else {
+        let grey = reference_grey(s);
+        // The scan's light, read as stage 4 reads it, times this lands the reference grey on the film's grey.
+        let gain: [f32; 3] = std::array::from_fn(|c| s.gains.stops[c].exp2() * GREY * 10f32.powf(grey[c]));
+        (gain, density_axis::pedestal(conversion::rendered_ceiling(s)))
+    };
     let mut settings = film::on_reference(STOCK, &STOCK.reference());
     settings.mode = ConversionMode::Digital;
     settings.virtual_film = Some(VirtualFilm { stock: STOCK, exposure: 0.0 });

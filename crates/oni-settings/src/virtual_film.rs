@@ -73,6 +73,13 @@ impl VirtualStock {
         catalogue.virtual_film(self).or_else(|| catalogue.virtual_film(VirtualStock::default())).cloned().expect("the default stock is shipped")
     }
 
+    /// Its file's entry and the look its `.cube` file gives, where a file defines it with one.
+    pub fn look(self) -> Option<(VirtualEntry, crate::stocks::cube::Look)> {
+        let entry = crate::stocks::current().virtual_film(self)?.clone();
+        let look = entry.look.clone()?;
+        Some((entry, look))
+    }
+
     /// A file defines it.
     pub fn is_known(self) -> bool {
         crate::stocks::current().virtual_film(self).is_some()

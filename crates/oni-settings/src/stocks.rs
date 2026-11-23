@@ -1,6 +1,7 @@
 //! The film stocks and papers ONI knows, each one file (`file`): the shipped ones built from this crate's `stocks` folder,
 //! the person's own adding or standing in by key; their catalogue (`catalogue`) is swapped whole while the app runs.
 
+pub mod cube;
 pub mod file;
 mod catalogue;
 mod order;

@@ -12912,5 +12912,13 @@
     "status": "done",
     "detail": "examples/look_lab_fit.rs run on the density pipe; the Frontier set's fit is unchanged.",
     "outcome": "Neutral set against Pro at rest: median dE 0.56 to 0.19 on 9948 negatives; the check's bound 0.3."
+  },
+  {
+    "id": 3727,
+    "type": "feature",
+    "title": "A .cube 3D LUT in the Stocks folder is a film of its own for digital photos: read through the cube in display sRGB in place of the virtual negative, printed on the paper through the internegative",
+    "status": "done",
+    "detail": "oni_settings::stocks::cube reads a .cube (size 2-128, domain 0-1, nodes red fastest) into a Look; the Stocks loader makes each one a film file on the default film's data under the key lut-<name>, brand LUT, offered to digital photos alone; the chain reads its scene through exposure, scanner_encode, color_cube and scanner_output, no scene white, then the internegative and the paper where one is laid (internegative::copy at unit light). No format change: the photo stores the film's key as before; a missing cube renders on the default film. ONI ships no look.",
+    "outcome": "tests/looks.rs: a photo through its look against the kernels' references 1.95e-7 (twin 1.36e-1, the film's exposure left out); printed on its paper 5.97e-7 (twin 2.85e-1, no paper)."
   }
 ]
