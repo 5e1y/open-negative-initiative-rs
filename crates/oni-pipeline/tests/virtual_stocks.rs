@@ -27,7 +27,7 @@ const LIGHT_CHROMA: f32 = 6.0;
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
 fn on(stock: VirtualStock) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock).per_pixel_only();
-    s.print.paper_blacks = true;
+    s.print.print_lift = true;
     s
 }
 

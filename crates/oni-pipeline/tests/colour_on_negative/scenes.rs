@@ -89,10 +89,10 @@ pub fn as_read(s: &PipelineSettings, q: V4) -> V4 {
     }
 }
 
-/// The colour pipes, each with Paper blacks so a paper's print is its dyes' own light.
+/// The colour pipes, each with Print lift so a paper's print is its dyes' own light.
 pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let blacks = |mut s: PipelineSettings| {
-        s.print.paper_blacks = true;
+    let lifted = |mut s: PipelineSettings| {
+        s.print.print_lift = true;
         s
     };
     let negative = shot_on();
@@ -102,9 +102,9 @@ pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("ONI's print, slide", slide()),
         ("paper, digital", digital()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() }),
-        ("paper, negative", blacks(PipelineSettings { print_paper: Some(PaperStock::default()), ..negative.clone() })),
-        ("neutral paper", blacks(PipelineSettings { print_paper: Some(PaperStock::default()), paperless: true, ..negative })),
-        ("paper, slide", blacks(PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() })),
+        ("paper, negative", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..negative.clone() })),
+        ("neutral paper", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), paperless: true, ..negative })),
+        ("paper, slide", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() })),
     ]
 }
 

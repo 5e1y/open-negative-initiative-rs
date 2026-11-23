@@ -210,24 +210,24 @@ export component ColorPane inherits Pane {
         if root.channel-tab == 2: StoreSlider { field: 52; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
     }
     // The virtual enlarger printing the photo in place of ONI's print, offered where one can print it: its switch and
-    // Print on paper first, then the paper's black and the paper by its name, then the enlarger's filtration.
+    // Print on paper first, then the paper's ends and the paper by its name, then the enlarger's filtration.
     if PanelState.paper-shown: Block {
         title: @tr("Paper");
-        help: @tr("Virtual enlarger prints the photo as an enlarger does, in place of ONI's own print: in true density, the enlarger resting where the frame's grey prints neutral, the black picked in Prepare the Roll held. Lighting then acts as in a darkroom.\n\nPrint on paper lays that light on a colour paper: its curves, its dyes and its white. Off, the enlarger prints on a neutral paper, ONI's print curve on each channel alone, to see what the paper brings.\n\nPaper blacks prints the black picked in Prepare the Roll where the paper lays it; off, that black lies on pure black.");
+        help: @tr("Virtual enlarger prints the photo as an enlarger does, in place of ONI's own print: in true density, the enlarger resting where the frame's grey prints neutral, the black picked in Prepare the Roll held. Lighting then acts as in a darkroom.\n\nPrint on paper lays that light on a colour paper: its curves, its dyes and its white. Off, the enlarger prints on a neutral paper, ONI's print curve on each channel alone, to see what the paper brings.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white.");
         Toggle { label: @tr("Virtual enlarger"); on: PanelState.enlarger-on; toggled(on) => { PanelState.enlarger-toggled(on); } }
         if PanelState.enlarger-on: Toggle { label: @tr("Print on paper"); on: PanelState.on-paper; toggled(on) => { PanelState.on-paper-toggled(on); } }
         if PanelState.enlarger-on && PanelState.on-paper: HorizontalLayout {
             spacing: Space.xs;
             Toggle {
-                label: @tr("Paper blacks");
-                on: PanelState.paper-blacks;
-                toggled(on) => { PanelState.paper-blacks-toggled(on); }
+                label: @tr("Print lift");
+                on: PanelState.print-lift;
+                toggled(on) => { PanelState.print-lift-toggled(on); }
             }
             VerticalLayout {
                 alignment: center;
                 HelpMark {
-                    subject: @tr("Paper blacks");
-                    note: @tr("On, the black picked in Prepare the Roll prints where the paper lays it at rest, a hair above the paper's own black, as on a print held in the hand. Off, that black prints on pure black, the paper's white kept and the tones between stretched evenly, as a print is shown on a screen. Lighting never lifts it; only Black point moves it.");
+                    subject: @tr("Print lift");
+                    note: @tr("On, the print keeps the paper's own ends: the black picked in Prepare the Roll a hair above the paper's black, and the paper's white, as on a print held in the hand. Off, that black lies on pure black and that white on pure white, the grey kept where it was, as a print shown on a screen.");
                 }
             }
         }

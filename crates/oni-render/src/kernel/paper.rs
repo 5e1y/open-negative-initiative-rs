@@ -1,5 +1,5 @@
 //! The paper: the enlarger's light through the negative's dyes exposes a colour paper's layers, which develop on their
-//! curves; the print's dyes are read under D50, then its ends: the frame's pick on its anchor, the paper's white held.
+//! curves; the print's dyes are read under D50, then its ends: the frame's pick and the paper's white each on its anchor.
 //! Brightness moves the enlarger's light as a time does, faded in from the pick over the deep shadows: the blacks stay,
 //! the mids move. Lighting's other sliders and the colour tools act on the negative before it (`negative`).
 
@@ -54,8 +54,10 @@ pub struct Paper {
     /// read between.
     pub pick: V3,
     pub white: V3,
-    /// Where the pick lands: pure black, or where the enlarger's rest prints it for Paper blacks.
+    /// Where the pick and the paper's white land: pure black and pure white, or for Print lift where the enlarger's
+    /// rest prints the pick and the paper's own white.
     pub anchor: V3,
+    pub white_anchor: V3,
     /// A black and white print reads its luma on its three channels.
     pub luma: bool,
 }
@@ -77,6 +79,7 @@ impl Paper {
             v3(self.pick, 0.0),
             v3(self.white, 0.0),
             v3(self.anchor, 0.0),
+            v3(self.white_anchor, 0.0),
         ];
         let pad = |n: usize| std::iter::repeat_n([0.0; 4], PAPER_BANDS - n);
         rows.extend(self.negative.iter().copied().chain(pad(self.negative.len())));
@@ -146,15 +149,15 @@ impl Paper {
         if self.luma { [dot(light, LUMA); 3] } else { light }
     }
 
-    /// Each channel laid from the printed pick K on the anchor A, the white W held: a straight line in light through
-    /// both, under K one onto no light, so the print stays above none.
+    /// Each channel laid from the printed pick K on its anchor A and the paper's white W on its anchor T: a straight
+    /// line in light through both, under K one onto no light, so the print stays above none.
     pub fn ended(&self, light: V3) -> V3 {
-        if self.anchor == self.pick {
+        if self.anchor == self.pick && self.white_anchor == self.white {
             return light;
         }
         map(light, |c, v| {
-            let (k, a, w) = (self.pick[c], self.anchor[c], self.white[c]);
-            if v <= k { v * a / k } else { a + (w - a) * ((v - k) / (w - k)) }
+            let (k, a, w, t) = (self.pick[c], self.anchor[c], self.white[c], self.white_anchor[c]);
+            if v <= k { v * a / k } else { a + (t - a) * ((v - k) / (w - k)) }
         })
     }
 

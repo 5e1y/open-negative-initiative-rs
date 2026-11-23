@@ -135,7 +135,7 @@ fn the_gpu_prints_the_frontier_as_its_reference_does() {
     let light = |mut s: PipelineSettings| {
         (s.print.exposure, s.print.contrast, s.print.shadows, s.print.highlights) = (s.print.exposure + 0.7, 0.2, 0.1, -0.1);
         s.print.set_filters([0.2, -0.1, 0.0]);
-        (s.print.black_point, s.print.white_point, s.print.brightness, s.print.paper_blacks) = (0.03, 0.05, 0.5, false);
+        (s.print.black_point, s.print.white_point, s.print.brightness, s.print.print_lift) = (0.03, 0.05, 0.5, false);
         s
     };
     for (label, s) in frames() {
@@ -149,8 +149,8 @@ fn the_gpu_prints_the_frontier_as_its_reference_does() {
         judge(&format!("Frontier, lit {label}, on pure black"), &out, &reference, &twin);
         let (e, t) = (error(&out, &reference), error(&out, &twin));
         assert!(e < 1.5e-5 && t > 4e-2, "{label}: {e:.2e}, twin {t:.2e}");
-        // Paper blacks off lays the pick on pure black.
-        let dark = conversion::stage47(&PipelineSettings { print: Print { paper_blacks: true, ..lit.print }, ..lit.clone() });
+        // Print lift off lays the pick on pure black.
+        let dark = conversion::stage47(&PipelineSettings { print: Print { print_lift: true, ..lit.print }, ..lit.clone() });
         let lifted = error(&reference, &mapped(&pixels, |p| cpu::stage47(p, &dark)));
         println!("{label}: pure black moves the print {lifted:.1e}, its pick printed at {:?}", dark.paper.unwrap().anchor);
         assert!(lifted > 0.0, "{label}");

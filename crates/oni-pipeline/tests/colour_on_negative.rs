@@ -30,7 +30,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut legacy = onis(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut bright = prepared_negative();
-    (bright.print.brightness, bright.print.paper_blacks) = (0.7, false);
+    (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
     let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
     vec![
@@ -125,9 +125,9 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         let redder = Negative { pivot: [n.pivot[0] + 0.1, n.pivot[1], n.pivot[2]], ..n };
         // A slide's internegative reads its grey a thousandth of a log off neutral, which the spread doubles.
         assert!(off(&n) < 4e-3 && off(&redder) > 2e-2, "{label}: the grey's negative moved by {}, {}", off(&n), off(&redder));
-        // On a paper whose print is its dyes' own light, its pick on its anchor, every colour at the track's ends lies
+        // On a paper whose print is its dyes' own light, its pick and white on their anchors, every colour at the track's ends lies
         // within what its dyes print; the former print-side Saturation, the twin, laid colours past them.
-        let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
+        let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && p.white_anchor == p.white && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
         if let Some(p) = conversion::stage47(&s).paper.filter(dyed) {
             checked += 1;
             for t in [-1.0f32, 1.0] {

@@ -153,10 +153,10 @@ pub struct Print {
     /// shadows, the blacks held; none on ONI's print.
     #[serde(skip_serializing_if = "at_zero")]
     pub brightness: f32,
-    /// A paper's print with the frame's pick where the paper's rest prints it, a hair above its own black; off, the
-    /// pick lies on pure black, its white kept, for a print on a screen's black.
-    #[serde(rename = "paperBlacks", skip_serializing_if = "is_off")]
-    pub paper_blacks: bool,
+    /// Print lift: a paper's print with its own ends, the frame's pick where the paper's rest prints it and the paper's
+    /// white; off, the pick on pure black and that white on pure white, for a print shown on a screen.
+    #[serde(rename = "printLift", skip_serializing_if = "is_off")]
+    pub print_lift: bool,
     /// Off for a measurement upstream; never serialised.
     #[serde(skip)]
     pub bypassed: bool,
@@ -180,7 +180,7 @@ impl Default for Print {
             channel_contrast: [0.0; 3],
             colour_compensation: true,
             brightness: 0.0,
-            paper_blacks: false,
+            print_lift: false,
             bypassed: false,
         }
     }
