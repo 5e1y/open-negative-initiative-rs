@@ -78,9 +78,11 @@ impl Cube {
     }
 }
 
-/// A digital photo's render on `stock` baked through `couplers`, at rest on the default paper, as a CPU chain.
+/// A digital photo's render on `stock` baked through `couplers`, at rest on the default paper, as a CPU chain; a slide
+/// projected.
 struct Render {
     stock: film::Stock,
+    projected: Option<&'static film::projection::Projected>,
     white: ColorMatrix,
     k47: Stage47,
     to_2020: M3,
@@ -94,13 +96,17 @@ impl Render {
         s.gains.stops = stock.reference.stops;
         s.levels = stock.reference.levels();
         let to_2020 = matmul(&inv(&M2020), &SRGB_TO_XYZ);
-        Render { white: conversion::scene_white(&s).unwrap(), k47: conversion::stage47(&s), to_2020, from_2020: inv(&to_2020), stock }
+        let projected = v.entry().reversal.then(|| film::projection::projected(v));
+        Render { white: conversion::scene_white(&s).unwrap(), k47: conversion::stage47(&s), to_2020, from_2020: inv(&to_2020), stock, projected }
     }
     /// Scene light in linear Rec. 2020 to the print's display code.
     fn scene(&self, p: V3) -> V3 {
         let lit = cpu::color_matrix([p[0] as f32, p[1] as f32, p[2] as f32, 1.0], &self.white);
         let neg = cpu::virtual_negative(lit, &self.stock.kernel_at(0.0), &self.stock.table);
-        let out = cpu::stage47(neg, &self.k47);
+        let out = match self.projected {
+            Some(p) => cpu::projection(neg, &p.projection, &p.table),
+            None => cpu::stage47(neg, &self.k47),
+        };
         mul(&self.from_2020, [out[0] as f64, out[1] as f64, out[2] as f64]).map(enc)
     }
     /// A display code read as the scene it encodes.
@@ -147,13 +153,27 @@ fn colours() -> Vec<V3> {
     out
 }
 
+/// Whether `couplers` fold one of `key`'s layers back, which the stock files refuse.
+fn folds(key: &'static str, couplers: &M3) -> bool {
+    let entry = VirtualStock::of(key).entry();
+    let p = Profile::read(entry.profile.as_bytes()).unwrap();
+    let develop = if entry.reversal { film::bake::curves_falling } else { film::bake::curves_through };
+    let (first, _) = develop(&p.log_exposure, &p.density_curves, couplers);
+    film::bake::folds(&p.log_exposure, &first, couplers)
+}
+
 fn loss(render: &Render, targets: &[(V3, V3)]) -> f64 {
     let f = |c: V3| render.code(c);
     targets.iter().map(|(c, t)| crosstalk(&f, *c).iter().zip(t).map(|(a, b)| (a - b).powi(2)).sum::<f64>()).sum::<f64>() / targets.len() as f64
 }
 
-fn with(off: &[f64; 6]) -> M3 {
+/// The common matrix's diagonal and `off` across it; a reversal film's diagonal left out, its curves steep enough that a
+/// layer's own inhibition folds their axis back.
+fn with(off: &[f64; 6], reversal: bool) -> M3 {
     let mut m = COUPLERS;
+    if reversal {
+        (0..3).for_each(|c| m[c][c] = 0.0);
+    }
     let places = [(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)];
     for (k, &(i, j)) in places.iter().enumerate() {
         m[i][j] = off[k];
@@ -246,19 +266,22 @@ fn main() {
         let (key, path) = pair.split_once('=').unwrap();
         let key: &'static str = Box::leak(key.to_string().into_boxed_str());
         let cube = Cube::read(path);
+        let reversal = VirtualStock::of(key).entry().reversal;
         let targets: Vec<(V3, V3)> = colours.iter().map(|&c| (c, crosstalk(&|x| cube.at(x), c))).collect();
         let started = std::time::Instant::now();
         let common = loss(&Render::new(key, COUPLERS), &targets);
-        let bare = loss(&Render::new(key, with(&[0.0; 6])), &targets);
+        let bare = loss(&Render::new(key, with(&[0.0; 6], reversal)), &targets);
         println!("{key}: one render {:.2} s", started.elapsed().as_secs_f64() / 2.0);
         let x0 = [COUPLERS[0][1], COUPLERS[0][2], COUPLERS[1][0], COUPLERS[1][2], COUPLERS[2][0], COUPLERS[2][1]];
         // From the common matrix and from no cross term, the better kept: one start can stall where the other does not.
-        let fit = |start| minimise(&|x| loss(&Render::new(key, with(x)), &targets), start, 220);
+        let fit = |start| minimise(&|x| if folds(key, &with(x, reversal)) { f64::INFINITY } else { loss(&Render::new(key, with(x, reversal)), &targets) }, start, 220);
         let ((a, fa), (b, fb)) = (fit(x0), fit([0.0; 6]));
         let (best, fitted) = if fa <= fb { (a, fa) } else { (b, fb) };
-        let m = with(&best);
-        let (gamma, ratio) = ratios(key, &m);
-        let (_, common_ratio) = ratios(key, &COUPLERS);
+        let m = with(&best, reversal);
+        // Kodak's ratio reads a negative's rising curves; a reversal film's fall, and none is told.
+        let none = ([f64::NAN; 3], [f64::NAN; 3]);
+        let (gamma, ratio) = if reversal { none } else { ratios(key, &m) };
+        let (_, common_ratio) = if reversal { none } else { ratios(key, &COUPLERS) };
         let rounded = |v: f64| (v * 1000.0).round() / 1000.0;
         let line = format!(
             "{key}\n  crosstalk error (Oklab², mean): common {common:.6}, no cross term {bare:.6}, fitted {fitted:.6}\n  fitted {:?}\n  \

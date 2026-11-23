@@ -218,6 +218,29 @@ pub fn curves_through(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<[
     (normal, (0..le.len()).map(|i| [before[0][i], before[1][i], before[2][i]]).collect())
 }
 
+/// A reversal film's curves through `couplers`: its first developer's negative image, the dyes' fall from their densest,
+/// inhibits as a negative's density does, and the dyes left are read where the inhibited exposure lands a grey on the sheet.
+pub fn curves_falling(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {
+    let high: [f64; 3] = std::array::from_fn(|c| density.iter().map(|d| d[c]).fold(f64::NEG_INFINITY, f64::max));
+    let first: Vec<[f64; 3]> = density.iter().map(|d| std::array::from_fn(|c| high[c] - d[c])).collect();
+    let left = (0..3)
+        .map(|c| {
+            let shifted: Vec<f64> = (0..le.len()).map(|i| le[i] - (0..3).map(|k| first[i][k] * couplers[k][c]).sum::<f64>()).collect();
+            le.iter().map(|&e| interpolate(e, &shifted, density, c)).collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    (first, (0..le.len()).map(|i| [left[0][i], left[1][i], left[2][i]]).collect())
+}
+
+/// Whether `couplers` fold a layer's exposure back: the first image's density, `first`, inhibiting the layer faster than
+/// its own exposure rises, so two exposures develop alike and the development reads no single one.
+pub fn folds(le: &[f64], first: &[[f64; 3]], couplers: &M3) -> bool {
+    (0..3).any(|c| {
+        let shifted = |i: usize| le[i] - (0..3).map(|k| first[i][k] * couplers[k][c]).sum::<f64>();
+        (1..le.len()).any(|i| shifted(i) <= shifted(i - 1))
+    })
+}
+
 /// `np.interp`: channel `c` of `ys` at `x` along increasing `xs`, held at the ends.
 pub fn interpolate(x: f64, xs: &[f64], ys: &[[f64; 3]], c: usize) -> f64 {
     let n = xs.len();

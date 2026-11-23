@@ -63,10 +63,14 @@ impl Pipeline {
             Some(k) => grain::grained(haloed, &k.seeded(inputs.seed), grain::dissolve(s, scan)),
             None => haloed,
         };
-        // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is. A look
-        // gives a positive: printed on a paper through the internegative, as a slide is, else shown as it is.
+        // The virtual film takes that scene as a pass of its own too: its negative is read as any negative is. A look or a
+        // projected slide gives a positive: printed on a paper through the internegative, as a slide is, else shown as it is.
         let read = copy.as_ref().map_or(s, |c| &c.settings);
-        let printed = match self.looked(graph, grained.clone(), s)? {
+        let positive = match self.looked(graph, grained.clone(), s)? {
+            Some(p) => Some(p),
+            None => self.projected(graph, grained.clone(), s)?,
+        };
+        let printed = match positive {
             Some(positive) => match &copy {
                 Some(c) => {
                     let negative = self.filmed(graph, positive.then(stages::color_matrix(&c.light)), read)?;

@@ -32,6 +32,8 @@ pub struct VirtualEntry {
     pub reference: StockReference,
     pub profile: Arc<str>,
     pub silver: bool,
+    /// A colour reversal film: its curves fall, and its slide is projected.
+    pub reversal: bool,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
     /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
@@ -240,11 +242,6 @@ fn claims(file: &File) -> Vec<Claim> {
     out
 }
 
-/// Two hashes as one.
-fn mixed(a: u64, b: u64) -> u64 {
-    (a ^ b.rotate_left(29)).wrapping_mul(0x0100_0000_01b3)
-}
-
 /// The catalogue of `files` taken whole, or the place of the first file to refuse and why.
 fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
     let mut c = Catalogue::default();
@@ -295,7 +292,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                         let reference = b.reference.ok_or_else(|| (at, format!("the film \"{}\" holds no reference", b.key)))?;
                         let set = canonical_in(&defined, files, Space::Dyes, &b.dyes).ok_or_else(|| (at, missing(Space::Dyes, &b.dyes)))?;
                         let profile: Arc<str> = Arc::from(b.profile.get());
-                        let revision = mixed(l.hash, super::hash(b.key.as_bytes()));
+                        let revision = super::mixed(l.hash, super::hash(b.key.as_bytes()));
                         c.virtuals.push(VirtualEntry {
                             stock: VirtualStock::of(intern(&b.key)),
                             name: kind.display_name,
@@ -305,6 +302,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             reference,
                             profile: profile.clone(),
                             silver: f.kind == FilmType::BlackAndWhite,
+                            reversal: f.kind == FilmType::ColourSlide,
                             couplers: b.couplers,
                             look: b.look.clone(),
                             revision,
@@ -336,7 +334,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
             let named = canonical_in(&defined, files, Space::Virtual, film).and_then(|k| c.virtuals.iter().find(|v| v.stock.key() == k));
             let own = named.and_then(|v| c.dyes.iter().find(|d| d.set == v.dyes && matches!(d.source, DyeSource::Profile(_))));
             let Some(own) = own else { return Err((at, format!("its mean names \"{film}\", which is no colour film measuring its own dyes"))) };
-            revision = mixed(revision, own.revision);
+            revision = super::mixed(revision, own.revision);
             sets.push(own.set);
         }
         c.dyes.push(DyeEntry { set: DyeSet::of(key), name: None, source: DyeSource::Mean(sets), revision });

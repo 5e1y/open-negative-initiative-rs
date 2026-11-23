@@ -88,7 +88,8 @@ fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s
     let plain = film::plain_grey();
     let portra = ramp(VirtualStock::of("kodak-portra-800"), &on(VirtualStock::of("kodak-portra-800"))).white;
     println!("stock: L* and C*ab from -3 to +2.3 stops · grey · white luma (Portra 800 {portra:.4}) · twin's grey C*ab");
-    for stock in VirtualStock::all() {
+    // A reversal film is projected, not printed: the GPU chain's neutral ramp holds its grey.
+    for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
         let s = on(stock);
         let mut off = s.clone();
         off.gains.stops[0] += 0.2;

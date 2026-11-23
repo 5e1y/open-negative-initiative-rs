@@ -66,8 +66,9 @@ impl Reference {
         let white = film::reference_light(stock);
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
-        let couplers = film::couplers(&stock.entry());
-        let curves = bake::curves_through(&profile.log_exposure, &profile.density_curves, &couplers);
+        let (couplers, reversal) = (film::couplers(&stock.entry()), stock.entry().reversal);
+        let develop = if reversal { bake::curves_falling } else { bake::curves_through };
+        let curves = develop(&profile.log_exposure, &profile.density_curves, &couplers);
         Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile, couplers }
     }
 
@@ -160,7 +161,9 @@ fn the_kernel_reads_the_negative_the_reference_develops() {
         let stock = film::stock(kind);
         let (gap, edge) = (worst(&stock.kernel, &stock.table, &reference, &inside), worst(&stock.kernel, &stock.table, &reference, &locus));
         eprintln!("{kind:?}: kernel against the reference, {gap:.5} density at worst, {edge:.5} on the locus");
-        assert!(gap < 0.001 && edge < 0.015, "{kind:?}: {gap} {edge}");
+        // A slide's curves are three to four times a negative's slope, read on the same 256 nodes.
+        let bound = if kind.entry().reversal { 0.002 } else { 0.001 };
+        assert!(gap < bound && edge < 0.015, "{kind:?}: {gap} {edge}");
         let uncoupled = VirtualNegative { couplers: [[0.0; 3]; 3], ..stock.kernel.clone() };
         assert!(worst(&uncoupled, &stock.table, &reference, &inside) > 0.001, "{kind:?}");
         let off = VirtualNegative { to_film: stock.kernel.to_film.map(|r| r.map(|v| v * 1.072)), ..stock.kernel.clone() };
@@ -176,8 +179,9 @@ fn a_grey_exposes_and_develops_on_the_data_sheet() {
     let held: Vec<(VirtualStock, f64)> = colour_stocks().map(|kind| (kind, grey_on(kind))).collect();
     for (kind, gap) in held {
         // A grey's layers take log exposures a few hundredths apart, which the neighbours' inhibition reads, more on
-        // a push's steeper curves (0.028 on Portra 800 Push 2).
-        assert!(gap < 0.03, "{kind:?}: {gap}");
+        // a push's steeper curves (0.028 on Portra 800 Push 2) and most on a slide's (0.033 on Velvia 50).
+        let bound = if kind.entry().reversal { 0.04 } else { 0.03 };
+        assert!(gap < bound, "{kind:?}: {gap}");
     }
 }
 
@@ -197,7 +201,9 @@ fn grey_on(kind: VirtualStock) -> f64 {
             let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &reference.curves.0, c));
             for m in 0..3 {
                 let inhibited = log[m] - (0..3).map(|k| first[k] * reference.couplers[k][m]).sum::<f64>();
-                gap = gap.max((bake::interpolate(inhibited, le, second, m) - first[m]).abs());
+                // A negative's sheet is its first curve; a reversal film's, the dyes its curves leave.
+                let sheet = if kind.entry().reversal { bake::interpolate(log[m], le, &reference.profile.density_curves, m) } else { first[m] };
+                gap = gap.max((bake::interpolate(inhibited, le, second, m) - sheet).abs());
             }
         }
         gap

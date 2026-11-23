@@ -21,6 +21,15 @@ fn pixel(p: vec2<i32>) -> vec4<f32> { return color_cube_px(load(p)); }
 );
 
 kernel!(
+    PROJECTION,
+    [wgsl::PROJECTION],
+    r#"
+fn projection_table(i: u32, row: u32) -> vec4<f32> { return load1(vec2<i32>(i32(i), i32(row))); }
+fn pixel(p: vec2<i32>) -> vec4<f32> { return projection_px(load(p)); }
+"#
+);
+
+kernel!(
     NEGATIVE,
     [wgsl::VIRTUAL_NEGATIVE],
     r#"
@@ -69,6 +78,14 @@ pub fn color_cube(n: usize) -> Tabled {
     Tabled {
         inner: PerPixel { name: "color-cube", kernel: &CUBE, params: uniform(head, &[]) },
         tables: Rect::new(0, 0, (n * n) as u32, n as u32),
+    }
+}
+
+/// A slide projected, its dyes and its lamp as seen the auxiliary image, two rows of `bands`.
+pub fn projection(k: &Projection) -> Tabled {
+    Tabled {
+        inner: PerPixel { name: "projection", kernel: &PROJECTION, params: uniform(k.head(), &k.rows()) },
+        tables: Rect::new(0, 0, k.bands as u32, 2),
     }
 }
 

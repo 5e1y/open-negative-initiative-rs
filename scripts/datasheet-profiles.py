@@ -461,6 +461,89 @@ def convert_paper(stock_id):
     return name, inferred
 
 
+# The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, and that film's key.
+# Provia 100F is left out: its sheet's blue and green curves are traced only to log H -2.16 and -1.50.
+SLIDES = [
+    ("fujifilm_velvia_50", "fujifilm-velvia50", "fujifilm-velvia-50"),
+    ("fujifilm_velvia_100", "fujifilm-velvia100", "fujifilm-velvia-100"),
+    ("kodak_ektachrome_e100", "kodak-ektachrome", "kodak-ektachrome-e100"),
+]
+
+
+def convert_slide(stock_id, file_key, film_key):
+    """A colour reversal film's profile, laid as the virtual film of its stock's file: a paper's parts, Status A, the
+    dyes unmixed over the base, the layers' sensitivity as printed. Its curves fall with exposure: each held non-rising,
+    the dyes unmixed from the densest end, the log H origin where green transmits an 18 % grey over the base."""
+    stock = STOCK[stock_id]
+    measured, inferred = [], []
+    sens_chart = chart(stock, "spectral_sensitivity")
+    layers = []
+    for channel in ("red_sensitive", "green_sensitive", "blue_sensitive"):
+        x, y = series(sens_chart, channel)
+        layers.append(tailed(x, y, y.max() - 8.0))
+    measured.append(f"spectral sensitivity, three layers, as printed ({sens_chart['confidence']} confidence)")
+    inferred.append("each layer's sensitivity past the sheet's first and last point, falling at its end slope")
+    dye_chart = chart(stock, "spectral_dye_density")
+    top = max(series(dye_chart, ch)[0][-1] for ch in ("cyan", "magenta", "yellow"))
+    dyes = []
+    for channel in ("cyan", "magenta", "yellow"):
+        x, y = series(dye_chart, channel)
+        logged = tailed(x, np.log10(np.maximum(y / y.max(), 1e-4)), -4.0)
+        dyes.append(np.where((WAVELENGTHS >= 400.0) & (WAVELENGTHS <= top), 10.0 ** logged, np.nan))
+    channel = unit(np.array(dyes).T, STATUS_A)
+    measured.append(f"cyan, magenta and yellow dye shapes ({dye_chart['confidence']} confidence)")
+    inferred.append("each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products")
+    curves_chart = chart(stock, "characteristic_curves")
+    raw = {k: series(curves_chart, k) for k in "RGB"}
+    le = np.linspace(max(v[0][0] for v in raw.values()), min(v[0][-1] for v in raw.values()), CURVE_NODES)
+    curves = {k: np.interp(le, cx, cy) for k, (cx, cy) in raw.items()}
+    lows = [curves[k].min() for k in "RGB"]
+    channels = {k: np.minimum.accumulate(curves[k]) - curves[k].min() for k in "RGB"}
+    le = le - float(np.interp(-math.log10(0.18), channels["G"][::-1], le[::-1]))
+    inferred.append("the curves' log H origin: where green transmits an 18 % grey over the base")
+    bare = np.where(np.isnan(channel).any(axis=1), np.nan, 0.0)
+    base = channel @ unmixed([lows], bare, channel, STATUS_A)[0]
+    sheet = np.array([channels[k] for k in "RGB"]).T
+    amounts_ = unmixed(sheet[::-1], base, channel, STATUS_A)[::-1]
+    measured.append(f"characteristic curves, Status A, as printed ({curves_chart['confidence']} confidence), each less its D-min")
+    inferred.append("the dyes' amounts along log H: the curves unmixed from the densest end, as they fall")
+    source = stock["source"]
+    profile = {
+        "info": {"stock": stock_id, "name": stock["name"], "manufacturer": stock["manufacturer"], "type": "reversal",
+                 "densitometer": "status_A", "reference_illuminant": "D"},
+        "provenance": {
+            "data_sheet": source.get("doc_id"),
+            "url": source.get("url"),
+            "sha256": source.get("sha256"),
+            "retrieved": source.get("retrieved"),
+            "dataset_id": stock_id,
+            "charts": [c["chart_id"] for c in (sens_chart, dye_chart, curves_chart)],
+            "measured": measured,
+            "inferred": inferred,
+        },
+        "data": {
+            "wavelengths": [float(w) for w in WAVELENGTHS],
+            "log_sensitivity": [[round(float(v), 6) for v in row] for row in np.array(layers).T],
+            "channel_density": [nulls(row) for row in channel],
+            "base_density": nulls(base),
+            "log_exposure": [round(float(v), 6) for v in le],
+            "density_curves": [[round(float(v), 6) for v in row] for row in amounts_],
+            "sheet_density_curves": [[round(float(v), 6) for v in row] for row in sheet],
+        },
+    }
+    path = STOCKS_DIR / f"{file_key}.json"
+    stock_file = json.loads(path.read_text())
+    # Nothing reads a slide as a negative: it rests on the generic set, as a black and white film does.
+    film = stock_file.get("film") or {"key": film_key, "balance": "daylight", "dyes": "generic-c41"}
+    if film.get("profile") != profile:
+        couplers = film.get("couplers")
+        film = {"key": film["key"], "balance": film["balance"], "dyes": film["dyes"], **({"couplers": couplers} if couplers else {}), "profile": profile}
+        stock_file["film"] = film
+        path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+        MOVED.append(path)
+    return file_key, inferred
+
+
 # The black and white negatives taken: the dataset's id, the file ONI names, the chart-id prefix of the developer the
 # stock rests on (the sheet's own, D-76 where the sheet prints it), and the stock whose spectrum stands for a missing one.
 BW_STOCKS = [
@@ -722,6 +805,10 @@ def main():
         name, inferred = convert_paper(stock_id)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred))
+    for stock_id, file_key, film_key in SLIDES:
+        name, inferred = convert_slide(stock_id, file_key, film_key)
+        names.append(name)
+        print(f"{name}: " + "; ".join(inferred[-2:]))
     for stock_id, name, prefix, spectrum_of in BW_STOCKS:
         name, inferred, others = convert_bw(stock_id, name, prefix, spectrum_of)
         names.append(name)

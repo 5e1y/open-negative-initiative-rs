@@ -8,6 +8,7 @@ pub mod wgsl;
 pub use kernel::affine::Affine;
 pub use kernel::warp::Warp;
 pub use kernel::color_cube::ColorCube;
+pub use kernel::projection::Projection;
 pub use kernel::color_matrix::ColorMatrix;
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};

@@ -58,7 +58,7 @@ fn rendered(g: &mut Graph, s: &PipelineSettings) -> Vec<V4> {
 fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     let (stocks, papers) = (sheet_stocks(), sheet_papers());
     println!("{} films and {} papers from their data sheets", stocks.len(), papers.len());
-    assert_eq!((stocks.len(), papers.len()), (75, 8));
+    assert_eq!((stocks.len(), papers.len()), (78, 8));
     for stock in &stocks {
         let json = stock.entry().profile;
         let read = if stock.is_silver() { film::profile::Silver::read(json.as_bytes()).err() } else { film::profile::Profile::read(json.as_bytes()).err() };
@@ -182,7 +182,9 @@ fn neutral_gap(json: &[u8], status: &Status, amounts: &str) -> f64 {
 
 #[test]
 fn every_colour_sheets_neutral_of_its_dye_amounts_reads_its_printed_curves() {
-    let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), s.entry().profile, &STATUS_M));
+    // A negative's sheet reads Status M, a reversal film's Status A.
+    let status = |s: VirtualStock| if s.entry().reversal { &STATUS_A } else { &STATUS_M };
+    let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), s.entry().profile, status(s)));
     let papers = sheet_papers().into_iter().map(|p| (p.name(), paper::source(p).unwrap(), &STATUS_A));
     let (mut worst, mut least_miss) = (0.0f64, f64::INFINITY);
     for (name, json, status) in films.chain(papers) {

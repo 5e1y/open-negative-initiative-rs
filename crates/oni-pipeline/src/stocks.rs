@@ -189,7 +189,8 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
                 .into_iter()
                 .map(|b| {
                     let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
-                    film::derive(b.profile.get(), b.balance, silver, DyeSet::of(stocks::intern(&b.dyes)), couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
+                    let (reversal, dyes) = (f.kind == FilmType::ColourSlide, DyeSet::of(stocks::intern(&b.dyes)));
+                    film::derive(b.profile.get(), b.balance, silver, reversal, dyes, couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })
                 .collect()
         }

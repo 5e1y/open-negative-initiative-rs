@@ -21,11 +21,11 @@ pub struct Copy {
     pub light: ColorMatrix,
 }
 
-/// `s`'s copy where it is a slide or a digital photo's look printed on a paper, none for any other frame: a slide's
+/// `s`'s copy where it is a slide or a digital photo's look or projected slide printed on a paper, none for any other frame: a slide's
 /// reference grey exposes the film at the film's grey, each channel through the slide's gains, a look's display grey
 /// is the film's grey as it is; Lighting, the paper (or the neutral one) and the colour tools are the frame's.
 pub fn copy(s: &PipelineSettings) -> Option<Copy> {
-    let looked = s.film().is_some_and(|f| f.stock.look().is_some());
+    let looked = s.film().is_some_and(|f| f.stock.look().is_some() || f.stock.entry().reversal);
     if !(s.mode.reads_positive() || looked) || s.paper().is_none() || s.print.bypassed {
         return None;
     }

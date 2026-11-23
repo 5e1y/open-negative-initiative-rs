@@ -12,8 +12,8 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
         let kind = crate::film::film_stock(Some(stock.catalogue_id())).expect("in the catalogue");
         assert!(!kind.line && kind.offered, "{stock:?}: a precise stock the picker lists, never its line");
         assert_eq!(kind.display_name, stock.name(), "{stock:?}");
-        if stock.is_silver() {
-            // Silver is neutral: the stock rests on the generic set, as a black and white roll does.
+        if stock.is_silver() || stock.entry().reversal {
+            // Silver is neutral and a slide is projected, never read as a negative: each rests on the generic set.
             assert_eq!((crate::dyes::dye_set(kind.id), stock.dye_set()), (None, DyeSet::of("generic-c41")), "{stock:?}");
             assert!(r.stops == [0.0; 3] && r.black.iter().chain(&r.white).all(|v| *v == r.black[0] || *v == r.white[0]), "{stock:?}: a neutral reference");
         } else {

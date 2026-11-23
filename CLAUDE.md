@@ -69,6 +69,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
   names no stock but the defaults (Portra 800, Royal Digital, the generic C-41 set) and the internegative (Vision3 50D); a key no
   file defines is kept as stored and renders on the default until its file is back.
+- **A digital photo on a colour reversal film is projected** (owner's call, 2026-11-23): its scene exposes the slide on the film's
+  sheet (curves falling, its couplers on the first developer's negative image), and the slide's dyes filter a 3200 K projector lamp
+  onto a white screen, seen adapted to the bare film's light with a 0.5 % veil (`film::projection`); on a paper it prints through
+  the internegative, as a scanned slide does. Velvia 50, Velvia 100 and Ektachrome E100 hold their sheets; Provia 100F's is traced short.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured

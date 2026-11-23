@@ -217,6 +217,13 @@ impl PipelineSettings {
         out.gains.stops = reference.stops;
         out.levels = reference.levels();
         out.dye_set = stock.dye_set();
+        // A slide is projected, not printed; a negative taken after one prints on the default paper again.
+        let was_slide = self.film().is_some_and(|f| f.stock.entry().reversal);
+        if stock.entry().reversal {
+            out.print_paper = None;
+        } else if was_slide && out.print_paper.is_none() {
+            out.print_paper = Some(PaperStock::default());
+        }
         out
     }
 

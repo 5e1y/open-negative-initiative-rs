@@ -79,6 +79,8 @@ pub struct Pipeline {
     films: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// Each look's nodes, uploaded once per graph and file content.
     looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
+    /// Each reversal film's projection table, uploaded once per graph and file content.
+    projections: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
@@ -179,6 +181,20 @@ impl Pipeline {
         let code = stages::laid(image, vec![stages::exposure(f.exposure), stages::scanner_encode(1.0)]);
         let read = code.then_reading(stages::color_cube(n), &[Image::new(&table)]);
         Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0, 0.0), &[read])))
+    }
+
+    /// A digital photo's scene shot on a reversal film and projected: the slide its virtual film develops, its dyes
+    /// filtering the projector's lamp, a positive; none on a negative film.
+    pub fn projected(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
+        let Some(f) = s.film().filter(|f| f.stock.entry().reversal) else { return Ok(None) };
+        let p = film::projection::projected(f.stock);
+        let key = (f.stock, p.revision);
+        if !self.projections.contains_key(&key) {
+            self.projections.insert(key, graph.upload(p.projection.bands as u32, 2, &p.table)?);
+        }
+        let table = Image::new(&self.projections[&key]);
+        let slide = self.filmed(graph, image, s)?;
+        Ok(Some(slide.then_reading(stages::projection(&p.projection), &[table])))
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {

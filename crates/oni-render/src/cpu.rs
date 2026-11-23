@@ -17,6 +17,7 @@ pub use crate::kernel::negative::negative;
 pub use crate::kernel::orient::orient;
 pub use crate::kernel::output_clip::output_clip;
 pub use crate::kernel::paper::paper;
+pub use crate::kernel::projection::projection;
 pub use crate::kernel::saturation_curve::saturation_curve;
 pub use crate::kernel::scanner::{scanner_density, scanner_output, scanner_encode};
 pub use crate::kernel::stage47::{stage47, windowed};

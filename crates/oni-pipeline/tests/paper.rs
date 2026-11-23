@@ -274,7 +274,8 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
 #[test]
 fn every_stock_rests_its_grey_neutral_on_every_paper() {
     let mut missed = Vec::new();
-    for stock in VirtualStock::all() {
+    // A reversal film's projection reaches a paper through the internegative, whose own checks hold it.
+    for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
         for p in PaperStock::all().into_iter().filter(|p| *p != PaperStock::of("fujifilm-fujiclear")) {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };
             let k = conversion::stage47(&s);

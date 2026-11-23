@@ -23,6 +23,7 @@ pub(crate) mod grid;
 pub(crate) mod negative;
 pub(crate) mod orient;
 pub(crate) mod paper;
+pub(crate) mod projection;
 pub(crate) mod output_clip;
 pub(crate) mod saturation_curve;
 pub(crate) mod scanner;

@@ -5,6 +5,7 @@ pub mod bake;
 pub mod cie;
 pub mod dyes;
 pub mod profile;
+pub mod projection;
 
 use bake::M3;
 use oni_render::{VirtualNegative, cpu};
@@ -59,9 +60,10 @@ struct Layers {
     couplers: M3,
 }
 
-/// A colour negative: three layers developed through `couplers`.
-fn colour(profile: Profile, couplers: M3) -> Layers {
-    let (before, after) = bake::curves_through(&profile.log_exposure, &profile.density_curves, &couplers);
+/// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative.
+fn colour(profile: Profile, couplers: M3, reversal: bool) -> Layers {
+    let develop = if reversal { bake::curves_falling } else { bake::curves_through };
+    let (before, after) = develop(&profile.log_exposure, &profile.density_curves, &couplers);
     Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers }
 }
 
@@ -79,8 +81,8 @@ fn silver(profile: Silver) -> Layers {
 
 /// A film's layers as its profile holds them, a colour one's developed through `couplers`, or why the profile does not
 /// read.
-fn layers(profile: &str, is_silver: bool, couplers: M3) -> Result<Layers, String> {
-    Ok(if is_silver { silver(Silver::read(profile.as_bytes())?) } else { colour(Profile::read(profile.as_bytes())?, couplers) })
+fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3) -> Result<Layers, String> {
+    Ok(if is_silver { silver(Silver::read(profile.as_bytes())?) } else { colour(Profile::read(profile.as_bytes())?, couplers, reversal) })
 }
 
 /// The coupler matrix a film develops through: its file's own, else the common one.
@@ -90,9 +92,9 @@ pub fn couplers(entry: &VirtualEntry) -> M3 {
 
 /// `entry` baked through `couplers` in place of its own, its reference derived again.
 pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
-    let layers = layers(&entry.profile, entry.silver, couplers)?;
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers)?;
     let (kernel, table) = baked(&layers, entry.balance);
-    let reference = derived(entry.silver, entry.dyes, &kernel, &table);
+    let reference = if entry.reversal { unread() } else { derived(entry.silver, entry.dyes, &kernel, &table) };
     Ok(Stock { kernel, table, reference, revision: entry.revision })
 }
 
@@ -131,9 +133,9 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 }
 
 fn bake(entry: &VirtualEntry) -> Stock {
-    let layers = layers(&entry.profile, entry.silver, couplers(entry)).expect("a stock's profile reads once its file is taken");
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry)).expect("a stock's profile reads once its file is taken");
     let (kernel, table) = baked(&layers, entry.balance);
-    let reference = derived(entry.silver, entry.dyes, &kernel, &table);
+    let reference = if entry.reversal { unread() } else { derived(entry.silver, entry.dyes, &kernel, &table) };
     Stock { kernel, table, reference, revision: entry.revision }
 }
 
@@ -147,10 +149,13 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
 
 /// The reference a film's `profile` derives at `balance`, as a stock's file leaving it out takes; or why the profile
 /// does not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, dyes: DyeSet, couplers: M3) -> Result<StockReference, String> {
-    let layers = layers(profile, is_silver, couplers)?;
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, dyes: DyeSet, couplers: M3) -> Result<StockReference, String> {
+    let layers = layers(profile, is_silver, reversal, couplers)?;
+    if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
+        return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
+    }
     let (kernel, table) = baked(&layers, balance);
-    let r = derived(is_silver, dyes, &kernel, &table);
+    let r = if reversal { unread() } else { derived(is_silver, dyes, &kernel, &table) };
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
         return Err("its profile bakes a reference that is not finite".into());
     }
@@ -191,6 +196,14 @@ fn read_on(is_silver: bool, dyes: DyeSet, reference: &StockReference) -> Pipelin
     s
 }
 
+/// A reversal film's reference: its slide is projected, not read as a negative, so its windows stand at a negative's
+/// rest and no gain lies on it.
+fn unread() -> StockReference {
+    let w = oni_settings::levels::LevelsSet::neutral(ConversionMode::Negative, CEILING).windows();
+    let fraction = |d: f32| graduation::fraction(d, ConversionMode::Negative);
+    StockReference { stops: [0.0; 3], black: w.map(|l| fraction(l.black)), white: w.map(|l| fraction(l.white)) }
+}
+
 /// The stock's own reference: gains that make its bare film grey, each channel's black on the bare film,
 /// and its white where a scene grey, entering every window at one share, prints on the negative's print at
 /// rest as a plain RAW's render prints it.
@@ -228,7 +241,11 @@ mod tests {
         for kind in VirtualStock::all() {
             println!("{kind:?}: {:?}", stock(kind).reference);
         }
-        for kind in VirtualStock::all() {
+        // A reversal film is projected, never read as a negative: its reference is the windows' rest.
+        for kind in VirtualStock::all().into_iter().filter(|k| k.entry().reversal) {
+            assert!(stock(kind).reference == unread() && kind.reference() == unread(), "{kind:?}");
+        }
+        for kind in VirtualStock::all().into_iter().filter(|k| !k.entry().reversal) {
             let (derived, held) = (stock(kind).reference, kind.reference());
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
             let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);

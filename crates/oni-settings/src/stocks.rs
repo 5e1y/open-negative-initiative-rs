@@ -48,6 +48,11 @@ pub struct Refusal {
     pub reason: String,
 }
 
+/// Two hashes as one.
+pub(crate) fn mixed(a: u64, b: u64) -> u64 {
+    (a ^ b.rotate_left(29)).wrapping_mul(0x0100_0000_01b3)
+}
+
 /// FNV-1a over `bytes`: a file's identity across reads, never a secret.
 pub fn hash(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, b| (h ^ u64::from(*b)).wrapping_mul(0x0100_0000_01b3))
