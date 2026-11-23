@@ -138,8 +138,6 @@ impl Ctl {
         let p = me.clone();
         window.global::<Pairing>().on_forget(move || p.act(crate::Act::ForgetPhones));
         let p = me.clone();
-        window.global::<crate::Notice>().on_close(move || p.neutral_decode_notice_dismissed());
-        let p = me.clone();
         window.global::<PanelState>().on_auto_balance(move || {
             p.journal_balanced();
             p.act(crate::Act::AutoBalance);

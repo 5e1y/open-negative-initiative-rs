@@ -136,7 +136,6 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     let shown_dyes = || ctl.state.borrow().shown_settings().map(|s| s.dye_set);
     lib.invoke_tile_opened(0);
     rig.until("the photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    w.global::<oni_app::Notice>().invoke_close();
     let open = PathBuf::from(ctl.state.borrow().open_path().expect("a photo open"));
     let other = ["A.tif", "B.tif"].map(|n| folder.join(n)).into_iter().find(|p| *p != open).unwrap();
     panel.set_tab(PanelTab::Roll);

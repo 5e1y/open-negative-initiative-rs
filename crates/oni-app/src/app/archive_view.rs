@@ -231,27 +231,6 @@ impl Ctl {
         self.thumbnail_reached(&fingerprint);
     }
 
-    /// `offerNeutralDecodeNotice`: once a library holds a RAW, until it is dismissed once.
-    pub(super) fn offer_neutral_decode_notice(&self, paths: &[String]) {
-        let Some(w) = self.window() else { return };
-        let seen = Preferences::load(&self.state.borrow().support).bool(preferences::NEUTRAL_DECODE_NOTICE_SHOWN).unwrap_or(false);
-        if seen || self.catching_up() || crate::bench::requested().is_some() || !paths.iter().any(|p| oni_decode::is_raw(Path::new(p))) {
-            return;
-        }
-        w.global::<crate::Notice>().set_shown(true);
-    }
-
-    /// Marked seen once dismissed, never on asking: a notice under another sheet would be spent unseen.
-    pub(super) fn neutral_decode_notice_dismissed(&self) {
-        if let Some(w) = self.window() {
-            w.global::<crate::Notice>().set_shown(false);
-        }
-        let support = self.state.borrow().support.clone();
-        if let Err(e) = Preferences::load(&support).set(preferences::NEUTRAL_DECODE_NOTICE_SHOWN, true.into()) {
-            self.say(&tr!("The notice cannot be marked seen: {error}", error = e));
-        }
-    }
-
     pub(super) fn publish_tree(&self) {
         let Some(w) = self.window() else { return };
         self.unfold_archive();

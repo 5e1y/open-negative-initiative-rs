@@ -1,30 +1,4 @@
-// `neutralDecodeNotice`: shown once the library holds a RAW, its bullets what the change means for a photo.
 import { Sheet, SheetStyle, Space, Gap, Label, TextRole, Button, BulletLine, SheetFooter } from "ds/ds.slint";
-
-export global Notice {
-    in property <bool> shown;
-    callback close();
-}
-
-export component NoticeSheet inherits Sheet {
-    title: @tr("RAW Colour, Recalibrated");
-    card-width: SheetStyle.notice-width;
-    // Its groups a wider step apart than a plain sheet's lines.
-    gap: Gap.l;
-    dismissed => { Notice.close(); }
-    VerticalLayout {
-        spacing: Space.s;
-        for line in [
-            @tr("Camera RAW files now render truer colour, especially on unusual film stocks."),
-            @tr("Your existing photos have already been nudged to compensate automatically."),
-            @tr("Still looks a touch off? One press of your usual balance button settles it."),
-        ]: BulletLine { text: line; }
-    }
-    SheetFooter {
-        commit: @tr("GOT IT");
-        committed => { Notice.close(); }
-    }
-}
 
 // Shown once to a person whose support folder held something: the sidecars move to a new format,
 // converted in the background; nothing to choose, so the work never waits for it. Then its line.

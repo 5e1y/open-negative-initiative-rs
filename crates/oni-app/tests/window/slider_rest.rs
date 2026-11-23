@@ -49,7 +49,6 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     rig.pump();
     assert!(!w.global::<App>().get_gallery(), "the tile opens in the editor, on Pro");
     // The RAW notice is modal: closed first, so the pointer reaches the panel.
-    w.global::<oni_app::Notice>().invoke_close();
     rig.settle();
 
     // Pro's Temperature rests at its centre, ticked on its rail, as the Scanner's letters rest at zero.

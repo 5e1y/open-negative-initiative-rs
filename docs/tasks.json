@@ -12952,5 +12952,12 @@
     "status": "done",
     "detail": "scripts/datasheet-profiles.py convert_slide: a reversal sheet's profile (Status A, curves held non-rising, the dyes unmixed from the densest end, the log H origin where green transmits an 18 % grey) laid as the virtual film of its stock file, dyes generic-c41; Provia 100F left out (its blue and green traces stop at log H -2.16 and -1.50). VirtualEntry::reversal; bake::curves_falling develops the couplers on the first developer's negative image; bake::folds and film::derive refuse a matrix folding a layer's curve. New kernel projection (oni-render, WGSL and scalar reference): the layers' amounts, the dyes and base over 81 bands, a 3200 K Planck lamp through the 1931 observer, Bradford-adapted to the bare film's light, Rec. 2020, a 0.5 % veil (film::projection). Pipeline::projected after the virtual negative; the positive shown as it is, or printed on a paper through the internegative; on_stock lays no paper on a slide and the default back after one. Couplers fitted on the reference charts (coupler_fit, the diagonal left out on a slide, folding refused). A reversal film's reference is the windows' rest. Negative-only checks scoped, the slides' tolerances widened for their steeper curves.",
     "outcome": "tests/projection.rs: the GPU projection against its reference 2.1e-7 (twin: no veil); a photo on Velvia 50 through the chain 6.4e-6 (twin: unlit at its daylight); a grey through its couplers 2.5e-5 off the sheet, a red 0.24 (twin). Crosstalk error to the reference charts: Velvia 50 0.0018, Velvia 100 0.0008, Ektachrome E100 0.0006 (no cross term 0.0047, 0.0029, 0.0026)."
+  },
+  {
+    "id": 3732,
+    "type": "chore",
+    "title": "The RAW colour recalibration notice leaves",
+    "status": "done",
+    "detail": "The owner's call (2026-11-23): the notice a library holding a RAW raised once is gone, its sheet, global, preference key and texts; the window checks that leant on it as a sheet use the update notice instead."
   }
 ]

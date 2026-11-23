@@ -1882,22 +1882,6 @@ msgid "Too wide and ONI reads everything; too narrow and photos stay out."
 msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fuera."
 
 #: crates/oni-ui/ui/notice.slint
-msgid "RAW Colour, Recalibrated"
-msgstr "Color RAW recalibrado"
-
-#: crates/oni-ui/ui/notice.slint
-msgid "Camera RAW files now render truer colour, especially on unusual film stocks."
-msgstr "Los archivos RAW de cámara muestran ahora un color más fiel, sobre todo con emulsiones poco habituales."
-
-#: crates/oni-ui/ui/notice.slint
-msgid "Your existing photos have already been nudged to compensate automatically."
-msgstr "Tus fotos existentes ya se han ajustado automáticamente para compensarlo."
-
-#: crates/oni-ui/ui/notice.slint
-msgid "Still looks a touch off? One press of your usual balance button settles it."
-msgstr "¿Todavía se ve algo raro? Una pulsación de tu botón de balance habitual lo resuelve."
-
-#: crates/oni-ui/ui/notice.slint
 msgid "GOT IT"
 msgstr "ENTENDIDO"
 
@@ -3222,10 +3206,6 @@ msgstr "Algo ha fallado"
 #: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/navigator/locate.rs
 msgid "The library index cannot be opened"
 msgstr "No se puede abrir el índice de la fototeca"
-
-#: crates/oni-app/src/app/archive_view.rs
-msgid "The notice cannot be marked seen: {error}"
-msgstr "No se puede marcar el aviso como visto: {error}"
 
 #: crates/oni-app/src/app/archive_view.rs
 msgid "One photo has no thumbnail: its original cannot be reached."

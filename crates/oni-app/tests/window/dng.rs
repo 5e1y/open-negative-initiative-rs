@@ -3,7 +3,7 @@
 //! roll comes back on the DNGs.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Converting, DngStage, Library, Notice};
+use oni_app::{Converting, DngStage, Library};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
@@ -73,10 +73,6 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
     };
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(60), || ctl.state.borrow().read_done());
-    // RAWs raise the recalibration notice first: the offer waits behind it.
-    rig.settle();
-    assert!(w.global::<Notice>().get_shown() && !sheet.get_shown(), "the offer waits for the notice to close");
-    w.global::<Notice>().invoke_close();
     rig.until("the folder's offer", Duration::from_secs(30), || sheet.get_shown());
     assert!(sheet.get_stage() == DngStage::Offer && !sheet.get_ready(), "the folder's HE NEFs are offered, the converter's download first");
     sheet.invoke_cancelled();

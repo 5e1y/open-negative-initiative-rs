@@ -134,7 +134,6 @@ pub(crate) fn a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed() {
     let plain = tile(&shell, "R");
     assert!(plain.companion.is_empty() && plain.gone_pass.is_empty(), "{plain:?}");
     // The recalibration notice a RAW raises is closed, so the shot shows the tiles.
-    shell.window.global::<oni_app::Notice>().invoke_close();
     rig.settle();
     rig.shot("pair-tile");
 }

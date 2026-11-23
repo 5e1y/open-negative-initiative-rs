@@ -52,7 +52,5 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<crate::Navigator>().set_catch_up_shown(false);
         }
-        let order = self.state.borrow().order.clone();
-        self.offer_neutral_decode_notice(&order);
     }
 }

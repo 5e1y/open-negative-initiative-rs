@@ -2,7 +2,7 @@
 //! here (sidecars copied, originals linked), so neither the folder nor its originals are ever touched.
 
 use oni_app::app::{self, Options, Shell, WRITE_DELAY};
-use oni_app::{App, Library, Notice};
+use oni_app::{App, Library};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{Key, WindowEvent};
 use slint::ComponentHandle;
@@ -75,7 +75,7 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     let lib = w.global::<Library>();
     let mut folders: Vec<PathBuf> = std::fs::read_dir(&rolls).unwrap().flatten().map(|e| e.path()).filter(|p| p.is_dir()).collect();
     folders.sort();
-    let (mut rewritten, mut moved, mut seen, mut notices) = (Vec::new(), Vec::new(), 0, 0);
+    let (mut rewritten, mut moved, mut seen) = (Vec::new(), Vec::new(), 0);
     for folder in &folders {
         let files = sidecars(folder);
         let before: Vec<Vec<u8>> = files.iter().map(|f| std::fs::read(f).unwrap()).collect();
@@ -91,12 +91,6 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
         assert!(!w.global::<App>().get_gallery(), "{}: a double click opens the editor", folder.display());
         rig.until("the frame rendered", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
         settle(&rig, WRITE_DELAY + Duration::from_millis(600));
-        // The RAW notice Swift's own preferences had dismissed shows once to the upgraded user, never twice.
-        if w.global::<Notice>().get_shown() {
-            notices += 1;
-            w.global::<Notice>().invoke_close();
-            rig.pump();
-        }
         rig.chord(Key::Control, "g");
         assert!(w.global::<App>().get_gallery(), "⌘G goes back to the gallery");
         settle(&rig, WRITE_DELAY + Duration::from_millis(600));
@@ -117,7 +111,6 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     }
     eprintln!("upgrade: {} rolls, {seen} sidecars, {} rewritten {rewritten:?}", folders.len(), rewritten.len());
     assert!(seen > 0, "twin: the mirror holds sidecars");
-    assert!(notices <= 1, "the RAW notice came back {notices} times");
     assert!(moved.is_empty(), "settings moved by a rewrite: {moved:?}");
     assert!(rewritten.is_empty(), "rewritten on a mere opening: {rewritten:?}");
 

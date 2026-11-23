@@ -2,7 +2,7 @@
 //! a default key, none, or a working stage with no commit.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Confirm, Converting, DngStage, Notice, Unsaved};
+use oni_app::{Confirm, Converting, DngStage, Unsaved, Upgraded};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
@@ -31,7 +31,7 @@ pub(crate) fn escape_answers_every_sheet_after_a_press_beside_it() {
     rig.settle();
     // What each sheet answered, in order.
     let heard = Rc::new(RefCell::new(Vec::<String>::new()));
-    let (u, c, n, k) = (w.global::<Unsaved>(), w.global::<Converting>(), w.global::<Notice>(), w.global::<Confirm>());
+    let (u, c, n, k) = (w.global::<Unsaved>(), w.global::<Converting>(), w.global::<Upgraded>(), w.global::<Confirm>());
     let (h, ww) = (heard.clone(), w.as_weak());
     u.on_answered(move |i| {
         h.borrow_mut().push(format!("unsaved {i}"));
@@ -45,7 +45,7 @@ pub(crate) fn escape_answers_every_sheet_after_a_press_beside_it() {
     let (h, ww) = (heard.clone(), w.as_weak());
     n.on_close(move || {
         h.borrow_mut().push("notice closed".into());
-        ww.unwrap().global::<Notice>().set_shown(false);
+        ww.unwrap().global::<Upgraded>().set_shown(false);
     });
     let (h, ww) = (heard.clone(), w.as_weak());
     k.on_answered(move |go| {

@@ -57,7 +57,6 @@ pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     w.global::<Library>().invoke_tile_opened(0);
     rig.until("the photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    w.global::<oni_app::Notice>().invoke_close();
     rig.settle();
     let n = ctl.state.borrow().renders();
     w.global::<PanelState>().invoke_film_type_picked(3);

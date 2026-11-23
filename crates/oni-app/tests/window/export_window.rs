@@ -155,16 +155,16 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
         }));
     }
 
-    // The app opens on the gallery under the recalibration notice a RAW raises on a first launch.
+    // The app opens on the gallery, a sheet laid over it.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
-    assert!(w.global::<oni_app::Notice>().get_shown(), "a library holding a RAW raises the notice");
+    w.global::<oni_app::Upgraded>().set_shown(true);
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
-    // Twin: the notice is a sheet, so ⌘G under it opens nothing.
+    // Twin: under a sheet ⌘G opens nothing.
     rig.chord(slint::platform::Key::Control, "g");
-    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "⌘G reached behind the notice");
+    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "⌘G reached behind the sheet");
     // Once it is closed, the first photo ringed is taken into the editor by ⌘G.
-    w.global::<oni_app::Notice>().invoke_close();
+    w.global::<oni_app::Upgraded>().set_shown(false);
     rig.pump();
     rig.chord(slint::platform::Key::Control, "g");
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens: {:?}", ctl.state.borrow().open_path());
@@ -299,7 +299,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     // What the line held when written, field for field: stated, so the scan's own only when left there.
     assert_eq!(text(exif::Tag::Model), Some(format!("\"{}\"", line_camera)));
     assert_eq!(text(exif::Tag::Artist).as_deref(), Some("\"A. Tester\""));
-    assert_eq!(text(exif::Tag::ImageDescription).as_deref(), Some("\"Kodak Gold\""));
+    assert_eq!(text(exif::Tag::ImageDescription).as_deref(), Some("\"Kodak Gold 200\""));
     let date = oni_export::capture_date(&roll.join("DSC_6432.NEF")).unwrap();
     assert_eq!(text(exif::Tag::DateTimeOriginal), Some(date.replacen(':', "-", 2)));
     // Twin: the NEF itself carries the scan's fields this reader would have seen.

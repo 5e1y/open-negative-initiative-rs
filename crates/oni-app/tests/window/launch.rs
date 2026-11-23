@@ -1,8 +1,8 @@
 //! What a launch shows: the app's window opens as the starter, each step on its band while it runs,
-//! then grows into the app; the recalibration notice hung in the window. Shot to `ONI_SHOTS`.
+//! then grows into the app; the update notice hung in the window. Shot to `ONI_SHOTS`.
 
 use oni_app::render::{Device, Engine, Kernels};
-use oni_app::{MainWindow, Notice, Starter, starter};
+use oni_app::{MainWindow, Starter, Upgraded, starter};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
 use std::cell::{Cell, RefCell};
@@ -73,12 +73,12 @@ pub(crate) fn the_starter_says_each_step_then_grows_into_the_app_and_the_notice_
     assert_eq!(opened.get(), 1, "the app opens once");
 
     rig.window.set_size(PhysicalSize::new(2 * 1440, 2 * 900));
-    window.global::<Notice>().set_shown(true);
+    window.global::<Upgraded>().set_shown(true);
     rig.settle();
     println!("shot {}", rig.shot("notice").display());
     let closed = Rc::new(Cell::new(false));
     let seen = closed.clone();
-    window.global::<Notice>().on_close(move || seen.set(true));
+    window.global::<Upgraded>().on_close(move || seen.set(true));
     let click = |x: f32, y: f32| {
         let position = slint::LogicalPosition::new(x, y);
         rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left });

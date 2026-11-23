@@ -100,7 +100,6 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.until("the library read", Duration::from_secs(120), || ctl.state.borrow().read_done());
     assert!(w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none());
     // The recalibration notice a RAW raises on a first launch is a sheet, closed so the bar's keys live.
-    w.global::<oni_app::Notice>().invoke_close();
     w.global::<Library>().invoke_tile_opened(0);
     assert!(!w.global::<App>().get_gallery());
 
