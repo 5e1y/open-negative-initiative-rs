@@ -3,7 +3,6 @@
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Menus, PanelState, PanelTab};
 use oni_settings::VirtualStock;
-use oni_settings::film::FILM_STOCKS;
 use slint::platform::Key;
 use slint::ComponentHandle;
 use std::path::PathBuf;
@@ -38,10 +37,10 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     rig.advance(Duration::from_secs(5));
     rig.settle();
     let (own, undo, written) = (stored(), menus.get_live().undo, sidecar(&path));
-    assert_eq!(on(&own), Some(VirtualStock::KodakPortra800));
+    assert_eq!(on(&own), Some(VirtualStock::of("kodak-portra-800")));
     // The two stocks listed just above the one in use, which the menu scrolls into view as it drops.
-    let listed: Vec<VirtualStock> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).filter_map(|i| oni_app::stocks::virtual_stock(FILM_STOCKS[i].id)).collect();
-    let at = listed.iter().position(|v| *v == VirtualStock::KodakPortra800).unwrap();
+    let listed: Vec<VirtualStock> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).filter_map(|i| oni_app::stocks::virtual_stock(oni_settings::film::stocks()[i].id)).collect();
+    let at = listed.iter().position(|v| *v == VirtualStock::of("kodak-portra-800")).unwrap();
     let (next, third) = (listed[at - 1], listed[at - 2]);
 
     // The pointer on a line shows its film on the photo; nothing is written.
@@ -61,7 +60,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     point(&rig, (2.0, 2.0));
     rig.settle();
     assert!(dropped(w), "leaving the menu keeps it open");
-    assert_eq!((on(&shown()), ctl.state.borrow().stock_lit()), (Some(VirtualStock::KodakPortra800), None), "the photo's own film again");
+    assert_eq!((on(&shown()), ctl.state.borrow().stock_lit()), (Some(VirtualStock::of("kodak-portra-800")), None), "the photo's own film again");
     // Escape shows its own film again too.
     point(&rig, common::in_popup(w, Role::Button, next.name()).middle());
     rig.settle();
@@ -79,7 +78,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     // The arrows light the stocks after the one in use, past the brands' names; Return writes the one lit.
     drop_menu(&rig, w);
     let order: Vec<usize> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).collect();
-    let at = order.iter().position(|&i| FILM_STOCKS[i].id == VirtualStock::KodakPortra800.catalogue_id()).unwrap();
+    let at = order.iter().position(|&i| oni_settings::film::stocks()[i].id == VirtualStock::of("kodak-portra-800").catalogue_id()).unwrap();
     rig.key(&slint::SharedString::from(Key::DownArrow));
     rig.settle();
     let after = order.get(at + 1).copied().unwrap_or(order[at]);
@@ -89,7 +88,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     rig.settle();
     let lit = ctl.state.borrow().stock_lit().expect("↑ lights a stock");
     assert_eq!(lit, order[at.saturating_sub(1)], "↑↑ lights the stock before the one in use");
-    let lit_stock = oni_app::stocks::virtual_stock(FILM_STOCKS[lit].id).unwrap();
+    let lit_stock = oni_app::stocks::virtual_stock(oni_settings::film::stocks()[lit].id).unwrap();
     assert_eq!(on(&shown()), Some(lit_stock));
     rig.key(&slint::SharedString::from(Key::Return));
     rig.settle();

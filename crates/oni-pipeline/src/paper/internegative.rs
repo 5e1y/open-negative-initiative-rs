@@ -11,7 +11,7 @@ use oni_settings::{ConversionMode, PipelineSettings, VirtualFilm, VirtualStock};
 
 /// The film a slide is copied on: of the colour negatives, the one that kept the owner's slides' hues and chroma
 /// closest to ONI's own render of them, its blues the least turned (#3300).
-pub const STOCK: VirtualStock = VirtualStock::KodakVision3_50D;
+pub const STOCK: VirtualStock = VirtualStock::of("kodak-vision3-50d");
 
 /// The internegative a slide printed on a paper is read from: the settings that read and print it, and the matrix that
 /// turns the slide's decoded scan into the light exposing it.

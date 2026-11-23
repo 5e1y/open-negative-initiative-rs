@@ -11,7 +11,7 @@ use oni_pipeline::film::{self, GREY, dyes};
 use oni_pipeline::stages;
 use oni_render::{DyeSeparation, Stage47, cpu};
 use oni_settings::frame::RgbPasses;
-use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock, stocks};
 
 /// The ColorChecker's patches as linear Rec. 2020 on D65, from their published sRGB values.
 fn chart() -> Vec<[f32; 3]> {
@@ -52,10 +52,10 @@ fn amounts(light: V4) -> [f32; 3] {
 
 #[test]
 fn the_virtual_negatives_scan_separates_into_the_dye_amounts_it_developed() {
-    let stock = film::stock(VirtualStock::KodakPortra800);
-    let (k, d) = reading(DyeSet::KodakPortra800, 1.0);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
+    let (k, d) = reading(DyeSet::of("kodak-portra-800"), 1.0);
     let (mut worst, mut read_as_scanned, mut other_set) = (0.0f32, 0.0f32, 0.0f32);
-    let (gold_k, gold) = reading(DyeSet::KodakGold200, 1.0);
+    let (gold_k, gold) = reading(DyeSet::of("kodak-gold-200"), 1.0);
     for scene in scenes() {
         let developed = cpu::virtual_dyes(scene, &stock.kernel, &stock.table);
         let scan = cpu::virtual_negative(scene, &stock.kernel, &stock.table);
@@ -80,7 +80,7 @@ fn every_set_converges_on_a_negatives_mixtures_where_its_matrix_alone_misses() {
         .iter()
         .map(|p| { let grey = 2.2 * p[0]; [grey + 0.6 * (p[1] - 0.5), grey, grey + 0.6 * (p[2] - 0.5)].map(|v| v.max(-0.1)) })
         .collect();
-    for set in DyeSet::ALL {
+    for set in DyeSet::all() {
         let d = dyes::dyes(set);
         let measured = dyes::measured(set);
         let (scan, camera) = (film::bake::scan_weights(&film::cie::D50), film::bake::camera_weights(&film::cie::D50));
@@ -106,12 +106,12 @@ fn every_set_converges_on_a_negatives_mixtures_where_its_matrix_alone_misses() {
 
 #[test]
 fn the_generic_set_is_the_c41_profiles_mean_and_none_of_them() {
-    let generic = dyes::measured(DyeSet::GenericC41);
-    let portra = dyes::measured(DyeSet::KodakPortra400);
+    let generic = dyes::measured(DyeSet::of("generic-c41"));
+    let portra = dyes::measured(DyeSet::of("kodak-portra-400"));
     assert!(generic.len() >= portra.len() - 4, "the generic set spans the band most profiles measure: {}", generic.len());
     let mean_at = |l: usize| {
-        let profile = |n: &str| film::profile::Profile::read(dyes::source(n).unwrap()).unwrap();
-        let at: Vec<[f64; 4]> = dyes::C41.iter().filter_map(|n| film::bake::scanned(&profile(n)).into_iter().find(|(w, _)| *w == l).map(|(_, v)| v)).collect();
+        let profile = |n: &str| film::profile::Profile::read(VirtualStock::of(stocks::intern(n)).entry().profile.as_bytes()).unwrap();
+        let at: Vec<[f64; 4]> = C41.iter().filter_map(|n| film::bake::scanned(&profile(n)).into_iter().find(|(w, _)| *w == l).map(|(_, v)| v)).collect();
         std::array::from_fn::<f64, 4, _>(|k| at.iter().map(|v| v[k]).sum::<f64>() / at.len() as f64)
     };
     for (l, v) in &generic {
@@ -119,8 +119,8 @@ fn the_generic_set_is_the_c41_profiles_mean_and_none_of_them() {
         assert!((0..4).all(|k| (v[k] - m[k]).abs() < 1e-12), "{l}");
     }
     // Twin: no profile's own dyes are the mean.
-    for set in DyeSet::ALL.into_iter().filter(|s| !s.is_generic()) {
-        assert_ne!(dyes::dyes(set).matrix, dyes::dyes(DyeSet::GenericC41).matrix, "{set:?}");
+    for set in DyeSet::all().into_iter().filter(|s| !s.is_generic()) {
+        assert_ne!(dyes::dyes(set).matrix, dyes::dyes(DyeSet::of("generic-c41")).matrix, "{set:?}");
     }
 }
 
@@ -142,9 +142,22 @@ const SPLIT: [(&str, &str); 14] = [
     ("fujifilm-superia-xtra400", "fujifilm_superia_x_tra_400"),
 ];
 
+/// The still colour negatives most shot today, which the generic set averages.
+const C41: [&str; 9] =
+    ["kodak-portra-160", "kodak-portra-400", "kodak-portra-800", "kodak-ektar-100", "kodak-gold-200", "kodak-ultramax-400", "fujifilm-c200", "fujifilm-pro-400h", "fujifilm-xtra-400"];
+
+/// The profile its data sheet's converter named `name`, as its stock's file holds it.
+fn profile_named(name: &str) -> serde_json::Value {
+    VirtualStock::all()
+        .into_iter()
+        .map(|v| serde_json::from_str::<serde_json::Value>(&v.entry().profile).unwrap())
+        .find(|json| json["info"]["stock"] == name)
+        .expect("shipped")
+}
+
 /// The dye and base densities a profile file holds where it measures all four, read straight from its JSON.
 fn in_file(name: &str) -> Vec<[f32; 4]> {
-    let json: serde_json::Value = serde_json::from_slice(dyes::source(name).expect("shipped")).unwrap();
+    let json = profile_named(name);
     let (dyes, base) = (json["data"]["channel_density"].as_array().unwrap(), json["data"]["base_density"].as_array().unwrap());
     dyes.iter()
         .zip(base)
@@ -167,7 +180,7 @@ fn each_split_stock_separates_on_its_own_profiles_dyes() {
     // A line keeps the profile it stood for, a digital photo's film Portra 800's.
     assert_eq!(set("kodak-portra"), set("kodak-portra400"));
     assert_eq!(set("fujifilm-fujicolor"), set("fujifilm-c200"));
-    assert_eq!(VirtualStock::KodakPortra800.dye_set(), set("kodak-portra800"));
+    assert_eq!(VirtualStock::of("kodak-portra-800").dye_set(), set("kodak-portra800"));
     // Twin: two Portra speeds separate on two matrices, and a speed read against another's file fails.
     let (p160, p800) = (dyes::dyes(set("kodak-portra160")), dyes::dyes(set("kodak-portra800")));
     let apart = (0..3).flat_map(|r| (0..3).map(move |c| (r, c))).map(|(r, c)| (p160.matrix[r][c] - p800.matrix[r][c]).abs()).fold(0.0, f32::max);
@@ -187,10 +200,10 @@ fn a_digital_photo_unmixes_its_stocks_own_dyes_from_its_bare_film() {
     let s = filmed();
     let k = conversion::stage47(&s);
     let d = k.dyes.expect("a digital photo unmixes its stock's measured dyes");
-    assert_eq!(s.dye_set, DyeSet::KodakPortra800);
-    assert_eq!((d.matrix, d.dose), (dyes::dyes(DyeSet::KodakPortra800).matrix, s.separation));
+    assert_eq!(s.dye_set, DyeSet::of("kodak-portra-800"));
+    assert_eq!((d.matrix, d.dose), (dyes::dyes(DyeSet::of("kodak-portra-800")).matrix, s.separation));
     // The bare film opens every window: its dyes are none.
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let bare = cpu::virtual_negative([0.0, 0.0, 0.0, 1.0], &stock.kernel, &stock.table);
     let windowed = Stage47 { print_on: 0.0, hunt: 0.0, density: 1.0, ..k };
     let open = cpu::stage47(bare, &windowed);
@@ -225,7 +238,7 @@ fn only_a_colour_negative_at_a_dose_unmixes_measured_dyes() {
 #[test]
 fn the_gpu_separates_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_separates_as_its_reference_does") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (37, 23);
     let mut pixels: Vec<V4> = noise(w, h, 5, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];
@@ -295,12 +308,12 @@ fn a_line_the_generic_set_and_the_virtual_film_separate_on_pinned_numbers() {
         ("cinestill-800t", 0xcd6e_b824_8b35_9575),
     ];
     let read: Vec<(&str, u64)> = kept.iter().map(|(id, _)| (*id, fingerprint(dyes::dyes(oni_settings::dyes::dye_set(id).unwrap())))).collect();
-    let digital = fingerprint(dyes::dyes(VirtualStock::KodakPortra800.dye_set()));
+    let digital = fingerprint(dyes::dyes(VirtualStock::of("kodak-portra-800").dye_set()));
     println!("{read:x?}, digital 0x{digital:016x}");
     assert_eq!(read, kept);
     assert_eq!(digital, 0x48ce_5d2e_3e11_b529);
     // Twin: one bit moved in a matrix is seen.
-    let mut moved = dyes::Dyes { dyes: Vec::new(), weights: Vec::new(), ..*dyes::dyes(DyeSet::KodakPortra400) };
+    let mut moved = dyes::Dyes { dyes: Vec::new(), weights: Vec::new(), ..*dyes::dyes(DyeSet::of("kodak-portra-400")) };
     let whole = fingerprint(&moved);
     moved.matrix[1][1] = f32::from_bits(moved.matrix[1][1].to_bits() ^ 1);
     assert_ne!(fingerprint(&moved), whole);
@@ -311,15 +324,15 @@ fn a_line_the_generic_set_and_the_virtual_film_separate_on_pinned_numbers() {
 #[test]
 fn the_gpu_separates_every_sets_every_band() {
     let rows = |set: DyeSet| reading(set, 1.0).1.rows([1.0; 3], 0.0, 1e-12).len();
-    let widest = DyeSet::ALL.iter().map(|s| dyes::dyes(*s).dyes.len()).max().unwrap();
+    let widest = DyeSet::all().iter().map(|s| dyes::dyes(*s).dyes.len()).max().unwrap();
     println!("the widest set measures {widest} wavelengths");
     assert!(widest > 64 && widest <= oni_render::VIRTUAL_NEGATIVE_BANDS);
-    assert!(DyeSet::ALL.iter().all(|s| rows(*s) == rows(DyeSet::GenericC41)), "one uniform's size for every set");
+    assert!(DyeSet::all().iter().all(|s| rows(*s) == rows(DyeSet::of("generic-c41"))), "one uniform's size for every set");
     let Some(mut g) = graph("the_gpu_separates_every_sets_every_band") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let pixels: Vec<V4> = noise(19, 11, 9, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let source = g.upload(19, 11, &pixels).unwrap();
-    for set in DyeSet::ALL {
+    for set in DyeSet::all() {
         let (k, d) = reading(set, 1.0);
         let out = whole(&mut g, &Image::new(&source).then(stages::dye_separation(&k, &d)));
         let twin = DyeSeparation { dose: 0.9, ..d };

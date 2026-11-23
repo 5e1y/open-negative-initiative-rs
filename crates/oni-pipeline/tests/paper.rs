@@ -56,7 +56,7 @@ fn sheet_of(paper: PaperStock) -> Sheet {
     struct File {
         data: Sheet,
     }
-    serde_json::from_slice::<File>(paper::source(paper).expect("a profiled paper")).expect("it reads").data
+    serde_json::from_str::<File>(&paper::source(paper).expect("a profiled paper")).expect("it reads").data
 }
 
 /// `np.interp` of the curve of channel `c` at `e`, held at either end.
@@ -102,9 +102,9 @@ fn amounts() -> Vec<[f32; 3]> {
 
 #[test]
 fn every_paper_prints_portra_800s_dye_amounts_as_its_profile_reads() {
-    let negative = dyes::measured(DyeSet::KodakPortra800);
-    for paper in PaperStock::ALL.into_iter().filter(|p| p.profile().is_some()) {
-        let s = PipelineSettings { print_paper: Some(paper), ..film::on_reference(VirtualStock::KodakPortra800, &VirtualStock::KodakPortra800.reference()) };
+    let negative = dyes::measured(DyeSet::of("kodak-portra-800"));
+    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
+        let s = PipelineSettings { print_paper: Some(paper), ..film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference()) };
         let k = conversion::stage47(&s).paper.expect("a negative on its paper");
         let sheet = sheet_of(paper);
         let (filters, scale) = (k.filters.map(f64::from), f64::from(k.scale));
@@ -158,7 +158,7 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_and_the_ends_ar
     }
     // A digital photo's reference grey is its scene grey: the paper prints the scene's grey as ONI's print does.
     let s = digital();
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let scan = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock.kernel, &stock.table);
     let printed = cpu::stage47(scan, &conversion::stage47(&s));
     assert!((0..3).all(|c| (printed[c] - *GREY_PRINT).abs() < 2e-3), "{printed:?}");
@@ -166,7 +166,7 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_and_the_ends_ar
 
 #[test]
 fn the_print_is_the_papers_own_its_colour_density_included() {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let pixels: Vec<V4> = noise(23, 17, 5, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let mut lit = prepared_negative();
     (lit.print.exposure, lit.print.contrast, lit.print.shadows, lit.print.black_point) = (2.0, 0.2, 0.1, 0.03);
@@ -234,7 +234,7 @@ fn a_measure_and_a_positive_read_as_its_own_negative_read_no_paper() {
 #[test]
 fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_prints_on_the_paper_as_its_reference_does") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (31, 19);
     let mut pixels: Vec<V4> = noise(w, h, 9, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];
@@ -246,9 +246,9 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     (lit.print.black_point, lit.print.white_point, lit.print.channel_contrast, lit.print.channel_mid) = (0.03, 0.05, [0.1, 0.0, -0.1], [0.0, 0.1, 0.0]);
     (lit.print.channel_white, lit.print.channel_black, lit.print.brightness, lit.print.print_lift) = ([0.02, 0.0, 0.0], [0.0, 0.0, 0.03], 0.5, false);
     lit.density = 0.3;
-    let mut mono = PipelineSettings { print_paper: Some(PaperStock::KodakEnduraPremier), ..mono() };
+    let mut mono = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..mono() };
     (mono.print.contrast, mono.print.highlights, mono.print.white_point, mono.print.brightness, mono.print.print_lift) = (0.3, -0.2, 0.04, -0.5, false);
-    let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::FujifilmCrystalArchiveDigitalDPII), ..prepared_negative() };
+    let unmixed_none = PipelineSettings { separation: 0.0, print_paper: Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")), ..prepared_negative() };
     let mut anchored = PipelineSettings { print: Print { print_lift: true, brightness: -0.7, ..lit.print }, ..lit.clone() };
     anchored.print.exposure -= 3.0;
     let darker = PipelineSettings { print: Print { brightness: -4.0, ..anchored.print }, ..anchored.clone() };
@@ -295,8 +295,8 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
 #[test]
 fn every_stock_rests_its_grey_neutral_on_every_paper() {
     let mut missed = Vec::new();
-    for stock in VirtualStock::ALL {
-        for p in PaperStock::ALL.into_iter().filter(|p| *p != PaperStock::FujifilmFujiclear) {
+    for stock in VirtualStock::all() {
+        for p in PaperStock::all().into_iter().filter(|p| *p != PaperStock::of("fujifilm-fujiclear")) {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };
             let grey = cpu::stage47(grey_scan(&s), &conversion::stage47(&s));
             let off = (0..3).map(|c| (grey[c] - *GREY_PRINT).abs()).fold(0.0f32, f32::max);
@@ -308,7 +308,7 @@ fn every_stock_rests_its_grey_neutral_on_every_paper() {
     println!("{} stock and paper pairs off their grey: {missed:?}", missed.len());
     // The Pro 160C sheet's layers want a cyan filtration no colour enlarger's pack holds: within 2e-3 on two papers.
     assert!(missed.iter().all(|m| m.starts_with("FujifilmPro160C")) && missed.len() <= 2, "{missed:?}");
-    let s = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
+    let s = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     let k = conversion::stage47(&s);
     let rest = conversion::printing(&s).unwrap().paper;
     let start = Paper { filters: [1.0, 10f32.powf(-0.5), 10f32.powf(-0.5)], ..rest };

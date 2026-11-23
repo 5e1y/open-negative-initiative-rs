@@ -1,6 +1,7 @@
 //! `Pipeline.apply`: a frame's settings to its working-space image, every stage in the Swift app's
 //! order, as one render-graph recipe that stays on the GPU until a region of it is read.
 
+mod baked;
 mod chain;
 pub mod conversion;
 pub mod corrections;
@@ -19,6 +20,7 @@ pub mod frontier_look;
 pub mod resident;
 pub mod scanner;
 pub mod stages;
+pub mod stocks;
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_render::ColorCube;
@@ -73,8 +75,8 @@ pub struct Pipeline {
     valoi: Option<(Source, [f32; 3])>,
     cubes: HashMap<&'static str, (Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
-    /// Each virtual film's table, uploaded once per graph.
-    films: HashMap<oni_settings::VirtualStock, Source>,
+    /// Each virtual film's table, uploaded once per graph and file content.
+    films: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
 }
@@ -150,12 +152,12 @@ impl Pipeline {
     pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
         let Some(f) = s.film() else { return Ok(image) };
         let stock = film::stock(f.stock);
-        let source = match self.films.get(&f.stock) {
+        let source = match self.films.get(&(f.stock, stock.revision)) {
             Some(source) => source.clone(),
             None => {
                 let (w, h) = stock.kernel.table_size();
                 let source = graph.upload(w as u32, h as u32, &stock.table)?;
-                self.films.insert(f.stock, source.clone());
+                self.films.insert((f.stock, stock.revision), source.clone());
                 source
             }
         };

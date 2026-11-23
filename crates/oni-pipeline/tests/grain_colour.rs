@@ -32,7 +32,7 @@ fn even(y: Option<f64>) -> GrainCurve {
 /// The tone the strength curve's axis names for a light: its display luminance through the photo's film, then
 /// its negative printed at rest on the film's own gains.
 fn shown(light: f32, s: &PipelineSettings) -> f32 {
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
     let picture = Stage47 { gain: stock.reference.stops.map(f32::exp2), ..conversion::stage47(s) };
     let p = cpu::stage47(cpu::virtual_negative([light, light, light, 1.0], &stock.kernel_at(0.0), &stock.table), &picture);
     (p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]).max(0.0).powf(1.0 / 2.2)

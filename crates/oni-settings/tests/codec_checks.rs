@@ -62,7 +62,7 @@ fn full() -> PipelineSettings {
     // Off the resting ceiling and any round value, so a dropped key cannot round trip by luck.
     s.density_ceiling = 2.3137;
     s.separation = 0.37;
-    s.dye_set = oni_settings::DyeSet::FujifilmC200;
+    s.dye_set = oni_settings::DyeSet::of("fujifilm-c200");
     s.levels.red.black = 0.1373;
     s.levels.red.white = 2.4477;
     s.levels.blue.mid = 0.375;
@@ -609,7 +609,7 @@ fn every_field_lives_in_exactly_one_family() {
         s.roll_reference = Some(oni_settings::frame::RollReference { id: Id::new(), stops, black, white, base: None, median: None });
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
-        (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::KodakPortra800, exposure: 0.5 }), Some(Default::default()));
+        (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::of("kodak-portra-800"), exposure: 0.5 }), Some(Default::default()));
         (s.legacy_print, s.paperless) = (Some(Default::default()), true);
         encoded(&s, VERSION)["settings"].as_object().unwrap().keys().cloned().collect()
     };

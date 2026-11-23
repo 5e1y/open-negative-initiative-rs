@@ -262,6 +262,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("stock_hero::prepare_picks_the_stock_on_its_hero", stock_hero::prepare_picks_the_stock_on_its_hero),
     ("stock_hero::the_roll_tab_changes_the_rolls_stock_as_one_undoable_step", stock_hero::the_roll_tab_changes_the_rolls_stock_as_one_undoable_step),
     ("stock_hero::a_digital_photos_film_is_picked_among_the_virtual_films", stock_hero::a_digital_photos_film_is_picked_among_the_virtual_films),
+    ("stock_files::a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_photo", stock_files::a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_photo),
     ("stock_menu::a_stock_under_the_pointer_shows_on_the_photo_unwritten", stock_menu::a_stock_under_the_pointer_shows_on_the_photo_unwritten),
     ("bw_film::a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and_white", bw_film::a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and_white),
     ("row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister", row_marks::the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister),

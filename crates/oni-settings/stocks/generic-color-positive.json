@@ -1,0 +1,10 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-color-positive",
+ "name": "Generic Colour Positive",
+ "brand": "Generic",
+ "generic": true,
+ "type": "colour-slide",
+ "canister": "generic-color-positive.svg"
+}

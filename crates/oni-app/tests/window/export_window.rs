@@ -261,7 +261,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_pick_film(0);
     let stocks = w.global::<oni_app::Stocks>();
     assert!(stocks.get_shown(), "the film stock field opens Select Film Stock");
-    let gold = oni_settings::film::FILM_STOCKS.iter().position(|k| k.display_name == "Kodak Gold 200").expect("Kodak Gold 200 listed");
+    let gold = oni_settings::film::stocks().iter().position(|k| k.display_name == "Kodak Gold 200").expect("Kodak Gold 200 listed");
     stocks.invoke_chosen(gold as i32);
     assert!(!stocks.get_shown());
     e.invoke_format_picked(0);

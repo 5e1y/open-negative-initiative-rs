@@ -26,6 +26,7 @@ mod reading;
 pub mod settings;
 pub mod sidecar;
 pub mod spectrogram;
+pub mod stocks;
 pub mod tolerant;
 pub mod tone;
 pub mod virtual_film;

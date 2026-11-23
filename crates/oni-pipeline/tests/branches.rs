@@ -50,7 +50,7 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
     let windows = Stage47 { low_points: [0.3, 0.22, 0.27], high_points: [0.7, 0.8, 0.74], ..gains };
     let decompressed =
         Stage47 { decompression: 0.7, film_share: 0.1, balance_low: [0.2, 0.25, 0.3], balance_span: [1.4, 1.45, 1.6], ..windows };
-    let dyes = oni_pipeline::film::dyes::dyes(oni_settings::DyeSet::GenericC41).separation([0.2, 0.25, 0.3], 0.8);
+    let dyes = oni_pipeline::film::dyes::dyes(oni_settings::DyeSet::of("generic-c41")).separation([0.2, 0.25, 0.3], 0.8);
     let separated = Stage47 { dyes: Some(dyes), ..decompressed };
     let printed = Stage47 {
         print_on: 1.0,

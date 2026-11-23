@@ -185,8 +185,8 @@ pub(crate) mod tests {
         let reference = |id| Some(oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
         let (portra, fuji) = (oni_settings::Id::new(), oni_settings::Id::new());
         let dyed = |id, set| PipelineSettings { separation: 1.1, dye_set: set, separation_by_hand: true, roll_reference: reference(id), ..PipelineSettings::rest(ConversionMode::Negative, false) };
-        let kodak = DyeSet::KodakPortra400;
-        let mut beside = dyed(fuji, DyeSet::FujifilmXtra400);
+        let kodak = DyeSet::of("kodak-portra-400");
+        let mut beside = dyed(fuji, DyeSet::of("fujifilm-xtra-400"));
         beside.print.exposure = 0.4;
         let laid = [("a.tif", dyed(portra, kodak)), ("b.tif", beside), ("c.tif", dyed(portra, kodak))];
         let paths: Vec<String> = laid.iter().map(|(n, _)| dir.join(n).to_string_lossy().into_owned()).collect();
@@ -204,7 +204,7 @@ pub(crate) mod tests {
         s.apply(reset(Block::Lighting, Some(kodak)));
         let dyes = |s: PipelineSettings| (s.separation, s.dye_set, s.separation_by_hand);
         assert_eq!(dyes(read(&paths[2])), (separation::BASE, kodak, false), "the roll's frame left out takes its stock's dyes");
-        assert_eq!(dyes(read(&paths[1])), (1.1, DyeSet::FujifilmXtra400, true), "the Fuji frame keeps its own");
+        assert_eq!(dyes(read(&paths[1])), (1.1, DyeSet::of("fujifilm-xtra-400"), true), "the Fuji frame keeps its own");
         assert_eq!(read(&paths[1]).print.exposure, Field::Exposure.knob().get(&rest(&read(&paths[1]))), "and its Lighting at its own rest");
         // Twin: once every frame stands at rest, the key no longer shows.
         assert!(!beside(&s));
@@ -220,9 +220,9 @@ pub(crate) mod tests {
     #[test]
     fn the_dye_separation_reset_lands_on_the_stocks_dyes_and_clears_the_dose_and_the_hand() {
         let (mut s, dir) = fresh("dyes");
-        let fuji = Some(DyeSet::FujifilmXtra400);
+        let fuji = Some(DyeSet::of("fujifilm-xtra-400"));
         let mut picked = s.settings().clone();
-        picked.dye_set = DyeSet::KodakGold200;
+        picked.dye_set = DyeSet::of("kodak-gold-200");
         s.apply(Command::Write(Box::new(picked)));
         // The dyes alone, the dose at its base, off the stock's show the block's reset key.
         assert_eq!(get(&s, Field::DyeSeparation), separation::BASE);
@@ -231,12 +231,12 @@ pub(crate) mod tests {
         assert!(s.settings().separation_by_hand);
         s.apply(reset(Block::DyeSeparation, fuji));
         let after = s.settings().clone();
-        assert_eq!((after.separation, after.dye_set, after.separation_by_hand), (separation::BASE, DyeSet::FujifilmXtra400, false));
+        assert_eq!((after.separation, after.dye_set, after.separation_by_hand), (separation::BASE, DyeSet::of("fujifilm-xtra-400"), false));
         assert!(!is_modified(&after, Block::DyeSeparation, fuji), "the stock's dyes are the block's rest");
         // With no stock naming dyes, the reset keeps the frame's own.
         s.apply(reset(Block::DyeSeparation, None));
-        assert_eq!(s.settings().dye_set, DyeSet::FujifilmXtra400);
-        assert!(is_modified(s.settings(), Block::DyeSeparation, Some(DyeSet::KodakGold200)), "twin: off the stock's dyes is a pick");
+        assert_eq!(s.settings().dye_set, DyeSet::of("fujifilm-xtra-400"));
+        assert!(is_modified(s.settings(), Block::DyeSeparation, Some(DyeSet::of("kodak-gold-200"))), "twin: off the stock's dyes is a pick");
         // Twin: the dose's knob alone lands on the base yet marks it by hand.
         let by_knob = Field::DyeSeparation.knob().set(&after, separation::BASE);
         assert!(by_knob.separation_by_hand && is_modified(&by_knob, Block::DyeSeparation, fuji));

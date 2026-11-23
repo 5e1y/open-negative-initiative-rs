@@ -34,7 +34,7 @@ fn main() {
     let mut e = engine.lock().unwrap();
     let slide = e.prepare(render::decode(raw, Reading::of(&owner)).expect("a decode")).unwrap();
     write(out, "oni", &e.render(&slide, &PipelineSettings { print_paper: None, ..owner.clone() }, Some(side)).unwrap());
-    for paper in PaperStock::ALL {
+    for paper in PaperStock::all() {
         let mut s = PipelineSettings { print_paper: Some(paper), ..owner.clone() };
         s.print.print_lift = false;
         if let Some(p) = oni_pipeline::conversion::printing(&s) {
@@ -42,7 +42,7 @@ fn main() {
         }
         write(out, &key(paper), &e.render(&slide, &s, Some(side)).unwrap());
     }
-    let mut blacks = PipelineSettings { print_paper: Some(PaperStock::KodakEnduraPremier), ..owner.clone() };
+    let mut blacks = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..owner.clone() };
     blacks.print.print_lift = true;
     write(out, "kodak-endura-premier-print-lift", &e.render(&slide, &blacks, Some(side)).unwrap());
 }

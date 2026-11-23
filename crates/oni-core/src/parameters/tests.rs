@@ -61,7 +61,7 @@ fn the_reset_keeps_the_framing_flat_field_and_dye_set() {
     s.geometry.crop = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
     s.geometry.measure_window = Some(oni_settings::cg::Rect::new(0.2, 0.2, 0.5, 0.5));
     s.flat_field.amount = 0.4;
-    s.dye_set = oni_settings::DyeSet::FujifilmC200;
+    s.dye_set = oni_settings::DyeSet::of("fujifilm-c200");
     s.separation = 1.3;
     s.print.exposure = 0.2;
     s.sharpen.amount = 2.5;

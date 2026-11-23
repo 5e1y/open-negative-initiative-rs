@@ -20,10 +20,7 @@ pub const FORMER_PORTRA_800: StockReference = StockReference {
 
 /// The reference format 37 stored for `stock`: Portra 800 was the one stock it named, so any other reads as format 38's.
 fn former(stock: VirtualStock) -> StockReference {
-    match stock {
-        VirtualStock::KodakPortra800 => FORMER_PORTRA_800,
-        other => datasheet::former(other),
-    }
+    if stock == VirtualStock::of("kodak-portra-800") { FORMER_PORTRA_800 } else { datasheet::former(stock) }
 }
 
 /// The reference a format 37 film stored, the hand's moves on it included, read off its raw keys.

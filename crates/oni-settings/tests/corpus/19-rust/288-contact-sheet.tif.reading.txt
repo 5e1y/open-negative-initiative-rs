@@ -299,7 +299,7 @@ settings: PipelineSettings {
     density_ceiling: 3.5,
     separation: 1.0,
     separation_by_hand: false,
-    dye_set: GenericC41,
+    dye_set: generic-c41,
     flat_field: FlatField {
         mask: None,
         custom: None,

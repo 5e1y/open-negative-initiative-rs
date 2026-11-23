@@ -42,9 +42,9 @@ mod tests {
         assert_eq!(caught_up(older, hand).separation, 0.35, "a dose a hand moved stays");
         let mut rolled = at_rest.clone();
         rolled.film = Some(Film { stock: Some("kodak-gold".into()), ..Film::new("Roll") });
-        assert_eq!(caught_up(older, rolled).dye_set, DyeSet::KodakGold200, "its sidecar's roll names its stock");
+        assert_eq!(caught_up(older, rolled).dye_set, DyeSet::of("kodak-gold-200"), "its sidecar's roll names its stock");
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-        assert_eq!(caught_up(older, PipelineSettings { dye_set: DyeSet::GenericC41, ..digital }).dye_set, DyeSet::KodakPortra800);
+        assert_eq!(caught_up(older, PipelineSettings { dye_set: DyeSet::of("generic-c41"), ..digital }).dye_set, DyeSet::of("kodak-portra-800"));
         // Twin: a file of this format keeps its own dose.
         assert_eq!(caught_up(STOCK_DYES_VERSION, at_rest).separation, separation::FAMILY_REST);
     }
@@ -58,7 +58,7 @@ mod tests {
         film.stock = Some("fujifilm-superia".into());
         roll_folder::set_roll(Some(&film), &dir).unwrap();
         let scan = PipelineSettings::rest(ConversionMode::Negative, true);
-        assert_eq!(marked(STOCK_DYES_VERSION - 1, scan.clone(), &dir.join("A.NEF")).dye_set, DyeSet::FujifilmXtra400);
+        assert_eq!(marked(STOCK_DYES_VERSION - 1, scan.clone(), &dir.join("A.NEF")).dye_set, DyeSet::of("fujifilm-xtra-400"));
         // Twin: a file of this format keeps the set it names.
         assert_eq!(marked(STOCK_DYES_VERSION, scan.clone(), &dir.join("A.NEF")).dye_set, scan.dye_set);
         let _ = std::fs::remove_dir_all(&dir);

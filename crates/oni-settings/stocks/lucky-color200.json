@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "lucky-color200",
+ "name": "Lucky Color 200",
+ "brand": "Lucky",
+ "type": "colour-negative",
+ "iso": 200,
+ "canister": "lucky-color200.svg",
+ "dyes": "generic-c41"
+}

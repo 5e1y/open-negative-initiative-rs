@@ -45,7 +45,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, negative", prepared_negative()),
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
-        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() }),
+        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
         ("neutral paper", PipelineSettings { paperless: true, ..prepared_negative() }),
         ("paper, slide", PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() }),
     ]
@@ -72,7 +72,7 @@ fn read(value: &Value) -> PipelineSettings {
 
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let mut pixels: Vec<V4> = common::noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(common::noise(17, 13, 8, 0.0, 1.0));
     pixels

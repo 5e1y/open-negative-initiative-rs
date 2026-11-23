@@ -192,7 +192,7 @@ fn a_digital_photos_windows_rest_on_its_films_reference() {
     let (mut store, dir) = crate::store::tests::fresh("editors-digital-levels");
     store.apply(Command::Write(Box::new(store.settings().carried(ConversionMode::Digital))));
     let digital = store.settings().clone();
-    let reference = oni_settings::VirtualStock::KodakPortra800.reference().levels();
+    let reference = oni_settings::VirtualStock::of("kodak-portra-800").reference().levels();
     assert_eq!(digital.levels, reference);
     assert_eq!(marked(&digital), vec![false; 3]);
     let mut moved = Windows::of(&digital);

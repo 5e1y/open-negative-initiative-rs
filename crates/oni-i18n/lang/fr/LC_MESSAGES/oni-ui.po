@@ -5009,6 +5009,18 @@ msgstr "Chargement en pleine résolution"
 msgid "Auto white balance"
 msgstr "Balance des blancs automatique"
 
+#: crates/oni-app/src/app/stock_files.rs
+msgid "Stock files"
+msgstr "Fichiers d’émulsions"
+
+#: crates/oni-app/src/app/stock_files.rs
+msgid "{file} is not used as it stands, its last version that read stays in use: {why}"
+msgstr "{file} n’est pas pris tel quel, sa dernière version lisible reste en usage : {why}"
+
+#: crates/oni-app/src/app/stock_files.rs
+msgid "{file} is not used: {why}"
+msgstr "{file} n’est pas pris : {why}"
+
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
 msgstr "{count} vues ensemble"
@@ -5360,6 +5372,34 @@ msgstr "Compilation des noyaux d'image"
 #: crates/oni-app/src/stocks.rs
 msgid "Stock not specified"
 msgstr "Émulsion non précisée"
+
+#: crates/oni-app/src/stocks.rs
+msgid "{key} (file missing)"
+msgstr "{key} (fichier absent)"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic"
+msgstr "Générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Azure"
+msgstr "Azur générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Black & White"
+msgstr "Noir et blanc générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Colour Negative"
+msgstr "Négatif couleur générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Colour Positive"
+msgstr "Positif couleur générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Generic Redscale"
+msgstr "Redscale générique"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

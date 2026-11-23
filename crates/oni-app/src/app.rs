@@ -95,6 +95,7 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod stock_files;
 mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
 mod updates;
@@ -267,6 +268,10 @@ pub struct State {
     published_revision: u64,
     /// Where the stock picker's choice lands while it shows.
     stock_target: Option<StockTarget>,
+    /// The stock the open sheet marks picked, which it is laid again on when the catalogue changes.
+    stock_current: Option<String>,
+    /// The person's stock files, watched while the shell stands.
+    _stock_files: stock_files::Watching,
     /// The stock or the paper an editor's menu lights: kept out of the settings, so it writes nothing.
     lit: Option<stock_picker::Lit>,
     /// The menu's stocks or papers baked since it last dropped.

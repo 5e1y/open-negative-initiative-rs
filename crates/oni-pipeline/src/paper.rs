@@ -5,11 +5,13 @@
 
 use crate::film::bake;
 use crate::film::cie::{self, WAVELENGTHS};
+use crate::baked::Baked;
 use crate::film::dyes;
 use oni_render::PAPER_CURVE_NODES;
+use oni_settings::stocks::Print;
 use oni_settings::{DyeSet, PaperStock, PipelineSettings};
 use serde::Deserialize;
-use std::sync::OnceLock;
+use std::sync::Arc;
 
 type V3 = [f32; 3];
 type V4 = [f32; 4];
@@ -44,9 +46,12 @@ struct Data {
     density_curves: Vec<[f64; 3]>,
 }
 
-/// A paper's profile file; none for the Frontier.
-pub fn source(paper: PaperStock) -> Option<&'static [u8]> {
-    dyes::source(paper.profile()?)
+/// A paper's profile as its file holds it; none for the Frontier.
+pub fn source(paper: PaperStock) -> Option<Arc<str>> {
+    match paper.entry().print {
+        Print::Profile(json) => Some(json),
+        Print::Frontier(_) => None,
+    }
 }
 
 /// A paper's profile, refused off the grid, off its curves' uniform nodes or holding a number not finite.
@@ -86,15 +91,16 @@ pub fn validate(json: &[u8]) -> Result<(), String> {
     parse(json).map(|_| ())
 }
 
-fn read(paper: PaperStock) -> Data {
-    parse(source(paper).expect("a profiled paper")).expect("a shipped paper reads")
+fn read(json: &str) -> Data {
+    parse(json.as_bytes()).expect("a paper reads once its file is taken")
 }
 
-fn baked(paper: PaperStock) -> Sheet {
-    if paper == PaperStock::FujifilmFrontierSp3000 {
-        return frontier::sheet();
-    }
-    let d = read(paper);
+fn baked(print: &Print) -> Sheet {
+    let json = match print {
+        Print::Frontier(fit) => return frontier::sheet(&frontier::read(fit).expect("a fit reads once its file is taken")),
+        Print::Profile(json) => json,
+    };
+    let d = read(json);
     let to_rgb = bake::view_matrix(&cie::D50);
     let norm: f64 = (0..WAVELENGTHS).map(|l| cie::D50[l] * cie::Y[l]).sum();
     let (print, view) = (0..WAVELENGTHS)
@@ -115,11 +121,11 @@ fn baked(paper: PaperStock) -> Sheet {
     }
 }
 
-/// The paper's tables, baked at first use.
+/// The paper's tables, baked at first use and again once its file changes.
 pub fn sheet(paper: PaperStock) -> &'static Sheet {
-    static SHEETS: [OnceLock<Sheet>; PaperStock::ALL.len()] = [const { OnceLock::new() }; PaperStock::ALL.len()];
-    let at = PaperStock::ALL.iter().position(|p| *p == paper).expect("every paper is listed");
-    SHEETS[at].get_or_init(|| baked(paper))
+    static SHEETS: Baked<(PaperStock, u64), Sheet> = Baked::new();
+    let entry = paper.entry();
+    SHEETS.get((entry.paper, entry.revision), || baked(&entry.print))
 }
 
 /// scipy's Akima interpolation of `(x, y)` at `at`, inside the samples.
@@ -184,24 +190,23 @@ pub struct Enlarger {
 }
 
 /// What the enlarger holds: a black and white negative's silver, or a colour negative's dyes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Film {
     Silver,
     Negative(DyeSet),
 }
 
 impl Film {
-    const COUNT: usize = DyeSet::ALL.len() + 1;
-
     /// What a frame lays in the enlarger: its silver or its negative's measured dyes.
     pub fn of(s: &PipelineSettings) -> Film {
         if s.is_monochrome() { Film::Silver } else { Film::Negative(s.dye_set) }
     }
 
-    fn index(self) -> usize {
+    /// Its dyes' file content; silver is no file's.
+    fn revision(self) -> u64 {
         match self {
             Film::Silver => 0,
-            Film::Negative(d) => 1 + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"),
+            Film::Negative(d) => d.entry().revision,
         }
     }
 }
@@ -211,16 +216,17 @@ fn silver() -> Vec<(usize, [f64; 4])> {
     (0..WAVELENGTHS).map(|l| (l, [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 0.0])).collect()
 }
 
-fn enlarging(film: Film, paper: PaperStock) -> Enlarger {
-    if paper == PaperStock::FujifilmFrontierSp3000 {
-        return frontier::enlarger(film == Film::Silver);
-    }
+fn enlarging(film: Film, print: &Print) -> Enlarger {
+    let json = match print {
+        Print::Frontier(fit) => return frontier::enlarger(&frontier::read(fit).expect("a fit reads once its file is taken"), film == Film::Silver),
+        Print::Profile(json) => json,
+    };
     let bands = match film {
         Film::Silver => silver(),
         Film::Negative(set) => dyes::measured(set),
     };
     let lamp = lamp();
-    let s: Vec<[f64; 3]> = read(paper).log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();
+    let s: Vec<[f64; 3]> = read(json).log_sensitivity.iter().map(|s| s.map(|v| 10f64.powf(v))).collect();
     Enlarger {
         negative: bands.iter().map(|(_, d)| d.map(|v| v as f32)).collect(),
         exposure: bands.iter().map(|(l, _)| s[*l].map(|v| (v * lamp[*l]) as f32)).collect(),
@@ -228,11 +234,12 @@ fn enlarging(film: Film, paper: PaperStock) -> Enlarger {
     }
 }
 
-/// The enlarger for `film` on `paper`, baked at first use; the Frontier's scanner reads the dye amounts themselves.
+/// The enlarger for `film` on `paper`, baked at first use and again once either file changes; the Frontier's scanner
+/// reads the dye amounts themselves.
 pub fn enlarger(film: Film, paper: PaperStock) -> &'static Enlarger {
-    static TABLES: [OnceLock<Enlarger>; Film::COUNT * PaperStock::ALL.len()] = [const { OnceLock::new() }; Film::COUNT * PaperStock::ALL.len()];
-    let at = PaperStock::ALL.iter().position(|p| *p == paper).expect("every paper is listed");
-    TABLES[at * Film::COUNT + film.index()].get_or_init(|| enlarging(film, paper))
+    static TABLES: Baked<(Film, u64, PaperStock, u64), Enlarger> = Baked::new();
+    let entry = paper.entry();
+    TABLES.get((film, film.revision(), entry.paper, entry.revision), || enlarging(film, &entry.print))
 }
 
 #[cfg(test)]

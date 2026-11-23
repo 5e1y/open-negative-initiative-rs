@@ -152,6 +152,7 @@ mod sidebar_filter;
 mod space_chip;
 mod states;
 mod stock_hero;
+mod stock_files;
 mod stock_menu;
 mod bw_film;
 mod stocks;

@@ -20,7 +20,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
         settings.dye_set == stock.dye_set() && (0..3).all(|c| (settings.gains.stops[c] - stops[c]).abs() < SAME)
     };
     // A black and white film came after format 56: no photo then stood on its reference.
-    if held(film.stock) || !VirtualStock::ALL.into_iter().filter(|s| !s.is_silver()).any(held) {
+    if held(film.stock) || !VirtualStock::all().into_iter().filter(|s| !s.is_silver()).any(held) {
         return settings;
     }
     let own = on_former(&settings, film.stock);
@@ -41,20 +41,20 @@ mod tests {
     #[test]
     fn a_photo_read_on_another_films_gains_and_dyes_moves_onto_its_own() {
         let older = OWN_FILM_VERSION - 1;
-        let moved = caught_up(older, on(VirtualStock::KodakVerita200D, VirtualStock::KodakVision3_200T));
-        let own = on_former(&PipelineSettings::rest(ConversionMode::Digital, true), VirtualStock::KodakVerita200D);
+        let moved = caught_up(older, on(VirtualStock::of("kodak-verita-200d"), VirtualStock::of("kodak-vision3-200t")));
+        let own = on_former(&PipelineSettings::rest(ConversionMode::Digital, true), VirtualStock::of("kodak-verita-200d"));
         assert_eq!((moved.gains, moved.dye_set, moved.levels), (own.gains, own.dye_set, own.levels));
         // Twins: a hand's gains, a photo on its own film and a file of this format stay as they are.
-        let mut hand = on(VirtualStock::KodakVerita200D, VirtualStock::KodakVision3_200T);
+        let mut hand = on(VirtualStock::of("kodak-verita-200d"), VirtualStock::of("kodak-vision3-200t"));
         hand.gains.stops[2] += 0.05;
         assert_eq!(caught_up(older, hand.clone()), hand);
-        let push = on(VirtualStock::KodakPortra800Push1, VirtualStock::KodakPortra800);
+        let push = on(VirtualStock::of("kodak-portra-800-push-1"), VirtualStock::of("kodak-portra-800"));
         assert_eq!(caught_up(older, push.clone()), push, "a push stands on Portra 800's own gains and dyes");
-        let laid = on(VirtualStock::KodakVerita200D, VirtualStock::KodakVision3_200T);
+        let laid = on(VirtualStock::of("kodak-verita-200d"), VirtualStock::of("kodak-vision3-200t"));
         assert_eq!(caught_up(OWN_FILM_VERSION, laid.clone()), laid);
         // Neutral gains on the generic dyes, a black and white film's reference, which no photo then stood on.
-        let mut neutral = on(VirtualStock::KodakVerita200D, VirtualStock::IlfordHP5Plus);
-        (neutral.gains.stops, neutral.dye_set) = ([0.0; 3], crate::DyeSet::GenericC41);
+        let mut neutral = on(VirtualStock::of("kodak-verita-200d"), VirtualStock::of("ilford-hp5-plus"));
+        (neutral.gains.stops, neutral.dye_set) = ([0.0; 3], crate::DyeSet::of("generic-c41"));
         assert_eq!(caught_up(older, neutral.clone()), neutral);
     }
 }

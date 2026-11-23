@@ -61,9 +61,14 @@ the code; a costly trap keeps its constraint and its number in two lines.
   (`virtual_negative`), then read by the negative pipeline unchanged; there is no film None. spektrafilm's full chain, on its own
   profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
-  profile from the official sheet's curves (`resources/film/datasheet`); no spektrafilm profile ships. ONI's bake follows spektrafilm's
+  profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. ONI's bake follows spektrafilm's
   model (couplers, gamut compression, TH-KG3 lamp, dichroic filters). The default paper is Kodak Royal Digital, Kodak's softest
   sheet (owner's call, 2026-11-22); a photo left on the former default, Portra Endura, lands on it.
+- **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
+  canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
+  in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
+  names no stock but the defaults (Portra 800, Royal Digital, the generic C-41 set) and the internegative (Vision3 50D); a key no
+  file defines is kept as stored and renders on the default until its file is back.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, fitted to the measured

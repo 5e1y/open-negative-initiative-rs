@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-redscale",
+ "name": "Generic Redscale",
+ "brand": "Generic",
+ "generic": true,
+ "type": "colour-negative",
+ "canister": "generic-redscale.svg",
+ "dyes": "generic-c41"
+}

@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "kodak-gold",
+ "name": "Kodak Gold",
+ "brand": "Kodak",
+ "type": "colour-negative",
+ "canister": "kodak-gold.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "kodak-gold-200"
+}

@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "cinestill-800t",
+ "name": "CineStill 800T",
+ "brand": "CineStill",
+ "type": "colour-negative",
+ "iso": 800,
+ "canister": "cinestill-800t.svg",
+ "dyes": "kodak-vision3-500t"
+}

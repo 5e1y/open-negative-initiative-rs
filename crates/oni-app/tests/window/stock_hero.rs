@@ -6,7 +6,6 @@ use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
 use oni_app::{Library, MainWindow, Menus, PanelState, PanelTab, Preparing, Stocks};
 use oni_core::{Archive, EditorStore};
-use oni_settings::film::FILM_STOCKS;
 use oni_settings::{DyeSet, VirtualStock};
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model};
@@ -16,7 +15,7 @@ use std::time::Duration;
 use crate::common;
 
 fn stock(id: &str) -> i32 {
-    FILM_STOCKS.iter().position(|k| k.id == id).unwrap() as i32
+    oni_settings::film::stocks().iter().position(|k| k.id == id).unwrap() as i32
 }
 
 fn family(path: &Path) -> DyeSet {
@@ -105,7 +104,7 @@ pub(crate) fn prepare_picks_the_stock_on_its_hero() {
     common::click(&rig, w, key.middle());
     rig.pump();
     assert!(stocks.get_shown(), "the key opens the sheet");
-    assert_eq!(listed(&stocks).len(), oni_settings::film::offered_stocks().count(), "every stock offered");
+    assert_eq!(listed(&stocks).len(), oni_settings::film::offered_stocks().len(), "every stock offered");
     stocks.invoke_chosen(stock("kodak-portra400"));
     rig.settle();
     assert!(!stocks.get_shown());
@@ -145,13 +144,13 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     rig.settle();
     assert_eq!(panel.get_stock().name.as_str(), "Generic Colour Negative");
     assert!(panel.get_stock().note.starts_with("Default"), "the default said so: {}", panel.get_stock().note);
-    assert_eq!(open_dyes(), DyeSet::GenericC41);
+    assert_eq!(open_dyes(), DyeSet::of("generic-c41"));
     let undo_before = menus.get_live().undo;
 
     // The key drops the menu on every stock a roll takes, by brand, the sheet's order.
     drop_menu(&rig, w);
     let (names, brands) = menu(&stocks);
-    let by_brand: Vec<&str> = oni_app::stocks::by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| FILM_STOCKS[i].display_name).collect();
+    let by_brand: Vec<&str> = oni_app::stocks::by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].display_name).collect();
     assert_eq!(names, by_brand, "every stock offered for a roll, by brand");
     assert_eq!(brands.first().map(String::as_str), Some("Generic"));
     assert_eq!(stocks.get_in_use(), -1, "a roll on no stock checks none, as the sheet marks none");
@@ -161,17 +160,17 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     let (renders, written) = (ctl.state.borrow().renders(), sidecar(&open));
     stocks.invoke_lit(stock("fujifilm-c200"));
     rig.until("the photo rendered on the lit stock's dyes", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    assert_eq!(shown_dyes(), Some(DyeSet::FujifilmC200), "the canvas shows the lit stock's dyes");
-    assert_eq!((open_dyes(), marker()), (DyeSet::GenericC41, None), "nothing written");
+    assert_eq!(shown_dyes(), Some(DyeSet::of("fujifilm-c200")), "the canvas shows the lit stock's dyes");
+    assert_eq!((open_dyes(), marker()), (DyeSet::of("generic-c41"), None), "nothing written");
     assert_eq!(menus.get_live().undo, undo_before, "no step");
     stocks.invoke_lit(-1);
     rig.settle();
-    assert_eq!(shown_dyes(), Some(DyeSet::GenericC41), "the photo's own dyes again");
+    assert_eq!(shown_dyes(), Some(DyeSet::of("generic-c41")), "the photo's own dyes again");
     // Twin: a stock lit that names no dyes shows the photo as it is, and asks no render.
     let renders = ctl.state.borrow().renders();
     stocks.invoke_lit(stock("ilford-hp5"));
     rig.settle();
-    assert_eq!(shown_dyes(), Some(DyeSet::GenericC41));
+    assert_eq!(shown_dyes(), Some(DyeSet::of("generic-c41")));
     assert_eq!(ctl.state.borrow().renders(), renders, "nothing rendered for a light that moves nothing");
     stocks.invoke_lit(-1);
     assert_eq!(common::placed(w, Role::Button, &names[0]).len(), 1, "the first line in view as the menu drops");
@@ -180,13 +179,13 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
         rig.key(&slint::SharedString::from(Key::DownArrow));
     }
     let lit = ctl.state.borrow().stock_lit().expect("the arrows light a stock");
-    let line = common::in_popup(w, Role::Button, FILM_STOCKS[lit].display_name);
+    let line = common::in_popup(w, Role::Button, oni_settings::film::stocks()[lit].display_name);
     assert!(line.y + line.height <= rig.window.size().height as f32 && line.y >= 0.0, "the lit line in view: {line:?}");
     assert!(common::placed(w, Role::Button, &names[0]).is_empty(), "twin: the list scrolled its first line out of view");
     rig.key("\u{1b}");
     rig.settle();
     assert!(!dropped(w) && ctl.state.borrow().stock_lit().is_none(), "Escape closes the menu and lights nothing");
-    assert_eq!(shown_dyes(), Some(DyeSet::GenericC41));
+    assert_eq!(shown_dyes(), Some(DyeSet::of("generic-c41")));
     assert_eq!(sidecar(&open), written, "the sidecar never written by a light");
 
     // A pick writes the roll's marker and its dyes on both photos as one step.
@@ -198,7 +197,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     rig.until("the open photo rendered on its new dyes", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     assert_eq!(marker().as_deref(), Some("fujifilm-c200"), "the roll's stock");
-    assert_eq!((open_dyes(), family(&other)), (DyeSet::FujifilmC200, DyeSet::FujifilmC200), "every photo of the roll on its dyes");
+    assert_eq!((open_dyes(), family(&other)), (DyeSet::of("fujifilm-c200"), DyeSet::of("fujifilm-c200")), "every photo of the roll on its dyes");
     assert_eq!(panel.get_stock().name.as_str(), "Fujifilm C200");
     assert_eq!(panel.get_dye_set().as_str(), "Fujifilm C200", "Dye Separation names them");
     assert!(menus.get_live().undo, "one step");
@@ -208,13 +207,13 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     ctl.act(oni_app::Act::Undo);
     rig.landed(&ctl);
     rig.settle();
-    assert_eq!((marker(), open_dyes(), family(&other)), (None, DyeSet::GenericC41, DyeSet::GenericC41));
+    assert_eq!((marker(), open_dyes(), family(&other)), (None, DyeSet::of("generic-c41"), DyeSet::of("generic-c41")));
     assert_eq!(panel.get_stock().name.as_str(), "Generic Colour Negative", "the hero follows the Undo");
     assert_eq!(menus.get_live().undo, undo_before);
     ctl.act(oni_app::Act::Redo);
     rig.landed(&ctl);
     rig.settle();
-    assert_eq!((marker().as_deref(), open_dyes()), (Some("fujifilm-c200"), DyeSet::FujifilmC200));
+    assert_eq!((marker().as_deref(), open_dyes()), (Some("fujifilm-c200"), DyeSet::of("fujifilm-c200")));
     assert_eq!(panel.get_stock().name.as_str(), "Fujifilm C200", "the hero follows the Redo");
     // Twin: the stock in use picked again writes nothing, and the gallery's sidebar shows the stock the editor picked.
     drop_menu(&rig, w);
@@ -226,7 +225,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     assert_eq!(lib.get_stock().name.as_str(), "Fujifilm C200");
-    assert_eq!(family(&open), DyeSet::FujifilmC200, "the open photo's dyes written to its sidecar");
+    assert_eq!(family(&open), DyeSet::of("fujifilm-c200"), "the open photo's dyes written to its sidecar");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -253,28 +252,28 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     let film = || ctl.state.borrow().store().settings().film().expect("a digital photo is shot on its film");
-    assert_eq!(panel.get_stock().name.as_str(), VirtualStock::KodakPortra800.name());
+    assert_eq!(panel.get_stock().name.as_str(), VirtualStock::of("kodak-portra-800").name());
     assert!(panel.get_stock().has_artwork, "its canister drawn");
     println!("shot {}", rig.shot("stock-hero-film").display());
 
     // The menu lists the virtual films alone, by brand, the one shot on checked.
     drop_menu(&rig, w);
     let (names, _) = menu(&stocks);
-    let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| FILM_STOCKS[i].display_name).collect();
+    let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].display_name).collect();
     assert_eq!(names, by_brand);
-    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::ALL.iter().map(|v| v.name().to_string()).collect::<Vec<_>>());
+    let (mut sorted, mut virtual_names) = (names.clone(), VirtualStock::all().iter().map(|v| v.name().to_string()).collect::<Vec<_>>());
     sorted.sort();
     virtual_names.sort();
     assert_eq!(sorted, virtual_names, "the virtual films alone, every one");
-    assert!(names.len() < oni_settings::film::offered_stocks().count(), "twin: a roll's menu lists more");
-    assert_eq!(stocks.get_lines().row_data(usize::try_from(stocks.get_in_use()).unwrap()).unwrap().name.as_str(), VirtualStock::KodakPortra800.name(), "the film in use checked");
+    assert!(names.len() < oni_settings::film::offered_stocks().len(), "twin: a roll's menu lists more");
+    assert_eq!(stocks.get_lines().row_data(usize::try_from(stocks.get_in_use()).unwrap()).unwrap().name.as_str(), VirtualStock::of("kodak-portra-800").name(), "the film in use checked");
     assert!(stocks.get_lines().iter().filter(|l| !l.brand).all(|l| l.has_artwork), "each line with its canister");
     println!("shot {}", rig.shot("stock-menu-film").display());
     rig.key("\u{1b}");
     rig.pump();
 
     // Each film picked shoots the photo on it, at its own white, as one step an Undo takes back.
-    for &next in VirtualStock::ALL.iter().rev() {
+    for &next in VirtualStock::all().iter().rev() {
         let (before, renders, undo) = (film().stock, ctl.state.borrow().renders(), menus.get_live().undo);
         drop_menu(&rig, w);
         stocks.invoke_picked(stock(next.catalogue_id()));

@@ -17,7 +17,7 @@ settings: PipelineSettings {
     inverted_source: false,
     virtual_film: Some(
         VirtualFilm {
-            stock: KodakPortra800,
+            stock: kodak-portra-800,
             exposure: 0.6,
         },
     ),
@@ -61,7 +61,7 @@ settings: PipelineSettings {
     density_ceiling: 3.5,
     separation: 1.0,
     separation_by_hand: false,
-    dye_set: KodakPortra800,
+    dye_set: kodak-portra-800,
     flat_field: FlatField {
         mask: None,
         custom: None,

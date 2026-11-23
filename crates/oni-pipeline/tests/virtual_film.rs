@@ -61,7 +61,7 @@ struct Reference {
 
 impl Reference {
     fn new(stock: VirtualStock) -> Self {
-        let profile = Profile::read(film::dyes::source(stock.profile()).unwrap()).unwrap();
+        let profile = Profile::read(stock.entry().profile.as_bytes()).unwrap();
         let spectra = film::profile::Spectra::read(SPECTRA).unwrap();
         let white = film::reference_light(stock);
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
@@ -104,7 +104,7 @@ impl Reference {
 
 /// The colour negatives, whose three layers and couplers this reference develops; silver has checks of its own.
 fn colour_stocks() -> impl Iterator<Item = VirtualStock> {
-    VirtualStock::ALL.into_iter().filter(|s| !s.is_silver())
+    VirtualStock::all().into_iter().filter(|s| !s.is_silver())
 }
 
 /// The ColorChecker's patches as their sRGB code is usually given, decoded and laid in Rec. 2020.
@@ -236,7 +236,7 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     ];
     pixels[..edges.len()].copy_from_slice(&edges);
     let input = g.upload(w, h, &pixels).unwrap();
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (tw, th) = stock.kernel.table_size();
     let table = g.upload(tw as u32, th as u32, &stock.table).unwrap();
     let k = stock.kernel_at(0.4);
@@ -270,7 +270,7 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
         if i / w < 4 { [v, v, v, 1.0] } else { [v, v * 0.6, v * 0.3, 1.0] }
     }).collect();
     // A grey under the film's white: the decode's pixel its white maps onto equal channels.
-    let white = VirtualStock::KodakPortra800.white();
+    let white = VirtualStock::of("kodak-portra-800").white();
     let to_white = oni_settings::white::relative(oni_settings::white::uv(white), oni_settings::white::anchor(true));
     let back = oni_settings::white::inverse(&to_white.map(|r| r.map(f64::from)));
     let lit = oni_settings::white::apply(&back, [f64::from(GREY); 3]).map(|v| v as f32);

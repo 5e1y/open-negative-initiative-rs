@@ -11,12 +11,12 @@ use oni_render::cpu;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 fn sheet_stocks() -> Vec<VirtualStock> {
-    VirtualStock::ALL.to_vec()
+    VirtualStock::all().to_vec()
 }
 
 /// Every paper but the Frontier, a machine measured.
 fn sheet_papers() -> Vec<PaperStock> {
-    PaperStock::ALL.into_iter().filter(|p| p.profile().is_some()).collect()
+    PaperStock::all().into_iter().filter(|p| !p.is_machine()).collect()
 }
 
 fn finite(pixels: &[V4]) -> bool {
@@ -60,12 +60,12 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     println!("{} films and {} papers from their data sheets", stocks.len(), papers.len());
     assert_eq!((stocks.len(), papers.len()), (75, 8));
     for stock in &stocks {
-        let json = film::dyes::source(stock.profile()).expect("shipped");
-        let read = if stock.is_silver() { film::profile::Silver::read(json).err() } else { film::profile::Profile::read(json).err() };
+        let json = stock.entry().profile;
+        let read = if stock.is_silver() { film::profile::Silver::read(json.as_bytes()).err() } else { film::profile::Profile::read(json.as_bytes()).err() };
         assert!(read.is_none(), "{stock:?}: {read:?}");
     }
     for p in &papers {
-        assert!(paper::validate(paper::source(*p).expect("shipped")).is_ok(), "{p:?}");
+        assert!(paper::validate(paper::source(*p).expect("shipped").as_bytes()).is_ok(), "{p:?}");
     }
     // Twin: a curve's first node turned into a number past any double, which no reading takes as a finite one.
     let spoiled = |json: &[u8], key: &str| {
@@ -75,12 +75,12 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
         let last = first + text[first..].find(|c: char| !(c.is_ascii_digit() || "-+.e".contains(c))).unwrap();
         format!("{}1e999{}", &text[..first], &text[last..]).into_bytes()
     };
-    let film_json = film::dyes::source(stocks[0].profile()).unwrap();
-    assert!(film::profile::Profile::read(&spoiled(film_json, "\"density_curves\"")).is_err());
-    let silver_json = film::dyes::source(VirtualStock::IlfordHP5Plus.profile()).unwrap();
-    assert!(film::profile::Silver::read(&spoiled(silver_json, "\"density_curve\"")).is_err());
+    let film_json = VirtualStock::default().entry().profile;
+    assert!(film::profile::Profile::read(&spoiled(film_json.as_bytes(), "\"density_curves\"")).is_err());
+    let silver_json = VirtualStock::of("ilford-hp5-plus").entry().profile;
+    assert!(film::profile::Silver::read(&spoiled(silver_json.as_bytes(), "\"density_curve\"")).is_err());
     let paper_json = paper::source(papers[0]).unwrap();
-    assert!(paper::validate(&spoiled(paper_json, "\"density_curves\"")).is_err());
+    assert!(paper::validate(&spoiled(paper_json.as_bytes(), "\"density_curves\"")).is_err());
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn every_sheet_film_prints_finite_on_the_cpu_with_and_without_paper() {
         }
     }
     // Twin: a NaN a scene carries is seen.
-    let mut out = printed(VirtualStock::KodakPortra800, &shot(VirtualStock::KodakPortra800, None));
+    let mut out = printed(VirtualStock::of("kodak-portra-800"), &shot(VirtualStock::of("kodak-portra-800"), None));
     out[3][1] = f32::NAN;
     assert!(!finite(&out));
 }
@@ -100,7 +100,7 @@ fn every_sheet_film_prints_finite_on_the_cpu_with_and_without_paper() {
 #[test]
 fn every_sheet_paper_prints_finite_on_the_cpu() {
     for p in sheet_papers() {
-        for stock in [VirtualStock::KodakPortra800, VirtualStock::KodakVision3_500T] {
+        for stock in [VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-vision3-500t")] {
             assert!(finite(&printed(stock, &shot(stock, Some(p)))), "{p:?} under {stock:?}");
         }
     }
@@ -113,10 +113,10 @@ fn every_sheet_film_and_paper_renders_finite_on_the_gpu() {
         assert!(finite(&rendered(&mut g, &shot(stock, None))), "{stock:?}");
     }
     for p in sheet_papers() {
-        assert!(finite(&rendered(&mut g, &shot(VirtualStock::KodakPortra800, Some(p)))), "{p:?}");
+        assert!(finite(&rendered(&mut g, &shot(VirtualStock::of("kodak-portra-800"), Some(p)))), "{p:?}");
     }
     // Twin: a NaN a render carries is seen.
-    let mut out = rendered(&mut g, &shot(VirtualStock::KodakPortra800, None));
+    let mut out = rendered(&mut g, &shot(VirtualStock::of("kodak-portra-800"), None));
     out[0][0] = f32::NAN;
     assert!(!finite(&out));
 }
@@ -182,10 +182,11 @@ fn neutral_gap(json: &[u8], status: &Status, amounts: &str) -> f64 {
 
 #[test]
 fn every_colour_sheets_neutral_of_its_dye_amounts_reads_its_printed_curves() {
-    let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), film::dyes::source(s.profile()).unwrap(), &STATUS_M));
+    let films = sheet_stocks().into_iter().filter(|s| !s.is_silver()).map(|s| (s.name(), s.entry().profile, &STATUS_M));
     let papers = sheet_papers().into_iter().map(|p| (p.name(), paper::source(p).unwrap(), &STATUS_A));
     let (mut worst, mut least_miss) = (0.0f64, f64::INFINITY);
     for (name, json, status) in films.chain(papers) {
+        let json = json.as_bytes();
         let (gap, miss) = (neutral_gap(json, status, "density_curves"), neutral_gap(json, status, "sheet_density_curves"));
         println!("{name}: the neutral within {gap:.1e} of its sheet; the printed curves taken as amounts miss it by {miss:.3}");
         // Within 0.02 D: where the traces disagree, on a shoulder, the unmix draws a dip, held as an amount never falls.

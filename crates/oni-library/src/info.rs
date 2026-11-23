@@ -17,7 +17,7 @@ pub fn roll_of<'a>(entry: &'a Entry, markers: &'a HashMap<String, Film>) -> Opti
 
 /// `InfoSidebar.stocks(among:)`: each stock of the photos' rolls with its count of photos, by
 /// display name; a photo with no stock, or one the catalogue does not know, gives no row.
-pub fn stocks(entries: &[Entry], markers: &HashMap<String, Film>) -> Vec<(&'static FilmStockKind, usize)> {
+pub fn stocks(entries: &[Entry], markers: &HashMap<String, Film>) -> Vec<(FilmStockKind, usize)> {
     let mut counts: HashMap<&str, usize> = HashMap::new();
     for stock in entries.iter().filter_map(|e| roll_of(e, markers)?.stock.as_deref()) {
         *counts.entry(stock).or_default() += 1;

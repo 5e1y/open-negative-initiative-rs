@@ -237,7 +237,7 @@ fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
         })
         .collect();
     let source = g.upload(w, h, &pixels).unwrap();
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
     let (tw, th) = stock.kernel.table_size();
     let table = g.upload(tw as u32, th as u32, &stock.table).unwrap();
     let film = Image::new(&source).then_reading(stages::virtual_negative(&stock.kernel_at(0.3)), &[Image::new(&table)]);
@@ -258,7 +258,7 @@ fn the_dye_separation_s_gpu_time_on_a_full_screen_region() {
     }
     let Ok(mut g) = Graph::new() else { return };
     let (w, h) = (3456u32, 2234u32);
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
     let pixels: Vec<[f32; 4]> = (0..w * h)
         .map(|i| {
             let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
@@ -286,7 +286,7 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
     }
     let Ok(mut g) = Graph::new() else { return };
     let (w, h) = (3456u32, 2234u32);
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::KodakPortra800);
+    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
     let paper = PipelineSettings::rest(ConversionMode::Digital, true);
     let separated = oni_pipeline::conversion::stage47(&paper);
     let d = separated.dyes.expect("a digital photo's dyes");

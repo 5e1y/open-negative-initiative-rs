@@ -2,9 +2,11 @@
 """Colour negative film profiles from the makers' data sheets, in the shape ONI's bake reads.
 
 Reads the emulsion dataset's export (filmstocks.json: curves traced from each official data sheet) and writes one
-profile per stock into crates/oni-pipeline/resources/film/datasheet/, each with its sheet's reference, URL and
-SHA-256 and a list of what is measured and what is inferred, plus crates/oni-pipeline/src/film/datasheet.rs,
-the table the bake includes. Run: scripts/datasheet-profiles.py <emulsion-dataset folder>. Needs numpy.
+profile per stock, each with its sheet's reference, URL and SHA-256 and a list of what is measured and what is
+inferred, into the "profile" of the stock's or the paper's file in crates/oni-settings/stocks/ (README.md there),
+every other field of the file kept; a profile no file holds yet gets a file of its own, its name and brand to check.
+A film whose profile moved has its reference derived again by the pipeline (examples/stock_references.rs).
+Run: scripts/datasheet-profiles.py <emulsion-dataset folder>. Needs numpy and cargo.
 
 What each part of a profile is:
 - log_sensitivity: the sheet's three layers on 380-780 nm, linear in log between its points; past the first and
@@ -35,6 +37,7 @@ grey, the enlarger's time absorbing it. A dye's or a layer's points hidden on it
 
 import json
 import math
+import subprocess
 import sys
 from pathlib import Path
 
@@ -43,8 +46,7 @@ import numpy as np
 WAVELENGTHS = np.arange(380.0, 781.0, 5.0)
 CURVE_NODES = 256
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "crates/oni-pipeline/resources/film/datasheet"
-TABLE = ROOT / "crates/oni-pipeline/src/film/datasheet.rs"
+STOCKS_DIR = ROOT / "crates/oni-settings/stocks"
 # The grey over the ISO 5800 speed point is measured on Gold 200's sheet, the only one printing its Log H Ref.
 REFERENCE_SHEET = "kodak_gold_200"
 LOG2 = math.log10(2.0)
@@ -349,7 +351,7 @@ def convert(stock_id, push, reference_offset, basis):
             "sheet_density_curves": [[round(float(v), 6) for v in row] for row in density],
         },
     }
-    (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
+    place(profile)
     return name, inferred
 
 
@@ -455,7 +457,7 @@ def convert_paper(stock_id):
             "sheet_density_curves": [[round(float(v), 6) for v in row] for row in sheet],
         },
     }
-    (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
+    place(profile)
     return name, inferred
 
 
@@ -627,8 +629,81 @@ def convert_bw(stock_id, name, prefix, spectrum_of):
             "developments": others,
         },
     }
-    (OUT / f"{name}.json").write_text(json.dumps(profile, indent=1) + "\n")
+    place(profile)
     return name, inferred, len(others)
+
+
+def blocks(stock_file):
+    """Every profile a stock's or a paper's file holds, with the block holding it."""
+    if stock_file.get("oni") == "paper":
+        return [stock_file] if "profile" in stock_file else []
+    films = [stock_file.get("film")] + [d.get("film") for d in stock_file.get("developments", [])]
+    return [f for f in films if f]
+
+
+MOVED = []
+
+
+def place(profile):
+    """`profile` laid into the file holding the profile of its name, every other field kept; else a file of its own."""
+    name = profile["info"]["stock"]
+    for path in sorted(STOCKS_DIR.glob("*.json")):
+        stock_file = json.loads(path.read_text())
+        for block in blocks(stock_file):
+            if block["profile"]["info"]["stock"] != name:
+                continue
+            if block["profile"] != profile:
+                block["profile"] = profile
+                if stock_file["oni"] == "film":
+                    block.pop("reference", None)
+                    MOVED.append(path)
+                path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+            return
+    key = name.replace("_", "-")
+    brand = profile["info"]["manufacturer"].split(" ")[0]
+    if profile["info"]["type"] == "paper":
+        new = {"oni": "paper", "format": 1, "key": key, "name": profile["info"]["name"], "brand": brand, "profile": profile}
+    else:
+        silver = profile["info"]["type"] == "bw_negative"
+        film = {"key": key, "balance": "tungsten" if profile["info"]["reference_illuminant"] == "T" else "daylight",
+                "dyes": "generic-c41" if silver else key, "profile": profile}
+        new = {"oni": "film", "format": 1, "key": key, "name": profile["info"]["name"], "brand": brand,
+               "type": "black-and-white" if silver else "colour-negative", "film": film}
+        if not silver:
+            new["dyes"] = key
+        MOVED.append(STOCKS_DIR / f"{key}.json")
+    (STOCKS_DIR / f"{key}.json").write_text(json.dumps(new, indent=1, ensure_ascii=False) + "\n")
+    print(f"{key}.json: a new file, its name, brand, speed and canister to check")
+
+
+def float32(v):
+    """The shortest decimal of a single, which reads back as that single."""
+    return float(str(np.float32(v)))
+
+
+def refresh_references():
+    """Each film whose profile moved takes the reference the pipeline derives from it, laid beside its dyes."""
+    moved = sorted(set(MOVED))
+    if not moved:
+        return
+    out = subprocess.run(["cargo", "run", "-q", "-p", "oni-pipeline", "--example", "stock_references", "--", *map(str, moved)],
+                         cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    derived = json.loads(out)
+    for path in moved:
+        stock_file = json.loads(path.read_text())
+        for block in blocks(stock_file):
+            reference = {k: [float32(v) for v in derived[path.name][block["key"]][k]] for k in ("stops", "black", "white")}
+            laid = {}
+            for k, v in block.items():
+                if k == "reference":
+                    continue
+                laid[k] = v
+                if k == "dyes":
+                    laid["reference"] = reference
+            block.clear()
+            block.update(laid)
+        path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+        print(f"{path.name}: its reference derived again")
 
 
 def main():
@@ -638,7 +713,6 @@ def main():
     gold = chart(STOCK[REFERENCE_SHEET], "characteristic_curves", "characteristic_curves")
     offset = gold["log_h_ref"] - speed_point(gold)
     basis = vision3_basis()
-    OUT.mkdir(parents=True, exist_ok=True)
     names = []
     for stock_id, push in STOCKS:
         name, inferred = convert(stock_id, push, offset, basis)
@@ -657,12 +731,7 @@ def main():
     for s in STOCK.values():
         if s["type"] == "bw_negative" and s["id"] not in taken:
             print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
-    arms = "\n".join(f'    ("{n}", include_bytes!("../../resources/film/datasheet/{n}.json")),' for n in names)
-    TABLE.write_text(
-        "//! Every profile scripts/datasheet-profiles.py writes from the makers' data sheets, by its file's name; the\n"
-        "//! script writes this table too.\n\n"
-        f"pub const PROFILES: [(&str, &[u8]); {len(names)}] = [\n{arms}\n];\n"
-    )
+    refresh_references()
 
 
 if __name__ == "__main__":

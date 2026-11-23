@@ -38,8 +38,8 @@ fn main() {
     let wanted: Option<Vec<String>> = args.get(2).map(|s| s.split(',').map(str::to_string).collect());
     let exposure: f32 = std::env::var("ONI_FILM_EXPOSURE").map_or(0.0, |v| v.parse().unwrap());
     println!("plain grey {}", film::plain_grey());
-    for stock in VirtualStock::ALL {
-        if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.profile())) {
+    for stock in VirtualStock::all() {
+        if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.key())) {
             continue;
         }
         let mut paper = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
@@ -54,7 +54,7 @@ fn main() {
         let dyes: Vec<[f32; 4]> = scene.iter().map(|p| { let d = cpu::virtual_dyes(*p, &k, &s.table); [d[0], d[1], d[2], 1.0] }).collect();
         let scan: Vec<[f32; 4]> = scene.iter().map(|p| cpu::virtual_negative(*p, &k, &s.table)).collect();
         let (kp, ko) = (conversion::stage47(&paper), conversion::stage47(&oni));
-        let name = stock.profile();
+        let name = stock.key();
         write(out, &format!("{name}-scene"), w, h, &scene);
         write(out, &format!("{name}-dyes"), w, h, &dyes);
         write(out, &format!("{name}-scan"), w, h, &scan);
