@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "fujifilm-fujicolor-pro",
+ "name": "Fujifilm Fujicolor Pro",
+ "brand": "Fujifilm",
+ "type": "colour-negative",
+ "canister": "fujifilm-fujicolor-pro.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "fujifilm-pro-400h"
+}

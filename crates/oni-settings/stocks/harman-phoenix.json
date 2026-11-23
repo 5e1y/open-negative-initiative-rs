@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "harman-phoenix",
+ "name": "Harman Phoenix",
+ "brand": "Harman",
+ "type": "colour-negative",
+ "iso": 200,
+ "canister": "harman-phoenix.svg",
+ "dyes": "generic-c41"
+}

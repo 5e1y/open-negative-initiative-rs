@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-azure",
+ "name": "Generic Azure",
+ "brand": "Generic",
+ "generic": true,
+ "type": "colour-negative",
+ "canister": "generic-azure.svg",
+ "dyes": "generic-c41"
+}

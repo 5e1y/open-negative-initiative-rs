@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 serde.workspace = true
-serde_json = { workspace = true, features = ["float_roundtrip"] }
+serde_json = { workspace = true, features = ["float_roundtrip", "raw_value"] }
 uuid = { version = "1", features = ["v4"] }
 libm = "0.2"
 oni-hack = { version = "0.1", path = "../oni-hack" }

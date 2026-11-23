@@ -25,7 +25,7 @@ pub fn slide() -> PipelineSettings {
 
 /// A scan noise and a virtual negative's scan.
 pub fn pixels() -> Vec<V4> {
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
@@ -48,7 +48,7 @@ pub const GREYS: usize = 17;
 
 /// A negative shot on Portra 400 and scanned, read as Prepare the Roll reads its own reference.
 pub fn shot_on() -> PipelineSettings {
-    let stock = VirtualStock::KodakPortra400;
+    let stock = VirtualStock::of("kodak-portra-400");
     PipelineSettings { mode: ConversionMode::Negative, ..film::on_reference(stock, &stock.reference()) }
 }
 
@@ -67,7 +67,7 @@ pub fn scanned(s: &PipelineSettings, scene: &[V4]) -> Vec<V4> {
     if s.mode.reads_positive() {
         return scene.iter().map(|p| [p[0].min(1.0), p[1].min(1.0), p[2].min(1.0), 1.0]).collect();
     }
-    let baked = film::stock(VirtualStock::KodakPortra400);
+    let baked = film::stock(VirtualStock::of("kodak-portra-400"));
     scene.iter().map(|p| cpu::virtual_negative(*p, &baked.kernel, &baked.table)).collect()
 }
 
@@ -101,7 +101,7 @@ pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("ONI's print, negative", onis(negative.clone())),
         ("ONI's print, slide", slide()),
         ("paper, digital", digital()),
-        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() }),
+        ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
         ("paper, negative", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..negative.clone() })),
         ("neutral paper", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), paperless: true, ..negative })),
         ("paper, slide", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..slide() })),

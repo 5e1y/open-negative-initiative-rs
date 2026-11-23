@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "kodak-ultramax",
+ "name": "Kodak UltraMax",
+ "brand": "Kodak",
+ "type": "colour-negative",
+ "canister": "kodak-ultramax.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "kodak-ultramax-400"
+}

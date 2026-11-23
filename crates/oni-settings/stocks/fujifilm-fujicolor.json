@@ -1,0 +1,12 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "fujifilm-fujicolor",
+ "name": "Fujifilm Fujicolor",
+ "brand": "Fujifilm",
+ "type": "colour-negative",
+ "canister": "fujifilm-fujicolor.svg",
+ "offered": false,
+ "line": true,
+ "dyes": "fujifilm-c200"
+}

@@ -1,0 +1,10 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-black-and-white",
+ "name": "Generic Black & White",
+ "brand": "Generic",
+ "generic": true,
+ "type": "black-and-white",
+ "canister": "generic-black-and-white.svg"
+}

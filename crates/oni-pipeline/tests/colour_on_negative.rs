@@ -32,7 +32,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
-    let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..digital() };
+    let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
         ("ONI's print, negative unmixed", unmixed),

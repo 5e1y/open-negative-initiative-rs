@@ -327,8 +327,11 @@ fn main() {
             }
             continue;
         }
-        let stock = edited.dye_set.profile().unwrap_or(oni_settings::VirtualStock::default().profile());
-        let scan_curve = Curve::of_stock(stock);
+        let stock = match edited.dye_set.entry().source {
+            oni_settings::stocks::DyeSource::Profile(json) => json,
+            oni_settings::stocks::DyeSource::Mean(_) => oni_settings::VirtualStock::default().entry().profile,
+        };
+        let scan_curve = Curve::of_stock(&stock);
         let curve = match (edited.mode.reads_positive(), &slide_curve) {
             (false, _) => &scan_curve,
             (true, Some(c)) => c,

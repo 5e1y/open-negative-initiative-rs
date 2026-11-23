@@ -15,7 +15,7 @@ use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
-const FRONTIER: PaperStock = PaperStock::FujifilmFrontierSp3000;
+const FRONTIER: PaperStock = PaperStock::of("fujifilm-frontier-sp-3000");
 
 fn on_frontier(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { print_paper: Some(FRONTIER), ..s }
@@ -126,7 +126,7 @@ fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
 #[test]
 fn the_gpu_prints_the_frontier_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_prints_the_frontier_as_its_reference_does") else { return };
-    let stock = film::stock(VirtualStock::KodakPortra800);
+    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (31, 19);
     let mut pixels: Vec<V4> = noise(w, h, 17, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];

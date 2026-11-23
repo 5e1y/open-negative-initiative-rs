@@ -3,17 +3,17 @@
 
 pub mod bake;
 pub mod cie;
-mod datasheet;
 pub mod dyes;
 pub mod profile;
 
 use bake::M3;
 use oni_render::{VIRTUAL_NEGATIVE_BANDS, VirtualNegative, cpu};
 use oni_settings::axis::{density_axis, graduation};
+use crate::baked::Baked;
+use oni_settings::stocks::VirtualEntry;
 use oni_settings::virtual_film::{Balance, StockReference};
-use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock};
 use profile::{Profile, Silver, Spectra};
-use std::sync::OnceLock;
 
 /// The scene light spektrafilm sets on a film's speed, log exposure 0: an 18.4 % grey.
 pub const GREY: f32 = 0.184;
@@ -21,11 +21,13 @@ pub const GREY: f32 = 0.184;
 /// The ceiling a virtual negative is read on, a mosaic negative's: its scan holds no veil of its own.
 pub const CEILING: f32 = density_axis::MOSAIC_REST;
 
-/// A stock's baked kernel at rest exposure, its table, and its own reference as derived from them.
+/// A stock's baked kernel at rest exposure, its table, and its own reference as derived from them; `revision`, its
+/// file's content, which a table uploaded from it is kept under.
 pub struct Stock {
     pub kernel: VirtualNegative,
     pub table: Vec<[f32; 4]>,
     pub reference: StockReference,
+    pub revision: u64,
 }
 
 fn f32s(m: &M3) -> [[f32; 3]; 3] {
@@ -37,7 +39,11 @@ const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
 
 /// The light the stock is balanced for, as a spectrum: its scene's white and its layers' reference.
 pub fn reference_light(stock: VirtualStock) -> &'static [f64; cie::WAVELENGTHS] {
-    match stock.balance() {
+    light_of(stock.balance())
+}
+
+fn light_of(balance: Balance) -> &'static [f64; cie::WAVELENGTHS] {
+    match balance {
         Balance::Daylight => &cie::D55,
         Balance::Tungsten => &cie::INCANDESCENT,
     }
@@ -56,8 +62,7 @@ struct Layers {
 
 /// A colour negative: three layers developed through the couplers, scanned through its dyes on every wavelength
 /// its profile measures them.
-fn colour(json: &[u8]) -> Layers {
-    let profile = Profile::read(json).expect("a shipped profile reads");
+fn colour(profile: Profile) -> Layers {
     let (before, after) = bake::curves(&profile);
     let weights = bake::scan_weights(&cie::D50);
     let scanned = bake::scanned(&profile).into_iter().map(|(l, d)| (d, weights[l])).collect();
@@ -66,8 +71,7 @@ fn colour(json: &[u8]) -> Layers {
 
 /// A black and white negative: its one layer on the three channels, no coupler, and its silver neutral at every
 /// wavelength, so the scan reads it in one band holding the camera's whole weight, each channel a third of its density.
-fn silver(json: &[u8]) -> Layers {
-    let profile = Silver::read(json).expect("a shipped profile reads");
+fn silver(profile: Silver) -> Layers {
     let curve: Vec<[f64; 3]> = profile.density_curve.iter().map(|d| [*d; 3]).collect();
     let weight = bake::scan_weights(&cie::D50).iter().fold([0.0; 3], |sum, w| std::array::from_fn(|c| sum[c] + w[c]));
     Layers {
@@ -80,11 +84,15 @@ fn silver(json: &[u8]) -> Layers {
     }
 }
 
-fn bake(stock: VirtualStock) -> Stock {
-    let json = dyes::source(stock.profile()).expect("every stock's profile is shipped");
-    let layers = if stock.is_silver() { silver(json) } else { colour(json) };
+/// A film's layers as its profile holds them, or why the profile does not read.
+fn layers(profile: &str, is_silver: bool) -> Result<Layers, String> {
+    Ok(if is_silver { silver(Silver::read(profile.as_bytes())?) } else { colour(Profile::read(profile.as_bytes())?) })
+}
+
+/// The kernel and table of a film's `layers` lit at `balance`.
+fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) {
     let spectra = Spectra::read(SPECTRA).expect("the shipped spectra read");
-    let white = reference_light(stock);
+    let white = light_of(balance);
     let light = bake::light_table(&spectra, &layers.sensitivity, white);
     let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
     assert!(layers.scanned.len() <= VIRTUAL_NEGATIVE_BANDS, "the uniform holds every scanned wavelength");
@@ -115,14 +123,37 @@ fn bake(stock: VirtualStock) -> Stock {
             table[(n + row) * w + i] = [d[0] as f32, d[1] as f32, d[2] as f32, 0.0];
         }
     }
-    let reference = derived(stock, &kernel, &table);
-    Stock { kernel, table, reference }
+    (kernel, table)
 }
 
-/// The stock baked at its first use, never before: a digital photo on another stock costs nothing.
+fn bake(entry: &VirtualEntry) -> Stock {
+    let layers = layers(&entry.profile, entry.silver).expect("a stock's profile reads once its file is taken");
+    let (kernel, table) = baked(&layers, entry.balance);
+    let reference = derived(entry.silver, entry.dyes, &kernel, &table);
+    Stock { kernel, table, reference, revision: entry.revision }
+}
+
+/// The stock baked at its first use, never before: a digital photo on another stock costs nothing. An edited file
+/// bakes anew; a key no file defines bakes the default stock.
 pub fn stock(stock: VirtualStock) -> &'static Stock {
-    static STOCKS: [OnceLock<Stock>; VirtualStock::ALL.len()] = [const { OnceLock::new() }; VirtualStock::ALL.len()];
-    STOCKS[stock as usize].get_or_init(|| bake(stock))
+    static STOCKS: Baked<(VirtualStock, u64), Stock> = Baked::new();
+    let entry = stock.entry();
+    STOCKS.get((entry.stock, entry.revision), || bake(&entry))
+}
+
+/// The reference a film's `profile` derives at `balance`, as a stock's file leaving it out takes; or why the profile
+/// does not read or bakes no finite reference.
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, dyes: DyeSet) -> Result<StockReference, String> {
+    let layers = layers(profile, is_silver)?;
+    if layers.scanned.len() > VIRTUAL_NEGATIVE_BANDS {
+        return Err(format!("its dyes are measured on {} wavelengths, past the {VIRTUAL_NEGATIVE_BANDS} the kernel holds", layers.scanned.len()));
+    }
+    let (kernel, table) = baked(&layers, balance);
+    let r = derived(is_silver, dyes, &kernel, &table);
+    if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
+        return Err("its profile bakes a reference that is not finite".into());
+    }
+    Ok(r)
 }
 
 impl Stock {
@@ -146,19 +177,23 @@ pub fn plain_grey() -> f32 {
 /// The negative at rest read on `reference`, its stock's dyes unmixed, as a digital photo on that stock opens; a black
 /// and white film's read as a monochrome roll's is.
 pub fn on_reference(stock: VirtualStock, reference: &StockReference) -> PipelineSettings {
-    let mode = if stock.is_silver() { ConversionMode::Monochrome } else { ConversionMode::Negative };
+    read_on(stock.is_silver(), stock.dye_set(), reference)
+}
+
+fn read_on(is_silver: bool, dyes: DyeSet, reference: &StockReference) -> PipelineSettings {
+    let mode = if is_silver { ConversionMode::Monochrome } else { ConversionMode::Negative };
     let mut s = PipelineSettings::rest(mode, true);
     s.density_ceiling = CEILING;
     s.gains.stops = reference.stops;
     s.levels = reference.levels();
-    s.dye_set = stock.dye_set();
+    s.dye_set = dyes;
     s
 }
 
 /// The stock's own reference: gains that make its bare film grey, each channel's black on the bare film,
 /// and its white where a scene grey, entering every window at one share, prints on the negative's print at
 /// rest as a plain RAW's render prints it.
-fn derived(stock: VirtualStock, kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
+fn derived(is_silver: bool, dyes: DyeSet, kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
     let scan = |scene: f32| cpu::virtual_negative([scene, scene, scene, 1.0], kernel, table);
     let (bare, grey) = (scan(0.0), scan(GREY));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
@@ -169,7 +204,7 @@ fn derived(stock: VirtualStock, kernel: &VirtualNegative, table: &[[f32; 4]]) ->
         StockReference { stops, black, white }
     };
     // Placed with no unmix, as Prepare the Roll measures a roll: the dyes' tones keep its greys.
-    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&PipelineSettings { separation: 0.0, ..on_reference(stock, &at(share)) }))[1];
+    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&PipelineSettings { separation: 0.0, ..read_on(is_silver, dyes, &at(share)) }))[1];
     let target = plain_grey();
     let (mut low, mut high) = (0.05f32, 1.0f32);
     let rising = printed(high) > printed(low);
@@ -190,10 +225,10 @@ mod tests {
 
     #[test]
     fn each_stocks_reference_is_its_profiles_derivation_and_prints_a_grey_as_a_plain_raw() {
-        for kind in VirtualStock::ALL {
+        for kind in VirtualStock::all() {
             println!("{kind:?}: {:?}", stock(kind).reference);
         }
-        for kind in VirtualStock::ALL {
+        for kind in VirtualStock::all() {
             let (derived, held) = (stock(kind).reference, kind.reference());
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
             let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);

@@ -46,8 +46,8 @@ fn main() {
         write(out, "owner", &e.render(&negative, &owner, Some(side)).unwrap());
         write(out, "placed", &e.render(&negative, &placed, Some(side)).unwrap());
     }
-    for stock in VirtualStock::ALL {
-        if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.profile())) {
+    for stock in VirtualStock::all() {
+        if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.key())) {
             continue;
         }
         let mut paper = rest.on_stock(stock);
@@ -59,7 +59,7 @@ fn main() {
             paper.print_paper = on_paper;
         }
         let oni = PipelineSettings { print_paper: None, ..paper.clone() };
-        let name = stock.profile().replace('/', "-");
+        let name = stock.key().replace('/', "-");
         write(out, &format!("paper-{name}"), &e.render(&negative, &paper, Some(side)).unwrap());
         write(out, &format!("oni-{name}"), &e.render(&negative, &oni, Some(side)).unwrap());
         let (graph, pipeline) = e.parts();

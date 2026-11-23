@@ -295,7 +295,7 @@ fn sentence(why: &str) -> String {
 
 /// What the Film step says of a stock's dyes: measured on its own profile, a line's on the one it stood for, a
 /// generic set standing in, or none to unmix in black and white or on a slide.
-pub(super) fn stock_note(stock: Option<&oni_settings::film::FilmStockKind>) -> String {
+pub(super) fn stock_note(stock: Option<oni_settings::film::FilmStockKind>) -> String {
     match stock.and_then(|k| oni_settings::dyes::dye_set(k.id)) {
         Some(set) if set.is_generic() => {
             tr("No profile measures this film stock's dyes: a generic colour-negative set, the mean of the measured ones, stands in, so its colours are approximate.").to_string()

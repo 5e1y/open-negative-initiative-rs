@@ -6,14 +6,15 @@
 use crate::conversion;
 use crate::finishing;
 use crate::film::bake;
-use crate::film::dyes::{self, C41};
+use crate::baked::Baked;
+use crate::film::dyes;
 use crate::film::profile::{Profile, Silver};
 use crate::paper::{self, bisected, film_ends, spanned};
 use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, LUMA, NEGATIVE_CURVE_NODES};
 use oni_render::{Negative, Stage47, cpu};
+use oni_settings::stocks::DyeSource;
 use oni_settings::tone::color_density;
 use oni_settings::{DyeSet, PipelineSettings, VirtualStock};
-use std::sync::OnceLock;
 
 type V3 = [f32; 3];
 
@@ -31,7 +32,7 @@ pub const READABLE: f64 = 0.1;
 const LIGHT_SPAN: f64 = 8.0;
 
 /// The film a frame's Lighting develops again.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Film {
     /// A digital photo's virtual stock, its own curves, pushed ones included; a black and white one's single layer
     /// uncoupled.
@@ -58,24 +59,21 @@ impl Film {
         }
     }
 
-    fn index(self) -> usize {
-        let stocks = VirtualStock::ALL.len();
+    /// Its file's content, which its development is kept under: an edited file develops anew.
+    fn revision(self) -> u64 {
         match self {
-            Film::Stock(v) => VirtualStock::ALL.iter().position(|s| *s == v).expect("every stock is listed"),
-            Film::Dyes(d) => stocks + DyeSet::ALL.iter().position(|s| *s == d).expect("every set is listed"),
-            Film::Silver => stocks + DyeSet::ALL.len(),
-            Film::Light => stocks + DyeSet::ALL.len() + 1,
+            Film::Stock(v) => v.entry().revision,
+            Film::Dyes(d) => d.entry().revision,
+            Film::Silver => DyeSet::default().entry().revision,
+            Film::Light => 0,
         }
     }
 }
 
-fn read(name: &str) -> Profile {
-    Profile::read(dyes::source(name).expect("a shipped profile")).expect("a shipped profile reads")
-}
-
-/// The C-41 profiles' mean of `curves` over the log exposures they all hold, on the development's nodes.
-fn generic(curves: fn(&Profile) -> &Vec<[f64; 3]>) -> (Vec<f64>, Vec<[f64; 3]>) {
-    let profiles = C41.map(read);
+/// The mean of `curves` over the log exposures they all hold, on the development's nodes, of the profiles `set`
+/// averages: the generic set's, the C-41 profiles.
+fn generic(set: DyeSet, curves: fn(&Profile) -> &Vec<[f64; 3]>) -> (Vec<f64>, Vec<[f64; 3]>) {
+    let profiles = dyes::sources(set);
     let low = profiles.iter().map(|p| p.log_exposure[0]).fold(f64::NEG_INFINITY, f64::max);
     let high = profiles.iter().map(|p| p.log_exposure[p.log_exposure.len() - 1]).fold(f64::INFINITY, f64::min);
     let le: Vec<f64> = (0..NEGATIVE_CURVE_NODES).map(|i| low + (high - low) * i as f64 / (NEGATIVE_CURVE_NODES - 1) as f64).collect();
@@ -125,29 +123,29 @@ fn developing(le: &[f64], density: &[[f64; 3]], coupled: bool) -> Development {
 fn developed(film: Film) -> Development {
     match film {
         Film::Stock(stock) if stock.is_silver() => {
-            let p = Silver::read(dyes::source(stock.profile()).expect("a shipped profile")).expect("a shipped profile reads");
+            let p = Silver::read(stock.entry().profile.as_bytes()).expect("a profile reads once its file is taken");
             let curve: Vec<[f64; 3]> = p.density_curve.iter().map(|d| [*d; 3]).collect();
             developing(&p.log_exposure, &curve, false)
         }
         Film::Stock(stock) => {
-            let p = read(stock.profile());
+            let p = dyes::profile(&stock.entry().profile);
             developing(&p.log_exposure, &p.density_curves, true)
         }
         // A scan's three layers are read on one curve, its stock's mean layer, each scaled to the frame's own: its windows
         // print the frame's neutral, which every common move then keeps; the model's own neutral is a virtual film's alone.
         Film::Dyes(set) => {
-            let (le, density) = match set.profile() {
-                Some(name) => {
-                    let p = read(name);
+            let (le, density) = match set.entry().source {
+                DyeSource::Profile(json) => {
+                    let p = dyes::profile(&json);
                     (p.log_exposure, p.density_curves)
                 }
-                None => generic(|p| &p.density_curves),
+                DyeSource::Mean(_) => generic(set, |p| &p.density_curves),
             };
             developing(&le, &one_layer(&density), false)
         }
         // Silver is neutral: its scan reads a density, the sheets' own curves, no dye's amount.
         Film::Silver => {
-            let (le, mean) = generic(|p| &p.sheet_density_curves);
+            let (le, mean) = generic(DyeSet::default(), |p| &p.sheet_density_curves);
             developing(&le, &one_layer(&mean), false)
         }
         Film::Light => {
@@ -160,11 +158,10 @@ fn developed(film: Film) -> Development {
     }
 }
 
-/// The film's development, baked at first use.
+/// The film's development, baked at first use and again once its file changes.
 pub fn development(film: Film) -> &'static Development {
-    const COUNT: usize = VirtualStock::ALL.len() + DyeSet::ALL.len() + 2;
-    static TABLES: [OnceLock<Development>; COUNT] = [const { OnceLock::new() }; COUNT];
-    TABLES[film.index()].get_or_init(|| developed(film))
+    static TABLES: Baked<(Film, u64), Development> = Baked::new();
+    TABLES.get((film, film.revision()), || developed(film))
 }
 
 /// Whether Lighting reads `s`'s dyes' amounts, as a paper does and a digital photo's negative is developed, before any

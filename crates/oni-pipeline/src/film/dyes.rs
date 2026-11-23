@@ -1,13 +1,14 @@
-//! Each dye set as the scan's camera reads it, from the stock profiles ONI ships: the light table's D50 read
-//! by the 1931 observer in Rec. 2020, the virtual negative's own scan. The generic set is the C-41 profiles' mean
-//! at each wavelength most of them measure.
+//! Each dye set as the scan's camera reads it, from the profile its stock's file holds: the light table's D50 read
+//! by the 1931 observer in Rec. 2020, the virtual negative's own scan. The generic set is its sources' mean at each
+//! wavelength most of them measure.
 
 use super::bake::{self, M3};
 use super::cie;
 use super::profile::Profile;
+use crate::baked::Baked;
 use oni_render::DyeSeparation;
 use oni_settings::DyeSet;
-use std::sync::OnceLock;
+use oni_settings::stocks::DyeSource;
 
 /// A dye set read by the camera: the dyes and the weights the kernel sums, the bare film, the matrix.
 #[derive(Debug)]
@@ -26,33 +27,24 @@ pub struct Dyes {
     pub matrix: [[f32; 3]; 3],
 }
 
-/// The C-41 profiles the generic set averages: the nine still colour negatives most shot today.
-pub const C41: [&str; 9] = [
-    "kodak_portra_160",
-    "kodak_portra_400",
-    "kodak_portra_800",
-    "kodak_ektar_100",
-    "kodak_gold_200",
-    "kodak_ultra_max_400",
-    "fujifilm_c200",
-    "fujifilm_pro_400h",
-    "fujifilm_superia_x_tra_400",
-];
-
-/// A profile's file, written from its maker's data sheet.
-pub fn source(name: &str) -> Option<&'static [u8]> {
-    super::datasheet::PROFILES.iter().find(|(n, _)| *n == name).map(|(_, json)| *json)
+/// The colour profiles a mean set averages, the generic set's the nine still colour negatives most shot today.
+pub fn sources(set: DyeSet) -> Vec<Profile> {
+    match set.entry().source {
+        DyeSource::Profile(json) => vec![profile(&json)],
+        DyeSource::Mean(sets) => sets.into_iter().flat_map(sources).collect(),
+    }
 }
 
-fn profile(name: &str) -> Profile {
-    Profile::read(source(name).expect("a shipped profile")).expect("a shipped profile reads")
+/// A profile of a file the catalogue took, which read when it was taken.
+pub fn profile(json: &str) -> Profile {
+    Profile::read(json.as_bytes()).expect("a profile reads once its file is taken")
 }
 
 /// The wavelengths a set's dyes and base are known on, each with the three dyes' densities and the base's.
 pub fn measured(set: DyeSet) -> Vec<(usize, [f64; 4])> {
-    match set.profile() {
-        Some(name) => bake::scanned(&profile(name)),
-        None => mean(&C41.map(|name| bake::scanned(&profile(name)))),
+    match set.entry().source {
+        DyeSource::Profile(json) => bake::scanned(&profile(&json)),
+        DyeSource::Mean(sets) => mean(&sets.into_iter().map(measured).collect::<Vec<_>>()),
     }
 }
 
@@ -99,11 +91,11 @@ fn derive(measured: Vec<(usize, [f64; 4])>) -> Dyes {
     }
 }
 
-/// The set's dyes, derived from its profiles at first use.
+/// The set's dyes, derived from its profiles at first use and again once its file changes.
 pub fn dyes(set: DyeSet) -> &'static Dyes {
-    static SETS: [OnceLock<Dyes>; DyeSet::ALL.len()] = [const { OnceLock::new() }; DyeSet::ALL.len()];
-    let at = DyeSet::ALL.iter().position(|s| *s == set).expect("every set is listed");
-    SETS[at].get_or_init(|| derive(measured(set)))
+    static SETS: Baked<(DyeSet, u64), Dyes> = Baked::new();
+    let entry = set.entry();
+    SETS.get((entry.set, entry.revision), || derive(measured(entry.set)))
 }
 
 impl Dyes {

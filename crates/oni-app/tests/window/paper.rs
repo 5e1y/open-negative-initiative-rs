@@ -60,7 +60,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let renders = ctl.state.borrow().renders();
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::KodakRoyalDigital), false));
+    assert_eq!((settings().print_paper, settings().paperless), (Some(PaperStock::of("kodak-royal-digital")), false));
     assert!(panel.get_enlarger_on() && panel.get_on_paper() && panel.get_paper_title() == "Kodak Royal Digital");
     assert_eq!(switches(), (1, 1, 1));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
@@ -84,7 +84,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     let (renders, on_paper) = (ctl.state.borrow().renders(), histogram());
     panel.invoke_on_paper_toggled(false);
     rig.pump();
-    assert!(settings().paperless && settings().print_paper == Some(PaperStock::KodakRoyalDigital) && !panel.get_on_paper());
+    assert!(settings().paperless && settings().print_paper == Some(PaperStock::of("kodak-royal-digital")) && !panel.get_on_paper());
     assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((1, 1, 0), 1, 0));
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     assert!(common::placed(w, Role::Text, &panel.get_paper_filtration()).len() == 1, "the filtration shown");
@@ -124,26 +124,26 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     rig.pump();
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    let (mut names, mut listed) = (papers_listed(&panel), PaperStock::ALL.map(|p| p.name().to_string()).to_vec());
+    let (mut names, mut listed) = (papers_listed(&panel), PaperStock::all().iter().map(|p| p.name().to_string()).collect::<Vec<_>>());
     names.sort();
     listed.sort();
     assert_eq!(names, listed, "every paper once");
     let renders = ctl.state.borrow().renders();
-    let crystal_archive = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmCrystalArchiveDigitalDPII).unwrap();
+    let crystal_archive = PaperStock::all().iter().position(|p| *p == PaperStock::of("fujifilm-crystal-archive-digital-dpii")).unwrap();
     panel.invoke_paper_chosen(crystal_archive as i32);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveDigitalDPII));
+    assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")));
     assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Digital Type DP II");
     rig.until("the frame printed on Crystal Archive", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     // The Frontier SP-3000 is one more paper: picked by its name, the frame prints on it again.
     let shown = |paper: PaperStock| ctl.state.borrow().shown_settings().is_some_and(|s| s.print_paper == Some(paper));
-    rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::FujifilmCrystalArchiveDigitalDPII) && histogram().is_some());
+    rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::of("fujifilm-crystal-archive-digital-dpii")) && histogram().is_some());
     let crystal = histogram();
     let renders = ctl.state.borrow().renders();
-    let frontier = PaperStock::ALL.iter().position(|p| *p == PaperStock::FujifilmFrontierSp3000).unwrap();
+    let frontier = PaperStock::all().iter().position(|p| *p == PaperStock::of("fujifilm-frontier-sp-3000")).unwrap();
     panel.invoke_paper_chosen(frontier as i32);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmFrontierSp3000));
+    assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-frontier-sp-3000")));
     assert_eq!(panel.get_paper_title(), "Fujifilm Frontier SP-3000");
     rig.until("the frame printed on the Frontier", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.until("the Frontier's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != crystal.as_ref()));
@@ -160,8 +160,8 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     panel.invoke_film_type_picked(1);
     rig.pump();
     assert!(panel.get_paper_shown() && panel.get_enlarger_on(), "the slide keeps its paper");
-    assert_eq!(settings().print_paper, Some(PaperStock::FujifilmCrystalArchiveDigitalDPII));
-    assert_eq!(papers_listed(&panel).len(), PaperStock::ALL.len());
+    assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")));
+    assert_eq!(papers_listed(&panel).len(), PaperStock::all().len());
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
     rig.until("the slide printed through its internegative", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Print lift")), (1, 1));
@@ -173,7 +173,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_and_a_slide_on_every_paper() {
     assert!(!panel.get_enlarger_on() && settings().print_paper.is_none());
     panel.invoke_enlarger_toggled(true);
     rig.pump();
-    assert_eq!(settings().print_paper, Some(PaperStock::KodakRoyalDigital));
+    assert_eq!(settings().print_paper, Some(PaperStock::of("kodak-royal-digital")));
     assert!(panel.get_enlarger_on() && panel.get_paper_title() == "Kodak Royal Digital");
     // Print on paper off: the slide's copy prints on the neutral paper, then back on its own.
     let renders = ctl.state.borrow().renders();

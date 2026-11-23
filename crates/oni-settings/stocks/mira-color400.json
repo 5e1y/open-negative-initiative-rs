@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "mira-color400",
+ "name": "Mira Color 400",
+ "brand": "Mira",
+ "type": "colour-negative",
+ "iso": 400,
+ "canister": "mira-color400.svg",
+ "dyes": "generic-c41"
+}

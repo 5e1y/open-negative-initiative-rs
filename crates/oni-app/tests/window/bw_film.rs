@@ -56,7 +56,7 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     rig.settle();
     let (own, undo) = (stored(), menus.get_live().undo);
     let colour = frame(w);
-    assert_eq!(on(&own), Some(VirtualStock::KodakPortra800));
+    assert_eq!(on(&own), Some(VirtualStock::of("kodak-portra-800")));
     assert!(chroma(&colour) > 20, "twin: the colour film's frame holds colour, {}", chroma(&colour));
 
     // The pointer on a black and white film shows the photo in black and white, nothing written.
@@ -70,9 +70,9 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
         frame(w)
     };
     drop_menu(&rig, w);
-    let pan = lit(VirtualStock::IlfordHP5Plus);
+    let pan = lit(VirtualStock::of("ilford-hp5-plus"));
     println!("shot {}", rig.shot("bw-film-hover-pan").display());
-    let ortho = lit(VirtualStock::IlfordOrthoPlus);
+    let ortho = lit(VirtualStock::of("ilford-ortho-plus"));
     println!("shot {}", rig.shot("bw-film-hover-ortho").display());
     assert!(chroma(&pan) <= 2 && chroma(&ortho) <= 2, "a black and white frame: {} {}", chroma(&pan), chroma(&ortho));
     let (pan_red, ortho_red) = (red_over_grey(&pan, width()), red_over_grey(&ortho, width()));
@@ -85,10 +85,10 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
 
     // Picked, the black and white film is written as one step; Undo takes the colour film back.
     drop_menu(&rig, w);
-    common::click(&rig, w, common::in_popup(w, Role::Button, VirtualStock::IlfordHP5Plus.name()).middle());
+    common::click(&rig, w, common::in_popup(w, Role::Button, VirtualStock::of("ilford-hp5-plus").name()).middle());
     rig.settle();
-    assert_eq!(stored(), own.on_stock(VirtualStock::IlfordHP5Plus), "the pick writes the film lit");
-    assert_eq!((panel.get_stock().name.as_str(), panel.get_stock().has_artwork), (VirtualStock::IlfordHP5Plus.name(), true));
+    assert_eq!(stored(), own.on_stock(VirtualStock::of("ilford-hp5-plus")), "the pick writes the film lit");
+    assert_eq!((panel.get_stock().name.as_str(), panel.get_stock().has_artwork), (VirtualStock::of("ilford-hp5-plus").name(), true));
     assert!(chroma(&frame(w)) <= 2 && menus.get_live().undo);
     println!("shot {}", rig.shot("bw-film-picked").display());
     let renders = ctl.state.borrow().renders();

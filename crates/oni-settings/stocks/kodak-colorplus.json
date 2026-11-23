@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "kodak-colorplus",
+ "name": "Kodak ColorPlus",
+ "brand": "Kodak",
+ "type": "colour-negative",
+ "iso": 200,
+ "canister": "kodak-colorplus.svg",
+ "dyes": "generic-c41"
+}

@@ -177,7 +177,7 @@ Apache-2.0, `vendor/wgpu-hal`), notify (CC0-1.0, `vendor/notify`), and the Inter
 `crates/oni-ui/fonts`).
 
 The virtual films, the dye separation's measured dyes and the papers are written from each film's and paper's
-data sheet as its maker publishes it (`crates/oni-pipeline/resources/film/datasheet`, `SOURCES.txt` there), developed,
+data sheet as its maker publishes it (one file a stock or a paper in `crates/oni-settings/stocks`, `SOURCES.txt` there), developed,
 scanned and printed after the model of [spektrafilm](https://github.com/andreavolpato/spektrafilm) by Andrea Volpato,
 on the spectra of Wenzel Jakob and Johannes Hanika's spectral upsampling from [vkdt](https://github.com/hanatos/vkdt)
 (BSD-2-Clause, `SPECTRA_LICENCE.txt` in `crates/oni-pipeline/resources/film`, shipped unchanged). What ONI keeps from

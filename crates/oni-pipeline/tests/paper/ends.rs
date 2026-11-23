@@ -10,7 +10,7 @@ use oni_settings::tone::Print;
 use oni_settings::{PaperStock, PipelineSettings};
 
 pub fn frames() -> [(&'static str, PipelineSettings); 4] {
-    let frontier = PipelineSettings { print_paper: Some(PaperStock::FujifilmFrontierSp3000), ..prepared_negative() };
+    let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..prepared_negative() };
     [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier)]
 }
 

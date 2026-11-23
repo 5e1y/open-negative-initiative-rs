@@ -1,0 +1,11 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "cinestill-400d",
+ "name": "CineStill 400D",
+ "brand": "CineStill",
+ "type": "colour-negative",
+ "iso": 400,
+ "canister": "cinestill-400d.svg",
+ "dyes": "generic-c41"
+}

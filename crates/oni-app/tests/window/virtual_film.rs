@@ -35,7 +35,7 @@ pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
         rig.settle();
     };
     let film = settings().film().expect("a digital photo is shot on its film");
-    assert_eq!((film.stock, film.exposure), (oni_settings::VirtualStock::KodakPortra800, 0.0));
+    assert_eq!((film.stock, film.exposure), (oni_settings::VirtualStock::of("kodak-portra-800"), 0.0));
     assert_eq!(panel.get_stock().name.as_str(), "Kodak Portra 800");
     assert!(shown(Role::Text, "Film") && shown(Role::Button, "Select Film Stock") && !shown(Role::Tab, "None"), "its stock and its key, no film None");
     assert!(shown(Role::Text, &panel.get_film_white()) && panel.get_film_white().starts_with("5500 K"), "the stock's white in sight: {}", panel.get_film_white());
@@ -46,7 +46,7 @@ pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
     rendered("the film's exposure rendered", &|| press_rail(&rig, w, "Film exposure", 0.75));
     let exposed = settings();
     assert!((exposed.film().unwrap().exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {:?}", exposed.film());
-    let reference = oni_settings::VirtualStock::KodakPortra800.reference();
+    let reference = oni_settings::VirtualStock::of("kodak-portra-800").reference();
     assert_eq!((exposed.gains.stops, exposed.levels), (reference.stops, reference.levels()), "the exposure alone moved");
     assert!(w.global::<Store>().get_film_modified(), "the block's Reset shows");
     assert_ne!(frame(), on);

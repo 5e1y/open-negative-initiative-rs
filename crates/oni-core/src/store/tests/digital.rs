@@ -27,8 +27,8 @@ fn read(p: &str) -> PipelineSettings {
 
 /// What a frame on the stock's reference holds.
 fn on_film(s: &PipelineSettings) -> bool {
-    let r = VirtualStock::KodakPortra800.reference();
-    s.virtual_film.is_some() && s.gains.stops == r.stops && s.levels == r.levels() && s.dye_set == VirtualStock::KodakPortra800.dye_set()
+    let r = VirtualStock::of("kodak-portra-800").reference();
+    s.virtual_film.is_some() && s.gains.stops == r.stops && s.levels == r.levels() && s.dye_set == VirtualStock::of("kodak-portra-800").dye_set()
 }
 
 #[test]
@@ -93,27 +93,27 @@ fn on_own_reference(s: &PipelineSettings) -> bool {
 
 #[test]
 fn a_film_picked_on_one_digital_photo_leaves_the_folders_others_on_their_own_film() {
-    let (mut store, dir, [a, b, c]) = on_stocks("picked", VirtualStock::KodakPortra800, VirtualStock::KodakVerita200D);
-    let next = store.settings().on_stock(VirtualStock::KodakVision3_200T);
+    let (mut store, dir, [a, b, c]) = on_stocks("picked", VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-verita-200d"));
+    let next = store.settings().on_stock(VirtualStock::of("kodak-vision3-200t"));
     store.apply_at(Command::Write(Box::new(next)), 0.0);
     store.flush();
-    assert!(on_own_reference(&read(&a)) && read(&a).film().unwrap().stock == VirtualStock::KodakVision3_200T);
+    assert!(on_own_reference(&read(&a)) && read(&a).film().unwrap().stock == VirtualStock::of("kodak-vision3-200t"));
     for p in [&b, &c] {
         let s = read(p);
-        assert_eq!(s.film().unwrap().stock, VirtualStock::KodakVerita200D, "{p}");
+        assert_eq!(s.film().unwrap().stock, VirtualStock::of("kodak-verita-200d"), "{p}");
         assert!(on_own_reference(&s), "{p}: {:?} {:?}", s.gains, s.dye_set);
     }
     // Twin: Verita read on Vision3 200T's gains and dyes, what the folder's roll laid, is off its reference.
     let mut laid = read(&b);
-    laid.gains.stops = VirtualStock::KodakVision3_200T.reference().stops;
-    laid.dye_set = VirtualStock::KodakVision3_200T.dye_set();
+    laid.gains.stops = VirtualStock::of("kodak-vision3-200t").reference().stops;
+    laid.dye_set = VirtualStock::of("kodak-vision3-200t").dye_set();
     assert!(!on_own_reference(&laid));
     let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 fn a_dye_dose_moved_on_one_digital_photo_still_reaches_its_folder_on_each_films_dyes() {
-    let (mut store, dir, [_, b, _]) = on_stocks("dose", VirtualStock::KodakPortra800, VirtualStock::KodakUltraMax400);
+    let (mut store, dir, [_, b, _]) = on_stocks("dose", VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-ultramax-400"));
     let mut next = store.settings().clone();
     next.separation = 0.7;
     store.apply_at(Command::Write(Box::new(next)), 0.0);

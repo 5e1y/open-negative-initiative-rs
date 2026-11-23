@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
-DATASHEET = ROOT / "crates/oni-pipeline/resources/film/datasheet"
+STOCKS = ROOT / "crates/oni-settings/stocks"
 WL = np.arange(380.0, 781.0, 5.0)
 
 
@@ -101,8 +101,8 @@ def weights(reader, light=D50):
 
 
 class Stock:
-    def __init__(self, path):
-        d = json.loads(Path(path).read_text())
+    def __init__(self, path_or_profile):
+        d = path_or_profile if isinstance(path_or_profile, dict) else json.loads(Path(path_or_profile).read_text())
         data = d["data"]
         self.name = d["info"]["stock"]
         nan = lambda v: np.array([[np.nan if x is None else x for x in row] for row in v], dtype=float)
@@ -144,14 +144,25 @@ class Stock:
         return np.linalg.inv(self.spill(w))
 
 
+def profiles():
+    """Every data sheet's profile the stock files hold, by the name its converter gave it."""
+    out = {}
+    for p in sorted(STOCKS.glob("*.json")):
+        f = json.loads(p.read_text())
+        blocks = [f] if f["oni"] == "paper" else [f.get("film")] + [d.get("film") for d in f.get("developments", [])]
+        for b in blocks:
+            if b and "profile" in b:
+                out[b["profile"]["info"]["stock"]] = b["profile"]
+    return dict(sorted(out.items()))
+
+
 def datasheet(kind="negative"):
     out = []
-    for p in sorted(DATASHEET.glob("*.json")):
-        d = json.loads(p.read_text())
+    for d in profiles().values():
         if d["info"].get("type") == kind and "channel_density" in d["data"] and len(d["data"]["density_curves"][0]) == 3:
             data = d["data"]
             if any(v is not None for row in data["channel_density"] for v in row):
-                out.append(Stock(p))
+                out.append(Stock(d))
     return out
 
 

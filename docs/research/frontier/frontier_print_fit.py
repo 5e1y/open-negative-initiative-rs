@@ -1,5 +1,6 @@
-"""The Frontier SP-3000's table refitted as a print of ONI's paper kernel (frontier-paper.md), written to
-crates/oni-pipeline/resources/scanner/frontier_print.json. Usage: python3 frontier_print_fit.py [rounds]."""
+"""The Frontier SP-3000's table refitted as a print of ONI's paper kernel (frontier-paper.md), written into the
+"frontier" block of its paper's file, crates/oni-settings/stocks/fujifilm-frontier-sp-3000.json, its provenance kept.
+Usage: python3 frontier_print_fit.py [rounds]."""
 
 import json
 import sys
@@ -166,7 +167,10 @@ def main():
         'fit': {'terms': TERMS, 'bands': BANDS, 'rounds': ROUNDS, 'weights': WEIGHTS, 'metric': 'Oklab distance x 100 of display-clipped code',
                 'nodes': 'frontier.cube inside its reach; constrained: channel spread under 0.6, every node read by a measurement'},
     }
-    (SCANNER / 'frontier_print.json').write_text(json.dumps(out, indent=1) + '\n')
+    paper_file = REPO / 'crates/oni-settings/stocks/fujifilm-frontier-sp-3000.json'
+    paper = json.loads(paper_file.read_text())
+    paper['frontier'] = {'provenance': paper['frontier']['provenance'], **out}
+    paper_file.write_text(json.dumps(paper, indent=1, ensure_ascii=False) + '\n')
     print(json.dumps(out['figures'], indent=1), 'least light', out['leastLight'])
 
 
