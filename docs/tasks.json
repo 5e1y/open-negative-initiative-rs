@@ -12753,5 +12753,21 @@
     "status": "done",
     "detail": "Label Print lift; help: on, the print keeps the paper's own ends; off, its black lies on pure black and its white on pure white, the grey kept. French 'Noirs et blancs du papier', Spanish 'Negros y blancos del papel': 'lift' has no settled photographic word in either language outside grading software, and the former labels already named what the switch keeps. The window check toggles it both ways, each a render and the second its own histogram.",
     "outcome": "Window check, catalogue check and lint green."
+  },
+  {
+    "id": 3650,
+    "type": "research",
+    "title": "The spill a masked negative leaves on a camera scan after per-channel windows, and one generic 3x3 against it",
+    "status": "done",
+    "detail": "docs/research/dye-spill.md, scripts in docs/research/dye-spill/. Each stock's dyes read as window shares (rows summing to 1) on Status M, the scan's Rec. 2020 and drawn cameras, for the 48 data-sheet profiles and spektrafilm's former ones; real scans bound each layer's purity from pictures (five rolls, 86 frames). Proposal: one generic spill as shares in the stock file with a dose, off by default, laid as I + dose x (inverse - I) on the window shares. No product code changed.",
+    "outcome": "The mask leaves 3 to 7 % of spill on Status M and 19 to 33 % on a camera's channels (overlap, not mask). Real frames (a red-lit column, a blue-green tank, UltraMax 400) cap cyan in green at 0.20 and magenta in red at 0.13 per unit: both models overstate the largest term by two. Proposed shares R 0.88 0.12 0.00, G 0.16 0.80 0.04, B 0.09 0.06 0.85. Awaits the owner's eye; images outside the repository."
+  },
+  {
+    "id": 3651,
+    "type": "research",
+    "title": "dye_spill example: a scan on ONI's print with no separation, a 3x3 on the window shares, and the separation on former or current dyes",
+    "status": "done",
+    "detail": "crates/oni-pipeline/examples/dye_spill.rs, the CPU reference only: off, now (data-sheet dyes), old (a former spektrafilm profile read from a path), each named matrix, and the density over the bare film that hull.py reads.",
+    "outcome": "The former separation and the inverse of spektrafilm's mean spill render alike on nine frames: the separation was one 3x3 to first order."
   }
 ]
