@@ -147,6 +147,7 @@ mod sheet_escape;
 mod field_undo;
 mod sheet_keys;
 mod sidebar_reveal;
+mod gallery_reveal;
 mod sidebars;
 mod sidebar_filter;
 mod space_chip;

@@ -177,6 +177,9 @@ impl Ctl {
             return;
         }
         let reopened = self.state.borrow().open_path() == Some(path);
+        if self.window().is_some_and(|w| w.global::<App>().get_gallery()) {
+            self.state.borrow_mut().chosen_in_gallery();
+        }
         let together = self.state.borrow().selected();
         let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };
         self.state.borrow_mut().designate(path);

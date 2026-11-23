@@ -1,5 +1,5 @@
 //! `revealInTree`: the library column unfolds whatever holds the photo it follows, on the archive
-//! and on the projects, once each time that photo changes, so a fold made by hand afterwards stays.
+//! and on the projects, once each time that photo is chosen, so a fold made by hand afterwards stays.
 
 use super::*;
 use oni_library::project_tree::NodeId as ProjectNode;
@@ -23,6 +23,12 @@ impl State {
     /// `anchoredHere` on the projects: the click set the ring and the fold itself.
     pub(super) fn project_anchored(&mut self, path: &str) {
         self.reveal.project = Some(path.to_owned());
+    }
+
+    /// A photo picked in the gallery is chosen again, the one already followed included: both trees
+    /// unfold down to it and bring its row into view, whatever a hand folded since.
+    pub(super) fn chosen_in_gallery(&mut self) {
+        (self.reveal.archive, self.reveal.project) = (None, None);
     }
 
     /// The first project holding `path`, as `Project.grouped(...).first` finds it.

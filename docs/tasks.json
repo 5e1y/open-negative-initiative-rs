@@ -12966,5 +12966,13 @@
     "title": "A folder prepared with no stock picked is a roll, its row the generic canister's",
     "status": "done",
     "detail": "Prepare's measure marked the folder a roll only once a stock was picked, so a roll prepared without one stayed a plain folder with no canister. The measure now writes the folder's roll marker in its own step, on the stock picked if any: one undo takes the measure and the marker back; a roll its frames alone name keeps taking the stock through its frames. Checked in the Prepare window check, with its twin on the undo."
+  },
+  {
+    "id": 3734,
+    "type": "fix",
+    "title": "A photo picked in the gallery is picked in the library column every time: its folders unfold, a hand's fold since included, and its row comes into view; on the projects, its project",
+    "status": "done",
+    "detail": "The column's reveal was kept per photo (tree_reveal::Reveal), so a photo picked again in the gallery, the one already followed, found its folders as a hand had folded them: no row to pick, unfold or scroll to, on the archive beside the photo and on the projects in the gallery. State::chosen_in_gallery forgets both trees' reveal at the gallery's click and keys and on its way into the editor (open_in_editor while the gallery shows); the column's shown and the projects' ring then unfold and centre it as for a new photo. A fold made by hand beside the photo still stays through edits and clicks in the column.",
+    "outcome": "Window check gallery_reveal: D10 deep in 2024/Summer/Deep/Roll 4 picked in the gallery, the tree folded by hand, D10 picked again: its row picked, every folder above it unfolded, the row in view (twins: the folded tree hides it, a column lower it is out of view, D09 is not picked); B12 of a folded roll; D03 on the projects, before and after Trip is folded by hand. Without the fix the check fails at 2024 is not unfolded, and at Trip unfolds with the archive half alone. The dev app on a scratch copy of roll #8 in nested folders: DSC_6465 folded away by hand, picked again in the gallery, shows unfolded, ringed and in view (folded and hidden before the fix)."
   }
 ]
