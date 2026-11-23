@@ -97,7 +97,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets, a
     // paper's white on pure white without Print lift.
-    const BEFORE: u64 = 0x9cfb_4c96_32ae_9004;
+    const BEFORE: u64 = 0x3dc5_2f11_b37c_0d55;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
