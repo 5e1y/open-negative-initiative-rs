@@ -19,7 +19,7 @@ use std::sync::Arc;
 type Change = (&'static str, fn(&mut PipelineSettings));
 
 /// Every field the reading reads, each moved.
-const INPUTS: [Change; 26] = [
+const INPUTS: [Change; 24] = [
     ("mode", |s| s.mode = ConversionMode::Positive),
     ("sheet", |s| s.sheet = Some(ContactSheetGrid { columns: 2, rows: 1, frames: 2, tile: Size { width: 36.0, height: 24.0 }, margin: 0.0, windows: None })),
     ("decoded_from_mosaic", |s| s.decoded_from_mosaic = !s.decoded_from_mosaic),
@@ -35,9 +35,7 @@ const INPUTS: [Change; 26] = [
     ("quarter_turns", |s| s.geometry.quarter_turns = 1),
     ("gains", |s| s.gains.stops[0] += 0.4),
     ("density_ceiling", |s| s.density_ceiling += 0.3),
-    ("separation", |s| s.separation = 0.9),
     ("dye_set", |s| s.dye_set = oni_settings::DyeSet::of("fujifilm-c200")),
-    ("separation_by_hand", |s| s.separation_by_hand = !s.separation_by_hand),
     ("flat_field", |s| {
         s.flat_field.mask = FlatFieldMask::ValoiEasy35V1;
         s.flat_field.amount = 1.0;
@@ -53,8 +51,8 @@ const INPUTS: [Change; 26] = [
 
 /// The inputs this check's scene shows moving the outcome; the others are read where it does not
 /// reach: the decode, a sheet's cells, a roll of one, the rotation of a scene the means do not see.
-const MOVING: [&str; 13] =
-    ["mode", "capture_stops", "crop", "measure_window", "angle", "gains", "density_ceiling", "separation", "flat_field", "corrections", "levels", "roll_reference", "density"];
+const MOVING: [&str; 12] =
+    ["mode", "capture_stops", "crop", "measure_window", "angle", "gains", "density_ceiling", "flat_field", "corrections", "levels", "roll_reference", "density"];
 
 /// Every look the reading leaves at rest, each moved.
 const LOOKS: [Change; 30] = [
@@ -192,9 +190,9 @@ fn every_input_the_scene_shows_moves_the_outcome_and_no_look_does() {
     // On its roll, and alone, measured as a roll of one, where the print is read bypassed.
     for base in [on_roll(), PipelineSettings::rest(ConversionMode::Negative, false)] {
         let at_rest = m.balance("scene", &base).expect("the scene balances");
-        // A roll of one lays its own windows and the resting separation over the frame's.
+        // A roll of one lays its own windows over the frame's.
         let alone = base.roll_reference.is_none();
-        for (name, change) in INPUTS.iter().filter(|(n, _)| MOVING.contains(n) && !(alone && ["levels", "separation"].contains(n))) {
+        for (name, change) in INPUTS.iter().filter(|(n, _)| MOVING.contains(n) && !(alone && *n == "levels")) {
             let mut s = base.clone();
             change(&mut s);
             let moved = m.balance("scene", &s);

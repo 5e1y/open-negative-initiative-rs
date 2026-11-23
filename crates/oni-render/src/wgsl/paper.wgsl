@@ -1,28 +1,24 @@
-// The paper, operation for operation as `cpu::paper`: the enlarger's light through the negative's dyes on the paper's
-// layers, Brightness faded in from the pick, its curves, its dyes seen under D50 in Rec. 2020, then its ends: the pick and
-// the paper's white each on its anchor; alpha kept.
+// The paper, operation for operation as `cpu::paper`: the window's shares laid back on density, each layer exposed by its
+// own channel through the time and its filter, Brightness faded in from the pick, its curves, its dyes seen under D50 in
+// Rec. 2020, then its ends: the pick and the paper's white each on its anchor; alpha kept.
 
 struct Params {
     head: vec4<u32>,
-    gain_pedestal: vec4<f32>,
-    black_guard: vec4<f32>,
-    filters_scale: vec4<f32>,
+    density_scale: vec4<f32>,
+    filters: vec4<f32>,
     pick_reach: vec4<f32>,
     curve_axis: vec4<f32>,
+    mix: array<vec4<f32>, 3>,
     pick: vec4<f32>,
     white: vec4<f32>,
     anchor: vec4<f32>,
     white_anchor: vec4<f32>,
-    negative: array<vec4<f32>, 81>,
-    exposure: array<vec4<f32>, 81>,
-    dichroic: array<vec4<f32>, 81>,
     print: array<vec4<f32>, 81>,
     view: array<vec4<f32>, 81>,
     curves: array<vec4<f32>, 256>,
 }
 
 const PAPER_CURVE_NODES: f32 = 256.0;
-const PAPER_EXPOSURE_FLOOR: f32 = 1e-10;
 fn paper_share(x: f32, width: f32) -> f32 {
     let t = clamp(x / width, 0.0, 1.0);
     return t * t * (3.0 - 2.0 * t);
@@ -50,30 +46,24 @@ fn paper_layer(log: f32, c: u32) -> f32 {
     return mix(P.curves[at][c], P.curves[at + 1u][c], f - i);
 }
 
-fn paper_px(s: vec4<f32>) -> vec4<f32> {
-    let guard = P.black_guard.w;
-    let amounts = -log(max((s.rgb + P.gain_pedestal.w) * P.gain_pedestal.xyz, vec3<f32>(guard))) * LOG10_E - P.black_guard.xyz;
-    let filters = P.filters_scale.xyz;
-    var raw = vec3<f32>(0.0);
-    for (var k = 0u; k < P.head.x; k = k + 1u) {
-        let dye = P.negative[k];
-        let dimmed = vec3<f32>(1.0) - (vec3<f32>(1.0) - P.dichroic[k].xyz) * (vec3<f32>(1.0) - filters);
-        let passed = exp2(-3.3219280948873623 * (dot(amounts, dye.xyz) + dye.w)) * dimmed.x * dimmed.y * dimmed.z;
-        raw = raw + passed * P.exposure[k].xyz;
-    }
-    var log_raw = log(max(raw, vec3<f32>(0.0)) * P.filters_scale.w + PAPER_EXPOSURE_FLOOR) * LOG10_E;
-    let brightness = P.curve_axis.z;
+fn paper_px(t: vec4<f32>) -> vec4<f32> {
+    let span = P.density_scale.x;
+    let bend = P.density_scale.y;
+    let d = span * sign(t.rgb) * pow(abs(t.rgb), vec3<f32>(bend));
+    let mixed = vec3<f32>(dot(P.mix[0].xyz, d), dot(P.mix[1].xyz, d), dot(P.mix[2].xyz, d));
+    var log_raw = log(P.density_scale.z * P.filters.xyz) * LOG10_E - mixed;
+    let brightness = P.pick_reach.z;
     if (brightness != 0.0) {
         let x = P.pick_reach.x - (log_raw.x + log_raw.y + log_raw.z) / 3.0;
         log_raw = log_raw - vec3<f32>(paper_lifted(x, brightness * 0.3010299956639812, P.pick_reach.y) - x);
     }
     let density = vec3<f32>(paper_layer(log_raw.x, 0u), paper_layer(log_raw.y, 1u), paper_layer(log_raw.z, 2u));
     var out = vec3<f32>(0.0);
-    for (var k = 0u; k < P.head.y; k = k + 1u) {
+    for (var k = 0u; k < P.head.x; k = k + 1u) {
         let dye = P.print[k];
         out = out + exp2(-3.3219280948873623 * (dot(density, dye.xyz) + dye.w)) * P.view[k].xyz;
     }
-    if (P.curve_axis.w > 0.5) {
+    if (P.density_scale.w > 0.5) {
         out = vec3<f32>(dot(out, LUMA));
     }
     let pick = P.pick.xyz;
@@ -84,5 +74,5 @@ fn paper_px(s: vec4<f32>) -> vec4<f32> {
         let above = anchor + (white_anchor - anchor) * ((out - pick) / (white - pick));
         out = select(above, out * anchor / pick, out <= pick);
     }
-    return vec4<f32>(out, s.a);
+    return vec4<f32>(out, t.a);
 }

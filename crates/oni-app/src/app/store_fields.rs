@@ -36,7 +36,6 @@ fields! {
     Chrome => set_chrome_fraction, get_chrome_fraction, set_chrome_readout, set_chrome_value;
     BalanceStrength => set_balance_strength_fraction, get_balance_strength_fraction, set_balance_strength_readout, set_balance_strength_value;
     DensityCeiling => set_density_ceiling_fraction, get_density_ceiling_fraction, set_density_ceiling_readout, set_density_ceiling_value;
-    DyeSeparation => set_dye_separation_fraction, get_dye_separation_fraction, set_dye_separation_readout, set_dye_separation_value;
     Angle => set_angle_fraction, get_angle_fraction, set_angle_readout, set_angle_value;
     SharpenAmount => set_sharpen_amount_fraction, get_sharpen_amount_fraction, set_sharpen_amount_readout, set_sharpen_amount_value;
     SharpenRadius => set_sharpen_radius_fraction, get_sharpen_radius_fraction, set_sharpen_radius_readout, set_sharpen_radius_value;
@@ -91,7 +90,6 @@ pub(super) fn set_modified(g: &Store, b: Block, on: bool) {
         Block::Lighting => g.set_lighting_modified(on),
         Block::Effects => g.set_effects_modified(on),
         Block::DensityCeiling => g.set_density_ceiling_modified(on),
-        Block::DyeSeparation => g.set_dye_separation_modified(on),
         Block::Sharpening => g.set_sharpening_modified(on),
         Block::ChromaDenoise => g.set_chroma_denoise_modified(on),
         Block::Texture => g.set_texture_modified(on),

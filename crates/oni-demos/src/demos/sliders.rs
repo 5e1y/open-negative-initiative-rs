@@ -1,5 +1,5 @@
 //! The one-slider demos: Details' Sharpening, Texture and Chroma Denoise on a detail of the photograph
-//! framed, the Roll tab's Density Ceiling and Dye Separation on all of it.
+//! framed, the Roll tab's Density Ceiling on all of it.
 
 use oni_app::fields::Field;
 use oni_settings::PipelineSettings;
@@ -74,16 +74,3 @@ pub fn density_ceiling() -> OneSlider {
     })
 }
 
-/// Dye Separation from its rest to its most: the sails' colours part while the greys stay.
-pub fn dye_separation() -> OneSlider {
-    OneSlider::new(Spec {
-        topic: "dye-separation",
-        component: "OneRow",
-        settings: photo::framed,
-        view: View::Whole,
-        field: Field::DyeSeparation,
-        to: 1.0,
-        levels: 5.0,
-        tuning: Tuning { tolerance: 3, colours: 80 },
-    })
-}

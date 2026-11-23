@@ -50,8 +50,6 @@
       ]
     },
     "densityCeiling": 3.5,
-    "separation": 0.6,
-    "separationByHand": false,
     "flatField": {
       "mask": "Valoi Easy35 V1",
       "amount": 0.26845777,

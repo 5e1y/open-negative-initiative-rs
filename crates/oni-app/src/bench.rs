@@ -100,7 +100,7 @@ pub(crate) fn healed(ctl: &Ctl) -> bool {
     !s.healing() && settings.corrections.iter().all(|c| c.stroke.is_empty() || crate::patches::made(&caches, settings, c))
 }
 
-/// `ONI_BENCH_FIELD` names the dragged parameter by its Slint stem (`dye-separation`); Exposure else.
+/// `ONI_BENCH_FIELD` names the dragged parameter by its Slint stem (`density-ceiling`); Exposure else.
 pub(crate) fn drag_field() -> Field {
     let named = std::env::var("ONI_BENCH_FIELD").ok();
     named.and_then(|n| Field::ALL.into_iter().find(|f| f.slint_name() == n)).unwrap_or(Field::Exposure)

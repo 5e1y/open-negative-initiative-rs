@@ -46,7 +46,7 @@ pub struct FilmFile {
     /// A whole line, its stock never named.
     #[serde(default, skip_serializing_if = "is_false")]
     pub line: bool,
-    /// The measured dyes a roll on it unmixes; none in black and white or on a slide.
+    /// The scanned stock whose curve Lighting reads a roll on it back through; none in black and white or on a slide.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dyes: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -68,7 +68,7 @@ pub struct FilmBlock {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub aliases: Vec<String>,
     pub balance: Balance,
-    /// The dye set its negative unmixes: its own key makes its profile's dyes that set.
+    /// The scanned stock its negative is read through: its own key makes its profile that stock's.
     pub dyes: String,
     /// Derived from the profile when left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]

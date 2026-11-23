@@ -68,7 +68,7 @@ impl Canvas {
 /// The print of the neutral `t` of the way from the pick to the grey, under `s`.
 fn neutral_print(s: &PipelineSettings, t: f32) -> V3 {
     let k = conversion::stage47(s);
-    let [pick, _, grey] = paper::anchors(s, k.dyes.as_ref());
+    let [pick, _, grey] = paper::anchors(s).map(|a| paper::shares_of(s, &k, a));
     let a: V3 = std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]));
     k.paper.unwrap().shown(a)
 }
@@ -84,7 +84,7 @@ fn with(s: &PipelineSettings, exposure: f32, brightness: f32) -> PipelineSetting
 fn ramp(s: &PipelineSettings, n: usize, reach: f32) -> Vec<V3> {
     let k = conversion::stage47(s);
     let p = k.paper.unwrap();
-    let [pick, _, grey] = paper::anchors(s, k.dyes.as_ref());
+    let [pick, _, grey] = paper::anchors(s).map(|a| paper::shares_of(s, &k, a));
     (0..=n).map(|i| {
         let t = reach * i as f32 / n as f32;
         lab(p.shown(std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))))
@@ -118,10 +118,10 @@ fn main() {
         let rest = ramp(&read, n, reach);
         let k = conversion::stage47(&read);
         let p = k.paper.unwrap();
-        let [pick, _, grey] = paper::anchors(&read, k.dyes.as_ref());
+        let [pick, _, grey] = paper::anchors(&read).map(|a| paper::shares_of(&read, &k, a));
         let x_of = |i: usize| {
             let t = reach * i as f32 / n as f32;
-            p.toward_light(p.pick_log, p.exposed(std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c]))))
+            p.toward_light(p.pick_log, p.exposed(p.density(std::array::from_fn(|c| pick[c] + t * (grey[c] - pick[c])))))
         };
         let xs: Vec<String> = [1.0f32, 3.0, 5.0, 8.0, 12.0, 20.0, 30.0, 50.0, 70.0, 90.0].iter()
             .map(|m| format!("{m}:{:.3}", x_of(rest.iter().position(|l| l[0] >= *m).unwrap_or(n)))).collect();

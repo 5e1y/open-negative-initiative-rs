@@ -12856,5 +12856,61 @@
     "title": "scripts/datasheet-profiles.py and frontier_print_fit.py write into the stock files",
     "status": "done",
     "detail": "The converter lays each profile into the file holding the profile of its name, every other field kept, and has the reference of a film whose profile moved derived again by examples/stock_references.rs; a profile no file holds yet gets a file of its own to check. The Frontier fit writes the SP-3000 paper file's frontier block, its provenance kept. The dye-spill research reads the profiles out of the stock files. stocks/README.md tells how to add or edit a stock or a paper without building the app."
+  },
+  {
+    "id": 3720,
+    "type": "feature",
+    "title": "Dye separation removed from both pipes",
+    "status": "done",
+    "detail": "The owner's call (2026-11-23): the film's orange mask already removes most spill on a white-light scan, and the data-sheet dyes carry no mask, so the separation over-corrected about three times. Gone: the kernel and its WGSL, its pass, Stage47.dyes, the settings `separation` and `separationByHand` (dropped at format 69; the old steps that moved their rests removed), its block, knob, field, demo, preset entry and phone row (the wire index kept). The stock (`dyeSet`) stays: Lighting reads a scan back through its curve.",
+    "outcome": "ONI's print on roll #8 moves only by the separation: tone within 1 L* (mean dL* -0.8), mean chroma down a third (C* 13.5 to 8.6 on DSC_6440, mean dE76 5 to 8). Black and white and slides unchanged to the bit."
+  },
+  {
+    "id": 3721,
+    "type": "feature",
+    "title": "A digital photo's virtual negative codes each layer's density on its own channel",
+    "status": "done",
+    "detail": "No camera scan of the virtual dyes: each developed layer's density is read on its own channel, as a masked negative's scan reads it, so the print reads the film's own per-channel densities. Every stock's reference re-derived; a digital photo of formats 66 to 68 moves its gains and windows onto it, every hand's move kept (migrate::layer_densities, format 69).",
+    "outcome": "Digital photos on ONI's print move by mean dE76 1.9; the stocks' references read a clear bare film on every channel."
+  },
+  {
+    "id": 3722,
+    "type": "feature",
+    "title": "The paper prints the window's shares: each channel's density exposes its own layer",
+    "status": "done",
+    "detail": "One window for both prints: stage 5 reads each channel's density through Prepare's window (black, white, mid); ONI's print takes its decompression and print curve on the shares, the paper lays the shares back on density (the windows' mean span, a power that sets the mean grey on its own density) and exposes the matching layer (red the cyan-forming), the Frontier's scanner matrix on the densities, a seat for a 3x3 later. The spectral negative, the TH-KG3 lamp, the dichroic filters and schott_kg3.csv are gone.",
+    "outcome": "Kernel, WGSL and CPU reference with their checks; the neutral paper prints a frame exactly as ONI's print (DSC_6440 identical)."
+  },
+  {
+    "id": 3723,
+    "type": "feature",
+    "title": "A neutral negative prints neutral: one filtration per paper, one time per frame; black and white alike",
+    "status": "done",
+    "detail": "The window aligns the three channels at black, grey and white; each paper's filtration is solved once on its own layers where they print a grey neutral on its white (one for Print lift, which shows that white), shown in the paper block; a frame's time shows its reference grey at a plain RAW's grey. Black and white takes the same filtration and prints its luma.",
+    "outcome": "Grey ramps neutral on the paper's own white on every paper and stock (grey C*ab 0.0, Royal Digital's scan ramp spread 0.23 to 0.14); with Print lift the grey takes the paper's white, laid on pure white it is neutral within a thousandth. Black and white on Royal Digital goes from 18.6 to 32.3 L*/stop at the grey: balanced, its layers print the negative's own density, and its roll's window spans 2.37 of density against colour's 1.44."
+  },
+  {
+    "id": 3724,
+    "type": "feature",
+    "title": "Lighting re-seated on per-channel density",
+    "status": "done",
+    "detail": "The negative kernel reads each channel's density above its bare film and codes the result back on the bare film's own; the tone table is gone. A scan's channel reads back through its stock's mean layer curve, scaled so its reference grey lies on the curve's speed point; a digital photo through its stock's own three layers and couplers; black and white through the C-41 sheets' mean.",
+    "outcome": "Lighting's and the colour tools' checks hold on every pipe."
+  },
+  {
+    "id": 3725,
+    "type": "research",
+    "title": "Contrast before and after the density pipe",
+    "status": "done",
+    "detail": "tone_response on roll #8 (DSC_6440, 6452, 6464), a black and white roll (P1071630, 6135), a digital photo (P1073289) on Portra 800 and HP5, ONI's print and Royal Digital; logs in the scratch folder.",
+    "outcome": "Royal Digital at the grey: scans 23.6 to 20.0 L*/stop, digital Portra 800 20.8 to 17.5, black and white 18.6 to 32.3, digital HP5 16.4 to 24.1; ONI's print unchanged (10.9, digital 10.2 to 10.6)."
+  },
+  {
+    "id": 3726,
+    "type": "chore",
+    "title": "The Look Lab's neutral set fitted again to Pro at rest, the separation gone",
+    "status": "done",
+    "detail": "examples/look_lab_fit.rs run on the density pipe; the Frontier set's fit is unchanged.",
+    "outcome": "Neutral set against Pro at rest: median dE 0.56 to 0.19 on 9948 negatives; the check's bound 0.3."
   }
 ]

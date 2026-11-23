@@ -25,7 +25,7 @@ fn raws(dir: &Path) -> Vec<PathBuf> {
 }
 
 /// The sidecar's stage 4 to 7 as the fused kernel takes them: gains, density axis, levels and
-/// the print's exposure. Decompression, separation and Hunt rest, so this is a fixture's positive.
+/// the print's exposure. Decompression and Hunt rest, so this is a fixture's positive.
 fn conversion(sidecar: &Value) -> Stage47 {
     let s = &sidecar["settings"];
     let f = |v: &Value| v.as_f64().expect("a number in the sidecar") as f32;

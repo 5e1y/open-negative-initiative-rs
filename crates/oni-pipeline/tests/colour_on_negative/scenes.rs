@@ -182,9 +182,9 @@ pub fn past_the_dyes(p: &Paper, light: [f32; 3]) -> f64 {
 
 /// Each layer's density as the negative's colour tools read it: the log exposure a grey develops it at, from the
 /// reference grey's.
-pub fn as_grey(n: &Negative, k: &Stage47, q: V4) -> [f32; 3] {
+pub fn as_grey(n: &Negative, q: V4) -> [f32; 3] {
     let d = n.development;
-    let read = n.read(k.dyes.map_or(q, |dyes| cpu::dye_separation(q, k, &dyes)));
+    let read = n.read(q);
     let own: [f32; 3] = std::array::from_fn(|c| (read[c] / n.scale[c]).max(d.foot[c]).min(d.top[c]));
     let grey = d.as_grey(n.owned(d.inhibited(n.moved(d.exposures(own)))));
     std::array::from_fn(|c| grey[c] - n.pivot[c])
@@ -192,7 +192,7 @@ pub fn as_grey(n: &Negative, k: &Stage47, q: V4) -> [f32; 3] {
 
 /// The hue a colour's chroma holds where the negative reads it, in degrees.
 pub fn scene_hue(k: &Stage47, q: V4) -> Option<f32> {
-    let about = as_grey(&k.negative?, k, q);
+    let about = as_grey(&k.negative?, q);
     let neutral = (0..3).map(|c| LUMA[c] * about[c]).sum::<f32>();
     let chroma = about.map(|v| v - neutral);
     let (a, b) = (chroma[0] - 0.5 * chroma[1] - 0.5 * chroma[2], 0.866_025_4 * (chroma[1] - chroma[2]));

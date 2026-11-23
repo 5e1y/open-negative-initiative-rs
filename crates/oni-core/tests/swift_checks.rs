@@ -188,7 +188,7 @@ fn each_former_group_carries_its_rows_and_none_falls_between_two() {
     assert_ne!(both, destination);
 
     // No former group names these, and they are rows: leaving them out is a choice.
-    let orphans = ["density", "densityCeiling", "separation", "texture", "flatField", "sourceEncoding"];
+    let orphans = ["density", "densityCeiling", "dyeSet", "texture", "flatField", "sourceEncoding"];
     assert!(orphans.iter().all(|o| !all.contains(o)));
     let ids: BTreeSet<&str> = parameters::all().iter().map(|r| r.id).collect();
     assert!(orphans.iter().all(|o| ids.contains(o)), "{orphans:?} against {ids:?}");

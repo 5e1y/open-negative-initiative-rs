@@ -59,13 +59,13 @@ export component GrainColourEditor inherits VerticalLayout {
         }
         // Each grab lies inside the plot, where the panel's edge takes no hand.
         black := GrainColourEnd {
-            field: 53; label: @tr("Grain colour at the black point"); fraction: Store.grain-colour-black-fraction; readout: Store.grain-colour-black-readout;
+            field: 52; label: @tr("Grain colour at the black point"); fraction: Store.grain-colour-black-fraction; readout: Store.grain-colour-black-readout;
             x: 0;
             y: parent.black-y - self.height / 2;
             span: parent.travel;
         }
         white := GrainColourEnd {
-            field: 54; label: @tr("Grain colour at the white point"); fraction: Store.grain-colour-white-fraction; readout: Store.grain-colour-white-readout;
+            field: 53; label: @tr("Grain colour at the white point"); fraction: Store.grain-colour-white-fraction; readout: Store.grain-colour-white-readout;
             x: parent.width - self.width;
             y: parent.white-y - self.height / 2;
             span: parent.travel;

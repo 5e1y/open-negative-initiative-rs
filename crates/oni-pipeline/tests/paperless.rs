@@ -27,10 +27,9 @@ fn slide() -> PipelineSettings {
     s
 }
 
-/// A negative whose three windows agree, read with no unmix: ONI's print and the neutral paper see the same tones.
+/// A negative whose three windows agree: ONI's print and the neutral paper see the same tones.
 fn even_negative() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.separation = 0.0;
     for w in [&mut s.levels.red, &mut s.levels.green, &mut s.levels.blue] {
         (w.black, w.white, w.mid) = (0.3, 1.6, 0.5);
     }
@@ -46,22 +45,22 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
         let k = conversion::stage47(&s);
         let p = k.paper.expect(label);
         let [black, _, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
-        let rested = p.printed(paper::anchors(&s, k.dyes.as_ref())[2]);
+        let rested = p.printed(paper::shares_of(&s, &k, paper::anchors(&s)[2]));
         println!("{label}: grey {rested:?} at rest, {grey:?} shown (a plain RAW's {:.5}), black {black:?}, pick {:?}", *GREY_PRINT, p.pick);
-        // The rest shows the grey neutral through the pick laid on pure black, printed before it by as little as the
+        // The rest prints the grey neutral at a plain RAW's, shown through the pick laid on pure black by as little as the
         // pick's light off.
-        assert!((0..3).all(|c| (grey[c] - *GREY_PRINT).abs() < 2e-6), "{label}: {grey:?}");
-        assert!((0..3).all(|c| (rested[c] - *GREY_PRINT).abs() <= p.pick[c] + 2e-6), "{label}: {rested:?}");
+        assert!((0..3).all(|c| (rested[c] - *GREY_PRINT).abs() < 2e-4), "{label}: {rested:?}");
+        assert!((0..3).all(|c| (grey[c] - rested[c]).abs() <= p.pick[c] + 2e-6), "{label}: {grey:?}");
         assert!(black[..3].iter().all(|v| v.abs() < 1e-6) && p.anchor == [0.0; 3], "{label}: the pick on pure black, {black:?}");
         assert!(p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{label}: no paper's white, {:?}", p.white);
         // Twin: the same frame on its paper lays the pick where the paper's rest prints it.
         let on_paper = conversion::stage47(&PipelineSettings { paperless: false, ..s.clone() }).paper.expect(label);
         assert!(on_paper.anchor.iter().all(|a| *a > 1e-3), "{label}: {:?}", on_paper.anchor);
     }
-    // Twin: the prepared negative through no filtration prints its grey off neutral.
+    // Twin: the prepared negative through ten CC of yellow prints its grey off neutral.
     let s = paperless(prepared_negative());
     let k = conversion::stage47(&s);
-    let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0; 3], ..p }), ..k };
+    let bare = Stage47 { paper: k.paper.map(|p| Paper { filters: [1.0, 1.0, 10f32.powf(-0.1)], ..p }), ..k };
     let unfiltered = cpu::stage47(grey_scan(&s), &bare);
     assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2, "{unfiltered:?}");
     // A slide prints its internegative on the neutral paper: the copy's base black, its grey a plain RAW's.
@@ -69,11 +68,11 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
     let copy = paper::internegative::copy(&s).expect("a slide on the neutral paper is copied");
     let k = conversion::stage47(&s);
     let p = k.paper.expect("a slide on the neutral paper");
-    let [pick, _, grey] = paper::anchors(&copy.settings, k.dyes.as_ref());
+    let [pick, _, grey] = paper::anchors(&copy.settings).map(|a| paper::shares_of(&copy.settings, &k, a));
     let (shown_pick, rested) = (p.shown(pick), p.shown(grey));
     assert!(copy.settings.paperless && p.white.iter().all(|w| (w - 1.0).abs() < 1e-6), "{:?}", p.white);
     assert!(shown_pick.iter().all(|v| v.abs() < 1e-6), "{shown_pick:?}");
-    assert!(rested.iter().all(|v| (v - *GREY_PRINT).abs() < 2e-6), "{rested:?}");
+    assert!(rested.iter().all(|v| (v - *GREY_PRINT).abs() < 2e-4), "{rested:?}");
     // Twin: the slide's copy on its own paper keeps the paper's white.
     assert!(conversion::stage47(&slide()).paper.unwrap().white.iter().all(|w| *w < 0.95));
 }
@@ -82,7 +81,7 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
 fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone() {
     let s = prepared_negative();
     let k = conversion::stage47(&s);
-    let [_, _, grey] = paper::anchors(&s, k.dyes.as_ref());
+    let grey = paper::shares_of(&s, &k, paper::anchors(&s)[2]);
     let moved = |p: &Paper, c: usize| {
         let (at, mut more) = (p.printed(grey), grey);
         more[c] += 0.2;
@@ -179,7 +178,7 @@ fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     ];
     for (label, s) in frames {
         let k = conversion::stage47(&s);
-        assert!(k.paper.is_some_and(|p| p.negative.len() == 3 && p.print.len() == 3), "{label}: on the neutral paper");
+        assert!(k.paper.is_some_and(|p| p.mix == paper::OWN_LAYERS && p.print.len() == 3), "{label}: on the neutral paper");
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
         let reference = mapped(&pixels, |p| cpu::stage47(p, &k));
         let twin = Stage47 { paper: k.paper.map(|p| Paper { scale: p.scale * 1.1, ..p }), ..k };

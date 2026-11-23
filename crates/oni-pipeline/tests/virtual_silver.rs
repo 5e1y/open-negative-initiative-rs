@@ -178,8 +178,9 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
             let r = PipelineSettings { mode, ..s.clone() };
             pipeline.render(&mut g, &scan, &r, &Request::default(), &Default::default(), None).unwrap().1
         };
-        let (mono, colour) = (read(ConversionMode::Monochrome), read(ConversionMode::Negative));
-        judge(&format!("a photo on a black and white film read as a monochrome roll, paperless {paperless}"), &on, &mono, &colour);
+        // Twin: read as a slide, another picture; as a colour negative its equal layers print alike, neutral either way.
+        let (mono, slide) = (read(ConversionMode::Monochrome), read(ConversionMode::Positive));
+        judge(&format!("a photo on a black and white film read as a monochrome roll, paperless {paperless}"), &on, &mono, &slide);
     }
     let back = shot(VirtualStock::of("ilford-hp5-plus")).on_stock(VirtualStock::of("kodak-portra-800"));
     assert_eq!(back, shot(VirtualStock::of("kodak-portra-800")), "nothing of the black and white film stays");

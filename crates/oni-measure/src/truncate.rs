@@ -44,9 +44,7 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
         Stage::Curves => {}
     }
     if before == Stage::Levels {
-        // Downstream of the windows: a gain written before the matrix lands mixed.
-        out.separation = 0.0;
-        // What enters the windows is measured through the graduation, never the dose.
+        // What enters the windows is measured through the graduation, never the decompression's dose.
         out.chroma_decompression = 1.0;
         out.roll_reference = None;
         let graduated = graduation::levels(s.mode);
@@ -64,16 +62,15 @@ mod tests {
     #[test]
     fn before_the_levels_the_windows_carry_the_graduation_and_the_print_is_bypassed() {
         let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-        s.separation = 0.6;
         s.density = 0.3;
         s.legacy_print = Some(LegacyPrint { d: 2, ..LegacyPrint::default() });
         let t = truncated(&s, Stage::Levels);
         assert_eq!(t.levels.red, graduation::levels(ConversionMode::Negative));
-        assert!(t.print.bypassed && t.separation == 0.0 && t.chroma_decompression == 1.0 && t.legacy_print.is_none());
+        assert!(t.print.bypassed && t.chroma_decompression == 1.0 && t.legacy_print.is_none());
         assert_eq!(truncated(&s, Stage::GlobalLevels).legacy_print, None, "ONI's windows in front of the print");
-        // Twin: before the curves, the windows, the separation and the legacy print are the frame's own.
+        // Twin: before the curves, the windows and the legacy print are the frame's own.
         let late = truncated(&s, Stage::Curves);
-        assert_eq!((late.levels, late.separation, late.print.bypassed), (s.levels, 0.6, false));
+        assert_eq!((late.levels, late.print.bypassed), (s.levels, false));
         assert_eq!(late.legacy_print, s.legacy_print);
     }
 

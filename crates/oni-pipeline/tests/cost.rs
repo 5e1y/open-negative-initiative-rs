@@ -1,7 +1,7 @@
 //! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
 //! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
-//! photo's film effects at rest and on a notch, a virtual negative, the dye separation and the paper on a full-screen region; without the
-//! variable it returns at once.
+//! photo's film effects at rest and on a notch, a virtual negative and the paper on a full-screen region; without the variable
+//! it returns at once.
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_pipeline::{finishing, stages};
@@ -248,35 +248,8 @@ fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
     println!("virtual negative on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
 }
 
-/// The dye separation's pass on the same full-screen region, a negative's scan, against one plain per-pixel pass.
-#[test]
-fn the_dye_separation_s_gpu_time_on_a_full_screen_region() {
-    if std::env::var_os("ONI_BENCH_COST").is_none() {
-        return;
-    }
-    let Ok(mut g) = Graph::new() else { return };
-    let (w, h) = (3456u32, 2234u32);
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
-    let pixels: Vec<[f32; 4]> = (0..w * h)
-        .map(|i| {
-            let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
-            oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table)
-        })
-        .collect();
-    let source = g.upload(w, h, &pixels).unwrap();
-    let k = oni_pipeline::conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, true));
-    let unmixed = Image::new(&source).then(stages::dye_separation(&k, &k.dyes.expect("a digital photo's dyes")));
-    let plain = Image::new(&source).then(stages::luma_only());
-    let (mut a, mut b) = (Vec::new(), Vec::new());
-    for _ in 0..RUNS {
-        a.push(ms(&mut g, &unmixed));
-        b.push(ms(&mut g, &plain));
-    }
-    println!("dye separation on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
-}
-
-/// A print notch on the same full-screen region, past the dye separation the cache keeps: the paper laid with the rest
-/// of stage 4-7 in one pass, against ONI's own print in its pass; then the notch's arguments solved on the CPU.
+/// A print notch on the same full-screen region: the paper laid with the rest of stage 4-7 in one pass, against ONI's own
+/// print in its pass; then the notch's arguments solved on the CPU.
 #[test]
 fn the_paper_s_gpu_time_on_a_full_screen_region() {
     if std::env::var_os("ONI_BENCH_COST").is_none() {
@@ -286,20 +259,17 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
     let (w, h) = (3456u32, 2234u32);
     let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
     let paper = PipelineSettings::rest(ConversionMode::Digital, true);
-    let separated = oni_pipeline::conversion::stage47(&paper);
-    let d = separated.dyes.expect("a digital photo's dyes");
+    let k = oni_pipeline::conversion::stage47(&paper);
     let pixels: Vec<[f32; 4]> = (0..w * h)
         .map(|i| {
             let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
-            let scan = oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table);
-            oni_render::cpu::dye_separation(scan, &separated, &d)
+            oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table)
         })
         .collect();
     let source = g.upload(w, h, &pixels).unwrap();
-    let after = separated.after_dyes();
-    let printed = stages::laid(Image::new(&source), vec![stages::paper(&separated.paper.expect("a digital photo's paper")), stages::stage47(&after)]);
+    let printed = stages::laid(Image::new(&source), vec![stages::stage47(&k), stages::paper(&k.paper.expect("a digital photo's paper"))]);
     let onis = oni_pipeline::conversion::stage47(&PipelineSettings { print_paper: None, ..paper.clone() });
-    let plain = Image::new(&source).then(stages::stage47(&onis.after_dyes()));
+    let plain = Image::new(&source).then(stages::stage47(&onis));
     let (mut a, mut b) = (Vec::new(), Vec::new());
     for _ in 0..RUNS {
         a.push(ms(&mut g, &printed));

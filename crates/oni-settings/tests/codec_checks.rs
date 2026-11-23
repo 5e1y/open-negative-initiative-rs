@@ -2,7 +2,7 @@
 //! before it, each with a twin that fails when the migration reaches too far or not at all.
 
 use oni_settings::axis::{density_axis, pipeline};
-use oni_settings::blocks::{ChromaDenoise, Gains, Sharpen, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Sharpen, Vignette};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, chain};
@@ -61,7 +61,6 @@ fn full() -> PipelineSettings {
     s.gains.stops = [1.25, -0.5, 2.125];
     // Off the resting ceiling and any round value, so a dropped key cannot round trip by luck.
     s.density_ceiling = 2.3137;
-    s.separation = 0.37;
     s.dye_set = oni_settings::DyeSet::of("fujifilm-c200");
     s.levels.red.black = 0.1373;
     s.levels.red.white = 2.4477;
@@ -238,38 +237,6 @@ fn a_positive_from_before_the_move_opens_on_the_new_rest() {
     let survived = read(ConversionMode::Positive, by_hand);
     assert_eq!(survived.red.black, 0.42);
     assert_eq!(survived.green.black, Levels::resting_black(ConversionMode::Positive, density_axis::base()));
-}
-
-#[test]
-fn separation_rests_move_only_where_nobody_chose() {
-    let read = |dose: f32, by_hand: bool, version: i64| {
-        let written = PipelineSettings { separation: dose, separation_by_hand: by_hand, ..PipelineSettings::default() };
-        decode(&aged(&written, version, |_| {})).separation
-    };
-    let before_7 = before_1_0::SEPARATION_REST_VERSION - 1;
-    assert_eq!(read(separation::FORMER_BASE, false, before_7), separation::FORMER_REST);
-    assert_eq!(read(1.6, false, before_7), 1.6);
-    // Twin: 100 % written after the move stays 100 %.
-    assert_eq!(read(separation::FORMER_BASE, false, before_1_0::SEPARATION_REST_VERSION), separation::FORMER_BASE);
-    let previous = chain::SEPARATION_LITERATURE_VERSION - 1;
-    assert_eq!(read(separation::PREVIOUS_BASE, false, previous), separation::BASE);
-    // Twin: the hand's 18 %, or one written after the move, stays.
-    assert_eq!(read(separation::PREVIOUS_BASE, true, previous), separation::PREVIOUS_BASE);
-    assert_eq!(read(separation::PREVIOUS_BASE, false, chain::SEPARATION_LITERATURE_VERSION), separation::PREVIOUS_BASE);
-}
-
-#[test]
-fn the_separation_chain_before_1_0_lands_where_each_step_says() {
-    // Before 7, 1 becomes the former rest 0.67; before 14 that rest is not the hand's; then 0.6 is not 0.18.
-    let written = PipelineSettings { separation: separation::FORMER_BASE, ..PipelineSettings::default() };
-    let read = decode(&aged(&written, 6, |s| {
-        s.remove("separationByHand");
-    }));
-    assert_eq!((read.separation, read.separation_by_hand), (separation::FORMER_REST, false));
-    let read = decode(&aged(&written, 13, |s| {
-        s.remove("separationByHand");
-    }));
-    assert_eq!((read.separation, read.separation_by_hand), (separation::FORMER_BASE, true));
 }
 
 #[test]
@@ -624,7 +591,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 47);
+    assert_eq!(keys.len(), 45);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

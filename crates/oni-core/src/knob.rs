@@ -3,7 +3,7 @@
 
 use crate::fields::Field;
 use oni_settings::axis::density_axis;
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::lens::LensCorrection;
 use oni_settings::levels::Levels;
@@ -52,8 +52,6 @@ pub enum Knob {
     GainTemperature,
     GainTint,
     DensityCeiling,
-    /// The dye separation's dose, which a hand dialling it owns from then on.
-    Separation,
     /// Balance strength re-doses the filters a key wrote, in one write.
     BalanceStrength,
     Level(Channel, Handle),
@@ -112,7 +110,6 @@ impl Knob {
         match self {
             Knob::Gain(_) | Knob::GainTemperature | Knob::GainTint => Field::Gains,
             Knob::DensityCeiling => Field::DensityCeiling,
-            Knob::Separation => Field::Separation,
             Knob::BalanceStrength => Field::BalanceStrength,
             Knob::Level(..) => Field::Levels,
             Knob::Exposure
@@ -154,7 +151,6 @@ impl Knob {
                 let r = density_axis::range_for(s.decoded_from_mosaic, s.mode);
                 (*r.start(), *r.end())
             }
-            Knob::Separation => separation::RANGE,
             Knob::BalanceStrength => oni_settings::blocks::filter_balance::STRENGTH_RANGE,
             Knob::Level(_, Handle::Mid) => Levels::MID_RANGE,
             Knob::Level(_, Handle::Shadows) => Levels::SHADOW_RANGE,
@@ -205,7 +201,6 @@ impl Knob {
             Knob::GainTemperature => gain_temperature(s.gains.stops),
             Knob::GainTint => gain_tint(s.gains.stops),
             Knob::DensityCeiling => s.density_ceiling,
-            Knob::Separation => s.separation,
             Knob::BalanceStrength => s.balance_strength,
             Knob::Level(c, h) => handle(levels(s, c), h),
             Knob::Exposure => p.exposure,
@@ -266,10 +261,6 @@ impl Knob {
             Knob::GainTemperature => shift_gains(&mut out.gains, GAIN_TEMPERATURE_AXIS, v - Knob::GainTemperature.get(s)),
             Knob::GainTint => shift_gains(&mut out.gains, GAIN_TINT_AXIS, v - Knob::GainTint.get(s)),
             Knob::DensityCeiling => out.density_ceiling = v,
-            Knob::Separation => {
-                out.separation = v;
-                out.separation_by_hand = true;
-            }
             Knob::BalanceStrength => {}
             Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
             Knob::Exposure => out.print.exposure = v,

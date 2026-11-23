@@ -4,7 +4,7 @@
 use crate::axis::density_axis;
 use crate::blocks::{
     ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, chroma_decompression,
-    filter_balance, separation,
+    filter_balance,
 };
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::dyes::DyeSet;
@@ -60,11 +60,8 @@ pub struct PipelineSettings {
     pub gains: Gains,
     #[serde(rename = "densityCeiling")]
     pub density_ceiling: f32,
-    /// The dye separation's dose: the stock's measured dyes unmixed on the scan's densities, before the windows.
-    pub separation: f32,
-    #[serde(rename = "separationByHand")]
-    pub separation_by_hand: bool,
-    /// The measured dyes the stock names, which picking a stock writes on its roll's frames.
+    /// The stock the roll was shot on, which picking a stock writes on its roll's frames: the curve Lighting reads its
+    /// negative back through.
     #[serde(rename = "dyeSet")]
     pub dye_set: DyeSet,
     #[serde(rename = "flatField")]
@@ -138,8 +135,6 @@ impl Default for PipelineSettings {
             chroma: ChromaDenoise::default(),
             gains: Gains::default(),
             density_ceiling: density_axis::base(),
-            separation: separation::BASE,
-            separation_by_hand: false,
             dye_set: DyeSet::default(),
             flat_field: FlatField::default(),
             corrections: Vec::new(),

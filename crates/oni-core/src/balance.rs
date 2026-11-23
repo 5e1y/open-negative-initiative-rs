@@ -2,7 +2,7 @@
 //! host provides, and writes only what it shows, one undoable step.
 
 use oni_settings::axis::graduation;
-use oni_settings::blocks::{chroma_decompression, separation};
+use oni_settings::blocks::chroma_decompression;
 use oni_settings::frame::RollReference;
 use oni_settings::geometry::proposal;
 use oni_settings::levels::{Levels, LevelsChannel};
@@ -55,12 +55,9 @@ impl Balance {
 pub fn applied(balance: &Balance, settings: &PipelineSettings) -> PipelineSettings {
     let mut out = settings.clone();
     out.gains.stops = balance.stops;
-    // A key reads the film's own colour and its dyes' whole spill, unless the hand dialled that dose.
+    // A key reads the film's own colour, unless the hand dialled that dose.
     if !settings.chroma_decompression_by_hand {
         out.chroma_decompression = chroma_decompression::BASE;
-    }
-    if !settings.separation_by_hand {
-        out.separation = separation::BASE;
     }
     out.levels.red = placed(&balance.levels[0], settings.mode);
     out.levels.green = placed(&balance.levels[1], settings.mode);

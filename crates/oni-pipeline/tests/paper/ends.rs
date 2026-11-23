@@ -55,13 +55,19 @@ pub fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper.expect("a paper")
 }
 
-/// The paper's print of `amounts` through Lighting on the negative, its tones included; the negative's range on each
-/// dye, the frame's densest read above its bare film.
-pub fn lit_shown(k: &Stage47, amounts: [f32; 3]) -> [f32; 3] {
-    k.paper.expect("a paper").shown(k.negative.map_or(amounts, |n| n.toned(n.redeveloped(amounts))))
+/// The print on `k` of the pixel holding `above` over each channel's bare film, through Lighting and the window; the
+/// negative's range on each channel, the frame's densest read above its bare film.
+pub fn lit_shown(s: &PipelineSettings, k: &Stage47, above: [f32; 3]) -> [f32; 3] {
+    let bare = paper::film_ends(s).0;
+    rgb(cpu::stage47(scan_at(s, std::array::from_fn(|c| bare[c] + above[c])), k))
 }
 pub fn span_of(s: &PipelineSettings) -> [f32; 3] {
-    paper::anchors(s, conversion::stage47(s).dyes.as_ref())[1]
+    paper::anchors(s)[1]
+}
+
+/// The window's shares of the frame's pick, densest read and reference grey as Lighting in `k` develops them.
+pub fn anchor_shares(s: &PipelineSettings, k: &Stage47) -> [[f32; 3]; 3] {
+    paper::anchors(s).map(|a| paper::shares_of(s, k, k.negative.map_or(a, |n| n.redeveloped(a))))
 }
 
 /// The frame's anchors printed on `k`: its pick, its densest read and its reference grey.

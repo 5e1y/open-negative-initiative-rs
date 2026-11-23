@@ -33,8 +33,6 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
 }
 
 fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut unmixed = onis(prepared_negative());
-    unmixed.separation = 0.0;
     let mut uncompensated = onis(prepared_negative());
     uncompensated.print.colour_compensation = false;
     let mut legacy = onis(prepared_negative());
@@ -47,7 +45,6 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
         ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, negative unmixed", unmixed),
         ("ONI's print, uncompensated", uncompensated),
         ("ONI's print, legacy Frontier at its entry", legacy),
         ("ONI's print, digital", onis(digital())),
@@ -97,7 +94,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, on the unmixed sheets, a
     // paper's white on pure white without Print lift.
-    const BEFORE: u64 = 0x3dc5_2f11_b37c_0d55;
+    const BEFORE: u64 = 0xe82a_50bb_bd7a_8cbc;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -284,7 +281,7 @@ fn contrast_turns_about_the_grey_and_the_filters_tint_holding_its_weight() {
             let now = rgb(cpu::stage47(grey, &k));
             // The grey's negative unmoved; its print within the hundredth the black's anchoring lays on a paper.
             let n = k.negative.unwrap();
-            let read = n.read(k.dyes.map_or(grey, |d| cpu::dye_separation(grey, &k, &d)));
+            let read = n.read(grey);
             let again = n.redeveloped(read);
             assert!((0..3).all(|c| (again[c] - read[c]).abs() < 2e-4), "{label}, Contrast {travel}: the grey's negative {again:?} from {read:?}");
             let off = (0..3).map(|c| (now[c] - at_rest[c]).abs() / at_rest[c].max(1e-3)).fold(0.0f32, f32::max);

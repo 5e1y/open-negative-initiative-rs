@@ -9,7 +9,7 @@ pub enum Field {
     DensityCeiling,
     Levels,
     Decompression,
-    Separation,
+    DyeSet,
     BalanceStrength,
 }
 
@@ -22,12 +22,12 @@ impl Field {
         Field::DensityCeiling,
         Field::Levels,
         Field::Decompression,
-        Field::Separation,
+        Field::DyeSet,
         Field::BalanceStrength,
     ];
 }
 
-pub const FIELD_NAMES: [&str; 14] = [
+pub const FIELD_NAMES: [&str; 12] = [
     "mode",
     "invertedSource",
     "virtualFilm",
@@ -38,8 +38,6 @@ pub const FIELD_NAMES: [&str; 14] = [
     "levels",
     "chromaDecompression",
     "chromaDecompressionByHand",
-    "separation",
-    "separationByHand",
     "dyeSet",
     "balanceStrength",
 ];
@@ -60,11 +58,7 @@ pub fn changed(before: &PipelineSettings, after: &PipelineSettings) -> BTreeSet<
                 (before.chroma_decompression, before.chroma_decompression_by_hand)
                     != (after.chroma_decompression, after.chroma_decompression_by_hand)
             }
-            Field::Separation => {
-                before.separation != after.separation
-                    || before.separation_by_hand != after.separation_by_hand
-                    || before.dye_set != after.dye_set
-            }
+            Field::DyeSet => before.dye_set != after.dye_set,
             Field::BalanceStrength => before.balance_strength != after.balance_strength,
         })
         .collect()
@@ -106,11 +100,7 @@ pub fn copied(fields: &BTreeSet<Field>, donor: &PipelineSettings, target: &Pipel
                 out.chroma_decompression = donor.chroma_decompression;
                 out.chroma_decompression_by_hand = donor.chroma_decompression_by_hand;
             }
-            Field::Separation => {
-                out.separation = donor.separation;
-                out.separation_by_hand = donor.separation_by_hand;
-                out.dye_set = donor.dye_set;
-            }
+            Field::DyeSet => out.dye_set = donor.dye_set,
             Field::BalanceStrength => out = dosed(&out, donor.balance_strength),
         }
     }

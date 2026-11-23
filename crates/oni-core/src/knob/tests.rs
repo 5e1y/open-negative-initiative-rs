@@ -77,10 +77,8 @@ fn the_gains_temperature_and_tint_move_apart_and_hold_the_gains_mean() {
 }
 
 #[test]
-fn a_dose_by_hand_and_a_strength_redose_as_the_panes_do() {
+fn a_strength_redoses_as_the_panes_do() {
     let mut s = PipelineSettings::default();
-    let dosed = Knob::Separation.set(&s, 1.2);
-    assert!(dosed.separation_by_hand);
     s.balance_filters = Some([0.4, 0.0, -0.4]);
     let half = Knob::BalanceStrength.set(&s, 0.5);
     assert_eq!(half.print.red.exposure, 0.2);

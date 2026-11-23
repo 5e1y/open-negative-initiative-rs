@@ -110,7 +110,7 @@ pub(crate) fn prepare_picks_the_stock_on_its_hero() {
     assert!(!stocks.get_shown());
     let hero = p.get_stock();
     assert_eq!(hero.name.as_str(), "Kodak Portra 400");
-    assert!(hero.has_artwork && hero.note.contains("Kodak Portra 400"), "its line names its dyes: {}", hero.note);
+    assert!(hero.has_artwork && hero.note.is_empty(), "a stock its own profile measures needs no word: {}", hero.note);
     println!("shot {}", rig.shot("stock-hero-prepare").display());
     // Twin: Done changes nothing.
     common::click(&rig, w, key.middle());
@@ -199,7 +199,6 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     assert_eq!(marker().as_deref(), Some("fujifilm-c200"), "the roll's stock");
     assert_eq!((open_dyes(), family(&other)), (DyeSet::of("fujifilm-c200"), DyeSet::of("fujifilm-c200")), "every photo of the roll on its dyes");
     assert_eq!(panel.get_stock().name.as_str(), "Fujifilm C200");
-    assert_eq!(panel.get_dye_set().as_str(), "Fujifilm C200", "Dye Separation names them");
     assert!(menus.get_live().undo, "one step");
     println!("shot {}", rig.shot("stock-hero-roll-tab").display());
 

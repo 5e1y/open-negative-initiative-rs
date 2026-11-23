@@ -1,6 +1,6 @@
 # The spill a masked negative leaves on a camera scan, and the small matrix that mends it
 
-The owner's question (task #3650): with dye separation removed from both pipes, can the data of every stock we hold make "a small something" against the spill left after the per-channel windows, without spectra at run time? Measured on the 48 data-sheet profiles, spektrafilm's former profiles (git history, `44fcc040`), and real scans; nothing of the app changed. Scripts in `docs/research/dye-spill/`, the renders by `crates/oni-pipeline/examples/dye_spill.rs`.
+The owner's question (task #3650): with dye separation removed from both pipes, can the data of every stock we hold make "a small something" against the spill left after the per-channel windows, without spectra at run time? Measured on the 48 data-sheet profiles, spektrafilm's former profiles (git history, `44fcc040`), and real scans; nothing of the app changed. Scripts in `docs/research/dye-spill/`, the renders by `crates/oni-pipeline/examples/dye_spill.rs` (removed with the separation; in the history at canvas f856020d).
 
 ## What "spill" is once each channel has its window
 
@@ -74,7 +74,6 @@ Honest strength: dose 1 is the upper bound the pictures allow, measured on one s
 
 ```
 python3 docs/research/dye-spill/study.py [folder of former spektrafilm profiles]
-cargo run -p oni-pipeline --example dye_spill -- <out> 1200 <former profile | -> on=1.1675,-0.1757,0.0083,-0.2281,1.2888,-0.0606,-0.1075,-0.0724,1.1799 -- <raw>...
 python3 docs/research/dye-spill/hull.py <out>
 python3 docs/research/dye-spill/view.py <out> <sheet.jpg> <frame> off,on
 ```

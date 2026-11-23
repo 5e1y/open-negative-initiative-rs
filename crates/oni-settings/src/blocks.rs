@@ -1,5 +1,4 @@
-//! The small blocks of the chain: gains, the dye separation's doses, chroma
-//! decompression's doses, the vignette, the grain, the halation, texture, sharpening, chroma denoise, the paper's gains.
+//! The small blocks of the chain: gains, chroma decompression's doses, the vignette, the grain, the halation, texture, sharpening, chroma denoise, the paper's gains.
 
 use crate::axis::pipeline;
 use serde::{Deserialize, Serialize};
@@ -20,21 +19,6 @@ pub struct Gains {
 impl Gains {
     pub const BASE: f32 = 0.0;
     pub const RANGE: (f32, f32) = (-3.0, 3.0);
-}
-
-/// The dye separation's doses; the dose itself is a field of the settings.
-pub mod separation {
-    pub const RANGE: (f32, f32) = (0.0, 2.0);
-    /// The whole unmix: the stock's dye amounts as its measured dyes make them.
-    pub const BASE: f32 = 1.0;
-    /// The rest the family's separation stood on before the measured dyes, recognised on the way in.
-    pub const FAMILY_REST: f32 = 0.6;
-    /// The rest a frame written before the literature's dose carries.
-    pub const PREVIOUS_BASE: f32 = 0.18;
-    /// The rest a frame written before the dose was the hand's keeps until a key balances it.
-    pub const FORMER_REST: f32 = 0.67;
-    /// The rest before `FORMER_REST`, recognised on the way in.
-    pub const FORMER_BASE: f32 = 1.0;
 }
 
 /// How much colour the windows decompress with the tones.

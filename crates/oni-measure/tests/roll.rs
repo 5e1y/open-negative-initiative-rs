@@ -97,9 +97,8 @@ fn the_roll_s_median_is_the_middle_frame_s_moved_and_one_frame_without_its_own_g
 #[test]
 fn a_frame_on_the_roll_s_window_carries_its_colour_whole_and_a_narrower_one_by_its_span() {
     let reference = RollReference { id: Id::new(), stops: [0.0; 3], black: [0.19, 0.23, 0.31], white: [0.53, 0.58, 0.67], base: None, median: None };
-    let base = PipelineSettings { separation: 0.0, density_ceiling: density_axis::MOSAIC_REST, ..PipelineSettings::default() };
-    let mut on_roll = written(&reference, &base);
-    on_roll.separation = 0.0;
+    let base = PipelineSettings { density_ceiling: density_axis::MOSAIC_REST, ..PipelineSettings::default() };
+    let on_roll = written(&reference, &base);
     assert_eq!(decompression_weights(&on_roll), (1.0, 0.0), "the windows' colour whole, the film's none");
     let mut narrowed = on_roll.clone();
     for w in [&mut narrowed.levels.red, &mut narrowed.levels.green, &mut narrowed.levels.blue] {

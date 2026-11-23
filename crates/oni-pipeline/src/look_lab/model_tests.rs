@@ -61,8 +61,8 @@ fn the_neutral_set_renders_pro_at_rest() {
     let grid = pro::grid();
     let neutral = against_pro(&FITTED.neutral, &grid);
     println!("neutral set against Pro at rest: median ΔE {neutral:.3} on {} negatives", grid.len());
-    // The stock's measured dyes, which no parameter of the Lab's chain unmixes, leave it 0.56 at best.
-    assert!(neutral <= 0.6, "{neutral}");
+    // Fitted within 0.19 of Pro at rest.
+    assert!(neutral <= 0.3, "{neutral}");
     // Twin: the Frontier set lands far from Pro.
     let frontier = against_pro(&FITTED.frontier.with_character(0.0), &grid);
     println!("  twin, Frontier set: {frontier:.3}");

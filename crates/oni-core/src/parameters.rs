@@ -73,16 +73,7 @@ pub fn all() -> &'static [Row] {
                 carry: carry!(gains),
             },
             Row { id: "densityCeiling", covers: &["densityCeiling"], sliders: vec![], carry: carry!(density_ceiling) },
-            Row {
-                id: "separation",
-                covers: &["separation", "separationByHand", "dyeSet"],
-                sliders: vec![],
-                carry: |from, to| {
-                    to.separation = from.separation;
-                    to.separation_by_hand = from.separation_by_hand;
-                    to.dye_set = from.dye_set;
-                },
-            },
+            Row { id: "dyeSet", covers: &["dyeSet"], sliders: vec![], carry: carry!(dye_set) },
             Row {
                 id: "levelsPerChannel",
                 covers: &["levels", "balanceMethod"],

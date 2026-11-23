@@ -6,13 +6,11 @@ pub const PRELUDE: &str = include_str!("wgsl/prelude.wgsl");
 /// The detail stage's Gaussian taps, which the blur built-in shares.
 pub const DETAIL_TAPS: &str = include_str!("wgsl/detail_taps.wgsl");
 
-/// `dye_separation_px(s)`.
-pub const DYE_SEPARATION: &str = include_str!("wgsl/dye_separation.wgsl");
 /// `negative_px(s)`.
 pub const NEGATIVE: &str = concat!(include_str!("wgsl/negative.wgsl"), include_str!("wgsl/negative_plain.wgsl"));
 /// `negative_px(s)` with the colour tools on its scene.
 pub const NEGATIVE_COLOURED: &str = concat!(include_str!("wgsl/negative.wgsl"), include_str!("wgsl/negative_colour.wgsl"));
-/// `paper_px(s)`.
+/// `paper_px(t)`, on the window's shares.
 pub const PAPER: &str = include_str!("wgsl/paper.wgsl");
 /// `stage47_px(s)`.
 pub const STAGE47: &str = include_str!("wgsl/stage47.wgsl");

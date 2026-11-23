@@ -1,7 +1,7 @@
 //! Lighting on the negative: a pixel's density above the bare film read back to each layer's log exposure through its
 //! stock's development, couplers included, Exposure, Contrast, the colour tools and the filters laid there and the film
 //! developed again, as a shot exposed otherwise; then the points, zones and mids on its density, and that density coded
-//! as the light the print reads.
+//! on the bare film's own as the light the window reads.
 
 use super::*;
 use super::saturation_curve::SaturationCurve;
@@ -140,7 +140,7 @@ fn solved(m: &[V3; 3], v: V3) -> V3 {
 }
 
 /// A frame's negative under Lighting: how a pixel is read as density above the bare film, its development, the moves
-/// in log exposure, the tones on its density and the density the print reads.
+/// in log exposure and the tones on its density.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Negative {
     /// The input read as density above the bare film: `−log10((s + pedestal)·gain) − black`, held at the guard.
@@ -182,22 +182,14 @@ pub struct Negative {
     pub points_white: V3,
     pub zones: V2,
     pub mids: V3,
-    /// Each channel's density above the bare film to the density the print reads, from `tone_low` by `tone_step`,
-    /// straight on past either end.
-    pub tone: [V3; DYE_TONE_NODES],
-    pub tone_low: V3,
-    pub tone_step: V3,
 }
-
-use super::dye_separation::DYE_TONE_NODES;
 
 impl Negative {
     pub fn head(&self) -> [u32; 4] {
         [0; 4]
     }
 
-    /// The uniform: the reading, the moves, the tones, the couplers, the colour tools, then the development and the
-    /// print's tone.
+    /// The uniform: the reading, the moves, the tones, the couplers, the colour tools, then the development.
     pub fn rows(&self) -> Vec<V4> {
         let d = self.development;
         let c = &d.couplers;
@@ -214,8 +206,6 @@ impl Negative {
             v3(self.points_black, self.zones[0]),
             v3(self.points_white, self.zones[1]),
             v3(self.mids, 0.0),
-            v3(self.tone_low, 0.0),
-            v3(self.tone_step, 0.0),
             v3(c[0], 0.0),
             v3(c[1], 0.0),
             v3(c[2], 0.0),
@@ -232,7 +222,6 @@ impl Negative {
         rows.extend(self.lightness.chunks(4).map(|l| [l[0], l[1], l[2], l[3]]));
         rows.extend(d.normal.iter().map(|v| v3(*v, 0.0)));
         rows.extend(d.after.iter().map(|v| v3(*v, 0.0)));
-        rows.extend(self.tone.iter().map(|v| v3(*v, 0.0)));
         rows
     }
 
@@ -332,7 +321,7 @@ impl Negative {
         let d = self.development;
         let developed = d.developed_on(d.from_grey(self.pivot.map(|p| p + n)));
         let density = map(developed, |c, v| self.sense * v * self.scale[c]);
-        with_alpha(map(self.printed(self.toned(density)), |_, v| (-LOG2_10 * v).exp2()), 1.0)
+        with_alpha(map(self.toned(density), |c, v| (-LOG2_10 * (v + self.black[c])).exp2()), 1.0)
     }
 
     /// The film holding `density` in the development's sense developed again under Lighting's moves and the colour
@@ -373,16 +362,6 @@ impl Negative {
         map(u, |c, v| (midded(v + lift, self.mids[c]) - self.origin) * self.span[c])
     }
 
-    /// The density the print reads for a density above the bare film.
-    pub fn printed(&self, density: V3) -> V3 {
-        map(density, |c, v| {
-            let f = (v - self.tone_low[c]) / self.tone_step[c];
-            let i = clamp(f.floor(), 0.0, (DYE_TONE_NODES - 2) as f32);
-            let at = i as usize;
-            mix(self.tone[at][c], self.tone[at + 1][c], f - i)
-        })
-    }
-
     /// A pixel's density above the bare film under Lighting.
     pub fn lit(&self, s: V4) -> V3 {
         let redeveloped = self.redeveloped(self.read(s));
@@ -390,9 +369,9 @@ impl Negative {
     }
 }
 
-/// One pixel's negative under Lighting, as the light whose density the print reads; alpha kept.
+/// One pixel's negative under Lighting, its density on the bare film's own as the light the window reads; alpha kept.
 pub fn negative(s: V4, k: &Negative) -> V4 {
-    with_alpha(map(k.printed(k.lit(s)), |_, v| (-LOG2_10 * v).exp2()), s[3])
+    with_alpha(map(k.lit(s), |c, v| (-LOG2_10 * (v + k.black[c])).exp2()), s[3])
 }
 
 #[cfg(test)]

@@ -15,14 +15,15 @@ const STOPS: [f32; 7] = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 2.3];
 const GREY_AT: usize = 3;
 const WHITE: usize = 6;
 
-/// The grey's CIELAB chroma on the print, its distance to a plain RAW's, and the white's luma off Portra 800's in stops.
+/// The grey's CIELAB chroma on the print, its distance to a plain RAW's, and the white's luma off Portra 800's in stops
+/// (0.086 at most, Superia 100's).
 const GREY_CHROMA: f32 = 0.5;
 const GREY_GAP: f32 = 2e-3;
-const WHITE_SPREAD: f32 = 0.06;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 10.9 in Pro
-/// 800's and 5.4 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
+const WHITE_SPREAD: f32 = 0.1;
+/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 11.9 in 160NC's
+/// and 6.9 in Verita 200D's lights; their numbers are printed, the owner judging them (owner's call).
 const CHROMA: f32 = 12.0;
-const LIGHT_CHROMA: f32 = 6.0;
+const LIGHT_CHROMA: f32 = 7.5;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
 fn on(stock: VirtualStock) -> PipelineSettings {
@@ -31,12 +32,16 @@ fn on(stock: VirtualStock) -> PipelineSettings {
     s
 }
 
-/// The print of a scene light lit at the film's white, through the CPU references of the chain.
+/// The print of a scene light lit at the film's white, through the CPU references of the chain, as the eye reads it on
+/// the paper's own white: each channel over that white's, the white's luma kept.
 fn printed(stock: VirtualStock, s: &PipelineSettings, light: f32) -> [f32; 3] {
     let st = film::stock(stock);
     let scan = cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table);
-    let p = cpu::stage47(scan, &conversion::stage47(s));
-    [p[0], p[1], p[2]]
+    let k = conversion::stage47(s);
+    let p = cpu::stage47(scan, &k);
+    let white = k.paper.map_or([1.0; 3], |q| q.white);
+    let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
+    std::array::from_fn(|c| p[c] / white[c] * luma)
 }
 
 fn luma(p: [f32; 3]) -> f32 {
@@ -116,8 +121,11 @@ fn a_tungsten_stock_turns_a_daylight_scene_blue() {
         let decoded = oni_settings::white::apply(&oni_settings::white::inverse(&day.map(|r| r.map(f64::from))), [f64::from(GREY); 3]);
         let lit: [f64; 3] = std::array::from_fn(|r| (0..3).map(|c| f64::from(to_white[r][c]) * decoded[c]).sum());
         let st = film::stock(stock);
-        let scan = cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table);
-        cpu::stage47(scan, &conversion::stage47(&on(stock)))
+        let k = conversion::stage47(&on(stock));
+        let p = cpu::stage47(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table), &k);
+        let white = k.paper.map_or([1.0; 3], |q| q.white);
+        let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
+        [p[0] / white[0] * luma, p[1] / white[1] * luma, p[2] / white[2] * luma]
     };
     let tungsten = daylight(VirtualStock::of("kodak-vision3-500t"));
     println!("a D55 grey on 500T {tungsten:?}, on 250D {:?}", daylight(VirtualStock::of("kodak-vision3-250d")));
@@ -179,13 +187,17 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             let source = g.upload(pixels.len() as u32, 1, pixels).unwrap();
             pipeline.render(g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1
         };
+        // As the eye reads the print on the paper's own white.
+        let white = conversion::stage47(&s).paper.map_or([1.0; 3], |q| q.white);
+        let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
+        let seen = |p: &V4| lab(std::array::from_fn(|c| p[c] / white[c] * luma)).1;
         let lit = render(&mut g, &mut pipeline, &scene(stock.white()));
-        let worst = lit.iter().map(|p| lab([p[0], p[1], p[2]]).1).fold(0.0, f32::max);
+        let worst = lit.iter().map(seen).fold(0.0, f32::max);
         let other = match stock.balance() {
             Balance::Daylight => VirtualStock::of("kodak-vision3-500t").white(),
             Balance::Tungsten => VirtualStock::of("kodak-portra-800").white(),
         };
-        let twin = render(&mut g, &mut pipeline, &scene(other)).iter().map(|p| lab([p[0], p[1], p[2]]).1).fold(0.0, f32::max);
+        let twin = render(&mut g, &mut pipeline, &scene(other)).iter().map(seen).fold(0.0, f32::max);
         println!("{:<28} GPU widest C*ab {worst:.2}, lit at the other light {twin:.1}", stock.name());
         if stock.is_silver() {
             // Silver prints any light without a hue; the colour stocks' twins show the check sees one.

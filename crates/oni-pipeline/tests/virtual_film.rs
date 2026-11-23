@@ -6,7 +6,7 @@ mod common;
 
 use common::{V4, graph, judge, mapped, noise, whole};
 use oni_graph::Image;
-use oni_pipeline::film::{self, GREY, bake, cie, profile::Profile};
+use oni_pipeline::film::{self, GREY, bake, profile::Profile};
 use oni_pipeline::{Pipeline, Request, stages};
 use oni_render::{VirtualNegative, cpu};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
@@ -56,7 +56,6 @@ struct Reference {
     n: usize,
     to_film: bake::M3,
     curves: (Vec<[f64; 3]>, Vec<[f64; 3]>),
-    weights: Vec<[f64; 3]>,
 }
 
 impl Reference {
@@ -67,7 +66,7 @@ impl Reference {
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
         let curves = bake::curves(&profile);
-        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, weights: bake::scan_weights(&cie::D50), profile }
+        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile }
     }
 
     /// The film's log exposure per channel for a scene pixel, at `stops`.
@@ -87,18 +86,9 @@ impl Reference {
         std::array::from_fn(|c| bake::interpolate(inhibited[c], le, &self.curves.1, c))
     }
 
+    /// Each layer's density as its own channel's light, as a masked negative's scan reads it.
     fn scan(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
-        let d = self.developed(rgb, stops);
-        let mut out = [0.0; 3];
-        for l in 0..cie::WAVELENGTHS {
-            let [c, m, y] = self.profile.channel_density[l];
-            let (Some(c), Some(m), Some(y), Some(base)) = (c, m, y, self.profile.base_density[l]) else { continue };
-            let t = 10f64.powf(-(d[0] * c + d[1] * m + d[2] * y + base));
-            for k in 0..3 {
-                out[k] += t * self.weights[l][k];
-            }
-        }
-        out
+        self.developed(rgb, stops).map(|d| 10f64.powf(-d))
     }
 }
 
@@ -257,8 +247,9 @@ fn filmed() -> PipelineSettings {
     s
 }
 
-/// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, and neutral; the
-/// digital photo is its virtual negative read by a negative's pipeline, pixel for pixel. Twins: the film a stop
+/// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, neutral on pure black and
+/// white, on the paper's own white with Print lift; the digital photo is its virtual negative read by a negative's
+/// pipeline, pixel for pixel. Twins: the film a stop
 /// over prints that grey lighter, and the same scan read as a slide is another picture.
 #[test]
 fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative() {
@@ -285,8 +276,11 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
     let pure = PipelineSettings { print: oni_settings::tone::Print { print_lift: false, ..digital.print }, ..digital.clone() };
     let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
     println!("a scene grey: the plain RAW {raw:?}, the film {:?}, on pure black {stretched:?}", on[0]);
+    let white = oni_pipeline::conversion::stage47(&digital).paper.expect("a digital photo's paper").white;
+    let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
     for c in 0..3 {
-        assert!((on[0][c] - raw[1]).abs() < 2e-3, "channel {c}: {:?} {raw:?}", on[0]);
+        assert!((stretched[c] - raw[1]).abs() < 2e-3, "channel {c}: {stretched:?} {raw:?}");
+        assert!((on[0][c] / white[c] * luma - raw[1]).abs() < 2e-3, "channel {c}: {:?} on {white:?}", on[0]);
     }
     let over = PipelineSettings { virtual_film: digital.film().map(|f| oni_settings::VirtualFilm { exposure: 1.0, ..f }), ..digital.clone() };
     let lighter = pipeline.render(&mut g, &source, &over, &Request::default(), &Default::default(), None).unwrap().1;

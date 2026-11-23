@@ -1,7 +1,7 @@
 //! The Frontier SP-3000 as a print on the paper kernel: its measured table refitted into its paper's file by
 //! `docs/research/frontier/frontier_print_fit.py`, each of the kernel's sums run over bands of its own, not wavelengths.
 
-use super::{Enlarger, Sheet, V3, V4};
+use super::{Sheet, V3, V4};
 use crate::film::bake;
 use oni_render::PAPER_CURVE_NODES;
 use serde::Deserialize;
@@ -41,25 +41,10 @@ pub fn density(fit: &Fit, c: usize, e: f64) -> f64 {
     fit.curves[c].iter().map(|[a, centre, spread]| a * cdf((e - centre) / spread)).sum()
 }
 
+/// The print, each layer reading the scanner's row of the three densities: the fit's matrix, black and white's alike.
 pub(super) fn sheet(fit: &Fit) -> Sheet {
     let step = (CURVE_RANGE[1] - CURVE_RANGE[0]) / (PAPER_CURVE_NODES - 1) as f32;
     let at = |i: usize| f64::from(CURVE_RANGE[0] + step * i as f32);
-    Sheet {
-        curves: std::array::from_fn(|i| std::array::from_fn(|c| density(fit, c, at(i)) as f32)),
-        curve_low: CURVE_RANGE[0],
-        curve_step: step,
-        print: fit.dyes.clone(),
-        view: fit.view.clone(),
-    }
-}
-
-/// The scanner's read, one band a layer: a row of the matrix over the dye amounts, its base laying the table's neutral
-/// at unit time; each layer's own filter alone dims it, a CC a hundredth of density there. Black and white reads the mean.
-pub(super) fn enlarger(fit: &Fit, mono: bool) -> Enlarger {
-    let row = |b: usize| if mono { [1.0 / 3.0; 3] } else { fit.matrix[b] };
-    Enlarger {
-        negative: (0..3).map(|b| [row(b)[0], row(b)[1], row(b)[2], -fit.neutral]).collect(),
-        exposure: (0..3).map(|b| std::array::from_fn(|c| if c == b { 1.0 } else { 0.0 })).collect(),
-        dichroic: (0..3).map(|b| std::array::from_fn(|c| if c == b { 0.0 } else { 1.0 })).collect(),
-    }
+    let curves = std::array::from_fn(|i| std::array::from_fn(|c| density(fit, c, at(i)) as f32));
+    Sheet::new(curves, CURVE_RANGE[0], step, fit.dyes.clone(), fit.view.clone(), fit.matrix)
 }

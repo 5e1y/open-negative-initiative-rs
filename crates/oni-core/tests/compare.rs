@@ -23,7 +23,6 @@ fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_and_crop_and
     edited.print.red.exposure = 0.3;
     edited.saturation = SaturationCurve::converted(0.5, 0.0);
     edited.sharpen.amount = 0.9;
-    edited.separation = 0.6;
     edited.density = -0.2;
     edited.legacy_print = Some(LegacyPrint { d: 3, c: -2, ..LegacyPrint::default() });
     let reference = compare::reference(&edited);

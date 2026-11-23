@@ -1,6 +1,6 @@
 # Film stocks and papers
 
-Everything ONI knows of a film stock or a paper is in one JSON file here, named by its key: who it is, the canister it draws, the dyes a roll on it unmixes, and the data sheet's profile a digital photo is shot on. Every file here is built into the app; nothing else in the code names a stock, except the defaults (Portra 800 for a digital photo, Royal Digital for a paper), which are the app's constants since a photo storing no stock reads them.
+Everything ONI knows of a film stock or a paper is in one JSON file here, named by its key: who it is, the canister it draws, the stock curve a roll on it is read back through, and the data sheet's profile a digital photo is shot on. Every file here is built into the app; nothing else in the code names a stock, except the defaults (Portra 800 for a digital photo, Royal Digital for a paper), which are the app's constants since a photo storing no stock reads them.
 
 ## Your own stocks and papers, without building the app
 
@@ -45,10 +45,10 @@ A photo keeps the key it was edited on even while no file defines it: it renders
 - `iso`: the speed the roll is exposed at, left out for a line or a generic stock.
 - `canister`: an SVG beside the file (48 × 48, its root `<svg width="48" height="48"`); left out or missing, the type's generic canister is drawn.
 - `offered: false`: the picker no longer lists it, a roll on it still reads. `line: true`: a whole line, its stock unnamed.
-- `dyes`: the dye set a roll on it unmixes; left out on a slide or in black and white.
-- `film`: the virtual film a digital photo is shot on, where the data sheet is profiled. Its `key` is what a digital photo stores; `dyes` naming its own key makes its profile's dyes a dye set of that key; `balance` is `daylight` (D55) or `tungsten`; `reference` is derived from the profile when left out; `profile` is what `scripts/datasheet-profiles.py` writes, its `provenance` naming the sheet, its URL, its SHA-256 and what is measured and what inferred.
+- `dyes`: the scanned stock a roll on it is read as, whose curve Lighting reads its negative back through; left out on a slide or in black and white.
+- `film`: the virtual film a digital photo is shot on, where the data sheet is profiled. Its `key` is what a digital photo stores; `dyes` naming its own key makes its profile the scanned stock of that key; `balance` is `daylight` (D55) or `tungsten`; `reference` is derived from the profile when left out; `profile` is what `scripts/datasheet-profiles.py` writes, its `provenance` naming the sheet, its URL, its SHA-256 and what is measured and what inferred.
 - `developments`: the stock developed otherwise, a push: each with its own `key`, `name`, `iso`, `dyes` and `film`, on this file's brand, type and canister.
-- `dye_set`: a set of no stock's own, `{"key": …, "mean_of": [film keys]}`, the dyes averaged at each wavelength most of them measure (the generic C-41 set, in `generic-color-negative.json`).
+- `dye_set`: a set of no stock's own, `{"key": …, "mean_of": [film keys]}`, their curves averaged (the generic C-41 stock, in `generic-color-negative.json`).
 
 ## A paper
 

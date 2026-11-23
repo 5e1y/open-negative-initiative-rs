@@ -1,12 +1,12 @@
-//! The measured dye sets the dye separation unmixes: one per stock profile ONI ships, each written from its maker's
-//! data sheet, and a generic colour-negative set, their mean, for a stock no profile measures; each defined by a stock's
-//! file (`crate::stocks`).
+//! The stocks a scanned roll names, by the key a sidecar stores: one per stock profile ONI ships, each written from its
+//! maker's data sheet, and a generic colour negative, their mean, for a stock no profile measures; each defined by a
+//! stock's file (`crate::stocks`).
 
 use crate::stocks::{DyeEntry, DyeSource};
 
 crate::stocks::keyed!(
-    /// A dye set by the key a sidecar stores: its stock's spectral dye densities and base. A key no file defines is kept as
-    /// stored and unmixes the generic set meanwhile.
+    /// A scanned stock by the key a sidecar stores, whose curve Lighting reads the negative back through. A key no file
+    /// defines is kept as stored and reads the generic one meanwhile.
     DyeSet, Dyes, "generic-c41"
 );
 

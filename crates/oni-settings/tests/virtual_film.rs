@@ -56,7 +56,7 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     let s = &doc.settings;
     let reference = VirtualStock::of("kodak-portra-800").reference();
     assert_eq!((s.mode, s.virtual_film.map(|f| (f.stock, f.exposure))), (ConversionMode::Digital, Some((VirtualStock::of("kodak-portra-800"), 0.0))));
-    assert_eq!((s.gains.stops, s.levels, s.dye_set, s.separation), (reference.stops, reference.levels(), VirtualStock::of("kodak-portra-800").dye_set(), 1.0));
+    assert_eq!((s.gains.stops, s.levels, s.dye_set), (reference.stops, reference.levels(), VirtualStock::of("kodak-portra-800").dye_set()));
     assert!((s.print.exposure - 0.2).abs() < 1e-6, "Lighting's move kept on the negative's rest, on its curve: {}", s.print.exposure);
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
     let grain = oni_settings::blocks::Grain { size: migrate::grain_size::microns(0.5, 1.0), ..before.grain };

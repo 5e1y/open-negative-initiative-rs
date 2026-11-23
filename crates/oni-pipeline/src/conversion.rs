@@ -1,9 +1,9 @@
 //! Stages 4 to 7: the fused kernel's arguments as `Pipeline.apply` passes them, with the models they
-//! read (the points reaching the windows, the dye separation, chroma decompression, the roll's factor).
+//! read (the points reaching the windows, chroma decompression, the roll's factor).
 
 use oni_render::{ColorMatrix, Negative, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
-use oni_settings::levels::{Levels, LevelsSet};
+use oni_settings::levels::Levels;
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, PipelineSettings};
 
@@ -18,10 +18,8 @@ pub const INVERSION: f32 = 5e-4;
 pub const INVERSION_FLOOR: f32 = INVERSION / 64.0;
 
 mod decompression;
-mod separation;
 
 pub use decompression::*;
-pub use separation::*;
 
 fn vector(w: &Levels) -> [f32; 3] {
     [w.black, w.white, w.gamma()]
@@ -42,9 +40,9 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order: the dyes, Lighting on the negative, the windows and the
-/// print at its rest of every mode; a black and white print, no channel's own tone; the frame's paper in place of the
-/// windows and the print, the print's ends its own; a slide on a paper, its internegative's.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: Lighting on the negative, the windows and the print at
+/// its rest of every mode; a black and white print, no channel's own tone; the frame's paper on the windows' shares in
+/// place of the print, the print's ends its own; a slide on a paper, its internegative's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return stage47(&copy.settings);
@@ -80,8 +78,7 @@ fn printed(s: &PipelineSettings) -> (Stage47, Option<crate::paper::Printing>) {
 
 /// Stage 4-7's arguments before any paper, Lighting and the colour tools on the negative.
 fn lit(s: &PipelineSettings) -> Stage47 {
-    let on_negative = !crate::negative::rests(s);
-    let k = unprinted(&PipelineSettings { print: s.print.unlit(), ..s.clone() }, on_negative && crate::negative::reads_amounts(s));
+    let k = unprinted(&PipelineSettings { print: s.print.unlit(), ..s.clone() });
     Stage47 { negative: crate::negative::negative(s, &k), ..k }
 }
 
@@ -100,16 +97,13 @@ fn print_stops(s: &PipelineSettings) -> f32 {
     if s.legacy().is_some() { rest - NEGATIVE_PRINT_STOPS } else { rest }
 }
 
-/// Stage 4-7's arguments before any paper and Lighting: the reading, its dyes, the windows and ONI's print, the dyes'
-/// amounts read as they are on a paper or where Lighting reads them before their tone (`amounts`).
-fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
+/// Stage 4-7's arguments before any paper and Lighting: the reading, the windows and ONI's print.
+fn unprinted(s: &PipelineSettings) -> Stage47 {
     let print = &s.print;
     let mono = s.is_monochrome();
     let (decompression, film_share) = decompression_weights(s);
     let ceiling = rendered_ceiling(s);
     let pedestal = density_axis::pedestal(ceiling);
-    let on_paper = s.paper().is_some() && !print.bypassed;
-    let dyes = if on_paper || amounts { stock_amounts(s) } else { stock_separation(s) };
     let windows = s.levels.windows();
     Stage47 {
         gain: s.gains.stops.map(f32::exp2),
@@ -134,7 +128,6 @@ fn unprinted(s: &PipelineSettings, amounts: bool) -> Stage47 {
         balance_low: windows.map(|w| w.black),
         balance_span: windows.map(|w| signed_span(&w)),
         film_share,
-        dyes,
         negative: None,
         paper: None,
     }
@@ -145,14 +138,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_monochrome_frame_carries_no_hunt_or_unmix() {
+    fn a_monochrome_frame_carries_no_hunt() {
         let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
-        let k = stage47(&s);
-        assert_eq!((k.hunt, k.dyes), (0.0, None));
-        // Twin: a colour negative at rest carries Hunt and its measured dyes, wholly unmixed.
+        assert_eq!(stage47(&s).hunt, 0.0);
+        // Twin: a colour negative at rest carries Hunt.
         let n = stage47(&PipelineSettings::rest(ConversionMode::Negative, true));
         assert_eq!(n.hunt, 1.0);
-        assert_eq!(n.dyes.map(|d| d.dose), Some(1.0));
         assert_eq!((n.decompression, n.film_share), (0.5, 0.5));
+    }
+
+    #[test]
+    fn a_positive_rests_on_the_base_ceiling_and_a_negative_on_its_own() {
+        let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
+        s.density_ceiling = 2.4;
+        assert_eq!(stage47(&s).pedestal, density_axis::pedestal(density_axis::base()));
+        // Twin: a negative keeps its own ceiling.
+        s.mode = ConversionMode::Negative;
+        assert_eq!(stage47(&s).pedestal, density_axis::pedestal(2.4));
     }
 }

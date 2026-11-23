@@ -29,7 +29,6 @@ static SMOOTH: std::sync::LazyLock<Development> = std::sync::LazyLock::new(|| {
 });
 
 fn at_rest() -> Negative {
-    let tone = std::array::from_fn(|i| [-1.0 + i as f32 * 6.0 / (DYE_TONE_NODES - 1) as f32; 3]);
     Negative {
         gain: [1.0; 3],
         pedestal: 0.0,
@@ -54,9 +53,6 @@ fn at_rest() -> Negative {
         points_white: [0.0; 3],
         zones: [0.0; 2],
         mids: [0.0; 3],
-        tone,
-        tone_low: [-1.0; 3],
-        tone_step: [6.0 / (DYE_TONE_NODES - 1) as f32; 3],
     }
 }
 
@@ -91,6 +87,14 @@ fn at_rest_the_negative_reads_through_unmoved_and_a_stop_is_a_stop_of_exposure()
     assert!((0..3).all(|c| (got[c] - expected[c]).abs() < 1e-4 && got[c] > density[c]), "{got:?} {expected:?}");
     // Twin: a stop laid on the density, as a print's time would, is not the film's stop.
     assert!((0..3).any(|c| (density[c] + 0.3 * [0.55, 0.6, 0.7][c] - got[c]).abs() > 5e-3), "{got:?}");
+    // The pixel leaves on its own bare film: unmoved, it is the light through the frame's gain the window read.
+    let read = Negative { gain: [2.0, 1.0, 0.5], pedestal: 0.01, black: [0.3, 0.2, 0.25], ..k };
+    let s = [0.2, 0.05, 0.4, 1.0];
+    let out = negative(s, &read);
+    assert!((0..3).all(|c| (out[c] / ((s[c] + 0.01) * read.gain[c]) - 1.0).abs() < 1e-5), "{out:?}");
+    // Twin: the density above the bare film coded alone reads the black's share lighter.
+    let above = map(read.lit(s), |_, v| (-std::f32::consts::LOG2_10 * v).exp2());
+    assert!((above[0] / out[0] - 10f32.powf(0.3)).abs() < 1e-3);
 }
 
 #[test]

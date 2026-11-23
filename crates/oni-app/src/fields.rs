@@ -2,7 +2,7 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
 use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
@@ -34,7 +34,6 @@ pub enum Field {
     Chrome,
     BalanceStrength,
     DensityCeiling,
-    DyeSeparation,
     Angle,
     SharpenAmount,
     SharpenRadius,
@@ -98,7 +97,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 60] = [
+    pub const ALL: [Field; 59] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -112,7 +111,6 @@ impl Field {
         Field::Chrome,
         Field::BalanceStrength,
         Field::DensityCeiling,
-        Field::DyeSeparation,
         Field::Angle,
         Field::SharpenAmount,
         Field::SharpenRadius,
@@ -211,7 +209,6 @@ impl Field {
                 let range = oni_settings::axis::density_axis::mosaic_range();
                 s("Ceiling", (*range.start(), *range.end()), Readout::Ceiling)
             }
-            Field::DyeSeparation => s("Dye separation", separation::RANGE, Readout::Percent),
             Field::Angle => s("Angle", oni_settings::frame::Geometry::ANGLE_RANGE, Readout::Degrees),
             Field::SharpenAmount => s("Amount", Sharpen::AMOUNT_RANGE, Readout::Times),
             Field::SharpenRadius => Spec {

@@ -3,14 +3,13 @@
 //! exposed otherwise, the film developed again, then its points, zones and mids on its density; the print, ONI's or a
 //! paper, at its rest, so it bounds every colour the tools lay.
 
-use crate::conversion;
 use crate::finishing;
 use crate::film::bake;
 use crate::baked::Baked;
 use crate::film::dyes;
 use crate::film::profile::{Profile, Silver};
 use crate::paper::{self, bisected, film_ends, spanned};
-use oni_render::{DYE_LIGHT_FLOOR, DYE_TONE_NODES, Development, LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, LUMA, NEGATIVE_CURVE_NODES};
+use oni_render::{Development, LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, LUMA, NEGATIVE_CURVE_NODES};
 use oni_render::{Negative, Stage47, cpu};
 use oni_settings::stocks::DyeSource;
 use oni_settings::tone::color_density;
@@ -37,7 +36,7 @@ pub enum Film {
     /// A digital photo's virtual stock, its own curves, pushed ones included; a black and white one's single layer
     /// uncoupled.
     Stock(VirtualStock),
-    /// A scanned colour negative's stock, by its dyes, read on its mean layer; the generic set on the C-41 profiles'.
+    /// A scanned colour negative's stock, by its name, read on its mean layer; the generic set on the C-41 profiles'.
     Dyes(DyeSet),
     /// A scanned black and white negative: the C-41 profiles' mean curve on its one layer, no couplers.
     Silver,
@@ -164,12 +163,6 @@ pub fn development(film: Film) -> &'static Development {
     TABLES.get((film, film.revision()), || developed(film))
 }
 
-/// Whether Lighting reads `s`'s dyes' amounts, as a paper does and a digital photo's negative is developed, before any
-/// tone: then ONI's print takes the dyes' pass untoned.
-pub fn reads_amounts(s: &PipelineSettings) -> bool {
-    s.paper().is_some() || s.film().is_some()
-}
-
 /// Whether nothing lays on `s`'s negative: its print bypassed, or Lighting there and every colour tool at rest; a black
 /// and white print has no colour for the tools to move.
 pub fn rests(s: &PipelineSettings) -> bool {
@@ -183,20 +176,12 @@ fn colour_rests(s: &PipelineSettings) -> bool {
 /// The print's lightness, its luma on a display gamma, of a grey at each of the negative's lightness nodes, as `k`
 /// prints it: the saturation curve's axis, the one the picture's histogram is drawn on.
 pub fn lightness(n: &Negative, k: &Stage47) -> [f32; LIGHTNESS_NODES] {
-    let print = k.after_dyes();
+    let print = k.after_negative();
     let step = (LIGHTNESS_HIGH - LIGHTNESS_LOW) / (LIGHTNESS_NODES - 1) as f32;
     std::array::from_fn(|i| {
         let v = cpu::stage47(n.grey(LIGHTNESS_LOW + step * i as f32), &print);
         (0..3).map(|c| LUMA[c] * v[c]).sum::<f32>().max(0.0).powf(1.0 / oni_settings::tone::Print::DISPLAY_GAMMA).clamp(0.0, 1.0)
     })
-}
-
-/// The tone reading each density above the bare film as `offset` more, straight on: what a print reading the density
-/// itself takes.
-fn straight(offset: V3) -> ([V3; DYE_TONE_NODES], V3, V3) {
-    let (low, high) = (-1.0f32, 5.0f32);
-    let step = (high - low) / (DYE_TONE_NODES - 1) as f32;
-    (std::array::from_fn(|i| offset.map(|o| low + i as f32 * step + o)), [low; 3], [step; 3])
 }
 
 /// The frame's negative under its Lighting on `k`, stage 4-7's arguments with Lighting at rest; none while it rests.
@@ -209,25 +194,10 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let mono = s.is_monochrome();
     let positive = s.mode.reads_positive();
     let sense = if positive { -1.0 } else { 1.0 };
-    // A paper reads the dyes' amounts, and so does a digital photo, its negative the model's own; ONI's print reads a
-    // scan's density, its dyes toned onto the grey its windows print, which keeps the frame's neutral.
+    // Each channel's density above its bare film, as the window reads it: a scan's, or a digital photo's layers.
     let film = Film::of(s);
-    let on_paper = s.paper().is_some();
-    let amounts = k.dyes.as_ref().filter(|_| reads_amounts(s));
-    let (gain, pedestal, log_guard, black) = match (amounts, k.dyes.is_some()) {
-        (Some(_), _) => ([1.0; 3], 0.0, DYE_LIGHT_FLOOR, [0.0; 3]),
-        (None, true) => ([1.0; 3], 0.0, k.log_guard, film_ends(s).0),
-        (None, false) => (k.gain, k.pedestal, k.log_guard, film_ends(s).0),
-    };
-    let (tone, tone_low, tone_step) = match (on_paper, amounts) {
-        (false, Some(_)) => {
-            let toned = conversion::stock_separation(s).expect("the frame's dyes");
-            (toned.tone, toned.tone_low, toned.tone_step)
-        }
-        (true, _) => straight([0.0; 3]),
-        (false, None) => straight(black),
-    };
-    let anchors = paper::anchors(s, amounts);
+    let black = film_ends(s).0;
+    let anchors = paper::anchors(s);
     let development = development(film);
     // A colour negative's layers developed so its reference grey is the stock's neutral at the speed's exposure, so
     // every common move on that neutral stays neutral; a positive's and silver's layers are one already, a black and
@@ -252,9 +222,9 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let points = print.channel_points(mono);
     let span = anchors[1].map(spanned);
     let at = Negative {
-        gain,
-        pedestal,
-        log_guard,
+        gain: k.gain,
+        pedestal: k.pedestal,
+        log_guard: k.log_guard,
         black,
         sense,
         development,
@@ -275,9 +245,6 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         points_white: points.map(|p| p.1),
         zones: [print.shadows, print.highlights],
         mids: own(print.channel_mid),
-        tone,
-        tone_low,
-        tone_step,
     };
     // Moves a black and white print reads none of lay nothing.
     if !at.moves() && !at.tones() && !at.colours() {

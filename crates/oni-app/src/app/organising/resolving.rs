@@ -33,14 +33,6 @@ impl State {
         film_stock(marker.or(self.store.settings().film.as_ref())?.stock.as_deref())
     }
 
-    /// The measured dyes the open photo's stock names, which its Dye Separation rests on: a digital photo its film's.
-    pub(in crate::app) fn open_dyes(&self) -> Option<oni_settings::DyeSet> {
-        if let Some(film) = self.store.settings().film() {
-            return Some(film.stock.dye_set());
-        }
-        self.open_stock().and_then(|k| oni_settings::dyes::dye_set(k.id))
-    }
-
     /// The archive's band the gallery stands on: the folder of the anchor shown, else the opened
     /// folder; the whole roll, as the medal filter keeps the gallery and never the roll.
     fn shown_band(&self) -> Option<library::Group> {

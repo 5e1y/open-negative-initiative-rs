@@ -1,6 +1,6 @@
 // Lighting on the negative, operation for operation as `cpu::negative`: the density above the bare film read back to
-// each layer's log exposure through the couplers, moved, its colour moved, developed again, toned, then coded as the
-// print's light. `negative_plain` or `negative_colour` follows with `negative_scene`.
+// each layer's log exposure through the couplers, moved, its colour moved, developed again, toned, then coded on the
+// bare film's own as the light the window reads. `negative_plain` or `negative_colour` follows with `negative_scene`.
 
 struct Params {
     head: vec4<u32>,
@@ -13,8 +13,6 @@ struct Params {
     points_black_shadows: vec4<f32>,
     points_white_highlights: vec4<f32>,
     mids: vec4<f32>,
-    tone_low: vec4<f32>,
-    tone_step: vec4<f32>,
     couplers: array<vec4<f32>, 3>,
     foot: vec4<f32>,
     top: vec4<f32>,
@@ -35,12 +33,10 @@ struct Params {
     lightness: array<vec4<f32>, 32>,
     normal: array<vec4<f32>, 256>,
     after: array<vec4<f32>, 256>,
-    tone: array<vec4<f32>, 128>,
 }
 
 const NEGATIVE_CURVE_NODES: u32 = 256u;
 const NEGATIVE_STEPS: u32 = 4u;
-const NEGATIVE_TONE_NODES: f32 = 128.0;
 // Channel `c` of the normal curve (`after` false) or the pulled one, and its slope: held at its first node under it,
 // straight on past its last.
 fn negative_at(after: bool, e: f32, c: u32) -> vec2<f32> {
@@ -176,15 +172,6 @@ fn negative_px(s: vec4<f32>) -> vec4<f32> {
         let share = select(vec3<f32>(1.0), clamp((own_density - fog) / max(P.foot.xyz - fog, vec3<f32>(1e-6)), vec3<f32>(0.0), vec3<f32>(1.0)), own_density < P.foot.xyz);
         density = (own_density + share * (negative_developed(pivot + (e - pivot) * slope + shift) - read)) * scale;
     }
-    let toned = negative_toned(sense * density);
-    let f = (toned - P.tone_low.xyz) / P.tone_step.xyz;
-    let i = clamp(floor(f), vec3<f32>(0.0), vec3<f32>(NEGATIVE_TONE_NODES - 2.0));
-    let along = f - i;
-    let at = vec3<u32>(i);
-    let printed = vec3<f32>(
-        mix(P.tone[at.x].x, P.tone[at.x + 1u].x, along.x),
-        mix(P.tone[at.y].y, P.tone[at.y + 1u].y, along.y),
-        mix(P.tone[at.z].z, P.tone[at.z + 1u].z, along.z),
-    );
+    let printed = negative_toned(sense * density) + P.black_guard.xyz;
     return vec4<f32>(exp2(-3.3219280948873623 * printed), s.a);
 }

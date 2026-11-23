@@ -19,7 +19,6 @@ impl Field {
             Field::Chrome => "chrome",
             Field::BalanceStrength => "balance-strength",
             Field::DensityCeiling => "density-ceiling",
-            Field::DyeSeparation => "dye-separation",
             Field::Angle => "angle",
             Field::SharpenAmount => "sharpen-amount",
             Field::SharpenRadius => "sharpen-radius",

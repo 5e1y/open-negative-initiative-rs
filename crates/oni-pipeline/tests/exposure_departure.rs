@@ -95,10 +95,10 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
     hash
 }
 
-/// The fold of every pipe's print as format 61 stored it, on the unmixed sheets' amounts, on the CPU and on the GPU (Metal
+/// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
 /// on Apple silicon), a paper's white on pure white without Print lift.
-const BEFORE_CPU: u64 = 0x5ae7_f3f6_feb7_d3ce;
-const BEFORE_GPU: u64 = 0xd094_a8fd_274d_4a92;
+const BEFORE_CPU: u64 = 0x4559_16c4_5954_b1a6;
+const BEFORE_GPU: u64 = 0x2254_0eb4_5e04_cbfe;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {

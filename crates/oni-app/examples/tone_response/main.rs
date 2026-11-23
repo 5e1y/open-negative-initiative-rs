@@ -99,19 +99,16 @@ fn measures(st: &[f32], l: &[f32], y: &[f32]) -> String {
     )
 }
 
-/// Stage 4-7 on the CPU, the paper's received log exposure and density per layer where one prints.
+/// Stage 4-7 on the CPU, the paper's received density, log exposure and developed density per layer where one prints.
 fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
     let k = conversion::stage47(s);
     let mut x = input;
-    if let Some(d) = &k.dyes {
-        x = cpu::dye_separation(x, &k, d);
-    }
     if let Some(n) = &k.negative {
         x = cpu::negative(x, n);
     }
-    let after = k.after_dyes();
+    let after = k.after_negative();
     let paper = after.paper.map(|p| {
-        let a = p.amounts(x);
+        let a = p.density(cpu::windowed(x, &after));
         let e = p.brightened(p.exposed(a));
         (a, e, p.developed(e))
     });
@@ -222,7 +219,7 @@ impl Run<'_> {
         let tint = chroma.zip(&st).filter(|(_, s)| (-4.0..=3.0).contains(*s)).map(|(c, _)| c).fold(0.0f32, f32::max);
         self.line(format!("{} {name}: {} | stage 4-7 alone against the render, max dL* {cpu_miss:.2} | grey ramp channel spread (-4..+3) {tint:.3}", self.tag, measures(&st, &ls, &ys)));
         let k = conversion::stage47(s);
-        if let Some(p) = k.after_dyes().paper {
+        if let Some(p) = k.after_negative().paper {
             let f = curve_facts(&p);
             let at = |sv: f32| received[st.iter().position(|v| (*v - sv).abs() < 1e-4).unwrap()];
             let (m4, p4, z) = (at(-4.0), at(4.0), at(0.0));

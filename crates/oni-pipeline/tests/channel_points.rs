@@ -33,10 +33,11 @@ fn shifts(a: &[V4], b: &[V4]) -> [f32; 3] {
     [0, 1, 2].map(|c| a.iter().zip(b).map(|(p, q)| (p[c] - q[c]).abs()).sum::<f32>() / a.len() as f32)
 }
 
-/// Channel `c` moved, at least 1.3 times as far as either other on ONI's print: those follow through the stock's
-/// couplers, the dye separation, chroma decompression and light-dependent colour, which mix the channels.
+/// Channel `c` moved, at least 1.2 times as far as either other on ONI's print: those follow through the stock's
+/// couplers, chroma decompression and light-dependent colour, which mix the channels (green's points lead blue by 1.26
+/// on a negative off a roll, where the decompression lays back half the film's own colour).
 fn led_by(moved: [f32; 3], c: usize) -> bool {
-    leads(moved, c, 1.3)
+    leads(moved, c, 1.2)
 }
 
 /// `led_by` on a paper, whose own layers and dyes mix the channels too: by 1.4 at least (1.49 for green's contrast on
