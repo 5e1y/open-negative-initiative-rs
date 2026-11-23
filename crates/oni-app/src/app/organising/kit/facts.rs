@@ -43,7 +43,7 @@ mod tests {
         sonnar.focal_length_mm = Some(Span { min: 38.0, max: 38.0 });
         let mut t2 = piece(Kind::Camera, 3, Some("Contax"), "T2");
         t2.built_in_lens = Some(Box::new(sonnar));
-        Kept { account: None, items: vec![piece(Kind::Camera, 1, Some("Canon"), "AE-1 Program"), zoom, t2], etag: None }
+        Kept { account: None, items: vec![piece(Kind::Camera, 1, Some("Canon"), "AE-1 Program"), zoom, t2], etag: None, signed: None }
     }
 
     #[test]

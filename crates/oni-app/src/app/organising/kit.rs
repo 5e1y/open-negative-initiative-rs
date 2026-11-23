@@ -10,7 +10,8 @@ mod facts;
 mod publish;
 mod search;
 mod sign_in;
-mod vault;
+mod token;
+pub mod vault;
 mod wait;
 mod words;
 
@@ -36,7 +37,9 @@ pub struct KitState {
     browse: Option<Box<dyn Fn(&str)>>,
     site: TldbSite,
     pub kept: Kept,
-    token: Option<String>,
+    token: token::Token,
+    /// The vault's own thread, none in a run that asks no service.
+    vault: Option<vault::Worker>,
     /// While a sign-in waits for the browser's return: the flag that cancels it.
     signing: Option<Arc<AtomicBool>>,
     found: Vec<Piece>,
@@ -62,8 +65,16 @@ pub struct KitState {
 }
 
 impl KitState {
-    pub fn new(browse: Box<dyn Fn(&str)>, site: TldbSite) -> KitState {
-        KitState { browse: Some(browse), site, ..KitState::default() }
+    /// `vault` a check's own; none takes the site's: the keychain for thelensdb.com, the support folder for
+    /// a simulated service.
+    pub fn new(browse: Box<dyn Fn(&str)>, site: TldbSite, vault: Option<Arc<dyn vault::Vault>>, support: &std::path::Path) -> KitState {
+        let vault: Option<Arc<dyn vault::Vault>> = match (&site, vault) {
+            (TldbSite::None, _) => None,
+            (_, Some(v)) => Some(v),
+            (TldbSite::Real, None) => Some(Arc::new(vault::Keychain)),
+            (TldbSite::Simulated(_), None) => Some(Arc::new(vault::Folder(support.to_path_buf()))),
+        };
+        KitState { browse: Some(browse), site, vault: vault.map(vault::Worker::new), ..KitState::default() }
     }
 
     /// The service the Kit asks, none when this run asks none.
@@ -74,11 +85,6 @@ impl KitState {
             TldbSite::Simulated(site) => site.as_str(),
         };
         Some(Service::new(site, crate::updates::version()))
-    }
-
-    /// A simulated service's token lies in the support folder, never in a keychain.
-    fn simulated(&self) -> bool {
-        matches!(self.site, TldbSite::Simulated(_))
     }
 
     /// Where a piece of the catalogue stands against the Kit and the sheet's picks.
@@ -117,9 +123,7 @@ impl Ctl {
         {
             let mut s = me.state.borrow_mut();
             let support = s.support.clone();
-            let kit = &mut s.org.kit;
-            kit.kept = Kept::load(&support);
-            kit.token = if kit.site == TldbSite::None { None } else { vault::read(&support, kit.simulated()) };
+            s.org.kit.kept = Kept::load(&support);
         }
         let k = window.global::<KitGlobal>();
         let p = me.clone();
@@ -151,7 +155,6 @@ impl Ctl {
         let p = me.clone();
         k.on_suggest(move || p.kit_open_page(Service::submit_page));
         me.kit_recount();
-        me.kit_refresh();
     }
 
     fn kit_browse(&self, url: &str) {
@@ -166,13 +169,8 @@ impl Ctl {
         self.kit_browse(&page(&service));
     }
 
-    fn client(&self) -> Option<Client> {
-        let s = self.state.borrow();
-        let kit = &s.org.kit;
-        Some(Client { service: kit.service()?, token: kit.token.clone()? })
-    }
-
-    /// The Kit read again, at launch and once signed in; an unchanged one costs the service no body.
+    /// The Kit read again once the token is known, at its first use or a sign-in; an unchanged one costs the
+    /// service no body.
     fn kit_refresh(&self) {
         let Some(client) = self.client() else { return };
         if self.state.borrow().org.kit.held().is_some() {
@@ -198,7 +196,7 @@ impl Ctl {
     fn kit_keep(&self, kit: oni_tldb::Kit, etag: Option<String>) {
         let written = {
             let mut s = self.state.borrow_mut();
-            s.org.kit.kept = Kept { account: kit.account.display_name, items: kit.items, etag };
+            s.org.kit.kept = Kept { account: kit.account.display_name, items: kit.items, etag, signed: Some(true) };
             s.org.kit.note = if kit.not_found.is_empty() {
                 String::new()
             } else {
@@ -231,13 +229,18 @@ impl Ctl {
     /// every call until it is over.
     fn kit_failed(&self, failure: Failure) {
         let note = self.failure_note(&failure);
+        if failure == Failure::SignedOut {
+            self.kit_forget(false);
+        }
         let mut s = self.state.borrow_mut();
         let support = s.support.clone();
         let kit = &mut s.org.kit;
         match failure {
             Failure::SignedOut => {
-                kit.token = None;
-                vault::erase(&support, kit.simulated());
+                kit.kept.signed = Some(false);
+                if let Err(e) = kit.kept.save(&support) {
+                    crate::timing::line(&format!("the Kit's copy is not kept: {:?}", e.kind()));
+                }
             }
             Failure::Wait(seconds) => kit.not_before = Some(Instant::now() + Duration::from_secs(seconds)),
             Failure::Down(_) | Failure::Refused(_) => {}
@@ -247,27 +250,16 @@ impl Ctl {
 
     /// Signed out at the person's word: the token revoked, the copy and the sheet's picks dropped.
     fn kit_disconnect(&self) {
-        let (token, service) = {
+        self.kit_forget(true);
+        {
             let mut s = self.state.borrow_mut();
             let support = s.support.clone();
             let kit = &mut s.org.kit;
-            if kit.site != TldbSite::None {
-                vault::erase(&support, kit.simulated());
-            }
-            let token = kit.token.take();
             kit.kept = Kept::default();
             kit.clear_search();
             kit.picking = false;
             kit.note.clear();
             let _ = std::fs::remove_file(Kept::file_path(&support));
-            (token, kit.service())
-        };
-        if let (Some(token), Some(service)) = (token, service) {
-            std::thread::spawn(move || {
-                if let Err(f) = service.revoke(&token) {
-                    crate::timing::line(&format!("the Kit's token is not revoked: {f:?}"));
-                }
-            });
         }
         self.publish_kit();
         self.publish_gear();

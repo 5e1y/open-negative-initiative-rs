@@ -21,7 +21,9 @@ impl Ctl {
     }
 
     pub(super) fn kit_ask(self: &Rc<Self>) {
-        let Some(client) = self.client() else { return };
+        if !self.state.borrow().org.kit.linked() {
+            return;
+        }
         if self.state.borrow().org.kit.held().is_some() {
             self.kit_ask_after_wait();
             return self.publish_kit();
@@ -42,9 +44,12 @@ impl Ctl {
         if query.chars().count() < 2 {
             return;
         }
-        std::thread::spawn(move || {
-            let answer = client.search(&query, kind, None, FOUND);
-            with_shell(move |c| c.kit_found(asked, query, answer));
+        self.kit_with_client(move |_, client| {
+            let Some(client) = client else { return };
+            std::thread::spawn(move || {
+                let answer = client.search(&query, kind, None, FOUND);
+                with_shell(move |c| c.kit_found(asked, query, answer));
+            });
         });
     }
 

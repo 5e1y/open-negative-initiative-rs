@@ -12769,5 +12769,13 @@
     "status": "done",
     "detail": "crates/oni-pipeline/examples/dye_spill.rs, the CPU reference only: off, now (data-sheet dyes), old (a former spektrafilm profile read from a path), each named matrix, and the density over the bare film that hull.py reads.",
     "outcome": "The former separation and the inverse of spektrafilm's mean spill render alike on nine frames: the separation was one 3x3 to first order."
+  },
+  {
+    "id": 3670,
+    "type": "bug",
+    "title": "The Kit's token read from the vault at its first use, on a thread of its own, never at launch",
+    "status": "done",
+    "detail": "The launch read the Keychain on the interface thread (Ctl::wire, wire_kit), and a new build's signature makes the Keychain ask the person first: the interface waited on that prompt and the window never settled. The vault (Keychain, Credential Manager, the simulated service's file) is now a trait behind one thread of its own that runs its calls in order, started at the first; no read, write or erase runs on the interface thread. Who is signed in at launch comes from a non-secret mark in the Kit's copy (kit.json, `signed`), written at sign-in and at a sign-out by the service, the file removed at the person's sign-out; a copy written before the mark presumes a token where it holds an account, which the first use settles. The token is read once, at the account's first use (the search sheet opening, Done, a removal, Disconnect), what waits on it running once it lands; the Kit is read again from the service then rather than at launch. A vault with no token turns the link out and marks the copy. Disconnect is out at once, the vault read on its thread only to revoke a token this run never read.",
+    "outcome": "Window checks with a counting vault: the launch reads no vault and asks the service nothing; the search sheet reads it once, off the interface thread, and a search after reads nothing; sign-out erases once off the interface, sign-in writes once and marks the copy; a sign-out never read reads once to revoke. Twins: a read on the interface thread is counted as the interface's; the Kit never read on a lone sign-out. The copy's mark round trip and its older-copy reading in oni-tldb, each with its twin."
   }
 ]

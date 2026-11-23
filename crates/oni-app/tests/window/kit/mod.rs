@@ -2,7 +2,7 @@
 //! return to ONI's port, and the service's journal read by address.
 
 use crate::common::{self, Rig};
-use oni_app::app::{Options, Shell, TldbSite};
+use oni_app::app::{Options, Shell, TldbSite, Vault};
 use oni_core::{Archive, EditorStore};
 use oni_settings::Film;
 use oni_tldb::fake::{Fake, Seen};
@@ -30,6 +30,11 @@ pub struct Stage {
 /// Two scans of one roll read, the window shown; `before` lays files in the support and caches folders
 /// first, as a token or an index. None without a GPU, said as a check skipped.
 pub fn stage(name: &str, tldb: TldbSite, before: impl FnOnce(&std::path::Path, &std::path::Path)) -> Option<Stage> {
+    stage_with(name, tldb, None, before)
+}
+
+/// `stage` with the token in `vault` instead of the site's own.
+pub fn stage_with(name: &str, tldb: TldbSite, vault: Option<std::sync::Arc<dyn Vault>>, before: impl FnOnce(&std::path::Path, &std::path::Path)) -> Option<Stage> {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -52,7 +57,7 @@ pub fn stage(name: &str, tldb: TldbSite, before: impl FnOnce(&std::path::Path, &
     let browser = opened.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let browse = Box::new(move |url: &str| browser.borrow_mut().push(url.to_string()));
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), browse, tldb, ..Options::default() };
+    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), browse, tldb, vault, ..Options::default() };
     let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
@@ -64,10 +69,14 @@ pub fn stage(name: &str, tldb: TldbSite, before: impl FnOnce(&std::path::Path, &
     Some(Stage { rig, shell, root, scans, support, opened })
 }
 
-/// The token a finished sign-in to the simulated service leaves in the support folder.
+/// What a finished sign-in to the simulated service leaves in the support folder: its token, and the copy's
+/// mark that one is kept.
 pub fn signed_in(fake: &Fake) -> impl FnOnce(&std::path::Path, &std::path::Path) {
     let token = fake.token();
-    move |support, _| std::fs::write(support.join("tldb-fake-token"), token).unwrap()
+    move |support, _| {
+        std::fs::write(support.join("tldb-fake-token"), token).unwrap();
+        oni_tldb::Kept { signed: Some(true), ..Default::default() }.save(support).unwrap();
+    }
 }
 
 /// What the browser does with the service's redirect: a GET on ONI's loopback port.

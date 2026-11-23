@@ -1,6 +1,6 @@
 //! The Kit when The Lens DB says no or nothing: a run that names no service asks none; a 429 holds every
 //! search until its Retry-After, then asks the latest once; Done unreached keeps its picks and sends them again;
-//! Done signed out keeps the copy and says why on the offer; a firewall's page at launch leaves the copy shown.
+//! Done signed out keeps the copy and says why on the offer; a firewall's page at the first use leaves the copy shown.
 
 use crate::common;
 use crate::kit::{self, EMPTY, WAIT, calls, piece_names};
@@ -18,17 +18,26 @@ fn note_shown(w: &oni_app::MainWindow, kit: &Kit) -> bool {
     !note.is_empty() && !common::placed(w, Role::Text, &note).is_empty()
 }
 
-/// The Kit's column, the search sheet opened and `words` typed, its answers landed.
+/// The Kit's column, the search sheet opened, the Kit read once its token is, and `words` typed, its answers landed.
 fn searched(stage: &kit::Stage, words: &str) {
     let (rig, w) = (&stage.rig, &stage.shell.window);
     let kit = w.global::<Kit>();
-    common::click(rig, w, EMPTY);
-    rig.until("signed in", WAIT, || kit.get_link() == KitLink::In && kit.get_bodies().row_count() > 0);
-    common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
-    rig.settle();
+    opened_search(stage);
     common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
     rig.key(words);
     rig.until("the search answered", WAIT, || !kit.get_searching() && kit.get_found().row_count() > 0);
+}
+
+/// The Kit's column, signed in by the copy's mark, then its search sheet, which reads the token and the Kit.
+fn opened_search(stage: &kit::Stage) {
+    let (rig, w) = (&stage.rig, &stage.shell.window);
+    let kit = w.global::<Kit>();
+    common::click(rig, w, EMPTY);
+    rig.settle();
+    assert_eq!(kit.get_link(), KitLink::In, "signed in by the copy's mark");
+    common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
+    rig.until("the Kit read", WAIT, || kit.get_bodies().row_count() > 0);
+    rig.settle();
 }
 
 fn picked_fm2(fake: &Fake, name: &str) -> Option<kit::Stage> {
@@ -55,7 +64,7 @@ pub(crate) fn a_run_naming_no_service_asks_none_and_connect_opens_nothing() {
     assert_eq!(kit.get_link(), KitLink::Out);
     assert!(stage.opened.borrow().is_empty(), "no sign-in page opened");
     assert!(fake.journal().is_empty(), "nothing asked: {:?}", fake.journal());
-    // Twin: the firewall's check below names the service, and its launch reads the Kit once.
+    // Twin: the firewall's check below names the service, and its first use reads the Kit once.
     let _ = std::fs::remove_dir_all(&stage.root);
 }
 
@@ -64,12 +73,9 @@ pub(crate) fn a_429_holds_every_search_until_its_end_then_asks_the_latest_once()
     let Some(stage) = kit::stage("kit-wait", TldbSite::Simulated(fake.site.clone()), kit::signed_in(&fake)) else { return };
     let (rig, w) = (&stage.rig, &stage.shell.window);
     let kit = w.global::<Kit>();
-    common::click(rig, w, EMPTY);
-    rig.until("signed in", WAIT, || kit.get_link() == KitLink::In && kit.get_bodies().row_count() > 0);
-    common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
-    rig.settle();
+    opened_search(&stage);
     common::click(rig, w, common::the(w, Role::TextInput, "Search The Lens DB").middle());
-    // One call in ten seconds: the launch's read of the Kit took it.
+    // One call in ten seconds: the read of the Kit as the sheet opened took it.
     fake.set_rate(1, Duration::from_secs(10));
     rig.key("leica");
     rig.until("the service asks to wait", WAIT, || kit.get_note().contains("wait"));
@@ -123,28 +129,35 @@ pub(crate) fn done_signed_out_keeps_the_copy_and_says_why_on_the_offer() {
     assert!(!kit.get_picking(), "the sheet closed, its picks dropped");
     assert!(note_shown(w, &kit), "the offer says why");
     assert!(Kept::file_path(&stage.support).exists(), "the copy kept");
-    assert!(!stage.support.join("tldb-fake-token").exists(), "the token forgotten");
+    rig.until("the token forgotten", WAIT, || !stage.support.join("tldb-fake-token").exists());
+    assert!(!Kept::load(&stage.support).signed_in(), "the copy marked signed out");
     assert_eq!(fake.kit_keys().len(), 2, "twin: nothing was added");
     let _ = std::fs::remove_dir_all(&stage.root);
 }
 
-pub(crate) fn a_firewall_at_launch_leaves_the_copy_shown_and_says_why() {
+pub(crate) fn a_firewall_at_the_first_use_leaves_the_copy_shown_and_says_why() {
     let fake = oni_tldb::fake::start();
     let Ok(Read::Fresh { kit: read, .. }) = fake.client().kit(None) else { panic!("the simulated Kit") };
     let before = calls(&fake, "/kit").len();
     let token = kit::signed_in(&fake);
     let copy = move |support: &std::path::Path, caches: &std::path::Path| {
         token(support, caches);
-        Kept { account: read.account.display_name, items: read.items, etag: Some("W/\"older\"".into()) }.save(support).unwrap();
+        // A copy written before the mark: its account stands for the token kept.
+        Kept { account: read.account.display_name, items: read.items, etag: Some("W/\"older\"".into()), signed: None }.save(support).unwrap();
     };
     fake.set_firewall(Some(403));
     let Some(stage) = kit::stage("kit-firewall", TldbSite::Simulated(fake.site.clone()), copy) else { return };
     let (rig, w) = (&stage.rig, &stage.shell.window);
     let kit = w.global::<Kit>();
     common::click(rig, w, EMPTY);
-    rig.until("the launch's read failed", WAIT, || !kit.get_note().is_empty());
     rig.settle();
-    assert_eq!(calls(&fake, "/kit").len(), before + 1, "the launch read the Kit once");
+    assert_eq!(calls(&fake, "/kit").len(), before, "the launch asks the service nothing");
+    assert_eq!((kit.get_link(), piece_names(kit.get_bodies())), (KitLink::In, vec!["Canon AE-1 Program".to_string()]), "the copy shown, signed in by its account");
+    common::click(rig, w, common::the(w, Role::Button, "Search Gear").middle());
+    rig.until("the first use's read failed", WAIT, || !kit.get_note().is_empty());
+    rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
+    rig.settle();
+    assert_eq!(calls(&fake, "/kit").len(), before + 1, "the first use read the Kit once");
     assert_eq!(kit.get_link(), KitLink::In, "a firewall signs no one out");
     assert_eq!(piece_names(kit.get_bodies()), ["Canon AE-1 Program"], "the copy shown");
     assert!(note_shown(w, &kit), "the column says why");

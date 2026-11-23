@@ -31,6 +31,7 @@ mod status_bar;
 pub(in crate::app) mod info_sidebar;
 mod gear;
 mod kit;
+pub use kit::vault::{Folder as FolderVault, Vault};
 mod resolving;
 pub(in crate::app) mod roll_card;
 mod band_rename;
@@ -198,8 +199,8 @@ pub struct Organising {
 }
 
 impl Organising {
-    pub fn new(browse: Box<dyn Fn(&str)>, tldb: super::TldbSite) -> Organising {
-        Organising { kit: kit::KitState::new(browse, tldb), ..Organising::default() }
+    pub fn new(browse: Box<dyn Fn(&str)>, tldb: super::TldbSite, vault: Option<std::sync::Arc<dyn Vault>>, support: &std::path::Path) -> Organising {
+        Organising { kit: kit::KitState::new(browse, tldb, vault, support), ..Organising::default() }
     }
 }
 

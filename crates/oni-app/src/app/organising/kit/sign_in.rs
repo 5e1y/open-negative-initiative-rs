@@ -47,11 +47,7 @@ impl Ctl {
     pub(super) fn kit_signed(self: &Rc<Self>, outcome: oauth::Outcome) {
         let note = match outcome {
             oauth::Outcome::Token(token) => {
-                let (support, simulated) = (self.state.borrow().support.clone(), self.state.borrow().org.kit.simulated());
-                if let Err(e) = vault::write(&support, simulated, &token) {
-                    crate::timing::line(&format!("the Kit's token is not kept: {e}"));
-                }
-                self.state.borrow_mut().org.kit.token = Some(token);
+                self.kit_keep_token(token);
                 String::new()
             }
             oauth::Outcome::Refused => tr("ONI was not authorised on The Lens DB.").into(),

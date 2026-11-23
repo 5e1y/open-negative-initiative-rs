@@ -36,6 +36,8 @@ pub struct Options {
     pub browse: Box<dyn Fn(&str)>,
     /// The Lens DB the Kit talks to; none, as every check and bench runs unless it hands a simulated one.
     pub tldb: TldbSite,
+    /// Where the Kit's token lies; none takes the site's own, and a check hands one that counts its calls.
+    pub vault: Option<std::sync::Arc<dyn Vault>>,
 }
 
 /// Which The Lens DB the Kit asks.
@@ -106,6 +108,7 @@ impl Default for Options {
             brought: Default::default(),
             browse: Box::new(system::open_url),
             tldb: TldbSite::None,
+            vault: None,
         }
     }
 }
