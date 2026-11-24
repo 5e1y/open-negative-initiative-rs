@@ -3,6 +3,7 @@
 
 use oni_core::parameters::{self, EXCLUDED};
 use oni_core::presets::{self, Preset, Tint};
+use oni_fixtures::scratch;
 use oni_library::history::History;
 use oni_settings::axis::density_axis;
 use oni_settings::cg::{Point, Rect};
@@ -13,14 +14,7 @@ use oni_settings::settings::look_settings;
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-core-swift-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 fn rows(names: &[&str]) -> BTreeSet<String> {
     names.iter().map(|n| n.to_string()).collect()
@@ -213,7 +207,7 @@ fn a_new_preset_is_offered_the_lowest_free_number() {
 
 #[test]
 fn presets_live_one_file_each_and_a_damaged_one_takes_none_down() {
-    let folder = scratch("presets").join("Presets");
+    let folder = scratch("core-swift-presets").join("Presets");
     let source = source();
     let first = Preset::new("Portra", rows(&["gains", "levelsPerChannel"]), Tint::default(), source.clone());
     let second = Preset::new("Portra", rows(&["levelsGlobal", "curves"]), Tint::default(), source.clone());
@@ -272,7 +266,7 @@ fn presets_live_one_file_each_and_a_damaged_one_takes_none_down() {
 
 #[test]
 fn a_preset_name_trims_spaces_and_tabs_and_keeps_a_line_break() {
-    let folder = scratch("preset-names");
+    let folder = scratch("core-swift-preset-names");
     let preset = Preset::new("Portra", rows(&["gains"]), Tint::default(), PipelineSettings::default());
     let mut object: Value = serde_json::from_str(&presets::encode(&preset).unwrap()).unwrap();
     object["preset"]["name"] = serde_json::json!("\tPortra\n");
@@ -285,7 +279,7 @@ fn a_preset_name_trims_spaces_and_tabs_and_keeps_a_line_break() {
 
 #[test]
 fn an_import_never_overwrites_and_a_duplicate_says_so() {
-    let folder = scratch("presets-share").join("Presets");
+    let folder = scratch("core-swift-presets-share").join("Presets");
     let source = source();
     let held = Preset::new("Gold 200", rows(&["gains"]), Tint::Amber, source.clone());
     presets::save(&held, &folder).unwrap();

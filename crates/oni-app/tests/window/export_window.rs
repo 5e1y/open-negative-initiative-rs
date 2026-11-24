@@ -19,15 +19,9 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::common;
+use oni_fixtures::scratch;
 
 const LONG: Duration = Duration::from_secs(600);
-
-fn scratch() -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-app-export-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 /// Roll #8's frames as hard links beside copies of their sidecars and marker, so no sidecar is written
 /// beside the originals and a contact sheet made in the roll never takes the first tile.
@@ -127,7 +121,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
     let rig = common::rig(shots);
     let window = rig.window.clone();
-    let root = scratch();
+    let root = scratch("app-export");
     let folder = mirror(&roll, &root);
     let support = root.join("support");
     let out = root.join("out");

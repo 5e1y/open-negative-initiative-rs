@@ -1,13 +1,14 @@
 //! A migration is never half-written: a refused rename, a process killed mid-write, a read-only folder
 //! each leave the old file as it was. An older build meets a file of this format read-only.
 
-use super::corpus::{corpus, facts, golden, laid, reading, scratch};
+use super::corpus::{corpus, facts, golden, laid, reading};
 use super::{Outcome, Refusal, Standing, chain, file_through, file_with, standing};
 use crate::date::Date;
 use crate::document::{self, VERSION};
 use crate::modes::Medal;
 use crate::settings::PipelineSettings;
 use crate::sidecar;
+use oni_fixtures::scratch;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -21,7 +22,7 @@ fn temporaries(folder: &Path) -> Vec<PathBuf> {
 
 #[test]
 fn a_refused_rename_leaves_the_file_byte_for_byte_and_the_next_pass_brings_it() {
-    let dir = scratch("refused-rename");
+    let dir = scratch("corpus-refused-rename");
     let path = corpus().join(SOURCE);
     let old = std::fs::read(&path).unwrap();
     let original = laid(&dir, &path, &old);
@@ -66,7 +67,7 @@ fn killed(mode: &str, original: &Path) {
 
 #[test]
 fn a_process_killed_once_the_temporary_is_written_leaves_the_old_file_and_the_next_run_brings_it() {
-    let dir = scratch("killed");
+    let dir = scratch("corpus-killed");
     let path = corpus().join(SOURCE);
     let old = std::fs::read(&path).unwrap();
     let original = laid(&dir, &path, &old);
@@ -89,7 +90,7 @@ fn a_process_killed_once_the_temporary_is_written_leaves_the_old_file_and_the_ne
 #[test]
 fn a_read_only_folder_reads_its_photo_as_it_read_refuses_a_write_and_is_brought_once_writable() {
     use std::os::unix::fs::PermissionsExt;
-    let dir = scratch("read-only");
+    let dir = scratch("corpus-read-only");
     let path = corpus().join(SOURCE);
     let old = std::fs::read(&path).unwrap();
     let original = laid(&dir, &path, &old);
@@ -158,7 +159,7 @@ fn shipped_reader(bytes: &[u8]) -> Result<bool, String> {
 
 #[test]
 fn an_older_build_reads_a_file_of_this_format_read_only() {
-    let dir = scratch("shipped");
+    let dir = scratch("corpus-shipped");
     let path = corpus().join(SOURCE);
     let original = laid(&dir, &path, &std::fs::read(&path).unwrap());
     facts(&path).facts(|f| file_with(&original, f)).unwrap();
@@ -248,7 +249,7 @@ fn main() {
 #[test]
 #[ignore = "builds 1.5.6's sidecar code from git, about a minute"]
 fn the_shipped_build_reads_a_file_of_this_format_read_only_and_writes_nothing() {
-    let dir = scratch("shipped-build");
+    let dir = scratch("corpus-shipped-build");
     let path = corpus().join(SOURCE);
     let original = laid(&dir.join("files"), &path, &std::fs::read(&path).unwrap());
     facts(&path).facts(|f| file_with(&original, f)).unwrap();
@@ -263,7 +264,7 @@ fn the_shipped_build_reads_a_file_of_this_format_read_only_and_writes_nothing() 
 
 #[test]
 fn a_file_of_a_newer_format_is_left_as_it_is() {
-    let dir = scratch("newer");
+    let dir = scratch("corpus-newer");
     let source = corpus().join(SOURCE);
     let original = laid(&dir, &source, &std::fs::read(&source).unwrap());
     facts(&source).facts(|f| file_with(&original, f)).unwrap();

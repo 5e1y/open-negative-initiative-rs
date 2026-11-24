@@ -25,17 +25,11 @@ pub(super) fn saved(answer: PathBuf, suggested_name: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn folder(label: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("oni-app-answers-{label}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
-    }
+    use oni_fixtures::scratch;
 
     #[test]
     fn an_answer_is_taken_once() {
-        let dir = folder("once");
+        let dir = scratch("app-answers-once");
         std::fs::write(dir.join("answer"), format!("{}\n", dir.display())).unwrap();
         assert_eq!(taken(&dir), Some(dir.clone()));
         // Twin: the same dialog opened again finds nothing and answers as cancelled.
@@ -44,7 +38,7 @@ mod tests {
 
     #[test]
     fn a_save_into_a_folder_keeps_the_suggested_name() {
-        let dir = folder("save");
+        let dir = scratch("app-answers-save");
         assert_eq!(saved(dir.clone(), "DSC_6432.jpg"), dir.join("DSC_6432.jpg"));
         // Twin: a path that is no folder stands as the file itself.
         let file = dir.join("named.jpg");

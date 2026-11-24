@@ -1,19 +1,13 @@
 //! Where an export lands: never on an original, always inside the chosen folder, and a failed
 //! write keeps the file it would have replaced. Each against its twin.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use oni_colour::PaperCorrection;
 use oni_export::file::{self, Ledger, Refused, Standing};
 use oni_export::landing::{Clash, plan};
 use oni_export::{ExifMetadata, Failure, Format, Image, Landing, Settings, destination, write};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-export-landing-{}-{name}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use oni_fixtures::scratch;
 
 fn frame() -> Result<Image, Failure> {
     Ok(Image { width: 8, height: 6, pixels: vec![0.4; 8 * 6 * 4] })
@@ -37,7 +31,7 @@ fn listing(dir: &Path) -> Vec<String> {
 
 #[test]
 fn an_export_never_lands_on_another_original() {
-    let dir = scratch("original");
+    let dir = scratch("export-landing-original");
     let support = dir.join("Support");
     let roll = dir.join("Roll");
     std::fs::create_dir_all(&roll).unwrap();
@@ -100,7 +94,7 @@ fn an_export_never_lands_on_another_original() {
 
 #[test]
 fn a_file_arriving_during_the_write_is_never_replaced() {
-    let dir = scratch("arriving");
+    let dir = scratch("export-landing-arriving");
     let path = dir.join("A.jpg");
     std::fs::write(&path, b"arrived").unwrap();
     assert!(matches!(file::create(&path, b"ours"), Err(Refused::Taken)));
@@ -148,7 +142,7 @@ fn a_typed_name_stays_in_the_chosen_folder() {
 #[test]
 fn a_failed_export_keeps_the_previous_one() {
     use std::os::unix::fs::PermissionsExt;
-    let dir = scratch("failed");
+    let dir = scratch("export-landing-failed");
     let support = dir.join("Support");
     let out = dir.join("Out");
     std::fs::create_dir_all(&out).unwrap();
@@ -188,7 +182,7 @@ fn a_failed_export_keeps_the_previous_one() {
 
 #[test]
 fn a_frame_past_a_jpeg_s_side_says_so() {
-    let dir = scratch("too-large");
+    let dir = scratch("export-landing-too-large");
     let source = dir.join("P1.NEF");
     std::fs::write(&source, b"raw").unwrap();
     let wide = |width: usize| move || Ok(Image { width, height: 1, pixels: vec![0.4; width * 4] });

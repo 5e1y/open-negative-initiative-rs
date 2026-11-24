@@ -2,10 +2,10 @@
 //! each account's own Kit, the accounts kept from one run to the next, and a catalogue read from a file.
 
 use crate::raw::{self, Answer};
+use oni_fixtures::scratch;
 use oni_tldb::fake::{self, Fake, Setup};
 use oni_tldb::oauth::{self, Outcome, Pending};
 use oni_tldb::{Client, Failure, Key, Kind, Read};
-use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
@@ -46,13 +46,6 @@ fn token(fake: &Fake, pending: Pending, back: String) -> String {
     token
 }
 
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-tldb-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
-
 #[test]
 fn the_pages_sign_in_then_ask_before_authorising() {
     let fake = fake::start();
@@ -88,7 +81,7 @@ fn the_pages_sign_in_then_ask_before_authorising() {
 
 #[test]
 fn a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run() {
-    let kept = scratch("kept").join("tldb-fake.json");
+    let kept = scratch("tldb-kept").join("tldb-fake.json");
     let fake = fake::start_with(Setup { kept: Some(kept.clone()), ..Setup::default() }).unwrap();
     let pending = oauth::begin(&fake.service(), true).unwrap();
     let page = raw::get(&pending.url);
@@ -121,7 +114,7 @@ fn a_new_account_confirms_its_e_mail_and_keeps_its_own_kit_from_run_to_run() {
 
 #[test]
 fn a_catalogue_file_replaces_the_simulated_one() {
-    let file = scratch("catalogue").join("catalogue.json");
+    let file = scratch("tldb-catalogue").join("catalogue.json");
     let pieces = r#"[
         {"type":"camera","id":996,"name":"Nikon FM2","brand":"Nikon","model":"FM2","url":"https://thelensdb.com/cameras/nikon-fm2-1982","mount":"Nikon F"},
         {"type":"lens","id":2691,"name":"Leica APO-Summicron-M 90mm F/2 ASPH. [V]","brand":"Leica","model":"APO-Summicron-M 90mm F/2 ASPH. [V]",

@@ -1,6 +1,7 @@
 //! The Swift app's self-checks on the models and the sidecar, each on its own adversarial values and
 //! with its twin, a variant built to fail when the property it guards is broken.
 
+use oni_fixtures::scratch;
 use oni_settings::axis::{density_axis, pipeline};
 use oni_settings::cg::Point;
 use oni_settings::document;
@@ -10,16 +11,8 @@ use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::tone::color_density;
 use oni_settings::{ConversionMode, ExifLine, ExifMetadata, Id, PipelineSettings};
 use serde_json::Value;
-use std::path::{Path, PathBuf};
 
 type V3 = [f32; 3];
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-settings-swift-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 // MARK: - ConversionMode.selfCheck
 
@@ -121,7 +114,7 @@ fn colour_density_keeps_a_neutral_and_raises_a_ratio_to_its_power() {
 
 #[test]
 fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
-    let folder = scratch("sidecar-exif");
+    let folder = scratch("settings-swift-sidecar-exif");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
     let typed = ExifLine {
@@ -153,7 +146,7 @@ fn the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent() {
 
 #[test]
 fn an_empty_line_gives_a_frame_never_touched_no_sidecar() {
-    let folder = scratch("sidecar-exif-untouched");
+    let folder = scratch("settings-swift-sidecar-exif-untouched");
     let original = folder.join("frame.RW2");
     std::fs::write(&original, b"raw").unwrap();
     sidecar::set_exif(ExifLine::default(), &original, true).unwrap();

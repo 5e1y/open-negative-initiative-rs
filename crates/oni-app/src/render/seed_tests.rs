@@ -2,14 +2,8 @@
 //! its own for each photo, and the same on the editor's preview and the export's full render.
 
 use super::*;
+use oni_fixtures::scratch;
 use std::path::PathBuf;
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-app-seed-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 /// A 3000 × 10 PNG whose pixels `salt` sets apart.
 fn png(path: &Path, salt: u8) {
@@ -28,7 +22,7 @@ fn seeds(path: &Path) -> [[u32; 2]; 4] {
 
 #[test]
 fn every_decode_of_a_photo_reads_one_seed_its_rename_keeps_and_another_photo_does_not_share() {
-    let dir = scratch("decodes");
+    let dir = scratch("app-seed-decodes");
     let (first, other, renamed) = (dir.join("scan.png"), dir.join("other.png"), dir.join("roll").join("renamed.png"));
     png(&first, 3);
     png(&other, 5);

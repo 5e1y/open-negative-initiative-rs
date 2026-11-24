@@ -3,16 +3,10 @@
 
 use oni_decode::container::{self, Kind};
 use oni_decode::{Linear, is_low_precision};
+use oni_fixtures::scratch;
 use std::path::{Path, PathBuf};
 
 mod common;
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-decode-swift-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 /// `ContainerRead.writeTestDNG`: a LinearRaw scan in one strip, its table and white level after the IFD.
 fn test_dng(path: &Path, curve: &[u16], samples: &[u16], w: usize, h: usize, bits: usize) {
@@ -249,7 +243,7 @@ fn resampled(full: &Linear, step: usize, out: (usize, usize), offsets: &[usize])
 
 #[test]
 fn a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias() {
-    let dir = scratch("container");
+    let dir = scratch("decode-swift-container");
     let curve: Vec<u16> = (0..256).map(|i| ((i as f64 / 255.0).powf(2.2) * 65535.0).round().min(65535.0) as u16).collect();
     let indices: [u16; 5] = [0, 64, 128, 192, 255];
     let flat: Vec<u16> = indices.iter().chain(indices.iter()).flat_map(|&i| [i; 3]).collect();

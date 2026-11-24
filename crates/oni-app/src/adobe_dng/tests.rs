@@ -1,4 +1,5 @@
 use super::*;
+use oni_fixtures::scratch;
 
 #[test]
 fn only_a_notarised_package_signed_by_adobe_is_opened() {
@@ -32,17 +33,10 @@ fn stand_in(dir: &Path, cut: &str) -> PathBuf {
 }
 
 #[cfg(unix)]
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-adobe-dng-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
-
 #[cfg(unix)]
 #[test]
 fn a_folder_converts_in_batches_and_only_a_dng_that_reads_counts() {
-    let dir = scratch("batches");
+    let dir = scratch("adobe-dng-batches");
     let program = stand_in(&dir, "DSC_0002.NEF");
     let raws: Vec<PathBuf> = (1..=6).map(|i| dir.join(format!("DSC_000{i}.NEF"))).collect();
     for r in &raws {
@@ -66,7 +60,7 @@ fn a_folder_converts_in_batches_and_only_a_dng_that_reads_counts() {
     let handed = std::fs::read_to_string(dir.join("handed.log")).unwrap();
     assert!(!handed.contains("DSC_0003.NEF") && handed.contains("DSC_0004.NEF"), "{handed}");
     // Twin: the same run with no cut file counts DSC_0002, so the exclusion above is the cut's.
-    let whole = scratch("whole");
+    let whole = scratch("adobe-dng-whole");
     let program = stand_in(&whole, "none");
     let raw = whole.join("DSC_0002.NEF");
     std::fs::write(&raw, b"nef").unwrap();

@@ -1,6 +1,7 @@
 //! The sidecar on disk, on real files: a corpus sidecar brought to this format, then read, edited and
 //! written back; and the roll #8 marker.
 
+use oni_fixtures::scratch;
 use oni_settings::document;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Date, Medal, PipelineSettings, roll_folder};
@@ -9,13 +10,6 @@ use std::path::{Path, PathBuf};
 
 fn value(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
-}
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-settings-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
 }
 
 /// A corpus sidecar of format 19, its EXIF line kept, beside an empty stand-in: read once, it stands
@@ -33,7 +27,7 @@ fn copied(dir: &Path) -> (PathBuf, String) {
 
 #[test]
 fn a_sidecar_read_and_written_back_is_the_same_file() {
-    let dir = scratch("rewrite");
+    let dir = scratch("settings-rewrite");
     let (original, text) = copied(&dir);
     assert_eq!(value(&text)["format"], json!(document::FORMAT));
     let loaded = sidecar::read(&original, true).unwrap();
@@ -57,7 +51,7 @@ fn a_sidecar_read_and_written_back_is_the_same_file() {
 
 #[test]
 fn label_and_trash_touch_nothing_else_and_keep_the_revision() {
-    let dir = scratch("envelope");
+    let dir = scratch("settings-envelope");
     let (original, text) = copied(&dir);
     let path = sidecar::url_for(&original);
     let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
@@ -92,7 +86,7 @@ fn label_and_trash_touch_nothing_else_and_keep_the_revision() {
 
 #[test]
 fn a_newer_format_opens_read_only_and_is_never_rewritten() {
-    let dir = scratch("future");
+    let dir = scratch("settings-future");
     let (original, text) = copied(&dir);
     let path = sidecar::url_for(&original);
     let future = text.replacen(&format!("\"version\": {}", document::VERSION), &format!("\"version\": {}", document::VERSION + 1), 1);
@@ -114,7 +108,7 @@ fn a_newer_format_opens_read_only_and_is_never_rewritten() {
 
 #[test]
 fn an_absent_sidecar_is_a_new_photo_and_an_unreadable_one_an_error() {
-    let dir = scratch("absent");
+    let dir = scratch("settings-absent");
     let original = dir.join("DSC_9999.NEF");
     std::fs::write(&original, b"").unwrap();
     let loaded = sidecar::read(&original, true).unwrap();

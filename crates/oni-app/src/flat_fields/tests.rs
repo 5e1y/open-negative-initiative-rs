@@ -1,4 +1,5 @@
 use super::*;
+use oni_fixtures::scratch;
 use std::cell::Cell;
 
 fn written(support: &Path, id: &str, pixels: &[f32], width: u32, height: u32) {
@@ -6,13 +7,6 @@ fn written(support: &Path, id: &str, pixels: &[f32], width: u32, height: u32) {
     let out = std::fs::File::create(file(support, id)).unwrap();
     let mut encoder = tiff::encoder::TiffEncoder::new(out).unwrap();
     encoder.write_image::<tiff::encoder::colortype::RGBA32Float>(width, height, pixels).unwrap();
-}
-
-fn scratch(label: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-flat-fields-{label}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
 }
 
 /// A panel falling off from 1 on the right to 0.25 on the left, as a decode would hand it.
@@ -24,7 +18,7 @@ fn ramp() -> Picture {
 
 #[test]
 fn a_mask_reads_with_its_peaks_and_its_passes_flag() {
-    let support = scratch("read");
+    let support = scratch("flat-fields-read");
     let pixels: Vec<f32> = (0..4 * 3).flat_map(|i| [0.2 + i as f32 * 0.05, 0.9 - i as f32 * 0.01, 0.4, 1.0]).collect();
     written(&support, "abc", &pixels, 4, 3);
     std::fs::write(folder(&support).join("masks.json"), r#"[{"id":"abc","name":"Panel","perChannel":true},{"id":"def","name":"Other"}]"#).unwrap();
@@ -54,7 +48,7 @@ fn the_id_is_the_first_eight_bytes_of_the_contents_sha_256() {
 /// again adds nothing, and the TIFF holds the decode's falloff.
 #[test]
 fn a_loaded_picture_joins_the_list_under_its_files_name_once() {
-    let support = scratch("load");
+    let support = scratch("flat-fields-load");
     let source = support.join("Scans/panel.tiff");
     std::fs::create_dir_all(source.parent().unwrap()).unwrap();
     std::fs::write(&source, b"the panel's own bytes").unwrap();
@@ -88,7 +82,7 @@ fn a_loaded_picture_joins_the_list_under_its_files_name_once() {
 /// id of its own; the same file alone is a white-light mask.
 #[test]
 fn a_triplets_lead_is_a_mask_of_passes_under_an_id_of_its_own() {
-    let support = scratch("passes");
+    let support = scratch("flat-fields-passes");
     let lead = support.join("Scans/B.tif");
     std::fs::create_dir_all(lead.parent().unwrap()).unwrap();
     std::fs::write(&lead, b"lead bytes").unwrap();
@@ -106,7 +100,7 @@ fn a_triplets_lead_is_a_mask_of_passes_under_an_id_of_its_own() {
 
 #[test]
 fn the_mask_source_is_known_by_its_name_then_its_content() {
-    let support = scratch("source");
+    let support = scratch("flat-fields-source");
     let source = support.join("Rig.NEF");
     std::fs::write(&source, b"rig bytes").unwrap();
     let entry = load(&support, &source, |_| Some(ramp())).unwrap();
@@ -128,7 +122,7 @@ fn the_mask_source_is_known_by_its_name_then_its_content() {
 /// `FlatField.selfCheck`'s remembered sliders.
 #[test]
 fn a_fresh_frame_opens_on_the_colour_last_dialled_and_a_dialled_one_keeps_its_own() {
-    let support = scratch("remember");
+    let support = scratch("flat-fields-remember");
     let mut preferences = Preferences::load(&support);
     assert_eq!(with_remembered(&FlatField::default(), remembered(&preferences)), FlatField::default());
     let dialled = FlatField { amount: 0.37, temperature: 0.61, tint: -0.23, ..FlatField::default() };
@@ -204,7 +198,7 @@ fn panel(root: &Path) -> (PathBuf, String, LibraryIndex) {
 
 #[test]
 fn a_photo_moved_out_trashes_its_sidecar_clears_its_row_and_takes_a_free_name() {
-    let root = scratch("move-out");
+    let root = scratch("flat-fields-move-out");
     let presets = presets(&root);
     let (photo, path, index) = panel(&root);
     std::fs::create_dir_all(&presets).unwrap();
@@ -224,7 +218,7 @@ fn a_photo_moved_out_trashes_its_sidecar_clears_its_row_and_takes_a_free_name() 
 
 #[test]
 fn a_move_across_volumes_syncs_checks_then_trashes_the_source() {
-    let root = scratch("move-across");
+    let root = scratch("flat-fields-move-across");
     let presets = presets(&root);
     let (photo, path, index) = panel(&root);
     let target = move_out(&path, &presets, Some(&index), &Moving { rename: across, copy: copied, trash: &trashed }).expect("moved");
@@ -234,7 +228,7 @@ fn a_move_across_volumes_syncs_checks_then_trashes_the_source() {
     assert!(!photo.exists() && index.all().is_empty());
     // Twin: a short copy, or one of the right length with a byte changed, keeps the original and its sidecar.
     for wrong in [short as fn(&Path, &Path) -> std::io::Result<()>, flipped] {
-        let root = scratch("move-across-wrong");
+        let root = scratch("flat-fields-move-across-wrong");
         let (photo, path, index) = panel(&root);
         let presets = super::presets(&root);
         assert!(move_out(&path, &presets, Some(&index), &Moving { rename: across, copy: wrong, trash: &trashed }).is_none());
@@ -260,7 +254,7 @@ fn raced_replacing(from: &Path, to: &Path) -> std::io::Result<()> {
 
 #[test]
 fn a_move_out_never_replaces_a_file_that_took_the_free_name() {
-    let root = scratch("move-out-raced");
+    let root = scratch("flat-fields-move-out-raced");
     let presets = presets(&root);
     let (photo, path, index) = panel(&root);
     assert!(move_out(&path, &presets, Some(&index), &Moving { rename: raced, copy: copied, trash: &trashed }).is_none());
@@ -268,7 +262,7 @@ fn a_move_out_never_replaces_a_file_that_took_the_free_name() {
     assert_eq!(std::fs::read(&photo).unwrap(), b"panel bytes");
     assert!(sidecar::url_for(&photo).exists() && index.all().len() == 1, "nothing of the photo left");
     // Twin: a rename that replaces moves the photo over the other file.
-    let root2 = scratch("move-out-raced-twin");
+    let root2 = scratch("flat-fields-move-out-raced-twin");
     let (_, path, index) = panel(&root2);
     let presets = super::presets(&root2);
     assert!(move_out(&path, &presets, Some(&index), &Moving { rename: raced_replacing, copy: copied, trash: &trashed }).is_some());
@@ -295,7 +289,7 @@ fn the_swift_apps_own_masks_read_whole() {
 
 #[test]
 fn a_photo_with_no_extension_moved_out_takes_a_number_and_no_dot() {
-    let root = scratch("move-out-bare");
+    let root = scratch("flat-fields-move-out-bare");
     let presets = presets(&root);
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     std::fs::create_dir_all(&presets).unwrap();

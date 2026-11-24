@@ -1,7 +1,7 @@
 //! LibRaw's frame on DNGs built here: a LinearRaw file read whole at every size, a mosaic's default
 //! crop placed inside its ActiveArea.
 
-use crate::source::tests::scratch;
+use oni_fixtures::scratch;
 use crate::{HALF, Linear, Neutral, decode, decode_for, decode_on};
 use oni_fixtures::dng::{Tag, directory};
 use std::path::Path;
@@ -71,7 +71,7 @@ fn bits(l: &Linear) -> (usize, usize, Vec<u32>) {
 
 #[test]
 fn a_linear_dng_is_read_whole_at_factor_one() {
-    let root = scratch("linear-half");
+    let root = scratch("source-linear-half");
     let linear = root.join("Linear.DNG");
     let samples: Vec<u16> = (0..W * H).flat_map(|i| [0, 1, 2].map(|c| at(i % W, i / W) + c * 500)).collect();
     dng(&linear, (W, H), 3, &samples, crop((8, 4), (W - 16, H - 8)));
@@ -91,7 +91,7 @@ fn a_linear_dng_is_read_whole_at_factor_one() {
 /// out starts at the margins, so the frame is the one a file without them shows.
 #[test]
 fn a_default_crop_lands_inside_the_active_area() {
-    let root = scratch("active-area");
+    let root = scratch("source-active-area");
     let (left, top) = (4, 2);
     let (size, origin) = ((80, 52), (2, 2));
     let framed = root.join("Framed.DNG");
@@ -118,7 +118,7 @@ fn a_default_crop_lands_inside_the_active_area() {
 /// positive never reads the other's decode back.
 #[test]
 fn a_slide_decodes_cooler_and_is_kept_under_its_own_key() {
-    let root = scratch("slide");
+    let root = scratch("source-slide");
     crate::cache::keep_in(root.join("Cache"), u64::MAX);
     let mosaic = root.join("Slide.DNG");
     dng(&mosaic, (W, H), 1, &(0..W * H).map(|i| at(i % W, i / W)).collect::<Vec<_>>(), crop((8, 4), (W - 16, H - 8)));
@@ -138,7 +138,7 @@ fn a_slide_decodes_cooler_and_is_kept_under_its_own_key() {
 /// and a file turned a quarter by its orientation.
 #[test]
 fn the_full_size_is_the_whole_decode_s_without_decoding() {
-    let root = scratch("full-size");
+    let root = scratch("source-full-size");
     let mosaic: Vec<u16> = (0..W * H).map(|i| at(i % W, i / W)).collect();
     let framed = root.join("Framed.DNG");
     let mut tags = vec![(50829, 4, 4, longs(&[2, 4, H, W]))];

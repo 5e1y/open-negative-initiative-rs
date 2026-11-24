@@ -4,15 +4,8 @@
 use super::*;
 use crate::{HALF, Linear, decoded_by};
 use oni_fixtures::dng::{MOSAIC_H as H, MOSAIC_W as W, mosaic_dng};
+use oni_fixtures::scratch;
 use std::path::PathBuf;
-
-/// A scratch folder of this run's own, under `name`.
-pub(crate) fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-source-{}-{name}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 fn decode_by(path: &Path, route: Route, side: usize, gain: f32) -> Result<Linear, DecodeError> {
     decoded_by(path, gain, side, crate::Neutral::Swift, route).map(|(linear, _)| linear)
@@ -32,7 +25,7 @@ fn long_folder(root: &Path) -> PathBuf {
 
 #[test]
 fn a_dng_in_an_ete_folder_decodes() {
-    let root = scratch("ete");
+    let root = scratch("source-ete");
     let ete = root.join("Été 🎞");
     std::fs::create_dir_all(&ete).unwrap();
     let accented = ete.join("Décembre.DNG");
@@ -61,7 +54,7 @@ fn a_dng_in_an_ete_folder_decodes() {
 
 #[test]
 fn the_handle_route_decodes_bit_for_bit_as_the_name_route() {
-    let root = scratch("routes");
+    let root = scratch("source-routes");
     let file = root.join("Frame.DNG");
     mosaic_dng(&file);
     let mut frames = vec![file.clone()];
@@ -99,7 +92,7 @@ fn preview_bytes(p: crate::embedded::Preview) -> Vec<u8> {
 #[test]
 fn a_file_being_read_renames() {
     use std::os::windows::fs::OpenOptionsExt;
-    let root = scratch("held");
+    let root = scratch("source-held");
     let file = root.join("Frame.DNG");
     mosaic_dng(&file);
     let held = Source::open(&file, Route::Handle).unwrap();
@@ -117,7 +110,7 @@ fn a_file_being_read_renames() {
 /// picture filled with black.
 #[test]
 fn a_truncated_raw_says_so() {
-    let root = scratch("cut");
+    let root = scratch("source-cut");
     let whole = root.join("Whole.DNG");
     mosaic_dng(&whole);
     let bytes = std::fs::read(&whole).unwrap();
@@ -153,7 +146,7 @@ fn a_name_that_is_not_utf8_keeps_its_bytes() {
 /// `reads` says whether the whole mosaic unpacks: a file cut inside its strip, or empty, does not.
 #[test]
 fn a_dng_reads_unless_cut() {
-    let root = scratch("reads");
+    let root = scratch("source-reads");
     let whole = root.join("Whole.DNG");
     mosaic_dng(&whole);
     let bytes = std::fs::read(&whole).unwrap();

@@ -6,6 +6,7 @@ use crate::document;
 use crate::geometry::Size;
 use crate::prepare;
 use crate::sidecar::{self, Loaded};
+use oni_fixtures::scratch;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -66,13 +67,6 @@ pub(super) fn golden(sidecar: &Path) -> String {
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
-pub(super) fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-corpus-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
-
 /// `bytes` laid as the sidecar of an empty original in its own `Roll` folder under `dir`, as the
 /// scrubbed drafts name their base's folder; the original's path.
 pub(super) fn laid(dir: &Path, sidecar: &Path, bytes: &[u8]) -> PathBuf {
@@ -113,7 +107,7 @@ fn first_apart(got: &str, want: &str) -> String {
 
 #[test]
 fn every_corpus_file_migrates_and_reads_back_as_its_golden() {
-    let dir = scratch("goldens");
+    let dir = scratch("corpus-goldens");
     let files = sidecars(&corpus());
     assert_eq!(files.len(), 42, "the corpus holds forty-two sidecars");
     let mut wrong = Vec::new();
@@ -144,7 +138,7 @@ fn every_corpus_file_migrates_and_reads_back_as_its_golden() {
 
 #[test]
 fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
-    let dir = scratch("broken");
+    let dir = scratch("corpus-broken");
     let mut seen = Vec::new();
     for path in sidecars(&corpus().join("broken")) {
         let source = std::fs::read(&path).unwrap();
@@ -172,7 +166,7 @@ fn keypads() -> Vec<(PathBuf, Value)> {
 
 #[test]
 fn twin_a_reshape_that_drops_the_half_steps_or_swaps_two_letters_is_caught() {
-    let dir = scratch("twin-keypad");
+    let dir = scratch("corpus-twin-keypad");
     let halved: Vec<(PathBuf, Value)> = keypads().into_iter().filter(|(_, d)| d["settings"]["scanner"].get("halves").is_some()).collect();
     assert!(halved.len() >= 3, "the three Scanner sidecars with half steps, one a copy at 21");
     for (path, mut document) in halved {
@@ -199,7 +193,7 @@ fn twin_a_reshape_that_drops_the_half_steps_or_swaps_two_letters_is_caught() {
 
 #[test]
 fn twin_a_field_written_under_another_name_is_no_fixed_point() {
-    let dir = scratch("twin-name");
+    let dir = scratch("corpus-twin-name");
     let path = corpus().join("19-rust/040-P1073163.RW2.json");
     let (original, _, _) = migrated(&dir, &path, &std::fs::read(&path).unwrap(), &facts(&path));
     let text = String::from_utf8(std::fs::read(sidecar::url_for(&original)).unwrap()).unwrap();
@@ -212,7 +206,7 @@ fn twin_a_field_written_under_another_name_is_no_fixed_point() {
 
 #[test]
 fn twin_a_golden_with_one_digit_changed_is_caught() {
-    let dir = scratch("twin-digit");
+    let dir = scratch("corpus-twin-digit");
     let file = corpus().join("19-plain/347-DSC_6452.NEF.json");
     let golden = golden(&file);
     let at = golden.find(|c: char| c.is_ascii_digit() && c != '9').unwrap();
@@ -226,7 +220,7 @@ fn twin_a_golden_with_one_digit_changed_is_caught() {
 
 #[test]
 fn twin_a_facts_file_without_its_matrix_fails_on_the_gains() {
-    let dir = scratch("twin-matrix");
+    let dir = scratch("corpus-twin-matrix");
     let file = corpus().join("19-plain/347-DSC_6452.NEF.json");
     let golden = golden(&file);
     let mut bare = facts(&file);
@@ -287,7 +281,7 @@ fn the_wide_corpus_migrates_to_its_goldens() {
         println!("SKIPPED the_wide_corpus_migrates_to_its_goldens: set ONI_SIDECAR_CORPUS and ONI_SIDECAR_GOLDENS");
         return;
     };
-    let (goldens, dir) = (PathBuf::from(goldens), scratch("wide"));
+    let (goldens, dir) = (PathBuf::from(goldens), scratch("corpus-wide"));
     let files = sidecars(Path::new(&corpus));
     let mut wrong = Vec::new();
     for path in &files {

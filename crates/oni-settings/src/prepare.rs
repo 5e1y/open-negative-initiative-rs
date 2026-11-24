@@ -198,6 +198,7 @@ fn stored(folder: &Path, drafts: Vec<Draft>) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oni_fixtures::scratch;
 
     fn draft(names: &[&str]) -> Draft {
         Draft {
@@ -219,16 +220,9 @@ mod tests {
         of.frames.keys().cloned().collect()
     }
 
-    fn folder(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("oni-prepare-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
-    }
-
     #[test]
     fn a_draft_reads_back_as_written_and_its_removal_takes_the_file_with_the_last() {
-        let dir = folder("one");
+        let dir = scratch("prepare-one");
         assert_eq!(read(&dir), []);
         let d = draft(&["A.NEF", "B.NEF"]);
         write(&dir, &names(&d), Some(&d)).unwrap();
@@ -248,7 +242,7 @@ mod tests {
 
     #[test]
     fn a_file_that_does_not_parse_is_set_aside_whole_and_frames_adopted_at_once_are_all_kept() {
-        let dir = folder("held");
+        let dir = scratch("prepare-held");
         let broken = b"{\"version\": 1, \"drafts\": [ trunc";
         std::fs::write(path(&dir), broken).unwrap();
         assert_eq!(read(&dir), [], "it reads as none");
@@ -287,7 +281,7 @@ mod tests {
 
     #[test]
     fn two_rolls_in_one_folder_keep_each_its_draft() {
-        let dir = folder("two");
+        let dir = scratch("prepare-two");
         let (a, b) = (draft(&["A1.NEF", "A2.NEF"]), draft(&["B1.NEF", "B2.NEF"]));
         write(&dir, &names(&a), Some(&a)).unwrap();
         write(&dir, &names(&b), Some(&b)).unwrap();

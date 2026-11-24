@@ -1,20 +1,14 @@
 //! What a sidecar write refuses: a missing original, a newer or unreadable sidecar; and what it
 //! writes: the document's keys and nothing else.
 
+use oni_fixtures::scratch;
 use oni_settings::cg::Point;
 use oni_settings::curves::CurveSet;
 use oni_settings::sidecar::{self, Error, url_for};
 use oni_settings::migrate::{chain, reshape};
 use oni_settings::{Date, Document, Medal, PipelineSettings, document};
 use serde_json::{Value, json};
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-guarded-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 fn edited() -> PipelineSettings {
     let mut s = PipelineSettings::default();
@@ -24,7 +18,7 @@ fn edited() -> PipelineSettings {
 
 #[test]
 fn a_write_beside_a_missing_original_is_refused_as_unreachable() {
-    let dir = scratch("missing");
+    let dir = scratch("guarded-missing");
     let gone = dir.join("Away").join("P1.RW2");
     let moved = dir.join("P2.RW2");
     for result in [
@@ -46,7 +40,7 @@ fn a_write_beside_a_missing_original_is_refused_as_unreachable() {
 
 #[test]
 fn a_newer_or_unparseable_sidecar_is_never_overwritten() {
-    let dir = scratch("stale");
+    let dir = scratch("guarded-stale");
     let photo = dir.join("P1.NEF");
     std::fs::write(&photo, b"").unwrap();
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
@@ -91,7 +85,7 @@ fn keys(value: &Value, at: &str, out: &mut Vec<String>) {
 
 #[test]
 fn a_written_sidecar_holds_the_documents_keys_alone_and_an_unknown_one_is_gone_after_migration() {
-    let dir = scratch("unknown");
+    let dir = scratch("guarded-unknown");
     let photo = dir.join("P1.NEF");
     std::fs::write(&photo, b"").unwrap();
     sidecar::write(&edited(), &photo, Default::default()).unwrap();
@@ -125,7 +119,7 @@ fn a_written_sidecar_holds_the_documents_keys_alone_and_an_unknown_one_is_gone_a
 
 #[test]
 fn a_retired_key_is_never_carried_to_be_read_twice() {
-    let dir = scratch("retired");
+    let dir = scratch("guarded-retired");
     let photo = dir.join("P1.NEF");
     std::fs::write(&photo, b"").unwrap();
     sidecar::write(&edited(), &photo, Default::default()).unwrap();

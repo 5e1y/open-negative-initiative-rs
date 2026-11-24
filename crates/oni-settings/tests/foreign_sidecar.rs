@@ -1,17 +1,11 @@
 //! A sidecar left by a photo deleted or renamed is never adopted by a later namesake: each write
 //! names its original by its print, and a stray one is set aside whole at the next write.
 
+use oni_fixtures::scratch;
 use oni_settings::sidecar::{self, identity, url_for};
 use oni_settings::{Date, Medal, PipelineSettings};
 use serde_json::Value;
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-foreign-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 /// A little-endian TIFF whose EXIF IFD holds `date`, then 200 KB of `fill`: the print's three
 /// blocks sample the fill, never the header, as on a real photo.
@@ -42,7 +36,7 @@ fn stored(path: &Path) -> Value {
 
 #[test]
 fn a_foreign_sidecar_is_not_adopted() {
-    let dir = scratch("adopted");
+    let dir = scratch("foreign-adopted");
     let photo = dir.join("DSC_0001.NEF");
     std::fs::write(&photo, shot("2024:05:01 10:00:00", 3)).unwrap();
     let mut edited = PipelineSettings::default();
@@ -100,7 +94,7 @@ fn a_foreign_sidecar_is_not_adopted() {
 
 #[test]
 fn an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar() {
-    let dir = scratch("redated");
+    let dir = scratch("foreign-redated");
     let photo = dir.join("SCAN_0001.tif");
     std::fs::write(&photo, shot("2024:05:01 10:00:00", 3)).unwrap();
     sidecar::set_label(Medal::Gold, &photo, false).unwrap();
@@ -138,7 +132,7 @@ fn an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar() {
 
 #[test]
 fn a_name_too_long_for_its_sidecar_says_so() {
-    let dir = scratch("long");
+    let dir = scratch("foreign-long");
     // 251 characters: the photo's own name fits, `.json` after it would not.
     let photo = dir.join(format!("{}.tif", "a".repeat(247)));
     std::fs::write(&photo, shot("2026:10:25 09:00:00", 1)).unwrap();

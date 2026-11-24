@@ -14,17 +14,11 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::common;
+use oni_fixtures::scratch;
 #[path = "../../../oni-colour/tests/common/mod.rs"]
 mod stand_in;
 
 const LONG: Duration = Duration::from_secs(600);
-
-fn scratch() -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-app-paper-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 /// Roll #8's frames as hard links beside copies of their sidecars and marker, so no sidecar is written
 /// beside the originals and a contact sheet made in the roll never takes the first tile.
@@ -113,7 +107,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
     let rig = common::rig(shots);
     let window = rig.window.clone();
-    let root = scratch();
+    let root = scratch("app-paper");
     let folder = mirror(&roll, &root);
     let support = root.join("support");
     let profiles = root.join("Profiles");
