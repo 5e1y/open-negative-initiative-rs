@@ -73,39 +73,18 @@ impl Ctl {
                     unprepared: presence.is_present() && s.nav.unprepared.contains(path),
                 }})
                 .collect();
-            let welcome: Vec<WelcomeLine> = s
-                .nav
-                .welcome
-                .iter()
-                .map(|p| {
-                    // A folder on a disk away is shown for what it is, never offered to open on nothing.
-                    let away = !s.present(p);
-                    let name = s.nav.computer.name(p);
-                    let title = if away {
-                        let state = reach::row_words(Presence::Offline(Away::Disconnected), p, &s.nav.computer).0;
-                        tr!("{name} — {state}", name = name, state = state)
-                    } else {
-                        tr!("Add {name}", name = name)
-                    };
-                    WelcomeLine { title: title.into(), path: p.clone().into(), enabled: !away }
-                })
-                .collect();
-            let welcome_shown = s.opened().is_none() && !s.nav.welcome.is_empty();
             s.nav.rows = paths;
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
             refused.extend(s.opened().map(str::to_owned).filter(|o| s.survey().unreadable.contains(o)));
             *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
-            (lines, welcome, welcome_shown, reveal)
+            (lines, reveal)
         };
         self.list_wanted();
-        let (lines, welcome, welcome_shown, reveal) = published;
+        let (lines, reveal) = published;
         let n = w.global::<crate::Navigator>();
         n.set_rows(ModelRc::new(VecModel::from(lines)));
         n.set_reveal_row(reveal);
-        n.set_welcome(ModelRc::new(VecModel::from(welcome)));
-        n.set_welcome_shown(welcome_shown);
-        self.publish_catch_up();
         // A volume mounted under another name moves no tile, so the banner's lead is looked for here too.
         self.look_for_lead();
         self.rewatch();

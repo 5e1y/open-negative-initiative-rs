@@ -54,11 +54,6 @@ impl Ctl {
         self.add_as(items, false);
     }
 
-    /// Add, as the welcome and the catch-up mean it: the folder starred, then opened.
-    pub(in crate::app) fn add_starred(self: &Rc<Self>, items: &[PathBuf]) {
-        self.add_as(items, true);
-    }
-
     fn add_as(self: &Rc<Self>, items: &[PathBuf], star: bool) {
         if items.is_empty() {
             return;

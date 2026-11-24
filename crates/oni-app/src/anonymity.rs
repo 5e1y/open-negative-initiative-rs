@@ -189,9 +189,7 @@ mod tests {
     const NAMING: [&str; 7] = ["{name}", "{names}", "{path}", "{folder}", "{disk}", "{file}", "{phones}"];
 
     /// Templates that never reach the log: captions, tooltips and fields set directly, or the app's own files.
-    const NEVER_LOGGED: [&str; 22] = [
-        "{name} — {state}",
-        "Add {name}",
+    const NEVER_LOGGED: [&str; 20] = [
         "{name} · decoding",
         "{disk} not connected",
         "{path} is on “{disk}”, which is not connected.",

@@ -178,7 +178,7 @@ export component Sheet inherits Rectangle {
     in property <string> exit: @tr("Done");
     in property <bool> exit-enabled: true;
     in property <bool> wide;
-    // A gauge of its own, as the notices' and the catch-up's; zero takes the plain or wide one.
+    // A gauge of its own, as the notices'; zero takes the plain or wide one.
     in property <length> card-width;
     // Zero fits the card to its content, which scrolls past the window's room (`WelcomeSheet`'s
     // fit); else the card is that tall at most, its content laid in the height it shows.

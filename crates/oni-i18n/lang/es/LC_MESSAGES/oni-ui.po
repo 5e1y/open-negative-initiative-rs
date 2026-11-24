@@ -351,7 +351,7 @@ msgstr "Antes"
 msgid "After"
 msgstr "Después"
 
-#: crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint
+#: crates/oni-ui/ui/ds/modes.slint crates/oni-ui/ui/pairing.slint
 msgid "DONE"
 msgstr "OK"
 
@@ -1565,7 +1565,7 @@ msgstr "Aún no hay emulsión definida"
 msgid "Description"
 msgstr "Descripción"
 
-#: crates/oni-ui/ui/kit.slint crates/oni-ui/ui/navigator.slint
+#: crates/oni-ui/ui/kit.slint
 msgid "Add"
 msgstr "Añadir"
 
@@ -1840,46 +1840,6 @@ msgstr "Reintentar"
 #: crates/oni-ui/ui/navigator.slint
 msgid "Folders"
 msgstr "Carpetas"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "The archive shows a folder of your disk and everything under it."
-msgstr "El archivo muestra una carpeta de tu disco y todo lo que contiene."
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Your photos were in:"
-msgstr "Tus fotos estaban en:"
-
-#: crates/oni-app/src/app/navigator/catch_up.rs crates/oni-ui/ui/navigator.slint
-msgid "Add Folder…"
-msgstr "Añadir carpeta…"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Your Library Now Follows Your Disk"
-msgstr "Tu fototeca ahora sigue a tu disco"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Pick the folder that holds all your scans"
-msgstr "Elige la carpeta que contiene todos tus escaneos"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "ONI reads it straight from your disk."
-msgstr "ONI la lee directamente de tu disco."
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Every folder inside it comes in"
-msgstr "Entran todas las carpetas que contiene"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "All the way down, nothing to import."
-msgstr "Hasta el fondo, sin nada que importar."
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Not your whole disk"
-msgstr "No todo tu disco"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Too wide and ONI reads everything; too narrow and photos stay out."
-msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fuera."
 
 #: crates/oni-ui/ui/notice.slint
 msgid "Your Edits, Brought Up to Date"
@@ -3769,24 +3729,6 @@ msgstr "Mover {count} fotos a un rollo nuevo…"
 msgid "Ungroup {count} Photos"
 msgstr "Desagrupar {count} fotos"
 
-#: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "Add Another Folder…"
-msgstr "Añadir otra carpeta…"
-
-#: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "Every photo of your former library lies in a favourite."
-msgstr "Todas las fotos de tu antigua fototeca están en un favorito."
-
-#: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "and {count} more folders"
-msgstr "y {count} carpetas más"
-
-#: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "One photo of your former library lies outside your favourites:"
-msgid_plural "{n} photos of your former library lie outside your favourites:"
-msgstr[0] "Una foto de tu antigua fototeca está fuera de tus favoritos:"
-msgstr[1] "{n} fotos de tu antigua fototeca están fuera de tus favoritos:"
-
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be renamed: a file in it is open in another app. Close that app, then try again."
 msgstr "No se pudo renombrar la carpeta: un archivo que contiene está abierto en otra app. Cierra esa app y vuelve a intentarlo."
@@ -3974,14 +3916,6 @@ msgstr[1] "ONI olvida las {n} fotos que conoce en «{folder}». No se toca ning�
 #: crates/oni-app/src/app/navigator/memory.rs
 msgid "Favourites and Projects"
 msgstr "Favoritos y proyectos"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "{name} — {state}"
-msgstr "{name} — {state}"
-
-#: crates/oni-app/src/app/navigator/rows.rs
-msgid "Add {name}"
-msgstr "Añadir {name}"
 
 #: crates/oni-app/src/app/navigator.rs
 msgid "The favourites cannot be saved: {error}"

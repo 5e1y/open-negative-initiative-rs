@@ -93,10 +93,8 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
         std::fs::create_dir_all(home.join(empty)).unwrap();
     }
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    // A library made before the archive followed the disk: two photos in Old, one in Roll 1.
-    let former = [p(&home.join("Old/x.tif")), p(&home.join("Old/y.tif")), p(&home.join("Scans/Roll 1/A.tif"))];
-    std::fs::create_dir_all(&support).unwrap();
-    std::fs::write(oni_library::library::file_path(&support), serde_json::json!({ "version": 2, "files": former }).to_string()).unwrap();
+    // The folder picker answers Old.
+    let old = home.join("Old");
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
 
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
@@ -107,7 +105,10 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
         let options = Options {
             support: support.clone(),
             caches: caches.clone(),
-            picker: Box::new(|| None),
+            picker: {
+                let old = old.clone();
+                Box::new(move || Some(old.clone()))
+            },
             computer: computer.clone(),
             ..Options::default()
         };
@@ -123,31 +124,11 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
 
     // No favourite yet, no section for them: Computer's alone, the home then every volume.
     rig.until("Computer's rows", Duration::from_secs(10), || titles(w) == ["Computer", "Home", "T7"]);
-    // A former library: the catch-up sheet counts the photos no folder holds, and the welcome offers
-    // the folders they were in, per volume, never the home itself.
-    assert!(n.get_catch_up_shown());
-    assert_eq!(n.get_catch_up_left().as_str(), "3 photos of your former library lie outside your favourites:");
-    let caught = n.get_catch_up_lines();
-    let caught: Vec<(String, String)> = (0..caught.row_count()).filter_map(|i| caught.row_data(i)).map(|l| (l.folder.to_string(), l.count.to_string())).collect();
-    assert_eq!(caught, [(p(&home.join("Old")), "2".to_string()), (p(&home.join("Scans/Roll 1")), "1".to_string())]);
-    assert_eq!(n.get_catch_up_choose().as_str(), "Add Folder…");
-    assert!(n.get_welcome_shown());
-    let welcome = n.get_welcome();
-    let offered: Vec<String> = (0..welcome.row_count()).filter_map(|i| welcome.row_data(i)).map(|l| l.title.to_string()).collect();
-    assert_eq!(offered, ["Add Old", "Add Scans"]);
-    // Adding a folder from the sheet stars it and opens it; its photos are then in.
-    n.invoke_catch_up_added(0);
+    // Add Folder… stars the folder picked and opens it.
+    ctl.act(oni_app::Act::AddFolder);
     rig.until("Old opened", Duration::from_secs(30), || ctl.state.borrow().read_done() && opened().is_some());
-    assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()));
-    assert_eq!(n.get_catch_up_left().as_str(), "One photo of your former library lies outside your favourites:");
-    assert_eq!(n.get_catch_up_choose().as_str(), "Add Another Folder…", "twin: a folder in, the key asks for another");
+    assert_eq!(opened().as_deref(), Some(p(&old).as_str()));
     rig.settle();
-    println!("shot {}", rig.shot("roots-catch-up").display());
-    assert!(!n.get_welcome_shown(), "a folder opened, the welcome leaves");
-    n.invoke_catch_up_done();
-    rig.pump();
-    assert!(!n.get_catch_up_shown());
-    assert_eq!(Preferences::load(&support).bool("rootsCatchUpShown"), Some(true));
 
     // Added, Old stands picked in the favourites' section, above Computer's; each heading is a row.
     assert_eq!(titles(w), ["Favourites", "Old", "Computer", "Home", "T7"]);
@@ -365,7 +346,6 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     let n = w.global::<Navigator>();
     rig.until("the rows listed again", Duration::from_secs(10), || titles(w) == rows_before);
     assert_eq!(n.get_height(), 320.0);
-    assert!(!n.get_catch_up_shown());
     assert!(row(w, "Scans 2026").favourite);
     let prefs = Preferences::load(&support);
     assert_eq!(prefs.value("navigatorEditorHeight").and_then(|v| v.as_f64()), Some(320.0));

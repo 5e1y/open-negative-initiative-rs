@@ -1,16 +1,16 @@
-//! The navigator in the window (`FolderNavigator`, `RootWelcome`, `RootsCatchUp`): folders listed off
+//! The navigator in the window (`FolderNavigator`): folders listed off
 //! this thread, the favourites and where each lives, the folder menu, what a launch finds.
 
 use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
-use crate::{App, CatchUpLine, FolderLine, MenuGlyph, MenuLine, WelcomeLine};
+use crate::{App, FolderLine, MenuGlyph, MenuLine};
 use oni_i18n::tr;
 use oni_library::places::{self, Places};
 use oni_library::history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
 use oni_library::paths::{self, holds};
 use oni_library::presence::{self, Away, Presence};
-use oni_library::roots::{self, Roots};
+use oni_library::roots::Roots;
 use oni_library::{archive_tree::NodeId, folders};
 use serde_json::Value;
 use slint::{ComponentHandle, ModelRc, VecModel};
@@ -25,7 +25,6 @@ mod rows;
 mod folder_menu;
 pub(in crate::app) use folder_menu::reveal_word;
 mod reading;
-mod catch_up;
 mod locate;
 pub(in crate::app) use locate::{Asked, lead_words};
 mod freshness;
@@ -37,16 +36,12 @@ pub const FOLDED: &str = "navigatorFoldedSections";
 pub const UNFOLDED: &str = "navigatorUnfolded";
 pub const UNFOLDED_FAVOURITES: &str = "navigatorUnfoldedFavourites";
 pub const EDITOR_HEIGHT: &str = "navigatorEditorHeight";
-/// `EditorScene.rootsCatchUpShown`: the catch-up sheet was dismissed once.
-pub const ROOTS_CATCH_UP_SHOWN: &str = "rootsCatchUpShown";
 /// `DS.Control.navigatorEditorRest`: the rows' height beside a photograph until one is dragged.
 pub const EDITOR_REST: f64 = 200.0;
 /// The threads reading listings at once, as a detached task each would on a small pool.
 const LISTERS: usize = 4;
 /// How often the mounted volumes are read again, where Swift waits for a mount's notification.
 const MOUNTS: Duration = Duration::from_secs(1);
-/// `RootsCatchUp`'s folders shown before "and N more folders".
-const CATCH_UP_SHOWN: usize = 6;
 
 /// The folder menu's lines, one set wherever a folder is right-clicked.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -76,11 +71,6 @@ pub(super) struct Nav {
     menu_path: Option<(String, &'static str)>,
     /// The open photo's folder last revealed beside it.
     current: Option<String>,
-    /// `RootWelcome`'s folders, and the former library's photos `RootsCatchUp` counts.
-    welcome: Vec<String>,
-    former: Vec<String>,
-    pub catching_up: bool,
-    catch_up_folders: Vec<String>,
     opened_rolls: HashSet<String>,
     /// The listed rows whose roll marker their listing found.
     listed_rolls: HashSet<String>,
@@ -119,10 +109,6 @@ impl Nav {
             menu: Vec::new(),
             menu_path: None,
             current: None,
-            welcome: Vec::new(),
-            former: Vec::new(),
-            catching_up: false,
-            catch_up_folders: Vec::new(),
             opened_rolls: HashSet::new(),
             listed_rolls: HashSet::new(),
             roll_edits: HashMap::new(),

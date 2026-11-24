@@ -43,36 +43,15 @@ impl Ctl {
         });
         let p = me.clone();
         n.on_mode_changed(move || p.follow_open_photo());
-        let p = me.clone();
-        // Add, wherever it is written: the folder starred, then opened.
-        n.on_welcome_added(move |i| {
-            let folder = p.state.borrow().nav.welcome.get(index(i)).cloned();
-            if let Some(folder) = folder {
-                p.add_starred(&[std::path::PathBuf::from(&folder)]);
-            }
-        });
-        let p = me.clone();
-        n.on_welcome_chose(move || p.act(crate::Act::AddFolder));
-        let p = me.clone();
-        n.on_catch_up_chose(move || p.act(crate::Act::AddFolder));
-        let p = me.clone();
-        n.on_catch_up_added(move |i| {
-            let folder = p.state.borrow().nav.catch_up_folders.get(index(i)).cloned();
-            if let Some(folder) = folder {
-                p.add_starred(&[std::path::PathBuf::from(&folder)]);
-            }
-        });
-        let p = me.clone();
-        n.on_catch_up_done(move || p.catch_up_done());
         Ctl::watch_volumes(me);
         // The ONI Trash stands in every view from the launch, before any folder is laid.
         me.publish_trash_rows();
     }
 
     /// `FolderNavigation.init` and the launch's favourites: the remembered sections, rows and height;
-    /// the places file, seeded once from `roots.json`; a former library's folders; the launch's notice.
+    /// the places file, seeded once from `roots.json`; the launch's notice.
     pub(super) fn load_navigator(&self) {
-        let (height, catching_up, failure) = {
+        let (height, failure) = {
             let mut s = self.state.borrow_mut();
             let prefs = &s.preferences;
             let strings = |key: &str| -> BTreeSet<String> {
@@ -80,8 +59,6 @@ impl Ctl {
             };
             let (folded, unfolded, favourites) = (strings(FOLDED), strings(UNFOLDED), strings(UNFOLDED_FAVOURITES));
             let height = prefs.value(EDITOR_HEIGHT).and_then(Value::as_f64).unwrap_or(EDITOR_REST);
-            let remembered_opened = prefs.string(crate::preferences::OPENED_FOLDER).map(str::to_owned);
-            let caught_up = prefs.bool(ROOTS_CATCH_UP_SHOWN).unwrap_or(false);
             // The home alone until the volumes' thread lists the rest: a sleeping mount never holds the launch.
             let volumes: Vec<String> = Some(s.nav.computer.home.clone()).filter(|h| !h.is_empty()).into_iter().collect();
             s.nav.model = Navigation::new(folded, unfolded, favourites, volumes);
@@ -106,15 +83,7 @@ impl Ctl {
                     s.save_favourites()
                 }
             };
-            let former = oni_library::library::load(&s.support).files;
-            let opened = remembered_opened.or_else(|| roots.current().map(str::to_owned));
-            if s.nav.favourites.places.is_empty() && opened.is_none() {
-                s.nav.welcome = roots::suggested(&former, &s.nav.computer.home);
-            }
-            // A bench never meets the sheet, as Swift's `--bench` leaves before it.
-            s.nav.catching_up = !former.is_empty() && !caught_up && crate::bench::requested().is_none();
-            s.nav.former = former;
-            (height, s.nav.catching_up, failure)
+            (height, failure)
         };
         if let Some(message) = failure {
             self.say(&message);
@@ -126,7 +95,6 @@ impl Ctl {
         if let Some(w) = self.window() {
             let n = w.global::<crate::Navigator>();
             n.set_height(height as f32);
-            n.set_catch_up_shown(catching_up);
         }
         self.publish_navigator();
     }

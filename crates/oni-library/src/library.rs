@@ -1,26 +1,10 @@
-//! The library's members are every image under the roots, read off the disk; `library.json` is
-//! read once, to tell a library made before the roots which photos no folder holds yet.
+//! The library's members are every image under the roots, read off the disk.
 
 use crate::index::{Entry, LibraryIndex};
 use crate::relink;
 use oni_settings::document::Envelope;
 use oni_settings::{Date, sidecar};
-use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LibraryFile {
-    pub version: i64,
-    pub files: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub folders: Option<Vec<String>>,
-}
-
-impl Default for LibraryFile {
-    fn default() -> Self {
-        LibraryFile { version: 2, files: Vec::new(), folders: None }
-    }
-}
+use std::path::Path;
 
 /// The extensions macOS declares as images (`UTType.image` and its descendants, camera RAWs
 /// included), lower case: the archive lists these and nothing else.
@@ -41,14 +25,6 @@ pub const JPEG_EXTENSIONS: &[&str] = &["jpg", "jpeg"];
 
 pub fn is_importable(path: &Path) -> bool {
     path.extension().map(|e| e.to_string_lossy().to_lowercase()).is_some_and(|e| IMAGE_EXTENSIONS.contains(&e.as_str()))
-}
-
-pub fn file_path(support: &Path) -> PathBuf {
-    support.join("library.json")
-}
-
-pub fn load(support: &Path) -> LibraryFile {
-    std::fs::read(file_path(support)).ok().and_then(|data| serde_json::from_slice(&data).ok()).unwrap_or_default()
 }
 
 pub use crate::paths::canonical;

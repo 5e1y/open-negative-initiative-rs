@@ -3,7 +3,6 @@
 import { PairingSheet, Pairing } from "pairing.slint";
 import { AppSettings, SettingsSheet } from "settings.slint";
 import { Upgraded, UpgradedSheet } from "notice.slint";
-import { Navigator, RootsCatchUpSheet } from "navigator.slint";
 import { Stocks, StockPickerSheet } from "stocks.slint";
 import { Help, WelcomeSheet, ReportSheet } from "help.slint";
 import { Wrapped, WrappedView } from "wrapped.slint";
@@ -22,7 +21,6 @@ export component Sheets inherits Rectangle {
     if Presets.editing: PresetEditorSheet { shown: Presets.editing; x: 0; y: 0; width: root.width; height: root.height; }
     if Pairing.shown: PairingSheet { shown: Pairing.shown; x: 0; y: 0; width: root.width; height: root.height; }
     if AppSettings.shown: SettingsSheet { shown: AppSettings.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Navigator.catch-up-shown: RootsCatchUpSheet { shown: Navigator.catch-up-shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.confirm-shown: ExportConfirmSheet { shown: Exporting.confirm-shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.notice-shown: ExportNoticeSheet { shown: Exporting.notice-shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.naming-shown: PresetNameSheet { shown: Exporting.naming-shown; x: 0; y: 0; width: root.width; height: root.height; }

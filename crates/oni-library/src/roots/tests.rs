@@ -1,5 +1,6 @@
 use super::*;
 use crate::scratch::Scratch;
+use std::collections::BTreeSet;
 
 #[test]
 fn a_scan_keeps_images_and_leaves_sidecars_hidden_folders_and_packages_out() {
@@ -92,49 +93,6 @@ fn roots_never_hold_a_photo_twice() {
     roots.add("/ro");
     assert_eq!(roots.paths, ["/r", "/ro"]);
     assert_eq!(roots.current(), Some("/ro"));
-}
-
-#[test]
-fn a_former_library_is_offered_per_volume_never_the_home_itself() {
-    let home = "/Users/a";
-    let proposed = suggested(
-        &[
-            "/Users/a/Pictures/Scans/2025/a.RW2",
-            "/Users/a/Pictures/Scans/2026/Roll/b.RW2",
-            "/Volumes/NAS/Film/c.tif",
-            "/Users/a/Downloads/d.jpg",
-        ]
-        .map(String::from),
-        home,
-    );
-    assert_eq!(proposed, ["/Users/a/Downloads", "/Users/a/Pictures", "/Volumes/NAS/Film"]);
-    // Twin: photos under one folder of the home offer that folder.
-    assert_eq!(
-        suggested(
-            &["/Users/a/Pictures/Scans/2025/a.RW2", "/Users/a/Pictures/Scans/2026/b.RW2"].map(String::from),
-            home
-        ),
-        ["/Users/a/Pictures/Scans"]
-    );
-}
-
-/// On Windows a drive roots the folders offered: the home's children, another drive's deepest
-/// common folder; the twin, a path rooted at `/`, never gains a drive.
-#[test]
-fn a_former_library_on_windows_drives_is_offered_per_drive() {
-    let members = ["C:/Users/a/Old/1.RW2", "C:/Users/a/Scans/Roll 1/2.RW2", "D:/Scans/A/3.NEF", "D:/Scans/B/4.NEF"].map(String::from);
-    assert_eq!(suggested(&members, "C:/Users/a"), ["C:/Users/a/Old", "C:/Users/a/Scans", "D:/Scans"]);
-    assert_eq!(suggested(&["/Volumes/T7/Scans/A/1.NEF".to_string()], "/Users/a"), ["/Volumes/T7/Scans/A"]);
-}
-
-/// A share keeps its two slashes: `/nas/film` would name a folder of the current drive.
-#[test]
-fn a_former_library_on_a_share_is_offered_on_that_share() {
-    assert_eq!(suggested(&["//nas/film/Scans/A/1.NEF".to_string()], "C:/Users/a"), ["//nas/film/Scans/A"]);
-    let spread = ["//nas/film/A/1.NEF", "//nas/film/B/2.NEF", "//nas/other/C/3.NEF"].map(String::from);
-    assert_eq!(suggested(&spread, "C:/Users/a"), ["//nas/film/A", "//nas/film/B", "//nas/other/C"]);
-    // Twin: a path rooted at one slash stays there, and never becomes a share.
-    assert_eq!(suggested(&["/nas/film/Scans/A/1.NEF".to_string()], "/Users/a"), ["/nas/film/Scans/A"]);
 }
 
 fn files(root: &Path, relatives: &[&str]) {

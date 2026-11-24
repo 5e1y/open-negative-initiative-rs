@@ -183,9 +183,6 @@ fn support_folder(support: &Path, index: &Path) -> usize {
     let roots = oni_library::roots::Roots::load(support);
     let raw = count(&support.join("roots.json"), "paths");
     check("roots", roots.paths.len() == raw, format!("{} of {raw}", roots.paths.len()));
-    let library = oni_library::library::load(support);
-    let raw = count(&support.join("library.json"), "files");
-    check("library.json", library.files.len() == raw, format!("{} of {raw}", library.files.len()));
     // Another schema's file, as the Swift app's, is never opened: this build makes its own beside it.
     let given = std::fs::read(index).ok();
     let opened = oni_library::LibraryIndex::open(index);
