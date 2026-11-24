@@ -158,22 +158,9 @@ fn bradford(from: [f64; 3], to: [f64; 3]) -> M3 {
     )
 }
 
-/// How a RAW's channels reach the working space: LibRaw demosaics on the same multipliers in each,
-/// only the matrix after it differs.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Colours {
-    /// Through the camera's matrix to XYZ, Bradford to D65, then Rec. 2020.
-    #[default]
-    Matrix,
-    /// The sensor's own channels, each scaled by the 5000 K balance alone: no channel feeds another.
-    Sensor,
-    /// The sensor's own channels as the photosites counted them, no balance at all.
-    SensorUnbalanced,
-}
-
 /// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
 /// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
-fn converted_on(cam_xyz: &M3, stops: f64, colours: Colours, neutral: Neutral) -> Option<Conversion> {
+fn converted_on(cam_xyz: &M3, stops: f64, neutral: Neutral) -> Option<Conversion> {
     let white = white_xyz(neutral);
     let n = apply(cam_xyz, white);
     if n.iter().any(|v| !v.is_finite() || *v <= 0.0) {
@@ -187,17 +174,9 @@ fn converted_on(cam_xyz: &M3, stops: f64, colours: Colours, neutral: Neutral) ->
     let undo = [0, 1, 2].map(|c| hi * n[c] / lo * stops.exp2());
     let to_2020 = mul(&rec2020_from_xyz(), &bradford(white, xyz(D65_XY)));
     let m = mul(&to_2020, &inverse(cam_xyz)?);
-    let diagonal = |gain: [f64; 3]| [0, 1, 2].map(|r| [0, 1, 2].map(|c| if r == c { gain[c] as f32 } else { 0.0 }));
-    let matrix = match colours {
-        Colours::Matrix => [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),
-        // The neutral reads (1, 1, 1) at the white level, as through the matrix, so grey keeps its level.
-        Colours::Sensor => diagonal([hi / lo * stops.exp2(); 3]),
-        // The most sensitive channel reads 1 at the white level; the others read their share of it.
-        Colours::SensorUnbalanced => diagonal(undo.map(|u| u / hi)),
-    };
     Some(Conversion {
         mul: n.map(|v| (1.0 / v) as f32),
-        matrix,
+        matrix: [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),
     })
 }
 
@@ -299,12 +278,7 @@ pub const HALF: usize = 1;
 /// `decode` for a copy no longer than `side`: a mosaic twice as long is read at half size, a sensor
 /// pixel per 2x2 block with no demosaic; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
-    decode_in(path, exposure_gain, side, Colours::Matrix)
-}
-
-/// `decode_for` in the given colours.
-pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, colours, Neutral::Swift)
+    decoded(path, exposure_gain, side, Neutral::Swift)
 }
 
 /// Whether `path` is Nikon's High Efficiency RAW, told by LibRaw's identification alone.
@@ -324,17 +298,18 @@ pub fn reads(path: &Path) -> bool {
 
 /// `decode_for` balanced on `neutral`.
 pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, Colours::Matrix, neutral)
+    decoded(path, exposure_gain, side, neutral)
 }
 
-fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
-    decoded_by(path, exposure_gain, side, colours, neutral, Route::PLATFORM)
+fn decoded(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
+    decoded_by(path, exposure_gain, side, neutral, Route::PLATFORM)
 }
 
-fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
-    // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's.
+fn decoded_by(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
+    // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's;
+    // its key keeps the word `Matrix`, so the decodes already kept stay valid.
     let slide = if neutral == Neutral::Slide { "|slide" } else { "" };
-    let keyed = |side: usize| cache::key(path, &format!("{:08x}|{colours:?}|{side}{slide}", exposure_gain.to_bits()));
+    let keyed = |side: usize| cache::key(path, &format!("{:08x}|Matrix|{side}{slide}", exposure_gain.to_bits()));
     let key = (side == 0 || side == HALF).then(|| keyed(side)).flatten();
     // A shorter copy LibRaw reads at half size is the `HALF` decode pixel for pixel: one kept serves it.
     let half = (side > HALF).then(|| keyed(HALF)).flatten();
@@ -358,7 +333,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, ne
     let d = &s.0;
     let cam_xyz: M3 = [0, 1, 2].map(|r| d.cam_xyz[r].map(f64::from));
     let conv = (d.colors == 3)
-        .then(|| converted_on(&cam_xyz, baseline(d.baseline_exposure), colours, neutral))
+        .then(|| converted_on(&cam_xyz, baseline(d.baseline_exposure), neutral))
         .flatten();
     let conv = conv.ok_or(DecodeError(NO_COLOUR_MATRIX))?;
     let rc = unsafe { oni_process(&mut s.0, conv.mul.as_ptr()) };

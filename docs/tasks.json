@@ -13205,5 +13205,40 @@
     "status": "done",
     "detail": "migrate::reading and the two branches of migrate::document each re-listed the same twelve typed steps (digital film to departure), so a new step had to be added three times. They now call one private typed_steps, each passing what it passed before: the stored settings to the digital film's step (none on a document's earlier branch) and to the datasheet's, its scanner and its former print. A pure refactor: every step, its order and its inputs stay as they were. The fuller fold the proposal sketched (one read_through for sidecar and document, unfiled facts) was not done: it would refuse a named document whose envelope fields do not type and read a current one with a malformed scanner key, where today the opposite holds, and the facts-asking steps (matrices, strokes, grain, scan line) and the two envelopes still differ by path.",
     "outcome": "cargo test -p oni-settings green but for sweep_pass's unix-permission twin, which cannot hold where the build's scratch folder lies on exFAT (the T7): no step's output moves, the corpus readings unchanged."
+  },
+  {
+    "id": 3775,
+    "type": "chore",
+    "title": "The one-off look and probe examples leave: brightness, colour and Lighting strips, paper black, enlarger states, slide paper, heal probe and the dust census",
+    "status": "done",
+    "detail": "Each served one investigation whose outcome is logged (Brightness #3280, the heal #2400, auto De-dust #1075/#1700/#1982, Paper blacks #3066/#3092, the slide paper #3234, the Lighting and colour strips #3610-#3616, the enlarger states #3340-#3343); no script, doc or check runs them, yet every API change had to keep them compiling under scripts/lint. 832 lines; any one comes back from git when an investigation needs it. No render or setting moves: they are auto-discovered examples, outside the app and the tests."
+  },
+  {
+    "id": 3776,
+    "type": "chore",
+    "title": "The Apple-against-LibRaw decoder research tools leave: decoder_fit, blocks and dump",
+    "status": "done",
+    "detail": "decoder_fit fitted LibRaw to the CIRAWFilter dumps the Swift app wrote, blocks and dump wrote the matching LibRaw grids and RenderDump files; they served the camera-matrix decision, withdrawn on 2026-11-02, and their driver scripts/decoder-gap is gone. 208 lines; nothing in crates or scripts ran them. docs/research/decoder-apple-vs-libraw.md stays as history with a line saying where they went. No render moves: examples only."
+  },
+  {
+    "id": 3777,
+    "type": "chore",
+    "title": "The sensor-colours prototype leaves with the decode colours only it read: examples/sensor_colours.rs, Colours and decode_in",
+    "status": "done",
+    "detail": "sensor_colours compared the roll in three decode colours against the Swift app's base and rendered the removed faces; its proposal (#181) was never adopted, and it was the only caller of decode_in with Colours::Sensor or SensorUnbalanced. The decode now has its one conversion, the camera's matrix: Colours, decode_in, the colours parameter of converted_on, decoded and decoded_by, and the two Sensor checks go; the singular-matrix check reads the matrix conversion (still refused on a zero matrix, its twin accepted on the Z f). The cache key keeps the literal Matrix, so every decode kept on disk stays valid; the Matrix arm is unchanged, so no render moves. docs/research/sensor-colours.md stays as history with a line saying where the prototype went. cargo test -p oni-decode --lib green (38)."
+  },
+  {
+    "id": 3778,
+    "type": "chore",
+    "title": "The keycap's comparison against the Swift bench's sheet leaves, with the parameters only it varied",
+    "status": "done",
+    "detail": "reference.rs loaded the dead Swift KeycapLab's export, absent on every machine, so its check and both twins returned before testing anything, and its sweep and dump were ignored. Sigmas, SIGMAS and compose_with (its backing colour and sigmas) existed only for it: compose now reads BLUR_SIGMA_PER_RADIUS and SHADOW_SIGMA_PER_RADIUS where it blurred through SIGMAS, and solid loses the clip every caller passed as None. The png dev-dependency goes (hakari unchanged). Every keycap pixel stays bit for bit: the same f64 products, and a coverage once multiplied by 1.0 now taken as is. cargo test -p oni-keycap green (16)."
+  },
+  {
+    "id": 3779,
+    "type": "chore",
+    "title": "One scratch-folder helper in oni-fixtures for the 26 identical copies across the checks",
+    "status": "done",
+    "detail": "The same six-line function (a folder named after the check and the process, removed then created) was written out in 26 test files. oni_fixtures::scratch(label) holds it once (temp_dir()/oni-<label>-<pid>); each site keeps its old prefix in its label (scratch(\"corpus-killed\")), so no two checks of one test binary share a folder, and the sibling modules that borrowed a helper (oni-decode's frames, oni-settings' migrate checks) call it the same way. oni-tldb takes oni-fixtures as a dev-dependency (hakari unchanged). The 11 sites that built under CARGO_TARGET_TMPDIR (decode, colour and core swift_checks; library trash_refusals; settings grain_seed, swift_checks, foreign_sidecar, scan_line, guarded_writes, real_files, sweep_pass) now write in the system's temporary folder, as the other 15 did: a library cannot read that variable, and a target directory on exFAT no longer sees the sweep and swift checks fail there. The 9 helpers of another shape (a file written, a roll mirrored, support and caches made, a folder never created, a canonical path, a thread id) stay. Test code only."
   }
 ]

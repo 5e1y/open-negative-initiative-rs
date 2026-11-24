@@ -1,6 +1,7 @@
 //! The person's stock files as the pipeline reads them: one added bakes on its derived reference, an edit renders otherwise,
 //! a broken edit is refused with the version before kept, a removed file is gone. Each verdict has a twin.
 
+use oni_fixtures::scratch;
 use oni_pipeline::film::{self, GREY};
 use oni_pipeline::stocks::Loader;
 use oni_pipeline::{conversion, paper};
@@ -8,14 +9,7 @@ use oni_render::cpu;
 use oni_settings::stocks::{self, shipped_files};
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 use serde_json::Value;
-use std::path::{Path, PathBuf};
-
-fn folder(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-stock-files-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 fn shipped(name: &str) -> Value {
     let bytes = shipped_files().iter().find(|(n, _)| *n == name).map(|(_, b)| *b).expect("shipped");
@@ -51,7 +45,7 @@ fn printed(stock: VirtualStock) -> Vec<[f32; 4]> {
 
 #[test]
 fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
-    let dir = folder("films");
+    let dir = scratch("stock-files-films");
     let mut loader = Loader::new(dir.clone());
     let first = loader.reload().expect("the first read builds");
     assert!(first.refused.is_empty());
@@ -104,7 +98,7 @@ fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
 
 #[test]
 fn a_persons_paper_is_listed_and_bakes() {
-    let dir = folder("papers");
+    let dir = scratch("stock-files-papers");
     let mut v = shipped("kodak-royal-digital.json");
     v["key"] = "kodak-royal-digital-mine".into();
     v["name"] = "Kodak Royal Digital (Mine)".into();

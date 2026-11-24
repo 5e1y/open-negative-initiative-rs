@@ -2,15 +2,9 @@
 //! with its twins, variants built to fail when the property they guard is broken.
 
 use oni_colour::source::Source;
+use oni_fixtures::scratch;
 use oni_settings::SourceEncoding;
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-colour-swift-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 /// `SourceEncoding.writeUntaggedTIFF`, with the ICC profile tag added when one is given.
 fn tiff(path: &Path, samples: &[u8], width: usize, channels: usize, icc: Option<&[u8]>) {
@@ -85,7 +79,7 @@ const SRGB_TO_2020: [[f32; 3]; 3] = [[0.6274, 0.3293, 0.0433], [0.0691, 0.9195, 
 
 #[test]
 fn an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says() {
-    let dir = scratch("source-encoding");
+    let dir = scratch("colour-swift-source-encoding");
     // Off every round value, dark enough that sRGB's linear toe and its power part both show.
     let codes: [u8; 12] = [23, 23, 23, 131, 131, 131, 201, 201, 201, 9, 77, 190];
     let file = dir.join("scan.tif");

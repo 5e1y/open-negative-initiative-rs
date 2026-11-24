@@ -1,18 +1,12 @@
 //! A sidecar of format 22 and under drops from its EXIF line the values holding the scan's own facts,
 //! once, as its original says them; a clear stays, and an original that cannot say holds nothing back.
 
+use oni_fixtures::scratch;
 use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, Facts, Mosaic, Outcome, Refusal, Standing, chain, reshape};
 use oni_settings::sidecar::{self, url_for};
 use oni_settings::{Document, ExifLine, ExifMetadata, PipelineSettings};
 use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-scan-line-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 /// What the digitising camera's file says of itself, as the export reads it.
 fn z_f() -> ExifMetadata {
@@ -68,7 +62,7 @@ fn answering(exif: &dyn Fn() -> Option<ExifMetadata>, then: impl FnOnce(&Facts))
 #[test]
 fn a_line_of_format_22_and_one_kept_under_exif_release_the_scan_s_facts() {
     for version in [chain::NAMED_VERSION, chain::STROKES_ON_SCAN_VERSION, 19] {
-        let dir = scratch(&format!("release-{version}"));
+        let dir = scratch(&format!("scan-line-release-{version}"));
         let photo = laid(&dir, &stored_at(&edited(), version));
         answering(&|| Some(z_f()), |f| assert_eq!(migrate::file_with(&photo, f), Ok(Outcome::Migrated { from: version })));
         let read = sidecar::read(&photo, true).unwrap();
@@ -86,7 +80,7 @@ fn a_line_of_format_22_and_one_kept_under_exif_release_the_scan_s_facts() {
 
 #[test]
 fn an_original_that_cannot_say_leaves_the_line_and_the_file_still_comes_to_this_format() {
-    let dir = scratch("unsaid");
+    let dir = scratch("scan-line-unsaid");
     let photo = laid(&dir, &stored_at(&edited(), chain::NAMED_VERSION));
     // No facts installed, as in a tool, or an original in the cloud: the read takes the line as it stands, writable.
     let read = sidecar::read(&photo, true).unwrap();
@@ -103,7 +97,7 @@ fn an_original_that_cannot_say_leaves_the_line_and_the_file_still_comes_to_this_
 
 #[test]
 fn a_scan_whose_exif_says_nothing_releases_nothing() {
-    let dir = scratch("unparsed");
+    let dir = scratch("scan-line-unparsed");
     let photo = laid(&dir, &stored_at(&edited(), chain::NAMED_VERSION));
     answering(&|| Some(ExifMetadata::default()), |f| assert_eq!(migrate::file_with(&photo, f), Ok(Outcome::Migrated { from: chain::NAMED_VERSION })));
     assert_eq!(sidecar::read(&photo, true).unwrap().exif, whole(), "the clears and the values all stay");
@@ -116,7 +110,7 @@ fn a_scan_whose_exif_says_nothing_releases_nothing() {
 
 #[test]
 fn a_line_written_at_this_format_keeps_what_equals_the_scan() {
-    let dir = scratch("current");
+    let dir = scratch("scan-line-current");
     let photo = laid(&dir, &stored_at(&edited(), VERSION));
     let bytes = std::fs::read(url_for(&photo)).unwrap();
     answering(&|| Some(z_f()), |f| {
@@ -155,7 +149,7 @@ fn a_settings_document_of_format_22_reads_its_settings_as_they_stand() {
 /// brought or not, and says the format it was stored at.
 #[test]
 fn the_envelope_reads_the_line_an_export_reads() {
-    let dir = scratch("envelope");
+    let dir = scratch("scan-line-envelope");
     let photo = laid(&dir, &stored_at(&edited(), chain::NAMED_VERSION));
     let ours = photo.clone();
     migrate::install(Some(std::sync::Arc::new(move |p: &Path, _: Option<bool>, then: &mut dyn FnMut(&Facts)| {

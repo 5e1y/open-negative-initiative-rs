@@ -1,15 +1,9 @@
 //! A photo's grain seed is its file's: kept through a rename and a move, another for another photo or a
 //! byte changed where the print reads; each verdict with a twin.
 
+use oni_fixtures::scratch;
 use oni_settings::sidecar::identity;
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-seed-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 /// 200 KB of bytes that tell one photo from another by `salt`.
 fn photo(salt: u32) -> Vec<u8> {
@@ -18,7 +12,7 @@ fn photo(salt: u32) -> Vec<u8> {
 
 #[test]
 fn a_renamed_or_moved_photo_keeps_its_seed_and_another_photo_has_its_own() {
-    let dir = scratch("kept");
+    let dir = scratch("seed-kept");
     let (first, moved, renamed, other) = (dir.join("DSC_0001.NEF"), dir.join("roll").join("DSC_0001.NEF"), dir.join("Kept.NEF"), dir.join("DSC_0002.NEF"));
     std::fs::create_dir_all(moved.parent().unwrap()).unwrap();
     std::fs::write(&first, photo(1)).unwrap();
@@ -37,7 +31,7 @@ fn a_renamed_or_moved_photo_keeps_its_seed_and_another_photo_has_its_own() {
 
 #[test]
 fn a_byte_changed_where_the_print_reads_moves_the_seed() {
-    let dir = scratch("byte");
+    let dir = scratch("seed-byte");
     let (path, bytes) = (dir.join("P1000001.RW2"), photo(3));
     std::fs::write(&path, &bytes).unwrap();
     let seed = identity::seed(&path).unwrap();

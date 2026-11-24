@@ -1,18 +1,12 @@
 //! A folder's pass touches only ONI's sidecars, asks an original nothing a step does not need, never
 //! converts another file's settings with this file's facts, and a plain read writes nothing.
 
+use oni_fixtures::scratch;
 use oni_settings::migrate::{self, Facts, Mosaic, Outcome, Refusal, Standing, chain, reshape};
 use oni_settings::sidecar::{self, url_for};
 use oni_settings::{ConversionMode, Document, PipelineSettings};
 use std::cell::Cell;
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-sweep-pass-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 /// An edited negative of a mosaic RAW, stored at `version`: one a camera's former matrix moves.
 fn edited_at(original: &Path, version: i64) -> Vec<u8> {
@@ -32,7 +26,7 @@ const MATRIX: migrate::M3 = [[1.1, -0.05, -0.05], [-0.02, 1.04, -0.02], [0.0, -0
 
 #[test]
 fn a_pass_touches_only_a_sidecar_beside_a_photo_with_a_sidecars_marks() {
-    let dir = scratch("scope");
+    let dir = scratch("sweep-pass-scope");
     // Another program's settings beside its own file, and a photo's namesake JSON without the marks.
     let foreign_tool = br#"{"name":"my app","settings":{"theme":"dark","fontSize":14},"recent":["a","b"]}"#;
     std::fs::write(dir.join("tool"), b"binary").unwrap();
@@ -59,7 +53,7 @@ fn a_pass_touches_only_a_sidecar_beside_a_photo_with_a_sidecars_marks() {
 
 #[test]
 fn a_format_that_asks_no_fact_never_asks_the_original_and_the_oldest_ask_how_it_decodes() {
-    let dir = scratch("lazy");
+    let dir = scratch("sweep-pass-lazy");
     let photo = dir.join("DSC_0001.NEF");
     std::fs::write(&photo, b"").unwrap();
     edited_at(&photo, chain::MATRICES_RETIRED_VERSION);
@@ -83,7 +77,7 @@ fn a_format_that_asks_no_fact_never_asks_the_original_and_the_oldest_ask_how_it_
 
 #[test]
 fn a_read_writes_nothing_and_facts_never_asked_never_say_a_camera_had_no_matrix() {
-    let dir = scratch("read-only");
+    let dir = scratch("sweep-pass-read-only");
     let photo = dir.join("DSC_0001.NEF");
     std::fs::write(&photo, b"").unwrap();
     let old = edited_at(&photo, chain::MATRICES_RETIRED_VERSION - 1);
@@ -124,7 +118,7 @@ fn shot(date: &str, fill: u8) -> Vec<u8> {
 
 #[test]
 fn another_files_sidecar_is_never_converted_with_this_files_facts() {
-    let dir = scratch("foreign");
+    let dir = scratch("sweep-pass-foreign");
     let photo = dir.join("DSC_0001.TIF");
     std::fs::write(&photo, shot("2024:05:01 10:00:00", 3)).unwrap();
     edited_at(&photo, chain::MATRICES_RETIRED_VERSION - 1);
@@ -146,7 +140,7 @@ fn another_files_sidecar_is_never_converted_with_this_files_facts() {
 
 #[test]
 fn a_write_laying_its_own_settings_needs_no_matrix_and_keeps_the_envelope() {
-    let dir = scratch("whole");
+    let dir = scratch("sweep-pass-whole");
     let photo = dir.join("DSC_0001.NEF");
     std::fs::write(&photo, b"").unwrap();
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
@@ -172,7 +166,7 @@ fn a_write_laying_its_own_settings_needs_no_matrix_and_keeps_the_envelope() {
 
 #[test]
 fn a_prepare_file_that_does_not_parse_never_blocks_a_frames_own_write() {
-    let dir = scratch("drafts");
+    let dir = scratch("sweep-pass-drafts");
     let photo = dir.join("DSC_0001.NEF");
     std::fs::write(&photo, b"").unwrap();
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);

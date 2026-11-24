@@ -4,16 +4,10 @@
 use oni_core::knob::Knob;
 use oni_core::preset_parameters::pasted_rows;
 use oni_core::{Archive, Command, EditorStore};
+use oni_fixtures::scratch;
 use oni_settings::sidecar::{self, url_for};
 use oni_settings::{Medal, PipelineSettings};
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-core-missing-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 fn text(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -31,7 +25,7 @@ fn edited() -> PipelineSettings {
 
 #[test]
 fn a_gesture_on_a_missing_original_writes_no_sidecar() {
-    let dir = scratch("gestures");
+    let dir = scratch("core-missing-gestures");
     let [open, present, moved] = ["O.tif", "A.tif", "B.tif"].map(|n| text(&dir.join(n)));
     let away = text(&dir.join("Away").join("C.tif"));
     for p in [&open, &present, &moved] {
@@ -76,7 +70,7 @@ fn a_gesture_on_a_missing_original_writes_no_sidecar() {
 
 #[test]
 fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
-    let dir = scratch("restore");
+    let dir = scratch("core-missing-restore");
     let disk = dir.join("T7");
     std::fs::create_dir_all(disk.join("Roll")).unwrap();
     let frames: Vec<String> = ["P1.RW2", "P2.RW2"].iter().map(|n| text(&disk.join("Roll").join(n))).collect();
@@ -107,7 +101,7 @@ fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
 
 #[test]
 fn copy_settings_reads_a_photo_not_open_off_its_sidecar_and_never_a_missing_one() {
-    let dir = scratch("copy");
+    let dir = scratch("core-missing-copy");
     let [open, other, moved] = ["O.tif", "A.tif", "B.tif"].map(|n| text(&dir.join(n)));
     for p in [&open, &other, &moved] {
         std::fs::write(p, b"").unwrap();

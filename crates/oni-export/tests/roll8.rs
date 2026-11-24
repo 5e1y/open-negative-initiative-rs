@@ -11,6 +11,7 @@ use oni_export::{
     Failure, Format, Image, ExifMetadata, Resize, Settings, capture_date, converted, encoded, estimate, gain_map, resized,
     scan_metadata, write,
 };
+use oni_fixtures::scratch;
 use oni_render::{Stage47, cpu};
 
 fn files(dir: &Path, extension: &str) -> Vec<PathBuf> {
@@ -22,13 +23,6 @@ fn files(dir: &Path, extension: &str) -> Vec<PathBuf> {
     out.sort();
     assert!(!out.is_empty(), "no {extension} in {}", dir.display());
     out
-}
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-export-{}-{name}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
 }
 
 /// A destination where nothing is replaced: any file found there is refused.
@@ -136,7 +130,7 @@ fn the_scans_own_exif_is_read_for_the_box() {
         assert!(!tags(&std::fs::read(&path).unwrap()).contains(&0x8827), "the RW2's own IFDs name an ISO");
     }
     // Twin: a file with no Exif reads an empty box and no date.
-    let bare = scratch("bare").join("bare.tiff");
+    let bare = scratch("export-bare").join("bare.tiff");
     let export = Settings::default();
     let rendered = converted(&Image { width: 2, height: 2, pixels: vec![0.5; 16] }, &export).unwrap();
     std::fs::write(&bare, encoded(&rendered, &export, &ExifMetadata::default()).unwrap()).unwrap();
@@ -148,7 +142,7 @@ fn the_scans_own_exif_is_read_for_the_box() {
 fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
     let Some(roll) = oni_fixtures::raw_dir("a_frame_exports_with_its_date_and_none_of_the_scans_fields") else { return };
     let source = roll.join("DSC_6432.NEF");
-    let dir = scratch("frame");
+    let dir = scratch("export-frame");
     let full = as_set(&source, decoded(&source));
     let date = capture_date(&source).expect("the frame has a capture date");
     // Twin first: the same reader sees the scan's own camera fields in the NEF itself.
@@ -228,7 +222,7 @@ fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
 fn the_source_is_never_overwritten() {
     let Some(roll) = oni_fixtures::raw_dir("the_source_is_never_overwritten") else { return };
     let source = roll.join("DSC_6436.NEF");
-    let dir = scratch("overwrite");
+    let dir = scratch("export-overwrite");
     let spelt = roll.join(".").join("DSC_6436.NEF");
     let mut destinations = vec![source.clone(), spelt];
     // A symbolic link needs no privilege on Unix alone.

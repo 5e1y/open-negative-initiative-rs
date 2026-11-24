@@ -1,16 +1,10 @@
 //! The Auto White Balance kept in the sidecar: it round-trips, a rewrite carries it, and it is never
 //! written where no sidecar stands.
 
+use oni_fixtures::scratch;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{AutoBalance, ConversionMode, PipelineSettings};
 use std::path::{Path, PathBuf};
-
-fn folder(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("oni-settings-auto-balance-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
 
 fn photo(dir: &Path, name: &str) -> PathBuf {
     let original = dir.join(name);
@@ -34,7 +28,7 @@ fn modified(original: &Path) -> std::time::SystemTime {
 
 #[test]
 fn the_kept_balance_round_trips_and_a_rewrite_carries_it() {
-    let dir = folder("round-trip");
+    let dir = scratch("settings-auto-balance-round-trip");
     let original = photo(&dir, "A.tif");
     sidecar::write(&edited(), &original, WriteOptions::default()).unwrap();
     let before = (sidecar::read(&original, false).unwrap(), modified(&original));
@@ -64,7 +58,7 @@ fn the_kept_balance_round_trips_and_a_rewrite_carries_it() {
 
 #[test]
 fn a_photo_with_no_sidecar_gains_none_for_its_balance_alone() {
-    let dir = folder("bare");
+    let dir = scratch("settings-auto-balance-bare");
     let bare = photo(&dir, "B.tif");
     assert!(!sidecar::set_auto_balance(&bare, false, &balance("f00d", [0.1; 3])).unwrap());
     assert!(!sidecar::url_for(&bare).exists(), "a sidecar was seeded for the balance");

@@ -14,8 +14,8 @@ fn neutral_xyz() -> [f64; 3] {
     white_xyz(Neutral::Swift)
 }
 
-fn converted_by(cam_xyz: &M3, stops: f64, colours: Colours) -> Option<Conversion> {
-    converted_on(cam_xyz, stops, colours, Neutral::Swift)
+fn converted_by(cam_xyz: &M3, stops: f64) -> Option<Conversion> {
+    converted_on(cam_xyz, stops, Neutral::Swift)
 }
 
 /// What LibRaw hands out for a white `w` whose most sensitive channel reaches the white level.
@@ -30,7 +30,7 @@ fn rendered(conv: &Conversion, w: [f64; 3]) -> [f64; 3] {
 
 #[test]
 fn the_5000_k_white_reads_neutral_at_the_baseline() {
-    let conv = converted_by(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix).unwrap();
+    let conv = converted_by(&Z_F, DEFAULT_BASELINE_EV).unwrap();
     let level = DEFAULT_BASELINE_EV.exp2();
     let out = rendered(&conv, neutral_xyz());
     for v in out {
@@ -93,54 +93,11 @@ fn the_extension_counts_only_when_the_bytes_claim_nothing() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// The camera channels LibRaw hands out for XYZ `w` scaled so its brightest channel sits at `top`.
-fn handed(conv: &Conversion, w: [f64; 3], top: f64) -> [f64; 3] {
-    let n = apply(&Z_F, w);
-    let hi = n.iter().cloned().fold(0.0, f64::max);
-    let most = conv.mul.iter().cloned().fold(0.0, f32::max) as f64;
-    let o = [0, 1, 2].map(|c| n[c] / hi * top * conv.mul[c] as f64 / most);
-    apply(&conv.matrix.map(|r| r.map(f64::from)), o)
-}
-
-#[test]
-fn the_sensor_s_channels_mix_nothing_and_its_neutral_keeps_the_matrix_s_level() {
-    let stops = DEFAULT_BASELINE_EV;
-    let (matrix, sensor) = (converted_by(&Z_F, stops, Colours::Matrix).unwrap(), converted_by(&Z_F, stops, Colours::Sensor).unwrap());
-    assert_eq!(sensor.mul, matrix.mul, "LibRaw demosaics on the same multipliers");
-    for r in 0..3 {
-        for c in (0..3).filter(|&c| c != r) {
-            assert_eq!(sensor.matrix[r][c], 0.0, "{:?}", sensor.matrix);
-        }
-    }
-    let (a, b) = (handed(&matrix, neutral_xyz(), 1.0), handed(&sensor, neutral_xyz(), 1.0));
-    for c in 0..3 {
-        assert!((b[c] - stops.exp2()).abs() < 1e-5 && (a[c] - b[c]).abs() < 1e-5, "{a:?} {b:?}");
-    }
-    // Twin: a colour the matrix pushes apart; through it the red leaks into another channel.
-    let red = handed(&matrix, xyz((0.5, 0.3)), 0.5);
-    let red_sensor = handed(&sensor, xyz((0.5, 0.3)), 0.5);
-    assert!(red.iter().zip(red_sensor).any(|(m, s)| (m - s).abs() > 0.05), "{red:?} {red_sensor:?}");
-}
-
-#[test]
-fn the_unbalanced_sensor_reads_the_photosites_share_of_the_white_level() {
-    let conv = converted_by(&Z_F, 0.0, Colours::SensorUnbalanced).unwrap();
-    let n = apply(&Z_F, neutral_xyz());
-    let hi = n.iter().cloned().fold(0.0, f64::max);
-    let out = handed(&conv, neutral_xyz(), 1.0);
-    for c in 0..3 {
-        assert!((out[c] - n[c] / hi).abs() < 1e-5, "{out:?} for {n:?}");
-    }
-    // Twin: unbalanced, the 5000 K neutral is not grey.
-    let spread = out.iter().cloned().fold(0.0, f64::max) - out.iter().cloned().fold(f64::MAX, f64::min);
-    assert!(spread > 0.2, "{out:?}");
-}
-
 #[test]
 fn a_singular_matrix_is_refused() {
-    assert!(converted_by(&[[0.0; 3]; 3], 0.0, Colours::Sensor).is_none());
+    assert!(converted_by(&[[0.0; 3]; 3], 0.0).is_none());
     // Twin: the Z f matrix is accepted.
-    assert!(converted_by(&Z_F, 0.0, Colours::Sensor).is_some());
+    assert!(converted_by(&Z_F, 0.0).is_some());
 }
 
 #[test]
@@ -167,14 +124,14 @@ fn planckian_5500(w: [f64; 3]) -> bool {
 fn a_slide_is_balanced_on_the_planckian_5500_k_and_a_negative_on_5000_k() {
     assert!(planckian_5500(white_xyz(Neutral::Slide)), "{:?}", white_xyz(Neutral::Slide));
     assert_eq!(white_xyz(Neutral::Swift), neutral_xyz(), "a negative's neutral is untouched");
-    let slide = converted_on(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix, Neutral::Slide).unwrap();
+    let slide = converted_on(&Z_F, DEFAULT_BASELINE_EV, Neutral::Slide).unwrap();
     let level = DEFAULT_BASELINE_EV.exp2();
     let out = rendered(&slide, white_xyz(Neutral::Slide));
     assert!(out.iter().all(|v| (v - level).abs() < 1e-5), "the 5500 K white reads grey: {out:?}");
     // Twin: the 5000 K white is warm on a slide's decode, and the 5500 K one cool on a negative's.
     let warm = rendered(&slide, neutral_xyz());
     assert!(warm[0] / warm[2] > 1.05, "{warm:?}");
-    let swift = converted_by(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix).unwrap();
+    let swift = converted_by(&Z_F, DEFAULT_BASELINE_EV).unwrap();
     let cool = rendered(&swift, white_xyz(Neutral::Slide));
     assert!(cool[2] / cool[0] > 1.05, "{cool:?}");
     assert!(!planckian_5500(neutral_xyz()));

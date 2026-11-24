@@ -1,17 +1,11 @@
 //! A mark that does not land names its cause: a newer sidecar, a missing original, a disk that
 //! refuses the write, each counted, never one hidden behind another.
 
+use oni_fixtures::scratch;
 use oni_library::trash;
 use oni_settings::Date;
 use oni_settings::sidecar::url_for;
-use std::path::{Path, PathBuf};
-
-fn scratch(name: &str) -> PathBuf {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-trash-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use std::path::Path;
 
 #[cfg(unix)]
 fn mode(path: &Path, bits: u32) {
@@ -22,7 +16,7 @@ fn mode(path: &Path, bits: u32) {
 #[cfg(unix)]
 #[test]
 fn a_mark_that_fails_on_one_sidecar_names_it_beside_a_refused_one() {
-    let dir = scratch("refused");
+    let dir = scratch("trash-refused");
     let newer = dir.join("A.NEF");
     std::fs::write(&newer, b"").unwrap();
     std::fs::write(url_for(&newer), br#"{"version": 99, "settings": {}}"#).unwrap();
@@ -65,7 +59,7 @@ fn many_failures_name_a_few_and_count_the_rest() {
 fn a_photo_held_back_in_an_earlier_format_says_its_own_reason() {
     use oni_settings::migrate::{chain, reshape};
     use oni_settings::{ConversionMode, Document, PipelineSettings};
-    let dir = scratch("held");
+    let dir = scratch("trash-held");
     let (held, newer) = (dir.join("A.NEF"), dir.join("B.NEF"));
     for p in [&held, &newer] {
         std::fs::write(p, b"").unwrap();

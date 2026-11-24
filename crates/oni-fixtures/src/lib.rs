@@ -1,4 +1,5 @@
 //! The folders the checks read and never write: the reference roll, the Lumix calibration files. Each lookup prints one line and answers `None` when its folder is absent.
+//! Beside them, the empty scratch folder a check writes in.
 
 pub mod dng;
 pub mod tiff;
@@ -26,6 +27,15 @@ pub fn present(which: (&str, &str), check: &str) -> Option<PathBuf> {
         println!("SKIPPED {check}: no {} (set {})", dir.display(), which.0);
         None
     }
+}
+
+/// An empty folder of this run's own, `oni-<label>-<pid>` in the system's temporary folder; a label
+/// stays unique among the checks of one test binary, which share its process.
+pub fn scratch(label: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("oni-{label}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
 }
 
 /// The reference roll, or `None` after a skip line.
