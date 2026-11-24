@@ -43,6 +43,7 @@ fn at_rest() -> Negative {
         own_pivot: [0.0; 3],
         own_slope: [1.0; 3],
         own_shift: [0.0; 3],
+        odds: 0.0,
         spread: 1.0,
         mixer: None,
         curve: None,
@@ -230,4 +231,40 @@ fn a_mixer_band_moves_its_own_hues_alone() {
     // Twin: the same dose on Red's band moves red.
     let on_red = Negative { mixer: Some(Spectrogram { hue_low: [20.0, 0.0, 0.0, 0.0], sat_low: [0.5, 0.0, 0.0, 0.0], hue_high: [0.0; 4], sat_high: [0.0; 4], ..blue }), ..rest };
     assert!((0..3).any(|c| (on_red.coloured(red)[c] - red[c]).abs() > 1e-2));
+}
+
+#[test]
+fn exposure_on_the_tone_share_holds_the_windows_ends_and_scales_each_ends_tones_about_it() {
+    let k = at_rest();
+    let span = k.span[0];
+    for odds in [-2.0f32, -0.4, 0.4, 2.0] {
+        let lit = Negative { odds, ..k };
+        // The window's black and white stay, and past them nothing moves.
+        for d in [-0.3, 0.0, span, span + 0.4] {
+            assert_eq!(lit.exposed([d; 3])[0], d, "{odds}: {d}");
+        }
+        // By each end a gain about it: the black's tones by e^odds, the white's distances by its inverse.
+        let by_black = |t: f32| lit.exposed([t * span; 3])[0] / (t * span);
+        let by_white = |t: f32| (span - lit.exposed([(1.0 - t) * span; 3])[0]) / (t * span);
+        for t in [1e-3f32, 1e-2] {
+            assert!((by_black(t) / odds.exp() - 1.0).abs() < 2.5 * t * odds.abs().exp(), "{odds}, {t}: {}", by_black(t));
+            assert!((by_white(t) * odds.exp() - 1.0).abs() < 2.5 * t * odds.abs().exp(), "{odds}, {t}: {}", by_white(t));
+        }
+        // The share's odds take the gain on every tone, and the tones keep their order.
+        let mut last = f32::NEG_INFINITY;
+        for i in 1..1000 {
+            let u = i as f32 / 1000.0;
+            let v = lit.exposed([u * span; 3])[0] / span;
+            assert!(((v / (1.0 - v)).ln() - (u / (1.0 - u)).ln() - odds).abs() < 2e-3, "{odds}, {u}: {v}");
+            assert!(v > last, "{odds}, {u}");
+            last = v;
+        }
+    }
+    // Twin: the same light laid in log exposure, as the film develops it, moves the window's white.
+    let shot = Negative { shift: [0.3; 3], ..k };
+    assert!(shot.redeveloped([span; 3])[0] > span + 0.05, "{:?}", shot.redeveloped([span; 3]));
+    // A negative's tone share reads from its densest on a positive: its bare film's white stays there too.
+    let positive = Negative { sense: -1.0, span: [-2.0; 3], origin: 1.0, odds: 0.4, ..k };
+    assert_eq!(positive.exposed([0.0; 3])[0], 0.0);
+    assert!(positive.exposed([-1.0; 3])[0] > -1.0, "{:?}", positive.exposed([-1.0; 3]));
 }

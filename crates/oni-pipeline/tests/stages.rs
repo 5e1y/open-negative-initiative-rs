@@ -49,6 +49,10 @@ fn per_pixel_kernels_match_their_references() {
     let n = lit.negative.expect("Lighting moved");
     let moved = oni_render::Negative { shift: n.shift.map(|v| v + 0.01), ..n };
     per_pixel(&mut g, "negative", &film, &transmitted, stages::negative(&n), |p| cpu::negative(p, &n), |p| cpu::negative(p, &moved));
+    // Exposure's gain on the tone share, a hundredth of a stop's odds off.
+    assert!(n.odds != 0.0, "Exposure lays its gain on the tone share");
+    let brighter = oni_render::Negative { odds: n.odds + 0.01, ..n };
+    per_pixel(&mut g, "negative, Exposure on the tone share", &film, &transmitted, stages::negative(&n), |p| cpu::negative(p, &n), |p| cpu::negative(p, &brighter));
     // Stage 4-7's kernel alone, past Lighting's pass.
     let k = oni_render::Stage47 { negative: None, ..lit };
     let shifted = oni_render::Stage47 { gain: [k.gain[0], k.gain[1] * 1.01, k.gain[2]], ..k };

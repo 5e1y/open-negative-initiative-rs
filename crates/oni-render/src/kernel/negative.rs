@@ -1,7 +1,7 @@
 //! Lighting on the negative: a pixel's density above the bare film read back to each layer's log exposure through its
-//! stock's development, couplers included, Exposure, Contrast, the colour tools and the filters laid there and the film
-//! developed again, as a shot exposed otherwise; then the points, zones and mids on its density, and that density coded
-//! on the bare film's own as the light the window reads.
+//! stock's development, couplers included, Contrast, the colour tools and the filters laid there and the film developed
+//! again, as a shot exposed otherwise; then Exposure on its tone share, the points, zones and mids, and that density
+//! coded on the bare film's own as the light the window reads.
 
 use super::*;
 use super::saturation_curve::SaturationCurve;
@@ -164,6 +164,9 @@ pub struct Negative {
     pub own_pivot: V3,
     pub own_slope: V3,
     pub own_shift: V3,
+    /// Exposure on each channel's tone share once developed again, held at the window's black and white: the share's
+    /// odds `u / (1 − u)` taken by `e^odds` on the three, so a neutral stays one; 0 at rest.
+    pub odds: f32,
     /// The colour tools on each layer's density read as the log exposure a grey develops it at, about `pivot`, Lighting's
     /// moves and filters laid: its neutral the luma's weight of the three, its chroma the rest. Saturation spreads the
     /// chroma by `spread`, the mixer turns, spreads and lights it by hue, the curve spreads it by the print's
@@ -215,6 +218,7 @@ impl Negative {
             v3(self.own_slope, 0.0),
             v3(self.own_shift, 0.0),
             v3(self.scale, 0.0),
+            [self.odds.exp(), 0.0, 0.0, 0.0],
             [self.spread, flag(self.curve.is_some()), flag(self.mixer.is_some()), 0.0],
         ];
         rows.extend(mixer);
@@ -232,6 +236,11 @@ impl Negative {
 
     /// Whether Exposure, Contrast or a filter moves any layer.
     pub fn moves(&self) -> bool {
+        self.develops() || self.odds != 0.0
+    }
+
+    /// Whether a move in log exposure develops any layer again: Contrast, a filter or its neutral hold.
+    fn develops(&self) -> bool {
         self.slope != [1.0; 3] || self.shift != [0.0; 3] || self.own_slope != [1.0; 3] || self.own_shift != [0.0; 3]
     }
 
@@ -324,11 +333,16 @@ impl Negative {
         with_alpha(map(self.toned(density), |c, v| (-LOG2_10 * (v + self.black[c])).exp2()), 1.0)
     }
 
-    /// The film holding `density` in the development's sense developed again under Lighting's moves and the colour
-    /// tools. Over the shoulder a density takes the shoulder's move; under the toe's foot the foot's, less the nearer
-    /// the fog, which no exposure moves.
+    /// The film holding `density` in the development's sense under Lighting: developed again under its moves and the
+    /// colour tools, then its Exposure on the tone share.
     pub fn redeveloped(&self, density: V3) -> V3 {
-        if !self.moves() && !self.colours() {
+        self.exposed(self.developed_again(density))
+    }
+
+    /// `density` developed again under the moves and the colour tools. Over the shoulder a density takes the shoulder's
+    /// move; under the toe's foot the foot's, less the nearer the fog, which no exposure moves.
+    fn developed_again(&self, density: V3) -> V3 {
+        if !self.develops() && !self.colours() {
             return density;
         }
         let d = self.development;
@@ -342,26 +356,6 @@ impl Negative {
         })
     }
 
-    /// Whether the points, zones or mids lay any density.
-    pub fn tones(&self) -> bool {
-        self.points_black != [0.0; 3] || self.points_white != [0.0; 3] || self.zones != [0.0; 2] || self.mids != [0.0; 3]
-    }
-
-    /// The density above the bare film Lighting's tones leave, each read on its tone share.
-    pub fn toned(&self, density: V3) -> V3 {
-        if !self.tones() {
-            return density;
-        }
-        let u = map(density, |c, d| (self.origin + d / self.span[c] - self.points_black[c]) / (1.0 - self.points_black[c] - self.points_white[c]));
-        let tone = (u[0] + u[1] + u[2]) / 3.0;
-        let lift = if self.zones != [0.0; 2] && (0.0..=1.0).contains(&tone) {
-            quartered(quartered(tone, self.zones[0], false), self.zones[1], true) - tone
-        } else {
-            0.0
-        };
-        map(u, |c, v| (midded(v + lift, self.mids[c]) - self.origin) * self.span[c])
-    }
-
     /// A pixel's density above the bare film under Lighting.
     pub fn lit(&self, s: V4) -> V3 {
         let redeveloped = self.redeveloped(self.read(s));
@@ -373,6 +367,8 @@ impl Negative {
 pub fn negative(s: V4, k: &Negative) -> V4 {
     with_alpha(map(k.lit(s), |c, v| (-LOG2_10 * (v + k.black[c])).exp2()), s[3])
 }
+
+mod tones;
 
 #[cfg(test)]
 mod tests;
