@@ -60,6 +60,8 @@ pub const SCANNER_OUTPUT: &str = include_str!("wgsl/scanner_output.wgsl");
 pub const SCANNER_ENCODE: &str = include_str!("wgsl/scanner_encode.wgsl");
 /// `dye_amounts_px(s)`, reading `dye_table(i, row)`.
 pub const DYE_AMOUNTS: &str = include_str!("wgsl/dye_amounts.wgsl");
+/// `held_black_px(lit, rest)`.
+pub const HELD_BLACK: &str = include_str!("wgsl/held_black.wgsl");
 /// `projection_px(s)`, reading `projection_table(i, row)`.
 pub const PROJECTION: &str = include_str!("wgsl/projection.wgsl");
 /// `virtual_negative_px(s)`, reading `negative_table(i, j)`.

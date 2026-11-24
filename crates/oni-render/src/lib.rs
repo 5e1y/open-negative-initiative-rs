@@ -19,6 +19,7 @@ pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
 pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, GRAIN_NODES, Grain, grain_node_light};
 pub use kernel::halation::{HALATION_COLOUR, HALATION_THRESHOLD, Halation};
+pub use kernel::held_black::HeldBlack;
 pub use kernel::negative::{LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, NEGATIVE_CURVE_NODES, NEGATIVE_STEPS, Development, Negative};
 pub use kernel::orient::Orient;
 pub use kernel::paper::{PAPER_CURVE_NODES, Paper, fade, lifted, share, viewed};

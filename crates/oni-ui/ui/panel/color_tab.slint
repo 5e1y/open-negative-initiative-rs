@@ -242,7 +242,7 @@ export component ColorPane inherits Pane {
     // A slide on the projector's screen, never on a paper: the film and lamp it is shown by, then its screen's ends.
     if PanelState.projected: Block {
         title: @tr("Projector");
-        help: @tr("A slide is shown as a projector shows it on a white screen: its film's dyes, read back from the scan, filter a 3200 K projector lamp, seen by an eye adapted to the bare film's light, with the room's faint veil over every tone. Lighting exposes the slide again through its film's curve, so a brighter Exposure reaches into the shadows the film still holds.\n\nProjected blacks keeps the screen's own black, the film's densest under the veil, and the bare film's white; off, that black lies on pure black and that white on pure white.");
+        help: @tr("A slide is shown as a projector shows it on a white screen: its film's dyes, read back from the scan, filter a 3200 K projector lamp, seen by an eye adapted to the bare film's light, with the room's faint veil over every tone. Lighting exposes the slide again through its film's curve, and its black stays where the slide shows it: the deepest shadows take part of a move, the rest all of it.\n\nProjected blacks keeps the screen's own black, the film's densest under the veil, and the bare film's white; off, that black lies on pure black and that white on pure white.");
         Label { role: TextRole.note; text: PanelState.projector-note; }
         HorizontalLayout {
             spacing: Space.xs;

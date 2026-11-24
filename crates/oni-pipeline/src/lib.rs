@@ -207,7 +207,8 @@ impl Pipeline {
         self.on_screen(graph, amounts, s, stock)
     }
 
-    /// A slide's dyes, coded as `10^-amount`, under Lighting, filtering the projector's lamp on the screen, its ends laid.
+    /// A slide's dyes, coded as `10^-amount`, under Lighting, filtering the projector's lamp on the screen, its ends laid,
+    /// then laid back onto the slide at rest over its deep shadows, so no slider lifts the film's black.
     fn on_screen(&mut self, graph: &mut Graph, amounts: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
         let p = film::projection::projected(stock);
         let key = (stock, p.revision);
@@ -215,14 +216,18 @@ impl Pipeline {
             e.insert(graph.upload(p.projection.bands as u32, 2, &p.table)?);
         }
         let table = Image::new(&self.projections[&key]);
-        let lit = match projector::lighting(s, stock) {
-            Some(n) => amounts.then(stages::negative(&n)),
-            None => amounts,
+        let ends = projector::ends(s, stock);
+        let on_screen = |a: Image| {
+            let shown = a.then_reading(stages::projection(&p.projection), std::slice::from_ref(&table));
+            match &ends {
+                Some(m) => shown.then(stages::color_matrix(m)),
+                None => shown,
+            }
         };
-        let shown = lit.then_reading(stages::projection(&p.projection), &[table]);
-        Ok(match projector::ends(s, stock) {
-            Some(m) => shown.then(stages::color_matrix(&m)),
-            None => shown,
+        let rest = on_screen(amounts.clone());
+        Ok(match projector::lighting(s, stock) {
+            Some(n) => on_screen(amounts.then(stages::negative(&n))).then_reading(stages::held_black(&projector::held(s, stock)), &[rest]),
+            None => rest,
         })
     }
 
