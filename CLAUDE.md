@@ -94,7 +94,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   and the bare base is solved, pixel by pixel, for its film's three dyes under a 5500 K scanner lamp (`dye_amounts`), then shown as a
   projector shows it on a white screen; its film is its roll's reversal stock where the sheet is profiled, else Ektachrome E100.
   Lighting re-exposes the slide through its stock's curve: each layer read as the neutral density holding it, back to log
-  exposure along the green layer's curve, so a grey stays grey. Projected blacks keeps the screen's own black and white, off at
+  exposure along the green layer's curve, so a grey stays grey; the screen then lays the lit slide back onto its rest over the
+  deep shadows (`held_black`), so no slider lifts the film's black. Projected blacks keeps the screen's own black and white, off at
   rest, pure black and white as on a display. A measure upstream of the print reads the scan through the windows; a legacy print
   keeps its render.
 - **The sidecar format is ONI's to change** (`oni-frame`, plain `serde_json` of `oni_settings::document`): every

@@ -1,7 +1,7 @@
 //! A scanned slide on the projector's screen: the GPU's dye solve against its scalar reference on every branch, the bare
 //! film projected as the screen's white and a dense one as its veil, the unmeasured bands held, Projected blacks' two
-//! ends, Lighting through the stock's curve keeping a grey grey, and the editor's chain laying it all. Each verdict has a
-//! twin.
+//! ends, the film's black held under every Lighting slider, Lighting through the stock's curve keeping a grey grey, and the
+//! editor's chain laying it all. Each verdict has a twin.
 
 mod common;
 
@@ -10,7 +10,7 @@ use oni_graph::Image;
 use oni_pipeline::film::projection::{self, FLARE};
 use oni_pipeline::film::profile::Profile;
 use oni_pipeline::{Pipeline, Request, negative, projector, stages};
-use oni_render::{DYE_HIGH, DYE_LOW, DyeAmounts, cpu};
+use oni_render::{DYE_HIGH, DYE_LOW, DyeAmounts, HeldBlack, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock};
 
@@ -114,6 +114,77 @@ fn projected_blacks_keep_the_screens_ends_and_off_lay_them_on_pure_black_and_whi
 }
 
 #[test]
+fn the_films_black_stays_where_the_slide_at_rest_shows_it_under_every_exposure_and_the_mids_follow_whole() {
+    let s = slide();
+    let p = projection::projected(VELVIA);
+    let curves = Profile::read(VELVIA.entry().profile.as_bytes()).unwrap().density_curves;
+    let densest: [f32; 3] = std::array::from_fn(|c| curves.iter().map(|d| d[c]).fold(f64::NEG_INFINITY, f64::max) as f32);
+    let coded = |a: [f32; 3]| [10f32.powf(-a[0]), 10f32.powf(-a[1]), 10f32.powf(-a[2]), 1.0];
+    // The film's densest, and a scan's black a little lighter, as the owner's Velvia roll holds it: each held within 5e-5
+    // of its rest, a twentieth of L* 1, where unheld Exposure +2 lifts it by more than 2e-3.
+    let blacks = [coded(densest), coded([2.70, 3.40, 2.87])];
+    let at = |s: &PipelineSettings, e: f32| PipelineSettings { print: Print { exposure: e, ..s.print }, ..s.clone() };
+    // Today's projection of Lighting, unheld: the slide re-exposed and shown as it lands.
+    let unheld = |s: &PipelineSettings, q: V4| {
+        let shown = cpu::projection(projector::lighting(s, VELVIA).map_or(q, |n| cpu::negative(q, &n)), &p.projection, &p.table);
+        projector::ends(s, VELVIA).map_or(shown, |m| cpu::color_matrix(shown, &m))
+    };
+    for veiled in [false, true] {
+        let s = PipelineSettings { print: Print { projected_blacks: veiled, ..s.print }, ..s.clone() };
+        for black in blacks {
+            let rest = projector::shown(black, &s, VELVIA);
+            for e in [-2.0f32, -1.0, 1.0, 2.0] {
+                let held = projector::shown(black, &at(&s, e), VELVIA);
+                assert!((0..3).all(|c| (held[c] - rest[c]).abs() < 5e-5), "Projected blacks {veiled}, {e:+}: {held:?} {rest:?}");
+            }
+            // Twin: unheld, Exposure +2 lifts that black into a colour, its blue the most.
+            let lifted = unheld(&at(&s, 2.0), black);
+            println!("Projected blacks {veiled}: black {:?} held at {:?}, unheld at +2 {:?}", &black[..3], &rest[..3], &lifted[..3]);
+            assert!(lifted[2] - rest[2] > 2e-3 && lifted[2] > lifted[1], "{lifted:?}");
+        }
+    }
+    // A tone the slide shows past the reach at rest follows Lighting whole, within the float's rounding.
+    let scanned = projection::scanned(VELVIA);
+    let k = projector::scanned(&s, VELVIA);
+    let mids: Vec<V4> = noise(17, 11, 6, 0.08, 0.9).iter().map(|q| cpu::dye_amounts(*q, &k, &scanned.table)).collect();
+    let mut followed = 0;
+    for e in [-2.0f32, -1.0, 1.0, 2.0] {
+        let lit = at(&s, e);
+        for q in &mids {
+            let rest = projector::shown(*q, &s, VELVIA);
+            if (0..3).map(|c| oni_render::LUMA[c] * rest[c]).sum::<f32>() < projector::held(&s, VELVIA).reach {
+                continue;
+            }
+            let (held, whole) = (projector::shown(*q, &lit, VELVIA), unheld(&lit, *q));
+            assert!((0..3).all(|c| (held[c] - whole[c]).abs() <= 1e-6 * (1.0 + whole[c].abs())), "{e:+}: {held:?} {whole:?}");
+            followed += 1;
+        }
+    }
+    assert!(followed > 300, "{followed}");
+    // Twin: a deep shadow, under the reach at rest, takes only part of the move.
+    let deep = cpu::dye_amounts([0.004, 0.003, 0.004, 1.0], &k, &scanned.table);
+    let (held, whole, rest) = (projector::shown(deep, &at(&s, 2.0), VELVIA), unheld(&at(&s, 2.0), deep), projector::shown(deep, &s, VELVIA));
+    println!("a deep shadow at +2: rest {:?}, held {:?}, unheld {:?}", &rest[..3], &held[..3], &whole[..3]);
+    assert!(held[1] > rest[1] && held[1] - rest[1] < 0.5 * (whole[1] - rest[1]));
+}
+
+#[test]
+fn the_gpu_holds_a_slides_black_as_its_reference_does() {
+    let Some(mut g) = graph("the_gpu_holds_a_slides_black_as_its_reference_does") else { return };
+    let (w, h) = (23, 13);
+    // The rest from under its black to past the reach, the lit picture anywhere, so every branch of the share is taken.
+    let rest: Vec<V4> = noise(w, h, 4, -0.01, 0.08).iter().map(|q| [q[0], q[1], q[2], 1.0]).collect();
+    let lit: Vec<V4> = noise(w, h, 5, 0.0, 1.0).iter().map(|q| [q[0], q[1], q[2], 0.5]).collect();
+    let k = HeldBlack { black: 0.005, reach: 0.044 };
+    let (a, b) = (g.upload(w, h, &lit).unwrap(), g.upload(w, h, &rest).unwrap());
+    let out = whole(&mut g, &Image::new(&a).then_reading(stages::held_black(&k), &[Image::new(&b)]));
+    let reference: Vec<V4> = lit.iter().zip(&rest).map(|(l, r)| cpu::held_black(*l, *r, &k)).collect();
+    // Twin: the reach doubled.
+    let twin = HeldBlack { reach: 0.088, ..k };
+    judge("a slide's black held", &out, &reference, &lit.iter().zip(&rest).map(|(l, r)| cpu::held_black(*l, *r, &twin)).collect::<Vec<_>>());
+}
+
+#[test]
 fn lighting_re_exposes_the_slide_through_its_films_curve_and_a_grey_stays_grey() {
     let s = slide();
     let scanned = projection::scanned(VELVIA);
@@ -122,7 +193,7 @@ fn lighting_re_exposes_the_slide_through_its_films_curve_and_a_grey_stays_grey()
     let lit = PipelineSettings { print: Print { exposure: 1.0, ..s.print }, ..s.clone() };
     let n = negative::slide(&lit, VELVIA).expect("Exposure moves the slide");
     let at = |e: f64| std::array::from_fn::<f32, 3, _>(|c| oni_pipeline::film::bake::interpolate(e, &le, &tone, c) as f32);
-    for e in [-1.0f64, -0.5, 0.0, 0.5] {
+    for e in [-1.0f64, -0.5, -0.25, 0.0, 0.5] {
         // A grey of the film at `e`, its amounts as the sheet's green layer lays a neutral.
         let grey = at(e);
         let coded = [10f32.powf(-grey[0]), 10f32.powf(-grey[1]), 10f32.powf(-grey[2]), 1.0];
@@ -130,9 +201,14 @@ fn lighting_re_exposes_the_slide_through_its_films_curve_and_a_grey_stays_grey()
         let want = at(e + std::f64::consts::LOG10_2);
         println!("a grey at log exposure {e:+}: {grey:?} to {:?}, its sheet a stop over {want:?}", &moved[..3]);
         assert!((0..3).all(|c| (moved[c] - want[c]).abs() < 1e-3), "{moved:?} {want:?}");
-        // Its screen is the film's grey a stop over, as the projector's lamp shows it: brighter, its colour that grey's.
+        // Past the reach the black is held under, its screen is the film's grey a stop over, as the projector's lamp shows
+        // it: brighter, its colour that grey's.
         let veiled = PipelineSettings { print: Print { projected_blacks: true, ..lit.print }, ..lit.clone() };
         let rest = PipelineSettings { print: Print { exposure: 0.0, ..veiled.print }, ..veiled.clone() };
+        let at_rest = projector::shown(coded, &rest, VELVIA);
+        if (0..3).map(|c| oni_render::LUMA[c] * at_rest[c]).sum::<f32>() < projector::held(&veiled, VELVIA).black + projector::held(&veiled, VELVIA).reach {
+            continue;
+        }
         let shown = projector::shown(coded, &veiled, VELVIA);
         let over = projector::shown([10f32.powf(-want[0]), 10f32.powf(-want[1]), 10f32.powf(-want[2]), 1.0], &rest, VELVIA);
         println!("  its screen: {:?}, the grey a stop over at rest {:?}", &shown[..3], &over[..3]);

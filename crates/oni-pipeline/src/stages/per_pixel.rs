@@ -2,7 +2,7 @@
 
 use super::*;
 use oni_graph::Image;
-use oni_render::{Negative, Paper};
+use oni_render::{HeldBlack, Negative, Paper};
 
 /// A kernel's composed shader; for one reading only its input, its source and its call on `v`, the
 /// input at `p`, so `laid` may run several in one pass.
@@ -40,6 +40,7 @@ kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
 kernel!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { return flat_field_px(load(p), load1(p)); }");
+kernel!(HELD_BLACK, [wgsl::HELD_BLACK], "fn pixel(p: vec2<i32>) -> vec4<f32> { return held_black_px(load(p), load1(p)); }");
 kernel!(SATURATION, wgsl::SATURATION_CURVE, call "saturation_curve_px(v)");
 kernel!(MATRIX, wgsl::COLOR_MATRIX, call "color_matrix_px(v)");
 kernel!(MOMENTS, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_MOMENTS], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_moments_px(load(p)); }");
@@ -94,6 +95,11 @@ pub fn output_clip() -> PerPixel {
 /// The division by the mask its first auxiliary image holds, laid on the frame's extent.
 pub fn flat_field(k: &FlatField) -> PerPixel {
     PerPixel { name: "flat-field", kernel: &FLAT_FIELD, params: uniform(HEAD, &k.rows()) }
+}
+
+/// The lit slide laid back onto its rest, the auxiliary image, over the deep shadows.
+pub fn held_black(k: &HeldBlack) -> PerPixel {
+    PerPixel { name: "held-black", kernel: &HELD_BLACK, params: uniform(HEAD, &k.rows()) }
 }
 
 pub fn saturation(k: &SaturationCurve) -> PerPixel {
