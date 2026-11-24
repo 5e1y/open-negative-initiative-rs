@@ -1,6 +1,7 @@
 //! Format 64 keeps every render: a sidecar of format 61 on every pipe, its Exposure at the former rest or off it, reads
 //! Exposure as its departure from the pipe's rest and prints to the bit as format 61 did, stage 4-7 on the CPU and the
-//! whole chain on the GPU. A negative at Exposure 0 prints its grey at a plain RAW's. Each verdict has a twin.
+//! whole chain on the GPU. A print on a paper lays Prepare's black and white on its own ends at any Exposure. Each verdict
+//! has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -9,7 +10,7 @@ mod frames;
 use common::V4;
 use frames::*;
 use oni_graph::Graph;
-use oni_pipeline::{Inputs, Pipeline, Request, conversion, film, paper};
+use oni_pipeline::{Inputs, Pipeline, Request, conversion, film};
 use oni_render::cpu;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 use serde_json::Value;
@@ -19,6 +20,7 @@ fn former_rest(mode: ConversionMode) -> f32 {
     if mode == ConversionMode::Positive { 0.0 } else { 1.5 }
 }
 
+/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
 fn onis(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { print_paper: None, ..s }
 }
@@ -36,17 +38,16 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut contrasted = onis(prepared_negative());
     contrasted.print.contrast = 0.2;
     vec![
-        ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, negative, Contrast", contrasted),
-        ("ONI's print, legacy Frontier", legacy),
-        ("ONI's print, digital", onis(digital())),
-        ("ONI's print, black and white", onis(mono())),
-        ("ONI's print, slide", slide()),
+        ("ONI Standard, negative", onis(prepared_negative())),
+        ("ONI Standard, negative, Contrast", contrasted),
+        ("legacy print, Frontier", legacy),
+        ("ONI Standard, digital", onis(digital())),
+        ("ONI Standard, black and white", onis(mono())),
+        ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
-        ("neutral paper", PipelineSettings { paperless: true, ..prepared_negative() }),
     ]
 }
 
@@ -94,11 +95,10 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
     hash
 }
 
-/// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
-/// on Apple silicon), a paper's white on pure white without Print lift, Exposure held at the window's ends; a slide on the
-/// GPU on its projector.
-const BEFORE_CPU: u64 = 0xa128_0d89_6b78_6715;
-const BEFORE_GPU: u64 = 0x3a03_0c06_6e9a_591d;
+/// Every pipe's print as format 61 stored it, folded on the CPU and on the GPU (Metal on Apple silicon): a legacy print on
+/// its own curve, every other on its paper's useful range, Exposure held at the window's ends; a slide on its projector.
+const BEFORE_CPU: u64 = 0x4137_a4f7_75f4_f909;
+const BEFORE_GPU: u64 = 0xd1ee_b7ff_a434_0623;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {
@@ -169,16 +169,24 @@ fn grey(s: &PipelineSettings) -> f32 {
 }
 
 #[test]
-fn a_negative_at_exposure_zero_prints_its_grey_at_a_plain_raws() {
-    let plain = *paper::GREY_PRINT;
-    for (label, s) in pipes().into_iter().filter(|(_, s)| s.mode == ConversionMode::Negative && s.legacy_print.is_none()) {
+fn at_any_exposure_a_paper_lays_prepares_black_and_white_on_its_own_ends() {
+    let mut seen = 0;
+    // Contrast, as every other Lighting slider, moves the whites freely.
+    for (label, s) in pipes().into_iter().filter(|(_, s)| s.paper().is_some() && s.legacy().is_none() && s.print.contrast == 0.0) {
         assert_eq!(s.print.exposure, 0.0, "{label}: Exposure rests at 0");
-        let at = grey(&s);
-        println!("{label}: the grey at Exposure 0 prints {at:.5}, a plain RAW's {plain:.5}");
-        assert!((at / plain).log2().abs() < 0.05, "{label}: {at} against {plain}");
-        // Twin: the former rest's 0, a stop and a half under, prints the grey far darker.
+        for exposure in [0.0f32, -1.5, 1.0] {
+            let t = PipelineSettings { print: oni_settings::tone::Print { exposure, ..s.print }, ..s.clone() };
+            let k = conversion::stage47(&t);
+            let p = k.paper.expect("a paper");
+            let [black, white, _] = anchor_scans(&t).map(|q| cpu::stage47(q, &k));
+            let off = |v: V4, a: [f32; 3]| (0..3).map(|c| (v[c] - a[c]).abs()).fold(0.0f32, f32::max);
+            println!("{label}, Exposure {exposure:+}: black {black:?}, white {white:?}");
+            assert!(off(black, p.anchor) < 1e-5 && off(white, p.white_anchor) < 1e-4, "{label}, {exposure}: {black:?} {white:?}");
+        }
+        // Twin: Exposure moves the tones between, the grey a stop and a half under printing darker by half a stop at least.
         let under = PipelineSettings { print: oni_settings::tone::Print { exposure: -1.5, ..s.print }, ..s.clone() };
-        assert!((grey(&under) / plain).log2() < -0.5, "{label}: {} under the former rest", grey(&under));
+        assert!((grey(&under) / grey(&s)).log2() < -0.5, "{label}: {} against {}", grey(&under), grey(&s));
+        seen += 1;
     }
+    assert!(seen >= 6, "{seen}");
 }
-

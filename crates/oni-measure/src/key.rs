@@ -30,17 +30,6 @@ pub fn roll_measured(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSetting
     roll::measured(path, s, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// A digital photo's lights on its film's own reference: the reference channel's light end, read in front of the
-/// levels at its film's gains, as a share of that reference's span from the bare film.
-pub fn digital_lights(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<f32> {
-    let film = s.film()?.stock.reference();
-    let read = r.reading(copy, s, Stage::Levels).histogram;
-    let c = crate::auto_levels::REFERENCE;
-    let high = read.ends.as_ref().filter(|e| e.len() == 3)?[c][1];
-    let span = film.white[c] - film.black[c];
-    (span > 0.0).then(|| (high - film.black[c]) / span)
-}
-
 /// A slide read at rest gains through its window, what the roll's screen sums; `None` for a blank
 /// slide: no cell of it holds a colour, every one black or clipped.
 pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<Histogram> {

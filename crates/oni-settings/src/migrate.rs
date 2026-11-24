@@ -19,6 +19,7 @@ pub mod departure;
 pub mod digital_film;
 pub mod digital_scan;
 pub mod draft;
+pub mod every_paper;
 pub mod exposure;
 pub mod grain_size;
 pub mod lighting;
@@ -29,6 +30,7 @@ pub mod matrices;
 mod on_disk;
 pub mod reshape;
 pub mod scan_line;
+pub mod sensor_white;
 pub mod slide_paper;
 pub mod slide_projector;
 pub mod measured_dyes;
@@ -315,8 +317,8 @@ fn typed_steps(
     let s = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, film)));
     let s = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, s)), scanner);
     let s = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, s, former), raw));
-    let s = digital_scan::caught_up(version, layer_densities::caught_up(version, s));
-    departure::caught_up(version, lighting_on_negative::caught_up(version, s))
+    let s = sensor_white::caught_up(version, digital_scan::caught_up(version, layer_densities::caught_up(version, s)));
+    every_paper::caught_up(version, departure::caught_up(version, lighting_on_negative::caught_up(version, s)), raw)
 }
 
 fn stored(bytes: &[u8]) -> Result<Object, Refusal> {

@@ -93,8 +93,7 @@ impl Render {
     pub fn of(key: &'static str, stock: film::Stock) -> Render {
         let v = VirtualStock::of(key);
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(v);
-        s.print_paper.get_or_insert_with(Default::default);
-        s.paperless = true;
+        s.print_paper = Some(Default::default());
         s.gains.stops = stock.reference.stops;
         s.levels = stock.reference.levels();
         let to_2020 = matmul(&inv(&M2020), &SRGB_TO_XYZ);

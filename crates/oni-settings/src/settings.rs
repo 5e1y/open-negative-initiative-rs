@@ -83,12 +83,10 @@ pub struct PipelineSettings {
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
     pub print: Print,
-    /// The virtual enlarger's paper, printing the negative in place of ONI's own print; none prints on ONI's.
+    /// The paper the enlarger prints the negative on; none names the default, but on a legacy print, which then keeps
+    /// the print it was edited on.
     #[serde(rename = "printPaper", skip_serializing_if = "Option::is_none", default)]
     pub print_paper: Option<PaperStock>,
-    /// The enlarger printing on a neutral paper, its paper's curves and dyes taken away; the paper stays chosen.
-    #[serde(skip_serializing_if = "std::ops::Not::not", default)]
-    pub paperless: bool,
     /// The former Scanner face's print a photo edited there keeps; none on every other photo.
     #[serde(rename = "legacyPrint", skip_serializing_if = "Option::is_none", default)]
     pub legacy_print: Option<LegacyPrint>,
@@ -143,7 +141,6 @@ impl Default for PipelineSettings {
             balance_strength: filter_balance::RESTING_STRENGTH,
             print: Print::default(),
             print_paper: None,
-            paperless: false,
             legacy_print: None,
             density: 0.0,
             manual_curves: CurveSet::default(),
@@ -176,25 +173,28 @@ impl PipelineSettings {
         block
     }
 
-    /// Whether a paper can print this frame: every one but a positive read as its own negative, whose light no
-    /// enlarger passes, and a slide, scanned or shot on a reversal film, which is projected.
+    /// Whether a paper prints this frame: every one but a slide, scanned or shot on a reversal film, which is projected.
     pub fn takes_paper(&self) -> bool {
-        !self.inverted_source && !self.mode.is_slide() && self.projector().is_none()
+        !self.mode.is_slide() && self.projector().is_none()
     }
 
-    /// The paper the render prints on: the chosen one where the frame takes a paper.
+    /// The paper the render prints on where the frame takes one: the chosen one, else the default; a legacy print keeps
+    /// the one it was edited on, none its own print (owner's call: every other print is made on a paper).
     pub fn paper(&self) -> Option<PaperStock> {
-        self.print_paper.filter(|_| self.takes_paper())
+        if !self.takes_paper() {
+            return None;
+        }
+        if self.legacy().is_some() { self.print_paper } else { Some(self.fitting_paper()) }
     }
 
-    /// The paper a print on paper takes: the chosen one, else the default.
+    /// The paper chosen, else the default.
     pub fn fitting_paper(&self) -> PaperStock {
         self.print_paper.unwrap_or_default()
     }
 
-    /// These settings printed on their fitting paper through the enlarger, as a prepared frame is (owner's call).
+    /// These settings on their paper named, as a prepared frame is.
     pub fn on_paper(self) -> PipelineSettings {
-        PipelineSettings { print_paper: Some(self.fitting_paper()), paperless: false, ..self }
+        PipelineSettings { print_paper: Some(self.fitting_paper()), ..self }
     }
 
     /// The former Scanner face's print the render lays, while it is laid.

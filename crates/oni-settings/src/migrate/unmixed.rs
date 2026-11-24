@@ -113,8 +113,11 @@ mod tests {
         // Twins: a file of this format, a black and white film and a scan stay as they are.
         let current = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800"));
         assert_eq!(read(&current, VERSION), current);
-        let silver = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("ilford-hp5-plus"));
-        assert_eq!(read(&silver, older), silver);
+        // A black and white film's reference this step leaves; the sensor's saturation's step lands it on its own.
+        let hp5 = VirtualStock::of("ilford-hp5-plus");
+        let silver = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(hp5);
+        let then = PipelineSettings { levels: super::super::sensor_white::grey_placed(hp5).levels(), ..silver.clone() };
+        assert_eq!(read(&then, older), silver);
         let scan = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_eq!(read(&scan, older), read(&scan, VERSION));
     }

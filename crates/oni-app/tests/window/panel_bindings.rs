@@ -43,9 +43,14 @@ pub(crate) fn opened_with(name: &str, seed: impl FnOnce(&std::path::Path)) -> Op
     std::fs::write(support.join("FlatFields/masks.json"), r#"[{"id":"a1","name":"Rig"}]"#).unwrap();
     seed(&support);
     let app = common::launch(root).show()?;
-    let common::App { rig, .. } = &app;
+    let common::App { rig, shell, .. } = &app;
     app.edit_first();
     rig.settle();
+    // The Paper section folded, as every frame prints on a paper: open, it lays Lighting past a short window's edge.
+    if let [key] = common::placed(&shell.window, Role::Button, "Hide Paper")[..] {
+        click(rig, key.middle().0, key.middle().1);
+        rig.settle();
+    }
     Some(app)
 }
 

@@ -9,7 +9,7 @@ use oni_settings::{ConversionMode, PipelineSettings, VirtualFilm, VirtualStock};
 pub const STOCK: VirtualStock = VirtualStock::of("kodak-vision3-50d");
 
 /// The settings that read and print the internegative of `s`'s look on a paper, none for any other frame: Lighting, the
-/// paper (or the neutral one) and the colour tools are the frame's.
+/// paper and the colour tools are the frame's.
 pub fn copy(s: &PipelineSettings) -> Option<PipelineSettings> {
     let looked = s.film().is_some_and(|f| f.stock.look().is_some());
     if !looked || s.paper().is_none() || s.print.bypassed {
@@ -21,7 +21,6 @@ pub fn copy(s: &PipelineSettings) -> Option<PipelineSettings> {
     settings.decoded_from_mosaic = s.decoded_from_mosaic;
     settings.print = s.print;
     settings.print_paper = s.print_paper;
-    settings.paperless = s.paperless;
     settings.density = s.density;
     settings.spectrogram = s.spectrogram;
     settings.saturation = s.saturation.clone();

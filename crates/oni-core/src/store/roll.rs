@@ -35,14 +35,11 @@ fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> Pipeline
     PipelineSettings { geometry: Geometry::default(), ..split(settings, framing) }
 }
 
-/// A frame of a roll prepared as digital: no roll reference, as a new preparation replaces the one before, its
-/// negative placed on its film's own reference, its black on the bare film and its windows' white at the roll's
-/// measured `lights` (a share of the reference's span, 1 its own), and printed on its paper.
-pub fn digital(settings: &PipelineSettings, lights: f32) -> PipelineSettings {
+/// A frame of a roll prepared as digital: no film to measure, no roll reference, as a new preparation
+/// replaces the one before, its negative placed on its film's own reference and printed on its paper.
+pub fn digital(settings: &PipelineSettings) -> PipelineSettings {
     let digital = PipelineSettings { roll_reference: None, ..settings.carried(oni_settings::ConversionMode::Digital) };
-    let stock = digital.film().map_or_else(Default::default, |f| f.stock);
-    let mut placed = digital.on_stock(stock);
-    placed.levels = stock.reference().spanned(lights).levels();
+    let placed = digital.on_stock(digital.film().map_or_else(Default::default, |f| f.stock));
     placed.on_paper()
 }
 
@@ -124,9 +121,9 @@ impl EditorStore {
     }
 
     /// A roll prepared as digital, one step: the open frame in memory, the others through their
-    /// sidecars, each on its film's reference spanned to the roll's `lights`; every roll found again on the next ask.
-    pub fn make_digital(&mut self, paths: &[String], lights: f32) -> usize {
-        let frames = self.lay_on(paths, |_, s| digital(s, lights), measure_label);
+    /// sidecars, each on its film's reference; every roll found again on the next ask.
+    pub fn make_digital(&mut self, paths: &[String]) -> usize {
+        let frames = self.lay_on(paths, |_, s| digital(s), measure_label);
         self.measured.clear();
         frames
     }

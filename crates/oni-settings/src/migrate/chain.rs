@@ -123,6 +123,10 @@ pub const SLIDE_PROJECTOR_VERSION: i64 = 70;
 /// The version a digital photo's negative came to be scanned as a real one is, through its dyes and base under a white
 /// lamp: its gains and windows move onto its stock's new reference.
 pub const DIGITAL_SCAN_VERSION: i64 = 71;
+/// The version every print came to be made on a paper, the window laid on its useful range: the virtual enlarger's switch
+/// and Print on paper left, a frame naming no paper printing on the default, ONI Standard, and one printed with Print on
+/// paper off naming it; a film's reference white on the density of the sensor's saturation, no grey placed.
+pub const EVERY_PAPER_VERSION: i64 = 72;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

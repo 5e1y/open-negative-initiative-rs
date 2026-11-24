@@ -1,5 +1,5 @@
-//! Lighting's colour compensation on the Colour tab of the headless window: a switch on at rest, turning it off stores
-//! it and renders the frame again; the Saturation Curve's plot draws no print's own curve.
+//! Lighting's colour compensation in the headless window: on at rest, its switch shown on a legacy print's own curve
+//! alone, turning it off stores it and renders the frame again; the Saturation Curve's plot draws no print's own curve.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::fields::Field;
@@ -26,9 +26,9 @@ pub(crate) fn the_switch_renders_again_and_lays_no_dashed_guide() {
     // The neutral line and the hand's curve: Contrast acts on the negative and lays no curve of its own.
     let lines = || editors.get_saturation_lines().row_count();
 
-    // At rest the switch is on and shown in Lighting.
+    // At rest the compensation is on; on a paper, which every frame but a legacy print prints on, its switch is not shown.
     assert!(settings().print.colour_compensation && panel.get_colour_compensation());
-    common::the(w, Role::Checkbox, "Colour compensation");
+    assert!(common::placed(w, Role::Checkbox, "Colour compensation").is_empty(), "no switch on a paper");
     w.global::<Store>().invoke_step(Field::Contrast.index(), 6);
     rig.pump();
     assert_ne!(settings().print.contrast, 0.0);

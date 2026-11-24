@@ -32,10 +32,10 @@ component PaperPicker inherits Picker {
     }
 }
 
-// ONI's print's colour compensation, on ONI's print alone as the enlarger lays none, then a legacy print where one is kept.
+// A legacy print's colour compensation, on its own print curve alone as a paper lays none, then the legacy print itself.
 component PrintRows inherits VerticalLayout {
     spacing: Space.s;
-    if !PanelState.monochrome && !PanelState.projected && !(PanelState.paper-shown && PanelState.enlarger-on): HorizontalLayout {
+    if !PanelState.monochrome && !PanelState.projected && !PanelState.paper-shown: HorizontalLayout {
         spacing: Space.xs;
         Toggle {
             label: @tr("Colour compensation");
@@ -211,14 +211,12 @@ export component ColorPane inherits Pane {
         }
         if root.channel-tab == 2: StoreSlider { field: 51; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
     }
-    // The virtual enlarger printing the photo in place of ONI's print, offered where one can print it: its switch and
-    // Print on paper first, then the paper's ends and the paper by its name, then the enlarger's filtration.
+    // The paper every print is made on, where the photo prints on one: its ends, the paper by its name under the block's
+    // title, then the enlarger's filtration.
     if PanelState.paper-shown: Block {
         title: @tr("Paper");
-        help: @tr("Virtual enlarger prints the photo as an enlarger does, in place of ONI's own print: in true density, the enlarger resting where the frame's grey prints neutral, the black picked in Prepare the Roll held. Lighting then acts as in a darkroom.\n\nPrint on paper lays that light on a colour paper: its curves, its dyes and its white. Off, the enlarger prints on a neutral paper, ONI's print curve on each channel alone, to see what the paper brings.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white.");
-        Toggle { label: @tr("Virtual enlarger"); on: PanelState.enlarger-on; toggled(on) => { PanelState.enlarger-toggled(on); } }
-        if PanelState.enlarger-on: Toggle { label: @tr("Print on paper"); on: PanelState.on-paper; toggled(on) => { PanelState.on-paper-toggled(on); } }
-        if PanelState.enlarger-on && PanelState.on-paper: HorizontalLayout {
+        help: @tr("Every photo is printed on a paper, as an enlarger prints it: in true density, the black picked in Prepare the Roll on the paper's black and its white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Lighting then acts as in a darkroom.\n\nONI Standard, the default, lays the mean curve of the makers' papers on a neutral paper; every other paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white.");
+        HorizontalLayout {
             spacing: Space.xs;
             Toggle {
                 label: @tr("Print lift");
@@ -229,15 +227,12 @@ export component ColorPane inherits Pane {
                 alignment: center;
                 HelpMark {
                     subject: @tr("Print lift");
-                    note: @tr("On, the print keeps the paper's own ends: the black picked in Prepare the Roll a hair above the paper's black, and the paper's white, as on a print held in the hand. Off, that black lies on pure black and that white on pure white, the grey kept where it was, as a print shown on a screen.");
+                    note: @tr("On, the print keeps the paper's own ends: the black picked in Prepare the Roll on the paper's black, and its white on the paper's white, as on a print held in the hand. Off, that black lies on pure black and that white on pure white, as a print shown on a screen.");
                 }
             }
         }
-        if PanelState.enlarger-on && PanelState.on-paper: Field {
-            label: @tr("Paper");
-            PaperPicker { }
-        }
-        if PanelState.enlarger-on: Label { role: TextRole.note; text: PanelState.paper-filtration; }
+        PaperPicker { }
+        Label { role: TextRole.note; text: PanelState.paper-filtration; }
     }
     // A slide on the projector's screen, never on a paper: the film and lamp it is shown by, then its screen's ends.
     if PanelState.projected: Block {
@@ -270,10 +265,10 @@ export component ColorPane inherits Pane {
         news-note: News.lighting-note;
         news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
-        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThrough the virtual enlarger the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows.");
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn the paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows.");
         StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
-        // The enlarger's print brightened between its paper's black and white; on ONI's print Exposure is that curve.
-        if PanelState.paper-shown && PanelState.enlarger-on: StoreSlider { field: 55; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }
+        // The enlarger's print brightened between its paper's black and white; on a legacy print Exposure is that curve.
+        if PanelState.paper-shown: StoreSlider { field: 55; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }
         StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
         StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }

@@ -1,5 +1,6 @@
 //! The frames the paper's checks print: a digital photo, a prepared negative, black and white, and their anchors' scans.
-//! Each prints on the paper's own black (Print lift), so a check reads the paper's print itself; pure black is `paper_ends`'.
+//! Each prints on Royal Digital, a data sheet's paper and its dyes' crosstalk, on the paper's own black (Print lift), so
+//! a check reads the paper's print itself; pure black is `paper_ends`'.
 
 #![allow(dead_code)]
 
@@ -8,13 +9,16 @@ use oni_pipeline::{conversion, paper};
 use oni_render::cpu;
 use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings};
 
+/// The data-sheet paper the frames print on.
+pub const SHEET_PAPER: PaperStock = PaperStock::of("kodak-royal-digital");
+
 fn on_print_lift(mut s: PipelineSettings) -> PipelineSettings {
     s.print.print_lift = true;
     s
 }
 
 pub fn digital() -> PipelineSettings {
-    on_print_lift(PipelineSettings::rest(ConversionMode::Digital, true))
+    on_print_lift(PipelineSettings { print_paper: Some(SHEET_PAPER), ..PipelineSettings::rest(ConversionMode::Digital, true) })
 }
 
 pub fn prepared_negative() -> PipelineSettings {
@@ -25,7 +29,7 @@ pub fn prepared_negative() -> PipelineSettings {
         (w.black, w.white, w.mid) = (black, white, mid);
     }
     s.dye_set = DyeSet::of("kodak-portra-400");
-    s.print_paper = Some(PaperStock::default());
+    s.print_paper = Some(SHEET_PAPER);
     on_print_lift(s)
 }
 
@@ -48,7 +52,7 @@ pub fn anchor_scans(s: &PipelineSettings) -> [V4; 3] {
 }
 
 pub fn mono() -> PipelineSettings {
-    on_print_lift(PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Monochrome, true) })
+    on_print_lift(PipelineSettings { print_paper: Some(SHEET_PAPER), ..PipelineSettings::rest(ConversionMode::Monochrome, true) })
 }
 
 /// `s` moved by `f`, its anchors printed.

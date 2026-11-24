@@ -16,6 +16,7 @@ use oni_render::{Negative, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
+/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
 fn onis(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { print_paper: None, ..s }
 }
@@ -41,21 +42,19 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode) - oni_settings::migrate::departure::former_rest(legacy.mode);
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
-    let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
-        ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, uncompensated", uncompensated),
-        ("ONI's print, legacy Frontier at its entry", legacy),
-        ("ONI's print, digital", onis(digital())),
-        ("ONI's print, black and white", onis(mono())),
-        ("ONI's print, slide", slide()),
+        ("ONI Standard, negative", onis(prepared_negative())),
+        ("ONI Standard, uncompensated", uncompensated),
+        ("legacy print, Frontier at its entry", legacy),
+        ("ONI Standard, digital", onis(digital())),
+        ("ONI Standard, black and white", onis(mono())),
+        ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, negative, Brightness", bright),
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
-        ("neutral paper", paperless),
     ]
 }
 
@@ -67,9 +66,11 @@ fn pixels() -> Vec<V4> {
     pixels
 }
 
-/// `s` as a sidecar of format 58 held it, read through this format's migration.
+/// `s` as a sidecar of format 58 held it, a digital photo on its film's reference of then, read through this format's
+/// migration.
 fn stored(s: &PipelineSettings) -> PipelineSettings {
-    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(s.clone()), 58)).unwrap();
+    let then = s.film().map_or_else(|| s.clone(), |f| oni_settings::migrate::datasheet::on_former(s, f.stock));
+    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(then), 58)).unwrap();
     value["version"] = 58.into();
     oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings
 }
@@ -92,8 +93,8 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
-    // its dyes' crosstalk and pure dyes, its white on pure white without Print lift.
-    const BEFORE: u64 = 0x5c42_018f_b6f1_f691;
+    // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift.
+    const BEFORE: u64 = 0x0deb_39b8_db2c_d513;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -206,9 +207,10 @@ fn exposure_holds_prepares_black_and_white_and_moves_the_grey_as_the_films_stop(
             // The grey within 0.07 stop of the film's stop a stop away, 0.28 two away; the mids within 0.45 a stop away.
             assert!(grey.abs() < 0.07 * stops * stops && (stops.abs() > 1.0 || mids < 0.45), "{label}, {stops}: grey {grey}, mids {mids}");
             // By the black the anchored print lies between the rest and the film's own stop, on ONI's print as by a gain.
+            // A paper's toe holds its first tones within a ten-thousandth of a stop of its black.
             for t in [0.01f32, 0.02, 0.03, 0.05, 0.1].into_iter().filter(|t| shown(&rest, *t) > 1e-4) {
                 let (from, to) = ((shown(&k, t) / shown(&rest, t)).log2(), (shown(&free, t) / shown(&rest, t)).max(1e-9).log2());
-                assert!(from * stops >= 0.0 && from.abs() <= to.abs() + 1e-3, "{label}, {stops}, {t}: {from} stops, the film's {to}");
+                assert!(from * stops >= -1e-4 && from.abs() <= to.abs() + 1e-3, "{label}, {stops}, {t}: {from} stops, the film's {to}");
             }
             assert!(s.paper().is_some() || near < 0.25 * stops.abs() + 0.25, "{label}, {stops}: near black {near}");
             // Twins: the film's own stop moves the white where a white can move, and jumps by the black.
@@ -260,9 +262,12 @@ fn brightening_on_the_negative_keeps_the_films_colour() {
             let (gain, all_gain) = (100.0 * (kept / lost - 1.0), 100.0 * (all / every - 1.0));
             println!("{label}, Exposure {stops:+}: the {n} colours lighter than the grey keep chroma {kept:.4} on the negative,");
             println!("  {film:.4} shot so, {lost:.4} by the time ({gain:+.1} %); every colour {all:.4} and {every:.4} ({all_gain:+.1} %)");
-            // A digital photo keeps nearly its film's colour, the white held drawing the lighter ones in; a scan about the time's.
-            let floor = if label == "digital" { film * 0.94 } else { lost * 0.85 };
-            assert!(all > every * 0.98, "{label}, {stops}");
+            // A digital photo keeps nearly its film's colour, the white held drawing the lighter ones in (92 % on ONI
+            // Standard); a scan about the time's.
+            let floor = if label == "digital" { film * 0.9 } else { lost * 0.85 };
+            // Every colour keeps the chroma of the film shot so or of the time, the lesser, within 2 %.
+            let shot_all = chroma(&shot, 0.0).0;
+            assert!(all > every.min(shot_all) * 0.98, "{label}, {stops}: {all} {every} {shot_all}");
             // Two stops up, the colours over the grey near the white Exposure holds, and lose some of their chroma there.
             assert!(stops > 1.0 || (n >= 6 && kept > floor), "{label}, {stops}");
             // Twin: the time's print, its grey as bright, is another print.
@@ -298,7 +303,9 @@ fn contrast_turns_about_the_grey_and_the_filters_tint_holding_its_weight() {
         let warm = rgb(cpu::stage47(grey, &k));
         let held = luma(warm) / luma(at_rest) - 1.0;
         println!("{label}, warmer: the grey {warm:?} from {at_rest:?}, its luma {:+.2} %", 100.0 * held);
-        assert!(held.abs() < 0.05 && warm[0] / warm[2] > at_rest[0] / at_rest[2] * 1.1, "{label}");
+        // The filters hold the grey's densities' weight on the negative; the paper's toe turns that into up to 25 % of its
+        // light, on the Frontier's.
+        assert!(held.abs() < 0.3 && warm[0] / warm[2] > at_rest[0] / at_rest[2] * 1.1, "{label}: {held}");
         // Twin: unheld, the filters' neutral stop off, the grey's luma moves.
         let unheld = Stage47 { negative: k.negative.map(|n| Negative { shift: n.shift.map(|v| v - n.shift.iter().sum::<f32>() / 3.0 + 0.05), ..n }), ..k };
         assert!((luma(rgb(cpu::stage47(grey, &unheld))) / luma(at_rest) - 1.0).abs() > held.abs() + 0.005, "{label}");

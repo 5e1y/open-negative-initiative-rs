@@ -3,7 +3,7 @@
 
 use oni_core::balance::written;
 use oni_measure::auto_levels::shift;
-use oni_measure::roll::{DEPTH, Measured, combined, digital_lights, summed};
+use oni_measure::roll::{Measured, combined, summed};
 use oni_pipeline::conversion::{colour_factor, decompression_weights};
 use oni_settings::axis::density_axis;
 use oni_settings::frame::RollReference;
@@ -150,19 +150,4 @@ fn two_frames_with_a_tinted_black_leave_the_roll_s_black_neutral() {
         v[1]
     };
     assert!(spread([second(0), second(1), second(2)]) > 0.1);
-}
-
-#[test]
-fn a_digital_rolls_lights_are_read_where_a_scanned_rolls_white_is_so_one_bright_photo_cannot_set_them() {
-    assert_eq!(digital_lights(Vec::new()), None, "no photo, no lights");
-    let lights: Vec<f32> = (0..10).map(|i| 0.6 + 0.01 * i as f32).collect();
-    let read = digital_lights(lights.clone()).unwrap();
-    let at = lights[((DEPTH[1] * 9.0).round()) as usize];
-    assert_eq!(read, at, "the photo at the white's depth, whatever the order");
-    let mut glare = lights.clone();
-    glare[3] = 3.0;
-    glare.reverse();
-    assert!((digital_lights(glare).unwrap() - read).abs() < 0.011, "one glaring photo moves the lights a rank at most");
-    // Twin: the brightest photo alone would set them on that glare.
-    assert!(lights.iter().cloned().fold(0.0, f32::max) > read);
 }

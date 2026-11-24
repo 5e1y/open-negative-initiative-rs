@@ -579,7 +579,7 @@ fn a_document_writes_every_field_the_table_names() {
         s.balance_method = Some("classic".into());
         (s.balance_filters, s.inverted_source, s.measured_gains) = (Some([0.0; 3]), true, Some([0.0; 3]));
         (s.virtual_film, s.print_paper) = (Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::of("kodak-portra-800"), exposure: 0.5 }), Some(Default::default()));
-        (s.legacy_print, s.paperless) = (Some(Default::default()), true);
+        s.legacy_print = Some(Default::default());
         encoded(&s, VERSION)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let table = |fields: &[Field]| -> Vec<String> {

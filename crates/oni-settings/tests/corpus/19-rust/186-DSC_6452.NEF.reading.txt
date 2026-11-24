@@ -198,7 +198,6 @@ settings: PipelineSettings {
         bypassed: false,
     },
     print_paper: None,
-    paperless: false,
     legacy_print: Some(
         LegacyPrint {
             machine: Frontier,

@@ -19,11 +19,11 @@ pub(crate) enum Lit {
 
 impl Lit {
     /// What its pick writes on `settings`, which the menu shows unwritten while it lights it; `own`, the stock in use.
-    /// A paper changes the one the enlarger prints on, never turns the enlarger on.
+    /// A paper changes the one the enlarger prints on, where the photo prints on one.
     pub(super) fn picked(self, settings: &PipelineSettings, own: Option<&str>) -> PipelineSettings {
         match self {
             Lit::Stock(i) => stocks().get(i).map_or_else(|| settings.clone(), |kind| picked(settings, kind, own)),
-            Lit::Paper(paper) if settings.print_paper.is_some() => PipelineSettings { print_paper: Some(paper), ..settings.clone() },
+            Lit::Paper(paper) if settings.paper().is_some() => PipelineSettings { print_paper: Some(paper), ..settings.clone() },
             Lit::Paper(_) => settings.clone(),
         }
     }
@@ -333,8 +333,11 @@ mod tests {
         let lit = Lit::Paper(other).picked(&digital, None);
         assert_eq!(lit, PipelineSettings { print_paper: Some(other), ..digital.clone() });
         assert_eq!(Lit::Paper(own).picked(&digital, None), digital, "its own paper writes nothing");
-        let unprinted = PipelineSettings { print_paper: None, ..digital.clone() };
-        assert_eq!(Lit::Paper(other).picked(&unprinted, None), unprinted, "the enlarger off stays off");
+        // A legacy print laid on its own curve takes no paper; a frame naming none prints on the default and takes one.
+        let legacy = PipelineSettings { print_paper: None, legacy_print: Some(Default::default()), ..digital.clone() };
+        assert_eq!(Lit::Paper(other).picked(&legacy, None), legacy, "a legacy print stays on its own curve");
+        let unnamed = PipelineSettings { print_paper: None, ..digital.clone() };
+        assert_eq!(Lit::Paper(other).picked(&unnamed, None).print_paper, Some(other));
         let at = PaperStock::all().iter().position(|p| *p == other).unwrap() as i32;
         assert_eq!((Lit::paper(at), Lit::paper(-1), Lit::paper(PaperStock::all().len() as i32)), (Some(Lit::Paper(other)), None, None));
         // Twin: lit on another paper, the photo is no longer as it was.

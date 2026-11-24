@@ -255,13 +255,12 @@ fn filmed() -> PipelineSettings {
     s
 }
 
-/// A scene grey lit at the film's own white prints where a plain RAW's render prints a grey, neutral on pure black and
-/// white, on the paper's own white with Print lift; the digital photo is its virtual negative read by a negative's
-/// pipeline, pixel for pixel. Twins: the film a stop
-/// over prints that grey lighter, and the same scan read as a slide is another picture.
+/// A scene grey lit at the film's own white prints between the paper's black and white on every channel, no grey placed;
+/// the digital photo is its virtual negative read by a negative's pipeline, pixel for pixel. Twins: the film a stop over
+/// prints that grey lighter, and the same scan read as a slide is another picture.
 #[test]
-fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative() {
-    let Some(mut g) = graph("the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negative") else { return };
+fn the_film_prints_a_grey_and_its_negative_is_read_as_any_negative() {
+    let Some(mut g) = graph("the_film_prints_a_grey_and_its_negative_is_read_as_any_negative") else { return };
     let (w, h) = (64, 8);
     let mut scene: Vec<V4> = (0..w * h).map(|i| {
         let x = (i % w) as f32 / (w - 1) as f32;
@@ -278,15 +277,14 @@ fn the_film_prints_a_grey_as_a_plain_raw_and_its_negative_is_read_as_any_negativ
     let mut pipeline = Pipeline::new();
     let digital = filmed();
     let on = pipeline.render(&mut g, &source, &digital, &Request::default(), &Default::default(), None).unwrap().1;
-    let raw = [film::plain_grey(); 3];
     let pure = PipelineSettings { print: oni_settings::tone::Print { print_lift: false, ..digital.print }, ..digital.clone() };
     let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
-    println!("a scene grey: the plain RAW {raw:?}, the film {:?}, on pure black {stretched:?}", on[0]);
+    println!("a scene grey: the film {:?}, on pure black {stretched:?}", on[0]);
     let white = oni_pipeline::conversion::stage47(&digital).paper.expect("a digital photo's paper").white;
     let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
     for c in 0..3 {
-        assert!((stretched[c] - raw[1]).abs() < 2e-3, "channel {c}: {stretched:?} {raw:?}");
-        assert!((on[0][c] / white[c] * luma - raw[1]).abs() < 2e-3, "channel {c}: {:?} on {white:?}", on[0]);
+        assert!(stretched[c] > 0.05 && stretched[c] < 0.95, "channel {c}: {stretched:?}");
+        assert!(on[0][c] / white[c] * luma > 0.05 && on[0][c] < white[c], "channel {c}: {:?} on {white:?}", on[0]);
     }
     let over = PipelineSettings { virtual_film: digital.film().map(|f| oni_settings::VirtualFilm { exposure: 1.0, ..f }), ..digital.clone() };
     let lighter = pipeline.render(&mut g, &source, &over, &Request::default(), &Default::default(), None).unwrap().1;

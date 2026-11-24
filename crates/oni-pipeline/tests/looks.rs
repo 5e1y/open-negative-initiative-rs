@@ -64,24 +64,27 @@ fn a_cube_in_the_stocks_folder_is_a_film_a_digital_photo_is_read_through() {
     let pixels: Vec<V4> = common::noise(w, h, 3, 0.0, 1.2).iter().map(|p| p.map(|v| v * v)).collect();
     let source = g.upload(w, h, &pixels).unwrap();
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(swapped);
-    (s.grain.amount, s.print_paper, s.virtual_film.as_mut().unwrap().exposure) = (0.0, None, 0.5);
+    (s.grain.amount, s.virtual_film.as_mut().unwrap().exposure) = (0.0, 0.5);
     let mut pipeline = Pipeline::new();
     let render = |p: &mut Pipeline, g: &mut oni_graph::Graph, s: &PipelineSettings| p.render(g, &source, &s.per_pixel_only(), &Request::default(), &Default::default(), None).unwrap().1;
-    let out = render(&mut pipeline, &mut g, &s);
+    let looked = pipeline.looked(&mut g, oni_graph::Image::new(&source), &s).unwrap().expect("a film with its look");
+    let out = whole(&mut g, &looked);
     let expected = mapped(&pixels, |p| reference(p, 0.5, 9, &look.nodes));
     // Twin: the same cube without the film's exposure.
     judge("a photo through its look", &out, &expected, &mapped(&pixels, |p| reference(p, 0.0, 9, &look.nodes)));
 
-    // On a paper the positive prints through the internegative, which reads it at unit light, the paper's print laid.
-    let on_paper = PipelineSettings { print_paper: Some(Default::default()), ..s.clone() };
+    // Every print is made on a paper: the positive prints through the internegative, which reads it at unit light, the
+    // paper's print laid; a measure reads no copy.
+    let on_paper = s.clone();
     let copy = paper::internegative::copy(&on_paper).expect("a look on a paper is copied");
-    assert!(conversion::stage47(&on_paper).paper.is_some() && paper::internegative::copy(&s).is_none());
+    let measured = PipelineSettings { print: oni_settings::tone::Print { bypassed: true, ..s.print }, ..s.clone() };
+    assert!(conversion::stage47(&on_paper).paper.is_some() && paper::internegative::copy(&measured).is_none());
     let printed = render(&mut pipeline, &mut g, &on_paper);
     let positive = g.upload(w, h, &expected).unwrap();
     let filmed = pipeline.filmed(&mut g, oni_graph::Image::new(&positive), &copy).unwrap();
     let through = whole(&mut g, &oni_pipeline::stages::converted(filmed, &conversion::stage47(&on_paper)));
     let clipped = mapped(&through, |p| [p[0].clamp(0.0, 1.0), p[1].clamp(0.0, 1.0), p[2].clamp(0.0, 1.0), p[3]]);
-    // Twin: the positive shown as it is, no paper.
+    // Twin: the positive shown as the cube gives it.
     judge("a look printed on its paper", &printed, &clipped, &expected);
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -13,6 +13,7 @@ use oni_settings::curves::SaturationCurve;
 use oni_settings::spectrogram::Band;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
+/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
 pub fn onis(s: PipelineSettings) -> PipelineSettings {
     PipelineSettings { print_paper: None, ..s }
 }
@@ -82,13 +83,12 @@ pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
     };
     let negative = shot_on();
     vec![
-        ("ONI's print, digital", onis(digital())),
-        ("ONI's print, negative", onis(negative.clone())),
-        ("ONI's print, slide", slide()),
+        ("ONI Standard, digital", onis(digital())),
+        ("ONI Standard, negative", onis(negative.clone())),
+        ("projector, slide", slide()),
         ("paper, digital", digital()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
-        ("paper, negative", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), ..negative.clone() })),
-        ("neutral paper", lifted(PipelineSettings { print_paper: Some(PaperStock::default()), paperless: true, ..negative })),
+        ("paper, negative", lifted(PipelineSettings { print_paper: Some(PaperStock::of("kodak-royal-digital")), ..negative })),
     ]
 }
 

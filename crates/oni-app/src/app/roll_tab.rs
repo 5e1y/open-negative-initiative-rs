@@ -147,10 +147,6 @@ impl Ctl {
         let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
-        panel.on_enlarger_toggled(move |on| p.write_settings(|s| s.print_paper = on.then(|| s.fitting_paper())));
-        let p = me.clone();
-        panel.on_on_paper_toggled(move |on| p.write_settings(|s| s.paperless = !on));
-        let p = me.clone();
         panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
         let p = me.clone();
         panel.on_print_lift_toggled(move |on| p.write_settings(|s| s.print.print_lift = on));
@@ -221,9 +217,8 @@ impl Ctl {
         self.publish_paper(&panel, &settings);
     }
 
-    /// The Colour tab's print switches: Lighting's colour compensation, and the enlarger where one can print the photo,
-    /// Print on paper, the paper's name, the filtration it prints through and Print lift; a slide's projector and its
-    /// Projected blacks.
+    /// The Colour tab's print switches: a legacy print's colour compensation, the paper the photo prints on, its name, the
+    /// filtration it prints through and Print lift; a slide's projector and its Projected blacks.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
         panel.set_colour_compensation(settings.print.colour_compensation);
         panel.set_print_lift(settings.print.print_lift);
@@ -234,15 +229,15 @@ impl Ctl {
             oni_i18n::tr!("{film} under a {kelvin} K projector lamp", film = f.entry().name, kelvin = oni_pipeline::film::projection::LAMP_KELVIN)
         });
         panel.set_projector_note(note.into());
-        panel.set_paper_shown(settings.takes_paper());
-        panel.set_enlarger_on(settings.paper().is_some());
-        panel.set_on_paper(!settings.paperless);
+        panel.set_paper_shown(settings.paper().is_some());
         let paper = settings.fitting_paper();
         panel.set_paper_title(if paper.is_known() { paper.name().into() } else { crate::stocks::missing(paper.key()).into() });
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;
-        panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l, settings.paper().is_some())).into());
+        // Named as the legacy print lays it, on the paper it names or its own curve, laid or not.
+        let on_paper = settings.print_paper.is_some() && settings.takes_paper();
+        panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l, on_paper)).into());
         panel.set_legacy_laid(legacy.is_some_and(|l| l.laid));
         panel.set_legacy_keys(legacy.as_ref().map_or_else(String::new, legacy_keys).into());
     }

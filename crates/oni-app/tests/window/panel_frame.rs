@@ -64,6 +64,9 @@ pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
+    // The Paper section folded, so every block's fold key stands in the window.
+    common::click(rig, w, common::the(w, Role::Button, "Hide Paper").middle());
+    rig.settle();
     assert_eq!(w.get_panel_x(), WIDTH - PANEL, "the editor's panel");
     // The block's title, which the tab bar's word, in mid-bar, names too.
     let named = common::placed(w, Role::Text, "Colour");

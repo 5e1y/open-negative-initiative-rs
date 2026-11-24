@@ -91,12 +91,13 @@ fn a_thumbnail_runs_opposite_to_its_negative_on_a_thin_and_a_dense_one_and_a_pla
         return;
     };
     let mut engine = Engine::on(&device);
-    for (name, range) in [("thin", (0.80, 0.995)), ("dense", (0.22, 0.34))] {
+    // A thin negative from 0.05 to 0.5 of density: on a paper, anything nearer the window's black prints on its black end.
+    for (name, range) in [("thin", (0.32, 0.9)), ("dense", (0.22, 0.34))] {
         let met = criteria(&mut engine, negative(range));
         assert_eq!(met, [true; 4], "{name} negative: bounded, inverted, edited, an image");
     }
     // The correlation discriminates: the negative against itself, a forgotten inversion, is refused.
-    let thin = samples(&negative((0.80, 0.995)).linear);
+    let thin = samples(&negative((0.32, 0.9)).linear);
     assert!(correlation(&thin, &thin) > 0.9);
     // Twin: a source rendering as a flat plate fails at least one criterion.
     let plate = criteria(&mut engine, negative((0.9, 0.9)));

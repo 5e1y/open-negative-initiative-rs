@@ -11,7 +11,7 @@ use crate::common::{self, Placed};
 use crate::help_demo::{leave_help, mark, press_help};
 use crate::panel_bindings::opened;
 
-const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThrough the virtual enlarger the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows.";
+const LIGHTING: &str = "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn the paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows.";
 /// The card's padding, `Gap.m`, its step from the column, `TipStyle.card-gap`, the window's margin, and
 /// the menu bar a check's window draws above the interface's coordinates.
 const PAD: f32 = 16.0;
@@ -198,8 +198,8 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
     rig.settle();
     // Lighting's title lies under the fold of so short a column: the wheel brings it up, low in the window.
     let over = slint::LogicalPosition::new(w.get_panel_x() + 120.0, 500.0);
-    for _ in 0..8 {
-        if !common::placed(w, Role::Button, "Help on Lighting").is_empty() {
+    for _ in 0..12 {
+        if common::placed(w, Role::Button, "Help on Lighting").iter().any(|m| m.y + m.height < 600.0) {
             break;
         }
         rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -40.0 });

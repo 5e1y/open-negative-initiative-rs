@@ -108,7 +108,7 @@ fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
     let (kernel, table) = baked(&layers, entry.balance);
     let mut stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: entry.revision };
     if !entry.reversal {
-        stock.reference = derived(entry.silver, entry.dyes, &stock);
+        stock.reference = derived(&stock);
     }
     stock
 }
@@ -162,14 +162,14 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
 
 /// The reference a film's `profile` derives at `balance`, as a stock's file leaving it out takes; or why the profile
 /// does not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, dyes: DyeSet, couplers: M3) -> Result<StockReference, String> {
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3) -> Result<StockReference, String> {
     let layers = layers(profile, is_silver, reversal, couplers)?;
     if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }
     let (kernel, table) = baked(&layers, balance);
     let stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: 0 };
-    let r = if reversal { unread() } else { derived(is_silver, dyes, &stock) };
+    let r = if reversal { unread() } else { derived(&stock) };
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
         return Err("its profile bakes a reference that is not finite".into());
     }
@@ -202,7 +202,7 @@ pub fn density(scan: f32, stops: f32) -> f32 {
     -((scan + density_axis::pedestal(CEILING)) * stops.exp2()).max(density_axis::log_guard(CEILING)).log10()
 }
 
-/// What a scene grey prints at on a plain RAW's render at rest, a slide's: where a film's reference prints it.
+/// What a scene grey prints at on a plain RAW's render at rest, a slide's: where a legacy print lays its reference grey.
 pub fn plain_grey() -> f32 {
     let k = crate::conversion::stage47(&PipelineSettings::rest(ConversionMode::Positive, true));
     cpu::stage47([GREY, GREY, GREY, 1.0], &k)[1]
@@ -232,28 +232,22 @@ fn unread() -> StockReference {
     StockReference { stops: [0.0; 3], black: w.map(|l| fraction(l.black)), white: w.map(|l| fraction(l.white)) }
 }
 
-/// The stock's own reference on its scan: gains that make its bare film grey, each channel's black on the bare film,
-/// and its white where a scene grey, entering every window at one share, prints on the negative's print at
-/// rest as a plain RAW's render prints it.
-pub fn derived(is_silver: bool, dyes: DyeSet, stock: &Stock) -> StockReference {
+/// The light a digital photo's decode lays its sensor's saturation on: a 5000 K neutral at the white level, `2^stops` of
+/// the camera RAW default, the BaselineExposure every file naming none takes.
+pub fn saturation() -> f32 {
+    (oni_settings::white::DEFAULT_BASELINE_EV as f32).exp2()
+}
+
+/// The stock's own reference on its scan: gains that make its bare film grey, each channel's black on the bare film, no
+/// light, and its white on the sensor's saturation, nothing solved on greys (owner's call).
+pub fn derived(stock: &Stock) -> StockReference {
     let scan = |scene: f32| stock.shot([scene, scene, scene, 1.0], 0.0);
-    let (bare, grey) = (scan(0.0), scan(GREY));
+    let (bare, white) = (scan(0.0), scan(saturation()));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
     let fraction = |d: f32| graduation::fraction(d, ConversionMode::Negative);
-    let black: [f32; 3] = std::array::from_fn(|c| fraction(density(bare[c], stops[c])));
-    let at = |share: f32| {
-        let white = std::array::from_fn(|c| black[c] + (fraction(density(grey[c], stops[c])) - black[c]) / share);
-        StockReference { stops, black, white }
-    };
-    let printed = |share: f32| cpu::stage47(grey, &crate::conversion::stage47(&read_on(is_silver, dyes, &at(share))))[1];
-    let target = plain_grey();
-    let (mut low, mut high) = (0.05f32, 1.0f32);
-    let rising = printed(high) > printed(low);
-    for _ in 0..60 {
-        let mid = 0.5 * (low + high);
-        if (printed(mid) < target) == rising { low = mid } else { high = mid }
-    }
-    at(0.5 * (low + high))
+    let black = std::array::from_fn(|c| fraction(density(bare[c], stops[c])));
+    let white = std::array::from_fn(|c| fraction(density(white[c], stops[c])));
+    StockReference { stops, black, white }
 }
 
 #[cfg(test)]
@@ -265,7 +259,7 @@ mod tests {
     }
 
     #[test]
-    fn each_stocks_reference_is_its_profiles_derivation_and_prints_a_grey_as_a_plain_raw() {
+    fn each_stocks_reference_is_its_profiles_derivation_and_prints_the_sensors_saturation_as_white() {
         for kind in VirtualStock::all() {
             println!("{kind:?}: {:?}", stock(kind).reference);
         }
@@ -276,13 +270,11 @@ mod tests {
         for kind in VirtualStock::all().into_iter().filter(|k| !k.entry().reversal) {
             let (derived, held) = (stock(kind).reference, kind.reference());
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
-            let grey = stock(kind).shot([GREY, GREY, GREY, 1.0], 0.0);
-            let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(kind, &held)));
-            assert!((0..3).all(|c| (printed[c] - plain_grey()).abs() < 2e-3), "{printed:?} {}", plain_grey());
-            // Twin: the white placed for a print resting a stop and a half under prints the grey apart.
-            let mut unlit = on_reference(kind, &held);
-            unlit.print.exposure = -1.5;
-            assert!((cpu::stage47(grey, &crate::conversion::stage47(&unlit))[1] - plain_grey()).abs() > 0.02);
+            let shot = |scene: f32| cpu::stage47(stock(kind).shot([scene, scene, scene, 1.0], 0.0), &crate::conversion::stage47(&on_reference(kind, &held)));
+            let white = shot(saturation());
+            assert!((0..3).all(|c| (white[c] - 1.0).abs() < 2e-3), "{kind:?}: {white:?}");
+            // Twin: a scene a stop over the sensor's saturation, past what a decode holds, prints past that white.
+            assert!(shot(2.0 * saturation())[1] > 1.0 + 1e-3, "{kind:?}: {:?}", shot(2.0 * saturation()));
         }
     }
 }

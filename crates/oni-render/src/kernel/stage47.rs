@@ -1,5 +1,5 @@
-//! The fused conversion kernel: Lighting on the negative, then each channel's density read through its window, then
-//! ONI's print curve, or the paper the window's shares expose in its place, its own ends included.
+//! The fused conversion kernel: Lighting on the negative, then each channel's density read through its window, then the
+//! paper the window's shares expose, its own ends included, or a legacy print's own curve.
 
 use super::*;
 

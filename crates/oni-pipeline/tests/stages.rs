@@ -27,9 +27,13 @@ fn swapped(p: V4) -> V4 {
     [p[2], p[1], p[0], p[3]]
 }
 
+/// `mode` at rest on a legacy print's curve, which lays no paper: stage 4-7's kernel alone.
+fn on_curve(mode: ConversionMode) -> PipelineSettings {
+    PipelineSettings { legacy_print: Some(oni_settings::LegacyPrint::default()), ..PipelineSettings::rest(mode, true) }
+}
+
 fn negative() -> PipelineSettings {
-    // Stage 4-7's kernel alone.
-    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+    let mut s = on_curve(ConversionMode::Negative);
     (s.print.exposure, s.print.contrast, s.density) = (0.3, 0.2, 0.3);
     s
 }
@@ -56,7 +60,7 @@ fn per_pixel_kernels_match_their_references() {
     let shifted = oni_render::Stage47 { gain: [k.gain[0], k.gain[1] * 1.01, k.gain[2]], ..k };
     per_pixel(&mut g, "stage47", &film, &transmitted, stages::stage47(&k), |p| cpu::stage47(p, &k), |p| cpu::stage47(p, &shifted));
     per_pixel(&mut g, "stage47, channels swapped", &film, &transmitted, stages::stage47(&k), |p| cpu::stage47(p, &k), |p| swapped(cpu::stage47(p, &k)));
-    let mono = conversion::stage47(&PipelineSettings::rest(ConversionMode::Monochrome, true));
+    let mono = conversion::stage47(&on_curve(ConversionMode::Monochrome));
     let positive = conversion::stage47(&PipelineSettings::rest(ConversionMode::Positive, true));
     per_pixel(&mut g, "stage47, monochrome", &film, &transmitted, stages::stage47(&mono), |p| cpu::stage47(p, &mono), |p| cpu::stage47(p, &positive));
 
@@ -285,7 +289,7 @@ fn a_view_in_a_straightened_frame_s_clear_corner_renders_clear() {
 
 /// Every settings family the pipeline branches on, each stage on.
 fn families() -> Vec<(&'static str, PipelineSettings)> {
-    let mut pro = negative();
+    let mut pro = PipelineSettings { legacy_print: None, ..negative() };
     pro.capture_stops = 0.4;
     pro.flat_field.mask = FlatFieldMask::ValoiEasy35V1;
     pro.flat_field.amount = 1.0;

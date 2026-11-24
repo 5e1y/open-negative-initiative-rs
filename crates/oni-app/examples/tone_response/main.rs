@@ -2,7 +2,7 @@
 //! grey, on synthetic neutral ramps rendered through the engine, the paper's received log exposure traced on the CPU
 //! references; then each file as its pipe prints it, with its L* spread. A digital photo's ramp is a scene; a scan's is
 //! its stock's mean layer read through the frame's own measure; a slide's needs `SLIDE_CURVE` (JSON `x`, `m`: density
-//! above its least along log exposure from its grey). `STOCK`, `DYES`, `PAPER` (a key, `oni` or `neutral`), `BLACKS`
+//! above its least along log exposure from its grey). `STOCK`, `DYES`, `PAPER` (a paper's key), `BLACKS`
 //! (Print lift on) and `DERIVED` (a digital photo on its stock's derived reference) override.
 
 mod curve;
@@ -152,17 +152,8 @@ fn overridden(mut s: PipelineSettings) -> PipelineSettings {
     if std::env::var("BLACKS").is_ok() {
         s.print.print_lift = true;
     }
-    match std::env::var("PAPER").as_deref() {
-        Ok("oni") => s.print_paper = None,
-        Ok("neutral") => {
-            s.print_paper = Some(s.fitting_paper());
-            s.paperless = true;
-        }
-        Ok(k) => {
-            s.print_paper = Some(serde_json::from_str(&key(k)).expect("a paper's key"));
-            s.paperless = false;
-        }
-        Err(_) => {}
+    if let Ok(k) = std::env::var("PAPER") {
+        s.print_paper = Some(serde_json::from_str(&key(&k)).expect("a paper's key"));
     }
     if std::env::var("DERIVED").is_ok()
         && let Some(f) = s.film()
@@ -291,12 +282,10 @@ fn main() {
     let f = digital.film().expect("a virtual film");
     let (stock, kernel) = (film::stock(f.stock), film::stock(f.stock).kernel_at(f.exposure));
     let to_film = move |v: V4| stock.scanned(cpu::virtual_negative(white.as_ref().map_or(v, |m| cpu::color_matrix(v, m)), &kernel, &stock.table));
-    for (name, paper) in [("digital-paper", None), ("digital-oni", Some("oni")), ("digital-neutral", Some("neutral"))] {
+    for (name, paper) in [("digital-paper", None), ("digital-royal", Some("kodak-royal-digital"))] {
         let mut s = digital.clone();
-        match paper {
-            Some("oni") => s.print_paper = None,
-            Some(_) => s.paperless = true,
-            None => {}
+        if let Some(k) = paper {
+            s.print_paper = Some(oni_settings::PaperStock::of(k));
         }
         if std::env::var("PAPER").is_ok() && paper.is_some() {
             continue;
@@ -338,9 +327,8 @@ fn main() {
             vec![("as-set", at_rest.clone())]
         } else {
             vec![
-                ("oni", PipelineSettings { print_paper: None, ..at_rest.clone() }),
-                ("paper", at_rest.clone().on_paper()),
-                ("neutral", PipelineSettings { paperless: true, ..at_rest.clone().on_paper() }),
+                ("standard", at_rest.clone().on_paper()),
+                ("royal", PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-royal-digital")), ..at_rest.clone() }),
             ]
         };
         for (v, s) in &variants {

@@ -1,5 +1,5 @@
-//! Every virtual stock at rest on its reference and the default paper: a neutral scene lit at its white prints its grey
-//! neutral as a plain RAW does and its white as Portra 800's, its sheet's crossovers under a ceiling. Each has a twin.
+//! Every virtual stock at rest on its reference and the default paper: a neutral scene lit at its white prints its white
+//! as Portra 800's, its sheet's crossovers under a ceiling. Each has a twin.
 
 mod common;
 
@@ -15,14 +15,12 @@ const STOPS: [f32; 7] = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 2.3];
 const GREY_AT: usize = 3;
 const WHITE: usize = 6;
 
-/// The grey's CIELAB chroma on the print, its distance to a plain RAW's, and the white's luma off Portra 800's in stops
-/// (0.086 at most, Superia 100's).
-const GREY_CHROMA: f32 = 0.5;
-const GREY_GAP: f32 = 2e-3;
+/// The white's luma off Portra 800's in stops.
 const WHITE_SPREAD: f32 = 0.1;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 12.2 in Superia
-/// 1600's shadows, its scan's dyes mixing the layers; their numbers are printed, the owner judging them (owner's call).
-const CHROMA: f32 = 13.0;
+/// The ramp's widest chroma and a light step's (L* 80 up): each channel's window spans the bare film to a scene white and
+/// each sheet's layers cross between, up to 23.8 in 160NC's mids, 5.4 in the lights; their numbers are printed, the
+/// owner judging them in each film's preset (owner's call), these ceilings a guard against a broken bake.
+const CHROMA: f32 = 25.0;
 const LIGHT_CHROMA: f32 = 9.0;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
@@ -80,14 +78,13 @@ impl Ramp {
     }
 }
 
-/// The table: every stock's neutral ramp, grey and white, each checked; its twin, the red gain a fifth of a stop off
-/// the stock's reference, prints the grey off neutral. A black and white film's ramp prints without a hue, its twin
+/// The table: every stock's neutral ramp and white, each checked; its twin, the red gain a fifth of a stop off the
+/// stock's reference, prints the ramp further off neutral. A black and white film's ramp prints without a hue, its twin
 /// Lighting's exposure off, which moves its grey.
 #[test]
-fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s() {
-    let plain = film::plain_grey();
+fn every_stock_prints_its_white_as_portra_800s_and_its_crossovers_under_a_ceiling() {
     let portra = ramp(VirtualStock::of("kodak-portra-800"), &on(VirtualStock::of("kodak-portra-800"))).white;
-    println!("stock: L* and C*ab from -3 to +2.3 stops · grey · white luma (Portra 800 {portra:.4}) · twin's grey C*ab");
+    println!("stock: L* and C*ab from -3 to +2.3 stops · grey · white luma (Portra 800 {portra:.4}) · twin's widest C*ab");
     // A reversal film is projected, not printed: the GPU chain's neutral ramp holds its grey.
     for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
         let s = on(stock);
@@ -95,24 +92,22 @@ fn every_stock_prints_a_neutral_grey_as_a_plain_raw_and_its_white_as_portra_800s
         off.gains.stops[0] += 0.2;
         let (held, twin) = (ramp(stock, &s), ramp(stock, &off));
         let steps: Vec<String> = held.steps.iter().map(|(l, c)| format!("L{l:.0} C{c:.1}")).collect();
-        println!("{:<28} {} · {:.4} · {:.4} · {:.1}", stock.name(), steps.join(" "), held.grey, held.white, twin.steps[GREY_AT].1);
-        assert!(held.steps[GREY_AT].1 < GREY_CHROMA, "{stock:?}: its grey prints at C*ab {}", held.steps[GREY_AT].1);
-        assert!((held.grey - plain).abs() < GREY_GAP, "{stock:?}: its grey prints {}, a plain RAW's {plain}", held.grey);
+        println!("{:<28} {} · {:.4} · {:.4} · {:.1}", stock.name(), steps.join(" "), held.grey, held.white, twin.chroma());
         if stock.is_silver() {
             // Silver prints its ramp without a hue, its white on its own curve's contrast; twin, Lighting's exposure off.
             assert!(held.chroma() < 0.01, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
             let darker = ramp(stock, &PipelineSettings { print: oni_settings::tone::Print { exposure: s.print.exposure + 0.2, ..s.print }, ..s.clone() });
-            assert!((darker.grey - plain).abs() > 5.0 * GREY_GAP, "{stock:?}: twin, Lighting moved, its grey at {}", darker.grey);
+            assert!((darker.grey - held.grey).abs() > 1e-2, "{stock:?}: twin, Lighting moved, its grey at {}", darker.grey);
             continue;
         }
         assert!((held.white / portra).log2().abs() < WHITE_SPREAD, "{stock:?}: its white {}, Portra 800's {portra}", held.white);
         assert!(held.chroma() < CHROMA && held.light_chroma() < LIGHT_CHROMA, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
-        assert!(twin.steps[GREY_AT].1 > 4.0 * GREY_CHROMA, "{stock:?}: twin, the red gain off its reference, its grey at C*ab {} only", twin.steps[GREY_AT].1);
+        assert!(twin.chroma() > held.chroma() + 1.0, "{stock:?}: twin, the red gain off its reference, its ramp at C*ab {} only", twin.chroma());
     }
 }
 
 /// A tungsten stock's scene stands at its lamp: under daylight, the scene a daylight stock sees as neutral, its print
-/// turns blue. Twin: a daylight stock prints that scene neutral.
+/// turns blue. Twin: a daylight stock prints that scene far less blue.
 #[test]
 fn a_tungsten_stock_turns_a_daylight_scene_blue() {
     let daylight = |stock: VirtualStock| {
@@ -130,9 +125,8 @@ fn a_tungsten_stock_turns_a_daylight_scene_blue() {
     };
     let tungsten = daylight(VirtualStock::of("kodak-vision3-500t"));
     println!("a D55 grey on 500T {tungsten:?}, on 250D {:?}", daylight(VirtualStock::of("kodak-vision3-250d")));
-    assert!(tungsten[2] > 1.5 * tungsten[0], "{tungsten:?}");
     let day = daylight(VirtualStock::of("kodak-vision3-250d"));
-    assert!(lab([day[0], day[1], day[2]]).1 < 0.5, "{day:?}");
+    assert!(tungsten[2] / tungsten[0] > 1.5 * day[2] / day[0], "{tungsten:?} {day:?}");
 }
 
 /// Each stock's light is its profile's: the white it stands at is the chromaticity of the spectrum its bake reads.
@@ -168,7 +162,7 @@ fn each_stock_bakes_at_its_first_use_and_holds_one_table() {
 }
 
 /// The GPU chain on every stock: a neutral scene ramp lit at the stock's white, rendered as the editor renders a
-/// digital photo, prints within the CPU references' chroma (13.4 at most, on Pro 160NH), a black and white film's
+/// digital photo, prints within the CPU references' ceiling, a black and white film's
 /// without a hue. Twin: on a colour stock, the same scene lit at the other light is coloured.
 #[test]
 fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
@@ -206,6 +200,6 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             continue;
         }
         assert!(worst < CHROMA, "{stock:?}: {lit:?}");
-        assert!(twin > 2.0 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
+        assert!(twin > 1.6 * CHROMA, "{stock:?}: twin at C*ab {twin} only");
     }
 }

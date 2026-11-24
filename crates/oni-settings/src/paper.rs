@@ -1,12 +1,13 @@
-//! The colour papers a photo may be printed on in place of ONI's own print: each profiled from its maker's data sheet,
-//! and the Frontier SP-3000's print refitted from its measured table; a slide reaches them through an internegative.
+//! The papers every print is made on: ONI Standard, the neutral default, the colour papers each profiled from its maker's
+//! data sheet, and the Frontier SP-3000's print refitted from its measured table; a look reaches them through an
+//! internegative.
 
 use crate::stocks::{PaperEntry, Print};
 
 crate::stocks::keyed!(
-    /// A colour paper by the key a sidecar stores, its file's (`crate::stocks`); the default is Kodak's softest data sheet,
-    /// Royal Digital. A key no file defines is kept as stored and prints on the default meanwhile.
-    PaperStock, Paper, "kodak-royal-digital"
+    /// A paper by the key a sidecar stores, its file's (`crate::stocks`); the default is ONI Standard, the data-sheet
+    /// papers' mean curve on a neutral paper. A key no file defines is kept as stored and prints on the default meanwhile.
+    PaperStock, Paper, "oni-standard"
 );
 
 impl PaperStock {
@@ -48,8 +49,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_paper_keeps_its_key_and_the_default_is_royal_digital() {
-        assert_eq!(serde_json::to_string(&PaperStock::default()).unwrap(), "\"kodak-royal-digital\"");
+    fn every_paper_keeps_its_key_and_the_default_is_oni_standard() {
+        assert_eq!(serde_json::to_string(&PaperStock::default()).unwrap(), "\"oni-standard\"");
         for p in PaperStock::all() {
             let back: PaperStock = serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
             assert_eq!(back, p);
@@ -67,9 +68,9 @@ mod tests {
         for key in ["kodak-supra-endura", "kodak-ultra-endura", "kodak-endura-premier-datasheet"] {
             assert_eq!(read(key), PaperStock::of("kodak-endura-premier"), "{key}");
         }
-        // The former defaults' keys read as the default, Royal Digital; twin: never as Endura Premier.
+        // The former defaults' keys read as Royal Digital, of their line; twin: never as Endura Premier.
         for key in ["kodak-portra-endura", PaperStock::RETIRED_REVERSAL_KEY] {
-            assert_eq!(read(key), PaperStock::default(), "{key}");
+            assert_eq!(read(key), PaperStock::of("kodak-royal-digital"), "{key}");
             assert_ne!(read(key), PaperStock::of("kodak-endura-premier"), "{key}");
         }
         let crystal = read("fujifilm-crystal-archive-type-ii");

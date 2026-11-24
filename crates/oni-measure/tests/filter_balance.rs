@@ -113,7 +113,7 @@ fn the_press_lands_the_three_means_together_through_the_kernel_and_the_dose_writ
 }
 
 #[test]
-fn a_dust_speck_past_white_is_left_out_and_read_it_sends_an_axis_to_its_stop() {
+fn a_dust_speck_past_white_is_left_out_and_read_it_pulls_the_filters_away() {
     let check = "filter_balance::dust";
     let Some(mut graph) = graph(check) else { return };
     let mut pipeline = Pipeline::new();
@@ -126,8 +126,10 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_sends_an_axis_to_its_stop() {
     let means = key::shades(&mut r, copy, &unlit(&narrow), kept, printable).unwrap();
     println!("kept {:?}, blinded {:?}", filters_to_axes(kept), filters_to_axes(blinded));
     assert!(parted(means) < 1e-3 && !stopped(kept), "the rest parts by {} at {:?}", parted(means), filters_to_axes(kept));
-    // Twin: read, the dust sends an axis to its stop.
-    assert!(stopped(blinded), "{:?}", filters_to_axes(blinded));
+    // Twin: read, the dust pulls the filters a tenth of an axis away; on a paper, past the window's white, it prints on
+    // the paper's own white end, never sending an axis to its stop.
+    let ((t, n), (bt, bn)) = (filters_to_axes(kept), filters_to_axes(blinded));
+    assert!((t - bt).hypot(n - bn) > 0.05, "{:?}", filters_to_axes(blinded));
 }
 
 #[test]
@@ -177,7 +179,7 @@ fn a_digital_photo_s_key_balances_its_print_on_its_films_reference() {
 }
 
 /// On a paper the key reads the paper's print, its Temperature and Tint the enlarger's filtration: the filters it finds land
-/// the paper's means together; twin: the filters found on ONI's print of the same photo leave the paper's parted.
+/// the paper's means together; twin: no filter leaves them parted.
 #[test]
 fn on_a_paper_the_key_balances_the_papers_own_print() {
     let check = "filter_balance::paper";
@@ -188,12 +190,10 @@ fn on_a_paper_the_key_balances_the_papers_own_print() {
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
     let paper = PipelineSettings::rest(ConversionMode::Digital, false);
     assert!(paper.paper().is_some(), "a digital photo at rest prints on the paper");
-    let onis = PipelineSettings { print_paper: None, ..paper.clone() };
     let found = key::filters(&mut r, copy, &paper, printable).expect("the cast photo reads");
-    let on_onis = key::filters(&mut r, copy, &onis, printable).expect("the cast photo reads");
     let balanced = parted(key::shades(&mut r, copy, &unlit(&paper), found, printable).unwrap());
-    let misread = parted(key::shades(&mut r, copy, &unlit(&paper), on_onis, printable).unwrap());
-    println!("on the paper {:?}, on ONI's print {:?}; the paper's means part by {balanced:.1e}, by {misread:.1e} on ONI's filters", filters_to_axes(found), filters_to_axes(on_onis));
+    let unfiltered = parted(key::shades(&mut r, copy, &unlit(&paper), [0.0; 3], printable).unwrap());
+    println!("on the paper {:?}; the paper's means part by {balanced:.1e}, by {unfiltered:.1e} unfiltered", filters_to_axes(found));
     assert!(balanced < 1e-3, "{found:?} parts by {balanced}");
-    assert!(misread > 3e-3, "twin: ONI's filters on the paper part by {misread}");
+    assert!(unfiltered > 3e-3, "twin: unfiltered the paper's means part by {unfiltered}");
 }

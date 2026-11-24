@@ -432,7 +432,6 @@ settings: PipelineSettings {
         bypassed: false,
     },
     print_paper: None,
-    paperless: false,
     legacy_print: None,
     density: 0.40069318,
     manual_curves: CurveSet {

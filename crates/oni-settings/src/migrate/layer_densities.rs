@@ -94,7 +94,7 @@ const SCANNED: [(VirtualStock, StockReference); 75] = {
 
 /// The reference a document of formats 66 to 68 laid for `stock`.
 pub fn scanned(stock: VirtualStock) -> StockReference {
-    SCANNED.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    SCANNED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::digital_scan::layered(stock), |(_, r)| *r)
 }
 
 /// `settings` of `version` on its stock's reference of the layers' own densities.

@@ -3,8 +3,8 @@
 
 use crate::conversion;
 use crate::scanner::{self, CHECK_GREY, MACHINE};
-use oni_render::{ScannerEncode, cpu};
-use oni_settings::PipelineSettings;
+use oni_render::{ScannerEncode, Stage47, cpu};
+use oni_settings::{LegacyPrint, PipelineSettings};
 
 use super::measure::SPREAD;
 
@@ -29,9 +29,12 @@ pub fn cube_input(pixel: [f32; 4], frontier: &PipelineSettings) -> Option<[f64; 
     inside.then_some(x)
 }
 
-/// Pro at rest on a scanned pixel, to display sRGB code: the conversion, the clip.
+/// Pro at rest on a scanned pixel, to display sRGB code: the conversion on the print curve the lab was fitted on, a
+/// legacy print's at a negative's rest a stop and a half up, then the clip.
 pub fn pro_code(pixel: [f32; 4], pro: &PipelineSettings) -> [f64; 3] {
-    let out = cpu::stage47(pixel, &conversion::stage47(pro));
+    let on_curve = PipelineSettings { legacy_print: Some(LegacyPrint::default()), print_paper: None, ..pro.clone() };
+    let k = Stage47 { print_stops: conversion::NEGATIVE_PRINT_STOPS, ..conversion::stage47(&on_curve) };
+    let out = cpu::stage47(pixel, &k);
     let code = cpu::scanner_encode(cpu::output_clip(out), &ScannerEncode { root: 1.0 });
     [code[0], code[1], code[2]].map(f64::from)
 }

@@ -1,6 +1,6 @@
-//! The paper: each paper printing each layer's density through pure dyes as a double reading of its curves; the enlarger
-//! resting on the paper's own grey, neutral on its white, its ends the paper's; the print its own; a measure on none; the
-//! GPU on every branch. Each has a twin.
+//! The paper: each paper printing each layer's density through pure dyes as a double reading of its curves; the print its
+//! own; every frame on one but a measure; every stock on every paper; the GPU on every branch. Where the window lies on a
+//! paper is `every_paper`'s. Each has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -91,7 +91,11 @@ fn every_paper_prints_each_channels_density_on_its_own_layer_as_its_profile_read
         let magenta = [filters[0], filters[1] * 10f64.powf(-0.05), filters[2]];
         let off = densities().into_iter().map(|d| (f64::from(k.exposed(d)[1]) - read_off(&sheet, magenta, scale, d.map(f64::from)).0[1]).abs()).fold(0.0, f64::max);
         assert!(off > 1e-2, "{paper:?}: {off}");
-        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light.
+        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light; ONI
+        // Standard's dyes are pure.
+        if paper == PaperStock::default() {
+            continue;
+        }
         let pure = densities().into_iter().map(|d| {
             let (e, v) = (k.exposed(d), k.viewed(k.developed(k.exposed(d))));
             (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-interp(&sheet, c, f64::from(e[c])))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
@@ -112,7 +116,8 @@ fn chroma(v: [f32; 3]) -> f64 {
 #[test]
 fn a_grey_prints_on_the_sheets_curves_and_a_colour_loses_what_the_dyes_crosstalk_takes() {
     let s = film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference());
-    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
+    // ONI Standard's dyes are pure, no crosstalk to take.
+    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine() && *p != PaperStock::default()) {
         let k = conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper.expect("a negative on its paper");
         let sheet = sheet_of(paper);
         let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| sheet.density_curves[i].map(|v| v as f32))));
@@ -146,42 +151,6 @@ fn a_grey_prints_on_the_sheets_curves_and_a_colour_loses_what_the_dyes_crosstalk
 /// The frames the rest is read on: a digital photo, a negative, and black and white.
 fn rests() -> [(&'static str, PipelineSettings); 3] {
     [("digital", digital()), ("negative", prepared_negative()), ("black and white", mono())]
-}
-
-#[test]
-fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_on_the_papers_white_and_the_ends_are_the_papers() {
-    for (label, s) in rests() {
-        let k = conversion::stage47(&s);
-        let p = k.paper.expect(label);
-        let [black, white, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
-        let shares = paper::layer_shares(&p, paper::shares_of(&s, &k, [0.0; 3]));
-        let dmax = p.viewed(p.dyed(p.curves[PAPER_CURVE_NODES - 1]));
-        let dmax = if p.luma { [oni_render::LUMA.iter().zip(dmax).map(|(w, v)| w * v).sum(); 3] } else { dmax };
-        let on_white: [f32; 3] = std::array::from_fn(|c| grey[c] / p.white[c] * luma(p.white));
-        println!("{label}: grey {grey:?}, on the paper's white {on_white:?} (a plain RAW's {:.5})", *GREY_PRINT);
-        println!("  black {black:?} (Dmax {dmax:?}), white {white:?} (paper {:?}); the base at {shares:?} of each layer's range", p.white);
-        // With Print lift a plain RAW's grey's light, neutral on the paper's own white, whatever the frame.
-        assert!((0..3).all(|c| (on_white[c] - *GREY_PRINT).abs() < 2e-4), "{label}: {on_white:?}");
-        // The ends are the paper's: the base above its Dmax, the densest read at most its white, neither laid on 0 or 1.
-        assert!((0..3).all(|c| black[c] >= dmax[c] - 1e-6 && black[c] > 1e-3 && white[c] <= p.white[c] + 1e-6 && white[c] < 0.9), "{label}");
-        // Twin: the same time through ten CC more yellow prints the grey off neutral.
-        let bare = Stage47 { paper: Some(Paper { filters: [p.filters[0], p.filters[1], p.filters[2] * 10f32.powf(-0.1)], ..p }), ..k };
-        let unfiltered = cpu::stage47(grey_scan(&s), &bare);
-        if label != "black and white" {
-            assert!((unfiltered[0] / p.white[0] - unfiltered[2] / p.white[2]).abs() > 1e-2, "{label}: {unfiltered:?}");
-        }
-        // Twin: ONI's window laid on the print would put the base on black and the densest read on white.
-        let windowed = |v: V4| -> [f32; 3] { std::array::from_fn(|c| (v[c] - black[c]) / (white[c] - black[c])) };
-        assert!(windowed(black) == [0.0; 3] && windowed(grey).iter().all(|g| (g - *GREY_PRINT).abs() > 0.01), "{label}");
-    }
-    // A digital photo's reference grey is its scene grey: the paper prints the scene's grey at its own grey.
-    let s = digital();
-    let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let scan = stock.scanned(cpu::virtual_negative([film::GREY, film::GREY, film::GREY, 1.0], &stock.kernel, &stock.table));
-    let k = conversion::stage47(&s);
-    let printed = cpu::stage47(scan, &k);
-    let white = k.paper.unwrap().white;
-    assert!((0..3).all(|c| (printed[c] / white[c] * luma(white) - *GREY_PRINT).abs() < 2e-3), "{printed:?}");
 }
 
 #[test]
@@ -243,18 +212,21 @@ fn a_legacy_print_on_a_paper_rests_at_its_rest_and_its_keys_move_the_enlarger() 
 }
 
 #[test]
-fn a_measure_and_a_positive_read_as_its_own_negative_read_no_paper() {
-    let inverted = PipelineSettings { inverted_source: true, ..prepared_negative() };
-    assert!(conversion::stage47(&inverted).paper.is_none(), "a positive read as its own negative");
+fn every_frame_prints_on_a_paper_but_a_measure_and_a_legacy_print_on_its_own() {
     let mut measured = prepared_negative();
     measured.print.bypassed = true;
     assert!(conversion::stage47(&measured).paper.is_none(), "a measure upstream of the print");
-    // Twin: the same negative printed.
-    assert!(conversion::stage47(&prepared_negative()).paper.is_some());
-    // Off, the negative renders as it did before the paper, to the bit.
-    let off = PipelineSettings { print_paper: None, ..prepared_negative() };
-    let k = conversion::stage47(&off);
-    assert!(k.paper.is_none() && k.print_on == 1.0, "ONI's print");
+    // A frame naming no paper and a positive read as its own negative print on the default, ONI Standard.
+    let unnamed = PipelineSettings { print_paper: None, ..prepared_negative() };
+    let inverted = PipelineSettings { inverted_source: true, ..unnamed.clone() };
+    for (label, s) in [("no paper named", unnamed.clone()), ("a positive read as its own negative", inverted)] {
+        let k = conversion::stage47(&s);
+        assert!(s.paper() == Some(PaperStock::default()) && k.paper.is_some() && k.print_on == 0.0, "{label}");
+    }
+    // Twin: a legacy print naming none keeps its own print curve.
+    let legacy = PipelineSettings { legacy_print: Some(LegacyPrint::default()), ..unnamed };
+    let k = conversion::stage47(&legacy);
+    assert!(k.paper.is_none() && k.print_on == 1.0, "a legacy print's own curve");
 }
 
 #[test]
@@ -305,31 +277,34 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
     judge("paper alone", &alone, &mapped(&pixels, |q| cpu::paper(q, &p)), &mapped(&pixels, |q| cpu::paper(q, &brighter)));
 }
 
-/// Every stock a digital photo is shot on rests on every paper with its grey printed at a plain RAW's share of the
-/// paper's white, neutral, the Frontier's steep curves included. Twin: at the rest's time on another filtration the Frontier prints its grey off neutral.
+/// Every stock a digital photo is shot on rests on every paper with its bare film on the paper's black and the sensor's
+/// saturation entering green's window at its white, whatever the paper. Twin: a tenth more of the enlarger's time moves the print.
 #[test]
-fn every_stock_rests_its_grey_neutral_on_every_paper() {
+fn every_stock_rests_its_ends_on_every_paper() {
     let mut missed = Vec::new();
     // A reversal film is projected, never printed.
     for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
+        let baked = film::stock(stock);
         for p in PaperStock::all() {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };
             let k = conversion::stage47(&s);
-            let grey = cpu::stage47(grey_scan(&s), &k);
-            let white = k.paper.unwrap().white;
-            let off = (0..3).map(|c| (grey[c] / white[c] * luma(white) - *GREY_PRINT).abs()).fold(0.0f32, f32::max);
-            if off > 2e-4 {
+            let q = k.paper.unwrap();
+            let sat = film::saturation();
+            let (bare, white) = (baked.shot([0.0, 0.0, 0.0, 1.0], 0.0), baked.shot([sat, sat, sat, 1.0], 0.0));
+            let black = cpu::stage47(bare, &k);
+            let share = cpu::windowed(white, &k)[1];
+            let off = (0..3).map(|c| (black[c] - q.anchor[c]).abs()).fold((share - 1.0).abs(), f32::max);
+            if off > 2e-4 || !cpu::stage47(white, &k).iter().chain(&black).all(|v| v.is_finite()) {
                 missed.push(format!("{stock:?} on {p:?}: {off:.1e}"));
             }
         }
     }
-    println!("{} stock and paper pairs off their grey: {missed:?}", missed.len());
-    // The window lays every stock's grey on one density, so the paper's own filtration serves them all.
+    println!("{} stock and paper pairs off their ends: {missed:?}", missed.len());
     assert!(missed.is_empty(), "{missed:?}");
     let s = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     let k = conversion::stage47(&s);
-    let rest = conversion::printing(&s).unwrap().paper;
-    let start = Paper { filters: [1.0, 10f32.powf(-0.5), 10f32.powf(-0.5)], ..rest };
-    let printed = cpu::stage47(grey_scan(&s), &Stage47 { paper: Some(start), ..k });
-    assert!((printed[0] - printed[1]).abs() > 0.02 || (printed[2] - printed[1]).abs() > 0.02, "{printed:?}");
+    let rest = k.paper.unwrap();
+    let longer = Stage47 { paper: Some(Paper { scale: rest.scale * 1.1, ..rest }), ..k };
+    let white = film::stock(VirtualStock::of("kodak-portra-800")).shot([1.0; 4], 0.0);
+    assert!((cpu::stage47(white, &longer)[1] - cpu::stage47(white, &k)[1]).abs() > 1e-3);
 }

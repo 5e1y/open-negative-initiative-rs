@@ -110,7 +110,7 @@ fn a_persons_paper_is_listed_and_bakes() {
     stocks::install(read.catalogue);
     let mine = PaperStock::of("kodak-royal-digital-mine");
     assert!(PaperStock::all().contains(&mine) && mine.brand() == "Kodak");
-    let (own, royal) = (paper::sheet(mine), paper::sheet(PaperStock::default()));
+    let (own, royal) = (paper::sheet(mine), paper::sheet(PaperStock::of("kodak-royal-digital")));
     assert_eq!(own.curves, royal.curves, "the same profile bakes the same sheet");
     // Twin: a fit that is no fit is refused.
     let mut fit = shipped("fujifilm-frontier-sp-3000.json");

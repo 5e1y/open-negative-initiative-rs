@@ -14,19 +14,19 @@ fn sheet_stocks() -> Vec<VirtualStock> {
     VirtualStock::all().to_vec()
 }
 
-/// Every paper but the Frontier, a machine measured.
+/// Every paper but the Frontier, a machine measured, and ONI Standard, the data sheets' mean.
 fn sheet_papers() -> Vec<PaperStock> {
-    PaperStock::all().into_iter().filter(|p| !p.is_machine()).collect()
+    PaperStock::all().into_iter().filter(|p| !p.is_machine() && *p != PaperStock::default()).collect()
 }
 
 fn finite(pixels: &[V4]) -> bool {
     pixels.iter().all(|p| p.iter().all(|v| v.is_finite()))
 }
 
-/// A digital photo at rest on `stock`, printed without paper or on `paper`.
+/// A digital photo at rest on `stock`, printed on the default paper or on `paper`.
 fn shot(stock: VirtualStock, paper: Option<PaperStock>) -> PipelineSettings {
     let s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only().on_stock(stock);
-    PipelineSettings { print_paper: paper, paperless: paper.is_none(), ..s }
+    PipelineSettings { print_paper: paper, ..s }
 }
 
 /// Scenes from 8 stops under the grey to 8 over, and every hue at three saturations.

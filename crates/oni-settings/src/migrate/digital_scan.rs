@@ -65,15 +65,15 @@ const LAYERED: [(VirtualStock, StockReference); 48] = {
     ]
 };
 
-/// The reference a document of formats 69 and 70 laid for `stock`; a stock the scan leaves unmoved, its own.
+/// The reference a document of formats 69 and 70 laid for `stock`; a stock the scan leaves unmoved, the next format's.
 pub fn layered(stock: VirtualStock) -> StockReference {
-    LAYERED.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    LAYERED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::sensor_white::grey_placed(stock), |(_, r)| *r)
 }
 
 /// `settings` of `version` on its stock's reference of the scanned negative.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
-        Some(film) if version < DIGITAL_SCAN_VERSION => onto(settings, layered(film.stock), film.stock.reference()),
+        Some(film) if version < DIGITAL_SCAN_VERSION => onto(settings, layered(film.stock), super::sensor_white::grey_placed(film.stock)),
         _ => settings,
     }
 }
@@ -92,7 +92,7 @@ mod tests {
         photo.levels = was.levels();
         photo.levels.blue.black -= 0.02;
         let landed = caught_up(DIGITAL_SCAN_VERSION - 1, photo.clone());
-        let now = stock.reference();
+        let now = super::super::sensor_white::grey_placed(stock);
         assert!(now.stops != was.stops, "the scan moves Portra 800's reference");
         assert!((0..3).all(|c| (landed.gains.stops[c] - (now.stops[c] + 0.25)).abs() < 1e-6), "{:?}", landed.gains.stops);
         assert!((landed.levels.blue.black - (now.levels().blue.black - 0.02)).abs() < 1e-5, "{:?}", landed.levels.blue);
@@ -100,7 +100,7 @@ mod tests {
         assert_eq!(caught_up(DIGITAL_SCAN_VERSION, photo.clone()).gains, photo.gains);
         // A black and white film's reference is unmoved, and a scan moves nothing.
         let silver = VirtualStock::of("ilford-hp5-plus");
-        assert_eq!(layered(silver), silver.reference());
+        assert_eq!(layered(silver).stops, silver.reference().stops);
         let scan = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_eq!(caught_up(DIGITAL_SCAN_VERSION - 1, scan.clone()).levels, scan.levels);
     }

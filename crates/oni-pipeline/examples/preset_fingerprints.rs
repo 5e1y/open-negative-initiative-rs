@@ -28,13 +28,13 @@ fn scenes() -> Vec<V4> {
 
 fn shot(stock: VirtualStock, paper: Option<PaperStock>) -> PipelineSettings {
     let s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only().on_stock(stock);
-    PipelineSettings { print_paper: paper, paperless: paper.is_none(), ..s }
+    PipelineSettings { print_paper: paper, ..s }
 }
 
 fn roll(mode: ConversionMode, dyes: DyeSet, paper: Option<PaperStock>) -> PipelineSettings {
     let mut s = PipelineSettings::rest(mode, true).per_pixel_only();
     s.dye_set = dyes;
-    PipelineSettings { print_paper: paper, paperless: paper.is_none(), ..s }
+    PipelineSettings { print_paper: paper, ..s }
 }
 
 fn main() {

@@ -29,21 +29,19 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
-    let paperless = PipelineSettings { paperless: true, ..prepared_negative() };
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
-        ("ONI's print, negative", onis(prepared_negative())),
-        ("ONI's print, uncompensated", uncompensated),
-        ("ONI's print, legacy Frontier", legacy),
-        ("ONI's print, digital", onis(digital())),
-        ("ONI's print, black and white", onis(mono())),
-        ("ONI's print, slide", slide()),
+        ("ONI Standard, negative", onis(prepared_negative())),
+        ("ONI Standard, uncompensated", uncompensated),
+        ("legacy print, Frontier", legacy),
+        ("ONI Standard, digital", onis(digital())),
+        ("ONI Standard, black and white", onis(mono())),
+        ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, negative, Brightness", bright),
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
-        ("neutral paper", paperless),
     ]
 }
 
@@ -85,7 +83,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0x12b0_fc97_7132_5a69;
+    const BEFORE: u64 = 0xc642_7165_25ff_27fa;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
@@ -127,6 +125,7 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         // The Frontier prints its fitted table, not its dyes' own light.
         let fitted = s.paper().and_then(|p| oni_settings::stocks::current().paper(p).map(|e| matches!(e.print, oni_settings::stocks::Print::Frontier(_))));
         if let Some(p) = conversion::stage47(&s).paper.filter(dyed).filter(|_| fitted != Some(true)) {
+            println!("    {label}: read on its paper's dyes");
             checked += 1;
             for t in [-1.0f32, 1.0] {
                 let past = at(t).iter().map(|v| past_the_dyes(&p, *v)).fold(0.0, f64::max);
@@ -137,8 +136,8 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
             assert!(former > 1e-2, "{label}: {former}");
         }
     }
-    // The Frontier's print is its fitted table's, the neutral paper's laid on pure black: two papers are read.
-    assert_eq!(checked, 2);
+    // The Frontier's print is its fitted table's, the other papers' without Print lift laid on pure black: three prints are read.
+    assert_eq!(checked, 3);
 }
 
 #[test]
@@ -197,8 +196,9 @@ fn the_saturation_curve_reads_the_prints_own_lightness() {
         let shifted: [f32; oni_render::LIGHTNESS_NODES] = std::array::from_fn(|i| n.lightness[(i + 2).min(oni_render::LIGHTNESS_NODES - 1)]);
         let (held, twin) = (off(&n.lightness), off(&shifted));
         println!("{label}: a grey's lightness on the curve within {held:.1e} of its print's; two nodes off, {twin:.1e}");
-        // A paper prints its greys a hair off neutral, so their luma strays from a grey's by 4.4e-3.
-        assert!(held < 6e-3 && twin > 4e-2, "{label}: {held} {twin}");
+        // A digital photo's greys print up to C* 4.7 off neutral (`digital_scan`), so their luma strays from a grey's by
+        // 1.3e-2.
+        assert!(held < 1.5e-2 && twin > 4e-2, "{label}: {held} {twin}");
         // Monotone along the greys: a lighter grey prints lighter.
         // The Frontier's table prints its greys a hair darker past its white, by 4e-4.
         assert!(n.lightness.windows(2).all(|w| w[1] - w[0] >= -1e-3), "{label}: {:?}", n.lightness);

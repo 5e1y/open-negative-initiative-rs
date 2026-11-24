@@ -50,7 +50,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
     printed(s).0
 }
 
-/// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on ONI's own print.
+/// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on a legacy print's own curve.
 pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return printing(&copy);
@@ -58,7 +58,7 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     printed(s).1
 }
 
-/// `k` printed on the frame's paper, with its printing; on ONI's print, as it is.
+/// `k` printed on the frame's paper, with its printing; on a legacy print's own curve, as it is.
 fn on_paper(s: &PipelineSettings, k: Stage47) -> (Stage47, Option<crate::paper::Printing>) {
     match crate::paper::printing(s, &k) {
         Some(p) => (Stage47 { print_on: 0.0, hunt: 0.0, paper: Some(p.paper), ..k }, Some(p)),
@@ -82,7 +82,7 @@ fn lit(s: &PipelineSettings) -> Stage47 {
     Stage47 { negative: crate::negative::negative(s, &k), ..k }
 }
 
-/// The stops ONI's print curve takes at rest on a negative: the curve its windows and reference grey are read under.
+/// The stops a legacy print's curve takes at rest on a negative: Lighting's grey is read under it.
 pub const NEGATIVE_PRINT_STOPS: f32 = 1.5;
 
 /// The stops ONI's print curve takes at its rest in `mode`: a negative's `NEGATIVE_PRINT_STOPS`, a slide's none.
@@ -97,7 +97,7 @@ fn print_stops(s: &PipelineSettings) -> f32 {
     if s.legacy().is_some() { rest - NEGATIVE_PRINT_STOPS } else { rest }
 }
 
-/// Stage 4-7's arguments before any paper and Lighting: the reading, the windows and ONI's print.
+/// Stage 4-7's arguments before any paper and Lighting: the reading, the windows and a legacy print's curve.
 fn unprinted(s: &PipelineSettings) -> Stage47 {
     let print = &s.print;
     let mono = s.is_monochrome();
@@ -134,10 +134,10 @@ mod tests {
 
     #[test]
     fn a_monochrome_frame_carries_no_hunt() {
-        let s = PipelineSettings::rest(ConversionMode::Monochrome, true);
-        assert_eq!(stage47(&s).hunt, 0.0);
-        // Twin: a colour negative at rest carries Hunt.
-        let n = stage47(&PipelineSettings::rest(ConversionMode::Negative, true));
+        let on_curve = |mode| PipelineSettings { legacy_print: Some(oni_settings::LegacyPrint::default()), ..PipelineSettings::rest(mode, true) };
+        assert_eq!(stage47(&on_curve(ConversionMode::Monochrome)).hunt, 0.0);
+        // Twin: a colour negative on a legacy print's curve carries Hunt.
+        let n = stage47(&on_curve(ConversionMode::Negative));
         assert_eq!(n.hunt, 1.0);
         assert_eq!((n.decompression, n.film_share), (0.5, 0.5));
     }

@@ -6,7 +6,7 @@ use crate::paper::{self, frontier};
 use oni_settings::stocks::file::{self, File, FilmBlock};
 use oni_settings::stocks::{self, Catalogue, Loaded, Origin, Refusal};
 use oni_settings::virtual_film::StockReference;
-use oni_settings::{DyeSet, film::FilmType};
+use oni_settings::film::FilmType;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -189,8 +189,8 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
                 .into_iter()
                 .map(|b| {
                     let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
-                    let (reversal, dyes) = (f.kind == FilmType::ColourSlide, DyeSet::of(stocks::intern(&b.dyes)));
-                    film::derive(b.profile.get(), b.balance, silver, reversal, dyes, couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
+                    let reversal = f.kind == FilmType::ColourSlide;
+                    film::derive(b.profile.get(), b.balance, silver, reversal, couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })
                 .collect()
         }

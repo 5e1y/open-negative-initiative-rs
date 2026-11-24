@@ -1,5 +1,5 @@
-//! The Frontier SP-3000 as a paper: its print is the measured table, its rest neutral with no offset of the machine's,
-//! Lighting on the negative as on every paper, the GPU its reference. Each verdict has a twin.
+//! The Frontier SP-3000 as a paper: its print is the measured table, its rest neutral along the window with no offset of
+//! the machine's, Lighting on the negative as on every paper, the GPU its reference. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -9,9 +9,8 @@ use common::{V4, error, graph, judge, mapped, noise, whole};
 use frames::*;
 use oni_graph::Image;
 use oni_pipeline::look_lab::measure::{self, centile, constrained, median};
-use oni_pipeline::paper::GREY_PRINT;
 use oni_pipeline::{conversion, film, scanner, stages};
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_render::{PAPER_CURVE_NODES, Paper, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
@@ -69,21 +68,29 @@ fn the_print_reproduces_the_measured_table() {
     assert!(med > 1.9 && p90 > 5.1, "{med} {p90}");
 }
 
+/// How far from neutral `p`'s neutral shares print between pure ends, the most of any channel's cube root of its light
+/// off green's along the window.
+fn strays(p: &Paper) -> f32 {
+    let pure = Paper { anchor: [0.0; 3], white_anchor: [1.0; 3], ..*p };
+    (0..=32)
+        .map(|i| pure.shown([i as f32 / 32.0; 3]).map(|v| v.max(0.0).cbrt()))
+        .map(|v| (v[0] - v[1]).abs().max((v[2] - v[1]).abs()))
+        .fold(0.0, f32::max)
+}
+
 #[test]
-fn the_rest_prints_the_reference_grey_neutral_with_no_offset_of_the_machines() {
+fn the_rest_prints_a_grey_neutral_along_the_window_with_no_offset_of_the_machines() {
     for (label, s) in frames() {
-        let k = conversion::stage47(&s);
-        let p = k.paper.expect(label);
-        let grey = cpu::stage47(grey_scan(&s), &k);
+        let p = conversion::stage47(&s).paper.expect(label);
         let filtration = conversion::printing(&s).unwrap().filtration;
-        println!("{label}: grey {grey:?} (a plain RAW's {:.5}), filtration {filtration:?} CC, pick {:?}, white {:?}", *GREY_PRINT, p.pick, p.white);
-        // With Print lift a plain RAW's grey's light, neutral on the paper's own white.
-        let luma = oni_render::LUMA.iter().zip(p.white).map(|(w, v)| w * v).sum::<f32>();
-        assert!((0..3).all(|c| (grey[c] / p.white[c] * luma - *GREY_PRINT).abs() < 2e-4), "{label}: {grey:?}");
-        // Twin: the same enlarger through no filtration prints the grey off neutral.
+        println!("{label}: a grey strays {:.4} from neutral, filtration {filtration:?} CC, pick {:?}, white {:?}", strays(&p), p.pick, p.white);
+        assert!(strays(&p) < 0.03, "{label}: {}", strays(&p));
+        // Twin: a tenth of a log more on red tints the greys.
         if label != "black and white" {
-            let unfiltered = cpu::stage47(grey_scan(&s), &Stage47 { paper: Some(Paper { filters: [1.0; 3], ..p }), ..k });
-            assert!((unfiltered[0] - unfiltered[2]).abs() > 1e-2 || (unfiltered[1] - unfiltered[0]).abs() > 1e-2, "{label}: {unfiltered:?}");
+            let redder = Paper { filters: [p.filters[0] * 10f32.powf(0.1), p.filters[1], p.filters[2]], ..p };
+            let pure = |q: &Paper| Paper { pick: q.printed([0.0; 3]), white: q.printed([1.0; 3]), ..*q };
+            println!("  twin, a tenth of a log redder: {:.4}", strays(&pure(&redder)));
+            assert!(strays(&pure(&redder)) > 0.05, "{label}: {}", strays(&pure(&redder)));
         }
     }
     // On a Frontier legacy print the paper takes the keys alone: the cube's resting offset is not laid.
@@ -118,7 +125,8 @@ fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
             match name {
                 "Exposure +1" => assert!(luma(is) > luma(was) * 1.1, "{label}"),
                 "Contrast 0.3" => assert!((luma(is) / luma(was) - 1.0).abs() < 0.02, "{label}: the grey held"),
-                _ if label != "black and white" => assert!((luma(is) / luma(was) - 1.0).abs() < 0.05 && is[0] / is[2] > was[0] / was[2] * 1.05, "{label}"),
+                // The grey's densities keep their weight on the negative; the paper's dark tones turn that into 0.13 of light.
+                _ if label != "black and white" => assert!((luma(is) / luma(was) - 1.0).abs() < 0.15 && is[0] / is[2] > was[0] / was[2] * 1.05, "{label}"),
                 _ => assert!(is == was, "{label}: black and white reads no filter"),
             }
         }

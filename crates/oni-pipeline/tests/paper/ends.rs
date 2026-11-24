@@ -9,9 +9,10 @@ use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{PaperStock, PipelineSettings};
 
-pub fn frames() -> [(&'static str, PipelineSettings); 4] {
+pub fn frames() -> [(&'static str, PipelineSettings); 5] {
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..prepared_negative() };
-    [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier)]
+    let standard = PipelineSettings { print_paper: Some(PaperStock::default()), ..prepared_negative() };
+    [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier), ("ONI Standard negative", standard)]
 }
 
 pub type Move = (&'static str, fn(&mut PipelineSettings));

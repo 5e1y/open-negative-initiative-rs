@@ -1,22 +1,15 @@
-//! Each frame's enlarger on its paper at rest: the paper's own filtration, solved once on its layers where they print a
-//! grey neutral on its white, and one time that shows the frame's reference grey at a plain RAW's grey through the
-//! print's ends, as the window has laid the three channels' greys on one density. Lighting then moves the negative it
-//! prints (`lighting`).
+//! Each frame's enlarger on its paper: the window laid on the paper's useful range, its bare film on the paper's black
+//! and its white on the paper's white, through the paper's own filtration (`placing`), no grey placed; Lighting then
+//! moves the negative it prints (`lighting`). The reference grey the Lighting sliders turn about is read here too.
 
 use super::*;
-use crate::film::bake::{self, M3};
 use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
 use oni_settings::axis::pipeline::DMAX;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
 use std::sync::LazyLock;
 
-/// The neutral solve's probe and largest step in log exposure, its iterations, its tolerance in log light, and the
-/// halvings a step may take before the solve stops where it stands.
-const PROBE: f32 = 0.01;
-const STEP_BOUND: f32 = 1.0;
-const ITERATIONS: usize = 40;
-const TOLERANCE: f32 = 1e-6;
+/// The halvings a solve's step may take before the solve stops where it stands.
 const HALVINGS: i32 = 30;
 
 /// A frame's paper and the enlarger's filtration it prints through, in CC: what the paper's block shows.
@@ -26,7 +19,7 @@ pub struct Printing {
     pub filtration: V3,
 }
 
-/// What a plain RAW's render at rest prints a scene grey at: where the paper prints the frame's reference grey.
+/// What a plain RAW's render at rest prints a scene grey at: where a legacy print lays the frame's reference grey.
 pub static GREY_PRINT: LazyLock<f32> = LazyLock::new(crate::film::plain_grey);
 
 pub(super) fn filters(cc: V3) -> V3 {
@@ -37,14 +30,15 @@ pub(super) fn luma(v: V3) -> f32 {
     oni_render::LUMA.iter().zip(v).map(|(w, x)| w * x).sum()
 }
 
-/// The share of every window that prints a plain RAW's grey on ONI's print at rest in `s`'s mode.
+/// The share of every window Lighting's moves turn about: where the legacy print's curve at rest in `s`'s mode shows a
+/// plain RAW's grey.
 pub fn grey_share(s: &PipelineSettings) -> f32 {
     let rest = Print { exposure: crate::conversion::resting_print_stops(s.mode), ..Print::default() };
     bisected(0.0, 2.0, *GREY_PRINT, |t| rest.output(t, LevelsChannel::Linked))
 }
 
-/// The scan densities, through the frame's gains, its windows print as a plain RAW's grey on ONI's print at rest:
-/// where every window reads the one share that grey prints at.
+/// The frame's reference grey, the scan densities through its gains where every window reads the one share Lighting's
+/// moves turn about.
 pub fn reference_grey(s: &PipelineSettings) -> V3 {
     let share = grey_share(s);
     let k = windows_alone(s);
@@ -110,104 +104,16 @@ pub fn shares_of(s: &PipelineSettings, k: &Stage47, above: V3) -> V3 {
     cpu::windowed([light[0], light[1], light[2], 1.0], &read)
 }
 
-/// How a share of the frame's window lies back on density, from its `anchors`: the windows' mean span, and the power
-/// that lays the mean window's grey on the mean grey's own density, so the print reads the negative's density at one
-/// grade on the mean.
-pub fn laid_back(s: &PipelineSettings, anchors: &[V3; 3]) -> (f32, f32) {
-    let mean = |v: V3| v.iter().map(|d| d.abs()).sum::<f32>() / 3.0;
-    let (span, at_grey) = (spanned(mean(anchors[1])), mean(anchors[2]));
-    let bend = (at_grey / span).ln() / grey_share(s).ln();
-    (span, if bend.is_finite() && bend > 0.0 { bend } else { 1.0 })
-}
-
-/// The `x` from `start` where `f` crosses zero, by Newton's steps in the enlarger's log exposure.
-fn root(start: f32, f: impl Fn(f32) -> f32) -> f32 {
-    let mut x = start;
-    for _ in 0..ITERATIONS {
-        let here = f(x);
-        if here.abs() < TOLERANCE {
-            break;
-        }
-        let slope = (f(x + PROBE) - here) / PROBE;
-        if slope.is_nan() || slope.abs() <= 1e-6 {
-            break;
-        }
-        let step = (here / slope).clamp(-STEP_BOUND, STEP_BOUND);
-        match damped(here.abs(), |t| f(x - t * step).abs()) {
-            Some(t) => x -= t * step,
-            None => break,
-        }
-    }
-    x
-}
-
-/// The share of a Newton step that lowers the miss from `now`, halving it from the whole: a steep paper's step past
+/// The share of a solve's step that lowers the miss from `now`, halving it from the whole: a steep paper's step past
 /// its root lands where its curve lies flat, from which no step returns.
-fn damped(now: f32, miss_at: impl Fn(f32) -> f32) -> Option<f32> {
+pub(super) fn damped(now: f32, miss_at: impl Fn(f32) -> f32) -> Option<f32> {
     (0..HALVINGS).map(|i| 0.5f32.powi(i)).find(|t| miss_at(*t) < now)
 }
 
-/// The three `x`, from `x`, where every channel's `miss` is zero.
-fn neutral_on(miss: impl Fn(V3) -> V3, mut x: V3) -> V3 {
-    for _ in 0..ITERATIONS {
-        let r = miss(x);
-        if r.iter().all(|v| v.abs() < TOLERANCE) {
-            break;
-        }
-        let columns: [V3; 3] = std::array::from_fn(|j| {
-            let mut moved = x;
-            moved[j] += PROBE;
-            let m = miss(moved);
-            std::array::from_fn(|c| (m[c] - r[c]) / PROBE)
-        });
-        let jacobian: M3 = std::array::from_fn(|c| std::array::from_fn(|j| f64::from(columns[j][c])));
-        let step = bake::apply(&bake::inverse(&jacobian), r.map(f64::from));
-        if !step.iter().all(|v| v.is_finite()) {
-            break;
-        }
-        // Shortened whole within its bound, so it keeps the direction that lowers the miss.
-        let within = (0..3).map(|j| STEP_BOUND / (step[j] as f32).abs()).fold(1.0f32, f32::min);
-        let step: V3 = std::array::from_fn(|j| step[j] as f32 * within);
-        let moved = |t: f32| -> V3 { std::array::from_fn(|j| x[j] - t * step[j]) };
-        let squared = |v: V3| v.iter().map(|c| c * c).sum::<f32>();
-        match damped(squared(r), |t| squared(miss(moved(t)))) {
-            Some(t) => x = moved(t),
-            None => break,
-        }
-    }
-    x
-}
-
-/// Each layer's log exposure where the paper prints a grey neutral on its own white, a plain RAW's grey's share of its
-/// white, or with `lift` a plain RAW's grey's light: the point its filtration and the frame's time bring the reference
-/// grey to, as the print's ends then show it.
-pub fn own_grey(sheet: &Sheet, lift: bool) -> V3 {
-    let on = |c: usize, log: f32| {
-        let f = ((log - sheet.curve_low) / sheet.curve_step).clamp(0.0, (PAPER_CURVE_NODES - 1) as f32);
-        let i = f.floor().min((PAPER_CURVE_NODES - 2) as f32);
-        let at = i as usize;
-        sheet.curves[at][c] + (f - i) * (sheet.curves[at + 1][c] - sheet.curves[at][c])
-    };
-    let viewed = |amounts: V3| -> V3 {
-        let row = |c: usize| (0..3).map(|k| sheet.crosstalk[c][k] * amounts[k]).sum::<f32>();
-        oni_render::viewed(std::array::from_fn(|c| sheet.floor[c] + row(c)))
-    };
-    let white = viewed(sheet.curves[0]);
-    let target = if lift { (*GREY_PRINT / luma(white)).ln() } else { GREY_PRINT.ln() };
-    let miss = |log: V3| -> V3 {
-        let v = viewed(std::array::from_fn(|c| on(c, log[c])));
-        std::array::from_fn(|c| (v[c] / white[c]).max(1e-12).ln() - target)
-    };
-    // From one exposure on the three, where the print's luma stands at the grey's share of its white.
-    let high = sheet.curve_low + sheet.curve_step * (PAPER_CURVE_NODES - 1) as f32;
-    let start = bisected(sheet.curve_low, high, target, |e| (luma(viewed([on(0, e), on(1, e), on(2, e)])) / luma(white)).max(1e-12).ln());
-    neutral_on(miss, [start; 3])
-}
-
-/// The filtration in CC, its least at none, that brings one neutral density to each layer's log exposure `grey`.
-pub fn filtration(grey: V3) -> V3 {
-    let most = grey.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    grey.map(|e| (most - e) * CC_PER_DENSITY)
+/// The filtration in CC, its least at none, that brings one neutral density to each layer's log exposure `at`.
+pub fn filtration(at: V3) -> V3 {
+    let most = at.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    at.map(|e| (most - e) * CC_PER_DENSITY)
 }
 
 /// Each layer's dye amount under the window's `shares`, as a share of its curve's range.
@@ -217,9 +123,9 @@ pub fn layer_shares(p: &Paper, shares: V3) -> V3 {
     std::array::from_fn(|c| (amounts[c] - low[c]) / (high[c] - low[c]))
 }
 
-/// Whether the print keeps the paper's own ends, Print lift on a paper: the neutral paper prints ONI's print's, pure.
+/// Whether the print keeps the paper's own ends: Print lift.
 pub fn lifted(s: &PipelineSettings) -> bool {
-    s.print.print_lift && !s.paperless
+    s.print.print_lift
 }
 
 /// A dye's range on the negative, never empty: a window's span holds at least 1e-4 of density, as ONI's print reads it.
@@ -227,28 +133,27 @@ pub(crate) fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper, or the neutral one with Print on paper off, at the window's shares: its own filtration, its time
-/// at rest showing the reference grey at a plain RAW's grey, then Brightness and the ends on the print of the negative as
-/// Lighting develops it. None on ONI's print.
+/// The frame's paper at the window's shares: the window's bare film on the paper's black and its white on the paper's
+/// white through its own filtration, then Brightness and the ends on the print of the negative as Lighting develops
+/// it; a legacy print's own time. None while the print is bypassed.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
-    let sheet = sheet_of(s, stock);
-    let above = anchors(s);
-    let (span, bend) = laid_back(s, &above);
-    // The neutral paper's axis spans the frame's mean range, as a window spans its own: one range on the three layers.
-    let axis = if s.paperless { span } else { 1.0 };
-    let lift = lifted(s);
-    let grey = if lift { sheet.lifted } else { sheet.grey }.map(|e| e * axis);
-    let cc = filtration(grey);
-    let bare = Paper {
-        span,
-        bend,
+    let sheet = sheet(stock);
+    if s.legacy().is_some() {
+        return Some(super::legacy::printing(s, k, sheet));
+    }
+    let placing = &sheet.placing;
+    let cc = filtration(placing.offsets);
+    let most = placing.offsets.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    let at_rest = Paper {
+        span: placing.range,
+        bend: 1.0,
         mix: sheet.mix,
         filters: filters(cc),
-        scale: 1.0,
+        scale: 10f32.powf(placing.black + most),
         curves: &sheet.curves,
-        curve_low: sheet.curve_low * axis,
-        curve_step: sheet.curve_step * axis,
+        curve_low: sheet.curve_low,
+        curve_step: sheet.curve_step,
         floor: sheet.floor,
         crosstalk: sheet.crosstalk,
         pick: [0.0; 3],
@@ -260,15 +165,8 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         reach: 0.0,
         luma: s.is_monochrome(),
     };
-    // From the reference grey's density laid on the paper's own grey, the time that shows it at a plain RAW's grey, the
-    // ends as Print lift lays them: on the paper's own white the grey's share of it is the light a plain RAW's grey holds.
-    let [pick, _, at_grey] = above.map(|a| shares_of(s, k, a));
-    let most = grey.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    let start = (most + bare.density(at_grey).iter().sum::<f32>() / 3.0) * std::f32::consts::LN_10;
-    let shown = |e: f32| {
-        let q = Paper { scale: e.exp(), ..bare };
-        luma(if lift { q.printed(at_grey) } else { super::laid(&q, pick, None).ended(q.printed(at_grey)) })
-    };
-    let time = root(start, |e| shown(e).max(1e-12).ln() - GREY_PRINT.ln());
-    Some(super::lighting::lit(&bare, time, &above, s, k, cc))
+    // The window's white at rest is the light laid on white; Brightness's reach is sought up to it.
+    let white = Paper { luma: false, ..at_rest }.printed([1.0; 3]);
+    let (bare, densest) = film_ends(s);
+    Some(super::lighting::lit(&at_rest, std::array::from_fn(|c| densest[c] - bare[c]), 1.0, white, s, k, cc))
 }

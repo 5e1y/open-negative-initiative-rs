@@ -45,7 +45,7 @@ mod tests {
         let slide = PipelineSettings { print_paper: Some(PaperStock::of("kodak-ektacolor-edge")), ..PipelineSettings::rest(ConversionMode::Positive, true) };
         assert_eq!(read(&stored(&slide, older, None)), PipelineSettings { print_paper: None, ..slide.clone() }, "nothing else moves");
         let reversal = read(&stored(&slide, older, Some(PaperStock::RETIRED_REVERSAL_KEY)));
-        assert_eq!(reversal.print_paper, Some(PaperStock::of("kodak-royal-digital")), "the default paper");
+        assert_eq!(reversal.print_paper, Some(PaperStock::default()), "the default paper");
         // A negative keeps its paper; one naming the reversal paper printed on ONI's print and stays there.
         let negative = PipelineSettings { mode: ConversionMode::Negative, ..slide.clone() };
         assert_eq!(read(&stored(&negative, older, None)).print_paper, Some(PaperStock::of("kodak-ektacolor-edge")));

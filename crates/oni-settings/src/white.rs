@@ -63,6 +63,10 @@ pub const fn uv_of_xy(x: f64, y: f64) -> Uv {
     (2.0 * x / d, 3.0 * y / d)
 }
 
+/// Stops a RAW decode adds to a file that names no BaselineExposure: without them `CIRAWFilter` sits 0.48 (Z f, roll
+/// #8) and 0.47 (S1R) stop over that decode in Rec. 2020 luminance; one value for every camera.
+pub const DEFAULT_BASELINE_EV: f64 = 0.48;
+
 /// The decode's own white: a mosaic's, else the file's.
 pub fn anchor(mosaic: bool) -> Uv {
     if mosaic { MOSAIC_WHITE } else { FILE_WHITE }

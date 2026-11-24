@@ -367,7 +367,7 @@ pub fn bake_ahead(s: &PipelineSettings) {
         negative::development(negative::Film::Slide(stock));
     }
     if let Some(paper) = s.paper().filter(|_| !s.print.bypassed) {
-        paper::sheet_of(s, paper);
+        paper::sheet(paper);
     }
 }
 

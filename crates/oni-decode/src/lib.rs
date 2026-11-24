@@ -86,9 +86,7 @@ const BRADFORD: M3 = [
     [0.0389, -0.0685, 1.0296],
 ];
 
-/// Stops added to a file that names no BaselineExposure: without them `CIRAWFilter` sits 0.48 (Z f, roll
-/// #8) and 0.47 (S1R) stop over this decode in Rec. 2020 luminance; one value for every camera.
-pub const DEFAULT_BASELINE_EV: f64 = 0.48;
+pub use oni_settings::white::DEFAULT_BASELINE_EV;
 
 pub struct Linear {
     pub width: usize,

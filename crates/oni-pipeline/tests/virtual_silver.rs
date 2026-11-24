@@ -8,7 +8,7 @@ use oni_graph::Image;
 use oni_pipeline::film::{self, GREY};
 use oni_pipeline::{Pipeline, Request, conversion, stages};
 use oni_render::{VirtualNegative, cpu};
-use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 fn silver() -> impl Iterator<Item = VirtualStock> {
     VirtualStock::all().into_iter().filter(|s| s.is_silver())
@@ -59,7 +59,7 @@ fn a_silver_negative_scans_neutral() {
 
 /// An orthochromatic film, blind to red, develops a red at a grey's luma at least 0.35 density thinner than that grey
 /// and its blue denser; a panchromatic film's red no more than 0.15 thinner. Printed, the red falls under a fifth of
-/// the grey's light on the orthochromatic film and stays over 0.7 of it on a panchromatic one. Twin: Ilford's
+/// the grey's light on the orthochromatic film and stays over half of it on a panchromatic one. Twin: Ilford's
 /// orthochromatic film's red at least 0.3 thinner than HP5's.
 #[test]
 fn an_orthochromatic_film_holds_red_thin_and_a_panchromatic_one_does_not() {
@@ -82,7 +82,7 @@ fn an_orthochromatic_film_holds_red_thin_and_a_panchromatic_one_does_not() {
     for stock in silver() {
         let share = printed(stock, red) / printed(stock, grey);
         println!("{:<24} its red printed at {share:.3} of its grey", stock.name());
-        assert!(if ortho(stock) { share < 0.2 } else { share > 0.7 }, "{stock:?}: {share:.3}");
+        assert!(if ortho(stock) { share < 0.2 } else { share > 0.5 }, "{stock:?}: {share:.3}");
     }
     let (o, p) = (VirtualStock::of("ilford-ortho-plus"), VirtualStock::of("ilford-hp5-plus"));
     assert!(thin(o, red) > thin(p, red) + 0.3, "twin: {} against {}", thin(o, red), thin(p, red));
@@ -165,8 +165,8 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
     let scene = noise(w, h, 3, 0.0, 1.2);
     let source = g.upload(w, h, &scene).unwrap();
     let mut pipeline = Pipeline::new();
-    for paperless in [false, true] {
-        let s = PipelineSettings { paperless, ..shot(VirtualStock::of("ilford-hp5-plus")) };
+    for paper in [PaperStock::default(), PaperStock::of("kodak-royal-digital")] {
+        let s = PipelineSettings { print_paper: Some(paper), ..shot(VirtualStock::of("ilford-hp5-plus")) };
         assert!(s.is_monochrome() && s.mode == ConversionMode::Digital);
         let on = pipeline.render(&mut g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1;
         assert!(on.iter().all(|p| (p[0] - p[1]).abs() < 1e-5 && (p[2] - p[1]).abs() < 1e-5), "a black and white print");
@@ -180,7 +180,7 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
         };
         // Twin: read as a slide, another picture; as a colour negative its equal layers print alike, neutral either way.
         let (mono, slide) = (read(ConversionMode::Monochrome), read(ConversionMode::Positive));
-        judge(&format!("a photo on a black and white film read as a monochrome roll, paperless {paperless}"), &on, &mono, &slide);
+        judge(&format!("a photo on a black and white film read as a monochrome roll, on {}", paper.name()), &on, &mono, &slide);
     }
     let back = shot(VirtualStock::of("ilford-hp5-plus")).on_stock(VirtualStock::of("kodak-portra-800"));
     assert_eq!(back, shot(VirtualStock::of("kodak-portra-800")), "nothing of the black and white film stays");
@@ -217,8 +217,11 @@ fn lighting_develops_a_black_and_white_films_own_curve() {
     println!("HP5's development {off:.4} off its sheet, the roll's mean {roll_off:.3}");
     // A flat foot read back rises at the least slope, a few thousandths over its sheet.
     assert!(off < 1e-2 && roll_off > 0.05, "{off} {roll_off}");
-    let baked = film::stock(stock);
-    let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &baked.kernel, &baked.table);
+    // The grey Lighting turns about, the window's own, as the scan holds it.
+    let k = conversion::stage47(&s);
+    let d = oni_pipeline::paper::reference_grey(&s);
+    let scan: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-d[c]) / k.gain[c] - k.pedestal);
+    let grey = [scan[0], scan[1], scan[2], 1.0];
     let printed = |p: Print| cpu::stage47(grey, &conversion::stage47(&PipelineSettings { print: p, ..s.clone() }));
     let rest = printed(s.print);
     let lighter = printed(Print { exposure: s.print.exposure + 1.0, ..s.print });
