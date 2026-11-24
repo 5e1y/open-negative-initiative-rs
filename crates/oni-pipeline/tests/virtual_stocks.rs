@@ -20,9 +20,9 @@ const WHITE: usize = 6;
 const GREY_CHROMA: f32 = 0.5;
 const GREY_GAP: f32 = 2e-3;
 const WHITE_SPREAD: f32 = 0.1;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 20.1 in Venus
-/// 800's shadows and 8.6 in Superia 1600's lights; their numbers are printed, the owner judging them (owner's call).
-const CHROMA: f32 = 21.0;
+/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 12.2 in Superia
+/// 1600's shadows, its scan's dyes mixing the layers; their numbers are printed, the owner judging them (owner's call).
+const CHROMA: f32 = 13.0;
 const LIGHT_CHROMA: f32 = 9.0;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
@@ -36,7 +36,7 @@ fn on(stock: VirtualStock) -> PipelineSettings {
 /// the paper's own white: each channel over that white's, the white's luma kept.
 fn printed(stock: VirtualStock, s: &PipelineSettings, light: f32) -> [f32; 3] {
     let st = film::stock(stock);
-    let scan = cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table);
+    let scan = st.scanned(cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table));
     let k = conversion::stage47(s);
     let p = cpu::stage47(scan, &k);
     let white = k.paper.map_or([1.0; 3], |q| q.white);
@@ -123,7 +123,7 @@ fn a_tungsten_stock_turns_a_daylight_scene_blue() {
         let lit: [f64; 3] = std::array::from_fn(|r| (0..3).map(|c| f64::from(to_white[r][c]) * decoded[c]).sum());
         let st = film::stock(stock);
         let k = conversion::stage47(&on(stock));
-        let p = cpu::stage47(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table), &k);
+        let p = cpu::stage47(st.scanned(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table)), &k);
         let white = k.paper.map_or([1.0; 3], |q| q.white);
         let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
         [p[0] / white[0] * luma, p[1] / white[1] * luma, p[2] / white[2] * luma]

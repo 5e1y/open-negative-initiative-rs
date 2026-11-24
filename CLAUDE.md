@@ -57,9 +57,13 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
 - **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, lit at the
-  stock's own white (Portra 800: D55), is exposed and developed on the stock's profile and scanned as a negative
-  (`virtual_negative`), then read by the negative pipeline unchanged; there is no film None. spektrafilm's full chain, on its own
-  profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
+  stock's own white (Portra 800: D55), is exposed and developed on the stock's profile (`virtual_negative`), then scanned as a real
+  negative is (owner's model, 2026-11-24): a 5500 K lamp through the sheet's dyes and orange D-min, the 1931 observer standing in
+  for an RGB camera balanced on the open lamp, through the slide projector's kernel (`film::projection::scanner`); that scan is read
+  by the negative pipeline unchanged, its reference derived on it as Prepare the Roll measures a roll's. A colour film's couplers
+  are fitted on the paperless enlarger (`examples/coupler_fit.rs`, the paper laid over a render, never part of it);
+  a film with no fit keeps the common matrix, closer than none on all fifteen fitted. There is no film None. spektrafilm's full
+  chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
   profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
   model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. The default paper is
@@ -88,7 +92,7 @@ the code; a costly trap keeps its constraint and its number in two lines.
   plain RAW does (Print lift keeps the paper's own black and white); Lighting but Exposure moves the whites freely.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
   through the stock's curves, and the film is developed again (`negative`); ONI's print and the enlarger print it at their rest. A
-  digital photo's negative is the model's own (three coupled layers, a black and white film's one uncoupled); a scan is read on
+  digital photo's scan is read through the model's own curves (three coupled layers, a black and white film's one uncoupled); a scan is read on
   its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
 - **Exposure holds Prepare's black and white** (owner's call, 2026-11-24): on the negative, in the chain before any print, it gains every
   tone share's odds `u / (1 − u)` by what the film's own stop lays on the grey's, the same on the three channels: the bare film and

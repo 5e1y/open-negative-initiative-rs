@@ -1,5 +1,5 @@
-//! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, and
-//! the reference its scan is read on, derived from the profile as Prepare the Roll measures a roll's.
+//! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, a colour negative's
+//! scan through its dyes, and the reference that scan is read on, derived as Prepare the Roll measures a roll's.
 
 pub mod bake;
 pub mod cie;
@@ -15,6 +15,7 @@ use oni_settings::stocks::VirtualEntry;
 use oni_settings::virtual_film::{Balance, StockReference};
 use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock};
 use profile::{Profile, Silver, Spectra};
+use projection::Scan;
 
 /// The scene light spektrafilm sets on a film's speed, log exposure 0: an 18.4 % grey.
 pub const GREY: f32 = 0.184;
@@ -22,11 +23,14 @@ pub const GREY: f32 = 0.184;
 /// The ceiling a virtual negative is read on, a mosaic negative's: its scan holds no veil of its own.
 pub const CEILING: f32 = density_axis::MOSAIC_REST;
 
-/// A stock's baked kernel at rest exposure, its table, and its own reference as derived from them; `revision`, its
-/// file's content, which a table uploaded from it is kept under.
+/// A stock's baked kernel at rest exposure, its table, a colour negative's scan, and its own reference as derived from
+/// them; `revision`, its file's content, which a table uploaded from it is kept under.
 pub struct Stock {
     pub kernel: VirtualNegative,
     pub table: Vec<[f32; 4]>,
+    /// A colour negative's scan through its dyes; none on a slide, projected instead, or on silver, whose neutral
+    /// density a white lamp reads alike on every channel.
+    pub scan: Option<Scan>,
     pub reference: StockReference,
     pub revision: u64,
 }
@@ -51,20 +55,22 @@ fn light_of(balance: Balance) -> &'static [f64; cie::WAVELENGTHS] {
 }
 
 /// What a profile lays on the bake: each layer's sensitivity, the curves before and after the couplers on their log H
-/// axis, and the couplers.
+/// axis, the couplers, and a colour negative's scan.
 struct Layers {
     sensitivity: Vec<[f64; 3]>,
     log_exposure: Vec<f64>,
     before: Vec<[f64; 3]>,
     after: Vec<[f64; 3]>,
     couplers: M3,
+    scan: Option<Scan>,
 }
 
 /// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative.
 fn colour(profile: Profile, couplers: M3, reversal: bool) -> Layers {
     let develop = if reversal { bake::curves_falling } else { bake::curves_through };
     let (before, after) = develop(&profile.log_exposure, &profile.density_curves, &couplers);
-    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers }
+    let scan = (!reversal).then(|| projection::scanner(&profile));
+    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers, scan }
 }
 
 /// A black and white negative: its one layer on the three channels, no coupler.
@@ -76,6 +82,7 @@ fn silver(profile: Silver) -> Layers {
         before: curve.clone(),
         after: curve,
         couplers: [[0.0; 3]; 3],
+        scan: None,
     }
 }
 
@@ -93,9 +100,17 @@ pub fn couplers(entry: &VirtualEntry) -> M3 {
 /// `entry` baked through `couplers` in place of its own, its reference derived again.
 pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
     let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers)?;
+    Ok(stock_of(layers, entry))
+}
+
+/// The stock `layers` bake at `entry`'s balance, its reference derived on its scan.
+fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
     let (kernel, table) = baked(&layers, entry.balance);
-    let reference = if entry.reversal { unread() } else { derived(entry.silver, entry.dyes, &kernel, &table) };
-    Ok(Stock { kernel, table, reference, revision: entry.revision })
+    let mut stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: entry.revision };
+    if !entry.reversal {
+        stock.reference = derived(entry.silver, entry.dyes, &stock);
+    }
+    stock
 }
 
 /// The kernel and table of a film's `layers` lit at `balance`.
@@ -134,9 +149,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 
 fn bake(entry: &VirtualEntry) -> Stock {
     let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry)).expect("a stock's profile reads once its file is taken");
-    let (kernel, table) = baked(&layers, entry.balance);
-    let reference = if entry.reversal { unread() } else { derived(entry.silver, entry.dyes, &kernel, &table) };
-    Stock { kernel, table, reference, revision: entry.revision }
+    stock_of(layers, entry)
 }
 
 /// The stock baked at its first use, never before: a digital photo on another stock costs nothing. An edited file
@@ -155,7 +168,8 @@ pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, 
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }
     let (kernel, table) = baked(&layers, balance);
-    let r = if reversal { unread() } else { derived(is_silver, dyes, &kernel, &table) };
+    let stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: 0 };
+    let r = if reversal { unread() } else { derived(is_silver, dyes, &stock) };
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
         return Err("its profile bakes a reference that is not finite".into());
     }
@@ -166,6 +180,20 @@ impl Stock {
     /// The kernel at `stops` of film exposure.
     pub fn kernel_at(&self, stops: f32) -> VirtualNegative {
         VirtualNegative { exposure: stops.exp2(), ..self.kernel.clone() }
+    }
+
+    /// A developed film's layers, each amount coded as `10^-amount`, as the pipeline reads them: a colour negative's
+    /// scan, a slide's or silver's as they are.
+    pub fn scanned(&self, developed: [f32; 4]) -> [f32; 4] {
+        match &self.scan {
+            Some(s) => cpu::projection(developed, &s.projection, &s.table),
+            None => developed,
+        }
+    }
+
+    /// A lit scene pixel shot on the film `stops` over its rest, developed and read as the pipeline reads it.
+    pub fn shot(&self, lit: [f32; 4], stops: f32) -> [f32; 4] {
+        self.scanned(cpu::virtual_negative(lit, &self.kernel_at(stops), &self.table))
     }
 }
 
@@ -204,11 +232,11 @@ fn unread() -> StockReference {
     StockReference { stops: [0.0; 3], black: w.map(|l| fraction(l.black)), white: w.map(|l| fraction(l.white)) }
 }
 
-/// The stock's own reference: gains that make its bare film grey, each channel's black on the bare film,
+/// The stock's own reference on its scan: gains that make its bare film grey, each channel's black on the bare film,
 /// and its white where a scene grey, entering every window at one share, prints on the negative's print at
 /// rest as a plain RAW's render prints it.
-fn derived(is_silver: bool, dyes: DyeSet, kernel: &VirtualNegative, table: &[[f32; 4]]) -> StockReference {
-    let scan = |scene: f32| cpu::virtual_negative([scene, scene, scene, 1.0], kernel, table);
+pub fn derived(is_silver: bool, dyes: DyeSet, stock: &Stock) -> StockReference {
+    let scan = |scene: f32| stock.shot([scene, scene, scene, 1.0], 0.0);
     let (bare, grey) = (scan(0.0), scan(GREY));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
     let fraction = |d: f32| graduation::fraction(d, ConversionMode::Negative);
@@ -248,7 +276,7 @@ mod tests {
         for kind in VirtualStock::all().into_iter().filter(|k| !k.entry().reversal) {
             let (derived, held) = (stock(kind).reference, kind.reference());
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
-            let grey = cpu::virtual_negative([GREY, GREY, GREY, 1.0], &stock(kind).kernel, &stock(kind).table);
+            let grey = stock(kind).shot([GREY, GREY, GREY, 1.0], 0.0);
             let printed = cpu::stage47(grey, &crate::conversion::stage47(&on_reference(kind, &held)));
             assert!((0..3).all(|c| (printed[c] - plain_grey()).abs() < 2e-3), "{printed:?} {}", plain_grey());
             // Twin: the white placed for a print resting a stop and a half under prints the grey apart.

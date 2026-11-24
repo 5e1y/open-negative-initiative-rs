@@ -72,7 +72,7 @@ fn read(value: &Value) -> PipelineSettings {
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let mut pixels: Vec<V4> = common::noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    let mut pixels: Vec<V4> = common::noise(17, 13, 7, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
     pixels.extend(common::noise(17, 13, 8, 0.0, 1.0));
     pixels
 }
@@ -97,8 +97,8 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
 /// The fold of every pipe's print as format 61 stored it, on each channel's density, on the CPU and on the GPU (Metal
 /// on Apple silicon), a paper's white on pure white without Print lift, Exposure held at the window's ends; a slide on the
 /// GPU on its projector.
-const BEFORE_CPU: u64 = 0x0580_e5b8_dfca_b330;
-const BEFORE_GPU: u64 = 0x61a9_5ebf_1c22_805d;
+const BEFORE_CPU: u64 = 0xa128_0d89_6b78_6715;
+const BEFORE_GPU: u64 = 0x3a03_0c06_6e9a_591d;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {

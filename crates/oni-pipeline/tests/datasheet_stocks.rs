@@ -46,7 +46,7 @@ fn scenes() -> Vec<V4> {
 fn printed(stock: VirtualStock, s: &PipelineSettings) -> Vec<V4> {
     let baked = film::stock(stock);
     let k = conversion::stage47(s);
-    scenes().into_iter().map(|p| cpu::stage47(cpu::virtual_negative(p, &baked.kernel, &baked.table), &k)).collect()
+    scenes().into_iter().map(|p| cpu::stage47(baked.scanned(cpu::virtual_negative(p, &baked.kernel, &baked.table)), &k)).collect()
 }
 
 fn rendered(g: &mut Graph, s: &PipelineSettings) -> Vec<V4> {

@@ -8,8 +8,8 @@
   "cases/oni-paper-keys-temp": ["dcd483b702527d94", "c678ffd2c8c95d0d"],
   "cases/frontier-paper-at-rest": ["ce533aba4a931160", "ac7b4dfc35b59e3d"],
   "cases/frontier-on-frontier-paper": ["bcb3895875ca04bb", "00244efe86927575"],
-  "cases/oni-digital-on-paper": ["fda49b3ae62b57f1", "3459593e8daf1425"],
-  "cases/frontier-digital-off-paper": ["e21065c3d0787297", "658104fcb054bdfd"],
+  "cases/oni-digital-on-paper": ["dd7c16abf05b9e77", "6c050bc3feefa30d"],
+  "cases/frontier-digital-off-paper": ["ebb3f828e26d0715", "5886bd463fca3985"],
   "cases/oni-no-compensation": ["4d6e46abd6b27bf0", "8a1b199c04002a75"],
   "cases/pro-with-scanner-fields": ["e7b9cdfdfba3dc4a", "6979e0271719a355"],
   "corpus/19-plain/047-DSC_6438.NEF.json": ["684dc87db0a94de1", "40d495aabc3d840d"],
@@ -45,8 +45,8 @@
   "corpus/21-rust/242-P1073044.RW2.json": ["b45c3eaee82a4d04", "8da93631bf0ff235"],
   "corpus/21-rust/269-P1073169.RW2.json": ["b53dd395171d58a4", "a4b909fe40783d35"],
   "corpus/21-rust/273-P1073209.RW2.json": ["2926f7d6a16faf17", "a5fe41228de4d0cd"],
-  "corpus/37-digital/001-P1070001.RW2.json": ["571bdff7307ef670", "8bff0cbe43a6832d"],
-  "corpus/37-digital/002-P1070002.RW2.json": ["90257ca2c68dd61d", "047963a0057b1f8d"],
+  "corpus/37-digital/001-P1070001.RW2.json": ["0e5b6fc2eee94b21", "de6540d753bbf76d"],
+  "corpus/37-digital/002-P1070002.RW2.json": ["03900d0eef700269", "650103c967479585"],
   "corpus/early/001-DSC_5771.NEF.json": ["01e087965ec0d968", "1ebfcdc90ba2a745"],
   "corpus/early/105-P1072740.RW2.json": ["8646019a697acbf1", "dd09421cc6f0376d"]
 }

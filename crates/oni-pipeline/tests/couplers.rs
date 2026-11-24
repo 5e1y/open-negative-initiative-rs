@@ -17,7 +17,7 @@ fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     assert_eq!((film::stock(v).kernel.couplers, negative::development(Film::Stock(v)).couplers), (f32s, f32s));
 
     let common = film::bake_through(&v.entry(), COUPLERS).unwrap();
-    let read = |s: &film::Stock, p: [f32; 4]| cpu::virtual_negative(p, &s.kernel_at(0.0), &s.table);
+    let read = |s: &film::Stock, p: [f32; 4]| s.scanned(cpu::virtual_negative(p, &s.kernel_at(0.0), &s.table));
     let (grey, red) = ([GREY, GREY, GREY, 1.0], [0.4, 0.08, 0.05, 1.0]);
     let apart = |p| (0..3).map(|c| (read(film::stock(v), p)[c] / read(&common, p)[c] - 1.0).abs()).fold(0.0f32, f32::max);
     println!("grey {:.2e}, red {:.2e}", apart(grey), apart(red));

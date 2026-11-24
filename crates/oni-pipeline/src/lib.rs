@@ -77,8 +77,8 @@ pub struct Pipeline {
     valoi: Option<(Source, [f32; 3])>,
     cubes: HashMap<&'static str, (Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
-    /// Each virtual film's table, uploaded once per graph and file content.
-    films: HashMap<(oni_settings::VirtualStock, u64), Source>,
+    /// Each virtual film's table and a colour negative's scan, uploaded once per graph and file content.
+    films: HashMap<(oni_settings::VirtualStock, u64), (Source, Option<Source>)>,
     /// Each look's nodes, uploaded once per graph and file content.
     looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
     /// Each reversal film's projection table, uploaded once per graph and file content.
@@ -156,20 +156,23 @@ impl Pipeline {
         self.flat_field(graph, out, s, inputs)
     }
 
-    /// A digital photo's scene on its virtual film: exposed, developed and scanned as that negative.
+    /// A digital photo's scene on its virtual film: exposed, developed and, a colour negative, scanned through its dyes
+    /// as a real negative is; a slide's layers as they are, for the projector.
     pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
         let Some(f) = s.film() else { return Ok(image) };
         let stock = film::stock(f.stock);
-        let source = match self.films.get(&(f.stock, stock.revision)) {
-            Some(source) => source.clone(),
-            None => {
-                let (w, h) = stock.kernel.table_size();
-                let source = graph.upload(w as u32, h as u32, &stock.table)?;
-                self.films.insert((f.stock, stock.revision), source.clone());
-                source
-            }
-        };
-        Ok(image.then_reading(stages::virtual_negative(&stock.kernel_at(f.exposure)), &[Image::new(&source)]))
+        let key = (f.stock, stock.revision);
+        if let Entry::Vacant(e) = self.films.entry(key) {
+            let (w, h) = stock.kernel.table_size();
+            let scan = stock.scan.as_ref().map(|scan| graph.upload(scan.projection.bands as u32, 2, &scan.table)).transpose()?;
+            e.insert((graph.upload(w as u32, h as u32, &stock.table)?, scan));
+        }
+        let (table, scan) = self.films[&key].clone();
+        let developed = image.then_reading(stages::virtual_negative(&stock.kernel_at(f.exposure)), &[Image::new(&table)]);
+        Ok(match (&stock.scan, scan) {
+            (Some(k), Some(table)) => developed.then_reading(stages::projection(&k.projection), &[Image::new(&table)]),
+            _ => developed,
+        })
     }
 
     /// A digital photo's scene read through its film's look in place of a negative: exposed at the film's stops, taken

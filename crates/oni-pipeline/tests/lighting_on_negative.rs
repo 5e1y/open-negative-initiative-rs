@@ -62,7 +62,7 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
 }
@@ -93,7 +93,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
     // its dyes' crosstalk and pure dyes, its white on pure white without Print lift.
-    const BEFORE: u64 = 0xf08d_10e7_8420_d941;
+    const BEFORE: u64 = 0x5c42_018f_b6f1_f691;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -124,7 +124,7 @@ fn shot_on(stock: VirtualStock) -> PipelineSettings {
 fn scanned(stock: VirtualStock, stops: f32) -> Vec<V4> {
     let baked = film::stock(stock);
     let k = baked.kernel_at(stops);
-    scene().iter().map(|p| cpu::virtual_negative(*p, &k, &baked.table)).collect()
+    scene().iter().map(|p| baked.scanned(cpu::virtual_negative(*p, &k, &baked.table))).collect()
 }
 
 fn lit(s: &PipelineSettings, f: impl Fn(&mut Print)) -> PipelineSettings {
