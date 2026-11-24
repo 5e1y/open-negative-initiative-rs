@@ -20,8 +20,6 @@ export component Rail inherits Rectangle {
     in property <float> rest: -1;
     // The lit stretch's glow, a progress bar's phosphor.
     in property <length> glow;
-    // Low at the bottom; a vertical rail sets its own width and height.
-    in property <bool> vertical;
     // Under the hand, the hollow sinks to a well's whole shade, as the knob's edge darkens.
     in property <bool> deep;
     // Under the hand, dragged or stepped, a bipolar rail of hues shows them whole; else a faint hue at each
@@ -45,33 +43,29 @@ export component Rail inherits Rectangle {
             root.low.mix(root.high, root.near).with-alpha(root.hue) root.far,
             root.high.with-alpha(root.ends) 100%)
     }
-    property <length> along: root.vertical ? self.height : self.width;
-    property <length> travel: root.along - 2 * root.overhang;
+    property <length> travel: self.width - 2 * root.overhang;
     property <length> lit: root.overhang + root.at * root.travel;
     property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
     height: SliderStyle.track;
     Rectangle {
         border-radius: SliderStyle.track-radius;
-        background: root.fill != SliderFill.bipolar || root.hued ? SliderStyle.ground
-            : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
-            : @linear-gradient(90deg, root.low 0%, root.high 100%);
+        background: root.fill != SliderFill.bipolar || root.hued ? SliderStyle.ground : @linear-gradient(90deg, root.low 0%, root.high 100%);
     }
     if root.hued: Rectangle {
         border-radius: SliderStyle.track-radius;
-        background: root.hues(root.vertical ? 0deg : 90deg);
+        background: root.hues(90deg);
     }
     // Its own round, no clip: a clipping rail renders each slider apart.
     if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {
-        x: root.vertical ? 0 : root.start;
-        y: root.vertical ? parent.height - root.lit : 0;
-        width: root.vertical ? parent.width : root.lit - root.start;
-        height: root.vertical ? root.lit : parent.height;
+        x: root.start;
+        y: 0;
+        width: root.lit - root.start;
+        height: parent.height;
         border-radius: SliderStyle.track-radius;
         background: root.fill == SliderFill.metal
             ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 33.33%, Colour.metal-light 66.67%, Colour.metal-dark 100%)
             : root.fill == SliderFill.ramp
-            ? (root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(SliderStyle.ramp-start * root.lift) 0%, root.tint.with-alpha(SliderStyle.ramp-end * root.lift) 100%)
-                : @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start * root.lift) 0%, root.tint.with-alpha(SliderStyle.ramp-end * root.lift) 100%))
+            ? @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start * root.lift) 0%, root.tint.with-alpha(SliderStyle.ramp-end * root.lift) 100%)
             : root.tint;
         drop-shadow-color: root.glow > 0 ? root.tint : transparent;
         drop-shadow-blur: root.glow;
@@ -82,10 +76,10 @@ export component Rail inherits Rectangle {
         shade: root.shade;
     }
     if root.rest >= 0: Rectangle {
-        x: root.vertical ? (parent.width - self.width) / 2 : root.overhang + root.rest * root.travel - self.width / 2;
-        y: root.vertical ? parent.height - root.overhang - root.rest * root.travel - self.height / 2 : (parent.height - self.height) / 2;
-        width: root.vertical ? SliderStyle.knob-height / 2 : Stroke.line;
-        height: root.vertical ? Stroke.line : SliderStyle.knob-height / 2;
+        x: root.overhang + root.rest * root.travel - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: Stroke.line;
+        height: SliderStyle.knob-height / 2;
         background: SliderStyle.rest-ink;
     }
 }

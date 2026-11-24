@@ -141,97 +141,6 @@ component LiveSlider inherits Slider {
     step(f, by) => { root.move-to(root.fraction + by / 100); }
 }
 
-// `DSSlider(axis: .vertical)`: the DS rail and knob turned, low at the bottom; no screen of the app
-// holds one, so it is driven here alone.
-component UprightSlider inherits VerticalLayout {
-    in property <string> label;
-    in-out property <float> value;
-    in property <float> minimum: 0;
-    in property <float> maximum: 1;
-    in property <float> base;
-    in property <bool> spectrum;
-    in property <color> low: #40c8e0;
-    in property <color> high: #ff453a;
-    in property <bool> percent;
-    in property <string> unit;
-    property <float> fraction: (root.value - root.minimum) / max(0.000001, root.maximum - root.minimum);
-    property <float> shown: root.fraction;
-    animate shown { duration: area.pressed || area.scrolling ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
-    function move-to(f: float) {
-        root.value = root.minimum + clamp(f, 0, 1) * (root.maximum - root.minimum);
-    }
-    spacing: 4px;
-    HorizontalLayout {
-        spacing: 8px;
-        Text { text: root.label; color: DS.system-primary; font-size: 13px; overflow: elide; horizontal-stretch: 1; }
-        Text { text: root.percent ? round(root.value * 100) + "%" : (root.value >= 0 ? "+" : "") + root.value.to-fixed(2) + root.unit; color: DS.system-secondary; font-size: 11px; }
-    }
-    HorizontalLayout {
-        alignment: start;
-        vertical-stretch: 1;
-        Rectangle {
-            width: SliderStyle.knob-height;
-            travel := Rectangle {
-                y: SliderStyle.knob-width / 2;
-                height: parent.height - SliderStyle.knob-width;
-                Rail {
-                    vertical: true;
-                    x: (parent.width - self.width) / 2;
-                    y: -self.overhang;
-                    width: SliderStyle.track;
-                    height: parent.height + 2 * self.overhang;
-                    overhang: SliderStyle.knob-width / 2;
-                    fill: root.spectrum ? SliderFill.bipolar : SliderFill.level;
-                    at: root.shown;
-                    low: root.low;
-                    high: root.high;
-                    vivid: area.has-hover || area.pressed;
-                }
-                Knob {
-                    vertical: true;
-                    across: travel.width;
-                    centre: travel.height - root.shown * travel.height;
-                    grown: area.over-knob || area.pressed;
-                }
-                area := TouchArea {
-                    property <float> start;
-                    property <bool> fine;
-                    in-out property <bool> scrolling;
-                    out property <bool> over-knob: self.has-hover && abs(self.mouse-y - (1 - root.shown) * self.height) <= SliderStyle.knob-width / 2;
-                    mouse-cursor: self.pressed ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                    pointer-event(event) => {
-                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                            self.start = root.fraction;
-                        }
-                        self.fine = event.modifiers.alt;
-                    }
-                    // Travel counts upwards: a value of 1 belongs at the top.
-                    moved => {
-                        if (self.pressed) {
-                            root.move-to(self.start - (self.mouse-y - self.pressed-y) / max(1px, self.height) * (self.fine ? 0.2 : 1));
-                        }
-                    }
-                    double-clicked => { root.value = root.base; }
-                    scroll-event(event) => {
-                        if (event.delta-y != 0 && abs(event.delta-y) > abs(event.delta-x)) {
-                            self.scrolling = true;
-                            idle.restart();
-                            root.move-to(root.fraction - event.delta-y * 0.25 / max(1px, self.height));
-                            return EventResult.accept;
-                        }
-                        EventResult.reject
-                    }
-                }
-                idle := Timer {
-                    interval: 160ms;
-                    running: area.scrolling;
-                    triggered => { area.scrolling = false; }
-                }
-            }
-        }
-    }
-}
-
 // A marker: `DS.Palette.marker` dashed 3 on 3 down the plot, at `x`.
 component Marker inherits Rectangle {
     width: 1px;
@@ -381,23 +290,20 @@ component LiveLevels inherits VerticalLayout {
 component KnobSpecimen inherits Rectangle {
     in property <color> tint: DS.palette-keycap;
     in property <bool> grown;
-    in property <bool> vertical;
     width: 64px;
     height: SliderStyle.knob-height + 6px;
     Rail {
-        vertical: root.vertical;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        width: root.vertical ? SliderStyle.track : 52px;
-        height: root.vertical ? parent.height : SliderStyle.track;
+        width: 52px;
+        height: SliderStyle.track;
         fill: SliderFill.bipolar;
         low: #40c8e0;
         high: #ff453a;
     }
     Knob {
-        vertical: root.vertical;
-        centre: root.vertical ? parent.height / 2 : parent.width / 2;
-        across: root.vertical ? parent.width : parent.height;
+        centre: parent.width / 2;
+        across: parent.height;
         fill: root.tint;
         grown: root.grown;
     }
@@ -493,17 +399,6 @@ export component SlidersPage inherits Rectangle {
             }
 
             Row {
-                title: "DSSLIDER, VERTICAL";
-                source: "DSSlider.swift:144 (centre, flipped) · DSPlayground.swift:340";
-                HorizontalLayout {
-                    spacing: 24px;
-                    height: 180px;
-                    UprightSlider { width: 130px; label: "Amount"; value: 0.4; base: 0.4; percent: true; }
-                    UprightSlider { width: 130px; label: "Cyan ↔ Red"; value: 0; minimum: -1; maximum: 1; spectrum: true; unit: " st"; }
-                }
-            }
-
-            Row {
                 title: "DSBARHANDLE";
                 source: "DSHandle.swift:27 (KeycapStyle.hardened × Variant.small 0.525) · DSPlayground.swift:493";
                 Specimen { name: "rest"; KnobSpecimen { } }
@@ -511,7 +406,6 @@ export component SlidersPage inherits Rectangle {
                 Specimen { name: "grab"; KnobSpecimen { grown: true; } }
                 Specimen { name: "black"; KnobSpecimen { tint: #000000; } }
                 Specimen { name: "white, grabbed"; KnobSpecimen { tint: #ffffff; grown: true; } }
-                Specimen { name: "vertical"; KnobSpecimen { vertical: true; height: 52px; } }
                 Specimen {
                     name: "×4, to read the chrome";
                     Rectangle {

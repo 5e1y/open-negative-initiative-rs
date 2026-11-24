@@ -13093,5 +13093,13 @@
     "status": "done",
     "detail": "#2209 took the Grain Curve out of the panel; GrainEditor had no instance in any .slint file since, yet Rust still drew its lines and dots on every editors publish, tracked its drag, owned Reset::Grain and read its fold. Zero anticipation keeps nothing for later. Gone: editors/grain.rs, Plot::Grain (the last plot, so the others keep their numbers), Reset::Grain (the last reset, so beside[0..3] keep theirs), Edit::Grain, the grain branches of the five-point gestures, the drawing cache and beside's grain arm, the Editors properties grain-lines, grain-dots, grain-modified and grain-folded, the Grain Curve fold, the grain half of the reset-beside test and two catalogue texts each in French and Spanish. The render, GrainCurve, its serialisation and its propagation between frames are untouched; the sectionFold.Grain Curve preference is left unread.",
     "outcome": "oni-app editors and folds unit checks green; window checks editors, editor_leftovers, together, together_all, together_moves, together_tools, grain_colour, film_effects, picture_plots, whole_roll, balance_kept green (17)."
+  },
+  {
+    "id": 3773,
+    "type": "chore",
+    "title": "The vertical rail and knob leave with the lab's upright slider",
+    "status": "done",
+    "detail": "No app screen or demo sets Rail.vertical or Knob.vertical; only the lab's UprightSlider (a mirror of Swift's DSSlider(axis: .vertical)) and a vertical knob specimen did. The property goes from both components and each ternary keeps its horizontal arm as written, so every rail and knob the app draws is the same; the lab loses UprightSlider, its DSSLIDER, VERTICAL row and the vertical knob specimen, the DS README its line on the vertical rail.",
+    "outcome": "The lab compiles; window checks design_system, slider_*, dial, toggles, levels, plots, guides, compare and welcome green (27)."
   }
 ]

@@ -172,7 +172,7 @@ fade and the chrome stays. The picker's field wears the same face.
 - **Rail** (`DSRail` in `dsRecessed`): 8 pt, round at its ends, thin so a bipolar rail stays calm beside the
   photo even in its full hues; `SliderStyle.ground`, 3:1 against the panel, or the bipolar gradient, the fill
   (`SliderStyle.lit`) on its own round, then `Inward`'s shade, edge and lit lip, the shade at
-  `SliderStyle.idle-relief` of a well's at rest and whole under the hand (`deep`); `vertical` runs low to high upwards.
+  `SliderStyle.idle-relief` of a well's at rest and whole under the hand (`deep`).
   A bipolar rail of hues (an end past `SliderStyle.hued` in saturation: Temperature, Tint, C, M, Y, the gains)
   lies on the grey ground at rest, a faint hue at each end (`hue-rest`, fading out by `hue-reach`), and shows its
   full gradient under the hand, dragged or stepped, or with the hand anywhere on its block (`vivid`, `near` from
