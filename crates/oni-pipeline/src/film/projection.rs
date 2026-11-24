@@ -34,8 +34,8 @@ pub struct Projected {
     pub revision: u64,
 }
 
-/// A slide's scan read back to its dyes: the solve at no gain, its table of the dyes and the scanner's lamp in working
-/// Rec. 2020, and that lamp's light through no film, which a frame's gains, putting the backlight on 1, are scaled by.
+/// A slide's scan read back to its dyes: the solve at no gain, its table of the dyes and the scanner's lamp as the
+/// observer sees it, and that lamp's light through no film in working Rec. 2020, which a frame's gains scale.
 pub struct Scanned {
     pub kernel: DyeAmounts,
     pub table: Vec<[f32; 4]>,
@@ -124,22 +124,26 @@ fn scan(entry: &VirtualEntry) -> Scanned {
     let (dyes, base) = dyes(&profile);
     let (seen, to_working) = seen(SCAN_KELVIN, &base);
     let n = cie::WAVELENGTHS;
-    let weights: Vec<[f64; 3]> = seen.iter().map(|s| mul(&to_working, *s)).collect();
+    // The solve reads the observer's light, each function scaled so the bare film reads 1, as working Rec. 2020 does.
+    let white: [f64; 3] = std::array::from_fn(|c| (0..n).map(|i| 10f64.powf(-base[i]) * seen[i][c]).sum());
+    let observed: Vec<[f64; 3]> = seen.iter().map(|s| std::array::from_fn(|c| s[c] / white[c])).collect();
+    let back = inverse(&to_working);
+    let to_seen: [V3; 3] = std::array::from_fn(|r| std::array::from_fn(|c| (back[r][c] / white[r]) as f32));
     let mut table = vec![[0.0f32; 4]; 2 * n];
     for i in 0..n {
         table[i] = [dyes[i][0] as f32, dyes[i][1] as f32, dyes[i][2] as f32, base[i] as f32];
-        table[n + i] = [weights[i][0] as f32, weights[i][1] as f32, weights[i][2] as f32, 0.0];
+        table[n + i] = [observed[i][0] as f32, observed[i][1] as f32, observed[i][2] as f32, 0.0];
     }
     let light = |amounts: [f64; 3]| -> [f64; 3] {
         let t = |i: usize| 10f64.powf(-(base[i] + (0..3).map(|k| amounts[k] * dyes[i][k]).sum::<f64>()));
-        std::array::from_fn(|c| (0..n).map(|i| t(i) * weights[i][c]).sum())
+        std::array::from_fn(|c| (0..n).map(|i| t(i) * observed[i][c]).sum())
     };
-    let open: [f64; 3] = std::array::from_fn(|c| weights.iter().map(|w| w[c]).sum());
-    // Each dye alone at unit amount, its density over the bare film on each channel: the guess inverts that.
+    let open: [f64; 3] = std::array::from_fn(|c| seen.iter().map(|s| mul(&to_working, *s)[c]).sum());
+    // Each dye alone at unit amount, its density over the bare film on each of the observer's: the guess inverts that.
     let cross: M3 = std::array::from_fn(|k| light(std::array::from_fn(|m| f64::from(u8::from(m == k)))).map(|v| -v.max(1e-9).log10()));
     let inverted = inverse(&cross);
     let start: [V3; 3] = std::array::from_fn(|r| std::array::from_fn(|c| inverted[c][r] as f32));
-    Scanned { kernel: DyeAmounts { gain: [1.0; 3], start, bands: n }, table, open: open.map(|v| v as f32), revision: entry.revision }
+    Scanned { kernel: DyeAmounts { gain: [1.0; 3], to_seen, start, bands: n }, table, open: open.map(|v| v as f32), revision: entry.revision }
 }
 
 /// The neutral densities a slide's Lighting reads its layers on, and each layer's amount a neutral of that density holds
