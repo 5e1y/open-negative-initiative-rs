@@ -13077,5 +13077,13 @@
     "status": "done",
     "detail": "The gallery and the sidebar cut by folder (folders::group, trash::groups), the only two places a FilmGroup is built, both on a folder with its heading. The library cut into rolls and capture days (grouped, key, keyed, day_start, start_of_day, day_label), the drag order (order, root_order, behind, detied), untitled and UNTITLED_STEM, is_explicit, explicit_name, info::resolved_roll and LibraryIndex::set_manual_order had no caller outside their tests. FilmKey gives way to a plain `folder` path, `start` (computed for nothing) goes and `heading` is a String. Nothing stored moves: Entry.manual_order, Film.manual_order and the index's columns are read and written as before.",
     "outcome": "cargo test -p oni-library green; oni-app's library tests green. The five Film.selfCheck tests in swift_checks.rs and roll8's day half go with what they tested; index tests keep their twins (file_tests' index-only twin now writes a label)."
+  },
+  {
+    "id": 3761,
+    "type": "simplification",
+    "title": "oni-measure drops the withdrawn AUTO LEVELS key's machinery: key::placed, levels and ends, Measurer::reduced, auto_levels' Balance, two_steps, keyed, applied, carried, mean and composite",
+    "status": "done",
+    "detail": "The key was withdrawn (#1053); what it left had no caller outside oni-measure's own tests. The roll measure keeps Classic's two steps inline (roll::measured), and Measured now carries the gains it lands on (`stops`) instead of a Balance whose levels and shift nothing read; the placement stays as the gate a flat channel fails. key::slide_read returns the histogram itself, and Prepare's slides build oni_core::balance::Balance directly, the same stops and resting windows. Nothing stored or rendered moves; ONI_READING_CODE changes with oni-measure/src, so kept Auto WB outcomes are read once again, to the same values.",
+    "outcome": "cargo test -p oni-measure green. The piled-channel check runs on roll::measured over the simulated densities (a reading's tails laid on them); roll8's second-press check runs on key::roll_measured on the reference roll (gains 0.0018 / 0.0015 st, tails 2e-4; twin read after the levels 0.47 / 0.55 st), and filter_balance compares the roll measure under a legacy print. Tests of the deleted helpers alone go (a selection's strategies over the dead applied and mean, keyed against two_steps, composite)."
   }
 ]

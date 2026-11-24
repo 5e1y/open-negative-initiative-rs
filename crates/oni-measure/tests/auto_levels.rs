@@ -1,17 +1,20 @@
 //! `AutoLevels.selfCheck`: the suggestion's threshold, the alignment, the placed handles, the two
-//! steps on simulated densities and a selection's two strategies, each with its twin.
+//! steps on simulated densities, each with its twin.
 
-use oni_core::balance::{self as core_balance, Strategy, Suggestion};
+use oni_core::balance::{self as core_balance, Suggestion};
 use oni_measure::Histogram;
 use oni_measure::auto_levels::*;
+use oni_measure::roll;
 use oni_settings::axis::{graduation, pipeline};
 use oni_settings::blocks::Gains;
-use oni_settings::cg::{Point, Rect};
 use oni_settings::migrate::density;
-use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
+use oni_settings::levels::{Levels, LevelsSet};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const NEG: ConversionMode = ConversionMode::Negative;
+
+/// The share a synthetic histogram skips at each end; a reading of the app skips nothing.
+const DEFAULT_THRESHOLD: f32 = 0.001;
 
 fn block(from: usize, to: usize, strays: f32) -> Vec<f32> {
     let mut counts = vec![0.0f32; 1024];
@@ -123,6 +126,16 @@ fn simulate(densities: &[Vec<f32>; 3], stops: [f32; 3]) -> Histogram {
     Histogram { rgb: counts.clone(), luma: counts.iter().map(|b| b[1]).collect(), ends: None }
 }
 
+/// The histogram with each channel's outermost populated bins as its tails, as a reading carries them.
+fn tailed(mut h: Histogram) -> Histogram {
+    let tail = |c: usize| {
+        let lit: Vec<usize> = (0..h.rgb.len()).filter(|&i| h.rgb[i][c] > 0.0).collect();
+        [lit[0] as f32 / 1023.0, lit[lit.len() - 1] as f32 / 1023.0]
+    };
+    h.ends = Some((0..3).map(tail).collect());
+    h
+}
+
 fn cloud(centre: f32, spread: f32, count: usize) -> Vec<f32> {
     (0..count).map(|i| centre + ((i as f32 + 0.5) / count as f32 - 0.5) * spread).collect()
 }
@@ -192,36 +205,28 @@ fn two_steps_recover_a_channel_piled_on_the_window_s_top_and_change_nothing_on_a
     // Twin: on the channel crossing the window's top the same gain is no translation.
     assert!(travelled(&broken, 2, 3.0) > 20.0 * one_bin);
 
+    let at_rest = PipelineSettings { mode: NEG, ..PipelineSettings::default() };
     for (name, raws, frame) in [("sane", &sane, simulate(&sane, [0.0; 3])), ("broken", &broken, broken_frame.clone())] {
         let one = placement(&frame, DEFAULT_THRESHOLD).unwrap();
-        let two = two_steps(&frame, [0.0; 3], NEG, DEFAULT_THRESHOLD, |s| simulate(raws, s)).unwrap();
+        let stops = roll::measured("", &at_rest, |s| tailed(simulate(raws, s))).unwrap().stops;
+        let two = placement(&simulate(raws, stops), DEFAULT_THRESHOLD).unwrap();
         let before = disagreement(&outcomes(raws, [0.0; 3], &handles(&one)));
-        let after = disagreement(&outcomes(raws, two.stops, &handles(&two.levels)));
+        let after = disagreement(&outcomes(raws, stops, &handles(&two)));
         if name == "broken" {
             let noise = 3.0 * one_bin * graduation::span() / spread;
             assert!(after < noise && after < before / 10.0, "broken: {before} to {after}");
             assert_eq!(one[2].white, 1.0, "one step reads blue's white off the pile");
             let expected = raws[2].iter().filter(|&&d| d > graduation::top()).count() as f32 / raws[2].len() as f32;
-            let recovered = piled(&simulate(raws, two.stops), 2);
+            let recovered = piled(&simulate(raws, stops), 2);
             assert!((broken_pile - expected).abs() < 0.01 && recovered < broken_pile / 10.0);
             let own = median(&frame.channel(2)).unwrap();
             let anchor = median(&frame.channel(1)).unwrap();
             let asked = stops_for_shift((anchor - own) * one_bin, NEG);
-            assert!((asked - 5.0).abs() < 0.03 && two.stops[2] == Gains::RANGE.1, "truncated, not refused: {asked}");
+            assert!((asked - 5.0).abs() < 0.03 && stops[2] == Gains::RANGE.1, "truncated, not refused: {asked}");
         } else {
             assert!((after - before).abs() < 5e-3, "step one changes nothing on a sane scene");
-            let sane_pile: Vec<f32> = (0..3).map(|c| piled(&simulate(raws, two.stops), c)).collect();
+            let sane_pile: Vec<f32> = (0..3).map(|c| piled(&simulate(raws, stops), c)).collect();
             assert!((0..3).all(|c| sane_pile[c] <= piled(&frame, c) + 1e-3));
-            let single = handles(&one);
-            let mapped: Vec<Levels> = (0..3).map(|c| two.shown(c, NEG)).collect();
-            let density = one_bin * graduation::span();
-            let drift = (0..3).map(|c| (mapped[c].black - single[c].black).abs().max((mapped[c].white - single[c].white).abs())).fold(0.0, f32::max);
-            assert!(drift < 2.0 * density, "mapped back, the markers land on a single step's");
-            // Twin: without the mapping they are out by step one's own 1.5 stops.
-            let unread = handles(&two.levels);
-            let unmapped = (0..3).map(|c| (unread[c].black - single[c].black).abs().max((unread[c].white - single[c].white).abs())).fold(0.0, f32::max);
-            let owed = shift(1.5, NEG).abs() * graduation::span();
-            assert!((unmapped - owed).abs() < 2.0 * density);
         }
     }
 }
@@ -246,63 +251,4 @@ fn the_bound_holds_recentring_to_the_room_between_the_tail_and_the_window() {
     assert!((held[0] - room).abs() < 1e-4 && held[0] < unbounded[0], "held at {}, room {room}", held[0]);
     // Twin: without the bound the whole tail leaves the window.
     assert!(without > after + share / 2.0 && after < share / 10.0);
-}
-
-fn run(frames: &[(&str, PipelineSettings)], strategy: Strategy, scenes: &dyn Fn(&str) -> Option<[Vec<f32>; 3]>) -> Result<Vec<(String, PipelineSettings)>, (String, usize)> {
-    let measure = |path: &str, s: &PipelineSettings| -> Option<Balance> {
-        let raws = scenes(path)?;
-        let stops = s.gains.stops;
-        two_steps(&simulate(&raws, stops), stops, NEG, DEFAULT_THRESHOLD, |st| simulate(&raws, st))
-    };
-    let mut landed = Vec::new();
-    match strategy {
-        Strategy::Each => {
-            for (path, s) in frames {
-                let b = measure(path, s).ok_or((path.to_string(), landed.len()))?;
-                landed.push((path.to_string(), applied(&b, s, None)));
-            }
-        }
-        Strategy::Average => {
-            let measured: Vec<Balance> = frames.iter().map(|(p, s)| measure(p, s).ok_or((p.to_string(), 0))).collect::<Result<_, _>>()?;
-            let n = measured.len() as f32;
-            let levels = [0, 1, 2].map(|c| mean(&measured.iter().map(|b| b.levels[c]).collect::<Vec<_>>()).unwrap());
-            let sum = |f: fn(&Balance) -> [f32; 3]| measured.iter().fold([0.0; 3], |a, b| [0, 1, 2].map(|c| a[c] + f(b)[c])).map(|v| v / n);
-            let shared = Balance { stops: sum(|b| b.stops), levels, shift: sum(|b| b.shift) };
-            for (path, s) in frames {
-                landed.push((path.to_string(), applied(&shared, s, None)));
-            }
-        }
-    }
-    Ok(landed)
-}
-
-#[test]
-fn a_selection_balances_each_or_on_the_mean_and_an_unreadable_frame_stops_it() {
-    let green = cloud(1.2, 1.2, 4000);
-    let first = [green.clone(), green.clone(), shifted(&green, -1.5)];
-    let second = [shifted(&green, -1.0), green.clone(), green.clone()];
-    let scenes = move |p: &str| match p {
-        "A" => Some(first.clone()),
-        "B" => Some(second.clone()),
-        _ => None,
-    };
-    let mut other = PipelineSettings::default();
-    other.geometry.crop = Rect::new(0.05, 0.1, 0.8, 0.7);
-    other.manual_curves.linked.points = vec![Point::new(0.0, 0.0), Point::new(0.3, 0.5), Point::new(1.0, 1.0)];
-    let roll = [("A", PipelineSettings::default()), ("B", other.clone())];
-    let each = run(&roll, Strategy::Each, &scenes).unwrap();
-    let averaged = run(&roll, Strategy::Average, &scenes).unwrap();
-    let (ea, eb, aa, ab) = (&each[0].1, &each[1].1, &averaged[0].1, &averaged[1].1);
-    assert_ne!(ea.gains.stops, eb.gains.stops, "one per image: each view has its own gains");
-    let middle = [0, 1, 2].map(|c| (ea.gains.stops[c] + eb.gains.stops[c]) / 2.0);
-    let same_levels = LevelsChannel::PER_CHANNEL.iter().all(|&c| aa.levels.get(c) == ab.levels.get(c));
-    assert!(aa.gains == ab.gains && same_levels && (0..3).all(|c| (aa.gains.stops[c] - middle[c]).abs() < 1e-5));
-    // Twin: the mean is neither view's own correction.
-    assert!(aa != ea && ab != eb);
-    assert!(ab.geometry == other.geometry && eb.geometry == other.geometry && ab.manual_curves == other.manual_curves && eb.manual_curves == other.manual_curves);
-
-    let hole = [("A", PipelineSettings::default()), ("introuvable", PipelineSettings::default()), ("B", PipelineSettings::default())];
-    assert_eq!(run(&hole, Strategy::Each, &scenes).unwrap_err(), ("introuvable".to_string(), 1), "only the frame before was written");
-    // Twin: averaging reads every frame first, so none is written.
-    assert_eq!(run(&hole, Strategy::Average, &scenes).unwrap_err().1, 0);
 }

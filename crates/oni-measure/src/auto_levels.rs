@@ -2,14 +2,11 @@
 //! first, then each channel's ends at those gains, read off a measured histogram.
 
 use crate::histogram::Histogram;
-use oni_core::balance::{self, Suggestion};
+use oni_core::balance::Suggestion;
 use oni_settings::axis::graduation;
 use oni_settings::blocks::Gains;
 use oni_settings::levels::LevelsChannel;
-use oni_settings::{ConversionMode, PipelineSettings};
-
-/// The share a check's synthetic histogram skips at each end; a reading of the app skips nothing.
-pub const DEFAULT_THRESHOLD: f32 = 0.001;
+use oni_settings::ConversionMode;
 
 /// The narrowest span a suggestion may propose, a share of the measured window: below it the
 /// channel is flat and the honest answer is none.
@@ -17,9 +14,6 @@ pub const MINIMUM_SPAN: f32 = 0.02;
 
 /// Green, the channel the other two are brought onto.
 pub const REFERENCE: usize = 1;
-
-/// `Method.classic`, the one placement, by the name a sidecar stores.
-pub const CLASSIC: &str = "classic";
 
 fn sum(counts: &[f32]) -> f32 {
     counts.iter().fold(0.0, |a, b| a + b)
@@ -81,23 +75,6 @@ pub fn placement(h: &Histogram, threshold: f32) -> Option<[Suggestion; 3]> {
         return None;
     }
     Some([suggest(h, 0, threshold)?, suggest(h, 1, threshold)?, suggest(h, 2, threshold)?])
-}
-
-/// One pair of ends on the RGB composite, the three channels' counts summed, laid on every channel;
-/// the reading's outermost ends in place of the counts' where it carries them.
-pub fn composite(h: &Histogram, threshold: f32) -> Option<[Suggestion; 3]> {
-    if h.is_empty() {
-        return None;
-    }
-    let summed: Vec<f32> = h.rgb.iter().map(|b| b[0] + b[1] + b[2]).collect();
-    let mut out = suggest_counts(&summed, threshold)?;
-    if let Some(e) = h.ends.as_ref().filter(|e| e.len() == 3) {
-        let low = e.iter().map(|t| t[0]).fold(f32::INFINITY, f32::min);
-        let high = e.iter().map(|t| t[1]).fold(f32::NEG_INFINITY, f32::max);
-        out.black = low.max(0.0).min(1.0 - MINIMUM_SPAN);
-        out.white = high.max(out.black + MINIMUM_SPAN).min(1.0);
-    }
-    Some([out; 3])
 }
 
 /// The bin, fractional, below which `fraction` of the counts lie.
@@ -162,96 +139,11 @@ pub fn recentred(h: &Histogram, stops: [f32; 3], mode: ConversionMode, threshold
     Some(out)
 }
 
-/// The two steps as one value, with the share of the window step one moved each channel.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Balance {
-    pub stops: [f32; 3],
-    pub levels: [Suggestion; 3],
-    pub shift: [f32; 3],
-}
-
-impl Balance {
-    /// The handles as the pre-step-one histogram would show them.
-    pub fn shown(&self, channel: usize, mode: ConversionMode) -> oni_settings::levels::Levels {
-        let mut out = self.levels[channel];
-        let travel = self.shift[channel];
-        out.black = (out.black - travel).max(0.0).min(1.0 - MINIMUM_SPAN);
-        out.white = (out.white - travel).max(out.black + MINIMUM_SPAN).min(1.0);
-        balance::placed(&out, mode)
-    }
-
-    pub fn core(&self) -> balance::Balance {
-        balance::Balance { stops: self.stops, levels: self.levels }
-    }
-}
-
-/// `AutoLevels.balance`: re-measured after the gains, which translate the density axis exactly
-/// but not the mass they carry over the window's ends.
-pub fn two_steps(
-    h: &Histogram,
-    stops: [f32; 3],
-    mode: ConversionMode,
-    threshold: f32,
-    mut remeasuring: impl FnMut([f32; 3]) -> Histogram,
-) -> Option<Balance> {
-    let moved = recentred(h, stops, mode, threshold)?;
-    let shift = [0, 1, 2].map(|c| self::shift(moved[c] - stops[c], mode));
-    let after = if moved == stops { h.clone() } else { remeasuring(moved) };
-    let levels = placement(&after, threshold)?;
-    Some(Balance { stops: moved, levels, shift })
-}
-
-/// The Auto levels key on a negative or a black and white frame: Classic's two steps from its own
-/// gains. A slide's moves its gains alone (`key::slide_read`).
-pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
-    let first = reading(stops);
-    if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) }
-}
-
 /// Each channel's window at rest on `mode`'s axis, as a balance lays it.
 pub fn resting(mode: ConversionMode) -> [Suggestion; 3] {
     let ceiling = oni_settings::axis::density_axis::base();
     LevelsChannel::PER_CHANNEL.map(|c| {
         let w = oni_settings::levels::LevelsSet::resting(c, mode, ceiling);
         Suggestion { black: graduation::fraction(w.black, mode), white: graduation::fraction(w.white, mode), mid: w.mid, shadows: w.shadows, highlights: w.highlights }
-    })
-}
-
-/// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.
-pub fn applied(b: &Balance, settings: &PipelineSettings, method: Option<&str>) -> PipelineSettings {
-    let mut out = balance::applied(&b.core(), settings);
-    if let Some(m) = method {
-        out.balance_method = Some(m.to_string());
-    }
-    out
-}
-
-/// `AutoLevels.carried`: ends placed under the frame's own inner points, which carry its look.
-pub fn carried(ends: &[Suggestion], settings: &PipelineSettings) -> PipelineSettings {
-    let mut out = settings.clone();
-    for (index, channel) in LevelsChannel::PER_CHANNEL.into_iter().enumerate() {
-        let Some(end) = ends.get(index) else { continue };
-        let kept = out.levels.get(channel);
-        let end = Suggestion { mid: kept.mid, shadows: kept.shadows, highlights: kept.highlights, ..*end };
-        if let Some(levels) = out.levels.get_mut(channel) {
-            *levels = balance::placed(&end, settings.mode);
-        }
-    }
-    out
-}
-
-/// The mean of each handle over several proposals.
-pub fn mean(proposals: &[Suggestion]) -> Option<Suggestion> {
-    if proposals.is_empty() {
-        return None;
-    }
-    let n = proposals.len() as f32;
-    let over = |f: fn(&Suggestion) -> f32| proposals.iter().fold(0.0, |a, p| a + f(p)) / n;
-    Some(Suggestion {
-        black: over(|p| p.black),
-        white: over(|p| p.white),
-        mid: over(|p| p.mid),
-        shadows: over(|p| p.shadows),
-        highlights: over(|p| p.highlights),
     })
 }

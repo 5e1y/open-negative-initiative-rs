@@ -1,7 +1,6 @@
-//! The automatic keys on the graph: Classic's two steps, a frame's roll, Auto White Balance and the
-//! base pick, each read in front of the stage it writes, never off the screen.
+//! The automatic keys on the graph: a frame's roll, Auto White Balance and the base pick, each read
+//! in front of the stage it writes, never off the screen.
 
-use crate::auto_levels::{self, Balance};
 use crate::filter_balance::{self, filtered, minkowski, unlit};
 use crate::histogram::Histogram;
 use crate::pipette;
@@ -9,7 +8,7 @@ use crate::reader::{Copy, Laying, Reader, on_graph};
 use crate::roll::{self, Measured};
 use crate::truncate::Stage;
 use crate::window::sheet_reads;
-use oni_core::balance::{self, Outcome, Suggestion};
+use oni_core::balance::{self, Outcome};
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::Pipeline;
 use oni_pipeline::resident::{Files, Resident};
@@ -31,35 +30,11 @@ pub fn roll_measured(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSetting
     roll::measured(path, s, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// `AutoLevels.placed`: both steps on the frame, re-measured between them.
-pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
-    let first = r.reading(copy, s, Stage::Levels).histogram;
-    if first.is_empty() {
-        return None;
-    }
-    auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
-}
-
-/// The Auto levels key on one frame, read in front of the levels.
-pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
-    auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
-}
-
-/// A slide read at rest gains through its window: what the roll's screen sums.
-pub struct SlideRead {
-    pub reading: Histogram,
-}
-
-/// `None` for a blank slide: no cell of it holds a colour, every one black or clipped.
-pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<SlideRead> {
+/// A slide read at rest gains through its window, what the roll's screen sums; `None` for a blank
+/// slide: no cell of it holds a colour, every one black or clipped.
+pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<Histogram> {
     let read = r.reading(copy, &at_gains(start, [Gains::BASE; 3]), Stage::Levels);
-    read.cells.iter().any(crate::slide_gains::usable).then_some(SlideRead { reading: read.histogram })
-}
-
-/// `AutoLevels.ends`: step two alone, the gains held.
-pub fn ends(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<[Suggestion; 3]> {
-    let h = r.reading(copy, s, Stage::Levels).histogram;
-    if h.is_empty() { None } else { auto_levels::placement(&h, 0.0) }
+    read.cells.iter().any(crate::slide_gains::usable).then_some(read.histogram)
 }
 
 /// `FilterBalance.shades`: each channel's sixth-power mean under given filters, over the kept pixels.
@@ -291,29 +266,6 @@ impl Measurer {
         out
     }
 
-    /// `RawDecode.linear(longestSide:)`: the file decoded, reduced to `side` with its edge rebuilt,
-    /// then read with `read`.
-    pub fn reduced<T>(&self, path: &str, s: &PipelineSettings, side: f64, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
-        let d = (self.decode)(Path::new(path), s).ok()?;
-        let mut guard = self.engine();
-        let Engine { graph, pipeline, resident, .. } = &mut *guard;
-        resident.fresh();
-        let uploaded = graph.upload(d.width, d.height, &d.pixels).ok()?;
-        let full_width = Some(d.full_width);
-        let long = f64::from(d.width.max(d.height));
-        drop(d);
-        let source = if long > side {
-            let reduced = graph.materialise(&oni_pipeline::stages::rebuilt_edge(Image::new(&uploaded).lanczos(side / long))).ok()?;
-            drop(uploaded);
-            reduced
-        } else {
-            uploaded
-        };
-        let out = read(&mut Reader { graph, pipeline, laying: Laying::Read(resident) }, Copy { source: &source, full_width });
-        drop(source);
-        graph.purge();
-        out
-    }
 }
 
 impl Measurer {

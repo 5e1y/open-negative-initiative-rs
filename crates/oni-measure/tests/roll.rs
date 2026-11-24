@@ -1,8 +1,8 @@
 //! `RollReference.selfCheck`'s combining claims: the roll outvotes one bad frame, a picked base is
 //! every channel's black, gains and medians move as the tails do; each claim beside its twin.
 
-use oni_core::balance::{Suggestion, written};
-use oni_measure::auto_levels::{Balance, shift};
+use oni_core::balance::written;
+use oni_measure::auto_levels::shift;
 use oni_measure::roll::{Measured, combined, summed};
 use oni_pipeline::conversion::{colour_factor, decompression_weights};
 use oni_settings::axis::density_axis;
@@ -11,12 +11,8 @@ use oni_settings::{ConversionMode, Id, PipelineSettings};
 
 const NEGATIVE: ConversionMode = ConversionMode::Negative;
 
-fn rest() -> [Suggestion; 3] {
-    [Suggestion { black: 0.0, white: 1.0, mid: 0.5, shadows: 0.0, highlights: 0.0 }; 3]
-}
-
 fn measured(stops: [f32; 3], tails: [[f32; 2]; 3], median: Option<[f32; 3]>) -> Measured {
-    Measured { path: String::new(), balance: Balance { stops, levels: rest(), shift: [0.0; 3] }, tails, median, counts: Vec::new() }
+    Measured { path: String::new(), stops, tails, median, counts: Vec::new() }
 }
 
 fn frame(white: f32, stops: [f32; 3]) -> Measured {
@@ -82,7 +78,7 @@ fn the_roll_s_median_is_the_middle_frame_s_moved_and_one_frame_without_its_own_g
     let roll = combined(&centres, NEGATIVE, None).unwrap();
     let wanted = [0, 1, 2].map(|c| {
         let mut moved: Vec<f32> =
-            centres.iter().map(|f| f.median.unwrap()[c] + shift(roll.stops[c] - f.balance.stops[c], NEGATIVE)).collect();
+            centres.iter().map(|f| f.median.unwrap()[c] + shift(roll.stops[c] - f.stops[c], NEGATIVE)).collect();
         moved.sort_by(|a, b| a.total_cmp(b));
         moved[1]
     });

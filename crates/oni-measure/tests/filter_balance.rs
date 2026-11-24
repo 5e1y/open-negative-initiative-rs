@@ -142,7 +142,7 @@ fn the_balance_reads_onis_print_under_a_legacy_print_which_renders_its_own() {
     let scanner = PipelineSettings { legacy_print: Some(LegacyPrint { d: 2, ..LegacyPrint::default() }), ..pro.clone() };
     let found = key::filters(&mut r, copy, &pro, printable).expect("the cast frame reads");
     assert_eq!(key::filters(&mut r, copy, &scanner, printable), Some(found), "the filters are ONI's print's under either");
-    assert_eq!(key::levels(&mut r, copy, &scanner), key::levels(&mut r, copy, &pro), "the roll's levels read ONI's windows");
+    assert_eq!(key::roll_measured(&mut r, copy, "", &scanner), key::roll_measured(&mut r, copy, "", &pro), "the roll's measure reads ONI's windows");
     // Twin: in front of the curves the legacy print renders its own picture, which a balance would misread.
     let mut read = |s: &PipelineSettings| r.plane(copy, s, Stage::ManualCurves).expect("the frame renders").pixels;
     let (own, pro_s) = (read(&scanner), read(&pro));

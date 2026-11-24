@@ -131,6 +131,6 @@ fn a_window_reads_only_what_it_holds_and_a_roll_reads_through_its_frames() {
 fn every_balance_reader_reads_through_one_door() {
     let key = include_str!("../src/key.rs");
     let door = "r.reading(";
-    assert!(key.matches(door).count() >= 3, "the click, the re-measure and the ends read through one door");
+    assert!(key.matches(door).count() >= 2, "the roll's measure and the slide's read through one door");
     assert!(!key.contains("blocks::medians") && !key.contains("blocks::reading("), "no key reads cells itself");
 }
