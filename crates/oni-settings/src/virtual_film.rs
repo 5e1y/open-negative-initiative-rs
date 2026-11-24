@@ -48,6 +48,13 @@ pub struct StockReference {
 }
 
 impl StockReference {
+    /// The reference with every channel's white at `share` of its own span from the bare film, its black: a roll's
+    /// measured lights, each window scaled alike so a grey keeps one share on the three, a minimum span held.
+    pub fn spanned(&self, share: f32) -> StockReference {
+        let white = std::array::from_fn(|c| (self.black[c] + share * (self.white[c] - self.black[c])).max(self.black[c] + crate::tone::Print::MINIMUM_SPAN).min(1.0));
+        StockReference { white, ..*self }
+    }
+
     /// The windows on a negative's axis, each channel's inner handles at rest.
     pub fn levels(&self) -> LevelsSet {
         let at = |c: usize| {

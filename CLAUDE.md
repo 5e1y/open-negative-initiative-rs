@@ -60,7 +60,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   stock's own white (Portra 800: D55), is exposed and developed on the stock's profile (`virtual_negative`), then scanned as a real
   negative is (owner's model, 2026-11-24): a 5500 K lamp through the sheet's dyes and orange D-min, the 1931 observer standing in
   for an RGB camera balanced on the open lamp, through the slide projector's kernel (`film::projection::scanner`); that scan is read
-  by the negative pipeline unchanged, its reference derived on it as Prepare the Roll measures a roll's. A colour film's couplers
+  by the negative pipeline unchanged, its reference derived on it as Prepare the Roll measures a roll's; Prepare on a digital roll
+  measures its white on the roll's own photos as on a scanned roll, the bare film, known, its black (owner's call, 2026-11-24). A colour film's couplers
   are fitted on the paperless enlarger (`examples/coupler_fit.rs`, the paper laid over a render, never part of it);
   a film with no fit keeps the common matrix, closer than none on all fifteen fitted. There is no film None. spektrafilm's full
   chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).

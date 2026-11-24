@@ -95,6 +95,16 @@ fn trimmed_median(sorted: &[f32]) -> f32 {
     if m % 2 == 1 { kept[m / 2] } else { (kept[m / 2 - 1] + kept[m / 2]) / 2.0 }
 }
 
+/// A digital roll's lights as a share of its film's own span: each photo's, sorted, read where `DEPTH` reads a scanned
+/// roll's white, so a few photos' lights clip for the roll's contrast; none from no photo.
+pub fn digital_lights(mut lights: Vec<f32>) -> Option<f32> {
+    if lights.is_empty() {
+        return None;
+    }
+    lights.sort_by(|a, b| a.total_cmp(b));
+    Some(at(&lights, DEPTH[1]))
+}
+
 /// `RollReference.combined`: gains on the median, each end's chroma on the trimmed median and its
 /// depth on `DEPTH` (beyond Swift); a picked base is every channel's black, moved to the roll's gains.
 pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]>) -> Option<RollReference> {

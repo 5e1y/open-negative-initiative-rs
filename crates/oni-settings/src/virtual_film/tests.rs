@@ -63,3 +63,23 @@ fn a_film_missing_its_exposure_reads_at_the_films_speed_and_a_stock_by_its_key()
     let twin: VirtualFilm = serde_json::from_str(r#"{"stock":"fujifilm-pro-800-datasheet"}"#).unwrap();
     assert!(!twin.stock.is_known(), "a twin's key only where the stock had one");
 }
+
+#[test]
+fn a_reference_spanned_to_a_rolls_lights_keeps_its_black_and_a_grey_on_one_share() {
+    let r = VirtualStock::of("kodak-portra-800").reference();
+    let narrow = r.spanned(0.75);
+    assert_eq!(narrow.black, r.black, "the bare film stays the black");
+    assert_eq!(narrow.stops, r.stops);
+    // A grey entering every window of the reference at one share enters every spanned one at one share too.
+    let share = |s: &StockReference, grey: [f32; 3]| -> [f32; 3] { std::array::from_fn(|c| (grey[c] - s.black[c]) / (s.white[c] - s.black[c])) };
+    let grey: [f32; 3] = std::array::from_fn(|c| r.black[c] + 0.4 * (r.white[c] - r.black[c]));
+    let shares = share(&narrow, grey);
+    assert!(shares.iter().all(|v| (v - 0.4 / 0.75).abs() < 1e-5), "{shares:?}");
+    assert_eq!(r.spanned(1.0), r, "the reference's own span changes nothing");
+    // Twin: a white moved on one channel alone tints that grey.
+    let mut tinted = narrow;
+    tinted.white[0] += 0.05;
+    assert!((share(&tinted, grey)[0] - share(&tinted, grey)[1]).abs() > 1e-3);
+    // A share at or under the black holds the minimum span.
+    assert!((0..3).all(|c| r.spanned(0.0).white[c] - r.black[c] >= crate::tone::Print::MINIMUM_SPAN - 1e-6));
+}

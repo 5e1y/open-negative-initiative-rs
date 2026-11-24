@@ -54,7 +54,7 @@ fn a_roll_prepared_as_digital_lands_on_its_film_and_leaves_its_reference_in_one_
     let reference = oni_settings::frame::RollReference { id: roll, stops: [0.0; 3], black: [0.0; 3], white: [3.0; 3], base: None, median: None };
     let (mut store, dir, [a, b, c]) = frames("prepared", |s| s.roll_reference = Some(reference.clone()));
     let all = [a.clone(), b.clone(), c.clone()];
-    assert_eq!(store.make_digital(&all), 3);
+    assert_eq!(store.make_digital(&all, 1.0), 3);
     assert_eq!(store.history().undo_label(), Some("Prepare the roll of 3 photos"));
     store.flush();
     for p in &all {
@@ -123,5 +123,21 @@ fn a_roll_dose_moved_on_one_digital_photo_still_reaches_its_folder_on_each_films
     assert!(on_own_reference(&s), "{:?}", s.dye_set);
     // Twin: the open photo's own dyes are another stock's.
     assert_ne!(store.settings().dye_set, s.dye_set);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_digital_roll_lands_on_its_films_reference_spanned_to_its_measured_lights() {
+    let (mut store, dir, [a, b, c]) = frames("lights", |_| {});
+    let all = [a.clone(), b.clone(), c.clone()];
+    assert_eq!(store.make_digital(&all, 0.75), 3);
+    store.flush();
+    let r = VirtualStock::of("kodak-portra-800").reference();
+    for p in &all {
+        let s = read(p);
+        assert!(s.gains.stops == r.stops && s.levels == r.spanned(0.75).levels(), "{p}");
+        // Twin: the film's own span is not what a measured roll lands on.
+        assert_ne!(s.levels, r.levels(), "{p}");
+    }
     let _ = std::fs::remove_dir_all(&dir);
 }
