@@ -39,7 +39,8 @@ fn lines(side: u32) -> Vec<V4> {
 
 /// `pixels`, `side` square, grained by `s` at `scale`, its clumps taking a blur of `sigma`.
 fn laid(g: &mut Graph, pixels: &[V4], side: u32, s: &PipelineSettings, scale: f64, sigma: f64) -> Vec<V4> {
-    let k = grain::grain(s, scan(scale), scale).unwrap();
+    // Laid in the light's own stops, as on a positive: the lattice and its blur alone are read.
+    let k = oni_render::Grain { negative: None, ..grain::grain(s, scan(scale), scale).unwrap() };
     let image = Image::new(&g.upload(side, side, pixels).unwrap());
     whole(g, &grain::grained(image, &k, sigma))
 }
@@ -157,7 +158,8 @@ fn stops_apart(a: &[V4], b: &[V4]) -> (f32, f32) {
 #[test]
 fn a_reduced_render_dissolves_what_the_full_one_does() {
     let Some(mut g) = graph("a_reduced_render_dissolves_what_the_full_one_does") else { return };
-    let s = grainy(0.8, 1.0);
+    // Four tenths of a stop at full resolution, the spread the bounds below were drawn on.
+    let s = grainy(0.4 / (grain::spread(oni_settings::VirtualStock::NEUTRAL) * std::f32::consts::LOG2_10), 1.0);
     let scene = soft(SIDE);
     let full = laid(&mut g, &scene, SIDE, &s, 1.0, grain::dissolve(&s, scan(1.0)));
     // The grain alone already parts a reduced render from the full one's means on a textured scene, as

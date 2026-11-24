@@ -125,8 +125,12 @@ pub fn film_lines(s: &PipelineSettings) -> [String; 4] {
     let stops = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x), 2, true, crate::fields::Unit::Stops));
     let shares = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x) * 100.0, 1, false, crate::fields::Unit::Percent));
     let channels = |[red, green, blue]: [String; 3]| oni_i18n::tr!("R {red} · G {green} · B {blue}", red = red, green = green, blue = blue);
+    let light = match film.stock.white() {
+        Some(white) => oni_i18n::tr!("{kelvin} K, the light the stock is balanced for", kelvin = (white.kelvin / 10.0).round() * 10.0),
+        None => oni_i18n::tr("The scene's own light, as its decode balanced it").to_owned(),
+    };
     [
-        oni_i18n::tr!("{kelvin} K, the light the stock is balanced for", kelvin = (film.stock.white().kelvin / 10.0).round() * 10.0),
+        light,
         channels(stops(r.stops)),
         channels(shares(r.black)),
         channels(shares(r.white)),

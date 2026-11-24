@@ -1,9 +1,10 @@
 //! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, a colour negative's
-//! scan through its dyes, and the reference that scan is read on, derived as Prepare the Roll measures a roll's.
+//! scan through its dyes, the neutral film's code, and the reference a scan is read on, derived as Prepare measures a roll's.
 
 pub mod bake;
 pub mod cie;
 pub mod dyes;
+pub mod neutral;
 pub mod profile;
 pub mod projection;
 
@@ -42,15 +43,17 @@ fn f32s(m: &M3) -> [[f32; 3]; 3] {
 /// The spectra table every stock's exposure reads, shipped unchanged.
 const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
 
-/// The light the stock is balanced for, as a spectrum: its scene's white and its layers' reference.
+/// The light a data sheet's stock is balanced for, as a spectrum: its scene's white and its layers' reference.
 pub fn reference_light(stock: VirtualStock) -> &'static [f64; cie::WAVELENGTHS] {
-    light_of(stock.balance())
+    light_of(stock.balance()).expect("a data sheet's film names its light")
 }
 
-fn light_of(balance: Balance) -> &'static [f64; cie::WAVELENGTHS] {
+/// A balance's light as a spectrum; none where the scene keeps its own, which exposes no data sheet's layers.
+fn light_of(balance: Balance) -> Option<&'static [f64; cie::WAVELENGTHS]> {
     match balance {
-        Balance::Daylight => &cie::D55,
-        Balance::Tungsten => &cie::INCANDESCENT,
+        Balance::Daylight => Some(&cie::D55),
+        Balance::Tungsten => Some(&cie::INCANDESCENT),
+        Balance::Scene => None,
     }
 }
 
@@ -116,7 +119,7 @@ fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
 /// The kernel and table of a film's `layers` lit at `balance`.
 fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) {
     let spectra = Spectra::read(SPECTRA).expect("the shipped spectra read");
-    let white = light_of(balance);
+    let white = light_of(balance).expect("a data sheet's film names its light, checked as its file is taken");
     let light = bake::light_table(&spectra, &layers.sensitivity, white);
     let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
     let n = spectra.nodes;
@@ -163,6 +166,9 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
 /// The reference a film's `profile` derives at `balance`, as a stock's file leaving it out takes; or why the profile
 /// does not read or bakes no finite reference.
 pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3) -> Result<StockReference, String> {
+    if light_of(balance).is_none() {
+        return Err("a data sheet's film is balanced for daylight or tungsten".into());
+    }
     let layers = layers(profile, is_silver, reversal, couplers)?;
     if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
@@ -195,6 +201,21 @@ impl Stock {
     pub fn shot(&self, lit: [f32; 4], stops: f32) -> [f32; 4] {
         self.scanned(cpu::virtual_negative(lit, &self.kernel_at(stops), &self.table))
     }
+}
+
+/// A lit scene pixel shot on `stock` `stops` over its rest, developed and read as the pipeline reads it: a data sheet's
+/// stock, or the neutral film's code.
+pub fn shot(stock: VirtualStock, lit: [f32; 4], stops: f32) -> [f32; 4] {
+    match neutral::kernel(stock) {
+        Some(k) => cpu::neutral_negative(lit, &neutral::exposed(k, stops)),
+        None => self::stock(stock).shot(lit, stops),
+    }
+}
+
+/// The reference a neutral film's `profile` derives, as its file leaving it out takes; or why the profile does not read.
+pub fn derive_neutral(profile: &str) -> Result<StockReference, String> {
+    let k = neutral::kernel_of(neutral::range(profile)?);
+    Ok(derived_on(|scene| cpu::neutral_negative([scene, scene, scene, 1.0], &k)))
 }
 
 /// A scan's density on the negative's axis at `stops` of gain, as stage 4 reads it.
@@ -241,7 +262,11 @@ pub fn saturation() -> f32 {
 /// The stock's own reference on its scan: gains that make its bare film grey, each channel's black on the bare film, no
 /// light, and its white on the sensor's saturation, nothing solved on greys (owner's call).
 pub fn derived(stock: &Stock) -> StockReference {
-    let scan = |scene: f32| stock.shot([scene, scene, scene, 1.0], 0.0);
+    derived_on(|scene| stock.shot([scene, scene, scene, 1.0], 0.0))
+}
+
+/// The reference of the film whose `scan` reads a grey scene of each light.
+fn derived_on(scan: impl Fn(f32) -> [f32; 4]) -> StockReference {
     let (bare, white) = (scan(0.0), scan(saturation()));
     let stops = [bare[1] / bare[0], 1.0, bare[1] / bare[2]].map(f32::log2);
     let fraction = |d: f32| graduation::fraction(d, ConversionMode::Negative);
@@ -260,17 +285,22 @@ mod tests {
 
     #[test]
     fn each_stocks_reference_is_its_profiles_derivation_and_prints_the_sensors_saturation_as_white() {
+        let derived = |kind: VirtualStock| match kind.entry().neutral {
+            true => derive_neutral(&kind.entry().profile).unwrap(),
+            false => stock(kind).reference,
+        };
         for kind in VirtualStock::all() {
-            println!("{kind:?}: {:?}", stock(kind).reference);
+            println!("{kind:?}: {:?}", derived(kind));
         }
         // A reversal film is projected, never read as a negative: its reference is the windows' rest.
         for kind in VirtualStock::all().into_iter().filter(|k| k.entry().reversal) {
             assert!(stock(kind).reference == unread() && kind.reference() == unread(), "{kind:?}");
         }
+        assert!(VirtualStock::NEUTRAL.entry().neutral, "the neutral film is among them");
         for kind in VirtualStock::all().into_iter().filter(|k| !k.entry().reversal) {
-            let (derived, held) = (stock(kind).reference, kind.reference());
+            let (derived, held) = (derived(kind), kind.reference());
             assert!(close(derived.stops, held.stops) && close(derived.black, held.black) && close(derived.white, held.white), "{derived:?} {held:?}");
-            let shot = |scene: f32| cpu::stage47(stock(kind).shot([scene, scene, scene, 1.0], 0.0), &crate::conversion::stage47(&on_reference(kind, &held)));
+            let shot = |scene: f32| cpu::stage47(shot(kind, [scene, scene, scene, 1.0], 0.0), &crate::conversion::stage47(&on_reference(kind, &held)));
             let white = shot(saturation());
             assert!((0..3).all(|c| (white[c] - 1.0).abs() < 2e-3), "{kind:?}: {white:?}");
             // Twin: a scene a stop over the sensor's saturation, past what a decode holds, prints past that white.

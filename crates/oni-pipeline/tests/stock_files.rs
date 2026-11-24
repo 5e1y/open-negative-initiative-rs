@@ -49,7 +49,7 @@ fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
     let mut loader = Loader::new(dir.clone());
     let first = loader.reload().expect("the first read builds");
     assert!(first.refused.is_empty());
-    assert_eq!(first.catalogue.films().len(), 104);
+    assert_eq!(first.catalogue.films().len(), 105);
     stocks::install(first.catalogue);
     assert!(loader.reload().is_none(), "a folder as it was builds nothing");
 
@@ -57,7 +57,7 @@ fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
     let added = loader.reload().expect("a file added is read");
     assert!(added.refused.is_empty(), "{:?}", added.refused);
     stocks::install(added.catalogue);
-    assert_eq!((oni_settings::film::stocks().len(), MINE.name(), MINE.is_known()), (105, "Kodak Gold 200 (Mine)", true));
+    assert_eq!((oni_settings::film::stocks().len(), MINE.name(), MINE.is_known()), (106, "Kodak Gold 200 (Mine)", true));
     let gold = VirtualStock::of("kodak-gold-200");
     assert_eq!(MINE.reference(), gold.reference(), "its reference is the one its profile derives, Gold 200's");
     assert!(printed(MINE).iter().all(|p| p.iter().all(|v| v.is_finite())));
@@ -91,7 +91,7 @@ fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
     std::fs::remove_file(dir.join("mine.json")).unwrap();
     let removed = loader.reload().expect("a file removed is read");
     stocks::install(removed.catalogue);
-    assert!(!MINE.is_known() && oni_settings::film::stocks().len() == 104);
+    assert!(!MINE.is_known() && oni_settings::film::stocks().len() == 105);
     assert_eq!(MINE.reference(), VirtualStock::default().reference(), "a key no file defines renders on the default stock");
     let _ = std::fs::remove_dir_all(&dir);
 }

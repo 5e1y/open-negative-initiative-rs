@@ -77,13 +77,14 @@ fn shown_brand(kind: &FilmStockKind) -> &'static str {
 }
 
 /// The shipped generic stocks' words, which their files hold and the screen shows translated.
-pub const GENERIC_WORDS: [&str; 6] = [
+pub const GENERIC_WORDS: [&str; 7] = [
     oni_i18n::marked("Generic"),
     oni_i18n::marked("Generic Azure"),
     oni_i18n::marked("Generic Black & White"),
     oni_i18n::marked("Generic Colour Negative"),
     oni_i18n::marked("Generic Colour Positive"),
     oni_i18n::marked("Generic Redscale"),
+    oni_i18n::marked("Neutral"),
 ];
 
 /// A key no file defines, as a menu or a hero names it: the key itself, marked missing.

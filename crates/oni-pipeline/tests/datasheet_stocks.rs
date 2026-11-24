@@ -11,7 +11,7 @@ use oni_render::cpu;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 fn sheet_stocks() -> Vec<VirtualStock> {
-    VirtualStock::all().to_vec()
+    VirtualStock::sheets()
 }
 
 /// Every paper but the Frontier, a machine measured, and ONI Standard, the data sheets' mean.

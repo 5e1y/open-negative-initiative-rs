@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use crate::common;
 
-fn stock(id: &str) -> i32 {
+pub(crate) fn stock(id: &str) -> i32 {
     oni_settings::film::stocks().iter().position(|k| k.id == id).unwrap() as i32
 }
 
@@ -223,7 +223,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     let film = || ctl.state.borrow().store().settings().film().expect("a digital photo is shot on its film");
-    assert_eq!(panel.get_stock().name.as_str(), VirtualStock::of("kodak-portra-800").name());
+    assert_eq!(panel.get_stock().name.as_str(), VirtualStock::NEUTRAL.name());
     assert!(panel.get_stock().has_artwork, "its canister drawn");
     println!("shot {}", rig.shot("stock-hero-film").display());
 
@@ -238,7 +238,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     virtual_names.sort();
     assert_eq!(sorted, virtual_names, "the offered virtual films alone, every one");
     assert!(names.len() < oni_settings::film::offered_stocks().len(), "twin: a roll's menu lists more");
-    assert_eq!(stocks.get_lines().row_data(usize::try_from(stocks.get_in_use()).unwrap()).unwrap().name.as_str(), VirtualStock::of("kodak-portra-800").name(), "the film in use checked");
+    assert_eq!(stocks.get_lines().row_data(usize::try_from(stocks.get_in_use()).unwrap()).unwrap().name.as_str(), VirtualStock::NEUTRAL.name(), "the film in use checked");
     assert!(stocks.get_lines().iter().filter(|l| !l.brand).all(|l| l.has_artwork), "each line with its canister");
     println!("shot {}", rig.shot("stock-menu-film").display());
     rig.key("\u{1b}");
@@ -252,8 +252,8 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
         rig.key("\u{1b}");
         rig.settle();
         assert_eq!((film().stock, panel.get_stock().name.as_str()), (next, next.name()));
-        let kelvin = format!("{} K", (next.white().kelvin / 10.0).round() * 10.0);
-        assert!(panel.get_film_white().starts_with(&kelvin), "{} lights the scene at {kelvin}: {}", next.name(), panel.get_film_white());
+        let light = next.white().map_or("The scene's own light".to_string(), |w| format!("{} K", (w.kelvin / 10.0).round() * 10.0));
+        assert!(panel.get_film_white().starts_with(&light), "{} lights the scene at {light}: {}", next.name(), panel.get_film_white());
         if next == before {
             assert_eq!(menus.get_live().undo, undo, "the film it stands on writes no step");
             continue;

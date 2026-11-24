@@ -224,7 +224,7 @@ fn a_channel_at_or_under_zero_carries_no_chroma_and_is_kept() {
         let (p, y) = (grain(under, under, at, &k), dot(rgb(under), LUMA));
         assert!(p[1] < 0.0 && (dot(rgb(p), LUMA) / (a.exp2() * y) - 1.0).abs() < 1e-6, "at {at:?}: {p:?}");
         // Twin: the channel floored at zero first.
-        let floored = laid(with_alpha(map(rgb(under), |_, v| v.max(0.0)), 1.0), a, TOP);
+        let floored = laid(with_alpha(map(rgb(under), |_, v| v.max(0.0)), 1.0), a, TOP, -a);
         twin = twin.max((floored[1] - p[1]).abs() / under[1].abs());
     }
     assert!(twin > 0.5, "the twin moves the channel {twin}");
@@ -238,10 +238,10 @@ fn the_share_scales_the_stops_the_colour_reads() {
     let mut twin = 0.0f32;
     for at in centres().take(512) {
         let b = grain(s, s, at, &half);
-        assert_eq!(b, laid(s, half.stops * 0.5 * field(at, &half), 2.0), "at {at:?}");
+        assert_eq!(b, laid(s, half.stops * 0.5 * field(at, &half), 2.0, -half.stops * 0.5 * field(at, &half)), "at {at:?}");
         // Twin: the colour read off the whole stops, the light's alone halved.
         let a = whole.stops * field(at, &whole);
-        let unshared = map(rgb(laid(s, a, 2.0)), |_, v| v * (-0.5 * a).exp2());
+        let unshared = map(rgb(laid(s, a, 2.0, -a)), |_, v| v * (-0.5 * a).exp2());
         twin = twin.max((0..3).map(|c| (unshared[c] / b[c] - 1.0).abs()).fold(0.0, f32::max));
     }
     assert!(twin > 1e-3, "the twin passes at {twin:.2e}");
@@ -300,4 +300,63 @@ fn every_seed_lays_standard_normals_uncorrelated_with_another_seed_s() {
     // Twin: a seed the hash ignores lays one arrangement on every photo.
     let ignored = correlation(SEEDS[0], SEEDS[1], &|i, _| normal(hash(i, [0, 0])));
     assert!(ignored > 0.99, "the twin correlates at {ignored}");
+}
+
+/// A masked negative: an orange bare film under its reading's pedestal, its blue layer's window the widest.
+const MASKED: GrainedNegative = GrainedNegative { bare: [0.5003, 0.2503, 0.1003], veil: 0.0003, layers: [0.8, 1.0, 1.2] };
+
+/// The film's light holding `share` of each layer's window, the mean window `window` of density.
+fn film(share: V3, window: f32) -> V4 {
+    with_alpha(map(share, |c, u| MASKED.bare[c] * 10f32.powf(-window * MASKED.layers[c] * u) - MASKED.veil), 1.0)
+}
+
+/// Each layer's share of its window `p` holds.
+fn shares(p: V4, window: f32) -> V3 {
+    map(rgb(p), |c, v| -((v + MASKED.veil) / MASKED.bare[c]).log10() / (window * MASKED.layers[c]))
+}
+
+#[test]
+fn on_a_negative_the_grain_moves_one_share_of_every_window_and_a_grey_stays_grey() {
+    let k = at_colour(2.0).on_negative(MASKED);
+    let grey = film([0.4; 3], 1.0);
+    let (mut apart, mut off, mut twin) = (0.0f32, 0.0f32, 0.0f32);
+    for at in centres().take(512) {
+        let a = k.stops * field(at, &k);
+        let u = shares(grain(grey, grey, at, &k), 1.0);
+        apart = apart.max((u[0] - u[1]).abs().max((u[2] - u[1]).abs()));
+        off = off.max((u[1] - (0.4 - a * std::f32::consts::LOG10_2)).abs());
+        // Twin: the same grain laid on the film's light as on a positive's parts the layers and tints the grey.
+        let plain = shares(grain(grey, grey, at, &Grain { negative: None, ..k }), 1.0);
+        twin = twin.max((plain[2] - plain[0]).abs());
+    }
+    assert!(apart < 2e-5, "a grey's layers part by {apart:.2e} of their windows");
+    assert!(off < 2e-5, "the share is {off:.2e} off the stops laid");
+    assert!(twin > 5e-3, "the twin's layers part by {twin:.2e} only");
+}
+
+#[test]
+fn on_a_negative_a_grain_deepens_the_hue_where_the_picture_darkens() {
+    let k = at_colour(2.0).on_negative(MASKED);
+    let s = film([0.3, 0.4, 0.55], 1.0);
+    let chroma = |p: V4| {
+        let u = shares(p, 1.0);
+        u[2] - u[0]
+    };
+    let (mut lighter, mut denser, mut twin) = (0, 0, 0.0f32);
+    for at in centres().take(512) {
+        let a = k.stops * field(at, &k);
+        let p = grain(s, s, at, &k);
+        if a > 0.01 {
+            assert!(chroma(p) > chroma(s) + 1e-4, "at {at:?}: a lighter negative, a darker picture, spreads its layers");
+            lighter += 1;
+        } else if a < -0.01 {
+            assert!((chroma(p) - chroma(s)).abs() < 2e-5, "at {at:?}: a denser negative keeps its hue");
+            denser += 1;
+        }
+        // Twin: without its colour the grain spreads no layer.
+        let mono = grain(s, s, at, &Grain { colour: [0.0; GRAIN_NODES], ..k });
+        twin = twin.max((chroma(mono) - chroma(s)).abs());
+    }
+    assert!(lighter > 100 && denser > 100, "{lighter} lighter and {denser} denser");
+    assert!(twin < 2e-5, "the monochrome twin spreads its layers by {twin:.2e}");
 }

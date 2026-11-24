@@ -34,6 +34,8 @@ pub struct VirtualEntry {
     pub silver: bool,
     /// A colour reversal film: its curves fall, and its slide is projected.
     pub reversal: bool,
+    /// A film of no character, its profile its density range alone.
+    pub neutral: bool,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
     /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
@@ -303,6 +305,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             profile: profile.clone(),
                             silver: f.kind == FilmType::BlackAndWhite,
                             reversal: f.kind == FilmType::ColourSlide,
+                            neutral: b.neutral,
                             couplers: b.couplers,
                             look: b.look.clone(),
                             revision,

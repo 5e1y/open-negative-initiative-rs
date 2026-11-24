@@ -1,5 +1,5 @@
 //! The virtual film a digital photo is always shot on: the stock and its exposure, with the white and the
-//! reference each stock brings, which its negative is read on as a roll's measure is.
+//! reference each stock brings, which its negative is read on as a roll's measure is; a new photo's is the neutral film.
 
 use crate::axis::graduation;
 use crate::dyes::DyeSet;
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 crate::stocks::keyed!(
     /// A stock a digital photo can be shot on, by the key a sidecar stores: every colour and black and white negative
     /// whose file holds its data sheet's profile (`crate::stocks`). A key no file defines is kept as stored, so a file
-    /// brought back finds its photos, and renders on the default stock meanwhile.
+    /// brought back finds its photos, and renders on the default stock meanwhile, as a photo storing no key does.
     VirtualStock, Virtual, "kodak-portra-800"
 );
 
@@ -24,14 +24,17 @@ pub enum Balance {
     Daylight,
     /// NIST's incandescent lamp, a tungsten sheet's "T".
     Tungsten,
+    /// No light of its own: the scene as its decode balanced it, a neutral film's.
+    Scene,
 }
 
 impl Balance {
-    /// Its CIE 1931 chromaticity, read off its spectrum by the 2° observer.
-    pub fn xy(self) -> (f64, f64) {
+    /// Its CIE 1931 chromaticity, read off its spectrum by the 2° observer; none where the scene keeps its own.
+    pub fn xy(self) -> Option<(f64, f64)> {
         match self {
-            Balance::Daylight => (0.33242, 0.34743),
-            Balance::Tungsten => (0.450_732_6, 0.408_049_6),
+            Balance::Daylight => Some((0.33242, 0.34743)),
+            Balance::Tungsten => Some((0.450_732_6, 0.408_049_6)),
+            Balance::Scene => None,
         }
     }
 }
@@ -62,10 +65,10 @@ impl StockReference {
 mod tests;
 
 impl VirtualEntry {
-    /// A digital photo is offered it: a colour film whose couplers are measured, a black and white one, which has none,
-    /// or a look.
+    /// A digital photo is offered it: a colour film whose couplers are measured, a black and white or a neutral one,
+    /// which have none, or a look.
     pub fn offered(&self) -> bool {
-        self.silver || self.couplers.is_some() || self.look.is_some()
+        self.silver || self.neutral || self.couplers.is_some() || self.look.is_some()
     }
 }
 
@@ -75,9 +78,17 @@ impl VirtualStock {
     /// render.
     pub const SLIDE: VirtualStock = VirtualStock::of("kodak-ektachrome-e100");
 
+    /// The film a new digital photo is shot on: the neutral one, which gives its scene back as its decode holds it.
+    pub const NEUTRAL: VirtualStock = VirtualStock::of("neutral");
+
     /// Every stock a digital photo can be shot on, in the menus' order.
     pub fn all() -> Vec<VirtualStock> {
         crate::stocks::current().virtuals().iter().map(|v| v.stock).collect()
+    }
+
+    /// Every stock a data sheet profiles: all but a neutral film, which reads none.
+    pub fn sheets() -> Vec<VirtualStock> {
+        crate::stocks::current().virtuals().iter().filter(|v| !v.neutral).map(|v| v.stock).collect()
     }
 
     /// Its file's entry; a key no file defines reads the default stock's.
@@ -104,10 +115,10 @@ impl VirtualStock {
     }
 
     /// The light the stock is balanced for, its profile's own: the scene is lit at it, as the film sees a
-    /// scene, and the print balances what it leaves.
-    pub fn white(self) -> White {
-        let (x, y) = self.balance().xy();
-        white::of_uv(white::uv_of_xy(x, y))
+    /// scene, and the print balances what it leaves; none on a film that keeps the scene's own.
+    pub fn white(self) -> Option<White> {
+        let (x, y) = self.balance().xy()?;
+        Some(white::of_uv(white::uv_of_xy(x, y)))
     }
 
     pub fn reference(self) -> StockReference {

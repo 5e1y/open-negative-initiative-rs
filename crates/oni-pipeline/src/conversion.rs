@@ -31,11 +31,11 @@ pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
 }
 
 /// A digital photo's scene lit at its film's own white, relative to the white its decode stands on, as the
-/// film sees a scene and its print balances what it leaves; none on a film mode.
+/// film sees a scene and its print balances what it leaves; none on a film mode or a film keeping the scene's own.
 pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
-    let film = s.film()?;
+    let white = s.film()?.stock.white()?;
     let anchor = oni_settings::white::anchor(s.decoded_from_mosaic);
-    let m = oni_settings::white::relative(oni_settings::white::uv(film.stock.white()), anchor);
+    let m = oni_settings::white::relative(oni_settings::white::uv(white), anchor);
     let row = |r: [f32; 3]| [r[0], r[1], r[2], 0.0];
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }

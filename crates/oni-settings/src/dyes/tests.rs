@@ -6,7 +6,8 @@ fn every_colour_negative_names_its_measured_dyes_and_only_a_colour_negative_does
     use crate::film::FilmType;
     for kind in stocks().iter() {
         let negative = matches!(kind.kind, FilmType::ColourNegative | FilmType::CineNegative);
-        assert_eq!(kind.dyes.is_some(), negative, "{}: a colour negative names its dyes, a slide or black and white none", kind.id);
+        let neutral = kind.film.is_some_and(|f| f.entry().neutral);
+        assert_eq!(kind.dyes.is_some(), negative && !neutral, "{}: a colour negative names its dyes, a slide, black and white or a neutral film none", kind.id);
     }
     assert_eq!(dye_set("kodak-portra"), Some(DyeSet::of("kodak-portra-400")));
     assert_eq!(dye_set("cinestill-800t"), Some(DyeSet::of("kodak-vision3-500t")));

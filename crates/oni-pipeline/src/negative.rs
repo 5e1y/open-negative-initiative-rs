@@ -34,7 +34,7 @@ const LIGHT_SPAN: f64 = 8.0;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Film {
     /// A digital photo's virtual stock, its own curves, pushed ones included; a black and white one's single layer
-    /// uncoupled.
+    /// and the neutral film's three, uncoupled.
     Stock(VirtualStock),
     /// A scanned colour negative's stock, by its name, read on its mean layer; the generic set on the C-41 profiles'.
     Dyes(DyeSet),
@@ -130,6 +130,11 @@ fn tabled(le: &[f64], normal: &[[f64; 3]], after: &[[f64; 3]], couplers: [V3; 3]
 
 fn developed(film: Film) -> Development {
     match film {
+        Film::Stock(stock) if stock.entry().neutral => {
+            let range = crate::film::neutral::range(&stock.entry().profile).expect("a profile reads once its file is taken");
+            let (le, density) = crate::film::neutral::curve(range, NEGATIVE_CURVE_NODES);
+            developing(&le, &density, None)
+        }
         Film::Stock(stock) if stock.is_silver() => {
             let p = Silver::read(stock.entry().profile.as_bytes()).expect("a profile reads once its file is taken");
             let curve: Vec<[f64; 3]> = p.density_curve.iter().map(|d| [*d; 3]).collect();

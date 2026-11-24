@@ -37,7 +37,7 @@ mod tests {
         let mut rolled = at_rest.clone();
         rolled.film = Some(Film { stock: Some("kodak-gold".into()), ..Film::new("Roll") });
         assert_eq!(caught_up(older, rolled.clone()).dye_set, DyeSet::of("kodak-gold-200"), "its sidecar's roll names its stock");
-        let digital = PipelineSettings::rest(ConversionMode::Digital, true);
+        let digital = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(crate::VirtualStock::of("kodak-portra-800"));
         assert_eq!(caught_up(older, PipelineSettings { dye_set: DyeSet::of("generic-c41"), ..digital }).dye_set, DyeSet::of("kodak-portra-800"));
         // Twin: a file of this format keeps the stock it names.
         assert_eq!(caught_up(STOCK_DYES_VERSION, rolled).dye_set, at_rest.dye_set);

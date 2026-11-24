@@ -157,9 +157,12 @@ impl Pipeline {
     }
 
     /// A digital photo's scene on its virtual film: exposed, developed and, a colour negative, scanned through its dyes
-    /// as a real negative is; a slide's layers as they are, for the projector.
+    /// as a real negative is; a slide's layers as they are, for the projector; the neutral film's code as it is.
     pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
         let Some(f) = s.film() else { return Ok(image) };
+        if let Some(k) = film::neutral::kernel(f.stock) {
+            return Ok(image.then(stages::neutral_negative(&film::neutral::exposed(k, f.exposure))));
+        }
         let stock = film::stock(f.stock);
         let key = (f.stock, stock.revision);
         if let Entry::Vacant(e) = self.films.entry(key) {
@@ -190,14 +193,6 @@ impl Pipeline {
         Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0), &[read])))
     }
 
-    /// A digital photo's scene shot on a reversal film and projected: the slide its virtual film develops on the
-    /// projector's screen, a positive; none on a negative film.
-    pub fn projected(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
-        let Some(stock) = s.film().and(s.projector()) else { return Ok(None) };
-        let slide = self.filmed(graph, image, s)?;
-        self.on_screen(graph, slide, s, stock).map(Some)
-    }
-
     /// A scanned slide on the projector's screen: its scan read back to its stock's dyes, then shown as any slide is.
     pub fn slide(&mut self, graph: &mut Graph, framed: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
         let scanned = film::projection::scanned(stock);
@@ -212,7 +207,7 @@ impl Pipeline {
 
     /// A slide's dyes, coded as `10^-amount`, under Lighting, filtering the projector's lamp on the screen, its ends laid,
     /// then laid back onto the slide at rest over its deep shadows, so no slider lifts the film's black.
-    fn on_screen(&mut self, graph: &mut Graph, amounts: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
+    pub(crate) fn on_screen(&mut self, graph: &mut Graph, amounts: Image, s: &PipelineSettings, stock: oni_settings::VirtualStock) -> Result<Image> {
         let p = film::projection::projected(stock);
         let key = (stock, p.revision);
         if let Entry::Vacant(e) = self.projections.entry(key) {
@@ -358,7 +353,7 @@ impl Pipeline {
 /// The tables a render of `s` bakes at their first use, baked now: its virtual film's stock and its paper's, so a render
 /// asked next finds them ready.
 pub fn bake_ahead(s: &PipelineSettings) {
-    if let Some(f) = s.film() {
+    if let Some(f) = s.film().filter(|f| !f.stock.entry().neutral) {
         film::stock(f.stock);
     }
     if let Some(stock) = s.projector() {

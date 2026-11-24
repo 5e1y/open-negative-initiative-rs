@@ -25,10 +25,10 @@ fn read(p: &str) -> PipelineSettings {
     sidecar::read(Path::new(p), p.ends_with("NEF")).unwrap().settings
 }
 
-/// What a frame on the stock's reference holds.
+/// What a frame on the neutral film's reference holds, the film a photo made digital is shot on.
 fn on_film(s: &PipelineSettings) -> bool {
-    let r = VirtualStock::of("kodak-portra-800").reference();
-    s.virtual_film.is_some() && s.gains.stops == r.stops && s.levels == r.levels() && s.dye_set == VirtualStock::of("kodak-portra-800").dye_set()
+    let r = VirtualStock::NEUTRAL.reference();
+    s.film().is_some_and(|f| f.stock == VirtualStock::NEUTRAL) && s.gains.stops == r.stops && s.levels == r.levels() && s.dye_set == VirtualStock::NEUTRAL.dye_set()
 }
 
 #[test]

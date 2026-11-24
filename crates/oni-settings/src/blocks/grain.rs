@@ -7,9 +7,9 @@ use crate::tolerant;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-/// Film grain on the scene before the print: its spread, a share of its track, and its size, a grain's width
-/// on the film in micrometres, so every resolution lays it alike on the picture; its strength by tone and its
-/// colour along it; either at rest is not written, so a new rest reaches every frame left on it.
+/// Film grain on a digital photo's developed film, uniform in its density: its spread, a share of its track, and its
+/// size, a grain's width on the film in micrometres, so every resolution lays it alike on the picture; its strength by
+/// tone and its colour along it; either at rest is not written, so a new rest reaches every frame left on it.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Grain {
@@ -100,9 +100,9 @@ impl Strength {
 }
 
 impl GrainCurve {
-    /// Light in the blacks, fullest in the low mids, falling to none at the white (owner's call, drawn on a photo).
+    /// The whole grain at every tone: laid on the negative, the inversion alone weakens it toward the white.
     pub const REST: GrainCurve = GrainCurve {
-        points: [Point::new(0.0, 0.35), Point::new(0.275, 0.916), Point::new(0.596, 0.719), Point::new(0.741, 0.311), Point::new(1.0, 0.0)],
+        points: [Point::new(0.0, 1.0), Point::new(0.25, 1.0), Point::new(0.5, 1.0), Point::new(0.75, 1.0), Point::new(1.0, 1.0)],
     };
 
     pub fn rests(&self) -> bool {
@@ -151,7 +151,7 @@ mod tests {
         c.move_point(4, Point::new(0.2, 0.5));
         assert_eq!(c.points[4], Point::new(1.0, 0.5));
         c.move_point(2, Point::new(0.95, 1.4));
-        assert_eq!(c.points[2], Point::new(0.741 - crate::curves::SPACING, 1.0));
+        assert_eq!(c.points[2], Point::new(0.75 - crate::curves::SPACING, 1.0));
         // Twin: a point set without the move crosses its neighbour.
         let mut raw = GrainCurve::REST;
         raw.points[2] = Point::new(0.95, 1.0);
@@ -159,15 +159,12 @@ mod tests {
     }
 
     #[test]
-    fn the_rest_is_light_in_the_blacks_fullest_in_the_low_mids_and_gone_at_the_white() {
+    fn the_rest_lays_the_whole_grain_at_every_tone() {
         let s = GrainCurve::REST.strength();
-        assert_eq!((s.at(0.0), s.at(1.0)), (0.35, 0.0));
-        let peak = (0..=100).map(|i| f64::from(i) / 100.0).max_by(|a, b| s.at(*a).total_cmp(&s.at(*b))).unwrap();
-        assert!((0.275..=0.6).contains(&peak) && s.at(peak) <= 1.0, "the peak at {peak}");
-        assert!((60..100).all(|i| s.at(f64::from(i) / 100.0) >= s.at(f64::from(i + 1) / 100.0)), "it falls past the mids");
-        // Twin: a curve left whole at its white end keeps grain there.
-        let mut kept = GrainCurve::REST;
-        kept.points[4].y = 0.4;
-        assert!(kept.strength().at(1.0) > 0.0);
+        assert!((0..=100).all(|i| s.at(f64::from(i) / 100.0) == 1.0));
+        // Twin: a curve lowered at its white end lays less grain there.
+        let mut lowered = GrainCurve::REST;
+        lowered.points[4].y = 0.4;
+        assert!(lowered.strength().at(1.0) < 1.0 && !lowered.rests());
     }
 }

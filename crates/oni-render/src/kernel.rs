@@ -23,6 +23,7 @@ pub(crate) mod halation;
 pub(crate) mod held_black;
 pub(crate) mod grid;
 pub(crate) mod negative;
+pub(crate) mod neutral_negative;
 pub(crate) mod orient;
 pub(crate) mod paper;
 pub(crate) mod projection;

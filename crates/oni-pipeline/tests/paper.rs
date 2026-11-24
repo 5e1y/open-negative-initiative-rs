@@ -283,7 +283,7 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
 fn every_stock_rests_its_ends_on_every_paper() {
     let mut missed = Vec::new();
     // A reversal film is projected, never printed.
-    for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
+    for stock in VirtualStock::sheets().into_iter().filter(|s| !s.entry().reversal) {
         let baked = film::stock(stock);
         for p in PaperStock::all() {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };

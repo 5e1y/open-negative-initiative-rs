@@ -118,7 +118,7 @@ fn a_film_frame_of_format_37_opens_as_it_was() {
 fn a_film_writes_its_stock_by_key_and_a_build_before_refuses_the_file_as_newer() {
     let filmed = PipelineSettings::rest(ConversionMode::Digital, true);
     let written = serde_json::to_value(Document::of(filmed.clone())).unwrap();
-    assert_eq!(written["settings"]["virtualFilm"]["stock"], json!("kodak-portra-800"));
+    assert_eq!(written["settings"]["virtualFilm"]["stock"], json!("neutral"));
     let bytes = serde_json::to_vec(&at(&filmed, VERSION + 1)).unwrap();
     assert!(matches!(migrate::reading(&bytes, &Facts::bare(true), false), Err(Refusal::Newer(v)) if v == VERSION + 1));
     // Twin: this format's own file reads, and a negative writes no film.
@@ -139,7 +139,7 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
         assert_eq!(read(&stored).settings, s, "{stock:?}");
     }
     // A photo of 46 on its paper, grain off as every photo of then, keeps the paper's own black it printed.
-    let mut portra = PipelineSettings::rest(ConversionMode::Digital, true);
+    let mut portra = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800"));
     portra.grain.amount = 0.0;
     let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, ..portra.clone() };
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.

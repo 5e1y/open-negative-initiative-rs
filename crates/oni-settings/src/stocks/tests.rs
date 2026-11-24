@@ -41,7 +41,7 @@ fn every_shipped_file_reads_and_round_trips() {
         assert_eq!(format!("{}.json", file.key()), name, "a file is named by its key");
         count += 1;
     }
-    assert_eq!(count, 111, "102 film stocks and 9 papers");
+    assert_eq!(count, 112, "103 film stocks and 9 papers");
     // Twin: a field dropped on the way is seen.
     let file = file::read(shipped_json().next().unwrap().1).unwrap();
     let mut lost = value(file.to_json().as_bytes());
@@ -75,11 +75,11 @@ fn a_broken_file_is_refused_with_why() {
 #[test]
 fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (files, canisters) = shipped();
-    assert_eq!((files.len(), canisters.len()), (111, 41), "every shipped file reads");
+    assert_eq!((files.len(), canisters.len()), (112, 41), "every shipped file reads");
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();
-    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (104, 79, 47, 9));
+    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (105, 80, 47, 9));
     assert!(VirtualStock::default().is_known() && PaperStock::default().is_known());
     assert!(DyeSet::default().is_generic() && c.dye_set(DyeSet::default()).is_some());
     assert_eq!(c.virtual_film(VirtualStock::of("kodak-portra-800-push-2")).map(|v| (v.catalogue, v.dyes)), Some(("kodak-portra800-push2", DyeSet::of("kodak-portra-800"))));
@@ -112,7 +112,7 @@ fn a_persons_file_adds_or_stands_in_and_a_clashing_one_is_refused() {
     });
     let (c, refused) = with_own(vec![own("kodak-gold200-mine.json", &added).unwrap()]);
     assert!(refused.is_empty(), "{refused:?}");
-    assert_eq!(c.films().len(), 105);
+    assert_eq!(c.films().len(), 106);
     let mine = c.virtual_film(VirtualStock::of("kodak-gold-200-mine")).expect("its film is listed");
     assert_eq!((mine.name, mine.dyes), ("Kodak Gold 200 (Mine)", DyeSet::of("kodak-gold-200")));
     let place = |c: &Catalogue, id: &str| c.films().iter().position(|k| k.id == id).unwrap();
@@ -120,7 +120,7 @@ fn a_persons_file_adds_or_stands_in_and_a_clashing_one_is_refused() {
 
     let renamed = edited("kodak-gold200.json", |v| v["name"] = "Kodak Gold 200 (Edited)".into());
     let (c, refused) = with_own(vec![own("kodak-gold200.json", &renamed).unwrap()]);
-    assert!(refused.is_empty() && c.films().len() == 104, "{refused:?}");
+    assert!(refused.is_empty() && c.films().len() == 105, "{refused:?}");
     assert_eq!(c.film("kodak-gold200").map(|k| k.display_name), Some("Kodak Gold 200 (Edited)"));
 
     let dropped = edited("kodak-gold200.json", |v| drop(v.as_object_mut().unwrap().remove("film")));
@@ -138,7 +138,7 @@ fn a_persons_file_adds_or_stands_in_and_a_clashing_one_is_refused() {
     assert!(why("dangling.json").contains("kodak-gold-900"), "{refused:?}");
     // Twin: the shipped Gold 200 stays in use, whole.
     assert_eq!(c.film("kodak-gold200").map(|k| k.display_name), Some("Kodak Gold 200"));
-    assert!(c.virtual_film(VirtualStock::of("kodak-gold-200")).is_some() && c.films().len() == 104);
+    assert!(c.virtual_film(VirtualStock::of("kodak-gold-200")).is_some() && c.films().len() == 105);
 }
 
 #[test]

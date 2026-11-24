@@ -64,8 +64,21 @@ the code; a costly trap keeps its constraint and its number in two lines.
   on the sensor's saturation, the decode's 5000 K neutral at the white level, `2^0.48` (owner's calls, 2026-11-24), nothing
   measured on the photos and nothing solved on greys, a film's cast its preset's. A colour film's couplers
   are fitted on the enlarger (`examples/coupler_fit.rs`, the paper laid over a render, never part of it);
-  a film with no fit keeps the common matrix, closer than none on all fifteen fitted. There is no film None. spektrafilm's full
-  chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
+  a film with no fit keeps the common matrix, closer than none on all fifteen fitted. The film of no character is the neutral
+  one. spektrafilm's full chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`,
+  `docs/research/colour-diagnosis`).
+- **A new digital photo is shot on the neutral film** (owner's calls, 2026-11-24): a film of no character, first in the list
+  (`stocks/generic-neutral.json`, `VirtualStock::NEUTRAL`), so a photo opens as its decode holds it, its white on the sensor's
+  saturation. Each layer's density above its clear bare film is its `range` times the sRGB code of its own working-space channel's
+  light over the saturation (`neutral_negative`): no spectrum, no coupler, pure dyes, the scene's own light (`balance: scene`), no
+  light exactly on the bare film; its scan is written less the pedestal its reading adds (0.2 % of light at mid-tone otherwise), so
+  the window's share is that code and the pure inversion gives the light back. Its range, 1.0, is a real colour negative's window
+  (Portra 800's green spans 0.99), so the gains and filters, laid in density, move it as they move a scan. Portra 800 stays what a
+  photo storing no film, or a key no file defines, reads.
+- **The grain lies on the developed film** (owner's call, 2026-11-24): a digital photo's alone, uniform in the film's density after
+  its curve (`grain`), so the inversion weakens it toward the white and strengthens it in the shadows as on film; Amount's top
+  spreads a sixteenth of the stock's window (`GRAIN_WINDOW`), its curve by tone rests flat, and halation stays on the scene before
+  the film. A slide's lies on its positive; a scanned negative takes none.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
   profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
   model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. The default paper is

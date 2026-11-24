@@ -29,6 +29,13 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     let stored = || ctl.state.borrow().store().settings().clone();
     let shown = || ctl.state.borrow().shown_settings().cloned().expect("the canvas asked");
     let on = |s: &oni_settings::PipelineSettings| s.film().map(|f| f.stock);
+    // The check reads a film amid its menu's list: the photo is shot on Portra 800 first, as a pick does.
+    let renders = ctl.state.borrow().renders();
+    drop_menu(rig, w);
+    w.global::<oni_app::Stocks>().invoke_picked(crate::stock_hero::stock(VirtualStock::of("kodak-portra-800").catalogue_id()));
+    rig.key("\u{1b}");
+    rig.until("the photo rendered on Portra 800", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.settle();
     // The writes the opening armed land first, so the sidecar stands still unless a pick writes it.
     rig.advance(Duration::from_secs(5));
     rig.settle();

@@ -142,7 +142,7 @@ mod tests {
         let offered: Vec<&str> = offered_stocks().into_iter().map(|(_, k)| k.id).collect();
         assert!(!offered.contains(&"foma-fomapan401"), "the picker no longer lists Foma 401");
         let lines = stocks().iter().filter(|k| k.line).count();
-        assert_eq!(offered.len(), stocks().len() - 1 - lines, "every other stock but the lines is still offered");
+        assert_eq!(offered.len(), stocks().len() - 2 - lines, "every other stock but the lines and the neutral film, which no roll is shot on, is still offered");
         assert!(offered.contains(&"foma-fomapan400") && offered.contains(&"foma-fomapan200"), "twin: the other Fomapans stay");
         for (i, kind) in offered_stocks() {
             assert_eq!(stocks()[i].id, kind.id, "a pick names the stock's place in the catalogue");

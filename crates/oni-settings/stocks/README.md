@@ -54,6 +54,8 @@ A photo keeps the key it was edited on even while no file defines it: it renders
 - `developments`: the stock developed otherwise, a push: each with its own `key`, `name`, `iso`, `dyes` and `film`, on this file's brand, type and canister.
 - `dye_set`: a set of no stock's own, `{"key": …, "mean_of": [film keys]}`, their curves averaged (the generic C-41 stock, in `generic-color-negative.json`).
 
+A film with `neutral: true` is a film of no character, as the shipped `generic-neutral.json`, which a new digital photo is shot on: each layer's density above a clear bare film is the sRGB code of its own channel's light over the sensor's saturation, times the one number its `profile`'s `data` holds, `range`, the density from the bare film to that saturation (over 0, up to 3). It reads no spectrum, has no coupler and its dyes are pure; `balance: scene` leaves the scene the light its decode balanced, where `daylight` or `tungsten` would light it first. The range moves no render at rest, the window being laid on it: it sets how far a gain or a filter, laid in density, moves the picture.
+
 A `colour-slide` stock's film is a reversal film: its profile's curves fall with exposure (Status A, the log H origin where green transmits an 18 % grey), its couplers act on the first developer's negative image, its reference is the windows' rest and its dyes `generic-c41`; a digital photo on it is projected rather than printed. A curve its sheet hides under another's stroke takes that one's points past its own last, listed as inferred (Provia 100F's green and blue under red's).
 
 ## A paper

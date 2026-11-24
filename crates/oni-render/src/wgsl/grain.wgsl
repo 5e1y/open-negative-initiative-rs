@@ -1,5 +1,5 @@
-// `grain`: a texture in stops on a cubic B-spline lattice anchored on the scan's full-resolution grid,
-// each pixel the field's mean over its own footprint, its share read off its light, its own colour deepened where it darkens.
+// `grain`: a texture in stops of the film's light on a cubic B-spline lattice anchored on the scan's full-resolution grid,
+// each pixel the field's mean over its own footprint, its share read off its light, its own colour deepened where the picture darkens.
 
 struct Params {
     // x, y: the photo's seed, added to every lattice index, so each photo lays its own arrangement.
@@ -10,9 +10,13 @@ struct Params {
     row_y: vec4<f32>,
     // x: the stops a unit of the mean moves the light by; y, z: the table's first stop and its nodes a stop.
     dose: vec4<f32>,
-    // x: the share of the blurred scene a clump takes at the whole share; y: one over the field's spread
+    // x: the share of the blurred film a clump takes at the whole share; y: one over the field's spread
     // at full resolution, which a clump's edge is measured in; z: the share of it laid between clumps.
     mix: vec4<f32>,
+    // A negative's light on each layer's bare film, its reading's pedestal added; w: that pedestal.
+    bare: vec4<f32>,
+    // Each layer's window over their mean; w: 1 on a negative, read as shares of its windows, 0 on a positive.
+    layers: vec4<f32>,
     // A node's share, the next node's, its colour and the next one's, `GRAIN_NODES` of them: one row
     // read a pixel, no lane indexed.
     nodes: array<vec4<f32>, 64>,
@@ -54,11 +58,11 @@ fn grain_normal(u: vec4<f32>) -> f32 {
     return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
 }
 
-// `s` darkened or lightened `a` stops, each channel's ratio to the luma raised to 2^(colour × the stops it
+// `s` moved `a` stops, each channel's ratio to the luma raised to 2^(colour × `darkened`, the stops the picture
 // darkens): its own hue deepened, a grey kept grey, its luma the grain's; a channel at or under zero is kept.
-fn grain_laid(s: vec3<f32>, a: f32, colour: f32) -> vec3<f32> {
+fn grain_laid(s: vec3<f32>, a: f32, colour: f32, darkened: f32) -> vec3<f32> {
     let k = exp2(a);
-    let darker = colour * max(-a, 0.0);
+    let darker = colour * max(darkened, 0.0);
     let y = dot(s, LUMA);
     if (darker <= 0.0 || y <= 0.0) { return s * k; }
     let r = s / y;
@@ -68,7 +72,7 @@ fn grain_laid(s: vec3<f32>, a: f32, colour: f32) -> vec3<f32> {
     return p * (k * y / q);
 }
 
-// `at` is the pixel's centre in the graph's pixels, `b` the scene blurred under a grain; a light given no share is kept.
+// `at` is the pixel's centre in the graph's pixels, `b` the film blurred under a grain; a light given no share is kept.
 fn grain_px(s: vec4<f32>, b: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
     let node = grain_node(s.rgb);
     if (node.x <= 0.0) { return s; }
@@ -96,9 +100,16 @@ fn grain_px(s: vec4<f32>, b: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
         }
         field += wy[r] * row;
     }
-    // Inside a clump the scene gives way to its blur, so detail finer than a grain follows the grain; a haze of it between.
+    // Inside a clump the film gives way to its blur, so detail finer than a grain follows the grain; a haze of it between.
     let clump = smoothstep(0.5, 1.5, abs(field) * P.mix.y);
     let w = P.mix.x * node.x * (P.mix.z + (1.0 - P.mix.z) * clump);
     let base = s.rgb + w * (b.rgb - s.rgb);
-    return vec4<f32>(grain_laid(base, P.dose.x * node.x * field, node.y), s.a);
+    let a = P.dose.x * node.x * field;
+    if (P.layers.w > 0.5) {
+        // A negative: each layer read as its share of its window, a lighter film a darker picture, then coded back.
+        let read = pow(max((base + P.bare.w) / P.bare.xyz, vec3<f32>(1e-30)), 1.0 / P.layers.xyz);
+        let laid = grain_laid(read, a, node.y, a);
+        return vec4<f32>(P.bare.xyz * pow(max(laid, vec3<f32>(0.0)), P.layers.xyz) - P.bare.w, s.a);
+    }
+    return vec4<f32>(grain_laid(base, a, node.y, -a), s.a);
 }

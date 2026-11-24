@@ -48,6 +48,13 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     let shown = || ctl.state.borrow().shown_settings().cloned().expect("the canvas asked");
     let on = |s: &oni_settings::PipelineSettings| s.film().map(|f| f.stock);
     let width = || w.global::<Canvas>().get_frame().size().width as usize;
+    // The check reads a film amid its menu's list: the photo is shot on Portra 800 first, as a pick does.
+    let renders = ctl.state.borrow().renders();
+    drop_menu(rig, w);
+    w.global::<oni_app::Stocks>().invoke_picked(crate::stock_hero::stock(VirtualStock::of("kodak-portra-800").catalogue_id()));
+    rig.key("\u{1b}");
+    rig.until("the photo rendered on Portra 800", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.settle();
     rig.advance(Duration::from_secs(5));
     rig.settle();
     let (own, undo) = (stored(), menus.get_live().undo);

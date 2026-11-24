@@ -4758,6 +4758,10 @@ msgid "Missing mask"
 msgstr "Masque manquant"
 
 #: crates/oni-app/src/app/roll_tab.rs
+msgid "The scene's own light, as its decode balanced it"
+msgstr "La lumière propre de la scène, telle que son décodage l’a équilibrée"
+
+#: crates/oni-app/src/app/roll_tab.rs
 msgid "Enlarger filtration: C {c}, M {m}, Y {y}"
 msgstr "Filtrage de l’agrandisseur : C {c}, M {m}, J {y}"
 
@@ -5302,6 +5306,10 @@ msgstr "Positif couleur générique"
 #: crates/oni-app/src/stocks.rs
 msgid "Generic Redscale"
 msgstr "Redscale générique"
+
+#: crates/oni-app/src/stocks.rs
+msgid "Neutral"
+msgstr "Neutre"
 
 #: crates/oni-app/src/updates.rs
 msgid "UPDATE"

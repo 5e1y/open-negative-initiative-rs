@@ -7,7 +7,7 @@
 use crate::common::V4;
 use oni_pipeline::{conversion, paper};
 use oni_render::cpu;
-use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings};
+use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings, VirtualStock};
 
 /// The data-sheet paper the frames print on.
 pub const SHEET_PAPER: PaperStock = PaperStock::of("kodak-royal-digital");
@@ -18,7 +18,7 @@ fn on_print_lift(mut s: PipelineSettings) -> PipelineSettings {
 }
 
 pub fn digital() -> PipelineSettings {
-    on_print_lift(PipelineSettings { print_paper: Some(SHEET_PAPER), ..PipelineSettings::rest(ConversionMode::Digital, true) })
+    on_print_lift(PipelineSettings { print_paper: Some(SHEET_PAPER), ..PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800")) })
 }
 
 pub fn prepared_negative() -> PipelineSettings {

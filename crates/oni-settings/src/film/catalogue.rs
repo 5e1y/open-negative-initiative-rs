@@ -109,7 +109,7 @@ mod tests {
         ids.sort();
         ids.dedup();
         assert_eq!(ids.len(), stocks().len());
-        assert_eq!(stocks().len(), 104, "every stock of the shipped files, Portra 800's pushes included");
+        assert_eq!(stocks().len(), 105, "every stock of the shipped files, Portra 800's pushes and the neutral film included");
         assert_eq!(film_stock(Some("fujifilm-fujicolor")).map(|k| k.brand), Some("Fujifilm"));
         assert_eq!(film_stock(Some("fujifilm-fujicolour")), None);
     }

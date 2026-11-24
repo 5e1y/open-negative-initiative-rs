@@ -20,7 +20,7 @@ pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
         settings.dye_set == stock.dye_set() && (0..3).all(|c| (settings.gains.stops[c] - stops[c]).abs() < SAME)
     };
     // A black and white film and a slide came after format 56: no photo then stood on their reference.
-    let then = |s: &VirtualStock| !s.is_silver() && !s.entry().reversal;
+    let then = |s: &VirtualStock| !s.is_silver() && !s.entry().reversal && !s.entry().neutral;
     if held(film.stock) || !VirtualStock::all().into_iter().filter(then).any(held) {
         return settings;
     }

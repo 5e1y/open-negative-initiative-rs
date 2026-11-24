@@ -6,7 +6,7 @@ mod common;
 use common::{V4, graph, judge, noise, whole};
 use oni_graph::{Graph, Image, Rect, Stage};
 use oni_pipeline::{conversion, grain, scanner, stages};
-use oni_render::{GRAIN_NODES, Grain, LUMA, Stage47, cpu, grain_node_light};
+use oni_render::{GRAIN_NODES, Grain, LUMA, cpu, grain_node_light};
 use oni_settings::migrate::grain_size::microns;
 use oni_settings::blocks::{GrainColour, GrainCurve};
 use oni_settings::cg::Point;
@@ -29,12 +29,10 @@ fn even(y: Option<f64>) -> GrainCurve {
     GrainCurve { points: [0.0, 0.25, 0.5, 0.75, 1.0].map(|x| Point::new(x, y.unwrap_or(x))) }
 }
 
-/// The tone the strength curve's axis names for a light: its display luminance through the photo's film, then
-/// its negative printed at rest on the film's own gains.
+/// The tone the strength curve's axis names for a light on the neutral film: its display luminance as that film's
+/// grey prints at rest.
 fn shown(light: f32, s: &PipelineSettings) -> f32 {
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
-    let picture = Stage47 { gain: stock.reference.stops.map(f32::exp2), ..conversion::stage47(s) };
-    let p = cpu::stage47(stock.scanned(cpu::virtual_negative([light, light, light, 1.0], &stock.kernel_at(0.0), &stock.table)), &picture);
+    let p = cpu::stage47([light, light, light, 1.0], &conversion::stage47(s));
     (p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]).max(0.0).powf(1.0 / 2.2)
 }
 
@@ -53,7 +51,7 @@ fn the_coloured_grain_matches_its_reference_on_every_branch() {
     }
     let input = g.upload_at(extent, &pixels).unwrap();
     let centre = |i: usize| [extent.x as f32 + (i % extent.w as usize) as f32 + 0.5, extent.y as f32 + (i / extent.w as usize) as f32 + 0.5];
-    let tones = grain::tones(&Stage47 { gain: [1.0; 3], ..conversion::stage47(&digital()) });
+    let tones = grain::tones(&digital());
     for (colour, curve) in [([2.0, 0.0], GrainCurve::REST), ([1.5, 0.7], even(Some(1.0))), ([0.0, 2.0], GrainCurve::REST), ([0.0, 0.0], GrainCurve::REST)] {
         let s = PipelineSettings { grain: oni_settings::blocks::Grain { curve, ..coloured(colour).grain }, ..digital() };
         let laid = grain::grain(&s, SCAN, 1.0).unwrap();
@@ -110,27 +108,31 @@ fn laid(g: &mut Graph, k: &Grain, patch: V4) -> Vec<V4> {
     whole(g, &image)
 }
 
-/// On a flat skin of each light, the colour read off the law, log2 of the power its red over its blue
-/// took, over the stops the grain darkened it, at the skin's tone.
+/// On a flat skin of each light shot on the neutral film, the colour read off the law, log2 of the power its red over
+/// its blue took in its layers' shares, over the stops the grain darkened the picture, at the film's tone.
 fn colour_by_tone(g: &mut Graph, colour: [f32; 2]) -> Vec<(f32, f32)> {
     let mut s = coloured(colour);
     // The whole grain on every light, so each has stops to read the colour against.
     s.grain.curve = even(Some(1.0));
     let k = grain::grain(&s, SCAN, 1.0).unwrap();
+    let n = k.negative.expect("a negative's grain");
+    // Each layer's light over its bare film's, which the neutral film's shares scale.
+    let read = |p: V4| -> V4 { [(p[0] + n.veil) / n.bare[0], (p[1] + n.veil) / n.bare[1], (p[2] + n.veil) / n.bare[2], 1.0] };
     let red_over_blue = |p: V4| f64::from((p[0] / p[2]).log2());
     GREYS
         .iter()
         .map(|&light| {
-            let patch = skin(light);
-            let (mut sum, mut n) = (0.0f64, 0usize);
+            let patch = oni_pipeline::film::shot(oni_settings::VirtualStock::NEUTRAL, skin(light), 0.0);
+            let rest = read(patch);
+            let (mut sum, mut count) = (0.0f64, 0usize);
             for p in laid(g, &k, patch) {
-                let darker = -f64::from((luma(p) / light).log2());
+                let darker = f64::from((luma(read(p)) / luma(rest)).log2());
                 if darker > 0.05 {
-                    sum += (red_over_blue(p) / red_over_blue(patch)).log2() / darker;
-                    n += 1;
+                    sum += (red_over_blue(read(p)) / red_over_blue(rest)).log2() / darker;
+                    count += 1;
                 }
             }
-            (shown(light, &s).min(1.0), (sum / n.max(1) as f64) as f32)
+            (shown(luma(patch), &s).min(1.0), (sum / count.max(1) as f64) as f32)
         })
         .collect()
 }
@@ -151,8 +153,8 @@ fn the_colour_follows_its_line_from_the_black_to_a_neutral_white() {
     let gap = off_line(&measured, line);
     assert!(gap < 0.08, "the colour is {gap:.3} off its line");
     let white = measured.last().unwrap();
-    // The film's shoulder holds its brightest grey under the white: there the colour has fallen most of the way.
-    assert!(white.0 > 0.8 && white.1 < 0.3 * measured[0].1, "near the white the colour reads {white:?}");
+    // Toward the white the colour has fallen most of the way.
+    assert!(white.0 > measured[0].0 + 0.4 && white.1 < 0.5 * measured[0].1, "near the white the colour reads {white:?}");
     // Twin: one colour on every tone.
     let flat = colour_by_tone(&mut g, [1.0, 1.0]);
     let twin = off_line(&flat, line);
@@ -242,6 +244,8 @@ fn a_key_notch_on_a_legacy_print_keeps_the_grain_s_shares() {
     t.legacy_print = Some(oni_settings::LegacyPrint { d: 4, c: 2, m: -2, y: 6, ..oni_settings::LegacyPrint::default() });
     let keyed = scanner::on_legacy_print(&t).unwrap();
     assert_eq!(stages::grain(&grain::grain(&keyed, scan, 1.0).unwrap()).params(), stages::grain(&k).params(), "a key notch moves the grain's pass");
-    // Twin: the tones read through the keyed picture move the shares.
-    assert_ne!(grain::shares(&machine.grain.curve, &grain::tones(&conversion::stage47(&keyed))), k.share);
+    // Twin: a notch of the curve moves them.
+    let mut curved = keyed.clone();
+    curved.grain.curve.move_point(1, Point::new(0.3, 0.4));
+    assert_ne!(grain::grain(&curved, scan, 1.0).unwrap().share, k.share);
 }

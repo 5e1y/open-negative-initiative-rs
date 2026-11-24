@@ -73,6 +73,10 @@ pub struct FilmBlock {
     /// Derived from the profile when left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<StockReference>,
+    /// A film of no character: no spectrum, no coupler, pure dyes; its profile's `data` then holds `range` alone, the
+    /// density from its bare film to the sensor's white.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub neutral: bool,
     /// The data sheet's profile as `scripts/datasheet-profiles.py` writes it: `info`, `provenance` and `data`.
     pub profile: Box<RawValue>,
     /// Its own DIR coupler matrix, row the donor layer's density, column the receiving layer's log exposure; the common

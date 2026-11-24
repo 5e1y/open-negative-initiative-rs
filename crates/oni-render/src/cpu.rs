@@ -26,5 +26,6 @@ pub use crate::kernel::stage47::{stage47, windowed};
 pub use crate::kernel::stroke_mask::stroke_mask;
 pub use crate::kernel::texture::{texture_moments, texture_coeff, texture};
 pub use crate::kernel::vignette::vignette;
+pub use crate::kernel::neutral_negative::{neutral_dyes, neutral_negative, screen_code};
 pub use crate::kernel::virtual_negative::{virtual_dyes, virtual_negative};
 pub use crate::kernel::warp::warp;

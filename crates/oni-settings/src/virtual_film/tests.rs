@@ -10,10 +10,10 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
         assert_eq!(levels.green.black, graduation::value(r.black[1], ConversionMode::Negative));
         assert!(levels.windows().iter().all(|w| w.white > w.black), "{stock:?}: {levels:?}");
         let kind = crate::film::film_stock(Some(stock.catalogue_id())).expect("in the catalogue");
-        assert!(!kind.line && kind.offered, "{stock:?}: a precise stock the picker lists, never its line");
+        assert!(!kind.line && kind.offered != stock.entry().neutral, "{stock:?}: a precise stock a roll's picker lists, never its line; no roll is shot on a neutral film");
         assert_eq!(kind.display_name, stock.name(), "{stock:?}");
-        if stock.is_silver() || stock.entry().reversal {
-            // Silver is neutral and a slide is projected, never read as a negative: each rests on the generic set.
+        if stock.is_silver() || stock.entry().reversal || stock.entry().neutral {
+            // Silver and a neutral film are neutral and a slide is projected, never read as a negative: each rests on the generic set.
             assert_eq!((crate::dyes::dye_set(kind.id), stock.dye_set()), (None, DyeSet::of("generic-c41")), "{stock:?}");
             assert!(r.stops == [0.0; 3] && r.black.iter().chain(&r.white).all(|v| *v == r.black[0] || *v == r.white[0]), "{stock:?}: a neutral reference");
         } else {
@@ -35,7 +35,7 @@ fn a_stocks_reference_lies_on_a_negatives_window_and_names_its_dyes() {
 /// A tungsten stock is balanced warmer than a daylight one, at about 2800 K.
 #[test]
 fn a_tungsten_stock_stands_at_its_lamp_and_a_daylight_one_at_d55() {
-    let kelvin = |s: VirtualStock| s.white().kelvin;
+    let kelvin = |s: VirtualStock| s.white().unwrap().kelvin;
     assert!((kelvin(VirtualStock::of("kodak-portra-800")) - 5500.0).abs() < 60.0, "{}", kelvin(VirtualStock::of("kodak-portra-800")));
     for stock in [VirtualStock::of("kodak-vision3-200t"), VirtualStock::of("kodak-vision3-500t")] {
         assert_eq!(stock.balance(), Balance::Tungsten);

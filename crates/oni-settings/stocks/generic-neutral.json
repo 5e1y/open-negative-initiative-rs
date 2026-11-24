@@ -1,0 +1,43 @@
+{
+ "oni": "film",
+ "format": 1,
+ "key": "generic-neutral",
+ "name": "Neutral",
+ "brand": "Generic",
+ "generic": true,
+ "type": "colour-negative",
+ "offered": false,
+ "film": {
+  "key": "neutral",
+  "balance": "scene",
+  "dyes": "generic-c41",
+  "reference": {
+   "stops": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "black": [
+    0.10443662,
+    0.10443662,
+    0.10443662
+   ],
+   "white": [
+    0.40294406,
+    0.40294406,
+    0.40294406
+   ]
+  },
+  "neutral": true,
+  "profile": {
+   "info": {
+    "stock": "neutral",
+    "name": "Neutral",
+    "type": "negative"
+   },
+   "data": {
+    "range": 1.0
+   }
+  }
+ }
+}

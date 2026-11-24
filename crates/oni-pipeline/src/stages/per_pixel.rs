@@ -2,7 +2,7 @@
 
 use super::*;
 use oni_graph::Image;
-use oni_render::{HeldBlack, Negative, Paper};
+use oni_render::{HeldBlack, Negative, NeutralNegative, Paper};
 
 /// A kernel's composed shader; for one reading only its input, its source and its call on `v`, the
 /// input at `p`, so `laid` may run several in one pass.
@@ -38,6 +38,7 @@ kernel!(NEGATIVE_COLOURED, wgsl::NEGATIVE_COLOURED, call "negative_px(v)");
 kernel!(PAPER, wgsl::PAPER, call "paper_px(v)");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
+kernel!(NEUTRAL_NEGATIVE, wgsl::NEUTRAL_NEGATIVE, call "neutral_negative_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
 kernel!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { return flat_field_px(load(p), load1(p)); }");
 kernel!(HELD_BLACK, [wgsl::HELD_BLACK], "fn pixel(p: vec2<i32>) -> vec4<f32> { return held_black_px(load(p), load1(p)); }");
@@ -83,6 +84,11 @@ pub fn exposure(ev: f32) -> PerPixel {
 /// A positive read as its own negative, its light inverted about `k`, held at `floor` below.
 pub fn reciprocal(k: f32, floor: f32) -> PerPixel {
     PerPixel { name: "reciprocal", kernel: &RECIPROCAL, params: uniform(HEAD, &[[k, floor, 0.0, 0.0]]) }
+}
+
+/// The neutral negative: a scene exposed and developed as the screen's code of its light.
+pub fn neutral_negative(k: &NeutralNegative) -> PerPixel {
+    PerPixel { name: "neutral-negative", kernel: &NEUTRAL_NEGATIVE, params: uniform(HEAD, &k.rows()) }
 }
 
 pub fn output_clip() -> PerPixel {

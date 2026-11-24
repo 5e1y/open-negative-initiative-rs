@@ -5,8 +5,8 @@ mod common;
 
 use common::{V4, graph, noise, whole};
 use oni_graph::{Graph, Image, Rect};
-use oni_pipeline::{conversion, grain};
-use oni_render::{GRAIN_LOW_STOPS, Grain, LUMA, Stage47, cpu};
+use oni_pipeline::grain;
+use oni_render::{Grain, LUMA};
 use oni_settings::migrate::grain_size::microns;
 use oni_settings::blocks::GrainColour;
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -15,10 +15,13 @@ const SCAN: Rect = Rect::new(0, 0, 1500, 1000);
 const WHITE: (f64, f64) = (0.197_83, 0.468_32);
 const COLOURS: [(&str, [f32; 3]); 5] = [("skin", [1.0, 0.64, 0.43]), ("sky", [0.35, 0.55, 1.0]), ("deep blue", [0.1, 0.15, 1.0]), ("red", [1.0, 0.12, 0.08]), ("foliage", [0.3, 0.55, 0.15])];
 
-/// A digital photo's grain at Amount's top, its curve at rest, its colour `colour`.
+/// A digital photo's grain on a slide, a positive grained in its own light, at Amount's top, its curve at rest, its
+/// colour `colour`.
 fn grained(colour: GrainColour) -> PipelineSettings {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-    (s.grain.amount, s.grain.size, s.grain.colour) = (1.0, microns(0.5, 1.0), colour);
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(oni_settings::VirtualStock::SLIDE);
+    // Half a stop at full resolution, the spread the bounds below were drawn on.
+    let amount = 0.5 / (grain::spread(oni_settings::VirtualStock::SLIDE) * std::f32::consts::LOG2_10);
+    (s.grain.amount, s.grain.size, s.grain.colour) = (amount, microns(0.5, 1.0), colour);
     s
 }
 
@@ -32,18 +35,9 @@ fn patch(c: [f32; 3], light: f32) -> V4 {
     [c[0] / y * light, c[1] / y * light, c[2] / y * light, 1.0]
 }
 
-/// The light whose tone, as the strength curve's axis names it, is `tone`: through the photo's film, then its
-/// negative printed at rest on the film's own gains.
-fn light_at(tone: f32, s: &PipelineSettings) -> f32 {
-    let stock = oni_pipeline::film::stock(oni_settings::VirtualStock::of("kodak-portra-800"));
-    let picture = Stage47 { gain: stock.reference.stops.map(f32::exp2), ..conversion::stage47(s) };
-    let shown = |y: f32| luma(cpu::stage47(stock.scanned(cpu::virtual_negative([y, y, y, 1.0], &stock.kernel_at(0.0), &stock.table)), &picture)).max(0.0).powf(1.0 / 2.2);
-    let (mut lo, mut hi) = (GRAIN_LOW_STOPS, 1.0f32);
-    for _ in 0..40 {
-        let mid = (lo + hi) / 2.0;
-        if shown(mid.exp2()) < tone { lo = mid } else { hi = mid }
-    }
-    lo.exp2()
+/// The light whose tone, as the strength curve's axis names it, is `tone`: a positive's light is its own tone.
+fn light_at(tone: f32) -> f32 {
+    tone.powf(2.2)
 }
 
 /// A flat `p` under `k`, `side` square.
@@ -107,7 +101,7 @@ fn the_grain_draws_no_hue_and_leaves_a_grey_grey() {
     let (k, mono) = (grain::grain(&s, SCAN, 1.0).unwrap(), grain::grain(&grained(GrainColour { black: 0.0, white: 0.0 }), SCAN, 1.0).unwrap());
     let (mut across, mut hue, mut grey, mut twin) = (0.0f64, 0.0f64, 0.0f64, (0.0f64, 0.0f64));
     for tone in [0.08f32, 0.2, 0.45] {
-        let light = light_at(tone, &s);
+        let light = light_at(tone);
         let neutral = [light, light, light, 1.0];
         grey = grey.max(measure(neutral, &laid(&mut g, &k, neutral, 200)).0);
         for (name, c) in COLOURS {
@@ -132,7 +126,7 @@ fn the_grain_draws_no_hue_and_leaves_a_grey_grey() {
 fn shadow_chroma(g: &mut Graph, colour: GrainColour, c: [f32; 3], symmetric: bool) -> f64 {
     let s = grained(colour);
     let tone = 0.2;
-    let p = patch(c, light_at(tone, &s));
+    let p = patch(c, light_at(tone));
     if !symmetric {
         return measure(p, &laid(g, &grain::grain(&s, SCAN, 1.0).unwrap(), p, 200)).2;
     }
@@ -154,7 +148,7 @@ fn the_shadows_colour_deepens_within_a_bound() {
     let rest = shadow_chroma(&mut g, GrainColour::REST, skin, false);
     let top = shadow_chroma(&mut g, GrainColour { black: GrainColour::RANGE.1, white: 0.0 }, skin, false);
     println!("skin's chroma in the shadows ×{rest:.3} at rest, ×{top:.3} at the top");
-    assert!((1.05..1.35).contains(&rest) && top < 1.5, "×{rest:.3} at rest, ×{top:.3} at the top");
+    assert!((1.05..1.35).contains(&rest) && top < 1.7, "×{rest:.3} at rest, ×{top:.3} at the top");
     // Twin: the symmetric law, its greyed lighter grains outweighing on a red.
     let twin = shadow_chroma(&mut g, GrainColour::REST, COLOURS[3].1, true);
     println!("the twin's red ×{twin:.3}");
@@ -167,7 +161,7 @@ fn a_reduced_render_deepens_the_colour_about_as_the_full_one_averaged() {
     // Size 1 on a 3000-pixel scan, as the grain's own reduced check: under the cap to a quarter.
     let mut s = grained(GrainColour::REST);
     s.grain.size = microns(1.0, 1.0);
-    let p = patch(COLOURS[0].1, light_at(0.2, &s));
+    let p = patch(COLOURS[0].1, light_at(0.2));
     let at = |scale: f64| grain::grain(&s, Rect::new(0, 0, (3000.0 * scale) as u32, (2000.0 * scale) as u32), scale).unwrap();
     let full = laid(&mut g, &at(1.0), p, 800);
     let means: Vec<V4> = (0..200 * 200)

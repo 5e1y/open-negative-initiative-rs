@@ -58,6 +58,8 @@ pub const DYE_AMOUNTS: &str = include_str!("wgsl/dye_amounts.wgsl");
 pub const HELD_BLACK: &str = include_str!("wgsl/held_black.wgsl");
 /// `projection_px(s)`, reading `projection_table(i, row)`.
 pub const PROJECTION: &str = include_str!("wgsl/projection.wgsl");
+/// `neutral_negative_px(s)`.
+pub const NEUTRAL_NEGATIVE: &str = include_str!("wgsl/neutral_negative.wgsl");
 /// `virtual_negative_px(s)`, reading `negative_table(i, j)`.
 pub const VIRTUAL_NEGATIVE: &str = include_str!("wgsl/virtual_negative.wgsl");
 

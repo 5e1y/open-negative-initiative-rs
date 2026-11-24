@@ -46,7 +46,7 @@ fn main() {
         write(out, "owner", &e.render(&negative, &owner, Some(side)).unwrap());
         write(out, "placed", &e.render(&negative, &placed, Some(side)).unwrap());
     }
-    for stock in VirtualStock::all() {
+    for stock in VirtualStock::sheets() {
         if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.key())) {
             continue;
         }

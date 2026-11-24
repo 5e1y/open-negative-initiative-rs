@@ -45,7 +45,7 @@ fn main() {
         _ => "no-gpu".into(),
     };
     let papers: Vec<Option<PaperStock>> = std::iter::once(None).chain(PaperStock::all().into_iter().map(Some)).collect();
-    for stock in VirtualStock::all() {
+    for stock in VirtualStock::sheets() {
         let key = serde_json::to_string(&stock).unwrap();
         let baked = film::stock(stock);
         for paper in [None, Some(PaperStock::default())] {

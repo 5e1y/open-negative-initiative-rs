@@ -190,7 +190,11 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
                 .map(|b| {
                     let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
                     let reversal = f.kind == FilmType::ColourSlide;
-                    film::derive(b.profile.get(), b.balance, silver, reversal, couplers).map_err(|e| format!("the film \"{}\": {e}", b.key))
+                    let derived = match b.neutral {
+                        true => film::derive_neutral(b.profile.get()),
+                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
+                    };
+                    derived.map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })
                 .collect()
         }

@@ -61,7 +61,7 @@ fn between_clumps_the_pixel_stays_sharp_and_inside_one_it_takes_the_blur_at_its_
             inside += 1;
             let w = 0.8 * 0.6;
             let base = with_alpha(map(rgb(SHARP), |c, v| v + w * (BLURRED[c] - v)), 1.0);
-            assert_eq!(out, laid(base, k.stops * 0.6 * f, 2.0), "at {at:?}: a clump takes another dose");
+            assert_eq!(out, laid(base, k.stops * 0.6 * f, 2.0, -k.stops * 0.6 * f), "at {at:?}: a clump takes another dose");
         }
         // The mix is convex: the base never leaves the span from the pixel to its blur.
         let w = mixed(f, 0.6, &k);
