@@ -218,8 +218,8 @@ fn a_digital_photo_s_film_effects_at_rest_and_on_a_notch() {
     }
 }
 
-/// The virtual negative's pass on the region a full-screen window shows at full resolution on a 16" Retina
-/// display, 3456 × 2234 pixels, against one plain per-pixel pass on it.
+/// The virtual negative's pass and its scan's on the region a full-screen window shows at full resolution on a 16"
+/// Retina display, 3456 × 2234 pixels, against one plain per-pixel pass on it.
 #[test]
 fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
     if std::env::var_os("ONI_BENCH_COST").is_none() {
@@ -239,13 +239,17 @@ fn the_virtual_negative_s_gpu_time_on_a_full_screen_region() {
     let (tw, th) = stock.kernel.table_size();
     let table = g.upload(tw as u32, th as u32, &stock.table).unwrap();
     let film = Image::new(&source).then_reading(stages::virtual_negative(&stock.kernel_at(0.3)), &[Image::new(&table)]);
+    let scan = stock.scan.as_ref().expect("a colour negative is scanned");
+    let dyes = g.upload(scan.projection.bands as u32, 2, &scan.table).unwrap();
+    let scanned = film.clone().then_reading(stages::projection(&scan.projection), &[Image::new(&dyes)]);
     let plain = Image::new(&source).then(stages::luma_only());
-    let (mut a, mut b) = (Vec::new(), Vec::new());
+    let (mut a, mut b, mut c) = (Vec::new(), Vec::new(), Vec::new());
     for _ in 0..RUNS {
         a.push(ms(&mut g, &film));
-        b.push(ms(&mut g, &plain));
+        b.push(ms(&mut g, &scanned));
+        c.push(ms(&mut g, &plain));
     }
-    println!("virtual negative on {w}x{h}: {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b));
+    println!("virtual negative on {w}x{h}: {:.2} ms, scanned {:.2} ms; one plain per-pixel pass {:.2} ms", median(a), median(b), median(c));
 }
 
 /// A print notch on the same full-screen region: the paper laid with the rest of stage 4-7 in one pass, against ONI's own
@@ -263,7 +267,7 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
     let pixels: Vec<[f32; 4]> = (0..w * h)
         .map(|i| {
             let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
-            oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table)
+            stock.scanned(oni_render::cpu::virtual_negative([0.01 + 2.0 * x * x, 0.02 + y, 0.05 + x * y, 1.0], &stock.kernel, &stock.table))
         })
         .collect();
     let source = g.upload(w, h, &pixels).unwrap();

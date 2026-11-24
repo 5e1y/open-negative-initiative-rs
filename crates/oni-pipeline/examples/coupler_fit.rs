@@ -1,156 +1,29 @@
 //! `coupler_fit <out> <stock>=<reference>... -- <scene.f32>...`: each stock's six cross-layer coupler terms fitted so its
-//! digital render's colour crosstalk (a colour against the same channels each sent alone through the grey response)
-//! matches its reference's, on a set of chart colours; then each scene rendered on the common and the fitted matrix.
+//! digital render matches its reference on a chart, the ColorChecker, Oklch rings and a grey ramp: a negative printed by the
+//! virtual enlarger on no paper (the paper is laid over a render, never part of it), a slide projected, each patch's
+//! Oklab distance to the reference's, the render's grey matched to the reference's, the ramp weighted. Then each scene rendered on the common and the
+//! fitted matrix.
 
+mod chart;
+
+use chart::{Cube, M3, RAMP, Render, V3, colours, judged, oklab, printed};
 use oni_pipeline::film::{self, bake::COUPLERS, profile::Profile};
-use oni_pipeline::conversion;
-use oni_render::{ColorMatrix, Stage47, cpu};
-use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+use oni_settings::VirtualStock;
 use std::io::Write;
 use std::path::Path;
 
-type V3 = [f64; 3];
-type M3 = [[f64; 3]; 3];
+/// The ramp's weight against one colour patch: a tint on the neutral axis shows on every photo.
+const NEUTRAL_WEIGHT: f64 = 2.0;
 
-const SRGB_TO_XYZ: M3 = [[0.4124564, 0.3575761, 0.1804375], [0.2126729, 0.7151522, 0.0721750], [0.0193339, 0.1191920, 0.9503041]];
-const M2020: M3 = [[0.6369580, 0.1446169, 0.1688810], [0.2627002, 0.6779981, 0.0593017], [0.0, 0.0280727, 1.0609851]];
-
-fn mul(m: &M3, v: V3) -> V3 {
-    std::array::from_fn(|i| m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2])
-}
-fn matmul(a: &M3, b: &M3) -> M3 {
-    std::array::from_fn(|i| std::array::from_fn(|j| (0..3).map(|k| a[i][k] * b[k][j]).sum()))
-}
-fn inv(m: &M3) -> M3 {
-    let d = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-    let c = |a: usize, b: usize, e: usize, f: usize| m[a][b] * m[e][f] - m[a][f] * m[e][b];
-    [
-        [c(1, 1, 2, 2) / d, -c(0, 1, 2, 2) / d, c(0, 1, 1, 2) / d],
-        [-c(1, 0, 2, 2) / d, c(0, 0, 2, 2) / d, -c(0, 0, 1, 2) / d],
-        [c(1, 0, 2, 1) / d, -c(0, 0, 2, 1) / d, c(0, 0, 1, 1) / d],
-    ]
-}
-fn dec(v: f64) -> f64 {
-    if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }
-}
-fn enc(v: f64) -> f64 {
-    let v = v.clamp(0.0, 1.0);
-    if v <= 0.0031308 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 }
-}
-/// sRGB code to Oklab.
-fn oklab(code: V3) -> V3 {
-    let [r, g, b] = code.map(dec);
-    let l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b).cbrt();
-    let m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b).cbrt();
-    let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
-    [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s]
-}
-/// Oklch to linear sRGB.
-fn oklch(l: f64, c: f64, h: f64) -> V3 {
-    let (a, b) = (c * h.cos(), c * h.sin());
-    let l_ = (l + 0.3963377774 * a + 0.2158037573 * b).powi(3);
-    let m_ = (l - 0.1055613458 * a - 0.0638541728 * b).powi(3);
-    let s_ = (l - 0.0894841775 * a - 1.2914855480 * b).powi(3);
-    [4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_, -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_, -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_]
+fn weight(i: usize, chart: usize) -> f64 {
+    if i + RAMP.len() >= chart { NEUTRAL_WEIGHT } else { 1.0 }
 }
 
-struct Cube {
-    n: usize,
-    nodes: Vec<V3>,
-}
-impl Cube {
-    fn read(path: &str) -> Cube {
-        let (_, look) = oni_settings::stocks::cube::read(&std::fs::read(path).unwrap()).unwrap();
-        Cube { n: look.size, nodes: look.nodes.iter().map(|p| [p[0] as f64, p[1] as f64, p[2] as f64]).collect() }
-    }
-    fn at(&self, c: V3) -> V3 {
-        let n = self.n;
-        let p = c.map(|v| v.clamp(0.0, 1.0) * (n - 1) as f64);
-        let i = p.map(|v| (v.floor() as usize).min(n - 2));
-        let f: V3 = std::array::from_fn(|k| p[k] - i[k] as f64);
-        let mut out = [0.0; 3];
-        for (db, dg, dr) in (0..8).map(|q| (q >> 2 & 1, q >> 1 & 1, q & 1)) {
-            let w = (if db == 1 { f[2] } else { 1.0 - f[2] }) * (if dg == 1 { f[1] } else { 1.0 - f[1] }) * (if dr == 1 { f[0] } else { 1.0 - f[0] });
-            let node = self.nodes[(i[0] + dr) + n * (i[1] + dg) + n * n * (i[2] + db)];
-            (0..3).for_each(|k| out[k] += w * node[k]);
-        }
-        out
-    }
-}
-
-/// A digital photo's render on `stock` baked through `couplers`, at rest on the default paper, as a CPU chain; a slide
-/// projected.
-struct Render {
-    stock: film::Stock,
-    projected: Option<&'static film::projection::Projected>,
-    white: ColorMatrix,
-    k47: Stage47,
-    to_2020: M3,
-    from_2020: M3,
-}
-impl Render {
-    fn new(key: &'static str, couplers: M3) -> Render {
-        let v = VirtualStock::of(key);
-        let stock = film::bake_through(&v.entry(), couplers).unwrap();
-        let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(v);
-        s.gains.stops = stock.reference.stops;
-        s.levels = stock.reference.levels();
-        let to_2020 = matmul(&inv(&M2020), &SRGB_TO_XYZ);
-        let projected = v.entry().reversal.then(|| film::projection::projected(v));
-        Render { white: conversion::scene_white(&s).unwrap(), k47: conversion::stage47(&s), to_2020, from_2020: inv(&to_2020), stock, projected }
-    }
-    /// Scene light in linear Rec. 2020 to the print's display code.
-    fn scene(&self, p: V3) -> V3 {
-        let lit = cpu::color_matrix([p[0] as f32, p[1] as f32, p[2] as f32, 1.0], &self.white);
-        let neg = cpu::virtual_negative(lit, &self.stock.kernel_at(0.0), &self.stock.table);
-        let out = match self.projected {
-            Some(p) => cpu::projection(neg, &p.projection, &p.table),
-            None => cpu::stage47(neg, &self.k47),
-        };
-        mul(&self.from_2020, [out[0] as f64, out[1] as f64, out[2] as f64]).map(enc)
-    }
-    /// A display code read as the scene it encodes.
-    fn code(&self, c: V3) -> V3 {
-        self.scene(mul(&self.to_2020, c.map(dec)))
-    }
-}
-
-/// The crosstalk of `f` on `c`: its colour against each channel sent alone through its grey response, in Oklab.
-fn crosstalk(f: &dyn Fn(V3) -> V3, c: V3) -> V3 {
-    let alone: V3 = std::array::from_fn(|k| f([c[k]; 3])[k]);
-    let (a, b) = (oklab(f(c)), oklab(alone));
-    std::array::from_fn(|k| a[k] - b[k])
-}
-
-/// The chart's colours: the ColorChecker's chromatic patches and Oklch rings held in sRGB, as display codes.
-fn colours() -> Vec<V3> {
-    let cc: [V3; 18] = [
-        [37.54, 14.37, 14.92], [64.66, 19.27, 17.5], [49.32, -3.82, -22.54], [43.46, -12.74, 22.72], [54.94, 9.61, -24.79], [70.48, -32.26, -0.37],
-        [62.73, 35.83, 56.5], [39.43, 10.75, -45.17], [50.57, 48.64, 16.67], [30.1, 22.54, -20.87], [71.77, -24.13, 58.19], [71.51, 18.24, 67.37],
-        [28.37, 15.42, -49.8], [54.38, -39.72, 32.27], [42.43, 51.05, 28.62], [81.8, 2.67, 80.41], [50.63, 51.28, -14.12], [49.57, -29.71, -28.32],
-    ];
-    let brad: M3 = [[0.9555766, -0.0230393, 0.0631636], [-0.0282895, 1.0099416, 0.0210077], [0.0122982, -0.0204830, 1.3299098]];
-    let to_srgb = inv(&SRGB_TO_XYZ);
-    let mut out: Vec<V3> = cc
-        .iter()
-        .map(|&[l, a, b]| {
-            let fy = (l + 16.0) / 116.0;
-            let f = |t: f64| if t.powi(3) > 0.008856 { t.powi(3) } else { (t - 16.0 / 116.0) / 7.787 };
-            let xyz = [0.96422 * f(fy + a / 500.0), f(fy), 0.82521 * f(fy - b / 200.0)];
-            mul(&to_srgb, mul(&brad, xyz)).map(enc)
-        })
-        .collect();
-    for l in [0.5, 0.65, 0.8] {
-        for c in [0.05, 0.1] {
-            for h in 0..12 {
-                let lin = oklch(l, c, h as f64 * std::f64::consts::TAU / 12.0);
-                if lin.iter().all(|v| (0.0..=1.0).contains(v)) {
-                    out.push(lin.map(enc));
-                }
-            }
-        }
-    }
-    out
+/// The mean weighted squared Oklab distance of the printed chart to the reference's.
+fn loss(printed: &[V3], targets: &[V3]) -> f64 {
+    let n = targets.len();
+    let total: f64 = (0..n).map(|i| weight(i, n) * (0..3).map(|k| (printed[i][k] - targets[i][k]).powi(2)).sum::<f64>()).sum();
+    total / (0..n).map(|i| weight(i, n)).sum::<f64>()
 }
 
 /// Whether `couplers` fold one of `key`'s layers back, which the stock files refuse.
@@ -160,11 +33,6 @@ fn folds(key: &'static str, couplers: &M3) -> bool {
     let develop = if entry.reversal { film::bake::curves_falling } else { film::bake::curves_through };
     let (first, _) = develop(&p.log_exposure, &p.density_curves, couplers);
     film::bake::folds(&p.log_exposure, &first, couplers)
-}
-
-fn loss(render: &Render, targets: &[(V3, V3)]) -> f64 {
-    let f = |c: V3| render.code(c);
-    targets.iter().map(|(c, t)| crosstalk(&f, *c).iter().zip(t).map(|(a, b)| (a - b).powi(2)).sum::<f64>()).sum::<f64>() / targets.len() as f64
 }
 
 /// The common matrix's diagonal and `off` across it; a reversal film's diagonal left out, its curves steep enough that a
@@ -267,25 +135,32 @@ fn main() {
         let key: &'static str = Box::leak(key.to_string().into_boxed_str());
         let cube = Cube::read(path);
         let reversal = VirtualStock::of(key).entry().reversal;
-        let targets: Vec<(V3, V3)> = colours.iter().map(|&c| (c, crosstalk(&|x| cube.at(x), c))).collect();
+        let targets: Vec<V3> = colours.iter().map(|&c| oklab(cube.at(c))).collect();
+        let of = |m: M3| printed(&Render::new(key, m), &colours, &cube);
         let started = std::time::Instant::now();
-        let common = loss(&Render::new(key, COUPLERS), &targets);
-        let bare = loss(&Render::new(key, with(&[0.0; 6], reversal)), &targets);
+        let (common, bare) = (of(COUPLERS), of(with(&[0.0; 6], reversal)));
         println!("{key}: one render {:.2} s", started.elapsed().as_secs_f64() / 2.0);
         let x0 = [COUPLERS[0][1], COUPLERS[0][2], COUPLERS[1][0], COUPLERS[1][2], COUPLERS[2][0], COUPLERS[2][1]];
         // From the common matrix and from no cross term, the better kept: one start can stall where the other does not.
-        let fit = |start| minimise(&|x| if folds(key, &with(x, reversal)) { f64::INFINITY } else { loss(&Render::new(key, with(x, reversal)), &targets) }, start, 220);
+        let fit = |start| minimise(&|x| if folds(key, &with(x, reversal)) { f64::INFINITY } else { loss(&of(with(x, reversal)), &targets) }, start, 260);
         let ((a, fa), (b, fb)) = (fit(x0), fit([0.0; 6]));
-        let (best, fitted) = if fa <= fb { (a, fa) } else { (b, fb) };
+        let best = if fa <= fb { a } else { b };
         let m = with(&best, reversal);
+        let fitted = of(m);
         // Kodak's ratio reads a negative's rising curves; a reversal film's fall, and none is told.
         let none = ([f64::NAN; 3], [f64::NAN; 3]);
         let (gamma, ratio) = if reversal { none } else { ratios(key, &m) };
         let (_, common_ratio) = if reversal { none } else { ratios(key, &COUPLERS) };
         let rounded = |v: f64| (v * 1000.0).round() / 1000.0;
+        let told = |p: &[V3]| {
+            let [de, dl, chroma, ramp, cube_ramp] = judged(p, &targets);
+            format!("loss {:.6}, mean dE00 {de:.2} (|dL*| {dl:.2}), ColorChecker chroma {chroma:.3} of the reference's, ramp C* {ramp:.2} (reference {cube_ramp:.2})", loss(p, &targets))
+        };
         let line = format!(
-            "{key}\n  crosstalk error (Oklab², mean): common {common:.6}, no cross term {bare:.6}, fitted {fitted:.6}\n  fitted {:?}\n  \
-             layer gammas {:?}; interimage ratios R/G/B common {:?}, fitted {:?}\n",
+            "{key}\n  common: {}\n  no cross term: {}\n  fitted: {}\n  fitted {:?}\n  layer gammas {:?}; interimage ratios R/G/B common {:?}, fitted {:?}\n",
+            told(&common),
+            told(&bare),
+            told(&fitted),
             m.map(|r| r.map(rounded)),
             gamma.map(|v| (v * 100.0).round() / 100.0),
             common_ratio.map(|v| (v * 100.0).round() / 100.0),

@@ -100,7 +100,7 @@ pub fn scanned(stock: VirtualStock) -> StockReference {
 /// `settings` of `version` on its stock's reference of the layers' own densities.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
-        Some(film) if version < LAYER_DENSITIES_VERSION => onto(settings, scanned(film.stock), film.stock.reference()),
+        Some(film) if version < LAYER_DENSITIES_VERSION => onto(settings, scanned(film.stock), super::digital_scan::layered(film.stock)),
         _ => settings,
     }
 }
@@ -119,7 +119,7 @@ mod tests {
         photo.levels = was.levels();
         photo.levels.red.white += 0.05;
         let landed = caught_up(LAYER_DENSITIES_VERSION - 1, photo.clone());
-        let now = stock.reference();
+        let now = super::super::digital_scan::layered(stock);
         assert!((0..3).all(|c| (landed.gains.stops[c] - (now.stops[c] + 0.25)).abs() < 1e-6), "{:?}", landed.gains.stops);
         assert!((landed.levels.red.white - (now.levels().red.white + 0.05)).abs() < 1e-5, "{:?}", landed.levels.red);
         // Twin: a photo of this format stays where it stands.

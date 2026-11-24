@@ -1,6 +1,8 @@
-//! A reversal film's slide projected on a white screen: its dyes over the base filter a projector's tungsten-halogen
-//! lamp, and the eye, adapted to the bare film's light on the screen, sees the rest with the room's veil laid over. A
-//! scanned slide is read back to those dyes first, its light under the scanner's lamp solved for their amounts.
+//! Light through a film's dyes. A reversal film's slide projected on a white screen: its dyes over the base filter a
+//! projector's tungsten-halogen lamp, and the eye, adapted to the bare film's light on the screen, sees the rest with the
+//! room's veil laid over. A scanned slide is read back to those dyes first, its light under the scanner's lamp solved for
+//! their amounts. A colour negative is scanned as a real one is: the scanner's lamp through its dyes and its orange base,
+//! seen by an RGB camera balanced on the lamp.
 
 use super::{bake, cie, profile::Profile};
 use crate::baked::Baked;
@@ -48,6 +50,13 @@ impl Scanned {
     pub fn at(&self, stops: V3) -> DyeAmounts {
         DyeAmounts { gain: std::array::from_fn(|c| stops[c].exp2() * self.open[c]), ..self.kernel.clone() }
     }
+}
+
+/// A colour negative's scan: its dyes and base, then the scanner's lamp as the camera sees it, two rows of the bands.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Scan {
+    pub projection: Projection,
+    pub table: Vec<[f32; 4]>,
 }
 
 /// `stock`'s slide projected, built at its first use; a film's file edited builds it again.
@@ -99,6 +108,26 @@ fn seen(kelvin: f64, base: &[f64]) -> (Vec<[f64; 3]>, M3) {
     (seen, matmul(&inverse(&REC2020), &matmul(&inverse(&BRADFORD), &matmul(&gain, &BRADFORD))))
 }
 
+/// The dyes and the base, then the lamp as seen, as the projection kernel reads them.
+fn tabled(dyes: &[[f64; 3]], base: &[f64], seen: &[[f64; 3]]) -> Vec<[f32; 4]> {
+    let n = cie::WAVELENGTHS;
+    let mut table = vec![[0.0f32; 4]; 2 * n];
+    for i in 0..n {
+        table[i] = [dyes[i][0] as f32, dyes[i][1] as f32, dyes[i][2] as f32, base[i] as f32];
+        table[n + i] = [seen[i][0] as f32, seen[i][1] as f32, seen[i][2] as f32, 0.0];
+    }
+    table
+}
+
+/// A colour negative of `profile` scanned under the scanner's daylight lamp, the 1931 observer standing in for an RGB
+/// camera balanced on the lamp through no film: each layer's amount, coded as `10^-amount`, to the scan's light.
+pub fn scanner(profile: &Profile) -> Scan {
+    let (dyes, base) = dyes(profile);
+    let (seen, to_working) = seen(SCAN_KELVIN, &[0.0; cie::WAVELENGTHS]);
+    let projection = Projection { to_working: to_working.map(|r| r.map(|v| v as f32)), flare: 0.0, bands: cie::WAVELENGTHS };
+    Scan { projection, table: tabled(&dyes, &base, &seen) }
+}
+
 fn read(entry: &VirtualEntry) -> Profile {
     Profile::read(entry.profile.as_bytes()).expect("a stock's profile reads once its file is taken")
 }
@@ -107,13 +136,8 @@ fn project(entry: &VirtualEntry) -> Projected {
     let profile = read(entry);
     let (dyes, base) = dyes(&profile);
     let (seen, to_working) = seen(LAMP_KELVIN, &base);
-    let n = cie::WAVELENGTHS;
-    let mut table = vec![[0.0f32; 4]; 2 * n];
-    for i in 0..n {
-        table[i] = [dyes[i][0] as f32, dyes[i][1] as f32, dyes[i][2] as f32, base[i] as f32];
-        table[n + i] = [seen[i][0] as f32, seen[i][1] as f32, seen[i][2] as f32, 0.0];
-    }
-    let projection = Projection { to_working: to_working.map(|r| r.map(|v| v as f32)), flare: FLARE, bands: n };
+    let table = tabled(&dyes, &base, &seen);
+    let projection = Projection { to_working: to_working.map(|r| r.map(|v| v as f32)), flare: FLARE, bands: cie::WAVELENGTHS };
     let densest: V3 = std::array::from_fn(|c| profile.density_curves.iter().map(|d| d[c]).fold(f64::NEG_INFINITY, f64::max) as f32);
     let shown = cpu::projection([10f32.powf(-densest[0]), 10f32.powf(-densest[1]), 10f32.powf(-densest[2]), 1.0], &projection, &table);
     Projected { projection, table, black: [shown[0], shown[1], shown[2]], revision: entry.revision }
@@ -129,11 +153,7 @@ fn scan(entry: &VirtualEntry) -> Scanned {
     let observed: Vec<[f64; 3]> = seen.iter().map(|s| std::array::from_fn(|c| s[c] / white[c])).collect();
     let back = inverse(&to_working);
     let to_seen: [V3; 3] = std::array::from_fn(|r| std::array::from_fn(|c| (back[r][c] / white[r]) as f32));
-    let mut table = vec![[0.0f32; 4]; 2 * n];
-    for i in 0..n {
-        table[i] = [dyes[i][0] as f32, dyes[i][1] as f32, dyes[i][2] as f32, base[i] as f32];
-        table[n + i] = [observed[i][0] as f32, observed[i][1] as f32, observed[i][2] as f32, 0.0];
-    }
+    let table = tabled(&dyes, &base, &observed);
     let light = |amounts: [f64; 3]| -> [f64; 3] {
         let t = |i: usize| 10f64.powf(-(base[i] + (0..3).map(|k| amounts[k] * dyes[i][k]).sum::<f64>()));
         std::array::from_fn(|c| (0..n).map(|i| t(i) * observed[i][c]).sum())

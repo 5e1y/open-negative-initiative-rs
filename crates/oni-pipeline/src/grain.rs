@@ -74,11 +74,10 @@ fn scene_tones(s: &PipelineSettings) -> [f32; GRAIN_NODES] {
     let picture = Stage47 { gain: [1.0; 3], ..conversion::stage47(&rest) };
     let Some(f) = s.film() else { return tones(&picture) };
     let stock = film::stock(f.stock);
-    let kernel = stock.kernel_at(f.exposure);
     let developed = Stage47 { gain: f.stock.reference().stops.map(f32::exp2), ..picture };
     std::array::from_fn(|i| {
         let y = grain_node_light(i);
-        let shown = cpu::stage47(cpu::virtual_negative([y, y, y, 1.0], &kernel, &stock.table), &developed);
+        let shown = cpu::stage47(stock.shot([y, y, y, 1.0], f.exposure), &developed);
         let luma = shown[0] * LUMA[0] + shown[1] * LUMA[1] + shown[2] * LUMA[2];
         luma.max(0.0).powf(1.0 / Print::DISPLAY_GAMMA)
     })

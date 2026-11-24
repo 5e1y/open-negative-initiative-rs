@@ -120,6 +120,9 @@ pub const LAYER_DENSITIES_VERSION: i64 = 69;
 /// digital photo on a reversal film named dropped, its scan read back to its roll's reversal film, a key a build before
 /// it would read as another paper's print.
 pub const SLIDE_PROJECTOR_VERSION: i64 = 70;
+/// The version a digital photo's negative came to be scanned as a real one is, through its dyes and base under a white
+/// lamp: its gains and windows move onto its stock's new reference.
+pub const DIGITAL_SCAN_VERSION: i64 = 71;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

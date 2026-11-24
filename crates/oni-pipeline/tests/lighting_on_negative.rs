@@ -62,7 +62,7 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
 }
@@ -93,7 +93,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
     // pure dyes, its white on pure white without Print lift.
-    const BEFORE: u64 = 0x4cd6_b1cc_4f5f_f273;
+    const BEFORE: u64 = 0x6b77_84fc_16dc_656e;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -124,7 +124,7 @@ fn shot_on(stock: VirtualStock) -> PipelineSettings {
 fn scanned(stock: VirtualStock, stops: f32) -> Vec<V4> {
     let baked = film::stock(stock);
     let k = baked.kernel_at(stops);
-    scene().iter().map(|p| cpu::virtual_negative(*p, &k, &baked.table)).collect()
+    scene().iter().map(|p| baked.scanned(cpu::virtual_negative(*p, &k, &baked.table))).collect()
 }
 
 fn lit(s: &PipelineSettings, f: impl Fn(&mut Print)) -> PipelineSettings {
@@ -199,15 +199,17 @@ fn on_a_digital_photo_lightings_exposure_is_the_films() {
         for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
             let s = PipelineSettings { print_paper: paper, ..digital().on_stock(stock) };
             let baked = film::stock(stock);
-            let shoot = |stops: f32| -> Vec<V4> { scene().iter().map(|p| cpu::virtual_negative(*p, &baked.kernel_at(stops), &baked.table)).collect() };
+            let shoot = |stops: f32| -> Vec<V4> { scene().iter().map(|p| baked.scanned(cpu::virtual_negative(*p, &baked.kernel_at(stops), &baked.table))).collect() };
             let by_film = printed(&shoot(1.0), &conversion::stage47(&s));
             let by_lighting = printed(&shoot(0.0), &conversion::stage47(&lit(&s, |p| p.exposure += 1.0)));
             let (worst, median) = apart(&by_lighting, &by_film);
             println!("{stock:?} on {pipe}: Lighting's Exposure +1 from Film's +1, ΔE worst {worst:.2}, median {median:.2}");
-            assert!(worst < 3.5 && median < 0.3, "{stock:?}, {pipe}");
+            // Lighting reads the scan as a real negative's, through the stock's coupled curves: the dyes' crosstalk in the
+            // scan leaves a median of 0.4 on Portra 800 and 1.6 on its push 2, whose steeper curves read it the most.
+            assert!(worst < 12.0 && median < 1.8, "{stock:?}, {pipe}: worst {worst}, median {median}");
             // Twin: half a stop on the film is another print.
             let (_, half) = apart(&printed(&shoot(0.5), &conversion::stage47(&s)), &by_film);
-            assert!(half > 5.0 * median, "{stock:?}, {pipe}: {half}");
+            assert!(half > 2.0 * median, "{stock:?}, {pipe}: {half}");
         }
     }
 }

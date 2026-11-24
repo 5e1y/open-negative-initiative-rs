@@ -140,7 +140,7 @@ fn the_gpu_prints_on_the_neutral_paper_as_its_reference_does() {
     let Some(mut g) = graph("the_gpu_prints_on_the_neutral_paper_as_its_reference_does") else { return };
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
     let (w, h) = (31, 19);
-    let mut pixels: Vec<V4> = noise(w, h, 11, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
+    let mut pixels: Vec<V4> = noise(w, h, 11, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
     let edges: [V4; 5] = [[0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0], [-0.1, 0.2, 0.3, 1.0], [3.0, 2.0, 1.0, 1.0], [1e-6, 0.4, 0.002, 0.5]];
     pixels[..edges.len()].copy_from_slice(&edges);
     let source = g.upload(w, h, &pixels).unwrap();
