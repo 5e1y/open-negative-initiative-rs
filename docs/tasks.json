@@ -13141,5 +13141,13 @@
     "status": "done",
     "detail": "Each reading carried three name vectors and a copy of its grid for the Blocks self-check's diagnostics, which no reader took. With Grid::name, name_of, Report and Reading.report gone, the ends are a fold of the kept cells' tail values by the same `<` comparison from the first kept cell on, so they are bit for bit the values first_min and first_max chose, NaN included.",
     "outcome": "cargo test -p oni-measure green; the naming asserts go, the window check reads the grid over the window itself (Grid::new(right).columns == 8)."
+  },
+  {
+    "id": 3769,
+    "type": "simplification",
+    "title": "One ordered list of the typed migration steps: reading and both branches of document run the steps past the grain's through typed_steps",
+    "status": "done",
+    "detail": "migrate::reading and the two branches of migrate::document each re-listed the same twelve typed steps (digital film to departure), so a new step had to be added three times. They now call one private typed_steps, each passing what it passed before: the stored settings to the digital film's step (none on a document's earlier branch) and to the datasheet's, its scanner and its former print. A pure refactor: every step, its order and its inputs stay as they were. The fuller fold the proposal sketched (one read_through for sidecar and document, unfiled facts) was not done: it would refuse a named document whose envelope fields do not type and read a current one with a malformed scanner key, where today the opposite holds, and the facts-asking steps (matrices, strokes, grain, scan line) and the two envelopes still differ by path.",
+    "outcome": "cargo test -p oni-settings green but for sweep_pass's unix-permission twin, which cannot hold where the build's scratch folder lies on exFAT (the T7): no step's output moves, the corpus readings unchanged."
   }
 ]
