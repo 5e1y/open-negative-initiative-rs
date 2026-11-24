@@ -1,13 +1,10 @@
 //! A slide roll: Prepare the Roll places one window and lays the gains of the white picked on every
 //! slide, its level held, each projected on no paper; none picked, none laid; never a roll reference nor a contact sheet.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -32,12 +29,7 @@ fn alike(s: &PipelineSettings) -> bool {
 }
 
 pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the slides are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-slides-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("slides");
     let (slides, negatives) = (root.join("Slides"), root.join("Negatives"));
     cast(&slides);
     cast(&negatives);
@@ -51,15 +43,8 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
         sidecar::write(&measured, &canonical(&negatives, i), WriteOptions::default()).unwrap();
         sidecar::write(&slide, &canonical(&slides, i), WriteOptions::default()).unwrap();
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p, panel) = (w.global::<Library>(), w.global::<Preparing>(), w.global::<PanelState>());
@@ -172,5 +157,4 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     rig.settle();
     rig.until("every slide at rest", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains.stops == [0.0; 3] && disk(i).measured_gains.is_none()));
 
-    let _ = std::fs::remove_dir_all(&root);
 }

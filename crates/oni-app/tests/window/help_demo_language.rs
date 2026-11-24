@@ -32,7 +32,8 @@ fn playing(rig: &common::Rig, tip: &Tip) -> Vec<u8> {
 }
 
 pub(crate) fn a_worded_demo_plays_in_the_app_s_language() {
-    let Some((rig, shell, root)) = opened("help-demo-language") else { return };
+    let Some(app) = opened("help-demo-language") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let tip = w.global::<Tip>();
     w.global::<PanelState>().set_tab(PanelTab::Roll);
@@ -43,9 +44,9 @@ pub(crate) fn a_worded_demo_plays_in_the_app_s_language() {
 
     oni_app::language::speak(Some(Language::French));
     rig.settle();
-    press_help(&rig, w, "Film Type");
+    press_help(rig, w, "Film Type");
     assert_eq!(tip.get_demo(), "film-type", "the Film Type mark opens its card in French");
-    let shown = playing(&rig, &tip);
+    let shown = playing(rig, &tip);
     assert!(french.contains(&shown), "the card plays the French film");
     assert!(!english.contains(&shown), "not the English one");
     rig.shot("help-demo-film-type-fr");
@@ -61,9 +62,8 @@ pub(crate) fn a_worded_demo_plays_in_the_app_s_language() {
     }
     // The interface's own words stay English in a check's build; translated, the note changed and closed it.
     if common::placed(w, i_slint_backend_testing::AccessibleRole::Groupbox, "Help on Film Type").is_empty() {
-        press_help(&rig, w, "Film Type");
+        press_help(rig, w, "Film Type");
     }
     assert_eq!(tip.get_demo(), "film-type", "the Film Type card stands in English");
     rig.until("the English film", Duration::from_secs(5), || clip_pixels(&tip).is_some_and(|p| english.contains(&p)));
-    let _ = std::fs::remove_dir_all(&root);
 }

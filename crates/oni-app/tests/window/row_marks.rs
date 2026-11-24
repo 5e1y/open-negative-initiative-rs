@@ -2,16 +2,14 @@
 //! canister (Foma 401's though no longer offered), a selected row flat where the tab bar keeps its relief.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementRoot};
-use oni_app::app::{Options, Shell};
 use oni_app::{App, AppSettings, FolderLine, Library, Navigator, Stocks};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Film, Id, PipelineSettings};
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common::{self, Placed};
@@ -119,14 +117,7 @@ fn flat(drawn: &(usize, Vec<Rgb565Pixel>), row: &Placed, x: f32) -> (bool, bool,
 }
 
 pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the rows' marks are not exercised"),
-    };
-    let made = std::env::temp_dir().join(format!("oni-app-row-marks-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&made);
-    std::fs::create_dir_all(&made).unwrap();
-    let root = PathBuf::from(oni_library::paths::canonical(&made));
+    let root = common::Root::new("row-marks").canonical();
     let (home, volumes) = (root.join("Home"), root.join("Volumes"));
     std::fs::create_dir_all(&volumes).unwrap();
     let scans = home.join("Scans");
@@ -146,15 +137,9 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
         roll(&folder, stock);
     }
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = oni_library::navigator::Computer { home: p(&home), volumes: p(&volumes) };
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
-    rig.window.set_size(slint::PhysicalSize::new(2560, 1600));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.computer = computer).scale(SCALE).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let n = w.global::<Navigator>();
@@ -335,7 +320,4 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
     assert!((at_rest.x + at_rest.width - (trashed.x + trashed.width - PADDING)).abs() < 0.01, "on the row's right edge");
     // Twin: the key stands before the count, never after it.
     assert!(key.x + key.width <= hovered.x, "Restore {key:?} before the count {hovered:?}");
-    drop(ctl);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&made);
 }

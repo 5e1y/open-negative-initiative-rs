@@ -6,7 +6,6 @@ use oni_app::{Help, MainWindow, Upgraded};
 use oni_i18n::tr;
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, PhysicalSize, SharedString};
-use std::path::PathBuf;
 
 use crate::common;
 
@@ -32,8 +31,7 @@ fn dots(window: &MainWindow, count: usize) -> Vec<Option<bool>> {
 }
 
 pub(crate) fn a_sheet_closing_over_another_hands_it_the_keyboard() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     // The interface and the names asked of it in one language, whatever the system's.

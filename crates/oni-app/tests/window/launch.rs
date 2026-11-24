@@ -6,7 +6,6 @@ use oni_app::{MainWindow, Starter, Upgraded, starter};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
 use std::cell::{Cell, RefCell};
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -20,8 +19,7 @@ fn physical(points: f32) -> u32 {
 }
 
 pub(crate) fn the_starter_says_each_step_then_grows_into_the_app_and_the_notice_covers_the_window() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
 
     // Twin first: kernels still compiling hold the starter past its last step.

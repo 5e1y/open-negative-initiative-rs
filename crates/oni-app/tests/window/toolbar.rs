@@ -9,7 +9,6 @@ use oni_app::{Act, App, Bar, Library, Preparing};
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -33,8 +32,7 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     let root = std::env::temp_dir().join(format!("oni-app-toolbar-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let (support, caches) = (root.join("Support"), root.join("Caches"));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the bar is not exercised"),
@@ -83,34 +81,21 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
 }
 
 pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the bar's modes are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-modes-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("toolbar-modes");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5), ("C.tif", 0.3)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1100, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1100, 800).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, bar, prep) = (w.global::<Library>(), w.global::<Bar>(), w.global::<Preparing>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let tile = |name: &str| oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     // The window at its narrowest, where the words give way to glyphs.
-    let keys = || spans(&rig, w, 1100);
+    let keys = || spans(rig, w, 1100);
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
     let gallery = keys();
@@ -152,7 +137,6 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     assert!(lines().is_empty(), "twin: a right click on the bar lays no menu: {:?}", lines());
     press(510.0, 200.0);
     assert!(lines().iter().any(|l| l == "Export…") && lines().iter().any(|l| l == "Move to ONI Trash"), "{:?}", lines());
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// Three times Swift's `DS.Space.sm` between the bar's groups, whose keys touch.
@@ -192,29 +176,16 @@ fn reached_chroma(rig: &common::Rig, key: common::Placed) -> i32 {
 }
 
 pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_last() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the bar's groups are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-groups-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("toolbar-groups");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 900).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let tile = |name: &str| oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.settle();
@@ -233,11 +204,11 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     assert!(edit.x < select.x, "twin: the measure finds the bar's keys");
     assert!(near(gap(select, prepare), BAR_GAP) && near(gap(prepare, add), BAR_GAP), "{select:?} {prepare:?} {add:?}");
     assert!(near(gap(add, reset), RULED) && near(gap(reset, trash), 0.0), "a rule, then one group, touching: {add:?} {reset:?} {trash:?}");
-    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between ADD FOLDER… and Reset");
+    assert!(inked(rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between ADD FOLDER… and Reset");
     // Twin: the room between two groups with no rule is bare ground.
-    assert!(!inked(&rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
+    assert!(!inked(rig, prepare, prepare.x - BAR_GAP / 2.0), "the measure sees bare room");
     // Under the hand Reset lights as any key, PREPARE ROLL's neutral ink; twin: Trash shows its danger's red.
-    let (plain_lit, reset_lit, trash_lit) = (reached_chroma(&rig, prepare), reached_chroma(&rig, reset), reached_chroma(&rig, trash));
+    let (plain_lit, reset_lit, trash_lit) = (reached_chroma(rig, prepare), reached_chroma(rig, reset), reached_chroma(rig, trash));
     assert!(reset_lit <= plain_lit + 6 && trash_lit > 80, "Reset as PREPARE ROLL under the hand, Trash red: {plain_lit} {reset_lit} {trash_lit}");
     // The app's keys one group, touching, EXPORT a bar's gap after them at the bar's end.
     let (report, settings, export) = (bar_key(w, "Feedback"), bar_key(w, "Settings"), bar_key(w, "EXPORT"));
@@ -286,7 +257,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     rig.key("\u{1b}");
     // A click on EXPORT opens the sheet on what is picked, the one photo, then both.
     let exported = |key: common::Placed| {
-        common::click(&rig, w, key.middle());
+        common::click(rig, w, key.middle());
         let names: Vec<String> = export_card::card(&ctl).targets.iter().map(|t| t.path.file_name().unwrap().to_string_lossy().into_owned()).collect();
         assert!(export_card::card(&ctl).shown, "the sheet opened");
         ctl.leave_export();
@@ -325,9 +296,9 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     }
     assert_eq!(on_bar("Trash"), 0, "no Trash on the editor's bar");
     assert!(near(gap(to_roll, reset), RULED), "a rule before Reset, alone where the group stood: {to_roll:?} {reset:?}");
-    assert!(inked(&rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste All and Reset");
+    assert!(inked(rig, reset, reset.x - BAR_GAP - 0.5), "the rule drawn between Paste All and Reset");
     // Beside Reset, where Trash stood, bare room up to the app's keys.
-    assert!(!inked(&rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
+    assert!(!inked(rig, reset, right(reset) + 12.0), "nothing drawn past Reset");
     // Twin: the views and the settings are two groups, a bar's gap apart.
     assert!(near(gap(compare, copy), BAR_GAP), "{compare:?} {copy:?}");
     assert!(common::placed(w, Role::Button, "Whole Roll").is_empty(), "one name in both modes");
@@ -340,6 +311,5 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     rig.landed(&ctl);
     assert!(trashed("A.tif") && !trashed("B.tif"), "the frame open alone moved to the ONI Trash");
     assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("B.tif")), "the editor goes on to B");
-    let _ = std::fs::remove_dir_all(&root);
 }
 

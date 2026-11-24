@@ -5,13 +5,11 @@
 use oni_app::FieldProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common;
 
 pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = FieldProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

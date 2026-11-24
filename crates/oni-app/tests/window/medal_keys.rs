@@ -2,12 +2,9 @@
 //! on that photo alone; a medal laid lands, still under Reduce Motion or when a selection only shows it.
 
 use i_slint_backend_testing::{AccessibleRole, ElementRoot};
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, MainWindow, Motion};
-use oni_core::{Archive, EditorStore};
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, SharedString};
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -105,31 +102,19 @@ fn widest(rig: &common::Rig, w: &MainWindow, area: Area, done: impl Fn() -> bool
 }
 
 pub(crate) fn the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the medal keys are not exercised"),
-    };
     // SAFETY: set before the shell or any worker thread of this process starts.
     unsafe { std::env::set_var("SLINT_SLOW_ANIMATIONS", SLOWED.to_string()) };
-    let root = std::env::temp_dir().join(format!("oni-app-medal-keys-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("medal-keys");
     let folder = root.join("Scans");
     for (name, tone) in [("A.tif", 1.0), ("B.tif", 0.7), ("C.tif", 0.4)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let point = |(x, y): (f32, f32)| {
         rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(x, y) });
@@ -173,9 +158,9 @@ pub(crate) fn the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands() {
     rig.settle();
     let side = w.global::<oni_app::DS>().get_control_icon_size();
     w.global::<Motion>().set_reduced(false);
-    lay(&rig, "1");
-    let landed = widest(&rig, w, a, || medal_of(w, "A") == 1);
-    settled(&rig);
+    lay(rig, "1");
+    let landed = widest(rig, w, a, || medal_of(w, "A") == 1);
+    settled(rig);
     let rest = coins(w, a);
     eprintln!("A's medal: {landed:.1} pt landing, {rest:?} at rest, its side {side}");
     assert!(landed >= side * 1.2, "the medal laid lands from above its side: {landed:.1} pt");
@@ -185,14 +170,14 @@ pub(crate) fn the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands() {
 
     // Twin: under Reduce Motion the medal stands still, gold turning silver.
     w.global::<Motion>().set_reduced(true);
-    lay(&rig, "2");
-    let still = widest(&rig, w, a, || medal_of(w, "A") == 2);
+    lay(rig, "2");
+    let still = widest(rig, w, a, || medal_of(w, "A") == 2);
     assert!(still <= side + 0.5, "under Reduce Motion the medal stands still: {still:.1} pt");
     w.global::<Motion>().set_reduced(false);
     // Without it, a medal turning another lands as one laid afresh: silver turning bronze.
-    lay(&rig, "3");
-    let turned = widest(&rig, w, a, || medal_of(w, "A") == 3);
-    settled(&rig);
+    lay(rig, "3");
+    let turned = widest(rig, w, a, || medal_of(w, "A") == 3);
+    settled(rig);
     assert!(turned >= side * 1.2, "a medal turning another lands: {turned:.1} pt");
 
     // Twin: a selection moved to a photo wearing its medal shows it still in the bar.
@@ -201,16 +186,14 @@ pub(crate) fn the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands() {
     assert_eq!((medal_of(w, "A"), medal_of(w, "B")), (3, 2), "silver on B, bronze on A");
     point(below);
     rig.settle();
-    lay(&rig, &SharedString::from(Key::RightArrow));
-    let bar_widest = widest(&rig, w, bar_area(w), || selected(w) == ["B"]);
+    lay(rig, &SharedString::from(Key::RightArrow));
+    let bar_widest = widest(rig, w, bar_area(w), || selected(w) == ["B"]);
     let picker = coins(w, bar_area(w));
     eprintln!("the bar's medals on B: {picker:?}, at most {bar_widest:.1} pt");
     assert!(bar_widest <= picker.iter().fold(0.0, |m: f32, c| m.max(*c)) + 0.5, "a selection's medal shows still: {bar_widest:.1} pt");
     // The key 1 on B: gold lands in the bar too.
-    lay(&rig, "1");
-    let bar_landed = widest(&rig, w, bar_area(w), || medal_of(w, "B") == 1);
+    lay(rig, "1");
+    let bar_landed = widest(rig, w, bar_area(w), || medal_of(w, "B") == 1);
     eprintln!("the bar's gold laid on B: {bar_landed:.1} pt");
     assert!(bar_landed > bar_widest + 1.0, "the bar's medal laid by the key lands: {bar_landed:.1} pt");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

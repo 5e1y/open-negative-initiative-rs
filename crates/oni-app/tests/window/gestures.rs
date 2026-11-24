@@ -3,16 +3,15 @@
 //! own undo naming its step, the film type, the framing's copy and paste, mirror, ⌘K and ⌘0.
 
 use oni_app::PanelTab;
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{self};
 use oni_app::fields::Field;
 use oni_app::{App, Confirm, Framing, Library, Menus, PanelState};
-use oni_core::{Archive, EditorStore};
 use oni_library::index::LibraryIndex;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::frame::RollReference;
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::ComponentHandle;
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -34,13 +33,8 @@ fn on_roll(path: &Path, id: Id) {
 }
 
 pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the gestures are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-gestures-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("gestures");
+    let (folder, caches) = (root.scans(), root.caches());
     let (x, y) = (Id::new(), Id::new());
     for (name, roll) in [("A.tif", x), ("B.tif", y), ("C.tif", y)] {
         common::linear_tiff(&folder.join(name), 96, 64, 0.8);
@@ -48,15 +42,8 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     }
     let path = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
     let (a, b, c) = (path("A.tif"), path("B.tif"), path("C.tif"));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches: caches.clone(), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).scale(2.0).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let menus = w.global::<Menus>();
@@ -259,6 +246,4 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert_eq!(app::tiles(w).len(), 3);
 
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

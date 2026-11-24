@@ -1,15 +1,14 @@
 //! Opening an archive as the Swift app does, on the headless window: the folder picker, the gallery
 //! first, the index and the remembered folder, the thumbnails pass and its files, an edit's redraw.
 
-use oni_app::app::{self, Options, Shell, WRITE_DELAY};
+use oni_app::app::{self, WRITE_DELAY};
 use oni_app::fields::Field;
 use oni_app::preferences::{self, Preferences};
 use oni_app::thumbnails;
 use oni_app::{App, Library, Store};
-use oni_core::{Archive, EditorStore};
 use oni_library::index::LibraryIndex;
 use slint::ComponentHandle;
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -29,27 +28,15 @@ fn wait(rig: &common::Rig, span: Duration) {
 }
 
 pub(crate) fn a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the archive is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-archive-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("archive");
+    let (folder, support, caches) = (root.scans(), root.support(), root.caches());
     for (name, tone) in [("A.tif", 1.0), ("B.tif", 0.7), ("C.tif", 0.4)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
     let chosen = folder.clone();
     let picker = Box::new(move || Some(chosen.clone()));
-    let options = Options { support: support.clone(), caches: caches.clone(), picker, ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.picker = picker).scale(2.0).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
 
@@ -121,7 +108,7 @@ pub(crate) fn a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once() 
     assert!(!w.global::<App>().get_gallery());
     rig.until("the first render", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     // Opening a photo redraws its thumbnail once the delay has passed, as its view appearing does.
-    wait(&rig, thumbnails::REFRESH_DELAY + Duration::from_millis(500));
+    wait(rig, thumbnails::REFRESH_DELAY + Duration::from_millis(500));
     rig.until("the opening's redraw", Duration::from_secs(30), || !ctl.state.borrow().drawing());
 
     // `Sidecar.writeDelay`: a notch writes the sidecar once the hand has rested 400 ms, not before.
@@ -132,16 +119,14 @@ pub(crate) fn a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once() 
     let drawn = modified(&thumb);
     w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
     let stepped = Instant::now();
-    wait(&rig, WRITE_DELAY - Duration::from_millis(100));
+    wait(rig, WRITE_DELAY - Duration::from_millis(100));
     assert_eq!(modified(&side), before, "nothing is written while the hand may still move");
     rig.until("the sidecar written", Duration::from_secs(2), || modified(&side) != before);
     let written = stepped.elapsed();
     assert!(written >= WRITE_DELAY && written < WRITE_DELAY + Duration::from_millis(400), "{written:?}");
 
     // `Thumbnails.refreshDelay` after the write, the photo's thumbnail is drawn again on its new settings.
-    wait(&rig, thumbnails::REFRESH_DELAY - Duration::from_millis(300));
+    wait(rig, thumbnails::REFRESH_DELAY - Duration::from_millis(300));
     assert_eq!(modified(&thumb), drawn, "twin: the redraw waits past the write");
     rig.until("the redraw", Duration::from_secs(30), || modified(&thumb) != drawn);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

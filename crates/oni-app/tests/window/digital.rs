@@ -16,7 +16,8 @@ const NEGATIVE_BLOCKS: [&str; 3] = ["Filtration", "Highlight Detail", "Per-Chann
 const SCAN_BLOCKS: [&str; 2] = ["Prepared Roll", "Flat-Field"];
 
 pub(crate) fn digital_shows_a_negatives_blocks_on_its_film() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("digital") else { return };
+    let Some(app) = crate::panel_bindings::opened("digital") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let panel = w.global::<PanelState>();
     let settings = || ctl.state.borrow().store().settings().clone();
@@ -32,7 +33,7 @@ pub(crate) fn digital_shows_a_negatives_blocks_on_its_film() {
     };
     let film_type = |name: &str| {
         tab(PanelTab::Roll);
-        common::click(&rig, w, common::the(w, Role::Tab, name).middle());
+        common::click(rig, w, common::the(w, Role::Tab, name).middle());
         rig.settle();
     };
 
@@ -72,33 +73,21 @@ pub(crate) fn digital_shows_a_negatives_blocks_on_its_film() {
     for title in NEGATIVE_BLOCKS.iter().chain(&SCAN_BLOCKS) {
         assert!(shown(Role::Text, title), "{title} back on the negative");
     }
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The gallery's info sidebar on a folder of digital photos: its name, date and camera body, no film
 /// stock nor preparation. Twin: the same folder as negatives shows its stock and asks to be prepared.
 pub(crate) fn a_digital_folders_sidebar_names_no_film_stock() {
     use oni_app::{InfoKind, Library};
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the info sidebar is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-digital-info-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("digital-info");
     for (name, mode) in [("Phone/A.tif", ConversionMode::Digital), ("Phone/B.tif", ConversionMode::Digital), ("Negs/C.tif", ConversionMode::Negative)] {
         common::linear_tiff(&root.join(name), 48, 32, 0.5);
         let s = oni_settings::PipelineSettings::rest(mode, false);
         oni_settings::sidecar::write(&s, &root.join(name), oni_settings::sidecar::WriteOptions::default()).unwrap();
     }
-    let root = std::path::PathBuf::from(oni_library::paths::canonical(&root));
-    let shots = std::env::var_os("ONI_SHOTS").map(std::path::PathBuf::from).unwrap_or_else(|| std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = oni_core::EditorStore::new(oni_core::Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = oni_app::app::Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Default::default() };
-    let shell = oni_app::app::Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let root = root.canonical();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let lib = w.global::<Library>();
     let shown = |name: &str| !common::placed(w, Role::Text, name).is_empty();
@@ -122,5 +111,4 @@ pub(crate) fn a_digital_folders_sidebar_names_no_film_stock() {
         rig.pump();
         lib.get_roll_unmeasured()
     });
-    let _ = std::fs::remove_dir_all(&root);
 }

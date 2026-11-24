@@ -207,7 +207,7 @@ pub(crate) fn a_parameter_change_on_a_batch_is_timed() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the parameter bench is not exercised"),
     };
-    let rig = crate::common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = crate::common::rig();
     let root = std::env::temp_dir().join(format!("oni-export-params-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let all = targets(&mirrored(&roll, &root.join("Roll"), n));
@@ -262,7 +262,7 @@ pub(crate) fn a_burst_of_changes_weighs_the_estimate_twice_at_most() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the estimate's coalescing is not exercised"),
     };
-    let rig = crate::common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = crate::common::rig();
     let root = std::env::temp_dir().join(format!("oni-export-burst-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(&root).unwrap();

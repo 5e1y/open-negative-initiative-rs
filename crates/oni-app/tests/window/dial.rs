@@ -15,7 +15,8 @@ fn pointer(rig: &common::Rig, event: WindowEvent) {
 }
 
 pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it() {
-    let Some((rig, shell, root)) = opened("dial") else { return };
+    let Some(app) = opened("dial") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     w.global::<PanelState>().set_tab(PanelTab::Crop);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Crop);
@@ -28,8 +29,8 @@ pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it
     rig.shot("dial-rest");
 
     // A press beside the index, on the ring: the angle stays where it was.
-    pointer(&rig, WindowEvent::PointerMoved { position: start });
-    pointer(&rig, WindowEvent::PointerPressed { position: start, button: PointerEventButton::Left });
+    pointer(rig, WindowEvent::PointerMoved { position: start });
+    pointer(rig, WindowEvent::PointerPressed { position: start, button: PointerEventButton::Left });
     rig.settle();
     assert_eq!(angle(), 0.0, "a press on the ring lands nothing under the pointer");
 
@@ -38,10 +39,10 @@ pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it
     let travel = 48.0;
     for step in 1..=8 {
         let at = LogicalPosition::new(start.x + travel * step as f32 / 8.0, y);
-        pointer(&rig, WindowEvent::PointerMoved { position: at });
+        pointer(rig, WindowEvent::PointerMoved { position: at });
     }
     let end = LogicalPosition::new(start.x + travel, y);
-    pointer(&rig, WindowEvent::PointerReleased { position: end, button: PointerEventButton::Left });
+    pointer(rig, WindowEvent::PointerReleased { position: end, button: PointerEventButton::Left });
     rig.settle();
     // `DialStyle.turn`, nine degrees of the ring a degree of the photo.
     let degree = slider.width / 2.0 * 9f32.to_radians();
@@ -51,5 +52,4 @@ pub(crate) fn the_straighten_dial_turns_with_the_hand_and_a_press_never_jumps_it
     assert!((turned - expected).abs() < 0.05, "the drag turned {turned}°, the scale under the hand asks {expected}°");
     // Twin: a rail's sense, its knob following the hand, would have raised the angle as much.
     assert!((turned + expected).abs() > 1.0, "a drag right must lower the angle, not raise it: {turned}°");
-    let _ = std::fs::remove_dir_all(&root);
 }

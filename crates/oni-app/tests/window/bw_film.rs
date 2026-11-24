@@ -33,16 +33,12 @@ fn red_over_grey(frame: &[u8], width: usize) -> f32 {
 }
 
 pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and_white() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: a black and white film under the hand is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-bw-film-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("bw-film");
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     // A red on the left half, a grey on the right.
     common::pixels_tiff(&root.join("Scans/A.tif"), 1200, 800, |x, _| if x < 600 { [0.75, 0.2, 0.15] } else { [0.4; 3] });
-    let (rig, shell) = crate::film_effects::opened(&gpu, &root);
+    let Some(app) = crate::film_effects::opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, menus) = (w.global::<PanelState>(), w.global::<Menus>());
     panel.set_tab(PanelTab::Color);
@@ -62,14 +58,14 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     // The pointer on a black and white film shows the photo in black and white, nothing written.
     let lit = |stock: VirtualStock| {
         let renders = ctl.state.borrow().renders();
-        point(&rig, common::in_popup(w, Role::Button, stock.name()).middle());
+        point(rig, common::in_popup(w, Role::Button, stock.name()).middle());
         rig.until("the photo rendered on the film under the pointer", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
         rig.settle();
         assert_eq!(on(&shown()), Some(stock), "the canvas shows {stock:?}");
         assert!(shown().is_monochrome() && !stored().is_monochrome());
         frame(w)
     };
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let pan = lit(VirtualStock::of("ilford-hp5-plus"));
     println!("shot {}", rig.shot("bw-film-hover-pan").display());
     let ortho = lit(VirtualStock::of("ilford-ortho-plus"));
@@ -84,8 +80,8 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     assert_eq!(shown(), own, "Escape shows the colour film again");
 
     // Picked, the black and white film is written as one step; Undo takes the colour film back.
-    drop_menu(&rig, w);
-    common::click(&rig, w, common::in_popup(w, Role::Button, VirtualStock::of("ilford-hp5-plus").name()).middle());
+    drop_menu(rig, w);
+    common::click(rig, w, common::in_popup(w, Role::Button, VirtualStock::of("ilford-hp5-plus").name()).middle());
     rig.settle();
     assert_eq!(stored(), own.on_stock(VirtualStock::of("ilford-hp5-plus")), "the pick writes the film lit");
     assert_eq!((panel.get_stock().name.as_str(), panel.get_stock().has_artwork), (VirtualStock::of("ilford-hp5-plus").name(), true));
@@ -97,6 +93,4 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     rig.settle();
     assert_eq!(stored(), own, "one Undo takes the colour film back, nothing of the black and white one kept");
     assert!(chroma(&frame(w)) > 20, "colour again");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

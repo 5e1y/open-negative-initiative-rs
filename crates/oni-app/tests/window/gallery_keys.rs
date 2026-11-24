@@ -94,8 +94,7 @@ pub(crate) fn a_photo_clicked_hands_the_grid_its_keys_and_a_ring_follows_the_key
     std::fs::create_dir_all(made.join("Volumes")).unwrap();
     let root = PathBuf::from(paths::canonical(&made));
     let computer = Computer { home: paths::canonical(&root.join("Home")), volumes: paths::canonical(&root.join("Volumes")) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

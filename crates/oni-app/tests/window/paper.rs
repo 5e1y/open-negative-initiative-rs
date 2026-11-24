@@ -14,7 +14,6 @@ use oni_core::{Archive, EditorStore};
 use oni_settings::PaperStock;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -28,8 +27,7 @@ pub(crate) fn the_paper_switch_prints_a_negative_on_every_paper_and_a_slide_is_p
     let _ = std::fs::remove_dir_all(&root);
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
@@ -217,8 +215,7 @@ pub(crate) fn a_digital_photo_prints_on_its_paper_on_pure_black() {
     let _ = std::fs::remove_dir_all(&root);
     let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };

@@ -8,7 +8,6 @@ use oni_app::{Help, MainWindow};
 use oni_i18n::{Language, tr};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common::{self, Placed};
 
@@ -73,8 +72,7 @@ fn sized(rig: &common::Rig, (w, h): (u32, u32)) {
 }
 
 pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);

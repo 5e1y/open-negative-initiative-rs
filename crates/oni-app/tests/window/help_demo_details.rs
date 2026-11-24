@@ -3,14 +3,10 @@
 
 use oni_app::InfoKind;
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
 use oni_app::{PanelState, Tip};
-use oni_core::{Archive, EditorStore};
 use oni_settings::Film;
 use i_slint_backend_testing::AccessibleRole as Role;
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -30,35 +26,22 @@ fn mark_is_right_of(w: &oni_app::MainWindow, subject: &'static str, c: &common::
 }
 
 pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the help demo is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-help-demo-details-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("help-demo-details");
+    let folder = root.scans();
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
     oni_library::folders::set_roll(Some(&Film::new("Roll 7")), &oni_library::paths::canonical(&folder)).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, tip) = (w.global::<oni_app::Library>(), w.global::<Tip>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
 
     // The gallery's Info sidebar, right of the window, on the roll a selected tile stands on.
     lib.invoke_tile_clicked(0, false, false);
     rig.settle();
     assert_eq!(lib.get_info_kind(), InfoKind::Roll, "the selection stands on a roll");
-    press_help(&rig, w, "Film Stock");
+    press_help(rig, w, "Film Stock");
     assert_eq!(tip.get_open(), FILM_STOCK, "the Film Stock mark opens its card");
     assert_eq!(tip.get_demo(), "", "the mark names no topic");
     assert!(!tip.get_has_clip() && clip_pixels(&tip).is_none(), "a note without a demo has no clip box");
@@ -76,7 +59,7 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     w.global::<PanelState>().set_tab(PanelTab::Dedust);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Dedust);
     rig.settle();
-    press_help(&rig, w, "Dust & Scratches");
+    press_help(rig, w, "Dust & Scratches");
     assert_eq!(tip.get_open(), DUST, "the Dust & Scratches mark opens its card");
     assert_eq!(tip.get_demo(), "dust", "the mark names its topic");
     assert!(tip.get_has_clip(), "the card holds a clip box");
@@ -93,5 +76,4 @@ pub(crate) fn the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip
     assert!(with_clip.height > with_clip.width, "the square clip stands above the note: {with_clip:?}");
     assert!(without.height < with_clip.height - with_clip.width / 2.0, "the Film Stock card had no box above its note: {without:?}");
     rig.shot("help-demo-dust");
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -43,7 +43,7 @@ pub(crate) fn the_key_balances_the_open_frame_off_the_interface_thread_and_one_u
         Ok(gpu) => gpu,
         Err(e) => return println!("SKIPPED the key: {e}"),
     };
-    let rig = common::rig(std::env::temp_dir());
+    let rig = common::rig();
     let window = rig.window.clone();
     let folder = mirror(&roll);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

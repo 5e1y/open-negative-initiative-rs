@@ -3,14 +3,10 @@
 //! it too, and a black and white photo has no Color block.
 
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Tip};
-use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, LogicalPosition};
-use std::path::PathBuf;
-use std::time::Duration;
 
 use crate::common;
 
@@ -102,40 +98,23 @@ fn evenly_apart(words: &[(f32, f32)], start: f32, edge: f32) -> bool {
 }
 
 pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the sidebars are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-sidebars-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("sidebars");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::plain_tiff(&folder.join(name), 96, 64, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let (lib, panel, tip) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<Tip>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
     rig.settle();
     rig.shot("sidebars-column");
 
     // Beside a photo the column's header is one select naming its layout in words: no key on its row
     // needs a note to be read.
     let select = common::the(w, i_slint_backend_testing::AccessibleRole::Button, "Two per row");
-    let met = notes_along(&rig, &tip, 0.0, 260.0, select.y + select.height / 2.0);
+    let met = notes_along(rig, &tip, 0.0, 260.0, select.y + select.height / 2.0);
     assert!(worded(&met), "{met:?}");
     // Twin: a row of glyph keys, each read off its note, is refused.
     assert!(!worded(&[("Show the Selected Photo".to_string(), 16.0, 40.0), ("Names only".to_string(), 40.0, 64.0)]));
@@ -148,8 +127,8 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     rig.shot("sidebars-crop");
     let (left, right) = (1280.0 - 340.0, 1280.0);
     let copy = "Copies this photo's crop: its frame, ratio, angle, turns, mirrors and measuring window.";
-    let y = row_of(&rig, &tip, left + 20.0, copy).expect("Copy Crop at the block's left");
-    let met = notes_along(&rig, &tip, left, right, y);
+    let y = row_of(rig, &tip, left + 20.0, copy).expect("Copy Crop at the block's left");
+    let met = notes_along(rig, &tip, left, right, y);
     // The block's edges: the panel's, less the section's inset (`Space.md`).
     let (start, edge) = (left + 16.0, right - 16.0);
     assert!(fills_block(&met, start, edge), "the group spans the block: {met:?}");
@@ -157,7 +136,7 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     let hugging = [(copy.to_string(), 956.0, 990.0), ("p".to_string(), 992.0, 1030.0), ("r".to_string(), 1032.0, 1100.0)];
     assert!(!fills_block(&hugging, start, edge));
     tip.set_shown(false);
-    let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
+    let words = words_along(rig, start + 2.0, edge - 2.0, y, 32.0);
     assert!(evenly_apart(&words, start, edge), "Copy Crop and Paste Crop evenly apart: {words:?}");
     // Twin: keys hugging their words, the last centred in the rest of the group.
     assert!(!evenly_apart(&[(968.0, 1000.0), (1024.0, 1059.0), (1124.0, 1210.0)], start, edge));
@@ -167,11 +146,11 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
     rig.settle();
     for help in ["Rotate 90° Clockwise", "Mirror left for right", "Mirror top for bottom"] {
-        let y = row_of(&rig, &tip, left + 20.0, help).unwrap_or_else(|| panic!("{help} at the block's left"));
-        let met = notes_along(&rig, &tip, left, right, y);
+        let y = row_of(rig, &tip, left + 20.0, help).unwrap_or_else(|| panic!("{help} at the block's left"));
+        let met = notes_along(rig, &tip, left, right, y);
         assert!(spans_alone(&met, start, edge), "{help}: its key alone spans the block: {met:?}");
         tip.set_shown(false);
-        let words = words_along(&rig, start + 2.0, edge - 2.0, y, 32.0);
+        let words = words_along(rig, start + 2.0, edge - 2.0, y, 32.0);
         assert!(centred(&words, start, edge), "{help}: its glyph and word centred on the key: {words:?}");
     }
     // Twins: three keys sharing one row, the last pushed past the edge; a word left on its key.
@@ -187,12 +166,12 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     rig.shot("sidebars-color");
-    assert!(row_of(&rig, &tip, left + 170.0, balance).is_some(), "twin: a colour photo shows the Color block");
+    assert!(row_of(rig, &tip, left + 170.0, balance).is_some(), "twin: a colour photo shows the Color block");
     panel.invoke_film_type_picked(2);
     rig.settle();
     rig.shot("sidebars-color-bw");
     assert!(panel.get_monochrome());
-    assert_eq!(row_of(&rig, &tip, left + 170.0, balance), None, "a black and white photo has no Color block");
+    assert_eq!(row_of(rig, &tip, left + 170.0, balance), None, "a black and white photo has no Color block");
     panel.invoke_film_type_picked(0);
     panel.set_tab(PanelTab::Roll);
     panel.invoke_tab_picked(PanelTab::Roll);
@@ -200,5 +179,4 @@ pub(crate) fn the_sidebars_lay_their_keys_in_groups_as_swift() {
     lib.invoke_surface_picked(1);
     rig.settle();
     rig.shot("sidebars-roll-projects");
-    let _ = std::fs::remove_dir_all(&root);
 }

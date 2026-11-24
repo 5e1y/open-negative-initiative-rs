@@ -4,14 +4,12 @@
 use oni_app::KeyProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
 
 pub(crate) fn a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = KeyProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

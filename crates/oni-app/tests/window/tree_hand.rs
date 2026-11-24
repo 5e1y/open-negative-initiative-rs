@@ -2,14 +2,12 @@
 //! selection, a right click opens Swift's menu on the pick or the row, a project's Rename… types
 //! over its name where a double click never does, a click on no row drops the picks.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, Navigator, TreeRow};
-use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -75,13 +73,8 @@ fn rest(rig: &common::Rig) {
 }
 
 pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the trees' hand is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-tree-hand-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("tree-hand");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     for i in 0..5 {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.65 + i as f32 / 100.0);
@@ -94,20 +87,12 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     ];
     project::save(&support, &ProjectsFile { version: project::FORMAT, projects }).unwrap();
 
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&scans);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&scans);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("a photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
@@ -121,7 +106,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(rows(&lib).iter().any(|r| !r.thumb && r.title == "A01.tif"), "twin: a name row keeps the extension");
 
     // A plain click opens; ⌘ gathers that row and the next; ⇧ adds the rows up to the anchor.
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(row(&lib, true, "A01.tif"), false, false);
     rig.pump();
     assert_eq!(open(), "A01.tif");
@@ -141,7 +126,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert_eq!(lines(&lib)[0], "Edit", "twin: a row outside the pick is alone");
 
     // A plain click empties the pick; ⌘ on a folder brings every photo under it, and the anchor.
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(row(&lib, true, "A02.tif"), false, false);
     rig.pump();
     assert_eq!(marked(&lib), ["A02.tif"], "a plain click leaves only its photo");
@@ -191,7 +176,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
     choose(&lib, "Rename…");
     lib.invoke_row_rename_edited("Roll C".into());
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(row(&lib, true, "B00.tif"), false, false);
     rig.until("Roll C read", Duration::from_secs(30), || rows(&lib).iter().any(|r| r.kind != 2 && r.title == "Roll C"));
     assert!(scans.join("Roll C/A00.tif").is_file() && !scans.join("Roll A").exists(), "the folder renamed on the disk");
@@ -209,7 +194,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     lib.invoke_surface_picked(1);
     rig.pump();
     let trip = project_row(&lib, "Trip");
-    rest(&rig);
+    rest(rig);
     lib.invoke_project_row_clicked(trip, false, false);
     lib.invoke_project_row_clicked(trip, false, false);
     lib.invoke_project_row_double_clicked(trip);
@@ -225,7 +210,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     let names = || project::load(&support).projects.iter().map(|p| p.name.clone()).collect::<Vec<_>>();
     assert!(names().contains(&"Holiday".to_string()) && project_rows(&lib).iter().any(|r| r.title == "Holiday"), "{:?}", names());
     let walk = project_row(&lib, "Walk");
-    rest(&rig);
+    rest(rig);
     assert!(lib.invoke_project_row_menu(walk));
     choose(&lib, "Rename…");
     lib.invoke_project_row_rename_committed(walk, "   ".into());
@@ -237,7 +222,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     if !project_rows(&lib)[holiday as usize].expanded {
         lib.invoke_project_row_folded(holiday);
     }
-    rest(&rig);
+    rest(rig);
     lib.invoke_project_row_clicked(project_row(&lib, "B00.tif"), false, false);
     lib.invoke_project_row_clicked(project_row(&lib, "B01.tif"), true, false);
     rig.pump();
@@ -247,7 +232,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(lines(&lib).contains(&"Paste Settings (2 photos)".to_string()), "{:?}", lines(&lib));
     assert!(lib.invoke_project_row_menu(project_row(&lib, "Holiday")));
     assert_eq!(lines(&lib), ["Rename…", "Delete Project"]);
-    rest(&rig);
+    rest(rig);
     lib.invoke_project_row_clicked(project_row(&lib, "Holiday"), false, false);
     lib.invoke_project_row_clicked(project_row(&lib, "Walk"), true, false);
     assert!(!lib.invoke_project_row_menu(project_row(&lib, "Walk")), "twin: two projects open no menu");
@@ -258,15 +243,13 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     let list_top = common::projects_top(w, &lib, "Holiday");
     let y = |title: &str| list_top + margin + (project_row(&lib, title) as f32 + 0.5) * height;
     let lit = || project_rows(&lib).into_iter().filter(|r| r.selected).map(|r| r.title.to_string()).collect::<Vec<_>>();
-    rest(&rig);
-    press(&rig, y("B00.tif"), PointerEventButton::Left, None);
+    rest(rig);
+    press(rig, y("B00.tif"), PointerEventButton::Left, None);
     assert_eq!(lit(), ["B00.tif"], "a plain click leaves its row alone");
-    press(&rig, y("B01.tif"), PointerEventButton::Left, Some(Key::Control));
+    press(rig, y("B01.tif"), PointerEventButton::Left, Some(Key::Control));
     assert_eq!(lit(), ["B00.tif", "B01.tif"], "twin: ⌘ held adds the row");
     lib.set_menu_lines(Default::default());
-    press(&rig, y("B01.tif"), PointerEventButton::Right, None);
+    press(rig, y("B01.tif"), PointerEventButton::Right, None);
     assert!(lines(&lib).contains(&"Paste Settings (2 photos)".to_string()), "{:?}", lines(&lib));
     rig.shot("tree-hand-projects");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -5,28 +5,20 @@
 //! trashed there handing on to its neighbour, and the bar's select-all key.
 
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
 use oni_app::{App, Canvas, Choice, Framing, Library, PanelState, Presets};
 use oni_core::presets::{self, Preset, Tint};
-use oni_core::{Archive, EditorStore};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::{ComponentHandle, Model};
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use std::collections::{BTreeSet, HashSet};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
 
 pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the editor's routes are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-routes-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("routes");
+    let (folder, support) = (root.scans(), root.support());
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.6), ("C.tif", 0.5), ("D.tif", 0.4)] {
         common::graded_tiff(&folder.join(name), 600, 400, tone);
     }
@@ -35,14 +27,8 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     Preferences::load(&support).set(preferences::BRUSH_RADIUS, 40.0.into()).unwrap();
     let auto: BTreeSet<String> = BTreeSet::from([oni_core::parameters::AUTO_BALANCE_NAME.to_string()]);
     presets::save(&Preset::new("Auto", auto, Tint::Amber, PipelineSettings::rest(ConversionMode::Negative, false)), &presets::directory(&support)).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, panel, framing, canvas) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
@@ -57,8 +43,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
         lib.invoke_tile_clicked(i, false, false);
         rig.pump();
     };
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     open(0);
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.pump();
@@ -234,6 +219,4 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
     rig.until("C alone again", Duration::from_secs(30), || canvas.get_status().contains(" × "));
     assert_eq!(*ctl.state.borrow().picked(), HashSet::from([names[2].clone()]));
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

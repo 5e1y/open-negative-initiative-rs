@@ -5,17 +5,13 @@
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::export_card::{self, Ask};
-use oni_app::app::{Options, Shell};
-use oni_app::{Exporting, Framing, Library, PanelState, PanelTab};
-use oni_core::{Archive, EditorStore};
+use oni_app::{Exporting, Framing, PanelState, PanelTab};
 use oni_settings::SourceEncoding;
 use oni_settings::frame::FlatFieldMask;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
 use std::cell::Cell;
-use std::path::PathBuf;
 use std::rc::Rc;
-use std::time::Duration;
 
 use crate::common;
 
@@ -34,48 +30,28 @@ fn press(rig: &common::Rig, window: &impl ComponentHandle, role: Role, name: &st
 }
 
 /// A shell on one TIFF naming no profile, its frame open and rendered.
-pub(crate) fn opened(name: &str) -> Option<(common::Rig, Shell, PathBuf)> {
+pub(crate) fn opened(name: &str) -> Option<common::App> {
     opened_with(name, |_| {})
 }
 
 /// `opened`, its support folder first laid by `seed` as an earlier build left it.
-pub(crate) fn opened_with(name: &str, seed: impl FnOnce(&std::path::Path)) -> Option<(common::Rig, Shell, PathBuf)> {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => {
-            eprintln!("{e}: the panel's controls are not exercised");
-            return None;
-        }
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+pub(crate) fn opened_with(name: &str, seed: impl FnOnce(&std::path::Path)) -> Option<common::App> {
+    let root = common::Root::new(name);
+    let (folder, support) = (root.scans(), root.support());
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     std::fs::create_dir_all(support.join("FlatFields")).unwrap();
     std::fs::write(support.join("FlatFields/masks.json"), r#"[{"id":"a1","name":"Rig"}]"#).unwrap();
     seed(&support);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    let lib = shell.window.global::<Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    let app = common::launch(root).show()?;
+    let common::App { rig, .. } = &app;
+    app.edit_first();
     rig.settle();
-    Some((rig, shell, root))
+    Some(app)
 }
 
 pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
-    let Some((rig, shell, root)) = opened("panel-bindings") else { return };
+    let Some(app) = opened("panel-bindings") else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (panel, framing) = (w.global::<PanelState>(), w.global::<Framing>());
@@ -85,7 +61,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
         let keys: Vec<_> = common::placed(w, Role::Button, "Reset").into_iter().filter(|k| titles.iter().any(|t| t.level_with(k))).collect();
         assert_eq!(keys.len(), 1, "one Reset on the row of {title}, found {keys:?}");
         let (x, y) = keys[0].middle();
-        click(&rig, x, y);
+        click(rig, x, y);
     };
     let settings = || ctl.state.borrow().store().settings().clone();
     let tab = |i: PanelTab| {
@@ -105,7 +81,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     assert!(framing.get_orientable(), "twin: 3:2 shows the Vertical switch");
-    let vertical = || press(&rig, w, Role::Checkbox, "Vertical");
+    let vertical = || press(rig, w, Role::Checkbox, "Vertical");
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -120,12 +96,12 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     // photo its own way; the window taller, so the keys under them stay in sight.
     rig.window.set_size(slint::PhysicalSize::new(1280, 1100));
     rig.settle();
-    press(&rig, w, Role::Button, "Rotate");
-    press(&rig, w, Role::Button, "Mirror Vertically");
+    press(rig, w, Role::Button, "Rotate");
+    press(rig, w, Role::Button, "Mirror Vertically");
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.quarter_turns != 0, g.mirrored, g.mirrored_vertically), (true, false, true), "a quarter turn and a flip top for bottom");
-    press(&rig, w, Role::Button, "Mirror Horizontally");
+    press(rig, w, Role::Button, "Mirror Horizontally");
     rig.settle();
     assert!(settings().geometry.mirrored, "a flip left for right");
     // Twin: no key says Mirror alone, a word both axes shared.
@@ -146,11 +122,11 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
 
     // The Measuring Window's own RESET, on its title's row, takes the window away; its Copy Window
     // and Paste Window lay it back.
-    press(&rig, w, Role::Button, "Copy Window");
+    press(rig, w, Role::Button, "Copy Window");
     reset("Measuring Window");
     rig.settle();
     assert_eq!(settings().geometry.measure_window, None, "the block's RESET takes the window away");
-    press(&rig, w, Role::Button, "Paste Window");
+    press(rig, w, Role::Button, "Paste Window");
     rig.settle();
     assert_eq!(settings().geometry.measure_window, window, "Paste lays the copied window back");
 
@@ -161,7 +137,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     panel.invoke_encoding_picked(1);
     rig.settle();
     // Flat-Field's chevron: the block unfolds above Scan Profile, its switch then in reach.
-    press(&rig, w, Role::Button, "Show Flat-Field");
+    press(rig, w, Role::Button, "Show Flat-Field");
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
     reset("Scan Profile");
@@ -169,7 +145,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || press(&rig, w, Role::Checkbox, "Flat-field");
+    let flat = || press(rig, w, Role::Checkbox, "Flat-field");
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -180,20 +156,20 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
     let picker = common::the(w, Role::Button, &panel.get_mask_title());
-    click(&rig, picker.middle().0, picker.middle().1);
+    click(rig, picker.middle().0, picker.middle().1);
     rig.settle();
     rig.shot("bindings-mask-menu");
     let line = common::in_popup(w, Role::Button, "Rig");
     let under = line.y >= picker.y + picker.height && line.x < picker.x + picker.width && picker.x < line.x + line.width;
     assert!(under, "the menu drops under its picker {picker:?}, its line Rig at {line:?}");
-    click(&rig, line.middle().0, line.middle().1);
+    click(rig, line.middle().0, line.middle().1);
     rig.settle();
     assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's line, chosen");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window() {
-    let Some((rig, shell, root)) = opened("size-boxes") else { return };
+    let Some(app) = opened("size-boxes") else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let e = w.global::<Exporting>();
@@ -209,7 +185,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click selects its value, so the digits typed replace it.
-    let width_box = || press(&rig, w, Role::TextInput, "Width");
+    let width_box = || press(rig, w, Role::TextInput, "Width");
     width_box();
     rig.key(&named(Key::Delete));
     rig.key(&named(Key::Delete));
@@ -219,7 +195,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
     // Full resolution, the key beside the box once it is resized.
-    let full = || press(&rig, w, Role::Button, "Full Resolution");
+    let full = || press(rig, w, Role::Button, "Full Resolution");
     full();
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
@@ -235,7 +211,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.key(&named(Key::Return));
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false), "8000 is refused");
-    let height_box = || press(&rig, w, Role::TextInput, "Height");
+    let height_box = || press(rig, w, Role::TextInput, "Height");
     height_box();
     rig.key("32");
     rig.key(&named(Key::Return));
@@ -252,28 +228,27 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
 
     // Load a Profile… in the chip's popover closes it before the file window opens.
     // CANCEL, then the space chip over the canvas, then its popover's Custom tab.
-    press(&rig, w, Role::Button, "Cancel");
+    press(rig, w, Role::Button, "Cancel");
     rig.settle();
-    press(&rig, w, Role::Button, &format!("{} · {}", e.get_chip_title(), e.get_chip_hint()));
+    press(rig, w, Role::Button, &format!("{} · {}", e.get_chip_title(), e.get_chip_hint()));
     rig.settle();
     let popped = |role: Role, name: &str| {
         let (x, y) = common::in_popup(w, role, name).middle();
-        click(&rig, x, y);
+        click(rig, x, y);
     };
     popped(Role::Tab, "Custom");
     rig.settle();
     assert_eq!(e.get_space_tab(), 4, "the popover's Custom tab took the press");
     if !e.get_on_profile() {
         eprintln!("no profile installed: the popover's Load a Profile… is not exercised");
-        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(root);
         return;
     }
     let (title, srgb) = (e.get_chip_title(), common::in_popup(w, Role::Tab, "sRGB").middle());
     popped(Role::Button, "Load a Profile…");
     rig.settle();
     assert_eq!(asked.get(), 1, "the key asked for files");
-    click(&rig, srgb.0, srgb.1);
+    click(rig, srgb.0, srgb.1);
     rig.settle();
     assert_eq!(e.get_chip_title(), title, "the popover closed, its sRGB tab gone from under the pointer");
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -1,10 +1,8 @@
 //! A flat-field drag on a frame with dust corrections: each patch lies on the decoded scan, so the drag
 //! neither drops a patch nor heals the frame again; only another decode does.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Dedust, Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::frame::{Correction, FlatField, FlatFieldMask};
 use oni_settings::sidecar::{self, WriteOptions};
@@ -34,13 +32,8 @@ fn patches(caches: &Path) -> Vec<(PathBuf, SystemTime)> {
 }
 
 pub(crate) fn a_flat_field_drag_keeps_every_patch() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the flat-field drag over patches is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-flat-drag-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("flat-drag");
+    let (folder, caches) = (root.scans(), root.caches());
     common::plain_tiff(&folder.join("A.tif"), 320, 240, 0.5);
     let mut settings = PipelineSettings::rest(ConversionMode::Negative, false);
     settings.flat_field = FlatField { mask: FlatFieldMask::ValoiEasy35V1, ..FlatField::default() };
@@ -53,20 +46,12 @@ pub(crate) fn a_flat_field_drag_keeps_every_patch() {
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     // SAFETY: set before any thread of this process reads it; the patches land in the check's own folder.
     unsafe { std::env::set_var("ONI_CACHES", &caches) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches: caches.clone(), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, c, d) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Dedust>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
@@ -89,6 +74,4 @@ pub(crate) fn a_flat_field_drag_keeps_every_patch() {
     // Twin: another decode of the file cuts its patches again, under its own reading.
     w.global::<PanelState>().invoke_film_type_picked(1);
     rig.until("the positive's patches", Duration::from_secs(120), || healed() && patches(&caches).len() == 6);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

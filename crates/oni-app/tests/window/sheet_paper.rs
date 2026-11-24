@@ -2,11 +2,8 @@
 //! shows it: the other frames, the gaps and the margins keep what they are with no correction at all.
 
 use oni_app::app::export_card::{self, Ask, job::End};
-use oni_app::app::{Options, Shell};
 use oni_app::{Exporting, Library};
-use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -35,12 +32,7 @@ fn apart(a: [f64; 3], b: [f64; 3]) -> f64 {
 }
 
 pub(crate) fn each_frame_of_a_sheet_on_a_paper_takes_its_own_correction() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the sheet on a paper is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-sheet-paper-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("sheet-paper");
     let (folder, out, profiles) = (root.join("Scans"), root.join("Out"), root.join("Profiles"));
     std::fs::create_dir_all(&out).unwrap();
     let names = ["A.tif", "B.tif", "C.tif"];
@@ -50,19 +42,11 @@ pub(crate) fn each_frame_of_a_sheet_on_a_paper_takes_its_own_correction() {
     let pearl = root.join("Pearl.icc");
     stand_in::write_stand_in(&pearl, "Pearl", 0.02, Some(stand_in::bluish()), false);
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
@@ -119,5 +103,4 @@ pub(crate) fn each_frame_of_a_sheet_on_a_paper_takes_its_own_correction() {
     let (c, n) = (block(&corrected, first, 300), block(&neutral, first, 300));
     println!("the first frame: {c:?} against {n:?}");
     assert!(c[2] / c[0] < n[2] / n[0] - 0.05, "the first frame keeps its blue: {c:?} against {n:?}");
-    let _ = std::fs::remove_dir_all(&root);
 }

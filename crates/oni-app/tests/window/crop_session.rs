@@ -27,7 +27,8 @@ fn drag(rig: &common::Rig, w: &oni_app::MainWindow, (x, y): (f32, f32), by: f32)
 }
 
 pub(crate) fn the_crops_handles_take_a_hand_past_their_slim_lines() {
-    let Some((rig, shell, root)) = opened("crop-reach") else { return };
+    let Some(app) = opened("crop-reach") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (framing, c) = (w.global::<Framing>(), w.global::<Canvas>());
     let crop = || ctl.state.borrow().store().settings().geometry.crop;
@@ -52,11 +53,11 @@ pub(crate) fn the_crops_handles_take_a_hand_past_their_slim_lines() {
     // follows the hand all the way; the fraction counts up from the bottom, as Swift's.
     let found = crop();
     let (x, y, ..) = frame();
-    drag(&rig, w, (x - 16.0, y - 16.0), 30.0);
+    drag(rig, w, (x - 16.0, y - 16.0), 30.0);
     assert_eq!(crop(), found, "twin: beyond the hand's reach the press holds nothing");
     let (x, y, wd, ht) = frame();
     let points = |f: oni_settings::cg::Rect| (f.x * f64::from(wd) / found.width, f.height * f64::from(ht) / found.height);
-    drag(&rig, w, (x - 10.0, y - 10.0), 30.0);
+    drag(rig, w, (x - 10.0, y - 10.0), 30.0);
     let cornered = crop();
     let travel = (points(cornered).0 - points(found).0, points(found).1 - points(cornered).1);
     assert!((travel.0 - 30.0).abs() < 0.5 && (travel.1 - 30.0).abs() < 0.5, "the corner follows the hand: {travel:?}");
@@ -65,22 +66,21 @@ pub(crate) fn the_crops_handles_take_a_hand_past_their_slim_lines() {
     // Ten points outside the right edge's middle, its edge is held and follows every step of the hand,
     // the left one kept, and let go it says its kept size no more.
     let (x, y, wd, ht) = frame();
-    drag(&rig, w, (x + wd + 16.0, y + ht / 2.0), -30.0);
+    drag(rig, w, (x + wd + 16.0, y + ht / 2.0), -30.0);
     assert_eq!(crop(), cornered, "twin: beyond the hand's reach the press holds nothing");
     let (x, y, wd, ht) = frame();
-    drag(&rig, w, (x + wd + 10.0, y + ht / 2.0), -30.0);
+    drag(rig, w, (x + wd + 10.0, y + ht / 2.0), -30.0);
     let edged = crop();
     let travel = (cornered.width - edged.width) * f64::from(wd) / cornered.width;
     assert!((travel - 30.0).abs() < 0.5 && (edged.x - cornered.x).abs() < 1e-6, "the right edge follows the hand: {travel}");
     rig.settle();
     assert_eq!(c.get_crop_badge(), "", "let go, the frame's kept size leaves");
     rig.shot("crop-reach");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it() {
-    let Some((rig, shell, root)) = opened("crop-session") else { return };
+    let Some(app) = opened("crop-session") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, framing, c) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
     let escape: SharedString = Key::Escape.into();
@@ -93,7 +93,7 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     let entry = geometry();
 
     // Escape: the ratio and the turn made in the crop are put back, and the crop is left.
-    crop(&rig);
+    crop(rig);
     framing.invoke_ratio_picked(3);
     framing.invoke_act(oni_app::Act::Rotate);
     rig.settle();
@@ -108,20 +108,20 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
     assert_eq!(geometry(), worked, "Undo takes the cancel back");
 
     // The header shows both ways out: Cancel does as Escape, DONE keeps.
-    crop(&rig);
+    crop(rig);
     let found = geometry();
     framing.invoke_act(oni_app::Act::Mirror);
     rig.settle();
-    common::click(&rig, w, common::the(w, Role::Button, "Cancel").middle());
+    common::click(rig, w, common::the(w, Role::Button, "Cancel").middle());
     assert_eq!((panel.get_tab(), geometry()), (PanelTab::Color, found), "Cancel puts the frame back and leaves");
-    crop(&rig);
+    crop(rig);
     framing.invoke_act(oni_app::Act::Mirror);
     rig.settle();
-    common::click(&rig, w, common::the(w, Role::Button, "DONE").middle());
+    common::click(rig, w, common::the(w, Role::Button, "DONE").middle());
     assert_eq!(panel.get_tab(), PanelTab::Color, "DONE leaves the crop");
     assert_ne!(geometry(), found, "twin: DONE keeps the mirror");
     let kept = geometry();
-    crop(&rig);
+    crop(rig);
     framing.invoke_act(oni_app::Act::Rotate);
     rig.settle();
     rig.key("\r");
@@ -140,18 +140,17 @@ pub(crate) fn escape_or_cancel_puts_back_what_a_tool_changed_and_done_keeps_it()
         c.invoke_paint_end();
         rig.until("the stroke", Duration::from_secs(10), || corrections() == 1);
     };
-    paint(&rig);
+    paint(rig);
     rig.key(&escape);
     assert_eq!((panel.get_tab(), corrections()), (PanelTab::Color, 0), "Escape leaves De-dust, its correction taken back");
-    paint(&rig);
+    paint(rig);
     rig.key("\r");
     assert_eq!((panel.get_tab(), corrections()), (PanelTab::Color, 1), "twin: Return keeps the correction");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
-    let Some((rig, shell, root)) = opened("crop-arrows") else { return };
+    let Some(app) = opened("crop-arrows") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, framing, c) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
     let crop = || ctl.state.borrow().store().settings().geometry.crop;
@@ -212,6 +211,4 @@ pub(crate) fn the_arrows_move_the_crop_and_every_readout_says_one_kept_size() {
     assert_eq!(format!("{:.0} × {:.0} px", full.0, full.1), kept, "the render cuts what the readouts say");
     assert_ne!(format!("{:.0} × 64 px", width().round()), kept);
     assert_eq!(panel.get_tab(), PanelTab::Color);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

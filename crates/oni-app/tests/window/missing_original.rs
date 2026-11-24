@@ -41,8 +41,7 @@ fn bench(label: &str, extra: impl Fn(&Path)) -> Option<Bench> {
     }
     extra(&roll);
     std::fs::create_dir_all(root.join("home")).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let computer = Computer { home: root.join("home").to_string_lossy().into_owned(), volumes: root.join("Volumes").to_string_lossy().into_owned() };

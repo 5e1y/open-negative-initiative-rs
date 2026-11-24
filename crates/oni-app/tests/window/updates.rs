@@ -39,8 +39,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let root = std::env::temp_dir().join(format!("oni-app-updates-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let (support, downloads) = (root.join("Support"), root.join("Downloads"));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
 
     // A key pair of the check's own: the archive signed with it, a forged one beside it.
     let rng = ring::rand::SystemRandom::new();

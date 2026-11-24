@@ -5,16 +5,13 @@
 
 use oni_app::InfoKind;
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, Menus, Stocks};
-use oni_core::{Archive, EditorStore};
-use oni_library::paths;
 use oni_settings::DyeSet;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::PipelineSettings;
 use slint::ComponentHandle;
-use slint::platform::{Key, WindowEvent};
-use std::path::{Path, PathBuf};
+use slint::platform::Key;
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -37,28 +34,17 @@ fn stock(id: &str) -> i32 {
 }
 
 pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the roll card is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-roll-card-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("roll-card");
     for file in ["Scans/A.tif", "Scans/B.tif", "Scans/C.tif", "Scans/Other/D.tif", "Scans/Other/E.tif"] {
         common::linear_tiff(&root.join(file), 48, 32, 0.5);
     }
-    let root = PathBuf::from(paths::canonical(&root));
+    let root = root.canonical();
     let scans = root.join("Scans");
     let other = scans.join("Other");
     let slide = PipelineSettings { mode: oni_settings::ConversionMode::Positive, ..PipelineSettings::default() };
     sidecar::write(&slide, &other.join("D.tif"), WriteOptions::default()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     shell.open_folder(&scans);
@@ -151,7 +137,7 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     // A name typed over the title makes the roll under it, the folder keeping its own name. The field the
     // title becomes keeps the column's margins, as wide as the column's content, its stock's key; twin: off
     // the column's edge, where its fold keys stand.
-    common::click(&rig, w, named[0].middle());
+    common::click(rig, w, named[0].middle());
     rig.settle();
     let content = common::the(w, AccessibleRole::Button, "Select Film Stock");
     let field = common::placed_all(w, AccessibleRole::TextInput).into_iter().find(|t| t.x >= edge - 1.0 && (t.y - named[0].y).abs() < 24.0).expect("the title's field");
@@ -243,6 +229,4 @@ pub(crate) fn a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_
     rig.landed(&ctl);
     rig.pump();
     assert_eq!(ctl.state.borrow().store().settings().dye_set, DyeSet::of("fujifilm-xtra-400"));
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -4,7 +4,6 @@
 use oni_app::SubmenuProbe;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -13,8 +12,7 @@ use crate::common;
 const REST: Duration = Duration::from_millis(400);
 
 fn probe() -> (common::Rig, SubmenuProbe) {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = SubmenuProbe::new().unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(800, 500));

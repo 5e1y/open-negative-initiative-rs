@@ -3,16 +3,12 @@
 //! DONE while the crop or De-dust stands open, none on the projects or in the ONI Trash. Each is a keycap
 //! filled with the accent, as a DONE is.
 
-use oni_app::app::{Options, Shell};
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Act, App, Bar, Library};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
-use slint::platform::WindowEvent;
 use slint::ComponentHandle;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -42,13 +38,8 @@ fn filled((_, share): (usize, f32)) -> bool {
 }
 
 pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the bar's accent is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-accent-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, measured, support, caches) = (root.join("Scans"), root.join("Measured"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("toolbar-accent");
+    let (folder, measured) = (root.join("Scans"), root.join("Measured"));
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
@@ -58,15 +49,8 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, false);
     s.roll_reference = Some(RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
     sidecar::write(&s, &done, WriteOptions::default()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 900).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
     // The bar's key so named.
@@ -76,7 +60,7 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
         assert_eq!(keys.len(), 1, "one {label:?} on the bar: {keys:?}");
         keys[0]
     };
-    let face = |label: &str| blue(&rig, key(label));
+    let face = |label: &str| blue(rig, key(label));
     // EXPORT ends the bar, the columns' inset from the window's right edge (`ShellStyle.bar-end`), no key after it.
     let at_end = || {
         let export = key("EXPORT");
@@ -91,8 +75,7 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     assert_eq!(at_end(), (true, 0), "EXPORT at the gallery's right end");
     assert!(key("ADD FOLDER…").x < key("Reset").x, "ADD FOLDER… in the centre, before Reset");
     // A roll never measured: Prepare Roll takes it.
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.until("the roll found unmeasured", Duration::from_secs(10), || lib.get_roll_unmeasured());
     let (prepare, add, export) = (face("PREPARE ROLL"), face("ADD FOLDER…"), face("EXPORT"));
     println!("shot {}", rig.shot("toolbar-accent-unmeasured").display());
@@ -115,7 +98,7 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     for (tool, act) in [("crop", Act::Framing), ("De-dust", Act::Correction)] {
         bar.invoke_act(act);
         rig.settle();
-        let (done, export) = (blue(&rig, common::the(w, Role::Button, "DONE")), face("EXPORT"));
+        let (done, export) = (blue(rig, common::the(w, Role::Button, "DONE")), face("EXPORT"));
         println!("shot {}", rig.shot(&format!("toolbar-accent-{tool}")).display());
         assert!(filled(done) && export.0 == 0, "the {tool}'s DONE alone wears the accent: {done:?} {export:?}");
         bar.invoke_act(act);
@@ -144,5 +127,4 @@ pub(crate) fn the_accent_lands_on_each_screens_own_commit() {
     let (prepare, add, export) = (face("PREPARE ROLL"), face("ADD FOLDER…"), face("EXPORT"));
     println!("shot {}", rig.shot("toolbar-accent-trash").display());
     assert!(prepare.0 == 0 && add.0 == 0 && export.0 == 0, "no accent in the ONI Trash: {prepare:?} {add:?} {export:?}");
-    let _ = std::fs::remove_dir_all(&root);
 }

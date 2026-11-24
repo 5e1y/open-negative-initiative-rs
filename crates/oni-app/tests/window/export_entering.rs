@@ -5,7 +5,6 @@ use oni_app::app::export_card;
 use oni_app::app::{Options, Shell};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -24,8 +23,7 @@ pub(crate) fn entering_the_export_reads_no_scan_on_the_interface_thread() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: entering the export is not exercised"),
     };
-    let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let root = std::env::temp_dir().join(format!("oni-app-export-entering-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let folder = root.join("Two");

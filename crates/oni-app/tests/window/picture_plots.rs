@@ -13,7 +13,8 @@ use crate::common;
 use crate::panel_bindings::opened;
 
 pub(crate) fn the_readout_is_its_plot_alone() {
-    let Some((rig, shell, root)) = opened("readout-alone") else { return };
+    let Some(app) = opened("readout-alone") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let (panel, plots) = (w.global::<PanelState>(), w.global::<Plots>());
     for tab in [PanelTab::Color, PanelTab::Roll] {
@@ -29,11 +30,11 @@ pub(crate) fn the_readout_is_its_plot_alone() {
         assert!((height - (150.0 - 20.0)).abs() > 0.5);
     }
     rig.shot("readout-alone-colour");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn the_curves_inputs_are_read_while_their_plot_is_open_alone() {
-    let Some((rig, shell, root)) = opened("input-plots") else { return };
+    let Some(app) = opened("input-plots") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, plots, editors) = (w.global::<PanelState>(), w.global::<Plots>(), w.global::<Editors>());
     panel.set_tab(PanelTab::Color);
@@ -68,5 +69,4 @@ pub(crate) fn the_curves_inputs_are_read_while_their_plot_is_open_alone() {
     curves_open(true);
     rig.until("a render asked anew", Duration::from_secs(60), || renders() > rendered);
     rig.until("the curves traced at once", Duration::from_secs(10), || plots.get_curves_revision() > traced);
-    let _ = std::fs::remove_dir_all(&root);
 }

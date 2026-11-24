@@ -1,9 +1,7 @@
 //! Prepare the Roll's last gaps on the headless window: the flat-field sliders a hand last left open
 //! a fresh roll and are kept as they move; a flagged frame that cannot be read is written, as Swift's is.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Library, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::FlatField;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
@@ -18,13 +16,8 @@ fn loaded(path: &Path) -> sidecar::Loaded {
 }
 
 pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare the Roll's leftovers are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-leftovers-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare-leftovers");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.7), ("C.tif", 0.5), ("D.tif", 0.3)] {
         common::graded_tiff(&scans.join("R1").join(name), 120, 80, tone);
     }
@@ -40,15 +33,8 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     }
     let kept = || oni_app::preferences::Preferences::load(&support).value(oni_app::flat_fields::SLIDERS_KEY).cloned();
     oni_app::preferences::Preferences::load(&support).set(oni_app::flat_fields::SLIDERS_KEY, serde_json::json!([0.5, 0.4, -0.3])).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p) = (w.global::<Library>(), w.global::<Preparing>());
@@ -119,5 +105,4 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     assert!(id("B.tif").is_some(), "the roll measured");
     assert_eq!(id("C.tif"), id("B.tif"), "the flagged frame rides on the roll, read or not");
     assert_eq!(id("D.tif"), None, "twin: a frame left in that cannot be read is left as it was");
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -2,10 +2,8 @@
 //! previews under the pointer without writing, a click applies to the selection as one gallery
 //! step, the editor writes once the hand rests, the share code comes back as a copy, a delete asks.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Advice, App, Confirm, Library, Menus, Presets, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use i_slint_backend_testing::AccessibleRole;
 use slint::platform::{Key, WindowEvent};
@@ -36,41 +34,22 @@ fn fits(w: &oni_app::MainWindow, commit: &str) {
 }
 
 pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the presets are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-presets-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches, trash) = (root.join("Scans"), root.join("Support"), root.join("Caches"), root.join("Trash"));
+    let root = common::Root::new("presets");
+    let (folder, support, trash) = (root.join("Scans"), root.join("Support"), root.join("Trash"));
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.6), ("C.tif", 0.4)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
     }
     std::fs::create_dir_all(&trash).unwrap();
     let canonical = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
     let binned = trash.clone();
-    let options = Options {
-        support: support.clone(),
-        caches,
-        picker: Box::new(|| None),
-        discard: Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap()))),
-        ..Options::default()
-    };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.discard = Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap())))).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let presets = w.global::<Presets>();
     let menus = w.global::<Menus>();
     let shelf = support.join("Presets");
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     assert_eq!(presets.get_cards().row_count(), 0);
     assert!(!menus.get_live().save_preset, "nothing to save with no photo open");
@@ -133,7 +112,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     let tab = common::the(w, AccessibleRole::Button, "Presets").middle();
     move_to(tab.0, tab.1);
     assert_eq!(first().1, rest_y, "twin: the pointer on the tab leaves the deck closed");
-    common::click(&rig, w, tab);
+    common::click(rig, w, tab);
     rig.settle();
     let (_, up_y) = first();
     assert!(up_y < rest_y - 64.0, "the tab opens the deck: {up_y} against {rest_y}");
@@ -189,7 +168,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     // reaches for the box once the sheet has come in.
     let at_once = || common::the(w, AccessibleRole::Checkbox, "Don\u{2019}t ask again this session").middle();
     rig.settle();
-    common::click(&rig, w, at_once());
+    common::click(rig, w, at_once());
     assert!(presets.get_copy_at_once(), "the click ticks it");
     rig.key("\u{1b}");
     assert!(!presets.get_saving());
@@ -197,7 +176,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.pump();
     assert!(presets.get_saving() && !presets.get_copy_at_once(), "twin: a sheet cancelled asks again, the choice off");
     rig.settle();
-    common::click(&rig, w, at_once());
+    common::click(rig, w, at_once());
     rig.key("\n");
     assert!(!presets.get_saving());
     // Then Copy takes the last boxes at once: the vignette moved since reaches the board, Lighting not.
@@ -332,5 +311,4 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert_eq!(oni_core::presets::files(&shelf).len(), 1);
     assert_eq!(std::fs::read_dir(&trash).unwrap().count(), 1, "the file went to the Trash, not away");
     assert_eq!(presets.get_cards().row_count(), 1);
-    let _ = std::fs::remove_dir_all(&root);
 }

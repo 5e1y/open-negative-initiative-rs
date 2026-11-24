@@ -51,8 +51,7 @@ pub fn stage_with(name: &str, tldb: TldbSite, vault: Option<std::sync::Arc<dyn V
     oni_settings::film::roll_folder::set_roll(Some(&Film::new("Scans")), &scans).unwrap();
     std::fs::create_dir_all(&support).unwrap();
     before(&support, &caches);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let opened: Rc<RefCell<Vec<String>>> = Rc::default();
     let browser = opened.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

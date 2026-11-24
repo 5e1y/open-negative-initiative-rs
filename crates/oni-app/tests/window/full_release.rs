@@ -2,45 +2,25 @@
 //! is dropped, never kept resident or rendered on the hidden canvas.
 
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
+use oni_app::app::Shell;
 use oni_app::fields::Field;
 use oni_app::{App, Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
-use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use crate::common;
 
 pub(crate) fn a_full_resolution_landing_in_the_gallery_is_let_go() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the full resolution's release is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-full-release-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("full-release");
+    let folder = root.scans();
     // Past the preview's side, so the full resolution is a build of its own.
     common::graded_tiff(&folder.join("A.tif"), 3000, 2000, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    let lib = w.global::<Library>();
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
     assert!(!ctl.state.borrow().full_built(), "the preview alone, before the setting asks the full resolution");
 
     // The whole-decode setting asks the full resolution at the next render; the gallery comes back before it lands.
@@ -70,26 +50,15 @@ pub(crate) fn a_full_resolution_landing_in_the_gallery_is_let_go() {
 }
 
 /// One frame, `A.tif`, past the preview's side, open in the editor and rendered.
-fn opened(gpu: &oni_app::render::Device, label: &str) -> (common::Rig, Shell, PathBuf) {
-    let root = std::env::temp_dir().join(format!("oni-app-{label}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
-    common::graded_tiff(&folder.join("A.tif"), 3000, 2000, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    edit_a(&shell);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    (rig, shell, root)
+fn opened(label: &str) -> Option<common::App> {
+    let root = common::Root::new(label);
+    common::graded_tiff(&root.scans().join("A.tif"), 3000, 2000, 0.6);
+    let app = common::launch(root).show()?;
+    let ctl = &app.shell.ctl;
+    app.read(&app.root.scans());
+    edit_a(&app.shell);
+    app.rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    Some(app)
 }
 
 /// A double-clicked in the gallery.
@@ -105,20 +74,17 @@ fn loading_full(shell: &Shell) -> bool {
 }
 
 pub(crate) fn a_full_resolution_build_survives_a_quick_return() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the full resolution's quick return is not exercised"),
-    };
-    let (rig, shell, root) = opened(&gpu, "full-return");
+    let Some(app) = opened("full-return") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     oni_app::render::FULL_DECODE.store(true, Ordering::Relaxed);
     w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
-    rig.until("the full resolution asked", Duration::from_secs(10), || loading_full(&shell));
+    rig.until("the full resolution asked", Duration::from_secs(10), || loading_full(shell));
     let asked = oni_app::decode_gate::FULL.asked();
     // Out and back before the build lands, which only a pump lets reach the interface thread.
     ctl.act(oni_app::Act::ToggleMode);
     assert!(w.global::<App>().get_gallery());
-    assert!(loading_full(&shell), "the bar says the decode still running");
+    assert!(loading_full(shell), "the bar says the decode still running");
     ctl.act(oni_app::Act::ToggleMode);
     assert!(!w.global::<App>().get_gallery(), "the editor again");
     // A notch at once asks a render, hence the full resolution, while the first build still runs.
@@ -130,18 +96,13 @@ pub(crate) fn a_full_resolution_build_survives_a_quick_return() {
         std::thread::sleep(Duration::from_millis(20));
     }
     assert_eq!(oni_app::decode_gate::FULL.asked(), asked, "the return waits on the build under way, never decodes the frame again");
-    assert!(!loading_full(&shell), "twin: the bar goes with the build's landing");
+    assert!(!loading_full(shell), "twin: the bar goes with the build's landing");
     oni_app::render::FULL_DECODE.store(false, Ordering::Relaxed);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn every_way_out_lets_the_editor_go() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the ways out of the editor are not exercised"),
-    };
-    let (rig, shell, root) = opened(&gpu, "ways-out");
+    let Some(app) = opened("ways-out") else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     oni_app::render::FULL_DECODE.store(true, Ordering::Relaxed);
     // The full resolution, Compare and the crop: what the editor holds and must let go.
@@ -169,13 +130,11 @@ pub(crate) fn every_way_out_lets_the_editor_go() {
     shell.open_folder(&root.join("Scans"));
     rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    edit_a(&shell);
+    edit_a(shell);
     hold();
     ctl.act(oni_app::Act::Remove);
     rig.landed(&ctl);
     assert!(w.global::<App>().get_gallery(), "the last frame of its roll trashed, the gallery");
     assert_eq!(held(), (false, false, false), "a trashed frame leaves the editor whole");
     oni_app::render::FULL_DECODE.store(false, Ordering::Relaxed);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -2,13 +2,11 @@
 //! reads the filters as C, M and Y, the same values as Temperature and Tint. Each state shot at 1512 x 982.
 
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, MainWindow, PanelState, PanelTab};
-use oni_core::{Archive, EditorStore};
 use oni_settings::{Document, LegacyMachine, PipelineSettings};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -29,40 +27,20 @@ fn scanner_sidecar(original: &Path) {
     std::fs::write(oni_settings::sidecar::url_for(original), serde_json::to_vec_pretty(&v).unwrap()).unwrap();
 }
 
-fn launch(name: &str, seed: impl FnOnce(&Path)) -> Option<(common::Rig, Shell, PathBuf)> {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => {
-            eprintln!("{e}: the one face is not exercised");
-            return None;
-        }
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-one-face-{name}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+fn launch(name: &str, seed: impl FnOnce(&Path)) -> Option<common::App> {
+    let root = common::Root::new(&format!("one-face-{name}"));
+    let folder = root.scans();
     common::plain_tiff(&folder.join("A.tif"), 960, 640, 0.35);
     common::plain_tiff(&folder.join("B.tif"), 960, 640, 0.35);
     seed(&folder.join("A.tif"));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let shell = Shell::new(store, engine, Options { support, caches, picker: Box::new(|| None), ..Options::default() }).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2 * 1512, 2 * 982));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    let lib = shell.window.global::<Library>();
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    let app = common::launch(root).size(1512, 982).scale(2.0).show()?;
+    let common::App { rig, shell, .. } = &app;
+    app.edit_first();
     let panel = shell.window.global::<PanelState>();
     panel.set_tab(PanelTab::Color);
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
-    Some((rig, shell, root))
+    Some(app)
 }
 
 fn shown(w: &MainWindow, role: Role, name: &str) -> bool {
@@ -75,7 +53,8 @@ fn slider_value(w: &MainWindow, name: &str) -> String {
 }
 
 pub(crate) fn the_colour_tab_lays_one_face_and_nothing_of_the_scanner() {
-    let Some((rig, shell, root)) = launch("blocks", |_| {}) else { return };
+    let Some(app) = launch("blocks", |_| {}) else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     // Tall enough for every block to stand laid; a digital photo lays the most.
     w.global::<PanelState>().invoke_film_type_picked(3);
@@ -90,11 +69,11 @@ pub(crate) fn the_colour_tab_lays_one_face_and_nothing_of_the_scanner() {
     assert!(!shown(w, Role::Tab, "Scanner") && !shown(w, Role::Tab, "Frontier") && !shown(w, Role::Tab, "Pro"), "no face, no machine");
     // Twin: the same probe sees a title the tab does lay that only a photo with a legacy print would lack.
     assert!(shown(w, Role::Text, "Lighting") && !shown(w, Role::Text, "Scanner ONI look (legacy)"));
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it() {
-    let Some((rig, shell, root)) = launch("legacy", scanner_sidecar) else { return };
+    let Some(app) = launch("legacy", scanner_sidecar) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let settings = || ctl.state.borrow().store().settings().clone();
     let legacy = settings().legacy_print.expect("the migrated photo keeps its legacy print");
@@ -106,11 +85,11 @@ pub(crate) fn a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switch
     let toggle = common::the(w, Role::Checkbox, title);
     // Off, the photo prints as its sliders say and keeps the legacy print to lay again.
     let renders = ctl.state.borrow().renders();
-    common::click(&rig, w, toggle.middle());
+    common::click(rig, w, toggle.middle());
     rig.until("the render without it", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     assert!(settings().legacy_print.is_some_and(|l| !l.laid), "kept, not laid");
     assert!(shown(w, Role::Checkbox, title), "its switch stays to lay it again");
-    common::click(&rig, w, common::the(w, Role::Checkbox, title).middle());
+    common::click(rig, w, common::the(w, Role::Checkbox, title).middle());
     rig.settle();
     assert!(settings().legacy_print.is_some_and(|l| l.laid));
     rig.window.set_size(slint::PhysicalSize::new(2 * 1512, 2 * 982));
@@ -128,13 +107,11 @@ pub(crate) fn a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switch
     rig.window.set_size(slint::PhysicalSize::new(2 * 1512, 2 * 3200));
     rig.settle();
     assert!(settings().legacy_print.is_none() && !shown(w, Role::Checkbox, title) && shown(w, Role::Text, "Lighting"));
-    drop(ctl);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn settings_read_the_filters_as_c_m_and_y_each_band_either_way() {
-    let Some((rig, shell, root)) = launch("cmy", |_| {}) else { return };
+    let Some(app) = launch("cmy", |_| {}) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let store = w.global::<oni_app::Store>();
     store.invoke_typed(oni_app::fields::Field::Temperature.index(), 100);
@@ -166,7 +143,4 @@ pub(crate) fn settings_read_the_filters_as_c_m_and_y_each_band_either_way() {
     rig.settle();
     assert!(shown(w, Role::Text, "C, M and Y move the light by \u{2212}1.00 EV") && slider_value(w, "Temperature").contains("1.00"));
     drop(store);
-    drop(ctl);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

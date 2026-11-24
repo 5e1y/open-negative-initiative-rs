@@ -3,9 +3,7 @@
 //! decides which light glows; a film mode shows none.
 
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{Options, Shell};
 use oni_app::{Canvas, Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
 use std::path::{Path, PathBuf};
@@ -40,21 +38,13 @@ pub(crate) fn press_rail(rig: &common::Rig, w: &oni_app::MainWindow, label: &str
     rig.pump();
 }
 
-/// A shell on `folder`'s one photo, open in the editor and rendered as a digital photo.
-pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig, Shell) {
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+/// A shell on the scans' one photo, open in the editor and rendered as a digital photo.
+pub(crate) fn opened(root: common::Root) -> Option<common::App> {
     // Tall enough for every Film Effects row, the colour line included, unscrolled.
-    rig.window.set_size(slint::PhysicalSize::new(1280, 2160));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
-    shell.window.show().unwrap();
+    let app = common::launch(root).size(1280, 2160).show()?;
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&app.root.scans());
     w.global::<Library>().invoke_tile_opened(0);
     rig.until("the photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
@@ -63,7 +53,7 @@ pub(crate) fn opened(gpu: &oni_app::render::Device, root: &Path) -> (common::Rig
     rig.until("the digital photo rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > n);
     rig.settle();
     assert_eq!(ctl.state.borrow().store().settings().mode, oni_settings::ConversionMode::Digital);
-    (rig, shell)
+    Some(app)
 }
 
 /// The view stepped up to 100 %.
@@ -81,14 +71,10 @@ pub(crate) fn at_full_size(rig: &common::Rig, ctl: &std::rc::Rc<oni_app::app::Ct
 }
 
 pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Film Effects block's grain is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-film-grain-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("film-grain");
     let name = photo(&root.join("Scans"));
-    let (rig, shell) = opened(&gpu, &root);
+    let Some(app) = opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with(&name)));
 
@@ -101,7 +87,7 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
     println!("a scan {long} px long: Grain size {}", g.get_grain_size_readout());
     assert_eq!(g.get_grain_size_readout().to_string(), format!("{:.1} px", oni_settings::blocks::Grain::pixels(rest.size, long)), "on a scan {long} long");
     let renders = ctl.state.borrow().renders();
-    press_rail(&rig, w, "Grain", 0.8);
+    press_rail(rig, w, "Grain", 0.8);
     rig.until("the grain rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     let laid = grain();
@@ -111,7 +97,7 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
     assert_eq!(laid.size, rest.size, "Grain size moved: {laid:?}");
     println!("shot {}", rig.shot("film-effects-grain-fit").display());
     // At 100 %, where the grain's cells are a pixel or two.
-    at_full_size(&rig, &ctl);
+    at_full_size(rig, &ctl);
     println!("shot {}", rig.shot("film-effects-grain-100").display());
     // Twin: the same frame as a negative keeps its grain unshown, with no Film Effects block.
     assert_eq!(common::placed(w, AccessibleRole::Text, "Film Effects").len(), 1, "a digital photo lays Film Effects");
@@ -119,17 +105,10 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
     rig.settle();
     assert_eq!(grain(), laid, "a film mode keeps the grain for a later Digital");
     assert!(common::placed(w, AccessibleRole::Text, "Film Effects").is_empty(), "a negative lays no Film Effects");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Film Effects block's halation is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-film-halation-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("film-halation");
     // A night: a lit window, a lamp and a thin wire of light on a dark ground.
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     common::pixels_tiff(&root.join("Scans/A.tif"), 2400, 1600, |x, y| {
@@ -139,7 +118,8 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
         let wire = (fy - 1300.0).abs() < 2.0 && (400.0..1400.0).contains(&fx);
         if window || lamp || wire { [1.0; 3] } else { [0.0; 3] }
     });
-    let (rig, shell) = opened(&gpu, &root);
+    let Some(app) = opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let halation = || ctl.state.borrow().store().settings().halation;
     let g = w.global::<Store>();
@@ -160,9 +140,9 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
         rig.until(what, Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
         rig.settle();
     };
-    rendered(&rig, "the halation rendered", &|| {
-        press_rail(&rig, w, "Halation", 0.95);
-        press_rail(&rig, w, "Halation size", 0.95);
+    rendered(rig, "the halation rendered", &|| {
+        press_rail(rig, w, "Halation", 0.95);
+        press_rail(rig, w, "Halation size", 0.95);
     });
     let laid = halation();
     assert!((laid.amount - 0.95).abs() < 0.03 && (laid.size - 0.95).abs() < 0.03, "the presses lay Halation and its size: {laid:?}");
@@ -173,19 +153,17 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
     println!("shot {}", rig.shot("film-effects-halation-fit").display());
     let glow = ring();
     // Near Sensitivity's left end the threshold stands over the window's light: nothing glows.
-    rendered(&rig, "the dull halation rendered", &|| press_rail(&rig, w, "Halation sensitivity", 0.02));
+    rendered(rig, "the dull halation rendered", &|| press_rail(rig, w, "Halation sensitivity", 0.02));
     let dull = ring();
     println!("the ring's red: {unlit:.1} unlit, {glow:.1} at rest, {dull:.1} at sensitivity {:.2}", halation().sensitivity);
     let threshold = oni_pipeline::halation::threshold(ctl.state.borrow().store().settings());
     assert!(threshold > 1.0 && glow > unlit + 4.0, "the window glows at rest, {unlit} then {glow}, and not past {threshold}");
     assert!((dull - unlit).abs() <= 1.0, "a threshold over the window's light lays no glow: {unlit} then {dull}");
     // Twin: near its right end the dimmer light glows too, more than at rest.
-    rendered(&rig, "the keen halation rendered", &|| press_rail(&rig, w, "Halation sensitivity", 0.95));
+    rendered(rig, "the keen halation rendered", &|| press_rail(rig, w, "Halation sensitivity", 0.95));
     let keen = ring();
     println!("the ring's red at sensitivity {:.2}: {keen:.1}", halation().sensitivity);
     assert!(keen > glow + 2.0, "a keener halation glows more: {glow} then {keen}");
-    at_full_size(&rig, &ctl);
+    at_full_size(rig, &ctl);
     println!("shot {}", rig.shot("film-effects-halation-100").display());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -44,7 +44,8 @@ fn told(w: &oni_app::MainWindow, label: &str) -> (Option<bool>, Option<bool>) {
 }
 
 pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
-    let Some((rig, shell, root)) = opened("help-card") else { return };
+    let Some(app) = opened("help-card") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let tip = w.global::<Tip>();
     // Tall enough to hold the Lighting block's sliders on screen.
@@ -72,7 +73,7 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
 
     // Open, the card stands left of the panel under its tab bar; nothing in the panel moves.
     let before = common::the(w, Role::Slider, "Exposure");
-    press_help(&rig, w, "Lighting");
+    press_help(rig, w, "Lighting");
     assert_eq!(tip.get_open(), LIGHTING);
     assert_eq!(expanded(), Some(true), "twin: and open");
     let card = common::the(w, Role::Groupbox, "Help on Lighting");
@@ -96,7 +97,7 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     assert!(after.x >= card.x + card.width, "the card leaves the slider uncovered: {after:?} {card:?}");
     let exposure = || ctl.state.borrow().store().settings().print.exposure;
     let rested = exposure();
-    common::click(&rig, w, (after.x + after.width * 0.95, after.y + after.height - 8.0));
+    common::click(rig, w, (after.x + after.width * 0.95, after.y + after.height - 8.0));
     rig.settle();
     assert!(exposure() > rested, "the press reached the slider: {rested} to {}", exposure());
     assert!(tip.get_open().is_empty(), "the hand off its mark, the card goes");
@@ -108,12 +109,12 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     assert!(!end(&Placed { x: fold.x + fold.width, ..moved }), "twin: a Reset beside the fold is refused");
 
     // Another block's mark takes its place at the same spot; the hand leaving it closes it.
-    press_help(&rig, w, "Lighting");
-    press_help(&rig, w, "Colour");
+    press_help(rig, w, "Lighting");
+    press_help(rig, w, "Colour");
     assert!(common::placed(w, Role::Groupbox, "Help on Lighting").is_empty(), "one card at a time");
     assert_eq!(common::placed(w, Role::Groupbox, "Help on Colour").len(), 1);
     assert!(beside(&common::the(w, Role::Groupbox, "Help on Colour")), "the same place for every block");
-    leave_help(&rig, w);
+    leave_help(rig, w);
     assert!(tip.get_open().is_empty() && common::placed(w, Role::Groupbox, "Help on Colour").is_empty(), "the hand leaving its mark closes it");
 
     // Folded, its fold tells it as plainly.
@@ -121,7 +122,6 @@ pub(crate) fn a_help_card_opens_left_of_the_panel_and_moves_nothing() {
     hide.expect("the fold").invoke_accessible_default_action();
     rig.settle();
     assert_eq!(told(w, "Show Lighting"), (Some(true), Some(false)), "the fold tells its block is folded");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// Opens the Lighting block's card and says where it stands.
@@ -131,7 +131,8 @@ fn lighting_card(rig: &common::Rig, w: &oni_app::MainWindow) -> Placed {
 }
 
 pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
-    let Some((rig, shell, root)) = opened("help-card-close") else { return };
+    let Some(app) = opened("help-card-close") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (tip, app) = (w.global::<Tip>(), w.global::<App>());
     w.global::<PanelState>().set_tab(PanelTab::Color);
@@ -144,7 +145,7 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     };
 
     // Escape takes the card and nothing behind it; twin: the next one leaves the editor.
-    lighting_card(&rig, w);
+    lighting_card(rig, w);
     rig.key("\u{1b}");
     closed("Escape");
     assert!(!app.get_gallery(), "Escape took the card, not the editor");
@@ -154,41 +155,41 @@ pub(crate) fn a_help_card_closes_by_hand_and_goes_with_its_mark() {
     let doubles = std::rc::Rc::new(std::cell::Cell::new(0));
     let heard = doubles.clone();
     w.global::<Canvas>().on_double_clicked(move || heard.set(heard.get() + 1));
-    let spot = lighting_card(&rig, w).middle();
+    let spot = lighting_card(rig, w).middle();
     assert!(!tip.get_open().is_empty(), "the hand on its mark, the card stands");
-    common::click(&rig, w, spot);
+    common::click(rig, w, spot);
     closed("the hand off its mark");
-    common::click(&rig, w, spot);
-    common::click(&rig, w, spot);
+    common::click(rig, w, spot);
+    common::click(rig, w, spot);
     assert_eq!(doubles.get(), 1, "the canvas lies under that spot");
     rig.settle();
 
     // Whatever takes its mark away takes the card: the pane, the panel hidden, a sheet, the gallery.
-    lighting_card(&rig, w);
+    lighting_card(rig, w);
     w.global::<PanelState>().set_tab(PanelTab::Details);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Details);
     closed("another pane");
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
-    lighting_card(&rig, w);
+    lighting_card(rig, w);
     ctl.act(Act::HidePanel);
     closed("the panel hidden");
     ctl.act(Act::HidePanel);
     rig.settle();
-    lighting_card(&rig, w);
+    lighting_card(rig, w);
     w.global::<oni_app::Help>().set_report_shown(true);
     closed("a sheet over the window");
     w.global::<oni_app::Help>().set_report_shown(false);
     rig.settle();
-    lighting_card(&rig, w);
+    lighting_card(rig, w);
     ctl.act(Act::ToggleMode);
     closed("the gallery");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column() {
-    let Some((rig, shell, root)) = opened("help-card-room") else { return };
+    let Some(app) = opened("help-card-room") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
@@ -204,11 +205,11 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
         rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -40.0 });
         rig.settle();
     }
-    let card = lighting_card(&rig, w);
+    let card = lighting_card(rig, w);
     assert!(card.y + card.height <= 680.0 - MARGIN + 0.5, "inside the window: {card:?}");
     assert!(MENU + w.get_tabs_foot() + card.height > 680.0 - MARGIN, "twin: under the tab bar it would leave the window: {card:?}");
     assert!((card.x + card.width - (w.get_panel_x() - GAP)).abs() < 0.5, "lifted, still left of the panel: {card:?}");
-    press_help(&rig, w, "Lighting");
+    press_help(rig, w, "Lighting");
 
     // The export's column is wider and has no bar above: the card keeps its step from it, at the window's top.
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
@@ -217,7 +218,7 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
     rig.settle();
     let presets = mark(w, "Presets");
     assert!(presets.x > 1280.0 - 400.0, "the mark in the export's column: {presets:?}");
-    press_help(&rig, w, "Presets");
+    press_help(rig, w, "Presets");
     let card = common::the(w, Role::Groupbox, "Help on Presets");
     assert!((card.x + card.width - (1280.0 - 400.0 - GAP)).abs() < 0.5 && (card.y - MENU - MARGIN).abs() < 0.5, "left of the export's column: {card:?}");
     // Escape takes the card first; twin: the next one leaves the export.
@@ -227,5 +228,4 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
     rig.key("\u{1b}");
     rig.settle();
     assert!(!w.global::<Exporting>().get_shown(), "twin: the next Escape left the export");
-    let _ = std::fs::remove_dir_all(&root);
 }

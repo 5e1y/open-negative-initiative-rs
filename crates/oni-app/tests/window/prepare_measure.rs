@@ -2,13 +2,9 @@
 //! next one's, the roll's histogram summed frame after frame with its ends, every screen dark until
 //! the first lands, a measure stopped and started again included.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, Preparing};
-use oni_core::{Archive, EditorStore};
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::collections::HashSet;
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -35,30 +31,17 @@ fn dark(p: &Preparing) -> bool {
 }
 
 pub(crate) fn each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the measure's screen is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-measure-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare-measure");
+    let folder = root.scans();
     for i in 0..FRAMES {
         common::graded_tiff(&folder.join(format!("F{i}.tif")), 1500, 1000, 0.2 + 0.7 * i as f32 / FRAMES as f32);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p) = (w.global::<Library>(), w.global::<Preparing>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let first = oni_app::app::tiles(w).iter().map(|t| t.index).min().unwrap();
     lib.invoke_tile_clicked(first, false, false);
@@ -119,5 +102,4 @@ pub(crate) fn each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure
     assert!(dark(&p), "the measure again opens on dark screens, not stale ones");
     rig.until("the measure landed", Duration::from_secs(180), || !p.get_shown() || w.global::<oni_app::Advice>().get_shown());
     assert!(dark(&p), "a landed measure leaves nothing drawn for the next one");
-    let _ = std::fs::remove_dir_all(&root);
 }

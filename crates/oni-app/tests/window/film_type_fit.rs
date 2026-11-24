@@ -39,7 +39,8 @@ fn tab_names(w: &oni_app::MainWindow) -> Vec<String> {
 }
 
 pub(crate) fn film_types_tabs_fit_the_narrowest_window_in_every_language() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("film-type-fit") else { return };
+    let Some(app) = crate::panel_bindings::opened("film-type-fit") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let panel = w.global::<PanelState>();
     rig.window.set_size(slint::PhysicalSize::new(NARROWEST, 760));
@@ -92,5 +93,4 @@ pub(crate) fn film_types_tabs_fit_the_narrowest_window_in_every_language() {
     rig.settle();
     // Twin: the words measured are each catalogue's own, French's Numérique and Spanish's Negativo, not English's.
     assert!(needs[0] != needs[2] && needs[1] != needs[2], "{needs:?}");
-    let _ = std::fs::remove_dir_all(&root);
 }

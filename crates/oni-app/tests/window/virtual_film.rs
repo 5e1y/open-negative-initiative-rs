@@ -11,15 +11,11 @@ use crate::common;
 use crate::film_effects::{opened, press_rail};
 
 pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Film block is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-virtual-film-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("virtual-film");
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     common::graded_tiff(&root.join("Scans/A.tif"), 2400, 1600, 0.7);
-    let (rig, shell) = opened(&gpu, &root);
+    let Some(app) = opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let panel = w.global::<PanelState>();
     panel.set_tab(PanelTab::Color);
@@ -43,7 +39,7 @@ pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
     let on = frame();
     println!("shot {}", rig.shot("virtual-film-on").display());
 
-    rendered("the film's exposure rendered", &|| press_rail(&rig, w, "Film exposure", 0.75));
+    rendered("the film's exposure rendered", &|| press_rail(rig, w, "Film exposure", 0.75));
     let exposed = settings();
     assert!((exposed.film().unwrap().exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {:?}", exposed.film());
     let reference = oni_settings::VirtualStock::of("kodak-portra-800").reference();
@@ -52,7 +48,7 @@ pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
     assert_ne!(frame(), on);
 
     assert!(!shown(Role::Text, "Gains"), "the reference behind the settings key");
-    common::click(&rig, w, common::the(w, Role::Button, "Show the film's reference").middle());
+    common::click(rig, w, common::the(w, Role::Button, "Show the film's reference").middle());
     rig.settle();
     assert!(shown(Role::Text, "Gains") && shown(Role::Text, "Black"), "the reference behind the settings key");
     println!("shot {}", rig.shot("virtual-film-reference").display());
@@ -63,6 +59,4 @@ pub(crate) fn a_digital_photo_opens_on_portra_and_shows_its_reference() {
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
     assert!(!shown(Role::Slider, "Film exposure"), "a negative shoots on no virtual film");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

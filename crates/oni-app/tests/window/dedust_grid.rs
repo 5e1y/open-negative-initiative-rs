@@ -3,9 +3,7 @@
 //! a click on its key removes it.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Canvas, Dedust, Library};
-use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::frame::Correction;
 use oni_settings::sidecar::{self, WriteOptions};
@@ -13,7 +11,6 @@ use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -44,13 +41,8 @@ fn marked(c: &Canvas) -> Vec<i32> {
 }
 
 pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_source() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the corrections' grid is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-dedust-grid-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("dedust-grid");
+    let (folder, caches) = (root.scans(), root.caches());
     common::plain_tiff(&folder.join("A.tif"), 320, 240, 0.5);
     let mut settings = PipelineSettings::rest(ConversionMode::Negative, false);
     settings.corrections = (0..3)
@@ -62,20 +54,12 @@ pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     // SAFETY: set before any thread of this process reads it; the patches land in the check's own folder.
     unsafe { std::env::set_var("ONI_CACHES", &caches) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, c, d) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Dedust>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
@@ -168,12 +152,10 @@ pub(crate) fn a_click_lays_a_dot_and_a_tile_shows_its_correction_alone_with_its_
 
     // A click on the key removes its correction; the next slides under the hand, shown alone, and the hand
     // gone shows every marker again.
-    common::click(&rig, w, k.middle());
+    common::click(rig, w, k.middle());
     rig.settle();
     assert_eq!(numbers(w), [2, 4], "the key removes its own correction");
     assert_eq!((d.get_hovered_row(), marked(&c)), (0, vec![2]), "the next under the hand, shown alone");
     moved(left - 200.0, top);
     assert_eq!((d.get_hovered_row(), marked(&c)), (-1, vec![2, 4]), "the hand gone, every marker");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

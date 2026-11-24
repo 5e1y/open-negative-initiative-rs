@@ -5,11 +5,7 @@
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Exporting;
 use oni_app::app::export_card;
-use oni_app::app::{Options, Shell};
-use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -49,28 +45,16 @@ fn fields(w: &oni_app::MainWindow, k: usize) -> Vec<(&'static str, common::Place
 }
 
 pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the export's columns are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-export-columns-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("export-columns");
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 64, 96, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     // Tall enough for both lines, each picture as wide as the room leaves it.
-    rig.window.set_size(slint::PhysicalSize::new(1280, 2600));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1280, 2600).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let lib = w.global::<oni_app::Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(1, true, false);
     ctl.act(oni_app::Act::Export);
@@ -107,7 +91,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
 
     // The key opens the card on every line in its place: each label over its field, the fields one above the
     // other, left of the picture, which gives the card what the key took less.
-    common::click(&rig, w, keys[0].middle());
+    common::click(rig, w, keys[0].middle());
     rig.settle();
     assert!(w.global::<Exporting>().get_exif_shown(), "the key opens the EXIF");
     for k in 0..2 {
@@ -138,7 +122,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert_eq!(hide.len(), 2, "a cross on each card: {hide:?}");
     let first = fields(w, 0);
     assert!(hide.iter().any(|x| x.y < first[0].1.y && x.x > first[0].1.x), "the cross over the first field, at its right: {hide:?} {:?}", first[0].1);
-    common::click(&rig, w, hide[0].middle());
+    common::click(rig, w, hide[0].middle());
     rig.settle();
     assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the card closes on every line");
     assert!((picture(0) - closed[0]).abs() < 1.0, "the picture back to its width: {} {}", picture(0), closed[0]);
@@ -163,5 +147,4 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     assert!(((left - slot) - (room - (size.x + size.width))).abs() < 1.0, "the upright frame's name and size under it: {left} {slot} {size:?}");
     assert!(left - slot > 40.0, "twin: off the slot's edge: {left} {slot}");
     println!("shot {}", rig.shot("export-columns-upright").display());
-    let _ = std::fs::remove_dir_all(&root);
 }

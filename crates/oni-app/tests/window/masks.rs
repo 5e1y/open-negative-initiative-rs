@@ -1,11 +1,9 @@
 //! The mask library on the headless window: Load…, Rename, Folder, the sliders kept for the next
 //! fresh frame, and Use This Photo as Flat-Field with its offer to move the photo out.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::flat_fields;
 use oni_app::{Advice, App, Canvas, Library, MaskDialog, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::FlatFieldMask;
 use slint::ComponentHandle;
 use std::cell::RefCell;
@@ -16,13 +14,8 @@ use std::time::Duration;
 use crate::common;
 
 pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the mask library is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-masks-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("masks");
+    let (folder, support) = (root.scans(), root.support());
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.6), ("C.tif", 0.4)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
     }
@@ -34,35 +27,16 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     let canonical = |n: &str| oni_library::paths::canonical(&folder.join(n));
     let chosen: Rc<RefCell<Option<PathBuf>>> = Rc::new(RefCell::new(None));
     let shown: Rc<RefCell<Vec<PathBuf>>> = Rc::new(RefCell::new(Vec::new()));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
     let (asked, seen) = (chosen.clone(), shown.clone());
     // The check's own Trash: the owner's never receives a fixture.
     let bin = root.join("Trash");
     std::fs::create_dir_all(&bin).unwrap();
-    let options = Options {
-        support: support.clone(),
-        caches,
-        picker: Box::new(|| None),
-        mask_picker: Box::new(move || asked.borrow().clone()),
-        show_folder: Box::new(move |p| seen.borrow_mut().push(p.to_path_buf())),
-        discard: Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap()))),
-        ..Options::default()
-    };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| { o.mask_picker = Box::new(move || asked.borrow().clone()); o.show_folder = Box::new(move |p| seen.borrow_mut().push(p.to_path_buf())); o.discard = Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap()))); }).show() else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, panel, dialog, advice) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<MaskDialog>(), w.global::<Advice>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
     rig.pump();
     let settings = || ctl.state.borrow().store().settings().clone();
     assert!(panel.get_can_take_mask() && panel.get_can_load_mask(), "a frame is open, nothing under way");
@@ -200,5 +174,4 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     moved("A.tif");
     assert!(w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none(), "none left, the gallery");
     assert!(ctl.state.borrow().split().is_none(), "Compare left with the editor");
-    let _ = std::fs::remove_dir_all(&root);
 }

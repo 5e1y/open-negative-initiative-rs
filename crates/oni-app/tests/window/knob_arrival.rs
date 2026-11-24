@@ -9,7 +9,8 @@ use slint::ComponentHandle;
 use std::time::{Duration, Instant};
 
 pub(crate) fn a_blocks_reset_springs_every_knob_home_on_one_timer() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("knob-arrival") else { return };
+    let Some(app) = crate::panel_bindings::opened("knob-arrival") else { return };
+    let crate::common::App { rig, shell, .. } = &app;
     let (ctl, g) = (shell.ctl.clone(), shell.window.global::<Store>());
     let lighting = Block::ALL.iter().position(|b| *b == Block::Lighting).unwrap() as i32;
     let stepped = [Field::Exposure, Field::Contrast, Field::Shadows];
@@ -47,6 +48,4 @@ pub(crate) fn a_blocks_reset_springs_every_knob_home_on_one_timer() {
         assert_eq!(oni_app::app::fraction(&g, *f), *to, "{f:?} lands on its target");
     }
     assert_eq!(ctl.state.borrow().arrivals() - before, 1, "no second timer started while they flew");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

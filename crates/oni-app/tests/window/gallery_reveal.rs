@@ -1,13 +1,12 @@
 //! A photo picked in the gallery is picked in the library column every time: the folders above it
 //! unfold, a fold made by hand since included, and its row stands in view; on the projects, its project.
 
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{self};
 use oni_app::{Library, TreeRow};
-use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
 use slint::{ComponentHandle, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
@@ -95,13 +94,8 @@ fn open_name(ctl: &Rc<app::Ctl>) -> String {
 }
 
 pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_the_column() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the gallery's pick in the column is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-gallery-reveal-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("gallery-reveal");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     // Tones apart, so no two files share a fingerprint; enough photos that a roll runs past the view.
     for (n, (path, letter)) in ROLLS.iter().enumerate() {
         for i in 0..14 {
@@ -114,26 +108,18 @@ pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_th
     projects.push(Project::new("Trip", at(10.5), vec![member("2024/Summer/Deep/Roll 4/D03.tif"), member("2024/Summer/Deep/Roll 4/D04.tif")]));
     project::save(&support, &ProjectsFile { version: project::FORMAT, projects }).unwrap();
 
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&scans);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&scans);
     rig.drawn();
     let deep = ["Scans", "2024", "Summer", "Deep", "Roll 4"];
 
     // D10 picked in the gallery deep in the tree, then shown beside the column.
-    pick(&rig, w, "D10");
-    edit(&rig, &ctl);
+    pick(rig, w, "D10");
+    edit(rig, &ctl);
     assert_eq!(open_name(&ctl), "D10");
     shown(&lib, &ctl, &deep, "D10").unwrap();
 
@@ -145,9 +131,9 @@ pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_th
     rig.pump();
 
     // Back in the gallery, D10 picked again: the open photo, chosen anew, unfolds and shows.
-    back(&rig, &ctl);
-    pick(&rig, w, "D10");
-    edit(&rig, &ctl);
+    back(rig, &ctl);
+    pick(rig, w, "D10");
+    edit(rig, &ctl);
     rig.shot("gallery-reveal-d10-again");
     shown(&lib, &ctl, &deep, "D10").unwrap();
     let height = ctl.state.borrow().tree_height();
@@ -159,14 +145,14 @@ pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_th
     // Folded by hand, then a photo of the folded roll picked: it unfolds too.
     lib.invoke_row_folded(folder(&lib, "Roll 2").0 as i32);
     rig.pump();
-    back(&rig, &ctl);
-    pick(&rig, w, "B12");
-    edit(&rig, &ctl);
+    back(rig, &ctl);
+    pick(rig, w, "B12");
+    edit(rig, &ctl);
     shown(&lib, &ctl, &["Scans", "2023", "Roll 2"], "B12").unwrap();
 
     // On the projects in the gallery, a photo picked rings under its project, which unfolds in view,
     // and again after the hand folds it.
-    back(&rig, &ctl);
+    back(rig, &ctl);
     lib.invoke_surface_picked(1);
     rig.drawn();
     rig.pump();
@@ -178,7 +164,7 @@ pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_th
     };
     let d03 = || project_rows().into_iter().find(|r| r.kind != 1 && r.kind != 3 && r.title.starts_with("D03"));
     for round in ["first", "after a fold"] {
-        pick(&rig, w, "D03");
+        pick(rig, w, "D03");
         rig.drawn();
         rig.pump();
         assert!(project_rows()[trip()].expanded, "Trip unfolds, {round}");
@@ -190,6 +176,4 @@ pub(crate) fn a_photo_picked_in_the_gallery_is_picked_unfolded_and_in_view_in_th
     }
     rig.settle();
     rig.shot("gallery-reveal-projects");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

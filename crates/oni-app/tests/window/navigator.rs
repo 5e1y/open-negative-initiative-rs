@@ -97,8 +97,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     let old = home.join("Old");
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
 
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let launch = || {
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

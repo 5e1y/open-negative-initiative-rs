@@ -4,13 +4,11 @@
 use oni_app::KeyboardProbe;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize, SharedString};
-use std::path::PathBuf;
 
 use crate::common;
 
 fn probe() -> (common::Rig, KeyboardProbe) {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = KeyboardProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     oni_app::slider_track::serve(&probe);

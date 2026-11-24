@@ -22,8 +22,7 @@ fn opened(gpu: &oni_app::render::Device, label: &str, frames: &[(&str, usize, us
     for (name, w, h, tone) in frames {
         common::plain_tiff(&folder.join(name), *w, *h, *tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(gpu);
     let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };

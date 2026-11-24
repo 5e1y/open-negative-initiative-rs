@@ -26,8 +26,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     let log = oni_app::timing::log_path(&support);
     std::fs::create_dir_all(log.parent().unwrap()).unwrap();
     std::fs::write(&log, "a session's line\n").unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let sent: Sent = Arc::default();
     let refuse = Arc::new(Mutex::new(true));
     let shell = |support: &PathBuf| {

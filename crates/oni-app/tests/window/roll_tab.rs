@@ -2,12 +2,9 @@
 //! profile reads it again, Source Balance writes and resets as its block does,
 //! and the flat-field's toggle, mask picker and Apply to Selection reach the frames.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::SourceEncoding;
 use oni_settings::frame::FlatFieldMask;
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -15,13 +12,8 @@ use std::time::Duration;
 use crate::common;
 
 pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Roll tab is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-roll-tab-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("roll-tab");
+    let (folder, support) = (root.scans(), root.support());
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::plain_tiff(&folder.join(name), 96, 64, tone);
     }
@@ -29,23 +21,12 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     std::fs::create_dir_all(support.join("FlatFields")).unwrap();
     std::fs::write(support.join("FlatFields/masks.json"), r#"[{"id":"a1","name":"Rig"}]"#).unwrap();
     let canonical = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, panel, g) = (w.global::<Library>(), w.global::<PanelState>(), w.global::<Store>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
     rig.pump();
     let settings = || ctl.state.borrow().store().settings().clone();
 
@@ -105,5 +86,4 @@ pub(crate) fn the_roll_tabs_blocks_write_what_swifts_write() {
     rig.pump();
     let b = oni_settings::sidecar::read(&canonical("B.tif"), false).unwrap().settings;
     assert_eq!(b.flat_field.custom.as_deref(), Some("a1"));
-    let _ = std::fs::remove_dir_all(&root);
 }

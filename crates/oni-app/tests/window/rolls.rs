@@ -5,13 +5,10 @@
 
 use oni_app::{PanelTab, RollState};
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Choice, Confirm, Library, Menus, PanelState};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::frame::RollReference;
 use oni_settings::{ConversionMode, Film, Id, PipelineSettings};
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -31,13 +28,8 @@ fn measured(path: &Path, id: Id, film: &Film) {
 }
 
 pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the roll gestures are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-rolls-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("rolls");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.7), ("C.tif", 0.5), ("D.tif", 0.3)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
     }
@@ -45,20 +37,12 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     let (id, film) = (Id::new(), Film::new("Roll 9"));
     measured(&canonical("A.tif"), id, &film);
     measured(&canonical("B.tif"), id, &film);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, menus, panel) = (w.global::<Library>(), w.global::<Menus>(), w.global::<PanelState>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let tile = |name: &str| {
         let shown: Vec<String> = oni_app::app::tiles(w).into_iter().map(|t| t.caption.to_string()).collect();
@@ -106,7 +90,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     let beside = |k: &common::Placed| k.x > balance.x + balance.width && k.y + k.height <= balance.y + balance.height;
     assert!(beside(&key), "the settings key beside the balance key, never under it: {key:?} {balance:?}");
     assert!(!beside(&common::Placed { y: balance.y + balance.height, ..key }), "twin: a key laid under it is refused");
-    common::click(&rig, w, key.middle());
+    common::click(rig, w, key.middle());
     rig.settle();
     rig.shot("rolls-strength");
     // Twin: open, the dose and its note show, and the key now hides them.
@@ -184,34 +168,20 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     // Both frames read, the key back: a synthetic ramp has no grey to measure, so the run says so.
     assert_eq!(panel.get_balance_progress().as_str(), "Reading 2 of 2\u{2026}");
     assert!(w.global::<oni_app::Canvas>().get_status().contains("nothing to balance"), "{}", w.global::<oni_app::Canvas>().get_status());
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// `TreeRowChrome`: a roll's row draws its stock, its mode's generic one while none is picked.
 pub(crate) fn a_rolls_row_draws_its_stock() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the tree is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-roll-stock-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("roll-stock");
     let (rolled, loose) = (root.join("Rolled"), root.join("Loose"));
     for (folder, name) in [(&rolled, "A.tif"), (&rolled, "B.tif"), (&loose, "C.tif")] {
         common::linear_tiff(&folder.join(name), 96, 64, 0.5);
     }
     // A folder made a roll carries it in its marker, the stock never picked.
     oni_settings::film::roll_folder::set_roll(Some(&Film::new("Roll 9")), &rolled).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    shell.open_folder(&root);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, root, .. } = &app;
+    app.read(root);
     rig.settle();
     let rows = shell.window.global::<Library>().get_rows();
     let listed: Vec<(i32, String, bool)> = rows.iter().map(|r| (r.kind, r.title.to_string(), r.has_stock)).collect();
@@ -219,23 +189,13 @@ pub(crate) fn a_rolls_row_draws_its_stock() {
     // Twin: the folder holding no roll keeps its glyph.
     assert!(rows.iter().any(|r| r.kind == 0 && r.title == "Loose" && !r.has_stock), "{listed:?}");
     println!("shot {}", rig.shot("rolls-stock-row").display());
-    drop(ctl);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The navigator's roll rows draw their stock as the tree's do: the one picked, else the negative
 /// default; a folder keeps its glyph, and a roll outside the opened folder reads its own marker.
 pub(crate) fn the_navigators_rolls_draw_their_stock() {
     use oni_app::{FolderLine, Navigator};
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the navigator is not exercised"),
-    };
-    let made = std::env::temp_dir().join(format!("oni-app-navigator-stock-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&made);
-    std::fs::create_dir_all(&made).unwrap();
-    let root = PathBuf::from(oni_library::paths::canonical(&made));
+    let root = common::Root::new("navigator-stock").canonical();
     let (home, volumes) = (root.join("Home"), root.join("Volumes"));
     std::fs::create_dir_all(&volumes).unwrap();
     for (folder, name) in [("Scans/Portra", "A.tif"), ("Scans/Bare", "B.tif"), ("Scans/Loose", "C.tif"), ("Away/Listed", "D.tif")] {
@@ -250,15 +210,9 @@ pub(crate) fn the_navigators_rolls_draw_their_stock() {
     oni_settings::film::roll_folder::set_roll(Some(&roll("Bare Roll", None)), &home.join("Scans/Bare")).unwrap();
     oni_settings::film::roll_folder::set_roll(Some(&roll("Listed Roll", Some("ilford-hp5"))), &home.join("Away/Listed")).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = oni_library::navigator::Computer { home: p(&home), volumes: p(&volumes) };
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    rig.window.set_size(slint::PhysicalSize::new(2560, 1600));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.computer = computer).scale(2.0).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let n = w.global::<Navigator>();
@@ -287,7 +241,4 @@ pub(crate) fn the_navigators_rolls_draw_their_stock() {
     let tree = |title: &str| rows.iter().find(|r| r.title == title).unwrap_or_else(|| panic!("{title} in the tree"));
     assert_eq!(tree("Portra Roll").stock.to_rgba8().unwrap().as_slice().to_vec(), artwork("kodak-portra").unwrap());
     assert!(!tree("Loose").has_stock, "twin: the tree's folder keeps its glyph");
-    drop(ctl);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&made);
 }

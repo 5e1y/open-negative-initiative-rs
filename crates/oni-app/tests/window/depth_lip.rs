@@ -5,7 +5,6 @@ use oni_app::DepthProbe;
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common;
 
@@ -22,8 +21,7 @@ fn lip(w: usize, px: &[Rgb565Pixel], x: f32, y: f32, h: f32) -> (u32, u32, u32) 
 }
 
 pub(crate) fn a_section_ending_on_a_well_draws_its_lip_whole() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = DepthProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

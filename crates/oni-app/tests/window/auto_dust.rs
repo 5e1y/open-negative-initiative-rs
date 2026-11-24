@@ -10,7 +10,6 @@ use oni_settings::{ConversionMode, PipelineSettings};
 use slint::platform::{PointerEventButton, WindowEvent};
 use i_slint_backend_testing::AccessibleRole;
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -62,8 +61,7 @@ pub(crate) fn a_detect_pressed_before_the_frame_landed_reads_once_it_lands() {
     let window = Levels::with_ends(-0.5, 1.0);
     (settings.levels.red, settings.levels.green, settings.levels.blue) = (window, window, window);
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);
@@ -119,8 +117,7 @@ pub(crate) fn a_reading_writes_nothing_and_its_removal_one_patch_per_speck() {
     let window = Levels::with_ends(-0.5, 1.0);
     (settings.levels.red, settings.levels.green, settings.levels.blue) = (window, window, window);
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support, caches: oni_app::system::caches(), picker: Box::new(|| None), ..Options::default() };
     let engine = oni_app::render::Engine::shared(&gpu);

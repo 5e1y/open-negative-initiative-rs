@@ -4,11 +4,8 @@
 //! margins; the sheet shown in the column, and Export As laying the gallery's pick on one sheet.
 
 use oni_app::app::export_card::{self, Ask, job::End};
-use oni_app::app::{Options, Shell};
 use oni_app::{Exporting, Library};
-use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Model};
-use slint::platform::WindowEvent;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -19,12 +16,7 @@ use crate::common;
 const LONG: Duration = Duration::from_secs(120);
 
 pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the contact sheet's export is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-export-sheet-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("export-sheet");
     let (folder, out) = (root.join("Scans"), root.join("Out"));
     std::fs::create_dir_all(&out).unwrap();
     let names = ["A.tif", "B.tif", "C.tif", "D.tif", "E.tif"];
@@ -34,19 +26,11 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
         common::graded_tiff(&folder.join(n), w, h, 0.8 - 0.2 * i as f32);
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
@@ -180,5 +164,4 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert_eq!(ctl.state.borrow().picked().len(), 1);
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
     assert_eq!(ctl.state.borrow().picked().len(), names.len(), "twin: one photo picked, the key picks its roll");
-    let _ = std::fs::remove_dir_all(&root);
 }

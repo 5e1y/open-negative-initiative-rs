@@ -53,7 +53,7 @@ pub(crate) fn a_roll_still_to_prepare_is_marked_in_the_navigator() {
     photo(&scans.join("Slide/C.tif"), Some(ConversionMode::Positive), false);
     std::fs::create_dir_all(scans.join("Bare/Inner")).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = oni_library::navigator::Computer { home: p(&home), volumes: p(&root.join("Volumes")) };
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };

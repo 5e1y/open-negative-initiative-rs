@@ -1,12 +1,9 @@
 //! The library column beside a photo: centred when the screen or the photo opened elsewhere changes, never on an
 //! edit or a click in it; a resize keeps rows and scroll; a redrawn thumbnail reaches its row; a double click acts once.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Library, Store, TreeRow};
-use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Image, Model, ModelRc};
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -33,30 +30,17 @@ fn rest(rig: &common::Rig) {
 }
 
 pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the library column is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-library-column-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("library-column");
+    let folder = root.scans();
     for i in 0..30 {
         common::plain_tiff(&folder.join(format!("P{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("P00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
@@ -111,7 +95,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     assert_eq!(lib.get_tree_viewport_y(), centred, "a screen change centres the column");
 
     // A double click on a photo row opens it once; a first click after the interval opens again.
-    rest(&rig);
+    rest(rig);
     let opens = ctl.state.borrow().opens();
     let p10 = photo_row(&lib, "P10") as i32;
     lib.invoke_row_clicked(p10, false, false);
@@ -120,7 +104,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     rig.pump();
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("P10.tif"));
     assert_eq!(ctl.state.borrow().opens(), opens + 1, "two clicks and a double click open the photo once");
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(photo_row(&lib, "P12") as i32, false, false);
     assert_eq!(ctl.state.borrow().opens(), opens + 2, "twin: a single click opens");
 
@@ -151,7 +135,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     assert_eq!(rows(&lib)[group as usize].expanded, !unfolded, "the chevron folds the group");
     lib.invoke_row_folded(group);
     assert_eq!(rows(&lib)[group as usize].expanded, unfolded, "twin: a second click unfolds it");
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(group, false, false);
     lib.invoke_row_clicked(group, false, false);
     lib.invoke_row_double_clicked(group);
@@ -166,8 +150,6 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     assert_eq!(renamed.expanded, unfolded, "and folds nothing");
     lib.invoke_row_rename_cancelled();
     assert!(!rows(&lib)[group as usize].renaming, "twin: Escape leaves the name as it was");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// A column many screens tall, scrolled by the wheel and by an ask, never resized: the rows brought
@@ -175,25 +157,14 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 pub(crate) fn a_scroll_brings_the_pictures_of_the_rows_it_reaches() {
     use slint::platform::WindowEvent;
     use slint::LogicalPosition;
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the column's scroll is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-column-scroll-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("column-scroll");
+    let folder = root.scans();
     let count = 400;
     for i in 0..count {
         common::plain_tiff(&folder.join(format!("P{i:04}.tif")), 24, 16, 0.3 + (i % 40) as f32 / 80.0);
     }
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let lib = shell.window.global::<Library>();
     shell.open_folder(&folder);
@@ -245,34 +216,21 @@ pub(crate) fn a_scroll_brings_the_pictures_of_the_rows_it_reaches() {
     assert_eq!(top(), deep);
     rig.until("the pictures the ask brought", Duration::from_secs(30), shown);
     assert_eq!(far_held(), 0, "twin: no row far from the view holds a picture");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// A tree of 2,000 photos beside the open one: a drag on Exposure costs each frame what it shows,
 /// never the rows far from the column's view.
 pub(crate) fn a_long_tree_makes_only_the_rows_near_its_view() {
-    use slint::platform::WindowEvent;
+    
     use std::time::Instant;
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the long tree is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-long-tree-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("long-tree");
+    let folder = root.scans();
     let count = 2000;
     for i in 0..count {
         common::plain_tiff(&folder.join(format!("P{i:04}.tif")), 24, 16, 0.3 + (i % 40) as f32 / 80.0);
     }
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let lib = shell.window.global::<Library>();
     shell.open_folder(&folder);
@@ -332,6 +290,4 @@ pub(crate) fn a_long_tree_makes_only_the_rows_near_its_view() {
     store.invoke_release(field);
     frames.sort_by(f64::total_cmp);
     println!("a notch handled and drawn beside {count} rows: p50 {:.2} ms, p90 {:.2} ms, worst {:.2} ms", frames[30], frames[54], frames[59]);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
