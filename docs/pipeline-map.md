@@ -523,10 +523,9 @@ Every pipeline kernel is a WGSL body in `oni-render/src/wgsl/` with a scalar CPU
 | Colour Mixer | `spectrogram.wgsl` | `kernel/spectrogram.rs` | `spectrogram` |
 | Saturation, points, Chrome | `saturation_curve.wgsl` | `kernel/saturation_curve.rs` | `saturation` |
 | Denoise, sharpen | `detail_rows.wgsl`, `detail_columns.wgsl`, `detail_taps.wgsl` | `kernel/detail.rs` | `DetailRows`, `DetailColumns` |
-| Texture | `texture*.wgsl` (4 files) | `kernel/texture.rs` | `texture` |
+| Texture | `texture.wgsl`, `texture_math.wgsl` | `kernel/texture.rs` | `texture` |
 | Blurs | `gaussian.wgsl` | `kernel/gaussian.rs` | `blurred_of` |
 | Output clip | `output_clip.wgsl` | `kernel/output_clip.rs` | `output_clip` |
-| (not in the live chain) | `scanner_density.wgsl` | `kernel/scanner.rs` | `scanner_density`, defined but never called by the chain |
 
 Outside `oni-render`:
 
@@ -573,7 +572,7 @@ Under a moving hand, a view renders at most `GESTURE_PIXELS` (4 Mpx) and is show
 ## 7. Things found while mapping
 
 - **Halation and grain run on Digital only.** A film mode never renders them (`chain.rs:61-62`, "owner's call"), and the Film Effects block shows only on a Digital photo.
-- **The live Frontier never reads the measured Frontier table.** `MACHINE.render` (`frontier.cube`) and the `scanner_density` kernel are used only by the CPU `replica`, the Look Lab fit and an example. The Frontier renders as ONI's machine through the baked `frontier_look::CUBE`, or through a hand's `.cube`. The GPU stage `stages::scanner_density` is defined (`stages/per_pixel.rs:113`) and never called by the chain.
+- **The live Frontier never reads the measured Frontier table.** `MACHINE.render` (`frontier.cube`) and the CPU `scanner_density` are used only by the Look Lab fit and an example; no GPU stage lays the density. The Frontier renders as ONI's machine through the baked `frontier_look::CUBE`, or through a hand's `.cube`.
 - **There is no "dark pick".** CLAUDE.md names a dark pick in Prepare the Roll (line 129). The steps are Film, FlatField, Base, Flags and Window, and the Base pick sets every channel's black.
 - **No app path calls Auto levels.** `oni_measure::key::levels`, `placed` and `ends` are called only by tests.
 - **Slides decode at 5500 K.** CLAUDE.md says the balance is 5000 K, but a slide RAW is balanced on `SLIDE_KELVIN` 5500 K (`oni-decode/src/neutral.rs:4`).

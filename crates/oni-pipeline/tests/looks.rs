@@ -34,7 +34,7 @@ fn reference(p: V4, stops: f32, n: usize, nodes: &[[f32; 4]]) -> V4 {
     let code = cpu::scanner_encode(p.map(|v| v * stops.exp2()), &ScannerEncode { root: 1.0 });
     let code = [code[0], code[1], code[2], p[3]];
     let read = cpu::color_cube(code, &k);
-    cpu::scanner_output(read, read, &ScannerOutput { warmth_share: 0.0, lift: 0.0, contrast: 0.0 })
+    cpu::scanner_output(read, read, &ScannerOutput { warmth_share: 0.0, lift: 0.0 })
 }
 
 #[test]

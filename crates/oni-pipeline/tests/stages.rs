@@ -9,7 +9,7 @@ use oni_pipeline::stages::{self, Blur, DetailColumns, DetailRows, Oriented, Patc
 use oni_pipeline::{Pipeline, Request, conversion, finishing, geometry, oni_look, scanner};
 use oni_render::cpu::{self, Grid};
 use oni_render::{
-    ColorCube, Detail, ExposureAdjust, FlatField, Gaussian, Orient, ScannerEncode, ScannerOutput, Texture, TextureCoeff,
+    ColorCube, Detail, ExposureAdjust, FlatField, Gaussian, Orient, ScannerEncode, ScannerOutput, Texture,
     Vignette,
 };
 use oni_settings::cg::Point;
@@ -40,8 +40,6 @@ fn per_pixel_kernels_match_their_references() {
     let (w, h) = (37, 23);
     let pixels = noise(w, h, 1, -0.2, 1.6);
     let input = g.upload(w, h, &pixels).unwrap();
-    // Moments of a neighbourhood, a mean and a mean square above its square.
-    let moments: Vec<V4> = noise(w, h, 14, 0.0, 1.0).iter().map(|p| [p[0], p[0] * p[0] + 0.05 * p[1], 0.0, 1.0]).collect();
     let transmitted = noise(w, h, 2, 0.002, 0.9);
     let film = g.upload(w, h, &transmitted).unwrap();
 
@@ -79,18 +77,6 @@ fn per_pixel_kernels_match_their_references() {
     };
     per_pixel(&mut g, "luma only", &input, &pixels, stages::luma_only(), luma, |p| luma(swapped(p)));
 
-    let positive_luma = mapped(&pixels, luma);
-    let luma_source = g.upload(w, h, &positive_luma).unwrap();
-    per_pixel(&mut g, "texture moments", &luma_source, &positive_luma, stages::texture_moments(), cpu::texture_moments, |p| cpu::texture_moments(p.map(|v| v * 1.01)));
-    let moment_source = g.upload(w, h, &moments).unwrap();
-    let coeff = |relative| TextureCoeff { relative };
-    per_pixel(&mut g, "texture coefficients", &moment_source, &moments, stages::texture_coeff(&coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.13)));
-
-    let mut frontier = negative();
-    frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: -2, m: 3, ..LegacyPrint::default() });
-    let d = scanner::fitted_density(&frontier);
-    let steeper = oni_render::ScannerDensity { scale: d.scale * 1.01, ..d };
-    per_pixel(&mut g, "scanner density", &film, &transmitted, stages::scanner_density(&d), |p| cpu::scanner_density(p, &d), |p| cpu::scanner_density(p, &steeper));
     let root = |root| ScannerEncode { root };
     per_pixel(&mut g, "scanner encode", &input, &pixels, stages::scanner_encode(oni_look::ROOT), |p| cpu::scanner_encode(p, &root(oni_look::ROOT)), |p| cpu::scanner_encode(p, &root(2.1)));
 }
@@ -114,8 +100,8 @@ fn two_input_kernels_read_their_auxiliary_images_at_the_same_pixel() {
     let t = Texture { gain };
     judge("texture", &out, &each(&|i| cpu::texture(pa[i], pb[i], pc[i], &t)), &each(&|i| cpu::texture(pa[i], pc[i], pb[i], &t)));
 
-    let k = ScannerOutput { warmth_share: 0.6, lift: scanner::LIFT, contrast: 0.3 };
-    let out = whole(&mut g, &Image::new(&c).then_reading(stages::scanner_output(k.warmth_share, k.lift, k.contrast), &[Image::new(&b)]));
+    let k = ScannerOutput { warmth_share: 0.6, lift: scanner::LIFT };
+    let out = whole(&mut g, &Image::new(&c).then_reading(stages::scanner_output(k.warmth_share, k.lift), &[Image::new(&b)]));
     judge("scanner output", &out, &each(&|i| cpu::scanner_output(pc[i], pb[i], &k)), &each(&|i| cpu::scanner_output(pc[i], beside(&pb, i), &k)));
 
     // A patch on part of the frame, through its mask; the frame stays itself outside it.

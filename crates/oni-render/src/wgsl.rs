@@ -40,20 +40,14 @@ pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");
 pub const COLOR_CUBE: &str = include_str!("wgsl/color_cube.wgsl");
 /// `blend_with_mask_px(picture, background, mask)`.
 pub const BLEND_WITH_MASK: &str = include_str!("wgsl/blend_with_mask.wgsl");
-/// `texture_moments_of` and `texture_coeff_of`, pure, for a pass or a blur's taps.
+/// `texture_moments_of` and `texture_coeff_of`, pure, for a blur's taps.
 pub const TEXTURE_MATH: &str = include_str!("wgsl/texture_math.wgsl");
-/// `texture_moments_px(luma)`; needs `TEXTURE_MATH`.
-pub const TEXTURE_MOMENTS: &str = include_str!("wgsl/texture_moments.wgsl");
-/// `texture_coeff_px(moments)`; needs `TEXTURE_MATH`.
-pub const TEXTURE_COEFF: &str = include_str!("wgsl/texture_coeff.wgsl");
 /// `texture_px(s, narrow, coeff)`.
 pub const TEXTURE: &str = include_str!("wgsl/texture.wgsl");
 /// `detail_rows_px(x, y)`, reading `detail_source(x, y)`; needs `DETAIL_TAPS`.
 pub const DETAIL_ROWS: &str = include_str!("wgsl/detail_rows.wgsl");
 /// `detail_columns_px(s, x, y)`, reading `detail_row(x, y)`; needs `DETAIL_TAPS`.
 pub const DETAIL_COLUMNS: &str = include_str!("wgsl/detail_columns.wgsl");
-/// `scanner_density_px(s)`.
-pub const SCANNER_DENSITY: &str = include_str!("wgsl/scanner_density.wgsl");
 /// `scanner_output_px(code, warmth)`.
 pub const SCANNER_OUTPUT: &str = include_str!("wgsl/scanner_output.wgsl");
 /// `scanner_encode_px(s)`.

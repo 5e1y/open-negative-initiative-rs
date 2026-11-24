@@ -66,7 +66,7 @@ fn on_frontier(original: &Path) -> PipelineSettings {
 /// The Frontier's stages on the CPU through `cube`, as `Pipeline::frontier` runs them, in working space.
 fn machine(p: &Picture, s: &PipelineSettings, cube: &ColorCube) -> Vec<[f32; 4]> {
     let k = scanner::fitted_density(s);
-    let out = ScannerOutput { warmth_share: 0.0, lift: LIFT, contrast: s.print.contrast };
+    let out = ScannerOutput { warmth_share: 0.0, lift: LIFT };
     let lift = (-s.capture_stops).exp2();
     p.px.iter()
         .map(|v| {

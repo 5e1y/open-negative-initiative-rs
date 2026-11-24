@@ -13248,5 +13248,45 @@
     "status": "done",
     "detail": "Each window check opened the GPU, made a temp root of its own, built an empty archive's store, the engine and Options { support, caches, picker: None }, set the scale and size and showed the window, then read the folder and double-clicked its first frame: about 25 lines copied into 118 files. common now holds it once: rig() reads ONI_SHOTS itself (else the target's shots folder, so 25 checks that wrote to the temp folder land beside the others), Root names a check's folder, empties it and removes it when it drops (canonical() spells it as the app keeps paths), launch(root) with .with(|o| ...) for the options a check changes, .size and .scale in points, .show() returning an App whose fields drop the shell before the root and the GPU, and App::read and edit_first for the opening steps. 88 launches are ported (panel_bindings::opened, film_effects::opened, stock_hero, full_release and their callers among them), with the closing drop(shell); remove_dir_all(&root) lines the guard makes redundant; a launch that drops its shell midway, builds its own store or engine, or relaunches in one process keeps its own code. Every assertion and twin stays as written; only the launch and its cleanup move.",
     "outcome": "163 files, 1270 lines in and 2781 out (net 1511 fewer). The window binary passes 303 of 303 before and after on this Mac; each pass ran its checks first (19, then 38), clippy on the window target is clean."
+  },
+  {
+    "id": 3781,
+    "type": "chore",
+    "title": "The Scanner face's density stage leaves the GPU: its kernel, stage and rows, the unread SCANNER_LIFT and the CPU replica of a render nothing lays",
+    "status": "done",
+    "detail": "No recipe laid stages::scanner_density: a legacy print renders through stage 4-7, then oni_finish or warmed_paper (encode, cube, scanner_output); only tests/stages.rs and tests/branches.rs called it. scanner::replica ran the measured table on the CPU 'as the GPU renders it', which the GPU never did; only its own test in scanner_tests read it, the keypad's offset and on_legacy_print keeping their tests. oni_render::SCANNER_LIFT had no reader: scanner::LIFT is the one read. Gone: scanner_density.wgsl, wgsl::SCANNER_DENSITY, its kernel and stage, ScannerDensity::rows, SCANNER_LIFT, replica and its test, the two GPU checks of the kernel. The CPU scanner_density, ScannerDensity and fitted_density stay for the Look Lab (look_lab/pro.rs, examples/look_lab_strip.rs).",
+    "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 unchanged; stages, branches and the pipeline's unit tests green."
+  },
+  {
+    "id": 3782,
+    "type": "chore",
+    "title": "The Scanner output loses the Contrast lane no render sets",
+    "status": "done",
+    "detail": "Every production call of stages::scanner_output (looked, oni_finish, warmed_paper) passed a contrast of 0, so the kernel's k.z != 0 branch never ran; only the removed replica and the offline examples/look_lab_strip.rs passed print.contrast, the example now printing without that bend. Gone: ScannerOutput.contrast, the stage's argument, bent() and the branch in the WGSL and its CPU reference; the branch check now separates warmth at share 0 and 0.1, its twin the share 0.02 off.",
+    "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 and looks unchanged; stages and branches green."
+  },
+  {
+    "id": 3783,
+    "type": "chore",
+    "title": "Pipeline::image lays the chain itself: no drawn, no chain taking the legacy print's settings apart",
+    "status": "done",
+    "detail": "image called drawn, which called chain with the frame and a precomputed copy of it, behind a clippy allow on too many arguments. That copy was always scanner::on_legacy_print(frame), which moves only the gains, so legacy.and_then(PipelineSettings::legacy) always equalled the frame's own legacy(). image now derives the laid settings itself and reads s.legacy(); every stage reads the same settings, so the graph is the same. tests/scanner_positive.rs renders through Pipeline::image with a default request (scale 1, reference 128, as the bench passed); its test 'a negative on a legacy print renders as before bit for bit' compared a render with itself, former adding 1.5 − 1.5 stops on a negative and a monochrome, and leaves; the slide's twin renders the frame 1.5 stops over, as on_legacy_print reads no print exposure.",
+    "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 unchanged; scanner_positive green, its twin still refusing the slide 1.5 stops over."
+  },
+  {
+    "id": 3784,
+    "type": "chore",
+    "title": "Texture's ten-pass stages leave: the moments and coefficients passes, kept only as a GPU oracle",
+    "status": "done",
+    "detail": "The pipeline's Texture folds both steps into the blurs' taps (Before::Moments, Before::Coeff, on TEXTURE_MATH); stages::texture_moments and texture_coeff, the MOMENTS and COEFF kernels and their two WGSL wrappers served only fused.rs's GPU-against-GPU ten-pass oracle, two per-pixel checks in stages.rs and the cost bench. fused.rs now judges the seven-pass Texture against the chain step by step on the CPU (cpu::gaussian, texture_moments, texture_coeff, texture), a reference independent of the GPU, its twin at gain × 1.1; the fold checks of each step, with their twins, stay. The cost bench compares the seven passes with one per-pixel pass.",
+    "outcome": "Texture against its CPU chain: at 780 px (narrow blur under its floor) error 1.80e-7, twin 5.96e-3; at 4000 px error 2.15e-7, twin 9.36e-3. fused and stages green; no render moves."
+  },
+  {
+    "id": 3785,
+    "type": "chore",
+    "title": "Stage 4-7 loses the print shaping Lighting on the negative replaced: Contrast, zones, each channel's filter, contrast and mids",
+    "status": "done",
+    "detail": "Stage47 is built from settings only by conversion::unprinted, reached only through lit() on print.unlit(), which zeroes contrast, shadows, highlights, the three filters and each channel's contrast and mids; every other producer copies it or starts from Stage47::rest(). So contrasted(x, 0) returned x, and the zones, the mids and the filters' luma levelling never ran. Gone from the kernel, its CPU reference and its uniform (13 rows to 9): print_contrast, print_zones, own_stops, own_contrast and own_mid, the WGSL quarter_pass, quartered and midded, the contrast family of both preludes, which nothing else read, the levelling block, the branch cases 'negative contrast, double quarters', 'channel tone with filters' and 'channel tone', and each_channel_s_own_tone_reaches_the_kernel. The carry held + (p − held) stays in both: a share past 2 rounds through it, and the pinned renders keep that rounding. The Rust quartered and midded stay for kernel/negative.rs. kernel_oracle.rs keeps judging the 1.0 migration's replica (Print::rendered) against an independent reference: the former print block frozen in the test file, on the kernel's own windows (cpu::windowed). oni-colour's roll #8 fixture no longer passes its sidecar's Contrast to a kernel that has none.",
+    "outcome": "Every pinned render is bit for bit unchanged: colour_on_negative and lighting_on_negative at rest, exposure_departure CPU and GPU (format 61), legacy_print CPU and GPU (format 45). kernel_oracle: the replica against the frozen print 2.98e-7 (twins unfiltered 6.1e-2, apart 8.1e-2, untoned 2.7e-1); a former document through it worst 0.0599 against 0.1188 unmigrated. branches, stages, channel_points and digital_negative green."
   }
 ]

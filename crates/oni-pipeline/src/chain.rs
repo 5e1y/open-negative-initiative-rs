@@ -5,19 +5,6 @@ use super::*;
 impl Pipeline {
     /// `apply` as a recipe on `source`: evaluate any region of it, materialise it, or read it whole.
     pub fn image(&mut self, graph: &mut Graph, source: &Source, settings: &PipelineSettings, request: &Request, inputs: &Inputs) -> Result<Image> {
-        let legacy = scanner::on_legacy_print(settings);
-        self.drawn(graph, source, settings, legacy.as_ref(), request, inputs)
-    }
-
-    fn drawn(
-        &mut self,
-        graph: &mut Graph,
-        source: &Source,
-        settings: &PipelineSettings,
-        legacy: Option<&PipelineSettings>,
-        request: &Request,
-        inputs: &Inputs,
-    ) -> Result<Image> {
         let mut input = Image::new(source);
         if request.scale != 1.0 {
             input = input.lanczos(request.scale);
@@ -27,23 +14,9 @@ impl Pipeline {
         let scale = if full_width > 0.0 { f64::from(e.w) / full_width } else { 1.0 };
         // Taken before stage 0: the band is a fraction of the picture, the dosed radii export pixels.
         let reference = f64::from(e.w.max(e.h));
-        self.chain(graph, input, settings, legacy, (scale, reference), request.measuring, inputs)
-    }
-
-    /// `image` with the legacy print's conversion given: `legacy` is `on_legacy_print`'s settings for `frame`, `None`
-    /// where it lays none; `at` is the scale and the reference length.
-    #[allow(clippy::too_many_arguments)]
-    pub fn chain(
-        &mut self,
-        graph: &mut Graph,
-        input: Image,
-        frame: &PipelineSettings,
-        legacy: Option<&PipelineSettings>,
-        at: (f64, f64),
-        measuring: bool,
-        inputs: &Inputs,
-    ) -> Result<Image> {
-        let ((scale, reference), s) = (at, legacy.unwrap_or(frame));
+        let measuring = request.measuring;
+        let laid = scanner::on_legacy_print(settings);
+        let s = laid.as_ref().unwrap_or(settings);
         let scan = input.extent();
         let framed = self.framed(graph, input, s, scale, inputs)?;
         // A scanned slide is projected; a measure upstream of the print reads its scan through the windows as any frame's.
@@ -84,7 +57,7 @@ impl Pipeline {
             },
         };
         // On a paper the legacy print lays its keys and TEMP alone: no look cube is laid over the paper's print.
-        let looked = match legacy.and_then(PipelineSettings::legacy) {
+        let looked = match s.legacy() {
             Some(l) if s.paper().is_some() => self.warmed_paper(graph, printed, &l)?,
             Some(l) => self.oni_finish(graph, printed, &l)?,
             None => printed,

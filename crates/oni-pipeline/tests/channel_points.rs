@@ -102,8 +102,6 @@ fn a_channels_own_mid_and_contrast_move_that_channel() {
     let mut pipeline = Pipeline::new();
     for mode in [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Digital] {
         let rest = PipelineSettings::rest(mode, true);
-        let k = conversion::stage47(&rest);
-        assert_eq!((k.own_contrast, k.own_mid), ([0.0; 3], [0.0; 3]), "{mode:?}: a frame at rest carries no channel tone");
         let at_rest = render(&mut g, &mut pipeline, &source, &rest);
         let led = if rest.paper().is_some() { paper_led_by } else { led_by };
         for (c, name) in ["red", "green", "blue"].into_iter().enumerate() {

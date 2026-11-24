@@ -24,7 +24,7 @@ pub use kernel::negative::{LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, NEGAT
 pub use kernel::orient::Orient;
 pub use kernel::paper::{PAPER_CURVE_NODES, Paper, fade, lifted, share, viewed};
 pub use kernel::saturation_curve::SaturationCurve;
-pub use kernel::scanner::{ScannerDensity, ScannerOutput, SCANNER_LIFT, ScannerEncode};
+pub use kernel::scanner::{ScannerDensity, ScannerOutput, ScannerEncode};
 pub use kernel::spectrogram::Spectrogram;
 pub use kernel::stage47::{Stage47, Packed};
 pub use kernel::stroke_mask::StrokeMask;

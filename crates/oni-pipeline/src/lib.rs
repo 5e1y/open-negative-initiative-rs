@@ -187,7 +187,7 @@ impl Pipeline {
         let (table, n) = self.looks[&key].clone();
         let code = stages::laid(image, vec![stages::exposure(f.exposure), stages::scanner_encode(1.0)]);
         let read = code.then_reading(stages::color_cube(n), &[Image::new(&table)]);
-        Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0, 0.0), &[read])))
+        Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0), &[read])))
     }
 
     /// A digital photo's scene shot on a reversal film and projected: the slide its virtual film develops on the
@@ -294,7 +294,7 @@ impl Pipeline {
         let (table, n) = if frontier { self.cube(graph, "frontier-look", &frontier_look::CUBE)? } else { self.cube(graph, "oni-look", &oni_look::CUBE)? };
         let looked = code.then_reading(stages::color_cube(n), &[table]);
         let (warmth, share) = self.warmed(graph, &looked, legacy.w)?;
-        Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
+        Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT), &[warmth]))
     }
 
     /// The legacy print's TEMP on a paper's print, its warmth look laid on the print's plain display code; the print as
@@ -305,7 +305,7 @@ impl Pipeline {
         }
         let code = stages::laid(image, vec![stages::scanner_encode(1.0)]);
         let (warmth, share) = self.warmed(graph, &code, legacy.w)?;
-        Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
+        Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT), &[warmth]))
     }
 
     fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet) -> Result<Image> {

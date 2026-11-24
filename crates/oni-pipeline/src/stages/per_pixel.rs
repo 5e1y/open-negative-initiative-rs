@@ -43,10 +43,7 @@ kernel!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { r
 kernel!(HELD_BLACK, [wgsl::HELD_BLACK], "fn pixel(p: vec2<i32>) -> vec4<f32> { return held_black_px(load(p), load1(p)); }");
 kernel!(SATURATION, wgsl::SATURATION_CURVE, call "saturation_curve_px(v)");
 kernel!(MATRIX, wgsl::COLOR_MATRIX, call "color_matrix_px(v)");
-kernel!(MOMENTS, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_MOMENTS], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_moments_px(load(p)); }");
-kernel!(COEFF, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_COEFF], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_coeff_px(load(p)); }");
 kernel!(TEXTURE, [wgsl::TEXTURE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_px(load(p), load1(p), load2(p)); }");
-kernel!(SCANNER_DENSITY, wgsl::SCANNER_DENSITY, call "scanner_density_px(v)");
 kernel!(SCANNER_ENCODE, wgsl::SCANNER_ENCODE, call "scanner_encode_px(v)");
 kernel!(SCANNER_OUTPUT, [wgsl::SCANNER_OUTPUT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_output_px(load(p), load1(p)); }");
 kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
@@ -117,30 +114,18 @@ pub fn luma_only() -> PerPixel {
     color_matrix(&ColorMatrix { r_vector: row, g_vector: row, b_vector: row, ..ColorMatrix::default() })
 }
 
-pub fn texture_moments() -> PerPixel {
-    PerPixel { name: "texture-moments", kernel: &MOMENTS, params: uniform(HEAD, &[]) }
-}
-
-pub fn texture_coeff(k: &TextureCoeff) -> PerPixel {
-    PerPixel { name: "texture-coeff", kernel: &COEFF, params: uniform(HEAD, &[[k.relative, 0.0, 0.0, 0.0]]) }
-}
-
 /// The band: the narrow luma first, the blurred coefficients second, as auxiliary images.
 pub fn texture(gain: f32) -> PerPixel {
     PerPixel { name: "texture", kernel: &TEXTURE, params: uniform(HEAD, &[[gain, 0.0, 0.0, 0.0]]) }
-}
-
-pub fn scanner_density(k: &ScannerDensity) -> PerPixel {
-    PerPixel { name: "scanner-density", kernel: &SCANNER_DENSITY, params: uniform(HEAD, &k.rows()) }
 }
 
 pub fn scanner_encode(root: f32) -> PerPixel {
     PerPixel { name: "scanner-encode", kernel: &SCANNER_ENCODE, params: uniform(HEAD, &[[root, 0.0, 0.0, 0.0]]) }
 }
 
-/// The warmth look's code as the auxiliary image, at `share`, its `lift` taken off, then `contrast`.
-pub fn scanner_output(share: f32, lift: f32, contrast: f32) -> PerPixel {
-    PerPixel { name: "scanner-output", kernel: &SCANNER_OUTPUT, params: uniform(HEAD, &[[share, lift, contrast, 0.0]]) }
+/// The warmth look's code as the auxiliary image, at `share`, its `lift` taken off.
+pub fn scanner_output(share: f32, lift: f32) -> PerPixel {
+    PerPixel { name: "scanner-output", kernel: &SCANNER_OUTPUT, params: uniform(HEAD, &[[share, lift, 0.0, 0.0]]) }
 }
 
 /// The vignette on `extent`, centred on it; coordinates are the graph's, which only the radius reads.

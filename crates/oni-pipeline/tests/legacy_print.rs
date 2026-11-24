@@ -60,7 +60,7 @@ fn cpu_print(px: &[[f32; 4]], s: &PipelineSettings) -> Vec<[f32; 4]> {
                 cpu::color_cube(code, if frontier { &frontier_look::CUBE } else { &oni_look::CUBE })
             };
             let (warmth, share) = m.warmth(legacy.w).map_or((looked, 0.0), |(cube, share)| (cpu::color_cube(looked, cube), share));
-            cpu::scanner_output(looked, warmth, &ScannerOutput { warmth_share: share, lift: scanner::LIFT, contrast: 0.0 })
+            cpu::scanner_output(looked, warmth, &ScannerOutput { warmth_share: share, lift: scanner::LIFT })
         })
         .collect()
 }
