@@ -16,7 +16,7 @@ const SOUGHT: f32 = 8.0;
 /// `p`'s print of `pick` and the paper's white, laid on pure black and pure white, or for Print lift the pick on `lift`
 /// and the white its own.
 pub fn laid(p: &Paper, pick: V3, lift: Option<V3>) -> Paper {
-    let white = p.viewed(p.curves[0]);
+    let white = p.viewed(p.dyed(p.curves[0]));
     let white = if p.luma { [luma(white); 3] } else { white };
     let (anchor, white_anchor) = lift.map_or(([0.0; 3], [1.0; 3]), |a| (a, white));
     Paper { pick: p.printed(pick), white, anchor, white_anchor, ..*p }

@@ -10,8 +10,9 @@ no number here comes from spektrafilm.
 What the files hold:
 
 - Measured, as printed on the sheet: a film layer's spectral sensitivity, the characteristic curves (Status M for a
-  film, less its least density; Status A for a paper, its D-min included, and nothing else of a paper), a film's D-min
-  and mid-scale neutral spectral densities, a Vision3 sheet's cyan, magenta and yellow dye shapes. A paper is taken only when its sheet, or an
+  film, less its least density; Status A for a paper, its D-min included), a film's D-min
+  and mid-scale neutral spectral densities, a Vision3 sheet's and a paper's cyan, magenta and yellow dye shapes (a
+  paper's kept only as the Status A densities each dye reads). A paper is taken only when its sheet, or an
   older edition of it, prints its characteristic curves.
 - Inferred by the script, each listed in its file: a sensitivity or a dye past the sheet's last point; a film's grey
   exposure (its ISO 5800 speed point plus the offset Kodak Gold 200's printed Log H Ref holds over its own); a

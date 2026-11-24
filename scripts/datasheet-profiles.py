@@ -381,9 +381,23 @@ def tailed(x, y, floor):
 
 def convert_paper(stock_id):
     """A colour paper's profile: its sheet's Status A curves as printed, each on its own D-min, on log H less the
-    grey's. ONI reads each layer through a pure dye on its own channel, so a paper's dyes and sensitivities are not kept."""
+    grey's, and its dyes' Status A crosstalk: what each channel reads of each dye at a unit amount. ONI prints each layer
+    through a pure dye on its own channel, so a paper's dye spectra and sensitivities are not kept."""
     stock = STOCK[stock_id]
     measured, inferred = [], []
+    dye_chart = chart(stock, "spectral_dye_density")
+    top = max(series(dye_chart, ch)[0][-1] for ch in ("cyan", "magenta", "yellow"))
+    dyes = []
+    for channel in ("cyan", "magenta", "yellow"):
+        x, y = series(dye_chart, channel)
+        logged = tailed(x, np.log10(np.maximum(y / y.max(), 1e-4)), -4.0)
+        dyes.append(np.where((WAVELENGTHS >= 400.0) & (WAVELENGTHS <= top), 10.0 ** logged, np.nan))
+    dyes = unit(np.array(dyes).T, STATUS_A)
+    crosstalk = np.array([read(dyes[:, k], STATUS_A) for k in range(3)]).T
+    measured.append(f"cyan, magenta and yellow dye shapes ({dye_chart['confidence']} confidence)")
+    inferred.append("each dye past its sheet's points (hidden under another curve), falling at its end slope in log")
+    inferred.append("each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products")
+    inferred.append("the crosstalk: the Status A densities each dye reads at its unit amount, a row a channel, a column a dye")
     curves_chart = chart(stock, "characteristic_curves")
     raw = {k: series(curves_chart, k) for k in "RGB"}
     le = np.linspace(min(v[0][0] for v in raw.values()), min(v[0][-1] for v in raw.values()), CURVE_NODES)
@@ -412,13 +426,14 @@ def convert_paper(stock_id):
             "sha256": source.get("sha256"),
             "retrieved": source.get("retrieved"),
             "dataset_id": stock_id,
-            "charts": [curves_chart["chart_id"]],
+            "charts": [dye_chart["chart_id"], curves_chart["chart_id"]],
             "measured": measured,
             "inferred": inferred,
         },
         "data": {
             "log_exposure": [round(float(v), 6) for v in le],
             "density_curves": [[round(float(v), 6) for v in row] for row in sheet],
+            "crosstalk": [[round(float(v), 6) for v in row] for row in crosstalk],
         },
     }
     place(profile)

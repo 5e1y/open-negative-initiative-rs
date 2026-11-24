@@ -1,7 +1,7 @@
 //! Lighting on the negative, the one operation every pipe takes: a frame's density read back to each layer's log
-//! exposure through its stock's development, Exposure, Contrast, the colour tools and the filters laid there as a shot
-//! exposed otherwise, the film developed again, then its points, zones and mids on its density; the print, ONI's or a
-//! paper, at its rest, so it bounds every colour the tools lay.
+//! exposure through its stock's development, Contrast, the colour tools and the filters laid there as a shot exposed
+//! otherwise, the film developed again, then Exposure on its tone share, held at the window's black and white, and its
+//! points, zones and mids; the print, ONI's or a paper, at its rest, so it bounds every colour the tools lay.
 
 use crate::finishing;
 use crate::film::bake;
@@ -233,6 +233,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
         pivot: development.exposures(std::array::from_fn(|c| grey[c] / scale[c])),
         span: if positive { span.map(|v| -v) } else { span },
         origin: if positive { 1.0 } else { 0.0 },
+        grey: Some(grey),
     };
     moved(s, read)
 }
@@ -257,12 +258,14 @@ pub fn slide(s: &PipelineSettings, stock: VirtualStock) -> Option<Negative> {
         pivot: [0.0; 3],
         span: densest.map(|v| -spanned(v)),
         origin: 1.0,
+        grey: None,
     };
     moved(s, read)
 }
 
 /// How Lighting reads a film: the light coding each layer's density, its development, each layer's density over the
-/// development's own, the log exposure the moves turn about, and the density's tone share, `origin + density / span`.
+/// development's own, the log exposure the moves turn about, the density's tone share, `origin + density / span`, and
+/// the reference grey's density Exposure is anchored on; none on a projected slide, whose Exposure develops it alone.
 struct Read {
     gain: V3,
     pedestal: f32,
@@ -274,6 +277,7 @@ struct Read {
     pivot: V3,
     span: V3,
     origin: f32,
+    grey: Option<V3>,
 }
 
 /// The frame's Lighting and colour tools laid on the film `r` reads; none where they lay nothing.
@@ -283,10 +287,13 @@ fn moved(s: &PipelineSettings, r: Read) -> Option<Negative> {
     let Read { development, scale, pivot, .. } = r;
     let own = |v: V3| if mono { [0.0; 3] } else { v };
     let stops = print.exposure;
-    let shift = |hold: f32| [stops * std::f32::consts::LOG10_2 + hold; 3];
+    // Exposure on the tone share where the window's ends hold it; on a projected slide, in the film's log exposure.
+    let anchored = r.grey.is_some();
+    let light = if anchored { 0.0 } else { stops * std::f32::consts::LOG10_2 };
+    let shift = |hold: f32| [light + hold; 3];
     let slope = [GRADE_BASE.powf(print.contrast); 3];
     // Each channel's own moves turn about the grey as its layer develops it under the neutral ones.
-    let own_pivot = development.inhibited(pivot.map(|e| e + stops * std::f32::consts::LOG10_2));
+    let own_pivot = development.inhibited(pivot.map(|e| e + light));
     let filters = own(print.filters());
     let own_shift = filters.map(|f| f * std::f32::consts::LOG10_2);
     let own_slope = own(print.channel_contrast).map(|c| GRADE_BASE.powf(c));
@@ -305,6 +312,7 @@ fn moved(s: &PipelineSettings, r: Read) -> Option<Negative> {
         own_pivot,
         own_slope,
         own_shift,
+        odds: 0.0,
         spread: if mono { 1.0 } else { color_density::factor(s.density) },
         mixer: finishing::spectrogram(&s.spectrogram).filter(|_| !mono),
         curve: finishing::saturation(&s.saturation).filter(|_| !mono),
@@ -317,18 +325,33 @@ fn moved(s: &PipelineSettings, r: Read) -> Option<Negative> {
         mids: own(print.channel_mid),
     };
     // Moves a black and white print reads none of lay nothing.
-    if !at.moves() && !at.tones() && !at.colours() {
+    if !at.moves() && !at.tones() && !at.colours() && (!anchored || stops == 0.0) {
         return None;
     }
-    if filters == [0.0; 3] {
-        return Some(at);
-    }
-    // A filter tints and the grey keeps its weight: one neutral stop holds its densities' luma as they print unfiltered.
-    let grey = |n: &Negative| {
-        let d = development.developed_on(n.owned(development.inhibited(n.moved(pivot))));
-        (0..3).map(|c| LUMA[c] * d[c] * scale[c]).sum::<f32>()
+    let hold = if filters == [0.0; 3] {
+        0.0
+    } else {
+        // A filter tints and the grey keeps its weight: one neutral stop holds its densities' luma as they print unfiltered.
+        let grey = |n: &Negative| {
+            let d = development.developed_on(n.owned(development.inhibited(n.moved(pivot))));
+            (0..3).map(|c| LUMA[c] * d[c] * scale[c]).sum::<f32>()
+        };
+        let target = grey(&Negative { own_shift: [0.0; 3], ..at });
+        bisected(-2.0, 2.0, target, |h| grey(&Negative { shift: shift(h), ..at }))
     };
-    let target = grey(&Negative { own_shift: [0.0; 3], ..at });
-    let hold = bisected(-2.0, 2.0, target, |h| grey(&Negative { shift: shift(h), ..at }));
-    Some(Negative { shift: shift(hold), ..at })
+    let lit = Negative { shift: shift(hold), ..at };
+    let Some(grey) = r.grey.filter(|_| stops != 0.0) else { return Some(lit) };
+    // Exposure held at the window's black and white: each stop the gain on every tone share's odds that the film's own
+    // stop lays on the grey's mean share, so each end's tones scale about it as by a gain and a neutral stays one.
+    let at_stop = |by: f32| {
+        let d = Negative { shift: [hold + by * std::f32::consts::LOG10_2; 3], ..at }.redeveloped(grey);
+        let u = (0..3).map(|c| r.origin + r.sense * d[c] / r.span[c]).sum::<f32>() / 3.0;
+        let u = u.clamp(ODDS_HELD, 1.0 - ODDS_HELD);
+        (u / (1.0 - u)).ln()
+    };
+    let per_stop = 0.5 * (at_stop(1.0) - at_stop(-1.0));
+    Some(Negative { odds: stops * per_stop, ..lit })
 }
+
+/// The least tone share, from either end, a stop's odds are read at: a grey a stop pushes onto an end stays inside.
+const ODDS_HELD: f32 = 1e-4;

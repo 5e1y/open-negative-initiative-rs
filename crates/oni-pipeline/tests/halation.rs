@@ -222,14 +222,15 @@ fn the_halation_lies_under_the_film_so_lightings_exposure_develops_its_glow_as_t
         let (with, without) = (render(1.0), render(0.0));
         halo.iter().map(|i| with[*i][0] - without[*i][0]).sum::<f32>() / halo.len() as f32
     };
-    // Two stops on Lighting develop the glow as two stops on the film, which exposes the halation with the scene.
+    // Two stops on Lighting develop the glow as two stops on the film, which exposes the halation with the scene, within
+    // the tenth Exposure's hold on Prepare's black lays on the dark ring.
     let (by_lighting, by_film) = (glow(false, 2.0, 0.0), glow(false, 0.0, 2.0));
     println!("the glow two stops up: {by_lighting:.5} by Lighting, {by_film:.5} by the film");
-    assert!((by_lighting / by_film - 1.0).abs() < 0.03, "{by_lighting} {by_film}");
+    assert!((by_lighting / by_film - 1.0).abs() < 0.15, "{by_lighting} {by_film}");
     // Twin: a halation laid on the print, its lamp clipped at white, glows otherwise.
     let over = glow(true, 2.0, 0.0);
     println!("the twin's glow {over:.5}");
-    assert!((over / by_film - 1.0).abs() > 0.1, "the twin's glow {over}, so the check sees nothing");
+    assert!((over / by_film - 1.0).abs() > 0.5, "the twin's glow {over}, so the check sees nothing");
 }
 
 #[test]

@@ -20,9 +20,9 @@ const WHITE: usize = 6;
 const GREY_CHROMA: f32 = 0.5;
 const GREY_GAP: f32 = 2e-3;
 const WHITE_SPREAD: f32 = 0.1;
-/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 20.1 in Venus
-/// 800's shadows and 8.6 in Superia 1600's lights; their numbers are printed, the owner judging them (owner's call).
-const CHROMA: f32 = 21.0;
+/// The ramp's widest chroma and a light step's (L* 80 up): each sheet's layers cross off the grey, up to 12.2 in Superia
+/// 1600's shadows, its scan's dyes mixing the layers; their numbers are printed, the owner judging them (owner's call).
+const CHROMA: f32 = 13.0;
 const LIGHT_CHROMA: f32 = 9.0;
 
 /// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.

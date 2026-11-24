@@ -40,16 +40,16 @@ fn the_whites_stay_free() {
     let mut seen = 0;
     for (label, s) in frames() {
         let [_, rest_white, _] = printed_on(&s, &conversion::stage47(&s));
-        for stops in [-1.0f32, 1.0] {
-            let k = conversion::stage47(&moved(&s, |t| t.print.exposure += stops));
+        for travel in [-0.3f32, 0.3] {
+            let k = conversion::stage47(&moved(&s, |t| t.print.contrast = travel));
             let (white, free) = (printed_on(&s, &k)[1], printed_on(&s, &unanchored(k))[1]);
             let (moved_by, free_by, apart) = (worst(white, rest_white), worst(free, rest_white), worst(white, free));
-            println!("{label}, Exposure {stops:+}: the densest read {white:?} from {rest_white:?} (moved {moved_by:.1e}), unanchored {free:?} ({free_by:.1e}), apart {apart:.1e}");
+            println!("{label}, Contrast {travel:+}: the densest read {white:?} from {rest_white:?} (moved {moved_by:.1e}), unanchored {free:?} ({free_by:.1e}), apart {apart:.1e}");
             // The densest read moves as the enlarger moves it, unanchored, within a hundredth of that move.
-            assert!(apart <= 0.01 * free_by + 2e-5, "{label}, {stops}: {apart} {free_by}");
+            assert!(apart <= 0.01 * free_by + 2e-5, "{label}, {travel}: {apart} {free_by}");
             // Twin: a white anchored too stays where the rest prints it, off the free move by all of it, where it moves.
             if free_by > 1e-3 {
-                assert!(worst(rest_white, free) > 0.01 * free_by + 2e-5, "{label}, {stops}");
+                assert!(worst(rest_white, free) > 0.01 * free_by + 2e-5, "{label}, {travel}");
                 seen += 1;
             }
         }

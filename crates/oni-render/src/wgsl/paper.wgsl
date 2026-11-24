@@ -1,6 +1,7 @@
 // The paper, operation for operation as `cpu::paper`: the window's shares laid back on density, each layer exposed by its
-// own channel through the time and its filter, Brightness faded in from the pick, its curves, each dye absorbing its own
-// Rec. 2020 channel alone, then its ends: the pick and the paper's white each on its anchor; alpha kept.
+// own channel through the time and its filter, Brightness faded in from the pick, its dyes on their curves, each channel
+// reading them through the Status A crosstalk over the D-min, each density absorbing its own Rec. 2020 channel alone,
+// then its ends: the pick and the paper's white each on its anchor; alpha kept.
 
 struct Params {
     head: vec4<u32>,
@@ -13,6 +14,8 @@ struct Params {
     white: vec4<f32>,
     anchor: vec4<f32>,
     white_anchor: vec4<f32>,
+    floor: vec4<f32>,
+    crosstalk: array<vec4<f32>, 3>,
     curves: array<vec4<f32>, 256>,
 }
 
@@ -55,7 +58,8 @@ fn paper_px(t: vec4<f32>) -> vec4<f32> {
         let x = P.pick_reach.x - (log_raw.x + log_raw.y + log_raw.z) / 3.0;
         log_raw = log_raw - vec3<f32>(paper_lifted(x, brightness * 0.3010299956639812, P.pick_reach.y) - x);
     }
-    let density = vec3<f32>(paper_layer(log_raw.x, 0u), paper_layer(log_raw.y, 1u), paper_layer(log_raw.z, 2u));
+    let amounts = vec3<f32>(paper_layer(log_raw.x, 0u), paper_layer(log_raw.y, 1u), paper_layer(log_raw.z, 2u));
+    let density = P.floor.xyz + vec3<f32>(dot(P.crosstalk[0].xyz, amounts), dot(P.crosstalk[1].xyz, amounts), dot(P.crosstalk[2].xyz, amounts));
     var out = exp2(-3.3219280948873623 * density);
     if (P.density_scale.w > 0.5) {
         out = vec3<f32>(dot(out, LUMA));

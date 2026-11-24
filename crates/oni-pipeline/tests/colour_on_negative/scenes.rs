@@ -160,7 +160,7 @@ pub fn past_the_dyes(p: &Paper, light: [f32; 3]) -> f64 {
         ];
         d = std::array::from_fn(|r| d[r] - (0..3).map(|c| inv[r][c] * miss[c]).sum::<f64>());
     }
-    let (low, high) = (p.curves[0], p.curves[PAPER_CURVE_NODES - 1]);
+    let (low, high) = (p.dyed(p.curves[0]), p.dyed(p.curves[PAPER_CURVE_NODES - 1]));
     (0..3).map(|c| (f64::from(low[c].min(high[c])) - d[c]).max(d[c] - f64::from(low[c].max(high[c]))).max(0.0)).fold(0.0, f64::max)
 }
 

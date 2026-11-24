@@ -60,7 +60,7 @@ fn the_neutral_paper_rests_its_grey_on_a_plain_raws_and_its_pick_on_pure_black()
 }
 
 #[test]
-fn each_layer_of_the_neutral_paper_and_of_every_paper_prints_its_own_dye_alone() {
+fn each_layer_of_the_neutral_paper_prints_its_own_dye_alone_and_a_papers_its_crosstalk_too() {
     let s = prepared_negative();
     let k = conversion::stage47(&s);
     let grey = paper::shares_of(&s, &k, paper::anchors(&s)[2]);
@@ -70,12 +70,18 @@ fn each_layer_of_the_neutral_paper_and_of_every_paper_prints_its_own_dye_alone()
         let after = p.printed(more);
         std::array::from_fn::<f32, 3, _>(|i| after[i] - at[i])
     };
+    let neutral = conversion::stage47(&paperless(s.clone())).paper.unwrap();
+    for c in 0..3 {
+        let own = moved(&neutral, c);
+        assert!(own[c] > 1e-3 && (0..3).filter(|i| *i != c).all(|i| own[i] == 0.0), "neutral, dye {c}: {own:?}");
+    }
+    // Twin: on a paper a layer's dye reaches the other channels through its crosstalk, less than its own.
     let on = |paper: PaperStock| conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper.unwrap();
-    let papers = PaperStock::all().into_iter().filter(|p| !p.is_machine()).map(|p| (p.name(), on(p)));
-    for (label, p) in std::iter::once(("neutral", conversion::stage47(&paperless(s.clone())).paper.unwrap())).chain(papers) {
+    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
         for c in 0..3 {
-            let own = moved(&p, c);
-            assert!(own[c] > 1e-3 && (0..3).filter(|i| *i != c).all(|i| own[i] == 0.0), "{label}, dye {c}: {own:?}");
+            let crossed = moved(&on(paper), c);
+            let others = (0..3).filter(|i| *i != c);
+            assert!(crossed[c] > 1e-3 && others.clone().all(|i| crossed[i] > 0.0 && crossed[i] < crossed[c]), "{}, dye {c}: {crossed:?}", paper.name());
         }
     }
     // Twin: the Frontier's layers read its scanner's matrix, so each share reaches the other layers too.

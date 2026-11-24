@@ -82,7 +82,7 @@ pub fn unanchored(k: Stage47) -> Stage47 {
 
 /// The paper's own Dmax as its print shows it.
 pub fn dmax(p: &Paper) -> [f32; 3] {
-    let v = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
+    let v = p.viewed(p.dyed(p.curves[PAPER_CURVE_NODES - 1]));
     if p.luma { [0.2627 * v[0] + 0.678 * v[1] + 0.0593 * v[2]; 3] } else { v }
 }
 

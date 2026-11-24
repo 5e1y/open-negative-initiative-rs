@@ -1,5 +1,5 @@
 //! A digital photo's negative scanned as a real one is: the GPU's film and scan against their scalar reference, the bare
-//! film reading its orange base, the grey ramp held neutral on the paperless pipe, and the chart's chroma against the
+//! film reading its orange base, a grey ramp lit at the film's white held neutral on the paperless pipe, and the chart's chroma against the
 //! film's reference where it is at hand (`ONI_CHART_DIR`). Each verdict has a twin.
 
 mod common;
@@ -52,21 +52,31 @@ fn a_scanned_negative_reads_its_orange_base() {
     assert!(alone[2] > 0.8 * alone[0], "{alone:?}");
 }
 
-/// The neutral axis's C* bound on the paperless pipe, as a digital photo renders it: the scan holds 6.5 at its most, a
-/// shadow's warmth the sheet's three curves lay; the read-out it replaces reached 9.1.
-const NEUTRAL_CHROMA: f64 = 7.0;
+/// The neutral axis's C* on the paperless pipe, a ramp of greys lit at the film's own white (Portra 800: D55), as a
+/// daylight scene reaches it: the grey neutral, the ends at 5.7 at most, green shadows and magenta highlights, the
+/// windows aligning each channel at its bare film and the grey alone while the layers' curves differ in shape.
+const GREY_CHROMA: f64 = 0.5;
+const NEUTRAL_CHROMA: f64 = 6.0;
 
 #[test]
-fn a_grey_ramp_prints_neutral_on_the_paperless_pipe() {
-    let ramp = |r: &chart::Render| chart::RAMP.map(|v| chart::cielab(chart::oklab(r.code([v; 3]))));
-    let worst = |r: &chart::Render| ramp(r).iter().map(|l| l[1].hypot(l[2])).fold(0.0, f64::max);
-    let (render, alone) = (chart::Render::new(PORTRA.key(), film::couplers(&PORTRA.entry())), chart::Render::of(PORTRA.key(), read_out_alone()));
-    for (name, r) in [("scanned", &render), ("the read-out alone", &alone)] {
-        println!("{name}: ramp L* a* b* {:?}", ramp(r).map(|l| l.map(|v| (v * 10.0).round() / 10.0)));
-    }
-    assert!(worst(&render) < NEUTRAL_CHROMA, "the ramp's C* reaches {}", worst(&render));
-    // Twin: the read-out alone tints the ramp past the bound.
-    assert!(worst(&alone) > NEUTRAL_CHROMA, "twin: {}", worst(&alone));
+fn a_grey_ramp_lit_at_the_films_white_prints_neutral_on_the_paperless_pipe() {
+    let white = oni_pipeline::conversion::scene_white(&PipelineSettings::rest(ConversionMode::Digital, true).on_stock(PORTRA)).unwrap();
+    let rows = [white.r_vector, white.g_vector, white.b_vector].map(|r| [f64::from(r[0]), f64::from(r[1]), f64::from(r[2])]);
+    let back = oni_settings::white::inverse(&rows);
+    let lit = |v: f64| oni_settings::white::apply(&back, [chart::dec(v); 3]);
+    let ramp = |r: &chart::Render, film: bool| chart::RAMP.map(|v| chart::cielab(chart::oklab(if film { r.scene(lit(v)) } else { r.code([v; 3]) })));
+    let chroma = |l: &chart::V3| l[1].hypot(l[2]);
+    let render = chart::Render::new(PORTRA.key(), film::couplers(&PORTRA.entry()));
+    let (shot, raw) = (ramp(&render, true), ramp(&render, false));
+    println!("lit at D55: L* a* b* {:?}", shot.map(|l| l.map(|v| (v * 10.0).round() / 10.0)));
+    println!("a RAW's neutral, lit at 5000 K: {:?}", raw.map(|l| l.map(|v| (v * 10.0).round() / 10.0)));
+    let worst = shot.iter().map(chroma).fold(0.0, f64::max);
+    assert!(chroma(&shot[4]) < GREY_CHROMA && worst < NEUTRAL_CHROMA, "the grey's C* {}, the ramp's {worst}", chroma(&shot[4]));
+    // Twins: a RAW's own neutral is a 5000 K grey, warmer than the film's light, and prints warm; the read-out the scan
+    // replaced tints the ramp's ends further (8.6).
+    assert!(chroma(&raw[4]) > GREY_CHROMA && raw.iter().map(chroma).fold(0.0, f64::max) > NEUTRAL_CHROMA);
+    let alone = ramp(&chart::Render::of(PORTRA.key(), read_out_alone()), true).iter().map(chroma).fold(0.0, f64::max);
+    assert!(alone > NEUTRAL_CHROMA, "twin: {alone}");
 }
 
 /// The chart's bounds on Portra 800 against its reference, grey matched: the ColorChecker's chroma within a tenth of the

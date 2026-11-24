@@ -188,7 +188,10 @@ pub fn own_grey(sheet: &Sheet, lift: bool) -> V3 {
         let at = i as usize;
         sheet.curves[at][c] + (f - i) * (sheet.curves[at + 1][c] - sheet.curves[at][c])
     };
-    let viewed = oni_render::viewed;
+    let viewed = |amounts: V3| -> V3 {
+        let row = |c: usize| (0..3).map(|k| sheet.crosstalk[c][k] * amounts[k]).sum::<f32>();
+        oni_render::viewed(std::array::from_fn(|c| sheet.floor[c] + row(c)))
+    };
     let white = viewed(sheet.curves[0]);
     let target = if lift { (*GREY_PRINT / luma(white)).ln() } else { GREY_PRINT.ln() };
     let miss = |log: V3| -> V3 {
@@ -207,11 +210,11 @@ pub fn filtration(grey: V3) -> V3 {
     grey.map(|e| (most - e) * CC_PER_DENSITY)
 }
 
-/// Each layer's density under the window's `shares`, as a share of its curve's range.
+/// Each layer's dye amount under the window's `shares`, as a share of its curve's range.
 pub fn layer_shares(p: &Paper, shares: V3) -> V3 {
     let (low, high) = (p.curves[0], p.curves[PAPER_CURVE_NODES - 1]);
-    let density = p.developed(p.exposed(p.density(shares)));
-    std::array::from_fn(|c| (density[c] - low[c]) / (high[c] - low[c]))
+    let amounts = p.amounts(p.exposed(p.density(shares)));
+    std::array::from_fn(|c| (amounts[c] - low[c]) / (high[c] - low[c]))
 }
 
 /// Whether the print keeps the paper's own ends, Print lift on a paper: the neutral paper prints ONI's print's, pure.
@@ -246,6 +249,8 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
         curves: &sheet.curves,
         curve_low: sheet.curve_low * axis,
         curve_step: sheet.curve_step * axis,
+        floor: sheet.floor,
+        crosstalk: sheet.crosstalk,
         pick: [0.0; 3],
         white: [1.0; 3],
         anchor: [0.0; 3],
