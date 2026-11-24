@@ -352,13 +352,21 @@ const FROZEN_PEDESTAL: f32 = 0.008;
 /// Twenty times under half an 8-bit step: a drift this far shows long before a cached thumbnail would.
 const FRAME_AGREEMENT: f32 = 1e-4;
 
-/// The frozen kernel: transmittance clamped into `[Tmin, 1]`, density divided by `DMAX`, three levels passes.
+/// The frozen kernel: transmittance clamped into `[Tmin, 1]`, density divided by `DMAX`, three levels
+/// passes, each clamped under its black.
 fn frozen(source: V3, stops: V3, levels: &LevelsSet) -> V3 {
     let lv = [&levels.red, &levels.green, &levels.blue];
     std::array::from_fn(|i| {
         let d = -((source[i] + FROZEN_PEDESTAL) * stops[i].exp2()).clamp(FROZEN_PEDESTAL / 8.0, 1.0).log10();
-        oni_settings::migrate::density::apply_levels(d / pipeline::DMAX, lv[i])
+        ((d / pipeline::DMAX - lv[i].black) / (lv[i].white - lv[i].black).max(1e-4)).max(0.0).powf(lv[i].gamma())
     })
+}
+
+/// The windows as a sidecar of the frozen kernel's day stored them, read through the migration chain.
+fn migrated(levels: &LevelsSet) -> LevelsSet {
+    let stored = PipelineSettings { levels: *levels, ..PipelineSettings::default() };
+    let aged = oni_settings::migrate::reshape::as_stored(&oni_settings::Document::of(stored), oni_settings::migrate::before_1_0::DENSITY_AXIS_VERSION - 1);
+    oni_settings::migrate::document(&serde_json::to_vec(&aged).unwrap()).unwrap().document.settings.levels
 }
 
 struct Arm {
@@ -385,7 +393,7 @@ fn live(arm: &Arm) -> PipelineSettings {
     let mut s = PipelineSettings::default();
     s.gains.stops = arm.stops;
     s.density_ceiling = -FROZEN_PEDESTAL.log10();
-    s.levels = if arm.migrating { oni_settings::migrate::density::migrate(&arm.frozen) } else { arm.frozen };
+    s.levels = if arm.migrating { migrated(&arm.frozen) } else { arm.frozen };
     s.vignette = Default::default();
     s.chroma = oni_settings::blocks::ChromaDenoise::OFF;
     s.spectrogram = Default::default();
@@ -418,28 +426,16 @@ fn reduced(image: &oni_decode::Linear, side: usize) -> (u32, u32, Vec<[f32; 4]>)
     (w as u32, h as u32, out)
 }
 
-/// The worst post-clip gap between the frozen kernel and `rendered`, and between the closed new form and it.
-fn gaps(source: &[[f32; 4]], rendered: &[[f32; 4]], arm: &Arm) -> (f32, f32) {
-    let migrated = oni_settings::migrate::density::migrate(&arm.frozen);
-    let ceiling = -FROZEN_PEDESTAL.log10();
-    let (mut against, mut residue) = (0.0f32, 0.0f32);
+/// The worst post-clip gap between the frozen kernel and `rendered`.
+fn gap(source: &[[f32; 4]], rendered: &[[f32; 4]], arm: &Arm) -> f32 {
+    let mut against = 0.0f32;
     for (p, out) in source.iter().zip(rendered) {
-        let s = [p[0], p[1], p[2]];
-        let old = frozen(s, arm.stops, &arm.frozen);
-        let new = oni_settings::migrate::density::new(
-            s,
-            arm.stops,
-            &migrated,
-            ConversionMode::Negative,
-            density_axis::pedestal(ceiling),
-            density_axis::log_guard(ceiling),
-        );
+        let old = frozen([p[0], p[1], p[2]], arm.stops, &arm.frozen);
         for c in 0..3 {
             against = against.max((pipeline::clip(old[c]) - pipeline::clip(out[c])).abs());
-            residue = residue.max((pipeline::clip(new[c]) - pipeline::clip(out[c])).abs());
         }
     }
-    (against, residue)
+    against
 }
 
 #[test]
@@ -461,11 +457,10 @@ fn the_migrated_windows_render_the_frozen_kernel_on_a_real_frame() {
         let source = g.upload(w, h, &small).expect("the thumbnail uploads");
         for arm in arms() {
             let (_, out) = Pipeline::new().render(&mut g, &source, &live(&arm), &Request::default(), &Inputs::default(), None).unwrap();
-            let (against, residue) = gaps(&small, &out, &arm);
-            println!("{name} thumbnail {w} x {h}, {}: frozen {against:.3e}, closed form {residue:.3e}", arm.name);
+            let against = gap(&small, &out, &arm);
+            println!("{name} thumbnail {w} x {h}, {}: frozen {against:.3e}", arm.name);
             if arm.migrating {
                 assert!(against <= FRAME_AGREEMENT, "{name} thumbnail, {}: {against:.3e}", arm.name);
-                assert!(residue <= FRAME_AGREEMENT, "{name} thumbnail, {}: the kernel's own share {residue:.3e}", arm.name);
             } else {
                 // Twin: windows left three times too narrow are a full-scale wrong render.
                 assert!(against > 0.5, "{name}: the unmigrated twin refuses only at {against:.4}");
@@ -474,7 +469,7 @@ fn the_migrated_windows_render_the_frozen_kernel_on_a_real_frame() {
         for arm in arms().iter().filter(|a| a.migrating) {
             let k = conversion::stage47(&live(arm));
             let out: Vec<[f32; 4]> = decoded.pixels.iter().map(|&p| cpu::stage47(p, &k)).collect();
-            let (against, _) = gaps(&decoded.pixels, &out, arm);
+            let against = gap(&decoded.pixels, &out, arm);
             println!("{name} full {} x {}, {}: frozen {against:.3e}", decoded.width, decoded.height, arm.name);
             assert!(against <= FRAME_AGREEMENT, "{name} full, {}: {against:.3e}", arm.name);
         }

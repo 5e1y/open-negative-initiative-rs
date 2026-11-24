@@ -7,8 +7,7 @@ use oni_measure::auto_levels::*;
 use oni_measure::roll;
 use oni_settings::axis::{graduation, pipeline};
 use oni_settings::blocks::Gains;
-use oni_settings::migrate::density;
-use oni_settings::levels::{Levels, LevelsSet};
+use oni_settings::levels::Levels;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const NEG: ConversionMode = ConversionMode::Negative;
@@ -113,13 +112,14 @@ fn placing_writes_all_five_handles_on_the_mode_s_own_window() {
 /// The measuring path's closed form over densities the frame really holds, binned onto the window.
 fn simulate(densities: &[Vec<f32>; 3], stops: [f32; 3]) -> Histogram {
     let g = graduation::levels(NEG);
-    let measuring = LevelsSet { red: g, green: g, blue: g };
     let mut counts = vec![[0.0f32; 3]; 1024];
     for (c, list) in densities.iter().enumerate() {
         for &d in list {
+            // The source's density at the gain, guarded under the log, over the measuring window.
             let t = 10f32.powf(-d) - pipeline::tpedestal();
-            let m = density::new([t; 3], [stops[c]; 3], &measuring, NEG, pipeline::tpedestal(), pipeline::tmin());
-            let bin = (m[0].min(1.0) * 1023.0).round() as i64;
+            let e = -((t + pipeline::tpedestal()) * stops[c].exp2()).max(pipeline::tmin()).log10();
+            let m = ((e - g.black) / (g.white - g.black).max(1e-4)).max(0.0).powf(g.gamma());
+            let bin = (m.min(1.0) * 1023.0).round() as i64;
             counts[bin.clamp(0, 1023) as usize][c] += 1.0;
         }
     }

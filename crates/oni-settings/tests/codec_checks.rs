@@ -7,7 +7,6 @@ use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
-use oni_settings::migrate::density;
 use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
@@ -313,7 +312,10 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     placed.levels.green = Levels { black: 0.1279, white: 0.7411, mid: 0.6413, ..Levels::default() };
     placed.levels.blue = Levels { black: 0.2113, white: 0.9337, mid: 0.5, ..Levels::default() };
     placed.gains.stops = [1.5, -0.5, 2.125];
-    let scaled = density::migrate(&placed.levels);
+    let mut scaled = placed.levels;
+    for lv in [&mut scaled.red, &mut scaled.green, &mut scaled.blue] {
+        (lv.black, lv.white) = (lv.black * pipeline::DMAX, lv.white * pipeline::DMAX);
+    }
     for stamp in [0, before_1_0::DENSITY_AXIS_VERSION - 1, before_1_0::DENSITY_AXIS_VERSION] {
         let read = decode(&aged(&placed, stamp, |_| {}));
         let wanted = if stamp < before_1_0::DENSITY_AXIS_VERSION { scaled } else { placed.levels };

@@ -13101,5 +13101,13 @@
     "status": "done",
     "detail": "The app lays its tree through archive_tree::walk and find, and filters its own first photo and counts (Archive::first_shown, shown_count); it calls folders::tree and groups_of apart, and folds the trash row through `unfolded` itself. The removed functions were the unfiltered twins of those or forwarders, reached only by their own tests. folders::groups calls groups_of on the tree directly.",
     "outcome": "cargo test -p oni-library green. archive_tree's fold test now reads walk alone, with its twin; the tree-and-groups check compares groups_of on a tree holding the survey's empty folders with groups, with its twin. roll8's an_index_rebuilt_from_the_sidecars_finds_every_frame fails on the reference roll on a line this change does not reach: the folder's marker on disk names another roll id and stock than its oracle (folders::rolls, untouched)."
+  },
+  {
+    "id": 3764,
+    "type": "simplification",
+    "title": "migrate::density leaves the settings crate: no migration used the oracle, and its 'kernel' window had drifted from the kernel",
+    "status": "done",
+    "detail": "The windows' move onto the density axis runs in before_1_0::in_density, on the raw JSON; migrate::density held a second copy of that x DMAX and two closed forms of stages 4-6 that only tests read. Its apply_levels still clamped under the black where the stage 4-7 kernel passes a density on (stage47.rs). Each outside check now states what it means: codec_checks writes the x DMAX expectation inline; the real-frame check (oni-pipeline swift_checks) takes its windows from migrate::document on a document aged under the density axis, so it renders through the step that runs, and keeps its frozen clamping kernel as a local oracle; its closed-form residue, a copy of the stage 4-7 CPU-GPU check, goes; auto_levels' simulation measures the density over its window itself; oni-app's levels checks read the window as the kernel's scalar reference runs it, the floored-track twin through pipeline::clip. No migration's output moves.",
+    "outcome": "cargo test -p oni-settings, oni-measure auto_levels and oni-app's levels tests green. On the reference roll's DSC_6432 the migrated windows render the frozen kernel within 2.4e-7 on the GPU thumbnail and 1.8e-7 on the full frame's CPU reference; the unmigrated twin parts by 0.93. The always-on proof of the two closed forms' identity (density.rs's own tests) goes with them: the identity is proven on a real frame only, with the reference roll and a GPU."
   }
 ]
