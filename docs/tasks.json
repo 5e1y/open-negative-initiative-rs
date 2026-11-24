@@ -13125,5 +13125,13 @@
     "status": "done",
     "detail": "Each PipelineSettings field was named in the struct, in the fields! table, and again in look_settings::FIELDS, FRAME_FIELDS or roll_settings::FIELD_NAMES; Field::family searched those lists by string, and two tests existed only to keep them in step. The table now carries each field's family in its row (`Mode => \"mode\", mode, Roll;`), so a field has one family by construction and family() returns Family. The table and FieldSet move to oni-settings (fields.rs, ordered.rs beside it; oni-core re-exports `fields`), so look_settings::copied becomes a loop of Field::carry over the Look family, the same 18 members cloned. Edit Together's OWN (the frame family plus sourceEncoding, which a roll field never reaches outside a slide's own) is the frame family. Serde names and the struct are unchanged: no sidecar byte moves.",
     "outcome": "cargo test -p oni-settings and oni-core green; the workspace's tests build. The table test (every declared field in order, with its twin) stays the guard; the codec check now holds the serialised document's keys to the table's names (twin: a table short of one field). Preset boxes and lens/paperless pastes read the Look family."
+  },
+  {
+    "id": 3767,
+    "type": "simplification",
+    "title": "The pipette keeps the one aggregate ever used, the density mean: Space, Statistic and their median and transmittance arms go",
+    "status": "done",
+    "detail": "Every call passed RETAINED_SPACE (density) and RETAINED_STATISTIC (mean); the median and the transmittance mean were a research alternative the constants had already refused, and the mode a read took served only the transmittance arm. pipette::read takes the plane, the point and the radius; its mean folds each channel in the same order and bounds the answer onto the window as before, so the base pick, the key and every roll's black read the same.",
+    "outcome": "cargo test -p oni-measure green (the example sensor_colours builds); the test of the two spaces goes with them, the rim and edge checks keep their twins."
   }
 ]

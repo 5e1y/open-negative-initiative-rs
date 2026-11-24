@@ -94,7 +94,7 @@ fn find_base(m: &Measurer, frames: &[Frame], film: ConversionMode, recorded: [f3
                 if (EDGE..1.0 - EDGE).contains(&unit.x) && (EDGE..1.0 - EDGE).contains(&unit.y) {
                     continue;
                 }
-                let Some(read) = pipette::read(&plane, unit, film, roll::BASE_RADIUS, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC) else { continue };
+                let Some(read) = pipette::read(&plane, unit, roll::BASE_RADIUS) else { continue };
                 let gap = worst(read.fractions, recorded);
                 if gap < best.2 {
                     best = (i, unit, gap);

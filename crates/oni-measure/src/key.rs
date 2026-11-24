@@ -152,7 +152,7 @@ pub fn bare(start: &PipelineSettings) -> PipelineSettings {
 /// `EditorScene.base`: the bare film under the pick, read before the levels.
 fn base(r: &mut Reader, copy: Copy, start: &PipelineSettings, unit: Point, radius: f64) -> Option<[f32; 3]> {
     let graduated = r.plane(copy, &bare(start), Stage::Levels)?;
-    pipette::read(&graduated, unit, start.mode, radius, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).map(|x| x.fractions)
+    pipette::read(&graduated, unit, radius).map(|x| x.fractions)
 }
 
 /// A file decoded on the CPU: linear Rec. 2020 pixels, and the full width of the frame they came from.

@@ -107,7 +107,7 @@ fn roll8_the_pipette_reads_before_the_levels_so_a_second_pick_cannot_answer_the_
         let mut read = |s: &PipelineSettings, before: Stage| {
             let plane = r.plane(copy, s, before).unwrap();
             let at = Point::new(0.5, 0.5);
-            pipette::read(&plane, at, s.mode, pipette::DEFAULT_RADIUS, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).unwrap().fractions
+            pipette::read(&plane, at, pipette::DEFAULT_RADIUS).unwrap().fractions
         };
         let drift = worst(read(&rest, Stage::Levels), read(&moved, Stage::Levels));
         let circular = worst(read(&rest, Stage::Curves), read(&moved, Stage::Curves));

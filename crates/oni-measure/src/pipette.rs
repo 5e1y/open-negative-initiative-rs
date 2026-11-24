@@ -1,36 +1,13 @@
 //! `Pipette`: the disc under the pointer, aggregated on the axis the levels are graduated in.
 
 use crate::plane::Plane;
-use oni_settings::axis::{graduation, pipeline};
 use oni_settings::cg::{Point, Rect};
-use oni_settings::ConversionMode;
 
 /// Resting radius in pixels of the measuring copy, so the reading follows neither zoom nor crop.
 pub const DEFAULT_RADIUS: f64 = 4.0;
 
 /// What the slider may dial; the track brackets what a photograph asks for.
 pub const RADIUS_RANGE: (f64, f64) = (2.0, 24.0);
-
-/// Where the samples are averaged; the two differ on the mean alone, a median commuting with the axis.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Space {
-    /// The chain's axis: the geometric mean of the transmittances.
-    Density,
-    /// Their arithmetic mean, which a sensor integrates.
-    Transmittance,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Statistic {
-    Mean,
-    Median,
-}
-
-/// Silver grain is log-normal: the axis the sliders are linear on is the one its brightest grains do not drag.
-pub const RETAINED_SPACE: Space = Space::Density;
-
-/// The disc is drawn before the click, so a speck is in plain sight and every pixel stays counted.
-pub const RETAINED_STATISTIC: Statistic = Statistic::Mean;
 
 /// A stored preference held to the track; an unreadable one reads as the rest.
 pub fn radius(stored: f64) -> f64 {
@@ -45,7 +22,7 @@ pub struct Reading {
 }
 
 /// The disc centred on `unit`, a point of the image with y downward; `None` outside the frame.
-pub fn read(graduated: &Plane, unit: Point, mode: ConversionMode, radius: f64, space: Space, statistic: Statistic) -> Option<Reading> {
+pub fn read(graduated: &Plane, unit: Point, radius: f64) -> Option<Reading> {
     let extent = graduated.extent();
     if extent.width < 1.0 || extent.height < 1.0 || radius < 0.5 || !(0.0..=1.0).contains(&unit.x) || !(0.0..=1.0).contains(&unit.y) {
         return None;
@@ -73,47 +50,18 @@ pub fn read(graduated: &Plane, unit: Point, mode: ConversionMode, radius: f64, s
             }
         }
     }
-    let fractions = aggregate(&samples, mode, space, statistic)?;
+    let fractions = mean(&samples)?;
     Some(Reading { fractions, pixels: samples.len() })
 }
 
-/// Only the answer is bounded onto the window: bounding each sample would drag the mean up out of a channel under zero.
-pub fn aggregate(samples: &[[f32; 3]], mode: ConversionMode, space: Space, statistic: Statistic) -> Option<[f32; 3]> {
+/// The mean on the graduated axis, affine in density: log-normal grain's brightest grains drag no
+/// density mean. Only the answer is bounded: bounding each sample would lift a channel under zero.
+fn mean(samples: &[[f32; 3]]) -> Option<[f32; 3]> {
     if samples.is_empty() {
         return None;
     }
-    let mut out = [0.0f32; 3];
-    for (c, slot) in out.iter_mut().enumerate() {
-        let column: Vec<f32> = samples.iter().map(|s| s[c]).collect();
-        let summarised = match (statistic, space) {
-            (Statistic::Median, _) => middle(&column),
-            // The graduated signal is affine in density, so its mean is the density's.
-            (Statistic::Mean, Space::Density) => column.iter().fold(0.0f32, |a, v| a + v) / column.len() as f32,
-            (Statistic::Mean, Space::Transmittance) => {
-                let mean = column.iter().fold(0.0f32, |a, &v| a + 10f32.powf(-density(v, mode))) / column.len() as f32;
-                fraction(-mean.max(f32::MIN_POSITIVE).log10(), mode)
-            }
-        };
-        *slot = summarised.max(0.0).min(1.0);
-    }
-    Some(out)
-}
-
-/// The lower middle on an even count, a value the film really holds.
-pub fn middle(column: &[f32]) -> f32 {
-    let mut sorted = column.to_vec();
-    sorted.sort_by(|a, b| a.total_cmp(b));
-    sorted[(sorted.len() - 1) / 2]
-}
-
-/// The density behind a fraction of the window: the positive branch re-inverts on `DMAX`.
-pub fn density(fraction: f32, mode: ConversionMode) -> f32 {
-    let value = graduation::value(fraction, mode);
-    if mode.invert_flag() > 0.5 { value } else { pipeline::DMAX - value }
-}
-
-pub fn fraction(density: f32, mode: ConversionMode) -> f32 {
-    graduation::fraction(if mode.invert_flag() > 0.5 { density } else { pipeline::DMAX - density }, mode)
+    let n = samples.len() as f32;
+    Some([0, 1, 2].map(|c| (samples.iter().fold(0.0f32, |a, s| a + s[c]) / n).max(0.0).min(1.0)))
 }
 
 /// The integer offsets a disc of `radius` holds about a pixel centre.

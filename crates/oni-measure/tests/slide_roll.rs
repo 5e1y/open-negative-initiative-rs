@@ -123,7 +123,7 @@ fn split(m: &Measurer, path: &str, decoded: &PipelineSettings, start: &PipelineS
     let centre = Point::new(0.5, 0.5);
     m.with(path, decoded, |r, copy| {
         let plane = r.plane(copy, &key::bare(start), Stage::Levels)?;
-        pipette::read(&plane, centre, start.mode, 4.0, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).map(|x| x.fractions)
+        pipette::read(&plane, centre, 4.0).map(|x| x.fractions)
     })
 }
 
