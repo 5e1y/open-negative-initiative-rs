@@ -32,7 +32,7 @@ on its own D-min, which ONI reads through pure dyes, each on its own channel; on
 taken, and a display material viewed by transmission is written as a paper. Each layer's level is as printed: Kodak's
 absolute, Fujifilm's on one relative axis for all three; the curves' log H origin is set where green prints an 18 %
 grey over its D-min, the enlarger's time absorbing it. A dye's or a layer's points hidden on its sheet are filled by
-its end slope.
+its end slope; a reversal film's curve hidden under another's stroke takes that one's points.
 """
 
 import json
@@ -440,19 +440,23 @@ def convert_paper(stock_id):
     return name, inferred
 
 
-# The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, and that film's key.
-# Provia 100F is left out: its sheet's blue and green curves are traced only to log H -2.16 and -1.50.
+# The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, that film's key, and
+# each curve the sheet hides under another's stroke (coincident within line width, the dataset's notes say) with that one.
 SLIDES = [
-    ("fujifilm_velvia_50", "fujifilm-velvia50", "fujifilm-velvia-50"),
-    ("fujifilm_velvia_100", "fujifilm-velvia100", "fujifilm-velvia-100"),
-    ("kodak_ektachrome_e100", "kodak-ektachrome", "kodak-ektachrome-e100"),
+    ("fujifilm_velvia_50", "fujifilm-velvia50", "fujifilm-velvia-50", {}),
+    ("fujifilm_velvia_100", "fujifilm-velvia100", "fujifilm-velvia-100", {}),
+    ("fujifilm_provia_100f", "fujifilm-provia100", "fujifilm-provia-100f", {"G": "R", "B": "R"}),
+    ("kodak_ektachrome_e100", "kodak-ektachrome", "kodak-ektachrome-e100", {}),
 ]
 
+CHANNEL_NAMES = {"R": "red", "G": "green", "B": "blue"}
 
-def convert_slide(stock_id, file_key, film_key):
+
+def convert_slide(stock_id, file_key, film_key, hidden):
     """A colour reversal film's profile, laid as the virtual film of its stock's file: a paper's parts, Status A, the
     dyes unmixed over the base, the layers' sensitivity as printed. Its curves fall with exposure: each held non-rising,
-    the dyes unmixed from the densest end, the log H origin where green transmits an 18 % grey over the base."""
+    the dyes unmixed from the densest end, the log H origin where green transmits an 18 % grey over the base. A curve
+    `hidden` under another's stroke past its last traced point takes that one's points there."""
     stock = STOCK[stock_id]
     measured, inferred = [], []
     sens_chart = chart(stock, "spectral_sensitivity")
@@ -474,6 +478,11 @@ def convert_slide(stock_id, file_key, film_key):
     inferred.append("each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products")
     curves_chart = chart(stock, "characteristic_curves")
     raw = {k: series(curves_chart, k) for k in "RGB"}
+    for k, under in hidden.items():
+        (x, y), (ux, uy) = raw[k], raw[under]
+        past = ux > x[-1]
+        raw[k] = (np.concatenate([x, ux[past]]), np.concatenate([y, uy[past]]))
+        inferred.append(f"{CHANNEL_NAMES[k]}'s curve past log H {x[-1]:.2f}, hidden on the sheet under {CHANNEL_NAMES[under]}'s stroke: {CHANNEL_NAMES[under]}'s points")
     le = np.linspace(max(v[0][0] for v in raw.values()), min(v[0][-1] for v in raw.values()), CURVE_NODES)
     curves = {k: np.interp(le, cx, cy) for k, (cx, cy) in raw.items()}
     lows = [curves[k].min() for k in "RGB"]
@@ -783,8 +792,8 @@ def main():
         name, inferred = convert_paper(stock_id)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred))
-    for stock_id, file_key, film_key in SLIDES:
-        name, inferred = convert_slide(stock_id, file_key, film_key)
+    for stock_id, file_key, film_key, hidden in SLIDES:
+        name, inferred = convert_slide(stock_id, file_key, film_key, hidden)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred[-2:]))
     for stock_id, name, prefix, spectrum_of in BW_STOCKS:

@@ -54,7 +54,7 @@ A photo keeps the key it was edited on even while no file defines it: it renders
 - `developments`: the stock developed otherwise, a push: each with its own `key`, `name`, `iso`, `dyes` and `film`, on this file's brand, type and canister.
 - `dye_set`: a set of no stock's own, `{"key": …, "mean_of": [film keys]}`, their curves averaged (the generic C-41 stock, in `generic-color-negative.json`).
 
-A `colour-slide` stock's film is a reversal film: its profile's curves fall with exposure (Status A, the log H origin where green transmits an 18 % grey), its couplers act on the first developer's negative image, its reference is the windows' rest and its dyes `generic-c41`; a digital photo on it is projected rather than printed.
+A `colour-slide` stock's film is a reversal film: its profile's curves fall with exposure (Status A, the log H origin where green transmits an 18 % grey), its couplers act on the first developer's negative image, its reference is the windows' rest and its dyes `generic-c41`; a digital photo on it is projected rather than printed. A curve its sheet hides under another's stroke takes that one's points past its own last, listed as inferred (Provia 100F's green and blue under red's).
 
 ## A paper
 

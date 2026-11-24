@@ -76,7 +76,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   sheet (curves falling, its couplers on the first developer's negative image), and the slide's dyes filter a 3200 K projector lamp
   onto a white screen, seen adapted to the bare film's light with a 0.5 % veil (`film::projection`), a band the sheet leaves
   unmeasured holding its neighbours'; it never prints on a paper, and shows as a scanned slide does (`projector`).
-  Velvia 50, Velvia 100 and Ektachrome E100 hold their sheets; Provia 100F's is traced short.
+  Velvia 50, Velvia 100, Provia 100F and Ektachrome E100 hold their sheets; Provia's green and blue, hidden under red's stroke
+  past log H -1.50 and -2.16, take red's points there.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
 - **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, its measured table

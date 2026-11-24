@@ -13302,5 +13302,13 @@
     "title": "The black and white profiles drop the other developments nothing read",
     "status": "done",
     "detail": "Each of the 27 black and white stock files carried every other development its sheet prints, 57,000 lines built into the binary that no code read (Silver::read takes the chosen curve alone). The data-sheet script no longer writes them; the chosen development and every render unchanged."
+  },
+  {
+    "id": 3786,
+    "type": "feature",
+    "title": "Fujifilm Provia 100F from its sheet: its green and blue, hidden under red's stroke, take red's points; offered to digital photos and projected",
+    "status": "done",
+    "detail": "scripts/datasheet-profiles.py convert_slide takes, for each reversal film, the curves its sheet hides under another's stroke: past its last traced point such a curve takes the covering one's points, listed under inferred in the profile's provenance. Provia 100F (AF3-036E) joins SLIDES with green and blue under red (the dataset: traced to log H -1.50 and -2.16, coincident with red within line width below), its profile spanning log H -2.48 to 1.74 written into fujifilm-provia100.json's new film block fujifilm-provia-100f (daylight, generic-c41, the windows' rest as its reference, as every reversal film's). Only Provia's profile was generated; Velvia 50, Velvia 100 and Ektachrome E100 rebuilt by the changed function are byte-identical to their files. Couplers fitted by examples/coupler_fit.rs on the Provia 100F reference chart (slide mode: no diagonal, folding refused). A roll on Provia now projects on Provia instead of Ektachrome E100; the checks naming a slide stock no sheet profiles take Kodachrome 64. Counts: 79 virtual films, 79 sheet films.",
+    "outcome": "Provia 100F's couplers [[0, 0.181, 0.18], [0, 0, 0], [0.132, 0.053, 0]]: the chart's loss to its reference 0.0021 (mean dE00 5.28, ColorChecker chroma 1.06 of the reference's) against 0.0031 with no cross term and 0.076 on the common matrix. Its scene's 18 % grey projected at a* +3.49 b* +0.28 (Velvia 100 +6.10 -1.22, Ektachrome E100 +5.53 -3.90). A digital photo (P1073074) on Provia against the reference: mean dE00 6.94, chroma 0.83 of the reference's (common matrix 19.4, 2.03). tests/projection.rs: Provia's profile reads, falls with exposure (4x the grey passes over twice the light) and projects its bare film as the screen's white within 1e-3; its range spans 4.22 log and holds green's 18 % grey (twin: green and blue as the sheet traces them hold none). oni-settings and oni-pipeline tests pass, oni-app's stock, slide and roll card unit checks (42) and the window checks on stock and slide (29 of 29)."
   }
 ]

@@ -258,11 +258,11 @@ mod tests {
         let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
         super::dyed(&mut s, Some("fujifilm-velvia100"));
         assert_eq!(s.projector(), Some(oni_settings::VirtualStock::of("fujifilm-velvia-100")));
-        super::dyed(&mut s, Some("fujifilm-provia100"));
+        super::dyed(&mut s, Some("kodak-kodachrome64"));
         assert_eq!((s.dye_set, s.projector()), (DyeSet::default(), Some(oni_settings::VirtualStock::SLIDE)));
         // Twin: a negative's key on a slide stays for its return to a negative.
         s.dye_set = DyeSet::of("kodak-portra-400");
-        super::dyed(&mut s, Some("fujifilm-provia100"));
+        super::dyed(&mut s, Some("kodak-kodachrome64"));
         assert_eq!(s.dye_set, DyeSet::of("kodak-portra-400"));
     }
 

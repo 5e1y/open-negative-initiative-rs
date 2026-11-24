@@ -79,7 +79,7 @@ fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();
-    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (104, 78, 47, 8));
+    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (104, 79, 47, 8));
     assert!(VirtualStock::default().is_known() && PaperStock::default().is_known());
     assert!(DyeSet::default().is_generic() && c.dye_set(DyeSet::default()).is_some());
     assert_eq!(c.virtual_film(VirtualStock::of("kodak-portra-800-push-2")).map(|v| (v.catalogue, v.dyes)), Some(("kodak-portra800-push2", DyeSet::of("kodak-portra-800"))));
