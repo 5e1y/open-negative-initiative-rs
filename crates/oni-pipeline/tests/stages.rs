@@ -9,7 +9,7 @@ use oni_pipeline::stages::{self, Blur, DetailColumns, DetailRows, Oriented, Patc
 use oni_pipeline::{Pipeline, Request, conversion, finishing, geometry, oni_look, scanner};
 use oni_render::cpu::{self, Grid};
 use oni_render::{
-    ColorCube, Detail, ExposureAdjust, FlatField, Gaussian, Orient, ScannerEncode, ScannerOutput, Texture, TextureCoeff,
+    ColorCube, Detail, ExposureAdjust, FlatField, Gaussian, Orient, ScannerEncode, ScannerOutput, Texture,
     Vignette,
 };
 use oni_settings::cg::Point;
@@ -40,8 +40,6 @@ fn per_pixel_kernels_match_their_references() {
     let (w, h) = (37, 23);
     let pixels = noise(w, h, 1, -0.2, 1.6);
     let input = g.upload(w, h, &pixels).unwrap();
-    // Moments of a neighbourhood, a mean and a mean square above its square.
-    let moments: Vec<V4> = noise(w, h, 14, 0.0, 1.0).iter().map(|p| [p[0], p[0] * p[0] + 0.05 * p[1], 0.0, 1.0]).collect();
     let transmitted = noise(w, h, 2, 0.002, 0.9);
     let film = g.upload(w, h, &transmitted).unwrap();
 
@@ -78,13 +76,6 @@ fn per_pixel_kernels_match_their_references() {
         [y, y, y, p[3]]
     };
     per_pixel(&mut g, "luma only", &input, &pixels, stages::luma_only(), luma, |p| luma(swapped(p)));
-
-    let positive_luma = mapped(&pixels, luma);
-    let luma_source = g.upload(w, h, &positive_luma).unwrap();
-    per_pixel(&mut g, "texture moments", &luma_source, &positive_luma, stages::texture_moments(), cpu::texture_moments, |p| cpu::texture_moments(p.map(|v| v * 1.01)));
-    let moment_source = g.upload(w, h, &moments).unwrap();
-    let coeff = |relative| TextureCoeff { relative };
-    per_pixel(&mut g, "texture coefficients", &moment_source, &moments, stages::texture_coeff(&coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.13)));
 
     let root = |root| ScannerEncode { root };
     per_pixel(&mut g, "scanner encode", &input, &pixels, stages::scanner_encode(oni_look::ROOT), |p| cpu::scanner_encode(p, &root(oni_look::ROOT)), |p| cpu::scanner_encode(p, &root(2.1)));

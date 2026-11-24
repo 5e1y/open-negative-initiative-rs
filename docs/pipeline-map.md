@@ -523,7 +523,7 @@ Every pipeline kernel is a WGSL body in `oni-render/src/wgsl/` with a scalar CPU
 | Colour Mixer | `spectrogram.wgsl` | `kernel/spectrogram.rs` | `spectrogram` |
 | Saturation, points, Chrome | `saturation_curve.wgsl` | `kernel/saturation_curve.rs` | `saturation` |
 | Denoise, sharpen | `detail_rows.wgsl`, `detail_columns.wgsl`, `detail_taps.wgsl` | `kernel/detail.rs` | `DetailRows`, `DetailColumns` |
-| Texture | `texture*.wgsl` (4 files) | `kernel/texture.rs` | `texture` |
+| Texture | `texture.wgsl`, `texture_math.wgsl` | `kernel/texture.rs` | `texture` |
 | Blurs | `gaussian.wgsl` | `kernel/gaussian.rs` | `blurred_of` |
 | Output clip | `output_clip.wgsl` | `kernel/output_clip.rs` | `output_clip` |
 

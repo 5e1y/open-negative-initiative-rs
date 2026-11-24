@@ -13149,5 +13149,13 @@
     "status": "done",
     "detail": "image called drawn, which called chain with the frame and a precomputed copy of it, behind a clippy allow on too many arguments. That copy was always scanner::on_legacy_print(frame), which moves only the gains, so legacy.and_then(PipelineSettings::legacy) always equalled the frame's own legacy(). image now derives the laid settings itself and reads s.legacy(); every stage reads the same settings, so the graph is the same. tests/scanner_positive.rs renders through Pipeline::image with a default request (scale 1, reference 128, as the bench passed); its test 'a negative on a legacy print renders as before bit for bit' compared a render with itself, former adding 1.5 − 1.5 stops on a negative and a monochrome, and leaves; the slide's twin renders the frame 1.5 stops over, as on_legacy_print reads no print exposure.",
     "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 unchanged; scanner_positive green, its twin still refusing the slide 1.5 stops over."
+  },
+  {
+    "id": 3784,
+    "type": "chore",
+    "title": "Texture's ten-pass stages leave: the moments and coefficients passes, kept only as a GPU oracle",
+    "status": "done",
+    "detail": "The pipeline's Texture folds both steps into the blurs' taps (Before::Moments, Before::Coeff, on TEXTURE_MATH); stages::texture_moments and texture_coeff, the MOMENTS and COEFF kernels and their two WGSL wrappers served only fused.rs's GPU-against-GPU ten-pass oracle, two per-pixel checks in stages.rs and the cost bench. fused.rs now judges the seven-pass Texture against the chain step by step on the CPU (cpu::gaussian, texture_moments, texture_coeff, texture), a reference independent of the GPU, its twin at gain × 1.1; the fold checks of each step, with their twins, stay. The cost bench compares the seven passes with one per-pixel pass.",
+    "outcome": "Texture against its CPU chain: at 780 px (narrow blur under its floor) error 1.80e-7, twin 5.96e-3; at 4000 px error 2.15e-7, twin 9.36e-3. fused and stages green; no render moves."
   }
 ]

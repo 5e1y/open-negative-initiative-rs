@@ -1,11 +1,10 @@
-//! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs
-//! against the same chain in ten passes, runs interleaved so both see the same load, and a digital
+//! `ONI_BENCH_COST=1`: Texture's GPU time on a 2000 px preview, its kernels folded into the blurs,
+//! against one per-pixel pass, runs interleaved so both see the same load, and a digital
 //! photo's film effects at rest and on a notch, a virtual negative and the paper on a full-screen region; without the variable
 //! it returns at once.
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
 use oni_pipeline::{finishing, stages};
-use oni_render::TextureCoeff;
 use oni_settings::migrate::grain_size::microns;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::time::Instant;
@@ -42,29 +41,20 @@ fn texture_s_gpu_time_on_the_preview() {
     s.texture.amount = 0.8;
     let reference = f64::from(w);
     let (narrow, wide, gain) = finishing::texture(&s.texture, reference).unwrap();
-    let ten = {
-        let image = Image::new(&source);
-        let narrowed = stages::blurred(image.clone().then(stages::luma_only()), narrow, false);
-        let moments = narrowed.clone().then(stages::texture_moments());
-        let coeff = stages::blurred(moments, wide, false).then(stages::texture_coeff(&TextureCoeff { relative: finishing::texture::EDGE_CONTRAST }));
-        image.then_reading(stages::texture(gain), &[narrowed, stages::blurred(coeff, wide, false)])
-    };
     let seven = oni_pipeline::texture(Image::new(&source), &s, reference);
     let plain = Image::new(&source).then(stages::luma_only());
-    let (mut a, mut b, mut c) = (Vec::new(), Vec::new(), Vec::new());
+    let (mut a, mut b) = (Vec::new(), Vec::new());
     for _ in 0..RUNS {
-        a.push(ms(&mut g, &ten));
-        b.push(ms(&mut g, &seven));
-        c.push(ms(&mut g, &plain));
+        a.push(ms(&mut g, &seven));
+        b.push(ms(&mut g, &plain));
     }
-    let (ten, seven, plain) = (median(a), median(b), median(c));
-    println!("Texture on 2000 px: ten passes {ten:.2} ms, seven {seven:.2} ms; one per-pixel pass {plain:.2} ms");
+    let (seven, plain) = (median(a), median(b));
+    println!("Texture on 2000 px: seven passes {seven:.2} ms; one per-pixel pass {plain:.2} ms");
     let parts = [
         ("narrow blur", stages::blurred(Image::new(&source), narrow, false)),
         ("wide blur", stages::blurred(Image::new(&source), wide, false)),
         ("wide rows", Image::new(&source).then(stages::Blur(oni_render::Gaussian { sigma: wide as f32, vertical: false, transparent: false }))),
         ("wide columns", Image::new(&source).then(stages::Blur(oni_render::Gaussian { sigma: wide as f32, vertical: true, transparent: false }))),
-        ("two per-pixel", Image::new(&source).then(stages::luma_only()).then(stages::texture_moments())),
         ("texture kernel", Image::new(&source).then_reading(stages::texture(gain), &[Image::new(&source), Image::new(&source)])),
     ];
     // The finishing's runs, laid or one by one.

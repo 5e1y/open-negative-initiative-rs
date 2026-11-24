@@ -1,5 +1,5 @@
-//! Kernels folded into the blur that reads them, against the steps run one after the other: on the
-//! CPU reference for each fold, and on the GPU for Texture's whole chain against its ten passes.
+//! Kernels folded into the blur that reads them, against the steps run one after the other on the
+//! CPU reference: each fold alone, and Texture's whole chain.
 
 mod common;
 
@@ -8,7 +8,7 @@ use oni_graph::{Image, Rect};
 use oni_pipeline::stages::{self, Before};
 use oni_pipeline::finishing;
 use oni_render::cpu::{self, Grid};
-use oni_render::{Gaussian, TextureCoeff};
+use oni_render::{Gaussian, Texture, TextureCoeff};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 /// Each step a blur folds into its taps against the step applied first, then both axes blurred on
@@ -42,21 +42,33 @@ fn a_blur_reading_through_a_step_is_the_step_then_the_blur() {
     }
 }
 
-/// `Pipeline.applyTexture`'s ten passes, as the stages ran them one by one.
-fn ten_passes(image: Image, narrow: f64, wide: f64, gain: f32) -> Image {
-    let floor = oni_settings::axis::pipeline::BLUR_FLOOR;
-    let blur = |i: Image, sigma: f64| if sigma <= floor { i } else { stages::blurred(i, sigma, false) };
-    let narrowed = blur(image.clone().then(stages::luma_only()), narrow);
-    let moments = narrowed.clone().then(stages::texture_moments());
-    let coeff = blur(moments, wide).then(stages::texture_coeff(&TextureCoeff { relative: finishing::texture::EDGE_CONTRAST }));
-    image.then_reading(stages::texture(gain), &[narrowed, blur(coeff, wide)])
+/// `Pipeline.applyTexture` step by step on the CPU: the luma narrowed, its moments then their
+/// coefficients each blurred wide, a blur under the floor skipped, then the band at `gain`.
+fn texture_step_by_step(w: u32, h: u32, pixels: &[V4], narrow: f64, wide: f64, gain: f32) -> Vec<V4> {
+    let blur = |px: Vec<V4>, sigma: f64| {
+        if sigma <= oni_settings::axis::pipeline::BLUR_FLOOR {
+            return px;
+        }
+        let k = |vertical| Gaussian { sigma: sigma as f32, vertical, transparent: false };
+        cpu::gaussian(&cpu::gaussian(&Grid::new(0, 0, w as usize, h as usize, px), &k(false)), &k(true)).pixels
+    };
+    let l = oni_settings::axis::pipeline::LUMA_WEIGHTS;
+    let luma = |p: &V4| {
+        let y = l[0] * p[0] + l[1] * p[1] + l[2] * p[2];
+        [y, y, y, p[3]]
+    };
+    let narrowed = blur(pixels.iter().map(luma).collect(), narrow);
+    let moments = blur(narrowed.iter().map(|&p| cpu::texture_moments(p)).collect(), wide);
+    let edge = TextureCoeff { relative: finishing::texture::EDGE_CONTRAST };
+    let coeff = blur(moments.iter().map(|&p| cpu::texture_coeff(p, &edge)).collect(), wide);
+    (0..pixels.len()).map(|i| cpu::texture(pixels[i], narrowed[i], coeff[i], &Texture { gain })).collect()
 }
 
-/// The pipeline's Texture, its kernels folded into the blurs, against the same chain in ten passes;
-/// the twin is that chain at another gain. At 780 px the narrow blur is under its floor, at 4000 over.
+/// The pipeline's Texture, its kernels folded into the blurs, against the same chain step by step on
+/// the CPU; the twin is that chain at another gain. At 780 px the narrow blur is under its floor, at 4000 over.
 #[test]
-fn texture_in_seven_passes_is_texture_in_ten() {
-    let Some(mut g) = graph("texture_in_seven_passes_is_texture_in_ten") else { return };
+fn texture_in_seven_passes_is_texture_step_by_step() {
+    let Some(mut g) = graph("texture_in_seven_passes_is_texture_step_by_step") else { return };
     for (w, h) in [(780u32, 520u32), (4000, 300)] {
         let pixels = noise(w, h, 5, 0.02, 0.9);
         let source = g.upload(w, h, &pixels).unwrap();
@@ -65,9 +77,9 @@ fn texture_in_seven_passes_is_texture_in_ten() {
         let reference = f64::from(w.max(h));
         let (narrow, wide, gain) = finishing::texture(&s.texture, reference).expect("Texture reaches");
         let fused = whole(&mut g, &oni_pipeline::texture(Image::new(&source), &s, reference));
-        let ten = whole(&mut g, &ten_passes(Image::new(&source), narrow, wide, gain));
-        let off = whole(&mut g, &ten_passes(Image::new(&source), narrow, wide, gain * 1.1));
-        judge(&format!("Texture at {w} px, narrow {narrow:.2}"), &fused, &ten, &off);
+        let steps = texture_step_by_step(w, h, &pixels, narrow, wide, gain);
+        let off = texture_step_by_step(w, h, &pixels, narrow, wide, gain * 1.1);
+        judge(&format!("Texture at {w} px, narrow {narrow:.2}"), &fused, &steps, &off);
     }
 }
 
