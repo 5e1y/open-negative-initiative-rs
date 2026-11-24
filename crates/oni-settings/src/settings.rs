@@ -45,8 +45,6 @@ pub struct PipelineSettings {
     pub decoded_from_mosaic: bool,
     #[serde(rename = "captureStops")]
     pub capture_stops: f32,
-    #[serde(rename = "lensCorrected")]
-    pub lens_corrected: bool,
     #[serde(rename = "primariesConverted")]
     pub primaries_converted: bool,
     #[serde(rename = "sourceEncoding", skip_serializing_if = "Option::is_none", default)]
@@ -74,8 +72,6 @@ pub struct PipelineSettings {
     pub chroma_decompression_by_hand: bool,
     #[serde(rename = "rollReference", skip_serializing_if = "Option::is_none", default)]
     pub roll_reference: Option<RollReference>,
-    #[serde(rename = "rollReferenceDeclined")]
-    pub roll_reference_declined: bool,
     /// A slide's gains as its gains-only measure placed them, on no roll reference: what its Source
     /// Balance rests on and a reset lands back on (owner's call).
     #[serde(rename = "measuredGains", skip_serializing_if = "Option::is_none", default)]
@@ -126,7 +122,6 @@ impl Default for PipelineSettings {
             sheet: None,
             decoded_from_mosaic: false,
             capture_stops: 0.0,
-            lens_corrected: false,
             primaries_converted: false,
             source_encoding: None,
             rgb_passes: None,
@@ -142,7 +137,6 @@ impl Default for PipelineSettings {
             chroma_decompression: chroma_decompression::BASE,
             chroma_decompression_by_hand: false,
             roll_reference: None,
-            roll_reference_declined: false,
             measured_gains: None,
             balance_method: None,
             balance_filters: None,
@@ -319,71 +313,17 @@ impl PipelineSettings {
 /// What a settings paste and Apply Settings to Roll carry: the Color and Details tabs, whole.
 pub mod look_settings {
     use super::*;
-
-    pub const FIELDS: [&str; 18] = [
-        "balanceFilters",
-        "print",
-        "printPaper",
-        "paperless",
-        "legacyPrint",
-        "density",
-        "manualCurves",
-        "spectrogram",
-        "saturation",
-        "vignette",
-        "secretSauce",
-        "paperCorrection",
-        "chroma",
-        "texture",
-        "sharpen",
-        "grain",
-        "halation",
-        "lensCorrection",
-    ];
-
-    /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 15] = [
-        "film",
-        "manualOrder",
-        "sheet",
-        "decodedFromMosaic",
-        "lensCorrected",
-        "primariesConverted",
-        "geometry",
-        "corrections",
-        "rollReference",
-        "rollReferenceDeclined",
-        "measuredGains",
-        "balanceMethod",
-        "captureStops",
-        "rgbPasses",
-        "passOf",
-    ];
+    use crate::fields::{Family, FieldSet};
 
     pub fn copied(donor: &PipelineSettings, target: &PipelineSettings) -> PipelineSettings {
         let mut out = target.clone();
-        out.balance_filters = donor.balance_filters;
-        out.print = donor.print;
-        out.print_paper = donor.print_paper;
-        out.paperless = donor.paperless;
-        out.legacy_print = donor.legacy_print;
-        out.density = donor.density;
-        out.manual_curves = donor.manual_curves.clone();
-        out.spectrogram = donor.spectrogram;
-        out.saturation = donor.saturation.clone();
-        out.vignette = donor.vignette;
-        out.secret_sauce = donor.secret_sauce;
-        out.paper_correction = donor.paper_correction;
-        out.chroma = donor.chroma;
-        out.texture = donor.texture;
-        out.sharpen = donor.sharpen;
-        out.grain = donor.grain;
-        out.halation = donor.halation;
-        out.lens_correction = donor.lens_correction;
+        for field in FieldSet::of_family(Family::Look).iter() {
+            field.carry(donor, &mut out);
+        }
         out
     }
 }
 
-/// What a roll shares: the Roll Settings pane's fields, one value on every frame of the roll.
 mod projector;
+/// What a roll shares: the Roll Settings pane's fields, one value on every frame of the roll.
 pub mod roll_settings;

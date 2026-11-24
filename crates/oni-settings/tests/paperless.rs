@@ -2,6 +2,7 @@
 //! nothing moves; written off, read back off; the paper kept as chosen; a Prepare and a paste carrying it.
 
 use oni_settings::document::{self, Document};
+use oni_settings::fields::{Family, Field};
 use oni_settings::settings::look_settings;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings};
 
@@ -35,7 +36,7 @@ fn a_prepare_prints_on_its_paper_and_a_paste_carries_the_switch() {
     assert_eq!((prepared.print_paper, prepared.paperless), (Some(PaperStock::of("kodak-ektacolor-edge")), false));
     let pasted = look_settings::copied(&off, &PipelineSettings::rest(ConversionMode::Negative, true));
     assert!(pasted.paperless && pasted.print_paper == off.print_paper);
-    assert!(look_settings::FIELDS.contains(&"paperless"));
+    assert_eq!(Field::Paperless.family(), Family::Look);
     // Twin: pasted from a print on paper, the switch comes back on.
     assert!(!look_settings::copied(&on_edge(), &off).paperless);
 }

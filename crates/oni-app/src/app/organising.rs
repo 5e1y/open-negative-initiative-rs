@@ -265,13 +265,10 @@ impl State {
             return oni_library::trash::groups(&self.org.trashed, &self.nav.computer)
                 .into_iter()
                 .map(|g| Band {
-                    key: match &g.id {
-                        oni_library::film_group::FilmKey::Folder(path) => path.clone(),
-                        _ => String::new(),
-                    },
                     title: g.heading_title(),
                     caption: g.trail().unwrap_or_default(),
                     entries: g.entries,
+                    key: g.folder,
                     naming: None,
                     explicit: String::new(),
                 })

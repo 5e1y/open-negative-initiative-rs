@@ -3,10 +3,10 @@
 //! level's end is laid through its own setter alike, so it never crosses that frame's other end.
 
 use super::Field;
-use oni_settings::PipelineSettings;
-use oni_settings::blocks::GrainCurve;
-use oni_settings::curves::{CurveSet, SaturationCurve};
-use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
+use crate::PipelineSettings;
+use crate::blocks::GrainCurve;
+use crate::curves::{CurveSet, SaturationCurve};
+use crate::levels::{Levels, LevelsChannel, LevelsSet};
 
 /// The fields holding curves whose points keep their x order, and windows whose ends keep theirs.
 pub(super) fn bends(field: Field) -> bool {
@@ -72,7 +72,7 @@ fn windows(own: &LevelsSet, on: &mut LevelsSet) {
 
 /// Each point of `patched` off `own` handed to `place`, in order; a list of another length was laid
 /// whole, in the open frame's own order, and is left.
-fn moved(own: &[oni_settings::cg::Point], patched: &[oni_settings::cg::Point], mut place: impl FnMut(usize, oni_settings::cg::Point)) -> bool {
+fn moved(own: &[crate::cg::Point], patched: &[crate::cg::Point], mut place: impl FnMut(usize, crate::cg::Point)) -> bool {
     if own.len() != patched.len() {
         return false;
     }
@@ -85,8 +85,8 @@ fn moved(own: &[oni_settings::cg::Point], patched: &[oni_settings::cg::Point], m
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oni_settings::cg::Point;
-    use oni_settings::curves::Curve;
+    use crate::cg::Point;
+    use crate::curves::Curve;
 
     fn curve(xs: [f64; 4]) -> Curve {
         Curve { points: xs.iter().map(|&x| Point::new(x, x)).collect() }
@@ -138,7 +138,7 @@ mod tests {
         let mut on = frame.clone();
         Field::Grain.patch(&was, &now, &mut on);
         let points = on.grain.curve.points;
-        assert!((points[1].x - (0.4 - oni_settings::curves::SPACING)).abs() < 1e-12, "{points:?}");
+        assert!((points[1].x - (0.4 - crate::curves::SPACING)).abs() < 1e-12, "{points:?}");
         assert_eq!((points[1].y, points[2]), (0.8, Point::new(0.4, 0.9)), "the y moved, its neighbour its own");
         // Twin: the leaves laid alone take the open frame's whole curve, the frame's own point lost.
         let mut leaves = frame.clone();

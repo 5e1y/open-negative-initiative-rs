@@ -1,13 +1,9 @@
-//! `Pipette.selfCheck` without a file: the stored radius held to the track, the two spaces under
-//! the median and the mean, and the rim the hand aims with being the sample, at every radius.
+//! `Pipette.selfCheck` without a file: the stored radius held to the track, and the rim the hand
+//! aims with being the sample, at every radius.
 
-use oni_measure::pipette::{self, DEFAULT_RADIUS, RADIUS_RANGE, Space, Statistic, aggregate, disc_offsets, read};
+use oni_measure::pipette::{self, DEFAULT_RADIUS, RADIUS_RANGE, disc_offsets, read};
 use oni_measure::plane::Plane;
-use oni_settings::ConversionMode;
 use oni_settings::cg::Point;
-
-const MODE: ConversionMode = ConversionMode::Negative;
-const HALF_BIN: f32 = 1.0 / 2048.0;
 
 #[test]
 fn a_stored_radius_is_held_to_the_track_and_the_smallest_disc_holds_pixels() {
@@ -18,17 +14,6 @@ fn a_stored_radius_is_held_to_the_track_and_the_smallest_disc_holds_pixels() {
     assert!(disc_offsets(RADIUS_RANGE.0).len() >= 5, "{} px", disc_offsets(RADIUS_RANGE.0).len());
     // Twin: under a pixel the disc holds its centre alone.
     assert_eq!(disc_offsets(0.9).len(), 1);
-}
-
-#[test]
-fn a_median_reads_the_same_in_both_spaces_and_the_mean_parts_them() {
-    let samples: Vec<[f32; 3]> = (0..101).map(|i| [0.1 + i as f32 * 0.008; 3]).collect();
-    let by_density = aggregate(&samples, MODE, Space::Density, Statistic::Median);
-    let by_transmittance = aggregate(&samples, MODE, Space::Transmittance, Statistic::Median);
-    assert_eq!(by_density, by_transmittance);
-    let mean_d = aggregate(&samples, MODE, Space::Density, Statistic::Mean).unwrap()[0];
-    let mean_t = aggregate(&samples, MODE, Space::Transmittance, Statistic::Mean).unwrap()[0];
-    assert!((mean_d - mean_t).abs() > HALF_BIN, "the means part by {}", (mean_d - mean_t).abs());
 }
 
 /// `Pipette.rimStraddle`: the last integer offset inside the rim and the first outside, `dx` positive.
@@ -65,7 +50,7 @@ fn speckled(offset: Option<(i64, i64)>) -> Plane {
 #[test]
 fn the_ring_the_hand_aims_with_is_the_sample_at_every_radius() {
     let centre = Point::new(700.5 / 1400.0, 466.5 / 933.0);
-    let mean = |p: &Plane, at: Point, r: f64| read(p, at, MODE, r, Space::Density, Statistic::Mean);
+    let mean = |p: &Plane, at: Point, r: f64| read(p, at, r);
     let radii = [RADIUS_RANGE.0, DEFAULT_RADIUS, DEFAULT_RADIUS + 0.5, (RADIUS_RANGE.0 + RADIUS_RANGE.1) / 2.0, RADIUS_RANGE.1];
     let flat_plane = speckled(None);
     for radius in radii {
@@ -84,8 +69,8 @@ fn the_ring_the_hand_aims_with_is_the_sample_at_every_radius() {
 #[test]
 fn a_disc_off_the_frame_reads_nothing_and_one_at_its_edge_reads_what_it_holds() {
     let p = speckled(None);
-    assert!(read(&p, Point::new(1.2, 0.5), MODE, 4.0, Space::Density, Statistic::Mean).is_none());
-    let edge = read(&p, Point::new(0.0, 1.0), MODE, 4.0, Space::Density, Statistic::Mean).unwrap();
+    assert!(read(&p, Point::new(1.2, 0.5), 4.0).is_none());
+    let edge = read(&p, Point::new(0.0, 1.0), 4.0).unwrap();
     // Twin: the corner holds about a quarter of the disc, never the whole of it.
     assert!(edge.pixels < disc_offsets(4.0).len() / 2 && edge.pixels > 0, "{} px at the corner", edge.pixels);
 }

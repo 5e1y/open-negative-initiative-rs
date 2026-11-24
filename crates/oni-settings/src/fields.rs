@@ -1,8 +1,7 @@
 //! Every field of `PipelineSettings` by its serialised name, the family each belongs to, and the
 //! set of fields a write moved: what a view re-reads after a notch, and nothing more.
 
-use oni_settings::PipelineSettings;
-use oni_settings::settings::{look_settings, roll_settings};
+use crate::PipelineSettings;
 use serde::de::{self, Deserialize, DeserializeOwned, Deserializer, Visitor};
 use serde::Serialize;
 use serde_json::Value;
@@ -11,7 +10,7 @@ use std::fmt;
 mod ordered;
 
 macro_rules! fields {
-    ($($variant:ident => $name:literal, $member:ident;)*) => {
+    ($($variant:ident => $name:literal, $member:ident, $family:ident;)*) => {
         /// One field of `PipelineSettings`, in declaration order.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub enum Field { $($variant,)* }
@@ -22,6 +21,11 @@ macro_rules! fields {
             /// The name the sidecar writes it under.
             pub fn name(self) -> &'static str {
                 match self { $(Field::$variant => $name,)* }
+            }
+
+            /// Who owns this field, named once beside it in the table.
+            pub fn family(self) -> Family {
+                match self { $(Field::$variant => Family::$family,)* }
             }
 
             /// True where the two settings hold a different value of this field.
@@ -42,51 +46,49 @@ macro_rules! fields {
 }
 
 fields! {
-    Mode => "mode", mode;
-    InvertedSource => "invertedSource", inverted_source;
-    VirtualFilm => "virtualFilm", virtual_film;
-    Film => "film", film;
-    ManualOrder => "manualOrder", manual_order;
-    Sheet => "sheet", sheet;
-    DecodedFromMosaic => "decodedFromMosaic", decoded_from_mosaic;
-    CaptureStops => "captureStops", capture_stops;
-    LensCorrected => "lensCorrected", lens_corrected;
-    PrimariesConverted => "primariesConverted", primaries_converted;
-    SourceEncoding => "sourceEncoding", source_encoding;
-    RgbPasses => "rgbPasses", rgb_passes;
-    PassOf => "passOf", pass_of;
-    Geometry => "geometry", geometry;
-    Chroma => "chroma", chroma;
-    Gains => "gains", gains;
-    DensityCeiling => "densityCeiling", density_ceiling;
-    DyeSet => "dyeSet", dye_set;
-    FlatField => "flatField", flat_field;
-    Corrections => "corrections", corrections;
-    Levels => "levels", levels;
-    ChromaDecompression => "chromaDecompression", chroma_decompression;
-    ChromaDecompressionByHand => "chromaDecompressionByHand", chroma_decompression_by_hand;
-    RollReference => "rollReference", roll_reference;
-    RollReferenceDeclined => "rollReferenceDeclined", roll_reference_declined;
-    MeasuredGains => "measuredGains", measured_gains;
-    BalanceMethod => "balanceMethod", balance_method;
-    BalanceFilters => "balanceFilters", balance_filters;
-    BalanceStrength => "balanceStrength", balance_strength;
-    Print => "print", print;
-    PrintPaper => "printPaper", print_paper;
-    Paperless => "paperless", paperless;
-    LegacyPrint => "legacyPrint", legacy_print;
-    Density => "density", density;
-    ManualCurves => "manualCurves", manual_curves;
-    Spectrogram => "spectrogram", spectrogram;
-    Saturation => "saturation", saturation;
-    Vignette => "vignette", vignette;
-    SecretSauce => "secretSauce", secret_sauce;
-    PaperCorrection => "paperCorrection", paper_correction;
-    Texture => "texture", texture;
-    Sharpen => "sharpen", sharpen;
-    Grain => "grain", grain;
-    Halation => "halation", halation;
-    LensCorrection => "lensCorrection", lens_correction;
+    Mode => "mode", mode, Roll;
+    InvertedSource => "invertedSource", inverted_source, Roll;
+    VirtualFilm => "virtualFilm", virtual_film, Roll;
+    Film => "film", film, Frame;
+    ManualOrder => "manualOrder", manual_order, Frame;
+    Sheet => "sheet", sheet, Frame;
+    DecodedFromMosaic => "decodedFromMosaic", decoded_from_mosaic, Frame;
+    CaptureStops => "captureStops", capture_stops, Frame;
+    PrimariesConverted => "primariesConverted", primaries_converted, Frame;
+    SourceEncoding => "sourceEncoding", source_encoding, Roll;
+    RgbPasses => "rgbPasses", rgb_passes, Frame;
+    PassOf => "passOf", pass_of, Frame;
+    Geometry => "geometry", geometry, Frame;
+    Chroma => "chroma", chroma, Look;
+    Gains => "gains", gains, Roll;
+    DensityCeiling => "densityCeiling", density_ceiling, Roll;
+    DyeSet => "dyeSet", dye_set, Roll;
+    FlatField => "flatField", flat_field, Roll;
+    Corrections => "corrections", corrections, Frame;
+    Levels => "levels", levels, Roll;
+    ChromaDecompression => "chromaDecompression", chroma_decompression, Roll;
+    ChromaDecompressionByHand => "chromaDecompressionByHand", chroma_decompression_by_hand, Roll;
+    RollReference => "rollReference", roll_reference, Frame;
+    MeasuredGains => "measuredGains", measured_gains, Frame;
+    BalanceMethod => "balanceMethod", balance_method, Frame;
+    BalanceFilters => "balanceFilters", balance_filters, Look;
+    BalanceStrength => "balanceStrength", balance_strength, Roll;
+    Print => "print", print, Look;
+    PrintPaper => "printPaper", print_paper, Look;
+    Paperless => "paperless", paperless, Look;
+    LegacyPrint => "legacyPrint", legacy_print, Look;
+    Density => "density", density, Look;
+    ManualCurves => "manualCurves", manual_curves, Look;
+    Spectrogram => "spectrogram", spectrogram, Look;
+    Saturation => "saturation", saturation, Look;
+    Vignette => "vignette", vignette, Look;
+    SecretSauce => "secretSauce", secret_sauce, Look;
+    PaperCorrection => "paperCorrection", paper_correction, Look;
+    Texture => "texture", texture, Look;
+    Sharpen => "sharpen", sharpen, Look;
+    Grain => "grain", grain, Look;
+    Halation => "halation", halation, Look;
+    LensCorrection => "lensCorrection", lens_correction, Look;
 }
 
 impl Field {
@@ -148,20 +150,6 @@ impl Field {
         Field::ALL.iter().copied().find(|f| f.name() == name)
     }
 
-    /// The family whose list names this field; `None` for a field placed nowhere.
-    pub fn family(self) -> Option<Family> {
-        let name = self.name();
-        if roll_settings::FIELD_NAMES.contains(&name) {
-            Some(Family::Roll)
-        } else if look_settings::FIELDS.contains(&name) {
-            Some(Family::Look)
-        } else if look_settings::FRAME_FIELDS.contains(&name) {
-            Some(Family::Frame)
-        } else {
-            None
-        }
-    }
-
     fn bit(self) -> u64 {
         1 << (self as u32)
     }
@@ -184,7 +172,7 @@ impl FieldSet {
     }
 
     pub fn of_family(family: Family) -> FieldSet {
-        Field::ALL.iter().copied().filter(|f| f.family() == Some(family)).collect()
+        Field::ALL.iter().copied().filter(|f| f.family() == family).collect()
     }
 
     pub fn contains(self, field: Field) -> bool {
@@ -273,50 +261,14 @@ pub fn declared_names() -> &'static [&'static str] {
     }
 }
 
-/// What is wrong with a placement of `names` in three families: a field in none, or in two.
-pub fn placement_faults(names: &[&str], families: [&[&str]; 3]) -> Vec<String> {
-    let mut faults = Vec::new();
-    for name in names {
-        let homes = families.iter().filter(|f| f.contains(name)).count();
-        if homes != 1 {
-            faults.push(format!("{name} is placed in {homes} families"));
-        }
-    }
-    for family in families {
-        for name in family {
-            if !names.contains(name) {
-                faults.push(format!("{name} is placed but is no field"));
-            }
-        }
-    }
-    faults
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const FAMILIES: [&[&str]; 3] = [&roll_settings::FIELD_NAMES, &look_settings::FIELDS, &look_settings::FRAME_FIELDS];
-
-    #[test]
-    fn every_field_is_the_rolls_the_looks_or_the_frames_and_one_only() {
-        let names = declared_names();
-        assert_eq!(names.len(), 45, "{names:?}");
-        assert_eq!(placement_faults(names, FAMILIES), Vec::<String>::new());
-        // Twin: a field the families leave out, and one in two of them, are both refused.
-        let mut grown = names.to_vec();
-        grown.push("phantom");
-        assert_eq!(placement_faults(&grown, FAMILIES), vec!["phantom is placed in 0 families".to_string()]);
-        let look_twice: Vec<&str> = look_settings::FIELDS.iter().copied().chain(["mode"]).collect();
-        let faults = placement_faults(names, [&roll_settings::FIELD_NAMES, &look_twice, &look_settings::FRAME_FIELDS]);
-        assert_eq!(faults, vec!["mode is placed in 2 families".to_string()]);
-    }
 
     #[test]
     fn the_field_table_names_every_declared_field_in_order() {
         let table: Vec<&str> = Field::ALL.iter().map(|f| f.name()).collect();
         assert_eq!(table, declared_names());
-        assert!(Field::ALL.iter().all(|f| f.family().is_some()));
         // Twin: a name the struct does not declare finds no field.
         assert_eq!(Field::from_name("phantom"), None);
         assert_eq!(Field::from_name("sharpen"), Some(Field::Sharpen));

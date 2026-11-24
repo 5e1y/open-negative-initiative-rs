@@ -26,7 +26,6 @@ settings: PipelineSettings {
     sheet: None,
     decoded_from_mosaic: true,
     capture_stops: 0.0,
-    lens_corrected: false,
     primaries_converted: false,
     source_encoding: None,
     rgb_passes: None,
@@ -362,7 +361,6 @@ settings: PipelineSettings {
             ),
         },
     ),
-    roll_reference_declined: false,
     measured_gains: None,
     balance_method: None,
     balance_filters: Some(

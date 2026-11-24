@@ -52,37 +52,11 @@ impl Grid {
         let h = self.window.height / self.rows as f64;
         Rect::new(self.window.x + column as f64 * w, self.window.y + self.window.height - (row + 1) as f64 * h, w, h)
     }
-
-    /// As a sheet is read: A1 top-left, letters across, numbers down.
-    pub fn name(row: usize, column: usize) -> String {
-        let mut letters = Vec::new();
-        let mut c = column as i64;
-        loop {
-            letters.insert(0, (b'A' + (c % 26) as u8) as char);
-            c = c / 26 - 1;
-            if c < 0 {
-                break;
-            }
-        }
-        format!("{}{}", letters.into_iter().collect::<String>(), row + 1)
-    }
-
-    pub fn name_of(&self, index: usize) -> String {
-        Grid::name(index / self.columns, index % self.columns)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Report {
-    pub black: Vec<String>,
-    pub white: Vec<String>,
-    pub grids: Vec<Grid>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Reading {
     pub histogram: Histogram,
-    pub report: Option<Report>,
     /// The medians the histogram counts, each cell's three channels together, so a colour is read
     /// where it stands rather than channel by channel.
     pub cells: Vec<[f32; 3]>,
@@ -210,16 +184,6 @@ pub fn histogram(rgb: &[[f32; 3]], luma: &[f32], bins: usize) -> Histogram {
     Histogram { rgb: counts, luma: trace, ends: None }
 }
 
-/// The first of the least, as Swift's `min(by:)` keeps it.
-fn first_min(kept: &[usize], key: impl Fn(usize) -> f32) -> usize {
-    kept.iter().copied().fold(kept[0], |best, i| if key(i) < key(best) { i } else { best })
-}
-
-/// The first of the greatest, as Swift's `max(by:)` keeps it.
-fn first_max(kept: &[usize], key: impl Fn(usize) -> f32) -> usize {
-    kept.iter().copied().fold(kept[0], |best, i| if key(best) < key(i) { i } else { best })
-}
-
 /// `Blocks.reading`: one grid over the windows' bounds, read in one pass, the cells a window wholly
 /// holds kept, so a sheet's gutters and borders never vote.
 pub fn reading(counted: &Plane, windows: &[Rect], bins: usize) -> Reading {
@@ -240,19 +204,20 @@ pub fn reading(counted: &Plane, windows: &[Rect], bins: usize) -> Reading {
     if kept.is_empty() {
         return Reading::default();
     }
-    let (mut black, mut white, mut ends) = (Vec::new(), Vec::new(), Vec::new());
-    for c in 0..3 {
-        let darkest = first_min(&kept, |i| cells.low[i][c]);
-        let lightest = first_max(&kept, |i| cells.high[i][c]);
-        black.push(grid.name_of(darkest));
-        white.push(grid.name_of(lightest));
-        ends.push([cells.low[darkest][c], cells.high[lightest][c]]);
-    }
+    // Each channel's least low tail and greatest high tail, by `<` from the first kept cell on.
+    let ends = (0..3)
+        .map(|c| {
+            let (low, high) = (|i: usize| cells.low[i][c], |i: usize| cells.high[i][c]);
+            let darkest = kept.iter().fold(low(kept[0]), |a, &i| if low(i) < a { low(i) } else { a });
+            let lightest = kept.iter().fold(high(kept[0]), |a, &i| if a < high(i) { high(i) } else { a });
+            [darkest, lightest]
+        })
+        .collect();
     let rgb: Vec<[f32; 3]> = kept.iter().map(|&i| cells.rgb[i]).collect();
     let luma: Vec<f32> = kept.iter().map(|&i| cells.luma[i]).collect();
     let mut counted = histogram(&rgb, &luma, bins);
     counted.ends = Some(ends);
-    Reading { histogram: counted, report: Some(Report { black, white, grids: vec![grid] }), cells: rgb }
+    Reading { histogram: counted, cells: rgb }
 }
 
 #[cfg(test)]

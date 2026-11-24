@@ -103,7 +103,7 @@ impl Ctl {
                             drawn = tile.as_ref().and_then(|t| Drawn::of(t, screen).zip(negative::of(t)));
                             match read {
                                 Some(read) => {
-                                    roll.add(&read.reading.rgb);
+                                    roll.add(&read.rgb);
                                     read_one = true;
                                 }
                                 None => blank.push(path.clone()),
@@ -118,9 +118,9 @@ impl Ctl {
                 let stopped = stop.load(Ordering::Relaxed);
                 // The white's gains, else the camera's 5500 K at rest: the base each Source Balance rests on.
                 let stops = gains.unwrap_or([Gains::BASE; 3]);
-                let balance = oni_measure::auto_levels::Balance { stops, levels: oni_measure::auto_levels::resting(film), shift: [0.0; 3] };
+                let balance = oni_core::balance::Balance { stops, levels: oni_measure::auto_levels::resting(film) };
                 for (_, _, s) in &mut written {
-                    *s = oni_core::balance::levelled(&balance.core(), s);
+                    *s = oni_core::balance::levelled(&balance, s);
                     s.measured_gains = gains;
                     // Projected as the roll's reversal film, where its sheet is profiled.
                     crate::app::organising::roll_card::dyed(s, stock.as_deref());

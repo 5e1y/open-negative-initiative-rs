@@ -13125,5 +13125,85 @@
     "status": "done",
     "detail": "Cause: #3730 fitted the cross terms at rest on Royal Digital with a crosstalk-only loss blind to absolute chroma and tone, on the per-channel read-out; the paper changed since (#3750). Fix: examples/coupler_fit.rs renders with Print on paper off (the paper is laid over a render, never part of it) and fits the six cross terms (common diagonal, fold refusal kept, two starts) to an absolute objective: the Oklab distance of each chart patch (ColorChecker's 18 chromatic, Oklch rings, a 9-step grey ramp weighted 2) to the reference applied to the same chart, the render's mid grey matched to the reference's channel by channel. The chart and its judging (CIEDE2000, chroma, ramp) live in examples/chart, shared with tests/digital_scan.rs. New matrices in the fifteen files (Portra 800's pushes take Portra 800's); every film without a reference chart keeps the common matrix, closer to each reference than no cross term on all fifteen (loss common 0.0047-0.0084 against none 0.0051-0.0095).",
     "outcome": "Chart against each reference, paperless, grey matched, before (per-channel read-out, former couplers) / after (scan, refit): mean dE00 Portra 800 9.46 / 8.01, Portra 400 9.70 / 8.57, Portra 160 8.78 / 8.01, Gold 200 10.25 / 8.70, UltraMax 400 9.58 / 8.16, Ektar 100 10.30 / 9.44, C200 8.30 / 6.75, Pro 400H 8.80 / 7.96, Superia 200 8.48 / 6.77, Superia 1600 9.18 / 8.48, Vision3 250D 9.99 / 8.51, 200T 11.95 / 8.99, 500T 11.38 / 8.55, Portra 160NC 9.11 / 9.20, 160VC 9.01 / 9.69; ColorChecker chroma after 0.84-1.02 of the reference's (Portra 800 0.949). About 7 L* of the remaining dE00 is tone, ONI's print against the reference's, which no coupler moves. Tungsten films' ramps stay blue (C* 9.4-9.8): a daylight scene on Vision3 200T and 500T, as before. On the 64 photos the refit brings back the chart's chroma, so the photos' pooled C* (21.6, 2.0x the reference's) stays near the former; it is the lift ONI's print gives the mids and shadows (L* +18), the saturation C*/L* 1.36x the reference's against 1.45x before."
+  },
+  {
+    "id": 3760,
+    "type": "simplification",
+    "title": "film_group keeps only the folder heading: the retired roll-and-day feed and its hand-placed order go",
+    "status": "done",
+    "detail": "The gallery and the sidebar cut by folder (folders::group, trash::groups), the only two places a FilmGroup is built, both on a folder with its heading. The library cut into rolls and capture days (grouped, key, keyed, day_start, start_of_day, day_label), the drag order (order, root_order, behind, detied), untitled and UNTITLED_STEM, is_explicit, explicit_name, info::resolved_roll and LibraryIndex::set_manual_order had no caller outside their tests. FilmKey gives way to a plain `folder` path, `start` (computed for nothing) goes and `heading` is a String. Nothing stored moves: Entry.manual_order, Film.manual_order and the index's columns are read and written as before.",
+    "outcome": "cargo test -p oni-library green; oni-app's library tests green. The five Film.selfCheck tests in swift_checks.rs and roll8's day half go with what they tested; index tests keep their twins (file_tests' index-only twin now writes a label)."
+  },
+  {
+    "id": 3761,
+    "type": "simplification",
+    "title": "oni-measure drops the withdrawn AUTO LEVELS key's machinery: key::placed, levels and ends, Measurer::reduced, auto_levels' Balance, two_steps, keyed, applied, carried, mean and composite",
+    "status": "done",
+    "detail": "The key was withdrawn (#1053); what it left had no caller outside oni-measure's own tests. The roll measure keeps Classic's two steps inline (roll::measured), and Measured now carries the gains it lands on (`stops`) instead of a Balance whose levels and shift nothing read; the placement stays as the gate a flat channel fails. key::slide_read returns the histogram itself, and Prepare's slides build oni_core::balance::Balance directly, the same stops and resting windows. Nothing stored or rendered moves; ONI_READING_CODE changes with oni-measure/src, so kept Auto WB outcomes are read once again, to the same values.",
+    "outcome": "cargo test -p oni-measure green. The piled-channel check runs on roll::measured over the simulated densities (a reading's tails laid on them); roll8's second-press check runs on key::roll_measured on the reference roll (gains 0.0018 / 0.0015 st, tails 2e-4; twin read after the levels 0.47 / 0.55 st), and filter_balance compares the roll measure under a legacy print. Tests of the deleted helpers alone go (a selection's strategies over the dead applied and mean, keyed against two_steps, composite)."
+  },
+  {
+    "id": 3762,
+    "type": "simplification",
+    "title": "The index drops its respelling pass and its dual-spelling keys: every row of a per-schema index file is keyed in the archive's spelling",
+    "status": "done",
+    "detail": "Since each schema keeps its own index-N.sqlite and open refuses any other user_version (#1569), upsert, the only writer of photos, has keyed every row with paths::normal, unchanged since the pass was written. So respell's search always came back empty and the `WHERE path IN (?, ?)` pairs (the path as given and its normal spelling) could only ever match the second. index/spelling.rs and its call go; each lookup, update and delete of photos and stamps keys on `path = normal(path)`. Should paths::normal ever change, a SCHEMA_VERSION bump rebuilds the cache. The index is a disposable cache: no sidecar or render moves.",
+    "outcome": "cargo test -p oni-library green; the two respelling tests go with the pass."
+  },
+  {
+    "id": 3763,
+    "type": "simplification",
+    "title": "The library's test-only tree and navigator API goes: archive_tree's flatten, first_path, Node::entries and count, project_tree's Node::entries, folders::tree_and_groups, ProjectGroup's display_title and explicit_name, Navigation::toggle_trash",
+    "status": "done",
+    "detail": "The app lays its tree through archive_tree::walk and find, and filters its own first photo and counts (Archive::first_shown, shown_count); it calls folders::tree and groups_of apart, and folds the trash row through `unfolded` itself. The removed functions were the unfiltered twins of those or forwarders, reached only by their own tests. folders::groups calls groups_of on the tree directly.",
+    "outcome": "cargo test -p oni-library green. archive_tree's fold test now reads walk alone, with its twin; the tree-and-groups check compares groups_of on a tree holding the survey's empty folders with groups, with its twin. roll8's an_index_rebuilt_from_the_sidecars_finds_every_frame fails on the reference roll on a line this change does not reach: the folder's marker on disk names another roll id and stock than its oracle (folders::rolls, untouched)."
+  },
+  {
+    "id": 3764,
+    "type": "simplification",
+    "title": "migrate::density leaves the settings crate: no migration used the oracle, and its 'kernel' window had drifted from the kernel",
+    "status": "done",
+    "detail": "The windows' move onto the density axis runs in before_1_0::in_density, on the raw JSON; migrate::density held a second copy of that x DMAX and two closed forms of stages 4-6 that only tests read. Its apply_levels still clamped under the black where the stage 4-7 kernel passes a density on (stage47.rs). Each outside check now states what it means: codec_checks writes the x DMAX expectation inline; the real-frame check (oni-pipeline swift_checks) takes its windows from migrate::document on a document aged under the density axis, so it renders through the step that runs, and keeps its frozen clamping kernel as a local oracle; its closed-form residue, a copy of the stage 4-7 CPU-GPU check, goes; auto_levels' simulation measures the density over its window itself; oni-app's levels checks read the window as the kernel's scalar reference runs it, the floored-track twin through pipeline::clip. No migration's output moves.",
+    "outcome": "cargo test -p oni-settings, oni-measure auto_levels and oni-app's levels tests green. On the reference roll's DSC_6432 the migrated windows render the frozen kernel within 2.4e-7 on the GPU thumbnail and 1.8e-7 on the full frame's CPU reference; the unmigrated twin parts by 0.93. The always-on proof of the two closed forms' identity (density.rs's own tests) goes with them: the identity is proven on a real frame only, with the reference roll and a GPU."
+  },
+  {
+    "id": 3765,
+    "type": "simplification",
+    "title": "Two dead stored fields go: lensCorrected and rollReferenceDeclined",
+    "status": "done",
+    "detail": "lensCorrected was only ever written (its default, the copy on import, before_1_0's mark on a document with dust strokes): the lens warp runs on the separate lensCorrection block, and the pinned decode applies no lens profile. rollReferenceDeclined was never set true nor read, only reset to false or copied. Each leaves its struct member, default, field-table row, frame family entry, preset exclusion, the frame's OWN entry, its copies in imported and unconverted, and its lines in the corpus readings. A sidecar holding either key still reads: PipelineSettings ignores unknown keys, and an older build fills a missing one from its struct default. No migration or render reads them; kept Auto WB fingerprints move once with the settings' shape, to the same outcome.",
+    "outcome": "cargo test -p oni-settings, oni-core and oni-measure green; the corpus goldens lose their two lines each. New codec check: a document holding both keys at version 0, 3 and 70 reads equal to one without them and is written back without them (twin: a key the settings read, captureStops, moves the frame). The out-of-repo wide-corpus goldens (ONI_SIDECAR_GOLDENS) need the same two lines dropped."
+  },
+  {
+    "id": 3766,
+    "type": "simplification",
+    "title": "One field table names each field's family: the three hand-kept name lists, the hand-written look copy, the placement checker and the frame's OWN list go",
+    "status": "done",
+    "detail": "Each PipelineSettings field was named in the struct, in the fields! table, and again in look_settings::FIELDS, FRAME_FIELDS or roll_settings::FIELD_NAMES; Field::family searched those lists by string, and two tests existed only to keep them in step. The table now carries each field's family in its row (`Mode => \"mode\", mode, Roll;`), so a field has one family by construction and family() returns Family. The table and FieldSet move to oni-settings (fields.rs, ordered.rs beside it; oni-core re-exports `fields`), so look_settings::copied becomes a loop of Field::carry over the Look family, the same 18 members cloned. Edit Together's OWN (the frame family plus sourceEncoding, which a roll field never reaches outside a slide's own) is the frame family. Serde names and the struct are unchanged: no sidecar byte moves.",
+    "outcome": "cargo test -p oni-settings and oni-core green; the workspace's tests build. The table test (every declared field in order, with its twin) stays the guard; the codec check now holds the serialised document's keys to the table's names (twin: a table short of one field). Preset boxes and lens/paperless pastes read the Look family."
+  },
+  {
+    "id": 3767,
+    "type": "simplification",
+    "title": "The pipette keeps the one aggregate ever used, the density mean: Space, Statistic and their median and transmittance arms go",
+    "status": "done",
+    "detail": "Every call passed RETAINED_SPACE (density) and RETAINED_STATISTIC (mean); the median and the transmittance mean were a research alternative the constants had already refused, and the mode a read took served only the transmittance arm. pipette::read takes the plane, the point and the radius; its mean folds each channel in the same order and bounds the answer onto the window as before, so the base pick, the key and every roll's black read the same.",
+    "outcome": "cargo test -p oni-measure green (the example sensor_colours builds); the test of the two spaces goes with them, the rim and edge checks keep their twins."
+  },
+  {
+    "id": 3768,
+    "type": "simplification",
+    "title": "blocks::Report and the cell naming (A1, F5...) go: nothing outside the tests read them",
+    "status": "done",
+    "detail": "Each reading carried three name vectors and a copy of its grid for the Blocks self-check's diagnostics, which no reader took. With Grid::name, name_of, Report and Reading.report gone, the ends are a fold of the kept cells' tail values by the same `<` comparison from the first kept cell on, so they are bit for bit the values first_min and first_max chose, NaN included.",
+    "outcome": "cargo test -p oni-measure green; the naming asserts go, the window check reads the grid over the window itself (Grid::new(right).columns == 8)."
+  },
+  {
+    "id": 3769,
+    "type": "simplification",
+    "title": "One ordered list of the typed migration steps: reading and both branches of document run the steps past the grain's through typed_steps",
+    "status": "done",
+    "detail": "migrate::reading and the two branches of migrate::document each re-listed the same twelve typed steps (digital film to departure), so a new step had to be added three times. They now call one private typed_steps, each passing what it passed before: the stored settings to the digital film's step (none on a document's earlier branch) and to the datasheet's, its scanner and its former print. A pure refactor: every step, its order and its inputs stay as they were. The fuller fold the proposal sketched (one read_through for sidecar and document, unfiled facts) was not done: it would refuse a named document whose envelope fields do not type and read a current one with a malformed scanner key, where today the opposite holds, and the facts-asking steps (matrices, strokes, grain, scan line) and the two envelopes still differ by path.",
+    "outcome": "cargo test -p oni-settings green but for sweep_pass's unix-permission twin, which cannot hold where the build's scratch folder lies on exFAT (the T7): no step's output moves, the corpus readings unchanged."
   }
 ]

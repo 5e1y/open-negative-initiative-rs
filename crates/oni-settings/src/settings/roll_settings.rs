@@ -27,21 +27,6 @@ impl Field {
     ];
 }
 
-pub const FIELD_NAMES: [&str; 12] = [
-    "mode",
-    "invertedSource",
-    "virtualFilm",
-    "sourceEncoding",
-    "flatField",
-    "gains",
-    "densityCeiling",
-    "levels",
-    "chromaDecompression",
-    "chromaDecompressionByHand",
-    "dyeSet",
-    "balanceStrength",
-];
-
 pub fn changed(before: &PipelineSettings, after: &PipelineSettings) -> BTreeSet<Field> {
     Field::ALL
         .into_iter()

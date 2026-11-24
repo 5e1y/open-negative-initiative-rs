@@ -15,7 +15,6 @@ use std::sync::{Arc, RwLock};
 pub mod before_1_0;
 pub mod chain;
 pub mod datasheet;
-pub mod density;
 pub mod departure;
 pub mod digital_film;
 pub mod digital_scan;
@@ -259,21 +258,14 @@ pub fn reading(bytes: &[u8], facts: &Facts, newer: bool) -> Result<(Converted, O
     };
     let settings = std::mem::take(&mut converted.document.settings);
     // Held, the grain is read in this format's units as on a photo wider than tall, never in the former's.
-    converted.document.settings = match grain_size::caught_up(version, settings.clone(), raw.as_ref(), facts.scan) {
+    let settings = match grain_size::caught_up(version, settings.clone(), raw.as_ref(), facts.scan) {
         Ok(s) => s,
         Err(why) => {
             held = held.or(Some(why));
             grain_size::unfiled(version, settings, raw.as_ref())
         }
     };
-    converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
-    converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
-    converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
-    converted.document.settings = print_lift::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
-    let settings = datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = digital_scan::caught_up(version, layer_densities::caught_up(version, unmixed::caught_up(version, settings)));
-    converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
+    converted.document.settings = typed_steps(version, settings, raw.as_ref(), raw.as_ref(), &scanner, &former);
     let line = std::mem::take(&mut converted.document.exif_line);
     converted.document.exif_line = scan_line::caught_up(version, line, facts.exif);
     if version > VERSION {
@@ -298,27 +290,33 @@ pub fn document(bytes: &[u8]) -> Result<Converted, Refusal> {
         let former = print_lift::Former::read(Some(&raw)).map_err(Refusal::Unreadable)?;
         let settings = slide_paper::caught_up(version, settings, Some(&raw));
         let settings = grain_size::unfiled(version, settings, Some(&raw));
-        let settings = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, Some(&raw))));
-        let settings = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, settings)), &scanner);
-        let settings = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, settings, &former), Some(&raw)));
-        let settings = digital_scan::caught_up(version, layer_densities::caught_up(version, settings));
-        let settings = departure::caught_up(version, lighting_on_negative::caught_up(version, settings));
+        let settings = typed_steps(version, settings, Some(&raw), Some(&raw), &scanner, &former);
         return Ok(Converted { document: Document::of(settings), from: version, draft: None });
     }
     let former = print_lift::Former::read(stored.get("settings")).map_err(Refusal::Unreadable)?;
     let raw = stored.get("settings").cloned();
     let (mut converted, scanner) = earlier(stored, version, None).map_err(Refusal::Unreadable)?;
     converted.document.settings = slide_paper::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = grain_size::unfiled(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = digital_film::caught_up(version, std::mem::take(&mut converted.document.settings), None);
-    converted.document.settings = own_film::caught_up(version, measured_dyes::caught_up(version, std::mem::take(&mut converted.document.settings)));
-    converted.document.settings = exposure::caught_up(version, paper::caught_up(version, std::mem::take(&mut converted.document.settings)));
-    converted.document.settings = one_face::caught_up(version, std::mem::take(&mut converted.document.settings), &scanner);
-    converted.document.settings = print_lift::caught_up(version, std::mem::take(&mut converted.document.settings), &former);
-    let settings = datasheet::caught_up(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
-    converted.document.settings = digital_scan::caught_up(version, layer_densities::caught_up(version, unmixed::caught_up(version, settings)));
-    converted.document.settings = departure::caught_up(version, lighting_on_negative::caught_up(version, std::mem::take(&mut converted.document.settings)));
+    let settings = grain_size::unfiled(version, std::mem::take(&mut converted.document.settings), raw.as_ref());
+    converted.document.settings = typed_steps(version, settings, None, raw.as_ref(), &scanner, &former);
     Ok(converted)
+}
+
+/// The typed steps past the grain's, in their order, the one list a sidecar and a document both run;
+/// `film` and `raw` are the stored settings as the digital film's step and the datasheet's read them.
+fn typed_steps(
+    version: i64,
+    settings: PipelineSettings,
+    film: Option<&Value>,
+    raw: Option<&Value>,
+    scanner: &one_face::Scanner,
+    former: &print_lift::Former,
+) -> PipelineSettings {
+    let s = own_film::caught_up(version, measured_dyes::caught_up(version, digital_film::caught_up(version, settings, film)));
+    let s = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, s)), scanner);
+    let s = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, s, former), raw));
+    let s = digital_scan::caught_up(version, layer_densities::caught_up(version, s));
+    departure::caught_up(version, lighting_on_negative::caught_up(version, s))
 }
 
 fn stored(bytes: &[u8]) -> Result<Object, Refusal> {

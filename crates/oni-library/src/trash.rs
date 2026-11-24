@@ -1,7 +1,7 @@
 //! The ONI Trash: a deleted photo is marked in its sidecar and hidden, its file never touched,
 //! moved or removed. The index caches the mark.
 
-use crate::film_group::{self, FilmGroup, FilmKey};
+use crate::film_group::FilmGroup;
 use crate::folders;
 use crate::index::Entry;
 use crate::navigator::{Computer, trails};
@@ -141,19 +141,9 @@ pub fn groups(trashed: &[Entry], computer: &Computer) -> Vec<FilmGroup> {
         .into_iter()
         .map(|folder| {
             let mut frames = by_folder.remove(&folder.path).unwrap_or_default();
-            let start = frames
-                .iter()
-                .map(film_group::capture)
-                .min_by(|a, b| crate::seconds(*a).total_cmp(&crate::seconds(*b)))
-                .unwrap_or(crate::distant_past());
             frames.sort_by(folders::shot);
-            FilmGroup {
-                id: FilmKey::Folder(folder.path.clone()),
-                film: None,
-                start,
-                entries: frames,
-                heading: named.remove(&folder.path).map(|(trail, name)| trail + &name),
-            }
+            let heading = named.remove(&folder.path).map(|(trail, name)| trail + &name).unwrap_or_default();
+            FilmGroup { folder: folder.path, film: None, entries: frames, heading }
         })
         .collect()
 }

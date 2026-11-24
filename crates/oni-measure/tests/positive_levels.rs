@@ -1,56 +1,20 @@
 //! A slide's gains: the white picked brought to grey by them alone, a black or clipped one placing
-//! nothing, its windows at rest; a negative's key still gets Classic's steps.
+//! nothing, its windows at rest.
 
-use oni_core::balance::levelled;
-use oni_measure::auto_levels::{self, Balance, keyed, shift};
-use oni_measure::histogram::Histogram;
+use oni_core::balance::{Balance, levelled};
+use oni_measure::auto_levels::{self, shift};
 use oni_measure::roll;
 use oni_settings::frame::FlatField;
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const POSITIVE: ConversionMode = ConversionMode::Positive;
 const NEGATIVE: ConversionMode = ConversionMode::Negative;
-const BINS: usize = 256;
-const BIN: f32 = 1.0 / (BINS - 1) as f32;
-
-/// A warm frame: each channel a flat band, red above green above blue, moved by its gain as the
-/// density axis is.
-fn reading(stops: [f32; 3], mode: ConversionMode) -> Histogram {
-    let bands = [[0.30, 0.80], [0.22, 0.70], [0.15, 0.62]];
-    let mut rgb = vec![[0.0f32; 3]; BINS];
-    for c in 0..3 {
-        let s = shift(stops[c], mode);
-        for (i, b) in rgb.iter_mut().enumerate() {
-            let x = i as f32 * BIN;
-            if x >= bands[c][0] + s && x <= bands[c][1] + s {
-                b[c] = 1.0;
-            }
-        }
-    }
-    let ends = (0..3)
-        .map(|c| {
-            let lit: Vec<f32> = (0..BINS).filter(|&i| rgb[i][c] > 0.0).map(|i| i as f32 * BIN).collect();
-            [lit[0], lit[lit.len() - 1]]
-        })
-        .collect();
-    Histogram { rgb, luma: Vec::new(), ends: Some(ends) }
-}
 
 /// A frame as the key finds it, gains an earlier balance left on it.
 fn frame(mode: ConversionMode) -> PipelineSettings {
     let mut s = PipelineSettings::rest(mode, true);
     s.gains.stops = [0.4, 0.0, -0.7];
     s
-}
-
-fn pressed(mode: ConversionMode) -> (Balance, Vec<[f32; 3]>) {
-    let mut asked = Vec::new();
-    let b = keyed(frame(mode).gains.stops, mode, |s| {
-        asked.push(s);
-        reading(s, mode)
-    })
-    .expect("the frame reads");
-    (b, asked)
 }
 
 #[test]
@@ -72,38 +36,13 @@ fn a_picked_white_s_cast_is_brought_to_grey_by_the_gains_alone() {
 
 #[test]
 fn a_slide_balanced_on_its_gains_keeps_its_windows_at_rest() {
-    let b = Balance { stops: [-0.2, 0.0, 0.3], levels: auto_levels::resting(POSITIVE), shift: [0.0; 3] };
-    let on = levelled(&b.core(), &frame(POSITIVE));
+    let b = Balance { stops: [-0.2, 0.0, 0.3], levels: auto_levels::resting(POSITIVE) };
+    let on = levelled(&b, &frame(POSITIVE));
     let rest = PipelineSettings::rest(POSITIVE, true).levels;
     for (c, (got, want)) in on.levels.windows().iter().zip(rest.windows()).enumerate() {
         assert!((got.black - want.black).abs() < 1e-4 && (got.white - want.white).abs() < 1e-4, "channel {c}'s window at rest: {got:?}");
     }
     assert_eq!(on.gains.stops, [-0.2, 0.0, 0.3]);
-}
-
-#[test]
-fn a_negative_s_key_is_classic_s_two_steps() {
-    let (n, asked) = pressed(NEGATIVE);
-    assert_eq!(asked[0], frame(NEGATIVE).gains.stops, "a negative starts from the frame's gains");
-    let stops = frame(NEGATIVE).gains.stops;
-    let classic = auto_levels::two_steps(&reading(stops, NEGATIVE), stops, NEGATIVE, 0.0, |s| reading(s, NEGATIVE)).unwrap();
-    assert_eq!(n, classic);
-    // Twin: the negative's gains move red and blue onto green, each channel on its own window.
-    assert!(n.stops[0] != 0.0 && n.stops[2] != 0.0 && n.levels[0] != n.levels[2], "{n:?}");
-}
-
-#[test]
-fn the_composite_takes_the_outermost_ends_and_the_summed_counts_without_them() {
-    let mut h = reading([0.0; 3], POSITIVE);
-    h.ends = Some(vec![[0.31, 0.79], [0.24, 0.69], [0.17, 0.61]]);
-    let carried = auto_levels::composite(&h, 0.0).unwrap();
-    assert_eq!((carried[0].black, carried[0].white), (0.17, 0.79));
-    h.ends = None;
-    let counted = auto_levels::composite(&h, 0.0).unwrap();
-    assert!((counted[2].black - 0.15).abs() <= BIN && (counted[2].white - 0.80).abs() <= BIN, "{counted:?}");
-    // Twin: per channel, red's own ends are not the composite's.
-    let per = auto_levels::placement(&h, 0.0).unwrap();
-    assert!((per[0].black - counted[0].black).abs() > 0.1);
 }
 
 #[test]

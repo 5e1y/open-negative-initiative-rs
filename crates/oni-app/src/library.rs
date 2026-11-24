@@ -81,14 +81,10 @@ pub struct Archive {
 }
 
 fn band(g: FilmGroup) -> Group {
-    let title = g.film.as_ref().map(|f| f.name.clone()).or(g.heading.clone()).unwrap_or_default();
+    let title = g.film.as_ref().map_or_else(|| g.heading.clone(), |f| f.name.clone());
     // `RollHeaderContent`: the folders above the roll, then its own name.
     let (caption, header) = (g.trail().unwrap_or_default(), g.heading_title());
-    let folder = match g.id {
-        oni_library::film_group::FilmKey::Folder(path) => Some(path),
-        _ => None,
-    };
-    Group { caption, header, title, film: g.film, folder, entries: g.entries }
+    Group { caption, header, title, film: g.film, folder: Some(g.folder), entries: g.entries }
 }
 
 impl Archive {
@@ -261,7 +257,7 @@ impl Archive {
         first(self, archive_tree::find(&self.nodes, id)?)
     }
 
-    /// The photos under `node` the filter shows, summed as `Node::count` sums them all.
+    /// The photos under `node` the filter shows, summed rather than copied out of the tree.
     fn shown_count(&self, node: &Node) -> usize {
         match node {
             Node::Photo(e) => usize::from(self.shows(e)),

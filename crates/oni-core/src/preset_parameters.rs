@@ -4,7 +4,7 @@
 use crate::parameters::{self, AUTO_BALANCE_NAME, WHITE_BALANCE_ROWS};
 use oni_i18n::{marked, tr};
 use oni_settings::PipelineSettings;
-use oni_settings::settings::look_settings;
+use oni_settings::fields::{Family, Field};
 use std::collections::BTreeSet;
 
 pub struct Entry {
@@ -83,9 +83,14 @@ pub fn entries() -> impl Iterator<Item = &'static Entry> {
     BLOCKS.iter().flat_map(|b| b.entries.iter())
 }
 
+/// Whether the field named `name` is one a paste lays: the look's.
+fn looks(name: &str) -> bool {
+    Field::from_name(name).is_some_and(|f| f.family() == Family::Look)
+}
+
 /// Whether a settings copy offers the box: its rows reach the Colour and Details tabs a paste lays.
 pub fn pasted(entry: &Entry) -> bool {
-    parameters::all().iter().filter(|r| entry.rows.contains(&r.id)).any(|r| r.covers.iter().any(|f| look_settings::FIELDS.contains(f)))
+    parameters::all().iter().filter(|r| entry.rows.contains(&r.id)).any(|r| r.covers.iter().any(|f| looks(f)))
 }
 
 /// Every row of the boxes a copy offers: what a copy carrying the look whole names.
@@ -198,6 +203,7 @@ pub fn label(parameters: &BTreeSet<String>) -> String {
 mod tests {
     use super::*;
     use oni_settings::ConversionMode;
+    use oni_settings::fields::FieldSet;
 
     fn rows(names: &[&str]) -> BTreeSet<String> {
         set(names)
@@ -278,9 +284,9 @@ mod tests {
             .iter()
             .filter(|r| pasted_rows().contains(r.id))
             .flat_map(|r| r.covers.iter().copied())
-            .filter(|f| look_settings::FIELDS.contains(f))
+            .filter(|f| looks(f))
             .collect();
-        assert_eq!(reached, look_settings::FIELDS.into_iter().collect(), "every field a paste lays has its box");
+        assert_eq!(reached, FieldSet::of_family(Family::Look).iter().map(Field::name).collect(), "every field a paste lays has its box");
         assert!(offered.contains(&"colour") && offered.contains(&"sharpen") && offered.contains(&"lighting"));
         // Twin: the roll's own boxes, which a paste never lays, are not offered.
         for roll in ["densityCeiling", "chromaDecompression", "sourceEncoding", "flatField", "dyeSet"] {

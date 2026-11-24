@@ -1,7 +1,7 @@
 //! `RollReference`'s measuring: each frame's own Classic, then the roll from its frames, so a light
 //! leak or a fogged first frame never sets the roll's range; and the frames Prepare the Roll writes.
 
-use crate::auto_levels::{self, Balance};
+use crate::auto_levels;
 use crate::histogram::Histogram;
 use oni_core::parameters;
 use oni_settings::cg::Rect;
@@ -15,14 +15,14 @@ pub const BASE_RADIUS: f64 = crate::pipette::RADIUS_RANGE.0;
 /// The preference the base step's Picker Size is remembered under, in no sidecar or preset.
 pub const BASE_RADIUS_KEY: &str = "rollBaseRadius";
 
-/// One frame's part in the roll: its own Classic, and the raw tails its ends were placed on.
+/// One frame's part in the roll: the gains its own Classic brings it to, and the raw tails read there.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Measured {
     pub path: String,
-    pub balance: Balance,
-    /// Each channel's low and high tails at `balance.stops`, before any clamp to the window.
+    pub stops: [f32; 3],
+    /// Each channel's low and high tails at `stops`, before any clamp to the window.
     pub tails: [[f32; 2]; 3],
-    /// Each channel's median at `balance.stops`, off the same histogram as the tails.
+    /// Each channel's median at `stops`, off the same histogram as the tails.
     pub median: Option<[f32; 3]>,
     /// That histogram's counts, each bin at its index over the last on the counted 0…1 window.
     pub counts: Vec<[f32; 3]>,
@@ -39,12 +39,12 @@ pub fn measured(path: &str, settings: &PipelineSettings, mut reading: impl FnMut
     let moved = auto_levels::recentred(&first, stops, mode, 0.0)?;
     let after = if moved == stops { first } else { reading(moved) };
     let tails = after.ends.as_ref().filter(|e| e.len() == 3).map(|e| [e[0], e[1], e[2]])?;
-    let levels = auto_levels::placement(&after, 0.0)?;
-    let shift = [0, 1, 2].map(|c| auto_levels::shift(moved[c] - stops[c], mode));
+    // A frame with a channel too flat to place is no measure of the roll.
+    auto_levels::placement(&after, 0.0)?;
     let scale = (after.rgb.len().saturating_sub(1)).max(1) as f32;
     let medians: Vec<f32> = (0..3).filter_map(|c| auto_levels::median(&after.channel(c)).map(|m| m / scale)).collect();
     let median = (medians.len() == 3).then(|| [medians[0], medians[1], medians[2]]);
-    Some(Measured { path: path.to_string(), balance: Balance { stops: moved, levels, shift }, tails, median, counts: after.rgb })
+    Some(Measured { path: path.to_string(), stops: moved, tails, median, counts: after.rgb })
 }
 
 /// The roll's histogram as `combined` reads it: every frame's counts moved to the roll's gains, as
@@ -57,7 +57,7 @@ pub fn summed(frames: &[Measured], roll: &RollReference, mode: ConversionMode, b
     for f in frames {
         let last = f.counts.len().saturating_sub(1).max(1) as f32;
         for c in 0..3 {
-            let s = auto_levels::shift(roll.stops[c] - f.balance.stops[c], mode);
+            let s = auto_levels::shift(roll.stops[c] - f.stops[c], mode);
             for (i, b) in f.counts.iter().enumerate() {
                 let x = i as f32 / last + s;
                 if (0.0..=1.0).contains(&x) {
@@ -101,13 +101,13 @@ pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]
     if frames.is_empty() {
         return None;
     }
-    let stops = [0, 1, 2].map(|c| middle(&mut frames.iter().map(|f| f.balance.stops[c]).collect::<Vec<_>>()));
+    let stops = [0, 1, 2].map(|c| middle(&mut frames.iter().map(|f| f.stops[c]).collect::<Vec<_>>()));
     // A gain is an exact translation of the densities, so each frame's tails move to the roll's gains unread.
     let moved: Vec<[[f32; 2]; 3]> = frames
         .iter()
         .map(|f| {
             [0, 1, 2].map(|c| {
-                let s = auto_levels::shift(stops[c] - f.balance.stops[c], mode);
+                let s = auto_levels::shift(stops[c] - f.stops[c], mode);
                 [f.tails[c][0] + s, f.tails[c][1] + s]
             })
         })
@@ -142,7 +142,7 @@ pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]
             middle(
                 &mut frames
                     .iter()
-                    .map(|f| f.median.expect("checked above")[c] + auto_levels::shift(stops[c] - f.balance.stops[c], mode))
+                    .map(|f| f.median.expect("checked above")[c] + auto_levels::shift(stops[c] - f.stops[c], mode))
                     .collect::<Vec<_>>(),
             )
         })

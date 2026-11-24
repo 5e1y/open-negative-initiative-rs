@@ -121,12 +121,11 @@ fn roll_8_opens_as_one_named_roll_of_its_photos() {
 
 #[test]
 fn a_rolls_row_shows_the_stock_picked_else_its_modes_generic_one() {
-    use oni_library::film_group::FilmKey;
     use oni_settings::ConversionMode;
     let mut entry = Entry::new("/R/A.NEF", oni_library::distant_past(), "A");
     entry.mode = Some(ConversionMode::Positive);
     let mut film = oni_settings::film::Film::new("Roll 1");
-    let mut group = FilmGroup { id: FilmKey::Roll(film.id), film: Some(film.clone()), start: oni_library::distant_past(), entries: vec![entry], heading: None };
+    let mut group = FilmGroup { folder: "/R".into(), film: Some(film.clone()), entries: vec![entry], heading: "R".into() };
     assert_eq!(default_stock(&group), "generic-color-positive");
     film.stock = Some("kodak-portra".into());
     group.film = Some(film);

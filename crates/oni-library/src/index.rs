@@ -131,8 +131,6 @@ impl LibraryIndex {
         let _ = connection.execute_batch("PRAGMA synchronous = NORMAL");
         let index = LibraryIndex { connection };
         index.prepare_schema(version == 0).ok()?;
-        // A busy database is respelt at the next open; meanwhile each write names both spellings.
-        let _ = spelling::respell(&index.connection);
         Some(index)
     }
 
@@ -255,7 +253,7 @@ impl LibraryIndex {
     }
 
     pub fn remove(&self, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("DELETE FROM photos WHERE path IN (?, ?)", params![path, normal(path)])?;
+        self.connection.execute("DELETE FROM photos WHERE path = ?", params![normal(path)])?;
         self.forget_stamp(path)
     }
 
@@ -281,7 +279,7 @@ impl LibraryIndex {
 
     // MARK: - Reading
 
-    /// Capture time ascending, an undated frame on its import time, the order `Film::day_start` cuts on.
+    /// Capture time ascending, an undated frame on its import time, the path breaking a tie.
     pub fn all(&self) -> Vec<Entry> {
         let sql = format!("SELECT {COLUMNS} FROM photos ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
         let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };
@@ -309,11 +307,11 @@ impl LibraryIndex {
         frames::latest_first(picked.into_iter().cloned().collect())
     }
 
-    /// The row at `path`, in either spelling the index may hold it under.
+    /// The row at `path`, keyed in the archive's spelling.
     pub fn row(&self, path: &str) -> Option<Entry> {
-        let sql = format!("SELECT {COLUMNS} FROM photos WHERE path IN (?, ?) LIMIT 1");
+        let sql = format!("SELECT {COLUMNS} FROM photos WHERE path = ? LIMIT 1");
         let mut statement = self.connection.prepare_cached(&sql).ok()?;
-        statement.query_row(params![path, normal(path)], entry).optional().ok().flatten()
+        statement.query_row(params![normal(path)], entry).optional().ok().flatten()
     }
 
     /// Every row of one fingerprint, in `all`'s order: the copies of one file.
@@ -387,7 +385,6 @@ pub mod listed;
 pub use frames::{shown, trashed};
 pub mod prune;
 mod rebuilt;
-mod spelling;
 mod stamps;
 pub use stamps::Stamped;
 

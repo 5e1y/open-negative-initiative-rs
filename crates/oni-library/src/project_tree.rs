@@ -30,14 +30,6 @@ impl Node {
             Node::Photo { entry, project } => NodeId::Photo { path: entry.path.clone(), project: *project },
         }
     }
-
-    pub fn entries(&self) -> Vec<Entry> {
-        match self {
-            Node::Project(group) => group.entries.clone(),
-            Node::Roll { entries, .. } => entries.clone(),
-            Node::Photo { entry, .. } => vec![entry.clone()],
-        }
-    }
 }
 
 /// A project's photos by roll, the folder each lies in: the rolls in the order their first photo

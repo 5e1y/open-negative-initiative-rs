@@ -1,7 +1,6 @@
 //! What the info sidebar reads off the library: a project's stocks counted by photo, the shot date
-//! typed by hand and clamped on the calendar, and the roll or project a selection stands on.
+//! typed by hand and clamped on the calendar, and the project a selection stands on.
 
-use crate::film_group::FilmGroup;
 use crate::index::Entry;
 use crate::project::{self, Project, ProjectGroup, Reach};
 use chrono::{Datelike, Local, NaiveDate, TimeZone};
@@ -49,16 +48,6 @@ pub fn ymd(date: Date) -> (i32, u32, u32) {
     let unix = date.unix_seconds();
     let at = chrono::DateTime::from_timestamp(unix.floor() as i64, 0).unwrap_or_default().with_timezone(&Local);
     (at.year(), at.month(), at.day())
-}
-
-/// `resolvedRoll`: the roll a click on its row named, else the anchor photo's; a group with no
-/// roll (a day, a folder) resolves to nothing.
-pub fn resolved_roll<'a>(groups: &'a [FilmGroup], selected: Option<&crate::FilmKey>, anchor: Option<&str>) -> Option<&'a FilmGroup> {
-    let group = match selected {
-        Some(key) => groups.iter().find(|g| g.id == *key),
-        None => groups.iter().find(|g| g.entries.iter().any(|e| Some(e.path.as_str()) == anchor)),
-    }?;
-    group.film.is_some().then_some(group)
 }
 
 /// `resolvedProjectGroup`: the project a click on its row named, else the anchor photo's.
@@ -128,14 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn the_sidebar_stands_on_the_ringed_roll_else_the_anchors_and_never_on_a_day() {
-        use crate::film_group::FilmKey;
-        let roll = FilmGroup { id: FilmKey::Roll(Id::new()), film: Some(Film::new("Roll 1")), start: Date::since_reference_date(0.0), entries: vec![shot("/r/a", None)], heading: None };
-        let day = FilmGroup { id: FilmKey::Day(0), film: None, start: Date::since_reference_date(0.0), entries: vec![shot("/d/a", None)], heading: None };
-        let groups = [roll.clone(), day.clone()];
-        assert_eq!(resolved_roll(&groups, None, Some("/r/a")).map(|g| g.id.clone()), Some(roll.id.clone()));
-        assert!(resolved_roll(&groups, None, Some("/d/a")).is_none(), "a day is no roll");
-        assert_eq!(resolved_roll(&groups, Some(&roll.id), Some("/d/a")).map(|g| g.id.clone()), Some(roll.id.clone()), "the ring wins");
+    fn the_sidebar_stands_on_the_anchor_s_project() {
         let trip = Project::new("Trip", Date::since_reference_date(0.0), vec![project::Member::new(Some("/d/a"), None)]);
         let entries = [shot("/d/a", None)];
         let entries = Reach::rows(&entries);

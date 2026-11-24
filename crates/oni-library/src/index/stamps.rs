@@ -68,7 +68,7 @@ impl LibraryIndex {
     }
 
     pub(super) fn forget_stamp(&self, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("DELETE FROM stamps WHERE path IN (?, ?)", params![path, normal(path)])?;
+        self.connection.execute("DELETE FROM stamps WHERE path = ?", params![normal(path)])?;
         Ok(())
     }
 }

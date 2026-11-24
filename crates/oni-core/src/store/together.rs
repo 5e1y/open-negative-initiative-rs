@@ -7,27 +7,6 @@ use crate::fields::{Field, FieldSet};
 use crate::knob::Knob;
 use oni_settings::settings::roll_settings::Field as Shared;
 
-/// A frame's own fields, which a step on the open frame never lays on the others: its file, its
-/// framing, its dust, its roll.
-const OWN: [Field; 16] = [
-    Field::Film,
-    Field::ManualOrder,
-    Field::Sheet,
-    Field::DecodedFromMosaic,
-    Field::CaptureStops,
-    Field::LensCorrected,
-    Field::PrimariesConverted,
-    Field::SourceEncoding,
-    Field::RgbPasses,
-    Field::PassOf,
-    Field::Geometry,
-    Field::Corrections,
-    Field::RollReference,
-    Field::RollReferenceDeclined,
-    Field::MeasuredGains,
-    Field::BalanceMethod,
-];
-
 /// What the open frame took during a step, as each frame together takes it.
 #[derive(Debug, Clone, PartialEq)]
 pub(super) enum Took {
@@ -133,7 +112,7 @@ impl Step<'_> {
     fn reaches(&self, path: &str, frame: &PipelineSettings) -> impl Fn(Field) -> bool {
         let mine = self.on_roll(path, frame);
         let slide = matches!(self.key, Some(RollKey::Slides(_)));
-        move |f: Field| !OWN.contains(&f) && (f.family() != Some(Family::Roll) || (mine && slide && slide_owns(f)))
+        move |f: Field| f.family() != Family::Frame && (f.family() != Family::Roll || (mine && slide && slide_owns(f)))
     }
 
     /// The frame together with the step laid.

@@ -271,13 +271,6 @@ impl Navigation {
         self.toggle_in(COMPUTER_ROW, folder);
     }
 
-    pub fn toggle_trash(&mut self) {
-        self.selected = Some(TRASH_ROW.to_owned());
-        if !self.unfolded.remove(TRASH_ROW) {
-            self.unfolded.insert(TRASH_ROW.to_owned());
-        }
-    }
-
     /// A folder renamed or moved: the pick, the unfolded rows and the folders beyond follow it.
     pub fn follow(&mut self, old: &str, new: &str) {
         let moved = |path: &str| paths::moved(path, old, new);

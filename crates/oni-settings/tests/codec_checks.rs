@@ -5,10 +5,10 @@ use oni_settings::axis::{density_axis, pipeline};
 use oni_settings::blocks::{ChromaDenoise, Gains, Sharpen, Vignette};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
+use oni_settings::fields::Field;
 use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
-use oni_settings::migrate::density;
-use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
+use oni_settings::frame::{AspectRatio, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::sidecar::ExifLine;
@@ -313,7 +313,10 @@ fn the_per_channel_windows_move_onto_the_density_axis_before_the_defaults() {
     placed.levels.green = Levels { black: 0.1279, white: 0.7411, mid: 0.6413, ..Levels::default() };
     placed.levels.blue = Levels { black: 0.2113, white: 0.9337, mid: 0.5, ..Levels::default() };
     placed.gains.stops = [1.5, -0.5, 2.125];
-    let scaled = density::migrate(&placed.levels);
+    let mut scaled = placed.levels;
+    for lv in [&mut scaled.red, &mut scaled.green, &mut scaled.blue] {
+        (lv.black, lv.white) = (lv.black * pipeline::DMAX, lv.white * pipeline::DMAX);
+    }
     for stamp in [0, before_1_0::DENSITY_AXIS_VERSION - 1, before_1_0::DENSITY_AXIS_VERSION] {
         let read = decode(&aged(&placed, stamp, |_| {}));
         let wanted = if stamp < before_1_0::DENSITY_AXIS_VERSION { scaled } else { placed.levels };
@@ -496,8 +499,6 @@ fn a_mosaic_raw_never_balanced_rests_knee_free_and_a_balanced_one_keeps_its_axis
     assert_eq!(slide.levels.green.black, Levels::resting_black(ConversionMode::Positive, density_axis::base()));
     let graded = read(&stamped(&|s| s.gains.stops = [0.4, 0.0, -0.3], v), true);
     assert!((graded.density_ceiling - former_axis(density_axis::base())).abs() < 1e-6);
-    let healed = read(&stamped(&|s| s.corrections = vec![Correction::new(vec![Point::new(0.4, 0.6)])], v), true);
-    assert!(healed.lens_corrected && !rested.lens_corrected);
 }
 
 #[test]
@@ -555,10 +556,11 @@ fn a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not() {
     assert_eq!((decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, decode(&former(before_1_0::LIGHTING_VERSION, false)).print), (kept.print, bare.print));
 }
 
-// MARK: - Families
+// MARK: - Fields
 
+/// With its optional fields set, a document writes every field the table names, and no other.
 #[test]
-fn every_field_lives_in_exactly_one_family() {
+fn a_document_writes_every_field_the_table_names() {
     let keys: Vec<String> = {
         let mut s = full();
         s.sheet = Some(oni_settings::frame::ContactSheetGrid {
@@ -580,22 +582,16 @@ fn every_field_lives_in_exactly_one_family() {
         (s.legacy_print, s.paperless) = (Some(Default::default()), true);
         encoded(&s, VERSION)["settings"].as_object().unwrap().keys().cloned().collect()
     };
-    let families = |names: &[&str]| -> Vec<String> {
-        let mut all: Vec<String> = oni_settings::settings::look_settings::FIELDS
-            .iter()
-            .chain(oni_settings::settings::look_settings::FRAME_FIELDS.iter())
-            .chain(names.iter())
-            .map(|s| s.to_string()).collect();
+    let table = |fields: &[Field]| -> Vec<String> {
+        let mut all: Vec<String> = fields.iter().map(|f| f.name().to_string()).collect();
         all.sort();
         all
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 45);
-    assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
-    // Twin: a family missing one field no longer covers the document.
-    let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];
-    assert_ne!(families(short), sorted);
+    assert_eq!(table(Field::ALL), sorted);
+    // Twin: a table missing one field no longer covers the document.
+    assert_ne!(table(&Field::ALL[1..]), sorted);
 }
 
 #[test]
@@ -684,4 +680,22 @@ fn a_document_from_before_folds_its_scanner_look_and_one_since_carries_none() {
     let newer = read(chain::LOOK_FOLDED_VERSION);
     assert_eq!(newer.density, 0.1);
     assert!(newer.manual_curves.is_neutral());
+}
+
+/// A sidecar still holding the retired `lensCorrected` and `rollReferenceDeclined` reads as one
+/// without them, at its own version or this one, and is written back without them.
+#[test]
+fn the_retired_frame_flags_read_as_absent_and_are_written_no_more() {
+    let placed = full();
+    let flagged = |s: &mut Object| {
+        s.insert("lensCorrected".into(), json!(true));
+        s.insert("rollReferenceDeclined".into(), json!(true));
+    };
+    for version in [0, before_1_0::DENSITY_AXIS_VERSION, VERSION] {
+        assert_eq!(decode(&aged(&placed, version, flagged)), decode(&aged(&placed, version, |_| {})), "version {version}");
+    }
+    // Twin: a key the settings read moves the frame, so the comparison sees a kept key.
+    assert_ne!(decode(&aged(&placed, VERSION, |s| drop(s.insert("captureStops".into(), json!(0.75))))), decode(&aged(&placed, VERSION, |_| {})));
+    let written = String::from_utf8(document::encode(&Document::of(decode(&aged(&placed, VERSION, flagged)))).unwrap()).unwrap();
+    assert!(!written.contains("lensCorrected") && !written.contains("rollReferenceDeclined") && written.contains("captureStops"));
 }

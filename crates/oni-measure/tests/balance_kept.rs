@@ -19,12 +19,11 @@ use std::sync::Arc;
 type Change = (&'static str, fn(&mut PipelineSettings));
 
 /// Every field the reading reads, each moved.
-const INPUTS: [Change; 24] = [
+const INPUTS: [Change; 23] = [
     ("mode", |s| s.mode = ConversionMode::Positive),
     ("sheet", |s| s.sheet = Some(ContactSheetGrid { columns: 2, rows: 1, frames: 2, tile: Size { width: 36.0, height: 24.0 }, margin: 0.0, windows: None })),
     ("decoded_from_mosaic", |s| s.decoded_from_mosaic = !s.decoded_from_mosaic),
     ("capture_stops", |s| s.capture_stops = 0.6),
-    ("lens_corrected", |s| s.lens_corrected = !s.lens_corrected),
     ("primaries_converted", |s| s.primaries_converted = !s.primaries_converted),
     ("source_encoding", |s| s.source_encoding = Some(SourceEncoding::Linear)),
     ("rgb_passes", |s| s.rgb_passes = Some(RgbPasses { red: "R.tif".into(), green: "G.tif".into(), blue: "B.tif".into(), registration: None })),
@@ -55,7 +54,7 @@ const MOVING: [&str; 12] =
     ["mode", "capture_stops", "crop", "measure_window", "angle", "gains", "density_ceiling", "flat_field", "corrections", "levels", "roll_reference", "density"];
 
 /// Every look the reading leaves at rest, each moved.
-const LOOKS: [Change; 30] = [
+const LOOKS: [Change; 29] = [
     ("print.exposure", |s| s.print.exposure = 0.8),
     ("print.contrast", |s| s.print.contrast = 0.5),
     ("print.shadows", |s| s.print.shadows = -0.4),
@@ -90,7 +89,6 @@ const LOOKS: [Change; 30] = [
     ("paper_correction", |s| s.paper_correction.stops = [0.1, 0.0, -0.1]),
     ("manual_order", |s| s.manual_order = Some(3.0)),
     ("film", |s| s.film = serde_json::from_value(serde_json::json!({"id": Id::new(), "name": "Portra 400"})).ok()),
-    ("roll_reference_declined", |s| s.roll_reference_declined = !s.roll_reference_declined),
     ("print.green", |s| s.print.green = Tone::exposure(0.1)),
     ("sharpen.halo", |s| s.sharpen.halo = 0.9),
 ];

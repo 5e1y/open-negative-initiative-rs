@@ -125,10 +125,6 @@ pub fn off_former_mosaic_axis(document: Object) -> Object {
             .and_then(|a| a.iter().map(|v| number_f32(Some(v))).collect::<Option<Vec<_>>>())
             .unwrap_or_default();
         let gains_at_rest = stops.iter().all(|&v| v == 0.0);
-        // Dust corrections were placed on the lens profile's geometry, which the pinned decode drops.
-        if s.get("corrections").and_then(Value::as_array).is_some_and(|c| !c.is_empty()) {
-            s.insert("lensCorrected".into(), Value::Bool(true));
-        }
         let ceiling = if stored == density_axis::base() && windows_at_rest && gains_at_rest && !positive {
             density_axis::MOSAIC_REST
         } else {

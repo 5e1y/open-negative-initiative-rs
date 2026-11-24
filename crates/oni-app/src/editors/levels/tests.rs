@@ -1,6 +1,19 @@
 use super::*;
 use oni_settings::axis::{graduation, pipeline};
-use oni_settings::migrate::density::{apply_levels, apply_window};
+
+/// One channel's window as the stage 4-7 kernel's scalar reference runs it: a density under the
+/// black passes on, below zero.
+fn window(e: f32, l: &Levels) -> f32 {
+    let n = (e - l.black) / (l.white - l.black).max(1e-4);
+    let t = if n > 0.0 { n.powf(l.gamma()) } else { n };
+    let (c1, c3) = (l.shadow_ordinate(), l.highlight_ordinate());
+    if c1 == 0.25 && c3 == 0.75 {
+        return t;
+    }
+    let u = t.clamp(0.0, 1.0);
+    let v = 1.0 - u;
+    c1 * (4.0 * u * v * v * v) + 0.5 * (6.0 * u * u * v * v) + c3 * (4.0 * u * u * u * v) + u * u * u * u + (t - u)
+}
 
 const MODES: [ConversionMode; 3] = [ConversionMode::Negative, ConversionMode::Positive, ConversionMode::Monochrome];
 
@@ -23,9 +36,9 @@ fn the_levels_track_holds_and_its_black_reaches_under_zero() {
 
     let transmitting = -0.243;
     let bottom = LevelsChannel::Red.value_at_position(0.0, ConversionMode::Negative);
-    let rescued = apply_levels(transmitting, &Levels::with_ends(bottom, pipeline::DMAX));
+    let rescued = pipeline::clip(window(transmitting, &Levels::with_ends(bottom, pipeline::DMAX)));
     assert!(bottom < transmitting && rescued > 0.0, "{bottom} {rescued}");
-    let sunk = apply_levels(transmitting, &Levels::with_ends(0.0, pipeline::DMAX));
+    let sunk = pipeline::clip(window(transmitting, &Levels::with_ends(0.0, pipeline::DMAX)));
     assert_eq!(sunk, 0.0, "twin: a track floored at zero renders that channel black");
 
     let hand = Levels { black: 0.4137, white: 2.7311, mid: 0.3117, ..Levels::default() };
@@ -134,7 +147,7 @@ fn the_inner_points_follow_their_neighbours_and_never_cross() {
 fn the_inner_handles_sit_where_their_quarter_renders() {
     for mid in [0.15, 0.3, 0.5, 0.62, 0.85] {
         let l = Levels { black: 0.1, white: 0.9, mid, ..Levels::default() };
-        let rendered = |v: f32| f64::from(apply_window(v, &l));
+        let rendered = |v: f32| f64::from(window(v, &l));
         for (v, quarter) in [(l.display_shadows(), 0.25), (l.display_mid(), 0.5), (l.display_highlights(), 0.75)] {
             assert!((rendered(v) - quarter).abs() < 1e-6, "mid {mid}: {v} renders {}", rendered(v));
         }

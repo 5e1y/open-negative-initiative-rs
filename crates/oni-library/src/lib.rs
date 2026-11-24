@@ -35,7 +35,7 @@ pub mod trash;
 pub mod watching;
 pub mod wrapped;
 
-pub use film_group::{FilmGroup, FilmKey};
+pub use film_group::FilmGroup;
 pub use index::{Entry, LibraryIndex};
 pub use oni_settings::{Date, Film, Id, Medal};
 

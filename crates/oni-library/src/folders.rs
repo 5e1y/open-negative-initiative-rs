@@ -2,7 +2,7 @@
 //! subfolders and then its own photos in shooting order, the gallery laying them flat the same way.
 
 use crate::archive_tree::Node;
-use crate::film_group::{self, FilmGroup, FilmKey};
+use crate::film_group::{self, FilmGroup};
 use crate::index::Entry;
 use crate::paths::{self, NameKey, holds};
 use oni_settings::{Date, Film, roll_folder};
@@ -50,17 +50,11 @@ pub fn shot(a: &Entry, b: &Entry) -> Ordering {
 }
 
 pub fn group(folder: &str, root: &str, entries: Vec<Entry>, roll: Option<Film>) -> FilmGroup {
-    let start = entries
-        .iter()
-        .map(film_group::capture)
-        .min_by(|a, b| crate::seconds(*a).total_cmp(&crate::seconds(*b)))
-        .unwrap_or(crate::distant_past());
     FilmGroup {
-        id: FilmKey::Folder(folder.to_owned()),
+        folder: folder.to_owned(),
         film: roll,
-        start,
         entries: in_shooting_order(entries),
-        heading: Some(paths::relative(folder, root)),
+        heading: paths::relative(folder, root),
     }
 }
 
@@ -158,21 +152,7 @@ pub fn groups(
     rolls: &HashMap<String, Film>,
     made: &HashMap<String, Date>,
 ) -> Vec<FilmGroup> {
-    tree_and_groups(root, entries, rolls, &[], made).1
-}
-
-/// `tree` and `groups` cut in one walk: the empty folders the survey adds hold no group, so the
-/// groups of the whole tree are those of its photos alone.
-pub fn tree_and_groups(
-    root: &str,
-    entries: &[Entry],
-    rolls: &HashMap<String, Film>,
-    folders: &[String],
-    made: &HashMap<String, Date>,
-) -> (Vec<Node>, Vec<FilmGroup>) {
-    let nodes = tree(root, entries, rolls, folders, made);
-    let groups = groups_of(root, &nodes, rolls);
-    (nodes, groups)
+    groups_of(root, &tree(root, entries, rolls, &[], made), rolls)
 }
 
 /// The groups a tree cut by `tree` holds, laid as `groups` lays them.
@@ -260,7 +240,7 @@ mod tests {
         let groups = groups("/R", &entries(), &rolls, &HashMap::new());
         let headings: Vec<String> = groups.iter().map(FilmGroup::display_title).collect();
         assert_eq!(headings, ["Portra", "2026", "2025", "R"]);
-        let juin = groups.iter().find(|g| g.id == FilmKey::Folder("/R/2026/Juin".into())).unwrap();
+        let juin = groups.iter().find(|g| g.folder == "/R/2026/Juin").unwrap();
         assert_eq!(juin.entries.iter().map(|e| name(&e.path)).collect::<Vec<_>>(), ["f10.RW2", "f2.RW2"]);
         // Twin: without its roll the folder heads with its path.
         let plain: Vec<String> = super::groups("/R", &entries(), &HashMap::new(), &HashMap::new())
@@ -271,19 +251,19 @@ mod tests {
         assert!(!groups.iter().flat_map(|g| &g.entries).any(|e| e.path == "/Elsewhere/y.RW2"));
     }
 
-    /// One walk cuts the tree and the gallery's groups; the survey's empty folders move no group.
+    /// The groups of a tree holding the survey's empty folders are the gallery's: an empty folder
+    /// moves no group.
     #[test]
-    fn the_groups_cut_with_the_tree_are_the_gallery_s() {
+    fn the_groups_cut_from_the_tree_are_the_gallery_s() {
         let made = HashMap::from([("/R/New".to_owned(), Date::since_reference_date(99.0))]);
         let rolls = HashMap::from([("/R/2026/Juin".to_owned(), Film::new("Portra"))]);
         let empty = ["/R/New".to_owned(), "/R/2026/Empty".to_owned()];
-        let (nodes, cut) = tree_and_groups("/R", &entries(), &rolls, &empty, &made);
+        let cut = groups_of("/R", &tree("/R", &entries(), &rolls, &empty, &made), &rolls);
         assert_eq!(cut, groups("/R", &entries(), &rolls, &made));
-        assert_eq!(nodes, tree("/R", &entries(), &rolls, &empty, &made));
         // Twin: a photo in the new folder gives it a group, which the comparison sees.
         let mut more = entries();
         more.push(entry("New/n.RW2", 50.0));
-        assert_ne!(tree_and_groups("/R", &more, &rolls, &empty, &made).1, cut);
+        assert_ne!(groups_of("/R", &tree("/R", &more, &rolls, &empty, &made), &rolls), cut);
     }
 
     /// The keys read once order the photos as `shot` does, ties broken by the Finder's name order.

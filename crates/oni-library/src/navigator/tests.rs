@@ -227,9 +227,6 @@ fn a_folder_opened_elsewhere_is_picked_where_it_shows_else_unfolded_down_to() {
     nav.reveal("/Volumes/T7/Film", &[]);
     assert_eq!((nav.beyond.iter().next().map(String::as_str), nav.selected.as_deref()), (Some("/Volumes/T7/Film"), Some("/Volumes/T7/Film")));
     assert!(!nav.unfolded.contains("/Volumes/T7"));
-    nav.toggle_trash();
-    assert_eq!(nav.selected.as_deref(), Some(TRASH_ROW));
-    assert!(nav.unfolded.contains(TRASH_ROW));
 }
 
 /// Windows mounts no disk in one folder: each drive's root is a volume, and a drive other than the
