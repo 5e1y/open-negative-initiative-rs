@@ -109,11 +109,7 @@ fn serve(instance: &ComponentInstance) {
             Some(Value::String(s)) => s.to_string(),
             _ => String::new(),
         };
-        let per = match args.get(2) {
-            Some(Value::Number(n)) => *n as f32,
-            _ => 0.0,
-        };
-        Value::Number(f64::from(typed_steps(&text(0), &text(1), per)))
+        Value::Number(f64::from(typed_steps(&text(0), &text(1))))
     };
     instance.set_global_callback("Readouts", "steps", steps).unwrap_or_else(|e| fail("Readouts.steps", e));
     let figure = |args: &[Value]| match args.first() {

@@ -13077,5 +13077,13 @@
     "status": "done",
     "detail": "Both served only a library.json from before roots (a Swift-era flat list of files), which a fresh install never has: the welcome's folders came only from roots::suggested over that list, and the sheet showed only while it held photos. No edit depends on it: sidecars lie beside the photos and the favourites import from roots.json (Places::seeded, places_held). Gone: navigator/catch_up.rs, the Nav fields welcome, former, catching_up and catch_up_folders, the five callbacks and their Navigator properties, Welcome and RootsCatchUpSheet in navigator.slint, WelcomeLine and CatchUpLine, Ctl::add_starred, library::load and LibraryFile, roots::suggested with its three tests, the upgrade check's library.json line and 17 catalogue texts each in French and Spanish. The rootsCatchUpShown preference is left unread; a leftover library.json stays on the disk, unread.",
     "outcome": "The navigator window check now stars and opens Old through Add Folder… with a picker answering it (Add stars the folder it opens, as before); oni-library tests green, catalogue check green."
+  },
+  {
+    "id": 3771,
+    "type": "chore",
+    "title": "The stepped Slider and the lab's Scanner keypad leave with the Scanner face",
+    "status": "done",
+    "detail": "No app screen or demo scene set Slider.stepped since the Scanner face left (one-face call, 2026-11-21); only the hue probe and the lab did, and step-reads was never set, so Readouts always took per = 0. Gone: the stepped branches of slider.slint (press, drag, release, double click, type-in, held and hand), the unused Typing global and its export, the per parameter of Readouts.steps and Readouts.pressed (typed_steps and pressed in slider_track.rs, the demos' welcome interface), the lab's LiveStepped, StepKey, StepKeyRow, BandKey, KeypadRow, its STEPPED SLIDER, LABSTEPKEYS, SCANNER KEYPAD, STEP KEYS and Pro/Scanner bar specimens, and the 15 lab-only tokens they used (scanner-band-*, scanner-key-*, scanner-keyboard-width, scanner-wide-key-width, control-mode-bar-width). #3063 kept the lab's keypad as a scoping note of the face removal, not an owner's call. The hue probe's C and D are continuous sliders, C's fraction following its count. Every typed number and key tooltip reads as before.",
+    "outcome": "slider_track's unit checks green (the per rows gone, a new twin: a readout's tenths count tenths); the lab compiles; window checks slider_hues, slider_keys, slider_rest, slider_hand, slider_relief, dial, keyboard's typed number, design_system and tooltip green (19)."
   }
 ]

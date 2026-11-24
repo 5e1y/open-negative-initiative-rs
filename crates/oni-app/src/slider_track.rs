@@ -67,32 +67,23 @@ pub fn number(readout: &str) -> &str {
     &text[..end]
 }
 
-/// The steps from a readout to a number typed over it: `per` readout units a step, or one unit of
-/// the readout's last digit where `per` is 0, an arrow's step; none when either holds no number.
-pub fn typed_steps(readout: &str, typed: &str, per: f32) -> i32 {
+/// The steps from a readout to a number typed over it, one unit of the readout's last digit a step, an
+/// arrow's; none when either holds no number.
+pub fn typed_steps(readout: &str, typed: &str) -> i32 {
     let (Some((shown, places)), Some((wanted, _))) = (read(readout), read(typed)) else { return 0 };
-    let unit = if per > 0.0 { f64::from(per) } else { 10f64.powi(-(places as i32)) };
-    ((wanted - shown) / unit).round() as i32
+    ((wanted - shown) / 10f64.powi(-(places as i32))).round() as i32
 }
 
-/// `steps` steps in a readout's own unit, unsigned, as a slider key's tooltip names its press: `per`
-/// readout units a step or, at 0, one unit of the readout's last digit; empty where it holds no number.
-pub fn pressed(readout: &str, per: f32, steps: i32) -> String {
+/// `steps` units of a readout's last digit, unsigned, as a slider key's tooltip names its press; empty
+/// where it holds no number.
+pub fn pressed(readout: &str, steps: i32) -> String {
     // The last figure and the unit after it: a span's higher end, a side's name left before it.
     let Some(end) = readout.rfind(|c: char| c.is_ascii_digit()) else { return String::new() };
     let start = readout[..end].rfind(|c: char| !(c.is_ascii_digit() || matches!(c, '.' | ','))).map_or(0, |i| i + readout[i..].chars().next().map_or(1, char::len_utf8));
     let figure = &readout[start..=end];
     let places = figure.find(['.', ',']).map_or(0, |i| figure.len() - i - 1);
     let unit = &readout[end + 1..];
-    let amount = f64::from(steps.unsigned_abs());
-    let (amount, places) = if per > 0.0 {
-        let amount = f64::from(per) * amount;
-        // A step finer than the readout's digit, as half a point on a whole count, keeps its own places.
-        let own = (0..=3).find(|p| ((amount * 10f64.powi(*p)).round() - amount * 10f64.powi(*p)).abs() < 1e-6).unwrap_or(3) as usize;
-        (amount, places.max(own))
-    } else {
-        (amount * 10f64.powi(-(places as i32)), places)
-    };
+    let amount = f64::from(steps.unsigned_abs()) * 10f64.powi(-(places as i32));
     format!("{amount:.places$}{unit}")
 }
 
@@ -102,9 +93,9 @@ where
     C: slint::ComponentHandle,
     for<'a> crate::Readouts<'a>: slint::Global<'a, C>,
 {
-    window.global::<crate::Readouts>().on_steps(|readout, typed, per| typed_steps(&readout, &typed, per));
+    window.global::<crate::Readouts>().on_steps(|readout, typed| typed_steps(&readout, &typed));
     window.global::<crate::Readouts>().on_number(|readout| number(&readout).into());
-    window.global::<crate::Readouts>().on_pressed(|readout, per, steps| pressed(&readout, per, steps).into());
+    window.global::<crate::Readouts>().on_pressed(|readout, steps| pressed(&readout, steps).into());
 }
 
 pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
@@ -181,7 +172,7 @@ mod tests {
         assert_eq!(number("2.1 px"), "2.1");
         assert_eq!(number("1.00\u{d7}"), "1.00");
         // The figure read back is the readout's own: typed unchanged, it moves nothing.
-        assert_eq!(typed_steps("Warm +0.46 EV", number("Warm +0.46 EV"), 0.0), 0);
+        assert_eq!(typed_steps("Warm +0.46 EV", number("Warm +0.46 EV")), 0);
         // Twin: the readout whole would carry its side and unit into the field.
         assert_ne!(number("Warm +0.46 EV"), "Warm +0.46 EV");
     }
@@ -189,28 +180,25 @@ mod tests {
     #[test]
     fn a_number_typed_over_a_readout_is_the_steps_an_arrow_would_take() {
         // The readout's last digit is a step: +1.50 EV to 2 is fifty hundredths, to −0.3 one hundred and eighty.
-        assert_eq!(typed_steps("+1.50 EV", "2", 0.0), 50);
-        assert_eq!(typed_steps("+1.50 EV", "\u{2212}0.3", 0.0), -180);
-        assert_eq!(typed_steps("+23", "-4", 0.0), -27);
-        assert_eq!(typed_steps("0%", "15 %", 0.0), 15);
-        assert_eq!(typed_steps("12.5 px", "12,8", 0.0), 3);
-        assert_eq!(typed_steps("3 / 24", "7", 0.0), 4);
-        // A stepped slider's steps are its own: +15% to 25% at 5% a step is two, half units on a letter.
-        assert_eq!(typed_steps("+15%", "25", 5.0), 2);
-        assert_eq!(typed_steps("+2", "\u{2212}1.5", 0.5), -7);
+        assert_eq!(typed_steps("+1.50 EV", "2"), 50);
+        assert_eq!(typed_steps("+1.50 EV", "\u{2212}0.3"), -180);
+        assert_eq!(typed_steps("+23", "-4"), -27);
+        assert_eq!(typed_steps("0%", "15 %"), 15);
+        assert_eq!(typed_steps("12.5 px", "12,8"), 3);
+        assert_eq!(typed_steps("3 / 24", "7"), 4);
         // The same number, or none, moves nothing.
-        assert_eq!(typed_steps("+1.50 EV", "1.5", 0.0), 0);
-        assert_eq!(typed_steps("+1.50 EV", "warm", 0.0), 0);
+        assert_eq!(typed_steps("+1.50 EV", "1.5"), 0);
+        assert_eq!(typed_steps("+1.50 EV", "warm"), 0);
         // The side a colour readout names is left aside, its sign read: Green −0.06 EV to 0 is six.
-        assert_eq!((typed_steps("Warm +0.46 EV", "0.5", 0.0), typed_steps("Green \u{2212}0.06 EV", "0", 0.0)), (4, 6));
+        assert_eq!((typed_steps("Warm +0.46 EV", "0.5"), typed_steps("Green \u{2212}0.06 EV", "0")), (4, 6));
         // Twin: the side named without its sign would step the wrong way.
-        assert_eq!(typed_steps("Green 0.06 EV", "0", 0.0), -6);
-        assert_eq!(typed_steps("", "2", 0.0), 0);
-        // Twin: the steps counted in whole units would leave the hundredths' readout fifty times short.
-        assert_ne!(typed_steps("+1.50 EV", "2", 1.0), 50);
+        assert_eq!(typed_steps("Green 0.06 EV", "0"), -6);
+        assert_eq!(typed_steps("", "2"), 0);
+        // Twin: the readout's tenths count tenths, ten times fewer than its hundredths.
+        assert_eq!(typed_steps("+1.5 EV", "2"), 5);
         // Typed then stepped, the value lands on the number typed.
         let track = track_range(Field::Exposure);
-        let at = stepped(Field::Exposure, 1.5, typed_steps(&Field::Exposure.readout(1.5), "-0.37", 0.0), &track);
+        let at = stepped(Field::Exposure, 1.5, typed_steps(&Field::Exposure.readout(1.5), "-0.37"), &track);
         assert_eq!(Field::Exposure.readout(at), "\u{2212}0.37 EV");
     }
 
@@ -222,28 +210,25 @@ mod tests {
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, -3, &track)), "+0.47 EV");
         // Twin: the value editor's own step moves one unit, a third of the press.
         assert_eq!(Field::Exposure.readout(stepped(Field::Exposure, 0.5, 1, &track)), "+0.51 EV");
-        // Every readout's press in its own unit, a span's and a side's included, a Scanner step its own.
+        // Every readout's press in its own unit, a span's and a side's included.
         let cases = [
-            ("+1.50 EV", 0.0, "0.03 EV"),
-            ("Warm +0.46 EV", 0.0, "0.03 EV"),
-            ("\u{2212}0.20 \u{2026} +0.30 EV", 0.0, "0.03 EV"),
-            ("85%", 0.0, "3%"),
-            ("+12°", 0.0, "3°"),
-            ("1.00\u{d7}", 0.0, "0.03\u{d7}"),
-            ("12.5 px", 0.0, "0.3 px"),
-            ("0.950", 0.0, "0.003"),
-            ("3 / 24", 0.0, "3"),
-            ("+15%", 5.0, "15%"),
-            ("0", 0.5, "1.5"),
-            ("\u{2212}0.30 EV", 0.1, "0.30 EV"),
-            ("Off", 0.0, ""),
+            ("+1.50 EV", "0.03 EV"),
+            ("Warm +0.46 EV", "0.03 EV"),
+            ("\u{2212}0.20 \u{2026} +0.30 EV", "0.03 EV"),
+            ("85%", "3%"),
+            ("+12°", "3°"),
+            ("1.00\u{d7}", "0.03\u{d7}"),
+            ("12.5 px", "0.3 px"),
+            ("0.950", "0.003"),
+            ("3 / 24", "3"),
+            ("Off", ""),
         ];
-        for (readout, per, words) in cases {
-            assert_eq!(pressed(readout, per, 3), words, "{readout}");
+        for (readout, words) in cases {
+            assert_eq!(pressed(readout, 3), words, "{readout}");
         }
         // Twin: one step, the value editor's, names a third of the press.
-        assert_eq!(pressed("+1.50 EV", 0.0, 1), "0.01 EV");
-        assert_ne!(pressed("+1.50 EV", 0.0, 1), pressed("+1.50 EV", 0.0, 3));
+        assert_eq!(pressed("+1.50 EV", 1), "0.01 EV");
+        assert_ne!(pressed("+1.50 EV", 1), pressed("+1.50 EV", 3));
         // The press named is the press taken: three units of the readout's digit from any Store readout.
         for f in Field::ALL {
             let range = track_range(f);
@@ -251,7 +236,7 @@ mod tests {
             let (from, to) = (f.readout(mid), f.readout(stepped(f, mid, 3, &range)));
             if let (Some((a, _)), Some((b, _))) = (read(&from), read(&to)) {
                 let unit = 10f64.powi(-(read(&from).unwrap().1 as i32));
-                let named = read(&pressed(&from, 0.0, 3)).unwrap().0;
+                let named = read(&pressed(&from, 3)).unwrap().0;
                 assert!(((b - a).abs() - named).abs() < unit / 2.0 && (named / unit - 3.0).abs() < 1e-6, "{f:?}: {from} to {to}, {named}");
             }
         }

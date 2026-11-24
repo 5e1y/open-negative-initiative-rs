@@ -8,7 +8,7 @@ import { Slider } from "../ui/ds/slider.slint";
 import { SliderFill, Rail } from "../ui/ds/rail.slint";
 import { Knob } from "../ui/ds/knob.slint";
 import { Plot, LevelsTrack, CurvePoint, Ink } from "../ui/ds/plots.slint";
-import { Keycap, Depth } from "depth.slint";
+import { Keycap } from "depth.slint";
 
 // The synthetic `Histogram.baseline` (lobes at 0.35, 0.45, 0.58), scaled by `HistogramScale` (^0.42), in a 480×96 box.
 global Plots {
@@ -141,21 +141,6 @@ component LiveSlider inherits Slider {
     step(f, by) => { root.move-to(root.fraction + by / 100); }
 }
 
-// The DS stepped `Slider` (the Scanner face's letters): whole steps, held at rest, three a press of the
-// keycap either side, as every slider's keys.
-component LiveStepped inherits Slider {
-    in-out property <int> amount;
-    stepped: true;
-    lowest: -10;
-    highest: 10;
-    rest: 0.5;
-    value: root.amount;
-    readout: (root.amount > 0 ? "+" : "") + root.amount;
-    value-text: self.readout;
-    step(f, by) => { root.amount = clamp(root.amount + by, root.lowest, root.highest); }
-    reset => { root.amount = 0; }
-}
-
 // `DSSlider(axis: .vertical)`: the DS rail and knob turned, low at the bottom; no screen of the app
 // holds one, so it is driven here alone.
 component UprightSlider inherits VerticalLayout {
@@ -244,68 +229,6 @@ component UprightSlider inherits VerticalLayout {
                 }
             }
         }
-    }
-}
-
-// A key of the scanner's keypad (`LabKeyboard.styled`): a small cap, its legend inked dark on a light
-// albedo (luminance over 0.55), white otherwise; it sinks under the press as `Keycap` does.
-component StepKey inherits Rectangle {
-    in property <string> legend;
-    in property <color> fill: DS.palette-keycap;
-    in property <length> legend-size: 13px;
-    in property <bool> enabled: true;
-    in property <bool> force-press;
-    callback clicked(bool);
-    property <bool> light: (0.2126 * root.fill.red + 0.7152 * root.fill.green + 0.0722 * root.fill.blue) / 255 > 0.55;
-    Keycap {
-        albedo: root.fill;
-        factor: SliderStyle.knob-factor;
-        depth: root.force-press || touch.pressed ? 1 : touch.has-hover ? Depth.hover-press : 0;
-        animate depth { duration: Depth.press-time; easing: ease-out; }
-        Text {
-            text: root.legend;
-            color: root.light ? #1f1f1f : DS.palette-text-on-fill;
-            font-size: root.legend-size;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        property <bool> shift;
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down) { self.shift = event.modifiers.shift; }
-        }
-        clicked => { root.clicked(self.shift); }
-    }
-}
-
-// `LabStepKeys`: a finishing slider as the scanner's keys on their socket (`LabStack`): −3 −1 TITLE +1 +3,
-// the side keys in their end's band colour, the middle key back to rest. 46 pt tall, the title key 96 wide.
-component StepKeyRow inherits Rectangle {
-    in property <string> title;
-    in-out property <float> value;
-    in property <float> step: 0.05;
-    in property <float> minimum: -1;
-    in property <float> maximum: 1;
-    in property <color> minus-fill: rgb(71, 71, 77);
-    in property <color> plus-fill: rgb(219, 219, 214);
-    in property <bool> force-press;
-    function moved(by: int) {
-        root.value = clamp((round(root.value / root.step) + by) * root.step, root.minimum, root.maximum);
-    }
-    height: 46px;
-    // The socket: `socketColor` black at the small cap's corner.
-    border-radius: Depth.corner * SliderStyle.knob-factor;
-    background: #000000;
-    HorizontalLayout {
-        StepKey { legend: "−3"; fill: root.minus-fill; clicked => { root.moved(-3); } }
-        StepKey { legend: "−"; fill: root.minus-fill; clicked => { root.moved(-1); } }
-        StepKey { width: 96px; legend: root.title; fill: DS.palette-keycap; force-press: root.force-press; clicked => { root.value = 0; } }
-        StepKey { legend: "+"; fill: root.plus-fill; clicked => { root.moved(1); } }
-        StepKey { legend: "+3"; fill: root.plus-fill; clicked => { root.moved(3); } }
     }
 }
 
@@ -615,32 +538,6 @@ export component SlidersPage inherits Rectangle {
                 Specimen { name: "rest"; CurvePoint { } }
                 Specimen { name: "active"; CurvePoint { active: true; } }
                 Specimen { name: "active, tinted"; CurvePoint { active: true; tint: DS.tint-chroma; } }
-            }
-
-            Row {
-                title: "STEPPED SLIDER";
-                source: "the Rust app's ds/slider.slint:120 (Scanner letters) · keys from LabKeyboard.swift:107";
-                VerticalLayout {
-                    width: 308px;
-                    spacing: 16px;
-                    alignment: start;
-                    LiveStepped { label: "C"; low: #d6403a; high: #1fa8c7; amount: 0; }
-                    LiveStepped { label: "D"; amount: 3; low: rgb(71, 71, 77); high: rgb(219, 219, 214); }
-                    Caption { text: "live: press or drag the rail, click a key (⇧ for three), double-click the name"; horizontal-alignment: left; }
-                }
-                Specimen { name: "at rest (ticked)"; LiveStepped { width: 220px; label: "M"; amount: 0; low: rgb(46, 163, 122); high: rgb(214, 51, 128); } }
-                Specimen { name: "hover, low side"; LiveStepped { width: 220px; label: "Y"; amount: -4; low: rgb(56, 92, 214); high: rgb(237, 199, 46); look: Look.hover; } }
-            }
-
-            Row {
-                title: "LABSTEPKEYS";
-                source: "LabKeyboard.swift:132 (LabStack :117, band :100) · ColorPane.swift:121";
-                VerticalLayout {
-                    spacing: 6px;
-                    contrast := StepKeyRow { width: 308px; title: "CONTRAST"; value: 0; }
-                    Caption { text: "live: CONTRAST " + round(contrast.value * 100) + " %"; horizontal-alignment: left; }
-                }
-                Specimen { name: "title key pressed"; StepKeyRow { width: 308px; title: "VIGNETTE"; force-press: true; minus-fill: rgb(219, 219, 214); plus-fill: rgb(71, 71, 77); } }
             }
 
             Row {

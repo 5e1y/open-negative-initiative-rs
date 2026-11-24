@@ -192,16 +192,6 @@ export component TabsPage inherits Rectangle {
             }
 
             Row {
-                name: "DSTabBar · faces";
-                source: "DSTabBar.swift:5 · EditorScene+Bar.swift:87 (modeBarWidth 232)";
-                TabBar { width: DS.control-mode-bar-width; tabs: ["Pro", "Scanner"]; selected: 0; }
-                States {
-                    Specimen { caption: "Pro"; TabBar { width: DS.control-mode-bar-width; tabs: ["Pro", "Scanner"]; selected: 0; } }
-                    Specimen { caption: "Scanner, hover Pro"; TabBar { width: DS.control-mode-bar-width; tabs: ["Pro", "Scanner"]; selected: 1; force-hover: 0; } }
-                }
-            }
-
-            Row {
                 name: "DSToggle";
                 source: "DSToggle.swift:5 · ExportSurface.swift:278, GeometryPanel.swift:22";
                 VerticalLayout {

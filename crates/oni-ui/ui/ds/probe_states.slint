@@ -141,7 +141,7 @@ export component StateProbe inherits AppWindow {
     }
 }
 
-// Rails of hues and a grey one, each between its keys: Temperature, then a stepped rail of hues and a grey one, and
+// Rails of hues and a grey one, each between its keys: Temperature, then C's rail of hues and a grey one, and
 // the twin of a key worn in its end's red. A check reads them off the window.
 export component HueProbe inherits AppWindow {
     in-out property <int> c;
@@ -187,10 +187,7 @@ export component HueProbe inherits AppWindow {
                 near: block.hovered;
                 label: "C";
                 readout: root.c;
-                stepped: true;
-                value: root.c;
-                lowest: -48;
-                highest: 48;
+                fraction: (root.c + 48) / 96;
                 rest: 0.5;
                 fill: SliderFill.bipolar;
                 low: Colour.channel-red;
@@ -202,9 +199,7 @@ export component HueProbe inherits AppWindow {
             dark := Slider {
                 label: "D";
                 readout: "0";
-                stepped: true;
-                lowest: -48;
-                highest: 48;
+                fraction: 0.5;
                 rest: 0.5;
                 fill: SliderFill.bipolar;
                 low: Colour.black;

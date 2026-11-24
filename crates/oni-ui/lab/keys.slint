@@ -139,27 +139,6 @@ component IconKey inherits LiveKey {
     Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525; }
 }
 
-// A scanner key (`LabKeyboard.styled`): 46 pt, a 13 pt legend inked by the albedo's luminance.
-component BandKey inherits LiveKey {
-    in property <string> text;
-    property <bool> light: (0.2126 * root.albedo.red + 0.7152 * root.albedo.green + 0.0722 * root.albedo.blue) / 255 > 0.55;
-    height: DS.scanner-key-height;
-    Legend { text: root.text; font-size: DS.scanner-key-legend-size; color: root.light ? DS.palette-text-on-light : DS.palette-text-on-fill; }
-}
-
-// One letter of the keypad: −3, −1, the letter on a light key 96 wide, +1, +3.
-component KeypadRow inherits HorizontalLayout {
-    in property <string> letter;
-    in property <color> minus;
-    in property <color> plus;
-    in property <string> word;
-    BandKey { text: "−3"; albedo: root.minus; }
-    BandKey { text: "−"; albedo: root.minus; }
-    BandKey { text: root.word != "" ? root.word : root.letter; width: DS.scanner-wide-key-width; }
-    BandKey { text: "+"; albedo: root.plus; }
-    BandKey { text: "+3"; albedo: root.plus; }
-}
-
 component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> source;
@@ -240,12 +219,6 @@ export component KeysPage inherits Rectangle {
                     Caption { text: "DSPanelButton .plate, DSActionButton on a footer"; vertical-alignment: center; }
                 }
                 StateRow {
-                    label: "small · scanner 46";
-                    BandKey { text: "D"; width: 96px; albedo: DS.palette-keycap; }
-                    BandKey { text: "+3"; width: DS.scanner-key-height; albedo: #e6e6e6; }
-                    Caption { text: "LabKeyboard keys"; vertical-alignment: center; }
-                }
-                StateRow {
                     label: "small · standard 40";
                     PanelWord { text: "DONE"; }
                     IconKey { glyph: Icons.framing; }
@@ -322,42 +295,6 @@ export component KeysPage inherits Rectangle {
                     IconKey { glyph: Icons.framing; height: DS.control-app-bar-keycap-height; albedo: DS.tint-geometry; }
                     PanelWord { text: "UNDO"; width: 80px; height: DS.control-app-bar-keycap-height; }
                     PanelWord { text: "UPDATE"; width: 92px; height: DS.control-app-bar-keycap-height; albedo: DS.tint-update; dark: true; }
-                }
-            }
-            Section {
-                title: "SCANNER KEYPAD";
-                source: "LabKeyboard.swift · 46 pt keys on one plate, bands inked by luminance";
-                HorizontalLayout {
-                    alignment: start;
-                    Plate {
-                        width: DS.scanner-keyboard-width;
-                        height: 5 * DS.scanner-key-height;
-                        VerticalLayout {
-                            KeypadRow { letter: "D"; minus: DS.scanner-band-dark; plus: DS.scanner-band-light; }
-                            KeypadRow { letter: "C"; minus: DS.scanner-band-red; plus: DS.scanner-band-cyan; }
-                            KeypadRow { letter: "M"; minus: DS.scanner-band-green; plus: DS.scanner-band-magenta; }
-                            KeypadRow { letter: "Y"; minus: DS.scanner-band-blue; plus: DS.scanner-band-yellow; }
-                            KeypadRow { letter: "W"; minus: DS.scanner-band-cool; plus: DS.scanner-band-warm; }
-                        }
-                    }
-                }
-            }
-            Section {
-                title: "STEP KEYS";
-                source: "LabStepKeys · a finishing slider as keys, the middle one back to rest";
-                HorizontalLayout {
-                    alignment: start;
-                    spacing: 28px;
-                    Plate {
-                        width: DS.scanner-keyboard-width;
-                        height: DS.scanner-key-height;
-                        KeypadRow { word: "CONTRAST"; minus: DS.scanner-band-dark; plus: DS.scanner-band-light; }
-                    }
-                    Plate {
-                        width: DS.scanner-keyboard-width;
-                        height: DS.scanner-key-height;
-                        KeypadRow { word: "WARMTH"; minus: DS.scanner-band-cool; plus: DS.scanner-band-warm; }
-                    }
                 }
             }
             Section {

@@ -182,11 +182,11 @@ fade and the chrome stays. The picker's field wears the same face.
   the on-light ink on a light cap (`grip-turn`). It grows by
   a scale on the rise spring, so its raster is drawn once, its edge darkening from `idle-relief` to whole.
 - **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
-  the hand; the stepped slider's knob carries its grip too. Every slider, continuous or stepped, stands between
+  the hand. Every slider stands between
   a − and a + keycap as tall as the knob (`SliderStyle.step-key`), in the interface's keycap grey and neutral
   ink, never on Tab's path: a press is `SliderStyle.press` (three) of its value editor's steps, so three shown
   units, one undo step, no repeat while held; its tooltip names the slider, the way and the press
-  (`press-reads`, from `Readouts.pressed`). AppKit's press, continuous or stepped: the knob pressed is
+  (`press-reads`, from `Readouts.pressed`). AppKit's press: the knob pressed is
   grabbed where it stands, a press on the rail lands it under the pointer, ⌥ keeps it put; a press gives it
   the keyboard unringed, Tab or an arrow acting on it rings it. The hand on the row grows the knob and lights
   the value; the rail's tooltip tells its double click back to rest. The value is a field: its box, a field

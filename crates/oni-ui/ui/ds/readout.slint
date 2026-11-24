@@ -6,13 +6,13 @@ import { Button, ButtonKind, ButtonSize } from "button.slint";
 import { Icons } from "icons.slint";
 import { Outside } from "outside.slint";
 
-// A readout as Rust reads it. `steps`: from the readout to a number typed over it, `per` readout units
-// a step or, at 0, one unit of its last digit, 0 when either holds no number; `number`: the figure alone;
-// `pressed`: `steps` such steps in the readout's unit, unsigned, empty where the readout holds no number.
+// A readout as Rust reads it. `steps`: from the readout to a number typed over it, one unit of its last
+// digit a step, 0 when either holds no number; `number`: the figure alone; `pressed`: `steps` such steps
+// in the readout's unit, unsigned, empty where the readout holds no number.
 export global Readouts {
-    pure callback steps(readout: string, typed: string, per: float) -> int;
+    pure callback steps(readout: string, typed: string) -> int;
     pure callback number(readout: string) -> string;
-    pure callback pressed(readout: string, per: float, steps: int) -> string;
+    pure callback pressed(readout: string, steps: int) -> string;
 }
 
 // The value edited on one face: its figure alone between a minus and a plus, each a step of one shown

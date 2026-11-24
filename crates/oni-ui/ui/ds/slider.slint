@@ -1,4 +1,4 @@
-// `DSSlider`, continuous or in whole steps: the readout above a rail and its knob.
+// `DSSlider`: the readout above a rail and its knob.
 import { Space, Motion, ButtonStyle, SliderStyle, DialStyle } from "theme.slint";
 import { Look, Button } from "button.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
@@ -8,12 +8,6 @@ import { ValueHeader, Readouts } from "readout.slint";
 import { Outside } from "outside.slint";
 import { Dial } from "dial.slint";
 import { Icons } from "icons.slint";
-
-// A number typed over a slider's readout, which Rust reads: the steps that reach it from the readout,
-// `per` readout units a step or, at 0, one unit of its last digit; 0 when either holds no number.
-export global Typing {
-    pure callback steps(readout: string, typed: string, per: float) -> int;
-}
 
 // A slider's keycap beside its rail, the interface's grey: `SliderStyle.press` steps a press. Its glyph,
 // Trinil's minus or plus, names no slider, so assistive tools read its help, which names the way and the step.
@@ -32,7 +26,7 @@ component StepKey inherits Button {
 }
 
 // `DSSlider`: the readout, then a track between a − and a + keycap, whose row grabs and to which Tab alone
-// gives the keyboard; Rust holds the value and its timing. `stepped`: whole steps from `lowest` to `highest`.
+// gives the keyboard; Rust holds the value and its timing.
 export component Slider inherits VerticalLayout {
     in property <int> field;
     in property <string> label;
@@ -50,12 +44,8 @@ export component Slider inherits VerticalLayout {
     // The readout above the track; a help card's demo shows the track alone, as it shows no words.
     in property <bool> header: true;
     in property <Look> look: Look.live;
-    in property <bool> stepped;
-    in property <int> value;
     in property <int> lowest;
     in property <int> highest;
-    // What one whole step reads in the readout's unit, so a number typed over it finds its steps.
-    in property <float> step-reads;
     // A turn: a ring's scale from `lowest` to `highest` in the readout's unit, moving with the hand, so
     // a drag right brings the lower figures under its index; a press never jumps it.
     in property <bool> dial;
@@ -64,7 +54,7 @@ export component Slider inherits VerticalLayout {
     in property <float> rest: -1;
     in property <string> help: @tr("Double-click to bring it back to rest");
     // What a key's press moves, in the readout's unit: `SliderStyle.press` of the value editor's steps.
-    out property <string> press-reads: Readouts.pressed(root.readout, root.stepped ? root.step-reads : 0, SliderStyle.press);
+    out property <string> press-reads: Readouts.pressed(root.readout, SliderStyle.press);
     // The minus and plus keys' tooltips: the slider, the way and the step.
     in property <string> minus-help: root.press-reads == "" ? @tr("{} −: lower", root.label) : @tr("{} −: lower by {}", root.label, root.press-reads);
     in property <string> plus-help: root.press-reads == "" ? @tr("{} +: higher", root.label) : @tr("{} +: higher by {}", root.label, root.press-reads);
@@ -74,16 +64,12 @@ export component Slider inherits VerticalLayout {
     callback release(int);
     // Rust answers whether the scroll runs along the track; one across it is left to the panel.
     callback scroll(int, length, length, length, bool) -> bool;
-    // An arrow's or accessibility's steps, a stepped slider's every move: whole steps, or the readout's
-    // last shown digit on a continuous one, or a notch where its track is not even in that digit.
+    // An arrow's or accessibility's steps: the readout's last shown digit, or a notch where the track is
+    // not even in that digit.
     callback step(int, int);
-    // A number typed over a continuous slider's readout: units of its last shown digit.
+    // A number typed over the readout: units of its last shown digit.
     callback typed(int, int);
     callback reset();
-    // A press on a stepped rail holds the edit, so a whole slide is one step to undo.
-    callback held(bool);
-    // The step under the hand while it slides, ahead of the value the store answers.
-    property <int> hand;
     // The hand on the rail or holding the knob, as a demo shows it: the knob grows, the rail deepens; on
     // the slider's whole line, its keys and the room between them, its hues show whole.
     property <bool> handled: root.enabled && (area.has-hover || area.held || root.look != Look.live);
@@ -99,8 +85,8 @@ export component Slider inherits VerticalLayout {
         lull.restart();
         root.step(root.field, by);
     }
-    // ⇧'s step with an arrow: three on a stepped slider, ten on a continuous one.
-    property <int> big: root.stepped ? 3 : 10;
+    // ⇧'s step with an arrow.
+    property <int> big: 10;
     property <int> span: max(1, root.highest - root.lowest);
     // The travel a drag or a scroll measures against, and its sense: the ring's scale moves one for one
     // under the hand at its index.
@@ -134,27 +120,15 @@ export component Slider inherits VerticalLayout {
     accessible-enabled: root.enabled;
     accessible-action-increment => { root.nudge(1); }
     accessible-action-decrement => { root.nudge(-1); }
-    property <float> at: root.stepped ? ((area.held ? root.hand : root.value) - root.lowest) / root.span : clamp(root.fraction, 0, 1);
+    property <float> at: clamp(root.fraction, 0, 1);
     // What the rail and the knob show: sprung on `settle` for a value from elsewhere, never under the hand.
     property <float> shown: root.at;
     animate shown { duration: area.held || area.scrolling ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
-    pure function step-at(x: length) -> int {
-        root.lowest + round(clamp(x / max(1px, track.width), 0, 1) * (root.highest - root.lowest))
-    }
-    // The step under a stepped drag, `dx` from the press, held at rest as a continuous drag is.
-    pure function step-held(dx: length) -> int {
-        root.step-at(root.detented(area.start-at, (area.start + dx) / max(1px, track.width)) * track.width)
-    }
-    // The steps from the readout to a number typed over it, held on a stepped slider's range; Return
-    // gives the photos the keyboard back, a press elsewhere has given it on already.
+    // The steps from the readout to a number typed over it; Return gives the photos the keyboard back,
+    // a press elsewhere has given it on already.
     function type-in(text: string) {
-        let by = Readouts.steps(root.readout, text, root.stepped ? root.step-reads : 0);
-        if (root.stepped) {
-            let reach = clamp(root.value + by, root.lowest, root.highest) - root.value;
-            if (reach != 0) {
-                root.nudge(reach);
-            }
-        } else if (by != 0) {
+        let by = Readouts.steps(root.readout, text);
+        if (by != 0) {
             root.stepping = true;
             lull.restart();
             root.typed(root.field, by);
@@ -224,7 +198,7 @@ export component Slider inherits VerticalLayout {
                     enabled: root.enabled;
                     in-out property <bool> held;
                     property <bool> fine;
-                    // AppKit's press, continuous or stepped: the knob grabbed where it stands, the rail landing it
+                    // AppKit's press: the knob grabbed where it stands, the rail landing it
                     // under the pointer, ⌥ keeping it put; the drag measures from `origin`, the value was at `start`.
                     property <length> start;
                     property <float> start-at;
@@ -233,55 +207,30 @@ export component Slider inherits VerticalLayout {
                     in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && (root.dial || abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2);
                     mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                    double-clicked => {
-                        if (root.stepped) { root.reset(); }
-                    }
                     pointer-event(event) => {
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
                             self.fine = event.modifiers.alt;
                             self.start = parent.width * root.at;
                             self.start-at = root.at;
                             self.origin = self.fine || self.over-knob ? self.mouse-x : self.start;
-                            if (root.stepped) {
-                                root.hand = root.step-held(self.mouse-x - self.origin);
-                                self.held = true;
-                                root.held(true);
-                                if (root.hand != root.value) {
-                                    root.step(root.field, root.hand - root.value);
-                                }
-                            } else {
-                                self.held = !root.press(root.field, self.fine);
-                                if (self.held && self.origin != self.mouse-x) {
-                                    root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
-                                }
+                            self.held = !root.press(root.field, self.fine);
+                            if (self.held && self.origin != self.mouse-x) {
+                                root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
                             }
-                        } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
-                            if (root.stepped) {
-                                if (self.held) {
-                                    self.held = false;
-                                    root.held(false);
-                                }
-                            } else if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
-                                self.held = false;
-                                root.release(root.field);
-                            }
+                        } else if ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel) {
+                            self.held = false;
+                            root.release(root.field);
                         } else if (event.kind == PointerEventKind.move) {
                             self.fine = event.modifiers.alt;
                         }
                     }
                     moved => {
-                        if (self.held && root.stepped) {
-                            let next = root.step-held(self.mouse-x - self.origin);
-                            if (next != root.hand) {
-                                root.step(root.field, next - root.hand);
-                                root.hand = next;
-                            }
-                        } else if (self.held) {
+                        if (self.held) {
                             root.drag(root.field, root.travel(self.mouse-x - self.origin), root.reach, self.fine);
                         }
                     }
                     scroll-event(event) => {
-                        if (!root.stepped && root.scroll(root.field, event.delta-x * root.sense, event.delta-y, root.reach, event.modifiers.alt)) {
+                        if (root.scroll(root.field, event.delta-x * root.sense, event.delta-y, root.reach, event.modifiers.alt)) {
                             self.scrolling = true;
                             still.restart();
                             return EventResult.accept;
