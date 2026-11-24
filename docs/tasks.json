@@ -13076,5 +13076,12 @@
     "title": "The one-off look and probe examples leave: brightness, colour and Lighting strips, paper black, enlarger states, slide paper, heal probe and the dust census",
     "status": "done",
     "detail": "Each served one investigation whose outcome is logged (Brightness #3280, the heal #2400, auto De-dust #1075/#1700/#1982, Paper blacks #3066/#3092, the slide paper #3234, the Lighting and colour strips #3610-#3616, the enlarger states #3340-#3343); no script, doc or check runs them, yet every API change had to keep them compiling under scripts/lint. 832 lines; any one comes back from git when an investigation needs it. No render or setting moves: they are auto-discovered examples, outside the app and the tests."
+  },
+  {
+    "id": 3776,
+    "type": "chore",
+    "title": "The Apple-against-LibRaw decoder research tools leave: decoder_fit, blocks and dump",
+    "status": "done",
+    "detail": "decoder_fit fitted LibRaw to the CIRAWFilter dumps the Swift app wrote, blocks and dump wrote the matching LibRaw grids and RenderDump files; they served the camera-matrix decision, withdrawn on 2026-11-02, and their driver scripts/decoder-gap is gone. 208 lines; nothing in crates or scripts ran them. docs/research/decoder-apple-vs-libraw.md stays as history with a line saying where they went. No render moves: examples only."
   }
 ]

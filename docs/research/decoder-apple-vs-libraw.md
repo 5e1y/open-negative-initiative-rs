@@ -4,6 +4,8 @@ Measured on 2026-10-20 (#165) on the reference roll's test copy (Nikon Z f, 38 N
 negative), one Lumix S1R negative (`P1072392.RW2`) and one Fujifilm RAF positive scene. Every number
 below comes from `scripts/decoder-gap/run`; nothing in the app changed.
 
+History: the tools it names (`decoder-gap`, `oni-decode/examples/{blocks,decoder_fit,dump}.rs`) left with the camera matrices; git holds them (#3776).
+
 ## Short answer
 
 - **The lean is real and it is red plus yellow.** On roll #8, opened in the Rust app with the
