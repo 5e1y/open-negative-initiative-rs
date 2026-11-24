@@ -46,9 +46,17 @@ fn the_gpu_reads_a_scan_back_to_its_dyes_as_its_reference_does() {
     let (w, h) = (29, 17);
     let mut pixels: Vec<V4> = noise(w, h, 5, -3.5, 0.2).iter().map(|q| [10f32.powf(q[0]), 10f32.powf(q[1]), 10f32.powf(q[2]), q[3]]).collect();
     // A black scan under the floor, a light past the open lamp under the least amount, a dense one past the most, a
-    // saturated colour, alpha carried.
+    // saturated colour, alpha carried, and a dense blue whose red is under zero, past the dyes' reach: its last steps miss
+    // more and are refused, the damping rising.
     let open = k.gain.map(|v| 1.0 / v);
-    let edges: [V4; 5] = [[0.0, -0.01, 0.0, 1.0], [100.0 * open[0], 100.0 * open[1], 100.0 * open[2], 1.0], [1e-7, 1e-7, 1e-7, 1.0], [0.5, 1e-3, 1e-4, 1.0], [0.2, 0.1, 0.05, 0.25]];
+    let edges: [V4; 6] = [
+        [0.0, -0.01, 0.0, 1.0],
+        [100.0 * open[0], 100.0 * open[1], 100.0 * open[2], 1.0],
+        [1e-7, 1e-7, 1e-7, 1.0],
+        [0.5, 1e-3, 1e-4, 1.0],
+        [0.2, 0.1, 0.05, 0.25],
+        scan_of(&s, [-6e-4, 6e-4, 2e-2]),
+    ];
     pixels[..edges.len()].copy_from_slice(&edges);
     let reference = mapped(&pixels, |q| cpu::dye_amounts(q, &k, &scanned.table));
     let read = |p: V4| amounts(p);
@@ -65,6 +73,100 @@ fn the_gpu_reads_a_scan_back_to_its_dyes_as_its_reference_does() {
     let held = whole(&mut g, &Image::new(&source).then_reading(stages::dye_amounts(&k), &[Image::new(&still)]));
     let guessed = mapped(&pixels, |q| cpu::dye_amounts(q, &k, &clear));
     judge("a solve no dye moves", &mapped(&held, read), &mapped(&guessed, read), &mapped(&reference, read));
+}
+
+/// The solve read in working Rec. 2020 rather than as the observer sees: its functions' negative lobes put a dense blue's
+/// red at zero or under, out of the dyes' reach. The twin of the checks on a light past that reach.
+fn in_working(k: &DyeAmounts, table: &[V4]) -> (DyeAmounts, Vec<V4>) {
+    let [[a, b, c], [d, e, f], [g, h, i]] = k.to_seen;
+    let det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    let back = [[e * i - f * h, c * h - b * i, b * f - c * e], [f * g - d * i, a * i - c * g, c * d - a * f], [d * h - e * g, b * g - a * h, a * e - b * d]];
+    let n = k.bands;
+    let weights = table[n..].iter().map(|w| {
+        let r: [f32; 3] = std::array::from_fn(|r| (0..3).map(|c| back[r][c] * w[c]).sum::<f32>() / det);
+        [r[0], r[1], r[2], 0.0]
+    });
+    let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    (DyeAmounts { to_seen: identity, ..k.clone() }, table[..n].iter().copied().chain(weights).collect())
+}
+
+/// CIELAB of a screen's linear Rec. 2020 light, its white D65's.
+fn cielab(v: [f32; 3]) -> [f32; 3] {
+    const XYZ: [[f32; 3]; 3] = [[0.636_958, 0.144_617, 0.168_881], [0.262_700, 0.677_998, 0.059_302], [0.0, 0.028_073, 1.060_985]];
+    const WHITE: [f32; 3] = [0.950_47, 1.0, 1.088_83];
+    let f = |t: f32| if t > (6.0f32 / 29.0).powi(3) { t.cbrt() } else { t / (3.0 * (6.0f32 / 29.0).powi(2)) + 4.0 / 29.0 };
+    let [x, y, z]: [f32; 3] = std::array::from_fn(|r| f((0..3).map(|c| XYZ[r][c] * v[c].max(0.0)).sum::<f32>() / WHITE[r]));
+    [116.0 * y - 16.0, 500.0 * (x - y), 200.0 * (y - z)]
+}
+
+/// The owner's blue sign as the scan reads it, the model's light: its mean and each channel's noise, a standard deviation.
+const SIGN: [f32; 3] = [7.5e-4, 1.27e-3, 9.8e-3];
+const SIGN_NOISE: [f32; 3] = [6.2e-4, 2.8e-4, 2.5e-3];
+
+/// The screen's CIELAB of amounts `a`, as `s` shows them.
+fn screen(a: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
+    let p = projector::shown([10f32.powf(-a[0]), 10f32.powf(-a[1]), 10f32.powf(-a[2]), 1.0], s, VELVIA);
+    cielab([p[0], p[1], p[2]])
+}
+
+fn delta_e(a: [f32; 3], b: [f32; 3]) -> f32 {
+    (0..3).map(|c| (a[c] - b[c]).powi(2)).sum::<f32>().sqrt()
+}
+
+#[test]
+fn a_light_leaving_the_dyes_reach_takes_its_neighbours_colour() {
+    let s = slide();
+    let scanned = projection::scanned(VELVIA);
+    let k = projector::scanned(&s, VELVIA);
+    // The sign's blue, its red falling past the dyes' reach and through the sensor's black to under zero.
+    let ramp: Vec<[f32; 3]> = (0..=4000).map(|i| [SIGN[0] - 2e-3 * (i as f32 / 4000.0 - 0.5), SIGN[1], SIGN[2]]).collect();
+    let leap = |k: &DyeAmounts, table: &[V4]| {
+        let shown: Vec<[f32; 3]> = ramp.iter().map(|l| screen(cpu::amounts(*l, k, table), &s)).collect();
+        (shown.windows(2).map(|w| delta_e(w[0], w[1])).fold(0.0, f32::max), shown[0], shown[ramp.len() - 1])
+    };
+    let (worst, first, last) = leap(&k, &scanned.table);
+    println!("the sign's red from {:.1e} to {:.1e}: on the screen Lab {first:?} to {last:?}, the most one step of {:.0e} moves it {worst:.3} ΔE", ramp[0][0], ramp[ramp.len() - 1][0], 2e-3 / 4000.0);
+    assert!(worst < 0.1, "{worst}");
+    // Twin: read in working Rec. 2020, the solve leaps.
+    let (working, table) = in_working(&k, &scanned.table);
+    let (twin, ..) = leap(&working, &table);
+    println!("  read in working Rec. 2020: {twin:.1} ΔE");
+    assert!(twin > 10.0, "{twin}");
+}
+
+#[test]
+fn a_noisy_saturated_blue_is_projected_without_speckles() {
+    let s = slide();
+    let scanned = projection::scanned(VELVIA);
+    let k = projector::scanned(&s, VELVIA);
+    // The sign's blue with its noise, uniform at the measured deviation: its red crosses zero.
+    let (w, h) = (96usize, 96usize);
+    let light: Vec<[f32; 3]> = noise(w as u32, h as u32, 11, -1.0, 1.0).iter().map(|q| std::array::from_fn(|c| SIGN[c] + q[c] * SIGN_NOISE[c] * 3f32.sqrt())).collect();
+    // Pixels whose screen colour lies more than 10 ΔE from the median of its eight neighbours, each Lab axis alone.
+    let speckles = |k: &DyeAmounts, table: &[V4]| {
+        let lab: Vec<[f32; 3]> = light.iter().map(|l| screen(cpu::amounts(*l, k, table), &s)).collect();
+        let mut count = 0;
+        for y in 1..h - 1 {
+            for x in 1..w - 1 {
+                let median: [f32; 3] = std::array::from_fn(|c| {
+                    let mut v: Vec<f32> = (0..9).filter(|n| *n != 4).map(|n| lab[(y + n / 3 - 1) * w + x + n % 3 - 1][c]).collect();
+                    v.sort_by(|a, b| a.total_cmp(b));
+                    (v[3] + v[4]) / 2.0
+                });
+                count += usize::from(delta_e(lab[y * w + x], median) > 10.0);
+            }
+        }
+        count
+    };
+    let (left, twin) = (speckles(&k, &scanned.table), {
+        let (working, table) = in_working(&k, &scanned.table);
+        speckles(&working, &table)
+    });
+    println!("a noisy blue sign of {} pixels: {left} speckles; read in working Rec. 2020, {twin}", (w - 2) * (h - 2));
+    // The few left are the scan's own noise: a blue drawn at its extreme swings b* that far in so dark a blue.
+    assert!(left * 1000 <= (w - 2) * (h - 2), "{left}");
+    // Twin: read in working Rec. 2020, a pixel in ten speckles at least.
+    assert!(twin * 10 > (w - 2) * (h - 2), "{twin}");
 }
 
 #[test]
