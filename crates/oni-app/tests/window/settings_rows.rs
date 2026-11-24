@@ -9,7 +9,6 @@ use oni_i18n::{Language, tr};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 use crate::common::{self, Placed};
@@ -28,8 +27,7 @@ const ROWS: [(i32, &[&str]); 2] = [
 ];
 
 pub(crate) fn every_settings_key_stays_on_its_page_in_every_language() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
@@ -92,8 +90,7 @@ pub(crate) fn every_settings_key_stays_on_its_page_in_every_language() {
 /// A row of keys too long for its width lays them on lines a group's gap apart, the words under it below
 /// the last; twin: wide enough, the same keys keep one line.
 pub(crate) fn a_row_too_long_for_its_width_lays_its_keys_on_lines_apart() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let probe = RowsProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

@@ -4,12 +4,8 @@
 use oni_app::InfoKind;
 use oni_app::PanelTab;
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, PanelState};
-use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -41,28 +37,15 @@ fn at_the_columns_inset(keys: &[common::Placed]) -> bool {
 }
 
 pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the panel's frame is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-panel-frame-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("panel-frame");
+    let folder = root.scans();
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(WIDTH as u32, HEIGHT));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(WIDTH as u32, HEIGHT).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
 
     // The gallery's column: its blocks start where the editor's do, a panel's width from the edge.
     lib.invoke_tile_clicked(0, false, false);
@@ -98,5 +81,4 @@ pub(crate) fn the_right_column_keeps_its_width_and_its_rows_keep_their_keys() {
     let mut pushed = keys.clone();
     pushed[5].x += 3.0;
     assert!(!at_the_columns_inset(&pushed));
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -12,7 +12,8 @@ use crate::panel_bindings::opened_with;
 
 pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     let seed = |support: &std::path::Path| common::plain_tiff(&support.with_file_name("Scans").join("B.tif"), 96, 64, 0.3);
-    let Some((rig, shell, root)) = opened_with("frame-gesture", seed) else { return };
+    let Some(app) = opened_with("frame-gesture", seed) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, framing, c) = (w.global::<PanelState>(), w.global::<Framing>(), w.global::<Canvas>());
     let escape: SharedString = Key::Escape.into();
@@ -92,6 +93,4 @@ pub(crate) fn a_frame_held_ends_with_its_overlay_and_its_photo() {
     let own = geometry();
     rig.key(&escape);
     assert_eq!(geometry(), own, "Esc lays nothing of A's window on B");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

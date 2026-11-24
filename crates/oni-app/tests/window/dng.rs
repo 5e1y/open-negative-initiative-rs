@@ -2,11 +2,8 @@
 //! converter's download first when it is missing; the NEFs go to the bin or stay unlisted, and the
 //! roll comes back on the DNGs.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Converting, DngStage, Library};
-use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -34,12 +31,7 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
         return eprintln!("the conversion's stand-in is a shell script: not exercised here");
     }
     let Some(samples) = oni_fixtures::present(oni_fixtures::NIKON_HE_DIR, "high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up") else { return };
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the conversion is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-dng-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("dng");
     let (folder, bin) = (root.join("Scans"), root.join("Bin"));
     std::fs::create_dir_all(&bin).unwrap();
     let (first, third) = (folder.join("DSC_0001.NEF"), folder.join("DSC_0003.NEF"));
@@ -48,21 +40,9 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
     std::fs::copy(samples.join("Nikon_Z8_raw_high_efficiency_hight.NEF"), &third).unwrap();
     // No converter yet: the folder's reading offers Adobe's download.
     unsafe { std::env::set_var("ONI_DNG_CONVERTER", root.join("absent")) };
-    let rig = common::rig(std::env::temp_dir());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let binned = bin.clone();
-    let options = Options {
-        support: root.join("Support"),
-        caches: root.join("Caches"),
-        picker: Box::new(|| None),
-        require_roll: true,
-        discard: Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap()))),
-        ..Options::default()
-    };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| { o.require_roll = true; o.discard = Box::new(move |p: &Path| std::fs::rename(p, binned.join(p.file_name().unwrap()))); }).show() else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let sheet = w.global::<Converting>();
@@ -85,7 +65,7 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
 
     // A frame opened from an unprepared folder enters its roll, which offers the HE NEFs among its
     // frames; with the converter there the offer converts, then the roll comes back on the DNGs.
-    unsafe { std::env::set_var("ONI_DNG_CONVERTER", stand_in(&root)) };
+    unsafe { std::env::set_var("ONI_DNG_CONVERTER", stand_in(root)) };
     w.global::<Library>().invoke_tile_opened(0);
     rig.until("the roll's offer", Duration::from_secs(60), || ctl.state.borrow().preparing() && sheet.get_shown());
     assert!(sheet.get_stage() == DngStage::Offer && sheet.get_ready(), "with the converter there, the offer converts");
@@ -108,6 +88,4 @@ pub(crate) fn high_efficiency_nefs_are_offered_converted_and_their_dngs_taken_up
     rig.until("the NEF binned", Duration::from_secs(60), || bin.join("DSC_0003.NEF").exists());
     assert!(!third.exists());
     rig.until("the listing without it", Duration::from_secs(60), || listed() == ["DSC_0001.dng", "DSC_0002.tif", "DSC_0003.dng"]);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

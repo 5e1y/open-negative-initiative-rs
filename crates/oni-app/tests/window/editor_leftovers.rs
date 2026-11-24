@@ -26,8 +26,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 900, 600, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     // A named system board on the Mac, so the copy crosses a relaunch without touching the clipboard.

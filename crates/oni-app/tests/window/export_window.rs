@@ -124,8 +124,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the export surface is not exercised"),
     };
-    let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let window = rig.window.clone();
     let root = scratch();
     let folder = mirror(&roll, &root);

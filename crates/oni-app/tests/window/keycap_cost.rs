@@ -2,20 +2,14 @@
 //! frame; the numbers are printed for the report.
 
 use oni_app::KeyProbe;
-use oni_app::app::{self, Options, Shell};
-use oni_core::{Archive, EditorStore};
+use oni_app::app::{self};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
 
 const SCALE: f32 = 2.0;
-
-fn shots() -> PathBuf {
-    std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"))
-}
 
 fn renders() -> u64 {
     oni_app::keycaps::stats().renders
@@ -35,26 +29,13 @@ fn frames(rig: &common::Rig, frames: usize) -> Vec<u64> {
 }
 
 pub(crate) fn a_screen_s_keys_are_drawn_once_and_never_again_while_still() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the keys' cost is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-keycap-cost-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("keycap-cost");
+    let folder = root.scans();
     common::plain_tiff(&folder.join("Roll").join("A.tif"), 48, 32, 0.3);
     common::plain_tiff(&folder.join("Roll").join("B.tif"), 48, 32, 0.5);
-    let rig = common::rig(shots());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
-    rig.window.set_size(PhysicalSize::new((1440.0 * SCALE) as u32, (900.0 * SCALE) as u32));
-    shell.window.show().unwrap();
-    let ctl = shell.ctl.clone();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    let Some(app) = common::launch(root).size(1440, 900).scale(SCALE).show() else { return };
+    let common::App { rig, shell, .. } = &app;
+    app.read(&folder);
     let tile = app::tiles(&shell.window).into_iter().find(|t| t.caption == "A").expect("A is shown");
     shell.window.global::<oni_app::Library>().invoke_tile_opened(tile.index);
     rig.settle();
@@ -75,7 +56,7 @@ pub(crate) fn a_screen_s_keys_are_drawn_once_and_never_again_while_still() {
     assert!(asked > 10 && drawn > 0, "the editor shows its keys as keycaps ({asked} asked)");
     rig.shot("keycap-cost-editor");
     // Still, a hundred frames redraw the screen and render no key.
-    let still: u64 = frames(&rig, 100).iter().sum();
+    let still: u64 = frames(rig, 100).iter().sum();
     assert_eq!(still, 0, "a still key is never drawn again");
     // A slider's knob is a keycap that slides: dragged, then sprung home by an undo, it is drawn no more.
     let g = shell.window.global::<oni_app::Store>();
@@ -85,20 +66,20 @@ pub(crate) fn a_screen_s_keys_are_drawn_once_and_never_again_while_still() {
     let dragged: u64 = (1..=20)
         .map(|i| {
             g.invoke_drag(field.index(), i as f32 * 4.0, 300.0, false);
-            frames(&rig, 1)[0]
+            frames(rig, 1)[0]
         })
         .sum();
     g.invoke_release(field.index());
     // Twin: the knob did move, so a raster tied to its place would have shown here.
     assert!((app::fraction(&g, field) - before).abs() > 0.05, "the drag moves the knob");
     rig.chord(slint::platform::Key::Control, "z");
-    let sprung: u64 = frames(&rig, 60).iter().sum();
+    let sprung: u64 = frames(rig, 60).iter().sum();
     println!("a slider dragged 20 frames and sprung home over 60: {} knob renders", renders() - start);
     assert_eq!(dragged + sprung, 0, "a knob is drawn once, wherever it slides");
 }
 
 pub(crate) fn a_press_draws_one_key_a_frame_and_nothing_once_it_rests() {
-    let rig = common::rig(shots());
+    let rig = common::rig();
     let probe = KeyProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });

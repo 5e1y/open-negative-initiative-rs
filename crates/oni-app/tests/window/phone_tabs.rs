@@ -9,7 +9,7 @@ use oni_core::{Archive, EditorStore};
 use oni_link_ffi::{Command, DisplayState, Face, PanelTab, Param, RemoteSession, generate_identity};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -64,8 +64,7 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_on_the_one_face() {
     std::fs::create_dir_all(root.join("Roll")).unwrap();
     let frame = root.join("Roll").join("A.NEF");
     std::fs::write(&frame, b"not a raw").unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let engine = Engine::shared(&gpu);
     let shell = launch(&rig, &engine, &root);
     let ctl = shell.ctl.clone();

@@ -2,10 +2,8 @@
 //! sets them, the frames' previews and the measure laid through the roll's custom mask.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::flat_fields;
 use oni_app::{Advice, Bar, Library, MaskDialog, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, Model};
@@ -103,13 +101,8 @@ fn the_flat_field_step_reads_its_check_and_its_caution(rig: &common::Rig, w: &on
 }
 
 pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare the Roll's masks are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-masks-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare-masks");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     for roll in ["R1", "R2", "R3"] {
         for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.7), ("C.tif", 0.5)] {
             common::graded_tiff(&scans.join(roll).join(name), 120, 80, tone);
@@ -125,16 +118,9 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     std::fs::write(&noise, b"no picture in here").unwrap();
     let path = |roll: &str, n: &str| PathBuf::from(oni_library::paths::canonical(&scans.join(roll).join(n)));
     let chosen: Rc<RefCell<Option<PathBuf>>> = Rc::new(RefCell::new(None));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
     let asked = chosen.clone();
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), mask_picker: Box::new(move || asked.borrow().clone()), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.mask_picker = Box::new(move || asked.borrow().clone())).show() else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p, advice, dialog) = (w.global::<Library>(), w.global::<Preparing>(), w.global::<Advice>(), w.global::<MaskDialog>());
@@ -171,7 +157,7 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     assert_eq!(p.get_step(), 1);
     assert!(!p.get_can_take_flat() && !p.get_loading_flat(), "no frame picked yet");
     let bare = tile(0);
-    the_flat_field_step_reads_its_check_and_its_caution(&rig, w, &p);
+    the_flat_field_step_reads_its_check_and_its_caution(rig, w, &p);
 
     // Load…: a cancelled panel does nothing; a file no reader takes says so; the panel's picture
     // becomes the roll's mask, its Amount as the hand left it, and no offer to move it out.
@@ -283,5 +269,4 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
         rig.until("the mask landed", Duration::from_secs(30), || !p.get_loading_flat());
         assert!(p.get_flat_masked() && p.get_mask_title() == "panel");
     }
-    let _ = std::fs::remove_dir_all(&root);
 }

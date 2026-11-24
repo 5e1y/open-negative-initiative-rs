@@ -2,14 +2,11 @@
 //! press or the editor hands it to the photos, the gallery listing no editor control; the select in words.
 
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{Options, Shell};
 use oni_app::{FolderLine, Library, Navigator};
-use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
-use oni_library::paths::canonical;
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::{ComponentHandle, Model, SharedString};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common::{self, Placed};
@@ -49,30 +46,17 @@ fn selected(lib: &Library) -> Vec<String> {
 }
 
 pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the library column's edges and keys are not exercised"),
-    };
-    let made = std::env::temp_dir().join(format!("oni-app-column-edges-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&made);
-    std::fs::create_dir_all(&made).unwrap();
-    let root = PathBuf::from(canonical(&made));
-    let (home, volumes, support, caches) = (root.join("Home"), root.join("Volumes"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("column-edges").canonical();
+    let (home, volumes) = (root.join("Home"), root.join("Volumes"));
     for (name, tone) in [("A", 0.8), ("B", 0.6), ("C", 0.5), ("D", 0.4)] {
         common::linear_tiff(&home.join(format!("Scans/Roll 1/{name}.tif")), 64, 48, tone);
     }
     std::fs::create_dir_all(home.join("Scans/Roll 2")).unwrap();
     std::fs::create_dir_all(&volumes).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
-    let options = Options { support, caches, picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.computer = computer).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let lib = w.global::<Library>();
     shell.add(&home.join("Scans/Roll 1"));
@@ -93,7 +77,7 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
 
     // A click on a folder's row gives the rows the keyboard, named for the ring the picked row wears.
     let roll1 = common::the(w, AccessibleRole::ListItem, "Roll 1").middle();
-    common::click(&rig, w, roll1);
+    common::click(rig, w, roll1);
     rig.until("Roll 1 read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.settle();
     assert_eq!(common::focused_label(w), "Folders", "the click gave the rows the keyboard");
@@ -102,7 +86,7 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     // Twin: a press on the grid gives the photos the keyboard, whose arrow walks them.
     let right: SharedString = Key::RightArrow.into();
     let photo = common::placed_all(w, AccessibleRole::ListItem).into_iter().find(|e| e.x > edges.1).expect("a tile in the grid");
-    common::click(&rig, w, photo.middle());
+    common::click(rig, w, photo.middle());
     assert_ne!(common::focused_label(w), "Folders", "a press on the grid takes the keyboard from the rows");
     let first = selected(&lib);
     rig.key(&right);
@@ -110,7 +94,7 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
 
     // The rows given the keyboard again, and the editor opened and left by the mode's key with no press
     // between, as from the menu: the way back gives the photos the arrows.
-    common::click(&rig, w, common::the(w, AccessibleRole::ListItem, "Roll 1").middle());
+    common::click(rig, w, common::the(w, AccessibleRole::ListItem, "Roll 1").middle());
     rig.until("Roll 1 read once more", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert_eq!(common::focused_label(w), "Folders", "the rows hold the keyboard as the editor opens");
     ctl.act(oni_app::Act::ToggleMode);
@@ -131,10 +115,10 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     assert!(!common::placed_all(w, AccessibleRole::Slider).is_empty(), "the panel's sliders are listed beside a photo");
 
     // The select's menu says each layout in words; a line picked lays the tree so and names it.
-    common::click(&rig, w, select.middle());
+    common::click(rig, w, select.middle());
     rig.settle();
     common::in_popup(w, AccessibleRole::Button, "Show the Selected Photo");
-    common::click(&rig, w, common::in_popup(w, AccessibleRole::Button, "One per row").middle());
+    common::click(rig, w, common::in_popup(w, AccessibleRole::Button, "One per row").middle());
     rig.settle();
     assert_eq!(lib.get_tree_layout(), 2, "one per row picked");
     assert_eq!(common::placed(w, AccessibleRole::Button, "One per row").len(), 1, "the select names the layout picked");
@@ -152,33 +136,19 @@ pub(crate) fn the_column_lines_up_and_its_keyboard_shows_where_it_is() {
     rig.key(&right);
     assert!(!selected(&lib).is_empty() && selected(&lib) != before, "back from the editor the arrow walks the photos: {before:?}");
     assert_eq!(folds(w), kept, "and folds no folder");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&made);
 }
 
 /// An empty list says so where its first row would stand: at the list's top, on the rows' text inset,
 /// its hint beneath, the projects' as the favourites'; the favourites' view is a key lit while on.
 pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the column's empty lists are not exercised"),
-    };
-    let made = std::env::temp_dir().join(format!("oni-app-column-empty-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&made);
-    std::fs::create_dir_all(&made).unwrap();
-    let root = PathBuf::from(canonical(&made));
+    let root = common::Root::new("column-empty").canonical();
     let (home, volumes) = (root.join("Home"), root.join("Volumes"));
     common::linear_tiff(&home.join("Scans/A.tif"), 64, 48, 0.5);
     std::fs::create_dir_all(&volumes).unwrap();
     let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let computer = Computer { home: p(&home), volumes: p(&volumes) };
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.computer = computer).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     shell.add(&home.join("Scans"));
     rig.until("Scans read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some());
@@ -214,6 +184,4 @@ pub(crate) fn an_empty_list_speaks_at_its_top_on_the_rows_inset() {
     key.invoke_accessible_default_action();
     rig.settle();
     assert_eq!(told("Show Computer").0, Some(false), "folded, its heading says it shows them again");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&made);
 }

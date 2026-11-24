@@ -1,13 +1,10 @@
 //! A sheet hands the keyboard to its default key, named, so Return presses it and an assistive tool
 //! lands on it; the window's bar behind the sheet reads out of reach until it closes.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Advice, AppSettings, Confirm, Library, Presets, Told};
-use oni_core::{Archive, EditorStore};
 use i_slint_backend_testing::{AccessibleRole, ElementHandle, ElementRoot};
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::{ComponentHandle, SharedString};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -39,28 +36,16 @@ fn unnamed(w: &oni_app::MainWindow) -> usize {
 }
 
 pub(crate) fn a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_it() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the sheets' keys are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-sheet-keys-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("sheet-keys");
     let folder = root.join("Scans");
     common::linear_tiff(&folder.join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     // The evaluated window, wide enough for the bar's words.
-    rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 1017).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let presets = w.global::<Presets>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
@@ -146,5 +131,4 @@ pub(crate) fn a_sheets_default_key_holds_the_keyboard_and_the_bar_waits_behind_i
     settings().invoke_accessible_default_action();
     rig.pump();
     assert!(w.global::<AppSettings>().get_shown(), "twin: with no sheet, Settings opens");
-    let _ = std::fs::remove_dir_all(&root);
 }

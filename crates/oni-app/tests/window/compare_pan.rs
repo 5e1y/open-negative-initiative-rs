@@ -2,12 +2,8 @@
 //! same frame, while the pan inside the rendered margin asks no render that could carry it.
 
 use i_slint_backend_testing::ElementHandle;
-use oni_app::app::{Options, Shell};
-use oni_app::{Canvas, Library};
-use oni_core::{Archive, EditorStore};
+use oni_app::Canvas;
 use slint::ComponentHandle;
-use slint::platform::WindowEvent;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -24,31 +20,14 @@ fn near(a: [f32; 4], b: [f32; 4]) -> bool {
 }
 
 pub(crate) fn a_pan_a_resize_and_a_pinch_move_the_before_with_the_after() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Compare's pan is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-compare-pan-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("compare-pan");
+    let folder = root.scans();
     common::graded_tiff(&folder.join("A.tif"), 3000, 2000, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let canvas = w.global::<Canvas>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    let lib = w.global::<Library>();
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
 
     // Compare on at 100 %, the full resolution built and every render landed.
     ctl.act(oni_app::Act::Compare);
@@ -102,6 +81,4 @@ pub(crate) fn a_pan_a_resize_and_a_pinch_move_the_before_with_the_after() {
     ctl.act(oni_app::Act::Compare);
     rig.pump();
     assert!(canvas.get_split() < 0.0 && canvas.get_before().size().width == 0, "Compare off lets the before go");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

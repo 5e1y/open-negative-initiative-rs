@@ -9,7 +9,7 @@ use oni_link::PairingCode;
 use oni_link_ffi::{Command, Frame, LinkError, Param, RemoteSession, generate_identity, parse_pairing_code};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -61,13 +61,12 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     for name in ["A.NEF", "B.NEF"] {
         std::fs::write(root.join("Roll").join(name), b"not a raw").unwrap();
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     // A port of its own, kept as a code keeps one: the default is every ONI's on this machine, a
     // sibling check's included, and is taken by another between two launches.
     let own = std::net::TcpListener::bind("0.0.0.0:0").unwrap().local_addr().unwrap().port();
     std::fs::create_dir_all(support.join("Link")).unwrap();
     std::fs::write(support.join("Link").join("port.txt"), format!("{own}\n")).unwrap();
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let engine = Engine::shared(&gpu);
     let shell = launch(&rig, &engine, &root);
     let ctl = shell.ctl.clone();
@@ -201,8 +200,7 @@ pub(crate) fn the_switch_off_hides_the_link_and_listens_nowhere() {
     let _ = std::fs::remove_dir_all(&root);
     let support = root.join("Support");
     oni_app::phone::trust(&support, oni_link::Identity::generate().public()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let engine = Engine::shared(&gpu);
     let shell = |phone: bool| {
         let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));

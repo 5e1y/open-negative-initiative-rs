@@ -3,10 +3,7 @@
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Library;
-use oni_app::app::{Options, Shell};
-use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -17,13 +14,8 @@ const SCALE: f32 = 1.5;
 const PAD: f32 = 8.0;
 
 pub(crate) fn the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the column's held roll is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-column-pin-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Archive"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("column-pin");
+    let folder = root.join("Archive");
     for r in 1..=4 {
         let roll = folder.join("2026").join(format!("2026-08-18 {r}"));
         for i in 0..12 {
@@ -31,21 +23,13 @@ pub(crate) fn the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it() {
         }
         oni_library::folders::set_roll(Some(&oni_settings::Film::new(&format!("2026-08-18 {r}"))), &oni_library::paths::canonical(&roll)).unwrap();
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
     // A point at 1.5 device pixels, where the column lays the tree's box at a fractional one.
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: SCALE });
-    rig.window.set_size(slint::PhysicalSize::new(1920, 1200));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).scale(SCALE).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("the photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
@@ -66,6 +50,4 @@ pub(crate) fn the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it() {
     assert!(whole(held), "the held row on a whole device pixel: {held} at {SCALE}");
     assert!(!whole(laid) && held > laid && held - laid < 1.0 / SCALE + 0.01, "twin: the box laid between two: {laid}, held at {held}");
     println!("shot {}", rig.shot("column-pin").display());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

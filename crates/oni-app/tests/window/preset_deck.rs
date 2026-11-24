@@ -3,18 +3,15 @@
 //! preview their balance, and the preview leaves with the deck or under a sheet.
 
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
-use oni_app::{Library, Menus, PanelState, Presets};
+use oni_app::{Menus, PanelState, Presets};
 use oni_core::preset_parameters::{self as carries, WhiteBalance};
 use oni_core::presets::{self, Preset, Tint};
-use oni_core::{Archive, EditorStore};
 use oni_settings::PipelineSettings;
 use i_slint_backend_testing::AccessibleRole as Role;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::collections::BTreeSet;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -45,13 +42,8 @@ fn wheel(rig: &common::Rig, x: f32, y: f32, dx: f32, dy: f32) {
 }
 
 pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the deck is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-preset-deck-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("preset-deck");
+    let (folder, support) = (root.scans(), root.support());
     // A cast the automatic balance measures away, so its preview differs from the preset laid alone.
     common::pixels_tiff(&folder.join("A.tif"), 240, 160, |x, y| {
         let (u, v) = (x as f32 / 240.0, y as f32 / 160.0);
@@ -65,24 +57,12 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
         let preset = Preset::new(&format!("Look {i:02}"), parameters, Tint::ALL[i % Tint::ALL.len()], bright.clone());
         presets::save(&preset, &shelf).unwrap();
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let deck = w.global::<Presets>();
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    let lib = w.global::<Library>();
-    lib.invoke_tile_clicked(0, false, false);
-    lib.invoke_tile_clicked(0, false, false);
-    rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    app.edit_first();
     assert_eq!(deck.get_cards().row_count(), LOOKS);
 
     // Two automatic cards in a row, the first still measuring: the second previews the balance.
@@ -111,72 +91,72 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
 
     // The tab is a 24 pt target: its foot opens the deck, the canvas just above it does not.
     assert!(tab_at.height >= 24.0, "{tab_at:?}");
-    click(&rig, tab.0, tab_at.y - 3.0);
+    click(rig, tab.0, tab_at.y - 3.0);
     rig.settle();
     assert_eq!(first().1, rest_y, "twin: a click above the tab opens nothing");
-    click(&rig, tab.0, tab_at.y + tab_at.height - 2.0);
+    click(rig, tab.0, tab_at.y + tab_at.height - 2.0);
     rig.settle();
     assert!(first().1 < rest_y - CARD_H, "the tab's foot opens the deck");
-    click(&rig, tab.0, tab.1);
+    click(rig, tab.0, tab.1);
     rig.settle();
     assert_eq!(first().1, rest_y);
 
     // The tab alone answers while the deck is closed: neither the canvas's edge nor the tab's hover opens it.
-    move_to(&rig, x, rest_y - 200.0);
-    move_to(&rig, x, tab.1);
-    move_to(&rig, tab.0, tab.1);
+    move_to(rig, x, rest_y - 200.0);
+    move_to(rig, x, tab.1);
+    move_to(rig, tab.0, tab.1);
     assert_eq!(first().1, rest_y, "a hover on the tab leaves the deck closed");
-    click(&rig, tab.0, tab.1);
+    click(rig, tab.0, tab.1);
     rig.settle();
     let up_y = first().1;
     assert!(up_y < rest_y - CARD_H, "twin: a click on the tab opens it: {up_y} against {rest_y}");
     assert_eq!(common::the(w, Role::Button, "Presets").middle(), tab, "the tab stays under the pointer");
     assert!(!deck.get_saving(), "the tab saves nothing");
-    click(&rig, tab.0, tab.1);
+    click(rig, tab.0, tab.1);
     rig.settle();
     assert_eq!(first().1, rest_y, "a second click on the tab closes it");
-    click(&rig, tab.0, tab.1);
+    click(rig, tab.0, tab.1);
     rig.settle();
-    move_to(&rig, x, up_y + mid);
+    move_to(rig, x, up_y + mid);
     assert_eq!(first().1, up_y, "the pointer onto the cards keeps it open");
-    move_to(&rig, x, up_y - 200.0);
+    move_to(rig, x, up_y - 200.0);
     assert_eq!(first().1, rest_y, "the pointer off the deck closes it");
 
     // The "+" card lifts under the pointer in its bottom band and still takes the click there.
-    click(&rig, tab.0, tab.1);
+    click(rig, tab.0, tab.1);
     rig.settle();
     let bottom = up_y + LIFT + CARD_H - 3.0;
-    move_to(&rig, plus, bottom);
+    move_to(rig, plus, bottom);
     rig.shot("preset-deck-plus");
-    click(&rig, plus, bottom + 0.5);
+    click(rig, plus, bottom + 0.5);
     rig.settle();
     assert!(deck.get_saving(), "the \"+\" card's bottom band opens the save sheet");
     deck.invoke_save_cancelled();
     // The sheet took the pointer and closed the deck: the tab opens it again.
-    move_to(&rig, x, rest_y - 200.0);
-    click(&rig, tab.0, tab.1);
+    move_to(rig, x, rest_y - 200.0);
+    click(rig, tab.0, tab.1);
     rig.settle();
-    move_to(&rig, x0 - GAP / 2.0, up_y + mid);
-    click(&rig, x0 - GAP / 2.0, up_y + mid);
+    move_to(rig, x0 - GAP / 2.0, up_y + mid);
+    click(rig, x0 - GAP / 2.0, up_y + mid);
     rig.settle();
     assert!(!deck.get_saving(), "twin: the gap beside the card opens nothing");
 
     // A wheel over a card keeps the deck up and the card hovered; a vertical one scrolls the roll.
-    move_to(&rig, x, up_y + mid);
+    move_to(rig, x, up_y + mid);
     assert_eq!(deck.get_hovered(), 0);
-    wheel(&rig, x, up_y + mid, 0.0, 40.0);
+    wheel(rig, x, up_y + mid, 0.0, 40.0);
     assert_eq!(first(), (x0, up_y), "twin: the roll's start holds against a wheel towards it");
     assert_eq!(deck.get_hovered(), 0, "the wheel keeps the card hovered");
-    wheel(&rig, x, up_y + mid, 0.0, -40.0);
+    wheel(rig, x, up_y + mid, 0.0, -40.0);
     assert_eq!(first().1, up_y, "the wheel keeps the deck up");
     assert!(first().0 < x0 - 20.0, "a vertical wheel scrolls the roll: {} against {x0}", first().0);
-    wheel(&rig, x, up_y + mid, 0.0, 400.0);
+    wheel(rig, x, up_y + mid, 0.0, 400.0);
     assert_eq!(first().0, x0);
-    wheel(&rig, x, up_y + mid, -40.0, 0.0);
+    wheel(rig, x, up_y + mid, -40.0, 0.0);
     assert!(first().0 < x0 - 20.0, "a sideways wheel still scrolls the roll: {} against {x0}", first().0);
     assert_eq!(first().1, up_y, "and keeps the deck up");
-    wheel(&rig, x, up_y + mid, 400.0, 0.0);
-    move_to(&rig, x, rest_y - 200.0);
+    wheel(rig, x, up_y + mid, 400.0, 0.0);
+    move_to(rig, x, rest_y - 200.0);
     assert_eq!(first().1, rest_y);
 
     // The preview leaves with the deck, under Crop, and under the save sheet.
@@ -223,12 +203,12 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     assert_eq!(deck.get_form_balance(), 0, "the photo's own balance proposes Not carried");
     // The menu drops under its field: its third line, Automatic, is where the pointer finds it.
     let field = common::the(w, Role::Button, "Not carried").middle();
-    click(&rig, field.0, field.1);
+    click(rig, field.0, field.1);
     rig.settle();
     println!("shot {}", rig.shot("preset-balance-menu").display());
     let automatic = common::in_popup(w, Role::Button, "Automatic WB (Temperature, Tint)");
     assert!(automatic.y > field.1, "the menu drops under its field: {automatic:?}");
-    click(&rig, automatic.middle().0, automatic.middle().1);
+    click(rig, automatic.middle().0, automatic.middle().1);
     rig.settle();
     assert_eq!(deck.get_form_balance(), 2, "Automatic picked under the field");
     deck.invoke_save_cancelled();
@@ -245,8 +225,7 @@ pub(crate) fn the_deck_opens_on_its_tab_and_answers_the_pointer() {
     assert!(deck.get_rows() == rows, "a keystroke keeps the rows' model");
     assert_eq!(deck.get_rows().row_data(0).unwrap().name.as_str(), "Renamed", "twin: the row shows the name typed");
     let name = common::the(w, Role::TextInput, "Preset name").middle();
-    click(&rig, name.0, name.1);
+    click(rig, name.0, name.1);
     rig.key("\n");
     assert!(!deck.get_editing(), "Return in a field is Done");
-    let _ = std::fs::remove_dir_all(&root);
 }

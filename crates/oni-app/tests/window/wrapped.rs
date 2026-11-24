@@ -1,14 +1,11 @@
 //! The year on film on the headless window: each gesture Swift notes lands in the journal, and
 //! "Show My Year on Film" reads it back as the deck, turned by a click or the arrows, Esc leaving.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Library, Menus, PanelState, Store, Wrapped};
-use oni_core::{Archive, EditorStore};
 use oni_library::journal::{Journal, Kind};
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -23,12 +20,7 @@ fn eyebrows(w: &Wrapped) -> Vec<String> {
 }
 
 pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the year on film is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-wrapped-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("wrapped");
     let (folder, support) = (root.join("Scans"), root.join("Support"));
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.6), ("C.tif", 0.4)] {
         common::linear_tiff(&folder.join(name), 96, 64, tone);
@@ -38,17 +30,10 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     parameters.insert("levelsGlobal".to_string());
     let preset = oni_core::presets::Preset::new("Portra warm", parameters, oni_core::presets::Tint::Amber, Default::default());
     oni_core::presets::save(&preset, &oni_core::presets::directory(&support)).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let journal = Journal::in_support(&support);
     let kinds = || journal.read().0.iter().map(|r| r.kind).collect::<Vec<_>>();
     let a = oni_library::paths::canonical(&folder.join("A.tif"));
@@ -169,5 +154,4 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     rig.roll_confirmed(&ctl, w);
     rig.until("the roll noted", Duration::from_secs(10), || kinds().contains(&Kind::Rolled));
     assert_eq!(journal.read().0.iter().find(|r| r.kind == Kind::Rolled).unwrap().value, 1);
-    let _ = std::fs::remove_dir_all(&root);
 }

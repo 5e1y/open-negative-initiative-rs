@@ -3,12 +3,9 @@
 //! own, and a tab of its tool's colour under it on the bar's bottom edge, as wide as the key, gone once it lets go.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Act, App, Bar, Library};
-use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -54,29 +51,16 @@ fn stacked(rig: &common::Rig, w: &oni_app::MainWindow, label: &str, word: &str) 
 }
 
 pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat_and_lit() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the bar's keys are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-toolbar-keys-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("toolbar-keys");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1728, 900));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 900).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, bar) = (w.global::<Library>(), w.global::<Bar>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let tile = |name: &str| oni_app::app::tiles(w).into_iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.settle();
@@ -87,7 +71,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     assert!(keys.len() >= 9 && keys.iter().all(|k| k.height == KEY), "every key of the gallery's bar {KEY} pt tall: {keys:?}");
     assert!(others.iter().any(|k| k.height != KEY), "twin: the measure tells a key of another height");
     for (label, word) in [("EDIT", "EDIT"), ("Sheet", "Sheet"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset", "Reset"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
-        stacked(&rig, w, label, word);
+        stacked(rig, w, label, word);
     }
     // Twin: beside the glyph, within the key's padding, nothing is drawn but its face.
     let trash = bar_key(w, "Trash");
@@ -103,7 +87,7 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     let (panel, back) = (common::placed(w, Role::Tab, "Colour")[0], bar_key(w, "BACK"));
     assert!(back.height > panel.height, "a key of the bar is taller than a tab: {back:?} {panel:?}");
     for (label, word) in [("BACK", "BACK"), ("Undo", "Undo"), ("Crop", "Crop"), ("De-dust", "De-dust"), ("Compare", "Compare"), ("Copy", "Copy"), ("Paste All", "Paste All"), ("EXPORT", "EXPORT")] {
-        stacked(&rig, w, label, word);
+        stacked(rig, w, label, word);
     }
 
     // Inside a key's padding beside its glyph, at its top, its middle and its foot, with the bar's ground
@@ -177,5 +161,4 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     let after = rig.drawn();
     let left = (0..after.0).filter(|&x| near(after.1[top * after.0 + x].0, crop) || near(after.1[(top + 1) * after.0 + x].0, compare)).count();
     assert_eq!(left, 0, "twin: let go, no ring");
-    let _ = std::fs::remove_dir_all(&root);
 }

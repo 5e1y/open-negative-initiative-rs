@@ -9,7 +9,6 @@ use oni_core::{Archive, EditorStore};
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, SharedString};
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -45,8 +44,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     // The post waits while `hold` is set, so a sheet can close and open again before it answers.
     let (hold, posted) = (Arc::new(AtomicBool::new(false)), Arc::new(AtomicUsize::new(0)));
     let (h, p) = (hold.clone(), posted.clone());
@@ -166,8 +164,7 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();
     let w = &shell.window;
@@ -239,8 +236,7 @@ pub(crate) fn a_clash_with_an_original_offers_rename_and_keeps_it() {
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();
     let w = &shell.window;
@@ -316,8 +312,7 @@ pub(crate) fn the_preset_name_sheet_holds_the_keys_and_answers_them() {
     let _ = std::fs::remove_dir_all(&root);
     let folder = root.join("Scans");
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
     let ctl = shell.ctl.clone();
     let w = &shell.window;

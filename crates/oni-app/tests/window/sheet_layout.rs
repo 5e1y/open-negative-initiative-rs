@@ -7,7 +7,6 @@ use oni_app::{Advice, AppSettings, Confirm, Help, MainWindow, OutsideProbe, Pres
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
 use std::cell::Cell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -40,8 +39,7 @@ fn find(rig: &common::Rig, heard: &Cell<bool>, xs: (f32, f32), ys: (f32, f32)) -
 }
 
 pub(crate) fn a_notices_key_sits_right() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
@@ -102,8 +100,7 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
     const GROWN: f32 = 200.0;
     // `SheetStyle.rest`: the share of the window's free height above the card.
     const REST: f32 = 0.42;
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
@@ -184,8 +181,7 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
 /// The Settings sheet stands at its tallest page's height, so its foot and its header's DONE stay put from
 /// section to section. Twin: General ends far above the foot, room a sheet fit to the page shown would close.
 pub(crate) fn the_settings_sheet_keeps_one_height_across_its_sections() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
@@ -230,8 +226,7 @@ const GROUP_GAP: f32 = 8.0;
 /// a question's Cancel at the card's left and its key at its right, destructive or not; a preset's Delete
 /// alone at the left end.
 pub(crate) fn a_footer_sets_cancel_apart_from_the_commit() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);

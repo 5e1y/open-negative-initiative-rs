@@ -10,7 +10,8 @@ use std::time::Duration;
 use crate::panel_bindings::opened;
 
 pub(crate) fn a_screen_of_another_density_renders_the_canvas_and_the_plots_again() {
-    let Some((rig, shell, root)) = opened("density") else { return };
+    let Some(app) = opened("density") else { return };
+    let crate::common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     // The Roll tab's levels unfolded in a window tall enough to lay them: their histogram is a raster
     // traced at the screen's density.
@@ -54,5 +55,4 @@ pub(crate) fn a_screen_of_another_density_renders_the_canvas_and_the_plots_again
     } else {
         rig.until("the levels traced at the new density", Duration::from_secs(60), || levels() == 2 * inputs);
     }
-    let _ = std::fs::remove_dir_all(&root);
 }

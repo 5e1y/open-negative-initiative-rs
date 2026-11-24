@@ -1,34 +1,21 @@
 //! The roll being prepared decodes first: while Prepare the Roll is shown, the gallery's thumbnails
 //! and every other background decode stand still, and resume once the roll is left.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Library, Preparing};
-use oni_core::{Archive, EditorStore};
-use slint::platform::WindowEvent;
 use slint::ComponentHandle;
 use std::time::Duration;
 
 use crate::common;
 
 pub(crate) fn the_roll_prepared_decodes_while_the_gallery_stands_still() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the roll's priority over the gallery is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-first-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("prepare-first");
     let folder = root.join("Scans");
     let frames = 8;
     for i in 0..frames {
         common::graded_tiff(&folder.join(format!("F{i}.tif")), 600, 400, 0.2 + 0.08 * i as f32);
     }
-    let rig = common::rig(std::env::temp_dir());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let p = w.global::<Preparing>();
 
@@ -54,6 +41,4 @@ pub(crate) fn the_roll_prepared_decodes_while_the_gallery_stands_still() {
     rig.until("the roll left", Duration::from_secs(10), || !p.get_shown());
     rig.until("the gallery's decodes resumed", Duration::from_secs(60), || oni_app::decode_gate::background_taken() > taken);
     rig.until("its thumbnails drawn", Duration::from_secs(60), || ctl.state.borrow().thumbnails_landed() > landed);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

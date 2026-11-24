@@ -42,7 +42,8 @@ fn means(ctl: &oni_app::app::Ctl) -> [f32; 3] {
 }
 
 pub(crate) fn more_color_settings_move_each_its_own_channel() {
-    let Some((rig, shell, root)) = opened("channel-points") else { return };
+    let Some(app) = opened("channel-points") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, g) = (w.global::<PanelState>(), w.global::<Store>());
     rig.window.set_size(slint::PhysicalSize::new(1280, 1600));
@@ -58,7 +59,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     let folded = paper() - title()[0].y;
     assert!(folded < 100.0, "the sliders lie folded: Paper {folded} pt below the title");
     rig.shot("channel-points-folded");
-    click(&rig, title()[0].middle());
+    click(rig, title()[0].middle());
     rig.settle();
     let open = paper() - title()[0].y;
     assert!(open > folded + 4.0 * 30.0, "the title's click lays the tabs and a tab's four sliders: {folded} then {open} pt");
@@ -76,7 +77,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     // Each tab shows its own channel's four sliders alone; each slider by its rail moves its own value
     // alone, through the field the markup wires, marks its tab alone, and the block's Reset clears it.
     for (c, (name, sliders)) in TABS.iter().enumerate() {
-        click(&rig, tab(name).middle());
+        click(rig, tab(name).middle());
         rig.settle();
         for (other, (_, theirs)) in TABS.iter().enumerate() {
             for (_, label) in theirs {
@@ -87,7 +88,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
             let rail = common::rail(w, label);
             let knob = field.knob();
             std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-            click(&rig, (rail.x + rail.width * 0.92, rail.y + rail.height - 13.0));
+            click(rig, (rail.x + rail.width * 0.92, rail.y + rail.height - 13.0));
             rig.settle();
             let s = settings();
             assert!(knob.get(&s).abs() > 0.05, "{label} moved its value: {}", knob.get(&s));
@@ -101,14 +102,14 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
             // Back to rest by the block's own key, beside its title.
             let reset: Vec<_> = common::placed(w, Role::Button, "Reset").into_iter().filter(|k| title()[0].level_with(k)).collect();
             assert_eq!(reset.len(), 1, "one Reset on the row of {TITLE}");
-            click(&rig, reset[0].middle());
+            click(rig, reset[0].middle());
             rig.settle();
             assert_eq!(knob.get(&settings()), 0.0, "{label}: the Reset took it back");
             assert!(!g.get_channel_points_modified() && marks() == [false; 3], "{label}: no mark once reset");
         }
     }
     // Twin: green's white point is not laid while the red tab is picked, so a walk of one tab sees one channel.
-    click(&rig, tab("R").middle());
+    click(rig, tab("R").middle());
     rig.settle();
     assert!(common::placed(w, Role::Slider, "Green white point").is_empty());
 
@@ -119,7 +120,7 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     let renders = ctl.state.borrow().renders();
     let red = common::rail(w, "Red white point");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, (red.x + red.width * 0.95, red.y + red.height - 13.0));
+    click(rig, (red.x + red.width * 0.95, red.y + red.height - 13.0));
     rig.until("the render of red's point", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     let after = means(&ctl);
@@ -143,6 +144,4 @@ pub(crate) fn more_color_settings_move_each_its_own_channel() {
     rig.settle();
     assert_eq!(ctl.state.borrow().store().settings().mode, oni_settings::ConversionMode::Digital);
     assert_eq!(title().len(), 1, "a digital photo lays More Color Settings");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

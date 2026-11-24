@@ -75,7 +75,7 @@ pub(crate) fn a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_a
         Err(e) => return println!("SKIPPED gallery cell: {e}"),
     };
     let d = disk();
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let shell = launch(&d, &gpu);
     let (one, two) = (d.root.join("Home/One"), d.root.join("Home/Two"));
@@ -119,7 +119,7 @@ pub(crate) fn a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed() {
     for (name, bytes) in [("P.NEF", &b"a raw"[..]), ("P.JPG", b"its jpeg"), ("Q.HEIC", b"\0\0\0\x18ftypheic")] {
         std::fs::write(folder.join(name), bytes).unwrap();
     }
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let shell = launch(&d, &gpu);
     let ctl = shell.ctl.clone();
@@ -153,7 +153,7 @@ pub(crate) fn a_selected_tiles_ring_reads_on_a_light_photo() {
         Err(e) => return println!("SKIPPED selected ring: {e}"),
     };
     let d = disk();
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     let shell = launch(&d, &gpu);
     let lib = shell.window.global::<Library>();

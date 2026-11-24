@@ -9,7 +9,7 @@ use oni_app::{App, Library, Store};
 use oni_core::{Archive, EditorStore, Knob};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -34,8 +34,7 @@ pub(crate) fn a_drag_holds_at_rest_and_a_double_click_on_the_name_brings_it_back
     let folder = root.join("Roll");
     std::fs::create_dir_all(&folder).unwrap();
     std::fs::write(folder.join("A.NEF"), b"not a raw").unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 1100));
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));

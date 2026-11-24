@@ -9,7 +9,6 @@ use oni_app::{HeaderProbe, PanelState, PanelTab};
 use oni_i18n::{Language, tr};
 use slint::{ComponentHandle, PhysicalSize};
 use std::ops::ControlFlow;
-use std::path::PathBuf;
 
 use crate::common::{self, Placed};
 
@@ -44,7 +43,8 @@ fn whole((laid, wanted): (Placed, f32)) -> bool {
 }
 
 pub(crate) fn every_tool_title_is_whole_at_the_smallest_window() {
-    let Some((rig, shell, _root)) = crate::panel_bindings::opened("mode-header") else { return };
+    let Some(app) = crate::panel_bindings::opened("mode-header") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (w, ctl) = (&shell.window, shell.ctl.clone());
     let panel = w.global::<PanelState>();
     rig.window.set_size(PhysicalSize::new(SMALLEST.0, SMALLEST.1));
@@ -73,8 +73,7 @@ pub(crate) fn every_tool_title_is_whole_at_the_smallest_window() {
 }
 
 pub(crate) fn a_title_longer_than_the_panel_is_caught_cut() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let probe = HeaderProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);

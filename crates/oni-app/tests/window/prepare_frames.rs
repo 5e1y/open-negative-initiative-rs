@@ -3,9 +3,7 @@
 //! of the pace that keeps it from flashing.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Library, Motion, Preparing};
-use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::time::{Duration, Instant};
@@ -22,24 +20,14 @@ fn luma(drawn: &(usize, Vec<slint::platform::software_renderer::Rgb565Pixel>), (
 }
 
 pub(crate) fn the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scrub_dissolves() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare's frames are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-frames-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("prepare-frames");
     let folder = root.join("Scans");
     let names = ["A.tif", "B.tif", "C.tif", "D.tif", "E.tif"];
     for (n, tone) in names.iter().zip([0.9, 0.3, 0.8, 0.2, 0.7]) {
         common::graded_tiff(&folder.join(n), 600, 400, tone);
     }
-    let rig = common::rig(std::env::temp_dir());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let p = w.global::<Preparing>();
@@ -61,9 +49,9 @@ pub(crate) fn the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scr
     // Twin: the search finds the step's own keys, named by the step.
     let (back, next) = (common::the(w, Role::Button, "Back"), common::the(w, Role::Button, "NEXT"));
     assert!(before.level_with(&after) && back.level_with(&next) && after.y < back.y, "the frame's keys over the scan, the step's in the footer");
-    common::click(&rig, w, after.middle());
+    common::click(rig, w, after.middle());
     rig.until("the next frame's scan", Duration::from_secs(60), || p.get_scan_ready() && p.get_base_name() == "B.tif");
-    common::click(&rig, w, before.middle());
+    common::click(rig, w, before.middle());
     rig.until("the first frame's scan again", Duration::from_secs(60), || p.get_scan_ready() && p.get_base_name() == "A.tif");
     assert_eq!(p.get_step(), 2, "twin: the frame's keys never walk the steps");
 
@@ -148,6 +136,4 @@ pub(crate) fn the_frame_keys_name_their_frame_the_loupe_shows_its_film_and_a_scr
     assert!(soon.abs_diff(whole) <= 6, "the dissolve over within 100 ms: {soon} against {whole}");
     assert!(shown.abs_diff(whole) > 60, "twin: the two frames read apart, so a dissolve under way would show: {shown} {whole}");
     assert_eq!(w.global::<Motion>().get_dissolve() as u128, (PACE.as_millis() + 1) / 3, "the token, a third of the pace");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

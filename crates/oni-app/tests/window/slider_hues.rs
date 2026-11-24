@@ -4,7 +4,6 @@
 use oni_app::HueProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize, Rgb8Pixel};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -58,8 +57,7 @@ fn key_chroma(rig: &common::Rig, x: f32, y: f32) -> i32 {
 }
 
 fn probe() -> (common::Rig, HueProbe) {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = HueProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     oni_app::slider_track::serve(&probe);

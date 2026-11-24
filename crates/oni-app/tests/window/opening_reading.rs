@@ -1,13 +1,10 @@
 //! A frame's opening decode overtaken by an edit naming another reading: the decode under the reading
 //! left never reaches the canvas, and the one under the new reading is rendered once it lands.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::SourceEncoding;
 use slint::ComponentHandle;
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -30,32 +27,19 @@ fn apart(a: [f64; 3], b: [f64; 3]) -> f64 {
 }
 
 pub(crate) fn a_decode_under_a_reading_left_never_lands_on_the_canvas() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the opening's reading is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-opening-reading-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("opening-reading");
+    let folder = root.scans();
     // Wider than the preview's side, so the opening decode keeps no full resolution, and short so it
     // decodes in a few milliseconds.
     common::plain_tiff(&folder.join("A.tif"), oni_app::render::PREVIEW_SIDE + 48, 300, 0.5);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (c, panel, store) = (w.global::<Canvas>(), w.global::<PanelState>(), w.global::<Store>());
     let renders = || ctl.state.borrow().renders();
     let rendered_past = |n: usize, what: &str| rig.until(what, Duration::from_secs(60), || renders() > n && c.get_frame().size().width > 0);
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     // The thumbnail's preview let go, so the opening decodes; every decode place held, so it waits
     // past its ticket's check while the reading changes.
@@ -98,6 +82,4 @@ pub(crate) fn a_decode_under_a_reading_left_never_lands_on_the_canvas() {
     rig.settle();
     let left = mean(&c);
     assert!(apart(left, own) > 8.0, "twin: the two readings render apart: {left:?} against {own:?}");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

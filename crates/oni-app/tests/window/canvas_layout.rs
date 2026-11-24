@@ -2,12 +2,10 @@
 //! edge, the bar's empty room, roll headers' trail and pin, the editor's medals, an undecodable file.
 
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{Options, Shell};
+use oni_app::app::Shell;
 use oni_app::{App, Bar, Canvas, Library};
-use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -48,35 +46,22 @@ fn open(rig: &common::Rig, shell: &Shell, caption: &str) {
 }
 
 pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the shell's layout is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-canvas-layout-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("canvas-layout");
+    let folder = root.scans();
     for i in 0..72 {
         common::plain_tiff(&folder.join("Roll A").join(format!("A{i:02}.tif")), 48, 32, 0.3 + i as f32 / 200.0);
     }
     common::plain_tiff(&folder.join("Roll B").join("B00.tif"), 48, 32, 0.5);
     std::fs::write(folder.join("Roll B").join("Bad.tif"), b"II*\0not a picture").unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(WIDTH as u32, HEIGHT as u32));
-    shell.window.show().unwrap();
+    let Some(launched) = common::launch(root).size(WIDTH as u32, HEIGHT as u32).show() else { return };
+    let common::App { rig, shell, .. } = &launched;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, app, canvas, bar) = (w.global::<Library>(), w.global::<App>(), w.global::<Canvas>(), w.global::<Bar>());
     let room = std::rc::Rc::new(std::cell::Cell::new(0));
     let pressed = room.clone();
     bar.on_room_pressed(move || pressed.set(pressed.get() + 1));
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    launched.read(&folder);
     rig.settle();
 
     // `RollHeaderContent`: the folders above the roll in secondary, then its name; no count.
@@ -98,17 +83,17 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     assert!(!lib.get_pinned_shown(), "twin: back at the top, nothing is held");
 
     // The bar's empty room stands for the title bar; a key takes its own press.
-    click(&rig, 200.0, MENU + 20.0);
+    click(rig, 200.0, MENU + 20.0);
     assert_eq!(room.get(), 1, "a press between the keys reaches the room");
 
-    open(&rig, &shell, "A00");
+    open(rig, shell, "A00");
     rig.until("A00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.settle();
     assert!(!app.get_gallery());
-    click(&rig, 40.0, MENU + 20.0);
+    click(rig, 40.0, MENU + 20.0);
     assert!(app.get_gallery(), "the BACK key took its press");
     assert_eq!(room.get(), 1, "twin: a key's press never reaches the room");
-    open(&rig, &shell, "A00");
+    open(rig, shell, "A00");
     rig.settle();
 
     rig.shot("layout-editor");
@@ -150,7 +135,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
 
     // The canvas's leading key hides the Library; the same key, now at the card's edge, brings it back.
     let tab_y = CARD_TOP + 8.0 + 4.0;
-    click(&rig, 260.0 + KEY + 12.0, CARD_TOP + 20.0);
+    click(rig, 260.0 + KEY + 12.0, CARD_TOP + 20.0);
     assert!(app.get_library_hidden(), "the column key hid the Library");
     rig.settle();
     let hidden_width = canvas.get_width();
@@ -159,38 +144,38 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     // The hidden column slides over the card from its edge while hovered, its tabs inset from its raised
     // face's top as from its sides; twin: flush with that top, as the docked column meets the card's.
     let surface = lib.get_surface();
-    click(&rig, 8.0 + 200.0, tab_y + 8.0);
+    click(rig, 8.0 + 200.0, tab_y + 8.0);
     assert_eq!(lib.get_surface(), surface, "twin: with nothing revealed the tabs are not there");
-    hover(&rig, 4.0, 400.0);
+    hover(rig, 4.0, 400.0);
     rig.shot("layout-revealed-library");
     let tab = common::the(&shell.window, AccessibleRole::Tab, "Projects");
     assert!((tab.y - (tab_y + COLUMN_INSET)).abs() < 1.0, "the tab a column's inset under the face's top: {tab:?}");
     assert!((tab.y - tab_y).abs() > 1.0, "twin: not flush with it: {tab:?}");
-    click(&rig, tab.x + tab.width / 2.0, tab.y + tab.height / 2.0);
+    click(rig, tab.x + tab.width / 2.0, tab.y + tab.height / 2.0);
     assert_ne!(lib.get_surface(), surface, "the revealed column's Projects tab took the click");
     lib.invoke_surface_picked(surface);
-    hover(&rig, 600.0, 400.0);
+    hover(rig, 600.0, 400.0);
 
     // The gallery lists the library whatever the editor hid.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     assert!(app.get_gallery() && app.get_library_hidden());
     rig.shot("layout-gallery-library-hidden");
-    click(&rig, 200.0, tab_y + 8.0);
+    click(rig, 200.0, tab_y + 8.0);
     assert_ne!(lib.get_surface(), surface, "the gallery's column is there to take the click");
     lib.invoke_surface_picked(surface);
     rig.pump();
 
     // Back beside the photo, the column key brings the Library back.
-    open(&rig, &shell, "A00");
+    open(rig, shell, "A00");
     rig.settle();
-    click(&rig, KEY + 12.0, CARD_TOP + 20.0);
+    click(rig, KEY + 12.0, CARD_TOP + 20.0);
     assert!(!app.get_library_hidden(), "the key shows the Library again");
 
     // A file that never decodes says so on the canvas; a fine one says nothing.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
-    open(&rig, &shell, "Bad");
+    open(rig, shell, "Bad");
     rig.until("Bad refused", Duration::from_secs(60), || !canvas.get_failure().is_empty());
     assert_eq!(canvas.get_failure(), "Bad.tif: could not be decoded");
     rig.shot("layout-undecodable");
@@ -210,7 +195,6 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     assert!(!canvas.get_convertible());
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
-    open(&rig, &shell, "B00");
+    open(rig, shell, "B00");
     assert_eq!(canvas.get_failure(), "", "twin: a fine frame clears the message");
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -63,8 +63,7 @@ impl Disk {
 }
 
 pub(crate) fn rig() -> common::Rig {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     rig
 }

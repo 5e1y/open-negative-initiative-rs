@@ -35,8 +35,7 @@ impl Roll {
         for (i, f) in ["Roll 1/A.tif", "Roll 1/B.tif", "Roll 2/C.tif", "Roll 2/D.tif"].iter().enumerate() {
             common::plain_tiff(&folder.join(f), 96, 64, 0.2 + 0.15 * i as f32);
         }
-        let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-        let rig = common::rig(shots);
+        let rig = common::rig();
         let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
         let engine = oni_app::render::Engine::shared(&gpu);
         let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };

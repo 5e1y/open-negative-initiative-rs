@@ -1,10 +1,8 @@
 //! `QuitGuard` on the headless window: closing writes the open frame's last settings at once, and a
 //! write that fails asks before quitting, Return choosing Cancel.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Confirm, Library, Store};
-use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
 use std::path::{Path, PathBuf};
@@ -18,28 +16,15 @@ fn written_exposure(path: &Path) -> Option<f32> {
 }
 
 pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the quit guard is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-quit-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("quit");
+    let folder = root.scans();
     common::linear_tiff(&folder.join("A.tif"), 96, 64, 0.7);
     let a = PathBuf::from(oni_library::paths::canonical(&folder.join("A.tif")));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
@@ -80,5 +65,4 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     assert_eq!(title, "Your latest settings could not be saved");
     assert!(!confirm.get_shown(), "Return chose Cancel");
     assert!((oni_app::store::get(ctl.state.borrow().store(), Field::Exposure) - again).abs() < 1e-6, "the work stays open");
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -18,7 +18,8 @@ const NARROWEST: f32 = 1100.0;
 const END: f32 = 16.0;
 
 pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("bar-13") else { return };
+    let Some(app) = crate::panel_bindings::opened("bar-13") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let bar = w.global::<Bar>();
     bar.set_traffic_lights(LIGHTS);
@@ -81,7 +82,6 @@ pub(crate) fn the_bar_holds_every_word_on_a_13_inch_screen() {
     println!("shot {}", rig.shot("bar-narrowest").display());
     let wide = keys(AIR_13);
     assert!(wide.iter().any(|k| k.width > k.height + 8.0 && k.height < 49.0 && (k.width - wide[wide.len() - 1].width).abs() > 0.5), "twin: worded, a flat key wider than tall: {wide:?}");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The bar's keys left of `bar_height` as laid at `width`, their right end.
@@ -95,7 +95,8 @@ fn right_end(rig: &common::Rig, w: &oni_app::MainWindow, width: f32, bar_height:
 /// by the bar's end; the gallery's keycaps keep their words down to the width the bar reads, and a point
 /// narrower, where words would run past the edge, wear their glyphs alone.
 pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_language() {
-    let Some((rig, shell, root)) = crate::panel_bindings::opened("bar-narrowest") else { return };
+    let Some(app) = crate::panel_bindings::opened("bar-narrowest") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let bar = w.global::<Bar>();
     bar.set_traffic_lights(LIGHTS);
@@ -107,23 +108,22 @@ pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_langu
             println!("{language:?}: the live interface reads English, judged on the app profile");
             continue;
         }
-        let end = right_end(&rig, w, NARROWEST, height);
+        let end = right_end(rig, w, NARROWEST, height);
         assert!(end <= NARROWEST - END + 0.5, "{language:?}, the editor: the last key ends at {end} pt");
         rig.chord(slint::platform::Key::Control, "g");
-        let end = right_end(&rig, w, NARROWEST, height);
+        let end = right_end(rig, w, NARROWEST, height);
         println!("shot {}", rig.shot(&format!("bar-narrowest-gallery-{}", language.key())).display());
         assert!(end <= NARROWEST - END + 0.5, "{language:?}, the gallery: the last key ends at {end} pt");
         let worded = || !common::placed(w, Role::Button, oni_i18n::tr("PREPARE ROLL")).is_empty();
         let least = bar.get_least().ceil();
         println!("{language:?}: the gallery's keycaps keep their words from {least} pt");
-        let end = right_end(&rig, w, least, height);
+        let end = right_end(rig, w, least, height);
         assert!(worded() && end <= least - END + 0.5, "{language:?}: worded at {least} pt, the last key ends at {end} pt");
-        right_end(&rig, w, least - 1.0, height);
+        right_end(rig, w, least - 1.0, height);
         assert!(!worded(), "twin, {language:?}: a point narrower the words would pass the edge, and give way");
         // The gallery's main actions keep their words at the narrowest window in every language.
         assert!(least <= NARROWEST, "{language:?}: the gallery's keycaps need {least} pt to keep their words");
         rig.chord(slint::platform::Key::Control, "g");
     }
     oni_app::language::speak(Some(oni_i18n::Language::English));
-    let _ = std::fs::remove_dir_all(&root);
 }

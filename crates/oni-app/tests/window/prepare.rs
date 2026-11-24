@@ -1,10 +1,8 @@
 //! Prepare the Roll on the headless window, every step by the hand: left keeping nothing, resumed from a
 //! quit's draft, measured as one gallery step, asked for by a bare frame opened again, from the Roll tab.
 
-use oni_app::app::{Options, Shell};
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{App, Bar, Canvas, Clicks, Confirm, Library, Menus, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::prepare::{self, Draft};
 use oni_settings::sidecar::{self, WriteOptions};
@@ -20,13 +18,8 @@ use crate::common;
 use crate::prepare_parts::{as_scanned, click, keeps_draft, kept_in_frame, loaded, stored};
 
 pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare the Roll is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare");
+    let (folder, support) = (root.scans(), root.support());
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.7), ("C.tif", 0.5), ("D.tif", 0.3)] {
         common::graded_tiff(&folder.join(name), 120, 80, tone);
     }
@@ -37,21 +30,13 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let mut other = PipelineSettings::rest(ConversionMode::Negative, false);
     other.roll_reference = Some(RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
     sidecar::write(&other, &canonical("D.tif"), WriteOptions::default()).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
     let radius = || oni_app::preferences::Preferences::load(&support).value(oni_measure::roll::BASE_RADIUS_KEY).and_then(serde_json::Value::as_f64);
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(launched) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &launched;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, menus, p, app) = (w.global::<Library>(), w.global::<Menus>(), w.global::<Preparing>(), w.global::<App>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    launched.read(&folder);
     rig.settle();
     let tile = |name: &str| {
         let mut tiles = oni_app::app::tiles(w);
@@ -112,7 +97,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     // NEXT walks past the skipped flat-field to the base; the step reached rides in every sidecar.
     let first = (common::the(w, Role::Button, "Cancel"), p.get_footer_height());
     let (x, y) = action();
-    click(&rig, x, y);
+    click(rig, x, y);
     assert_eq!(p.get_step(), 2);
     rig.until("the draft written", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "base"));
     let d = drafted().unwrap();
@@ -149,7 +134,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(key("NEXT").y, key("Cancel").y, "the short key back on Cancel's line");
     // At the keycap's place, a click goes on without the base, which keeps no mark; Back returns to it.
     let (x, y) = action();
-    click(&rig, x, y);
+    click(rig, x, y);
     assert_eq!(p.get_step(), 3, "NEXT passes the empty base");
     assert_eq!(done(), [true, false, false, false, false], "a base passed empty holds no mark");
     p.invoke_back();
@@ -203,7 +188,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(on_scan.0, on_scan.1) });
     rig.pump();
     assert_eq!(pressed.get(), 0, "twin: the pointer over the scan picks nothing and clicks nothing");
-    click(&rig, on_scan.0, on_scan.1);
+    click(rig, on_scan.0, on_scan.1);
     assert_eq!((p.get_step(), pressed.get()), (3, 1), "a pick goes on by itself, with a click");
     p.invoke_step_picked(2);
     rig.pump();
@@ -232,7 +217,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.settle();
     println!("shot {}", rig.shot("prepare-base-picked").display());
     let (x, y) = action();
-    click(&rig, x, y);
+    click(rig, x, y);
     assert_eq!(p.get_step(), 3, "NEXT goes on to the flags");
     assert!(p.get_has_tutorial(), "the flags offer their own demo");
     rig.until("the flags' own demo, played as its step shows", Duration::from_secs(5), || demo() > 0);
@@ -246,12 +231,12 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
         (p.get_sheet_origin_x() + pad + i as f32 * (width + gap) + width / 2.0, p.get_sheet_origin_y() + pad + width / 3.0)
     };
     let (x, y) = cell(2);
-    click(&rig, x, y);
+    click(rig, x, y);
     assert_eq!(p.get_flags_note().as_str(), "2 measured, 1 flagged");
     p.invoke_clear_flags();
     rig.pump();
     assert_eq!(p.get_flags_note().as_str(), "3 measured, 0 flagged", "twin: the flag is the click's, not the sheet's");
-    click(&rig, x, y);
+    click(rig, x, y);
     assert!(p.get_cells().row_data(2).unwrap().flagged);
     // The flag rides in the draft only at a step change, so closing the window writes it.
     rig.until("the flags step's draft", Duration::from_secs(10), || drafted().is_some_and(|d| d.step == "flags"));
@@ -306,7 +291,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(!confirm.get_shown() && p.get_shown(), "twin: answered Cancel, the roll stays with its steps");
     // The footer's Cancel asks the same; Discard leaves for the gallery and keeps nothing: every frame's draft dropped.
     rig.settle();
-    common::click(&rig, w, common::the(w, Role::Button, "Cancel").middle());
+    common::click(rig, w, common::the(w, Role::Button, "Cancel").middle());
     assert!(confirm.get_shown() && p.get_shown());
     confirm.invoke_answered(true);
     rig.pump();
@@ -330,7 +315,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let marked = || oni_library::folders::roll(&canonical("A.tif").parent().unwrap().to_string_lossy());
     assert!(marked().is_none(), "the folder is no roll before its measure");
     let (x, y) = action();
-    click(&rig, x, y);
+    click(rig, x, y);
     let advice = w.global::<oni_app::Advice>();
     rig.until("the measure landed", Duration::from_secs(120), || !p.get_shown() || advice.get_shown());
     assert!(!advice.get_shown(), "{}: {}", advice.get_title(), advice.get_message());
@@ -388,5 +373,4 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(p.get_left_out().as_str(), "");
     rig.key("\u{1b}");
     assert!(!p.get_shown() && !app.get_gallery(), "Cancel goes back to the editor it came from");
-    let _ = std::fs::remove_dir_all(&root);
 }

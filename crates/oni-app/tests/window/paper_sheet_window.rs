@@ -34,8 +34,7 @@ pub(crate) fn a_maker_s_profile_is_listed_installed_chosen_and_uninstalled() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the paper sheet is not exercised"),
     };
-    let shots = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots");
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let root = std::env::temp_dir().join(format!("oni-app-paper-sheet-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     let support = root.join("support");

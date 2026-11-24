@@ -5,7 +5,6 @@
 use oni_app::OutsideProbe;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -33,8 +32,7 @@ fn typed(rig: &common::Rig, text: &str) {
 }
 
 fn probe() -> (common::Rig, OutsideProbe) {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = OutsideProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

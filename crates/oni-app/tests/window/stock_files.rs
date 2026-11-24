@@ -42,15 +42,11 @@ fn save(folder: &Path, bytes: &[u8]) {
 }
 
 pub(crate) fn a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_photo() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the person's stock files are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-stock-files-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("stock-files");
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     common::graded_tiff(&root.join("Scans/A.tif"), 1200, 800, 0.7);
-    let (rig, shell) = crate::film_effects::opened(&gpu, &root);
+    let Some(app) = crate::film_effects::opened(root) else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let folder = root.join("Support/Stocks");
     assert!(folder.is_dir(), "the support folder holds the person's stocks' folder");
@@ -67,7 +63,7 @@ pub(crate) fn a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_p
     rig.until("the menu lists the dropped stock", Duration::from_secs(30), || listed(w).iter().any(|n| n == "Kodak Gold 200 (Mine)"));
     let n = renders();
     let at = oni_settings::film::stocks().iter().position(|k| k.id == "kodak-gold200-mine").expect("listed") as i32;
-    crate::stock_hero::drop_menu(&rig, w);
+    crate::stock_hero::drop_menu(rig, w);
     w.global::<Stocks>().invoke_picked(at);
     rig.key("\u{1b}");
     rig.until("the photo rendered on the person's stock", Duration::from_secs(60), || renders() > n);
@@ -106,6 +102,4 @@ pub(crate) fn a_stock_file_dropped_edited_and_removed_updates_the_menu_and_the_p
     rig.settle();
     assert_eq!(hero(), "kodak-gold-200-mine (file missing)");
     assert!(!MINE.is_known() && MINE.reference() == VirtualStock::default().reference());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

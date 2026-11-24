@@ -1,9 +1,8 @@
 //! The gallery's last gaps on the headless window: back from the editor it lands on the open photo,
 //! a band's heading is renamed in place, and files dropped from the Finder open as ⌘O opens them.
 
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{self};
 use oni_app::{App, Library};
-use oni_core::{Archive, EditorStore};
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::path::{Path, PathBuf};
@@ -34,13 +33,8 @@ fn bytes(path: &Path) -> Vec<u8> {
 }
 
 pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the gallery's leftovers are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-gallery-leftovers-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, elsewhere, support, caches) = (root.join("Scans"), root.join("Elsewhere"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("gallery-leftovers");
+    let (scans, elsewhere) = (root.join("Scans"), root.join("Elsewhere"));
     for i in 0..96 {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 24, 16, 0.5);
     }
@@ -51,15 +45,8 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     common::plain_tiff(&elsewhere.join("E2.tif"), 24, 16, 0.6);
     std::fs::write(elsewhere.join("notes.txt"), b"not a photo").unwrap();
     let originals: Vec<(PathBuf, Vec<u8>)> = ["E1.tif", "E2.tif", "notes.txt"].iter().map(|n| (elsewhere.join(n), bytes(&elsewhere.join(n)))).collect();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(launched) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &launched;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, app) = (w.global::<Library>(), w.global::<App>());
@@ -106,14 +93,14 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, on_heading);
+    click(rig, on_heading);
     assert_eq!(picked(), 1, "a click on a heading leaves the picks as they were");
     assert!(!heading(&first.title).unwrap().renaming, "twin: one click is no rename");
-    click(&rig, on_heading);
+    click(rig, on_heading);
     assert!(heading(&first.title).unwrap().renaming, "the double click types over the heading");
     assert!(app.get_gallery() && lib.get_heading_draft().is_empty(), "a folder no roll names opens an empty field");
     rig.pump();
-    typed(&rig, "Holiday");
+    typed(rig, "Holiday");
     rig.key(&slint::SharedString::from(Key::Return));
     let renamed = scans.join("Holiday");
     rig.until("the folder renamed", Duration::from_secs(10), || renamed.is_dir());
@@ -125,18 +112,18 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     let holiday = heading("Holiday").unwrap();
     let on_holiday = (lib.get_grid_x() + 200.0, lib.get_grid_y() + holiday.y - lib.get_scroll() + 12.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, on_holiday);
-    click(&rig, on_holiday);
-    typed(&rig, "X");
+    click(rig, on_holiday);
+    click(rig, on_holiday);
+    typed(rig, "X");
     rig.key(&slint::SharedString::from(Key::Escape));
     assert!(!heading("Holiday").unwrap().renaming);
     assert!(renamed.is_dir() && !scans.join("HolidayX").exists(), "twin: Escape renames nothing");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, on_holiday);
-    click(&rig, on_holiday);
-    typed(&rig, "Trip");
+    click(rig, on_holiday);
+    click(rig, on_holiday);
+    typed(rig, "Trip");
     let cell = app::tiles(w).into_iter().find(|t| t.y - lib.get_scroll() > 60.0 && t.y + t.height - lib.get_scroll() < viewport).expect("a cell in view");
-    click(&rig, (lib.get_grid_x() + cell.x + cell.width / 2.0, lib.get_grid_y() + cell.y - lib.get_scroll() + cell.height / 2.0));
+    click(rig, (lib.get_grid_x() + cell.x + cell.width / 2.0, lib.get_grid_y() + cell.y - lib.get_scroll() + cell.height / 2.0));
     rig.until("the folder renamed again", Duration::from_secs(10), || scans.join("Trip").is_dir());
 
     assert!(app.get_gallery(), "the click that commits picks its cell, opening nothing");
@@ -159,8 +146,8 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     assert_eq!(project.caption, "Project 1", "the project's name over its roll's");
     let on_project = (lib.get_grid_x() + 200.0, lib.get_grid_y() + project.y - lib.get_scroll() + 12.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    click(&rig, on_project);
-    click(&rig, on_project);
+    click(rig, on_project);
+    click(rig, on_project);
     assert!(lib.get_headings().iter().all(|h| !h.renaming), "twin of a roll's heading: a project's opens no field");
     lib.invoke_surface_picked(0);
     rig.pump();
@@ -191,5 +178,4 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     for (path, was) in &originals {
         assert_eq!(&bytes(path), was, "{} is untouched", path.display());
     }
-    let _ = std::fs::remove_dir_all(&root);
 }

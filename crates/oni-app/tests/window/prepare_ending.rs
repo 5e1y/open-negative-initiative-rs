@@ -2,26 +2,18 @@
 //! saying how to show every frame together; Settings' switch on, every frame together at once.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::preferences::Preferences;
 use oni_app::{App, AppSettings, Bar, Canvas, Library, Preparing};
-use oni_core::{Archive, EditorStore};
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::{ComponentHandle, Model};
 use std::collections::HashSet;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
 
 pub(crate) fn prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_settings_asks() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare the Roll's endings are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-ending-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare-ending");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     for (roll, names) in [("R1", ["A.tif", "B.tif", "C.tif"]), ("R2", ["E.tif", "F.tif", "G.tif"])] {
         for (i, name) in names.iter().enumerate() {
             common::graded_tiff(&scans.join(roll).join(name), 120, 80, 0.8 - 0.2 * i as f32);
@@ -31,15 +23,8 @@ pub(crate) fn prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_s
     // A preferences file as 1.5.6 leaves it: keys of its own, none for this choice.
     std::fs::create_dir_all(&support).unwrap();
     std::fs::write(Preferences::file_path(&support), br#"{ "keepZoom": false, "soundMuted": true }"#).unwrap();
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(launched) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &launched;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p, app, canvas, settings) = (w.global::<Library>(), w.global::<Preparing>(), w.global::<App>(), w.global::<Canvas>(), w.global::<AppSettings>());
@@ -92,7 +77,7 @@ pub(crate) fn prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_s
     rig.settle();
     let switch = common::the(w, Role::Checkbox, "After Prepare, open the whole roll");
     assert!(!settings.get_whole_roll_after_prepare(), "a file written without the key reads off");
-    common::click(&rig, w, switch.middle());
+    common::click(rig, w, switch.middle());
     rig.settle();
     assert!(settings.get_whole_roll_after_prepare() && Preferences::load(&support).whole_roll_after_prepare());
     println!("shot {}", rig.shot("prepare-ending-settings").display());
@@ -109,5 +94,4 @@ pub(crate) fn prepare_ends_on_the_first_frame_alone_and_on_the_whole_roll_once_s
     rig.settle();
     assert!(hinted() == 0 && !p.get_landed_alone(), "the whole roll shown needs no word on it");
     println!("shot {}", rig.shot("prepare-ends-whole").display());
-    let _ = std::fs::remove_dir_all(&root);
 }

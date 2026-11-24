@@ -47,20 +47,21 @@ pub(crate) fn watch(rig: &common::Rig, span: Duration) {
 }
 
 pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
-    let Some((rig, shell, root)) = opened("help-demo") else { return };
+    let Some(app) = opened("help-demo") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let tip = w.global::<Tip>();
     w.global::<PanelState>().set_tab(PanelTab::Details);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Details);
     rig.settle();
 
-    press_help(&rig, w, "Sharpening");
+    press_help(rig, w, "Sharpening");
     assert_eq!(tip.get_demo(), "sharpening", "the mark names its topic");
     assert!(tip.get_has_clip(), "the card holds a clip box");
     rig.until("the demo's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
     let first = clip_pixels(&tip).unwrap();
     // The hand rests half a second before it moves: past that, the picture must have changed.
-    watch(&rig, Duration::from_millis(1500));
+    watch(rig, Duration::from_millis(1500));
     let later = clip_pixels(&tip).expect("still playing");
     assert_ne!(first, later, "the demo's frame advances while the card stands");
     rig.shot("help-demo-sharpening");
@@ -70,19 +71,18 @@ pub(crate) fn a_help_mark_with_a_demo_plays_it_and_leaving_stops_it() {
     rig.settle();
     let _ = rig.drawn();
     assert!(tip.get_open().is_empty() && clip_pixels(&tip).is_none(), "no card stands: no clip");
-    watch(&rig, Duration::from_millis(600));
+    watch(rig, Duration::from_millis(600));
     assert!(clip_pixels(&tip).is_none(), "no card stands: no frame asked");
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     let _ = rig.drawn();
-    press_help(&rig, w, "Sharpening");
+    press_help(rig, w, "Sharpening");
     rig.until("twin: its mark again, its frames", Duration::from_secs(5), || clip_pixels(&tip).is_some());
 
     // The hand leaving the mark stops the clip, and another mark plays its own demo.
-    leave_help(&rig, w);
+    leave_help(rig, w);
     assert!(tip.get_open().is_empty() && !tip.get_has_clip() && clip_pixels(&tip).is_none(), "the hand leaving its mark stops the clip");
-    press_help(&rig, w, "Chroma Denoise");
+    press_help(rig, w, "Chroma Denoise");
     assert_eq!(tip.get_demo(), "chroma-denoise", "the next mark names its own topic");
     rig.until("its own demo", Duration::from_secs(5), || clip_pixels(&tip).is_some_and(|p| p != later));
-    let _ = std::fs::remove_dir_all(&root);
 }

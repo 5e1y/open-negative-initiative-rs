@@ -5,7 +5,6 @@
 use oni_app::FieldProbe;
 use slint::platform::{Key, PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -30,8 +29,7 @@ fn pause(rig: &common::Rig) {
 }
 
 pub(crate) fn a_field_entered_selects_its_value_and_a_double_click_a_word() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = FieldProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

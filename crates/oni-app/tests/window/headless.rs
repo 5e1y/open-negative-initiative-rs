@@ -75,10 +75,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the window is not exercised"),
     };
-    let shots = std::env::var_os("ONI_SHOTS")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let window = rig.window.clone();
 
     let originals = stamps(&roll);

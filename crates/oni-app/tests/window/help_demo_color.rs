@@ -16,26 +16,27 @@ const LIGHTING: &str = "The negative back to light along a straight line: the bl
 const EFFECTS: &str = "Vignette darkens the corners in stops, without shifting their colour; below zero it lightens them.\n\nChrome lays a saturation curve over everything, greying the ends and keeping colour in the middle.";
 
 pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
-    let Some((rig, shell, root)) = opened("help-demo-color") else { return };
+    let Some(app) = opened("help-demo-color") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let tip = w.global::<Tip>();
     w.global::<PanelState>().set_tab(PanelTab::Color);
     w.global::<PanelState>().invoke_tab_picked(PanelTab::Color);
     rig.settle();
 
-    press_help(&rig, w, "Lighting");
+    press_help(rig, w, "Lighting");
     assert_eq!(tip.get_open(), LIGHTING, "the Lighting mark opens its card");
     assert_eq!(tip.get_demo(), "lighting", "the mark names its topic");
     assert!(tip.get_has_clip(), "the card holds a clip box");
     rig.until("the demo's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
     let first = clip_pixels(&tip).unwrap();
     // The hand reaches the first knob within a second: past that, the picture must have changed.
-    watch(&rig, Duration::from_millis(1500));
+    watch(rig, Duration::from_millis(1500));
     assert_ne!(Some(&first), clip_pixels(&tip).as_ref(), "the demo's frame advances while the card stands");
     rig.shot("help-demo-lighting");
 
     // Twin: another mark of the tab names its own topic and plays another clip.
-    press_help(&rig, w, "Lighting");
+    press_help(rig, w, "Lighting");
     // Effects lies under the fold: the panel is scrolled by the wheel to bring it up.
     let over = LogicalPosition::new(w.get_panel_x() + 120.0, 500.0);
     for _ in 0..12 {
@@ -45,26 +46,26 @@ pub(crate) fn the_color_tabs_marks_play_their_own_demos() {
         rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -150.0 });
         rig.settle();
     }
-    press_help(&rig, w, "Effects");
+    press_help(rig, w, "Effects");
     assert_eq!(tip.get_open(), EFFECTS, "the Effects mark opens its card");
     assert_eq!(tip.get_demo(), "effects");
     rig.until("the other demo's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
     assert_ne!(Some(first), clip_pixels(&tip), "the Effects card shows its own clip, its knobs elsewhere");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The Colour block's card of a digital photo is a negative's, its Auto White Balance balancing the print, and
 /// plays the white balance's demo; a card standing as the film type turns keeps it. Twin: the Film block's card
 /// beside it plays none.
 pub(crate) fn the_colour_card_of_a_digital_photo_plays_the_white_balance() {
-    let Some((rig, shell, root)) = opened("help-demo-digital") else { return };
+    let Some(app) = opened("help-demo-digital") else { return };
+    let common::App { rig, shell, .. } = &app;
     let w = &shell.window;
     let (tip, panel) = (w.global::<Tip>(), w.global::<PanelState>());
     let settings = || shell.ctl.state.borrow().store().settings().clone();
     panel.set_tab(PanelTab::Color);
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
-    press_help(&rig, w, "Colour");
+    press_help(rig, w, "Colour");
     let negative = tip.get_open().to_string();
     assert_eq!(tip.get_demo(), "white-balance", "a negative's Colour card");
     // The film type turned under the hand, the card standing: the same words, the same clip.
@@ -75,8 +76,7 @@ pub(crate) fn the_colour_card_of_a_digital_photo_plays_the_white_balance() {
     rig.until("the white balance's first frame", Duration::from_secs(5), || clip_pixels(&tip).is_some());
     rig.shot("help-colour-digital");
     // Twin: another mark of the tab names its own topic, here none.
-    crate::help_demo::leave_help(&rig, w);
-    press_help(&rig, w, "Film");
+    crate::help_demo::leave_help(rig, w);
+    press_help(rig, w, "Film");
     assert!(tip.get_open().starts_with("Shoots the photo on a film") && tip.get_demo().is_empty());
-    let _ = std::fs::remove_dir_all(&root);
 }

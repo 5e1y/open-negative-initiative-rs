@@ -3,13 +3,10 @@
 //! undo taking both back. Twin: a negative's film step asks what it was digitised with and goes on with NEXT.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Act, App, Library, Menus, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -17,12 +14,7 @@ use std::time::Duration;
 use crate::common;
 
 pub(crate) fn a_digital_photos_roll_is_prepared_on_its_film_step_alone() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Prepare on a digital photo is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-digital-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("prepare-digital");
     let folder = root.join("Phone");
     let canonical = |name: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(name)));
     // A measured roll whose first photo was turned digital by hand: the second still a negative on it.
@@ -35,27 +27,20 @@ pub(crate) fn a_digital_photos_roll_is_prepared_on_its_film_step_alone() {
     }
     let (a, b) = (canonical("A.tif"), canonical("B.tif"));
     let stored = |p: &Path| sidecar::read(p, false).unwrap().settings;
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, p) = (w.global::<Library>(), w.global::<Preparing>());
     let settings = || ctl.state.borrow().store().settings().clone();
     let shown = |role: Role, name: &str| !common::placed(w, role, name).is_empty();
     let press = |role: Role, name: &str| {
         rig.settle();
-        common::click(&rig, w, common::the(w, role, name).middle());
+        common::click(rig, w, common::the(w, role, name).middle());
         rig.pump();
     };
     let skipped = || (0..5).map(|i| p.get_skipped().row_data(i).unwrap()).collect::<Vec<bool>>();
 
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let first = oni_app::app::tiles(w).iter().map(|t| t.index).min().unwrap();
     lib.invoke_tile_opened(first);
@@ -108,6 +93,4 @@ pub(crate) fn a_digital_photos_roll_is_prepared_on_its_film_step_alone() {
     rig.until("B open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("B.tif")));
     rig.settle();
     assert!(!p.get_shown(), "no Prepare the Roll on opening a digital photo");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

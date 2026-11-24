@@ -3,14 +3,13 @@
 use oni_app::ScrollProbe;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common;
 
 pub(crate) fn a_surface_scrolls_by_the_wheel_and_never_by_a_drag() {
     use slint::platform::PointerEventButton;
     use slint::LogicalPosition;
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let rig = common::rig();
     let probe = ScrollProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.set_size(PhysicalSize::new(1440, 900));
@@ -49,7 +48,7 @@ fn wait(rig: &common::Rig, span: std::time::Duration) {
 pub(crate) fn the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves() {
     use slint::LogicalPosition;
     use std::time::Duration;
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let rig = common::rig();
     let probe = ScrollProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
@@ -135,7 +134,7 @@ const KEEP: f32 = 10.0;
 /// jumps to the spot; the content itself never drags, and the wheel still scrolls over the knob.
 pub(crate) fn the_knob_drags_the_content_and_its_track_pages_as_appkit_s() {
     use std::time::Duration;
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let rig = common::rig();
     let probe = ScrollProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
@@ -204,29 +203,18 @@ pub(crate) fn the_knob_drags_the_content_and_its_track_pages_as_appkit_s() {
 /// The gallery's knob over the document Rust scrolls: a drag takes the wheel's way, so the tiles in
 /// view, the pinned heading and the thumbnails follow it, and a move over a long roll stays light.
 pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
-    use oni_app::app::{Options, Shell};
+    
     use oni_app::Library;
-    use oni_core::{Archive, EditorStore};
+    
     use slint::Model;
     use std::time::{Duration, Instant};
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the gallery knob is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-gallery-knob-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("gallery-knob");
+    let folder = root.scans();
     for i in 0..1200 {
         common::plain_tiff(&folder.join(format!("P{i:04}.tif")), 24, 16, 0.3 + (i % 40) as f32 / 80.0);
     }
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let lib = shell.window.global::<Library>();
     shell.open_folder(&folder);
@@ -272,14 +260,12 @@ pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
     });
 
     // A click on the track under the knob pages the grid by a page less `page-keep`.
-    click(&rig, (edge, top + page - 10.0));
+    click(rig, (edge, top + page - 10.0));
     assert!((lib.get_scroll() - (scroll + page - KEEP)).abs() < 0.5, "the track click paged to {}", lib.get_scroll());
     // Twin: a drag on the tiles scrolls nothing.
     let before = lib.get_scroll();
-    drag(&rig, (left + width / 2.0, top + page - 40.0), (left + width / 2.0, top + 40.0), 10);
+    drag(rig, (left + width / 2.0, top + page - 40.0), (left + width / 2.0, top + 40.0), 10);
     assert_eq!(lib.get_scroll(), before, "a drag on the tiles scrolled the grid");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The brightest green, 0 to 63, in the panel's right margin past its blocks' inset, where its knob
@@ -293,57 +279,44 @@ fn edge_ink(rig: &common::Rig, top: usize) -> u16 {
 /// The editor opened by a double click on a tile from a pointer parked in the corner, as an
 /// evaluation drives it: the panel's knob dark once the opening settles, lit by a wheel over the panel.
 pub(crate) fn the_panels_knob_is_dark_when_a_double_click_opens_the_editor() {
-    use oni_app::app::{Options, Shell};
+    
     use oni_app::{App, Library};
-    use oni_core::{Archive, EditorStore};
+    
     use std::time::Duration;
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the panel's knob is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-panel-knob-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("panel-knob");
+    let folder = root.scans();
     for name in ["A.tif", "B.tif", "C.tif"] {
         common::plain_tiff(&folder.join(name), 96, 64, 0.6);
     }
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(PhysicalSize::new(1728, 1017));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 1017).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(1726.0, 1015.0) });
     rig.settle();
     let lib = w.global::<Library>();
     let t = oni_app::app::tiles(w).into_iter().min_by_key(|t| t.index).expect("a tile");
     let at = (lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
-    common::click(&rig, w, at);
-    common::click(&rig, w, at);
+    common::click(rig, w, at);
+    common::click(rig, w, at);
     rig.until("A rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     assert!(!w.global::<App>().get_gallery(), "the double click opened the editor");
-    wait(&rig, Duration::from_millis(2500));
+    wait(rig, Duration::from_millis(2500));
     let top = 360;
-    let rest = edge_ink(&rig, top);
+    let rest = edge_ink(rig, top);
     println!("shot {}", rig.shot("panel-knob-opened").display());
     // A wheel over the panel lights its knob: the edge's ink rises well past the panel's at rest.
     let over = slint::LogicalPosition::new(1500.0, 700.0);
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: over });
     rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -40.0 });
-    wait(&rig, Duration::from_millis(300));
-    let lit = edge_ink(&rig, top);
+    wait(rig, Duration::from_millis(300));
+    let lit = edge_ink(rig, top);
     // A moment after, the pointer over the canvas, the knob out: the ink the editor opened on.
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(700.0, 500.0) });
-    wait(&rig, Duration::from_millis(2500));
-    let out = edge_ink(&rig, top);
+    wait(rig, Duration::from_millis(2500));
+    let out = edge_ink(rig, top);
     assert_eq!(rest, out, "the editor opened with its knob lit");
     // Twin: the measure sees a lit knob.
     assert!(lit > out + 10, "a wheel over the panel lit its knob: {lit} against {out}");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

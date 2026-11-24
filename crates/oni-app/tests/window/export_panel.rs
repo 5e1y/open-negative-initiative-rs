@@ -20,7 +20,8 @@ fn gap(above: common::Placed, below: common::Placed) -> f32 {
 }
 
 pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
-    let Some((rig, shell, root)) = opened("export-panel") else { return };
+    let Some(app) = opened("export-panel") else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let e = w.global::<Exporting>();
@@ -88,7 +89,7 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     // An empty field shows an example, never what reads as a value; twin: a name typed hides it.
     let example = "e.g. Jane Doe";
     assert_eq!(common::placed(w, Role::Text, example).len(), 1, "the empty Artist field shows its example");
-    common::click(&rig, w, artist.middle());
+    common::click(rig, w, artist.middle());
     rig.key("Ansel Adams");
     rig.settle();
     assert!(common::placed(w, Role::Text, example).is_empty(), "the typed name stands alone");
@@ -120,7 +121,7 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
         let found = i_slint_backend_testing::ElementHandle::find_by_accessible_label(w, "Date").find(|e| e.accessible_role() == Some(Role::TextInput));
         found.and_then(|e| e.accessible_value()).unwrap_or_default().to_string()
     };
-    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Date").middle());
     rig.key("summer 1998");
     rig.settle();
     assert_eq!(field(), "summer 1998", "twin: the words stand until let go");
@@ -129,8 +130,8 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     assert_eq!(field(), "2026-09-14 16:46:19");
     // Typed in, the words stand through the line published again, which a preview or a size landing
     // does as date-settled does, so a time typed after the day reaches the file whole.
-    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
-    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Date").middle());
     rig.key("2026-09-15");
     rig.settle();
     e.invoke_date_settled(0);
@@ -143,14 +144,13 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     rig.settle();
     assert_eq!(field(), "2026-09-15 10:30:00");
     // Let go by a click elsewhere, the field shows the date the file will carry as Return does.
-    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
-    common::click(&rig, w, common::the(w, Role::TextInput, "Date").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Date").middle());
     rig.key("2026-09-16");
-    common::click(&rig, w, common::the(w, Role::TextInput, "Artist").middle());
+    common::click(rig, w, common::the(w, Role::TextInput, "Artist").middle());
     rig.settle();
     assert_eq!(field(), "2026-09-16 00:00:00");
-    presets_keep_the_rows_in_place(&rig, &shell);
-    let _ = std::fs::remove_dir_all(&root);
+    presets_keep_the_rows_in_place(rig, shell);
 }
 
 /// Where each row under the picker lies, from the format's tabs to the summary at the panel's foot.
@@ -286,19 +286,20 @@ pub(crate) fn a_preset_saved_before_web_keeps_its_name_and_its_file() {
     let settings: serde_json::Value = serde_json::from_str(&web.raw_value()).unwrap();
     let file = serde_json::json!({ "exportPresets": [{ "name": "Web 2048", "settings": settings }] });
     let seed = |support: &std::path::Path| std::fs::write(support.join("preferences.json"), file.to_string()).unwrap();
-    let Some((rig, shell, root)) = opened_with("export-kept", seed) else { return };
+    let Some(app) = opened_with("export-kept", seed) else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let e = w.global::<Exporting>();
     ctl.act(oni_app::Act::Export);
     rig.settle();
     assert_eq!(export_card::kept(&ctl).iter().map(|k| k.name.as_str()).collect::<Vec<_>>(), ["Web 2048"]);
-    choose(&rig, w, "Web");
+    choose(rig, w, "Web");
     assert_eq!(export_card::card(&ctl).settings, web);
     // Twin: the built-in Web's line, the fourth, is not the one checked, the saved one after it is.
     assert_ne!(e.get_lit_preset(), 3, "the built-in Web's line holds the settings too, yet the saved name stands");
     assert_eq!(e.get_lit_preset(), 4, "the saved line checked, after the four built-in ones");
     assert_eq!(picker(w), "Web 2048 · JPEG · sRGB · 2048 px");
-    choose(&rig, w, "Rename “Web 2048”…");
+    choose(rig, w, "Rename “Web 2048”…");
     rig.key("Blog");
     let ret: slint::SharedString = slint::platform::Key::Return.into();
     rig.key(&ret);
@@ -311,5 +312,4 @@ pub(crate) fn a_preset_saved_before_web_keeps_its_name_and_its_file() {
     let words: Vec<&String> = item.as_object().unwrap().keys().collect();
     assert_eq!(words, ["name", "settings"], "each preset in the two words 1.5.6 lists it by");
     assert_eq!(oni_export::Settings::from_raw_value(&item["settings"].to_string()), Some(web), "its settings in their own words");
-    let _ = std::fs::remove_dir_all(&root);
 }

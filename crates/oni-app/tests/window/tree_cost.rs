@@ -1,11 +1,9 @@
 //! The archive's tree is cut again only when its shape moves: opening a photo and a thumbnail
 //! landing cut nothing, a fold lays the rows again, a read that finds a new folder cuts the tree.
 
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{self};
 use oni_app::Library;
-use oni_core::{Archive, EditorStore};
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -15,31 +13,18 @@ fn folder_row(lib: &Library, title: &str) -> Option<usize> {
 }
 
 pub(crate) fn opening_a_photo_or_a_thumbnail_landing_cuts_no_tree() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the tree's cost is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-tree-cost-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("tree-cost");
+    let scans = root.join("Scans");
     for i in 0..6 {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.65 + i as f32 / 100.0);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&scans);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&scans);
     rig.until("every thumbnail landed", Duration::from_secs(60), || ctl.state.borrow().loaded() >= 12);
     rig.settle();
     let cuts = oni_app::library::cuts;
@@ -67,7 +52,7 @@ pub(crate) fn opening_a_photo_or_a_thumbnail_landing_cuts_no_tree() {
         rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
         rig.settle();
     };
-    reread(&rig);
+    reread(rig);
     assert_eq!(cuts().0, before.0, "a read that finds the same rows cuts no tree");
 
     // Twin: a fold lays the rows again, the tree kept.
@@ -80,11 +65,10 @@ pub(crate) fn opening_a_photo_or_a_thumbnail_landing_cuts_no_tree() {
 
     // Twin: a folder added on the disk cuts the tree again, and its row shows.
     common::plain_tiff(&scans.join("Roll C").join("C00.tif"), 96, 64, 0.5);
-    reread(&rig);
+    reread(rig);
     rig.until("Roll C's row", Duration::from_secs(30), || folder_row(&lib, "Roll C").is_some());
     assert!(cuts().0 > before.0, "twin: a new folder cuts the tree again");
     assert!(!lib.get_rows().iter().any(|r| r.kind == 2 && r.title.starts_with("B0")), "the hand's fold stays through the cut");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// What the interface thread spent on the jobs the other threads posted, while `done` is false.
@@ -134,13 +118,8 @@ pub(crate) fn the_tree_s_cost_on_a_big_folder() {
     if std::env::var_os("ONI_TREE_BENCH").is_none() {
         return eprintln!("ONI_TREE_BENCH unset: the big folder is not laid");
     }
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the tree's cost is not measured"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-tree-bench-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Library"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("tree-bench");
+    let scans = root.join("Library");
     let started = std::time::Instant::now();
     let mut total = 0;
     for f in 0..200 {
@@ -154,31 +133,24 @@ pub(crate) fn the_tree_s_cost_on_a_big_folder() {
         total += 1;
     }
     println!("{total} photos written in {:.1} s", started.elapsed().as_secs_f64());
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
     let read = |rig: &common::Rig, name: &str| said(name, &busy_until(rig, Duration::from_secs(600), || ctl.state.borrow().read_done()));
     timed("open the folder (the call)", || shell.open_folder(&scans));
-    read(&rig, "first read: landings");
-    said("thumbnail pass: landings", &busy_until(&rig, Duration::from_secs(900), || ctl.state.borrow().loaded() >= total));
+    read(rig, "first read: landings");
+    said("thumbnail pass: landings", &busy_until(rig, Duration::from_secs(900), || ctl.state.borrow().loaded() >= total));
     rig.settle();
     timed("read again (the call)", || lib.invoke_tree_reload());
-    read(&rig, "read again, nothing moved: landings");
+    read(rig, "read again, nothing moved: landings");
     rig.settle();
     let tile = app::tiles(w).into_iter().next().expect("a tile");
     let landed = ctl.state.borrow().thumbnails_landed();
     timed("open a photo", || lib.invoke_tile_opened(tile.index));
     rig.until("a photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
-    said("its thumbnail drawn again", &busy_until(&rig, Duration::from_secs(20), || ctl.state.borrow().thumbnails_landed() > landed));
+    said("its thumbnail drawn again", &busy_until(rig, Duration::from_secs(20), || ctl.state.borrow().thumbnails_landed() > landed));
     rig.settle();
     let roll = folder_row(&lib, "Roll 0").expect("Roll 0's row");
     timed("fold a folder", || lib.invoke_row_folded(roll as i32));
@@ -186,5 +158,4 @@ pub(crate) fn the_tree_s_cost_on_a_big_folder() {
     timed("medal the open photo", || ctl.act(oni_app::Act::MedalGold));
     timed("medal it again", || ctl.act(oni_app::Act::MedalNone));
     rig.settle();
-    let _ = std::fs::remove_dir_all(&root);
 }

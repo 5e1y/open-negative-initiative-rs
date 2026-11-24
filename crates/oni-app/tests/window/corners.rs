@@ -29,7 +29,8 @@ fn inside(r: f32, k: f32) -> bool {
 }
 
 pub(crate) fn the_canvas_squares_its_corner_against_a_readout_run_edge_to_edge() {
-    let Some((rig, shell, root)) = opened("corners") else { return };
+    let Some(app) = opened("corners") else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let ds = w.global::<DS>();
     let (ground, canvas) = (rgb565(ds.get_palette_panel()), rgb565(ds.get_palette_canvas()));
@@ -37,19 +38,18 @@ pub(crate) fn the_canvas_squares_its_corner_against_a_readout_run_edge_to_edge()
     let panel = w.get_panel_x();
 
     // The canvas's top right corner is square against the readout; its top left keeps its round.
-    assert_eq!(pixel(&rig, panel - 1.0, BAR), canvas, "the top right corner is square");
-    assert_eq!(pixel(&rig, LIBRARY, BAR), ground, "twin: the top left corner lies outside its round");
-    assert_eq!(pixel(&rig, LIBRARY + 5.0, BAR + 5.0), canvas, "the canvas within it");
+    assert_eq!(pixel(rig, panel - 1.0, BAR), canvas, "the top right corner is square");
+    assert_eq!(pixel(rig, LIBRARY, BAR), ground, "twin: the top left corner lies outside its round");
+    assert_eq!(pixel(rig, LIBRARY + 5.0, BAR + 5.0), canvas, "the canvas within it");
 
     // The readout's glass from the card's top, edge to edge: its very corners are the glass's; twin: the
     // plots' round would leave the corner pixel to the ground.
-    assert_ne!(pixel(&rig, panel, BAR), ground, "the readout's corner beside the canvas is the glass's");
-    assert_ne!(pixel(&rig, 1279.0, BAR), ground, "the readout runs to the window's edge");
+    assert_ne!(pixel(rig, panel, BAR), ground, "the readout's corner beside the canvas is the glass's");
+    assert_ne!(pixel(rig, 1279.0, BAR), ground, "the readout runs to the window's edge");
     assert!(!inside(ROUND, 0.0) && inside(ROUND, 2.0), "a round would take the corner pixel");
 
     // Twin: the panel folded squares the canvas's right side, and the same probe sees it.
     ctl.act(Act::HidePanel);
     rig.settle();
-    assert_eq!(pixel(&rig, 1279.0, BAR), canvas, "a folded column's side is square");
-    let _ = std::fs::remove_dir_all(&root);
+    assert_eq!(pixel(rig, 1279.0, BAR), canvas, "a folded column's side is square");
 }

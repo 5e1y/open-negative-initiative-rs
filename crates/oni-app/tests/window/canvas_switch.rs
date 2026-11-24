@@ -3,16 +3,14 @@
 //! and brush; a heal that failed is not started again on every notch.
 
 use oni_app::PanelTab;
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Dedust, Library, PanelState, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::frame::Correction;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, Id, PipelineSettings};
 use slint::{ComponentHandle, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -42,35 +40,22 @@ fn healed(w: &oni_app::MainWindow) -> bool {
 }
 
 pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the canvas switch is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-canvas-switch-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("canvas-switch");
+    let (folder, caches) = (root.scans(), root.caches());
     common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
     common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
     with_corrections(&folder.join("A.tif"), 1);
     with_corrections(&folder.join("B.tif"), 2);
     // SAFETY: set before any thread of this process reads it; the patches land in the check's own folder.
     unsafe { std::env::set_var("ONI_CACHES", &caches) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, c, d) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Dedust>());
     // B's file taken away below stays its frame's: no watch reads the folder again behind the check.
     ctl.set_watching(false);
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
@@ -139,6 +124,4 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     rig.until("the generation's failure", Duration::from_secs(60), || healed(w));
     w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
     assert!(healed(w), "a notch starts no generation again");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -2,10 +2,9 @@
 //! by the hand's distance and leaves every Tint, and the crop and De-dust keys say why they wait.
 
 use i_slint_backend_testing::AccessibleRole;
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Library, Store, Tip};
-use oni_core::{Archive, EditorStore, Knob};
+use oni_core::Knob;
 use oni_settings::PipelineSettings;
 use oni_settings::sidecar::{self, WriteOptions};
 use slint::{ComponentHandle, Model};
@@ -20,13 +19,8 @@ fn read(path: &Path) -> PipelineSettings {
 }
 
 pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Edit Together's moves are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-together-moves-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("together-moves");
+    let folder = root.scans();
     // A and C balanced each its own way, as a balance measured frame by frame leaves them; B at rest.
     let balanced = |temperature: f32, tint: f32| Knob::Tint.set(&Knob::Temperature.set(&PipelineSettings::default(), temperature), tint);
     for (name, tone, own) in [("A", 0.9, Some(balanced(0.6, -0.3))), ("B", 0.7, None), ("C", 0.5, Some(balanced(-0.4, 0.2)))] {
@@ -37,20 +31,12 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
         }
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1728, 1017));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).size(1728, 1017).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, canvas, g, tip) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Store>(), w.global::<Tip>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let tile = |name: &str| oni_app::app::tiles(w).iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     let path = |name: &str| folder.join(format!("{name}.tif"));
@@ -92,7 +78,7 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     println!("shot {}", rig.shot("together-moves").display());
 
     // Colour's Reset lays each frame's own rest on all three, then leaves.
-    common::click(&rig, w, crate::help_card::reset_of(w, "Colour").expect("Colour's Reset").middle());
+    common::click(rig, w, crate::help_card::reset_of(w, "Colour").expect("Colour's Reset").middle());
     rig.until("the others at rest", Duration::from_secs(10), || near(Knob::Temperature.get(&read(&path("A"))), 0.0));
     let (a, c) = (read(&path("A")), read(&path("C")));
     assert!(near(Knob::Tint.get(&a), 0.0) && near(Knob::Temperature.get(&c), 0.0) && near(Knob::Tint.get(&c), 0.0));
@@ -118,5 +104,4 @@ pub(crate) fn frames_together_read_their_span_and_move_by_one_distance() {
     rig.until("B alone", Duration::from_secs(60), || canvas.get_status().contains(" \u{d7} "));
     assert!(hover("Crop").starts_with("Crop and Straighten"));
     assert_eq!(g.get_temperature_readout().as_str(), Field::Temperature.readout(open(Knob::Temperature)), "alone, one value again");
-    let _ = std::fs::remove_dir_all(&root);
 }

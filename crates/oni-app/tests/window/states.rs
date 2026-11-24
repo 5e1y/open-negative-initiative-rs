@@ -7,7 +7,6 @@
 use oni_app::StateProbe;
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common;
 
@@ -68,8 +67,7 @@ fn contrast(a: f64, b: f64) -> f64 {
 }
 
 pub(crate) fn every_state_reads_apart_from_its_neighbour() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = StateProbe::new().unwrap();
     probe.set_word("Scanner".into());
     oni_app::keycaps::serve(&probe);
@@ -254,8 +252,7 @@ pub(crate) fn every_state_reads_apart_from_its_neighbour() {
 
 /// Every readout ends on one edge, its unit with it: one number bare, in percent and in stops.
 pub(crate) fn readouts_end_at_one_edge() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = StateProbe::new().unwrap();
     probe.set_word("Value".into());
     let readouts = ["1.50", "1.50%", "1.50 EV"];

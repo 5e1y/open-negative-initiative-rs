@@ -1,9 +1,7 @@
 //! The base step's loupe: its first picture on a frame is the full resolution, decoded ahead from the
 //! roll's entry and for the neighbours, never the reduced scan sharpening under the eye.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Bar, Library, Preparing};
-use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use std::path::{Path, PathBuf};
@@ -42,23 +40,12 @@ fn frames(folder: &Path) -> (Vec<String>, Option<(usize, usize)>) {
 }
 
 pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the base loupe is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-loupe-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("prepare-loupe");
+    let folder = root.scans();
     let (names, size) = frames(&folder);
     let canonical = |n: &str| oni_library::paths::canonical(&folder.join(n));
-    let rig = common::rig(std::env::temp_dir());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p) = (w.global::<Library>(), w.global::<Preparing>());
@@ -151,31 +138,19 @@ pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
 
     // Past the base step, every full resolution is let go.
     let pick = (p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.05, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.1);
-    click(&rig, pick.0, pick.1);
+    click(rig, pick.0, pick.1);
     assert_eq!(p.get_step(), 3, "a pick goes on by itself");
     assert!(held().is_empty(), "the flags step holds no full resolution: {:?}", held());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// A frame whose scan cannot be read says why on the base step, never left reading.
 pub(crate) fn an_unreadable_scan_says_why_on_the_base_step() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the base step's failure is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-prepare-unreadable-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("prepare-unreadable");
     let folder = root.join("Scans");
     common::graded_tiff(&folder.join("A.tif"), 600, 400, 0.8);
     std::fs::write(folder.join("B.tif"), b"II*\0not a picture").unwrap();
-    let rig = common::rig(std::env::temp_dir());
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), require_roll: true, ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).with(|o| o.require_roll = true).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let p = w.global::<Preparing>();
@@ -200,6 +175,4 @@ pub(crate) fn an_unreadable_scan_says_why_on_the_base_step() {
     rig.pump();
     assert!(p.get_step() == 2 && !p.get_has_base() && !p.get_scan_failure().is_empty(), "a pick of no value stays on its step");
     assert!(p.get_action_enabled(), "twin: NEXT goes on without it");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -1,10 +1,9 @@
 //! A Swift user's rolls opened by this app: `ONI_UPGRADE_ROLLS` holds one folder per roll, mirrored
 //! here (sidecars copied, originals linked), so neither the folder nor its originals are ever touched.
 
-use oni_app::app::{self, Options, Shell, WRITE_DELAY};
+use oni_app::app::{self, WRITE_DELAY};
 use oni_app::{App, Library};
-use oni_core::{Archive, EditorStore};
-use slint::platform::{Key, WindowEvent};
+use slint::platform::Key;
 use slint::ComponentHandle;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -54,22 +53,11 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     let Some(source) = std::env::var_os("ONI_UPGRADE_ROLLS").map(PathBuf::from) else {
         return eprintln!("ONI_UPGRADE_ROLLS is unset: the upgrade is not exercised");
     };
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the upgrade is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-upgrade-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (rolls, support, caches) = (root.join("Rolls"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("upgrade");
+    let rolls = root.join("Rolls");
     mirror(&source, &rolls);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
@@ -90,10 +78,10 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
         rig.pump();
         assert!(!w.global::<App>().get_gallery(), "{}: a double click opens the editor", folder.display());
         rig.until("the frame rendered", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
-        settle(&rig, WRITE_DELAY + Duration::from_millis(600));
+        settle(rig, WRITE_DELAY + Duration::from_millis(600));
         rig.chord(Key::Control, "g");
         assert!(w.global::<App>().get_gallery(), "⌘G goes back to the gallery");
-        settle(&rig, WRITE_DELAY + Duration::from_millis(600));
+        settle(rig, WRITE_DELAY + Duration::from_millis(600));
         for (file, was) in files.iter().zip(&before) {
             seen += 1;
             let now = std::fs::read(file).unwrap();
@@ -125,6 +113,4 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
     w.global::<oni_app::Store>().invoke_step(oni_app::fields::Field::Exposure.index(), 1);
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(ctl.state.borrow().open_path().unwrap()));
     rig.until("the notch written", Duration::from_secs(5), || edited(&was, &std::fs::read(&frame).unwrap(), mosaic).is_some());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

@@ -1,11 +1,8 @@
 //! RGB passes on the headless window: Prepare the Roll groups the files by threes, reads their order,
 //! shifts by one file and registers each triplet; the gallery and status bar show each by its lead.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{App, Library, Preparing};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -60,13 +57,8 @@ fn strings(model: slint::ModelRc<slint::SharedString>) -> Vec<String> {
 }
 
 pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: RGB passes are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-rgb-passes-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Passes"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("rgb-passes");
+    let folder = root.join("Passes");
     std::fs::create_dir_all(&folder).unwrap();
     // Two frames taken green, red, blue, and one stray file: P6.
     for (frame, first) in [(texture(0x9E37_79B9_7F4A_7C15), 0), (texture(0x2545_F491_4F6C_DD1D), 3)] {
@@ -76,20 +68,12 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     }
     pass(&folder.join("P6.tif"), &texture(7), 1, 0.0);
     let canonical = |n: &str| PathBuf::from(oni_library::paths::canonical(&folder.join(n)));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(launched) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &launched;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, p, app) = (w.global::<Library>(), w.global::<Preparing>(), w.global::<App>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    launched.read(&folder);
     rig.settle();
     let tile = |name: &str| {
         let tiles = oni_app::app::tiles(w);
@@ -186,5 +170,4 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     rig.pump();
     assert!(loaded(&canonical("P4.tif")).settings.pass_of.is_none(), "one undo unjoins the passes");
     assert!(loaded(&canonical("P3.tif")).settings.rgb_passes.is_none());
-    let _ = std::fs::remove_dir_all(&root);
 }

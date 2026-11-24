@@ -1,15 +1,12 @@
 //! A stroke painted on a turned, cropped picture is kept on the scan under the hand, and its marker
 //! follows the picture through another turn and a mirror, the stroke itself untouched.
 
-use oni_app::app::{Options, Shell};
 use oni_app::{Canvas, Library};
-use oni_core::{Archive, EditorStore};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::Geometry;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::{ComponentHandle, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -29,33 +26,20 @@ fn shown(c: &Canvas, g: &Geometry, p: Point) -> (f32, f32) {
 }
 
 pub(crate) fn a_stroke_stays_on_its_scan_point_through_turns_and_mirrors() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: strokes across framings are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-dedust-turn-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("dedust-turn");
+    let (folder, caches) = (root.scans(), root.caches());
     common::plain_tiff(&folder.join("A.tif"), SCAN.0 as usize, SCAN.1 as usize, 0.5);
     let mut settings = PipelineSettings::rest(ConversionMode::Negative, false);
     settings.geometry = Geometry { quarter_turns: 1, crop: Rect::new(0.1, 0.05, 0.6, 0.8), ..Geometry::default() };
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     // SAFETY: set before any thread of this process reads it; the patches land in the check's own folder.
     unsafe { std::env::set_var("ONI_CACHES", &caches) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, c) = (w.global::<Library>(), w.global::<Canvas>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
@@ -97,5 +81,4 @@ pub(crate) fn a_stroke_stays_on_its_scan_point_through_turns_and_mirrors() {
         assert!((m.0 - stale.0).hypot(m.1 - stale.1) > 5.0, "{name}: the marker stayed where it was");
     }
     rig.shot("dedust_turn");
-    let _ = std::fs::remove_dir_all(&root);
 }

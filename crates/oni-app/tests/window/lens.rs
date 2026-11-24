@@ -4,14 +4,12 @@
 
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::{Canvas, Library, PanelState, PanelTab, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::cg::Point;
 use oni_settings::lens::LensCorrection;
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{ConversionMode, PipelineSettings};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::common;
@@ -37,14 +35,10 @@ fn share(v: f32) -> f32 {
 }
 
 pub(crate) fn each_lens_slider_lays_its_correction_and_moves_the_canvas() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Lens Corrections block is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-lens-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("lens");
     let name = photo(&root.join("Scans"));
-    let (rig, shell) = opened(&gpu, &root);
+    let Some(app) = opened(root) else { return };
+    let common::App { rig, shell, root, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let panel = w.global::<PanelState>();
     panel.set_tab(PanelTab::Roll);
@@ -58,7 +52,7 @@ pub(crate) fn each_lens_slider_lays_its_correction_and_moves_the_canvas() {
 
     // Distortion by a drag, from its rest to a barrel lens's correction.
     let renders = ctl.state.borrow().renders();
-    drag_rail(&rig, w, "Distortion", share(0.0), share(60.0));
+    drag_rail(rig, w, "Distortion", share(0.0), share(60.0));
     rig.until("the distortion rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     // A drag moves by the track's own gain from where the hand caught the knob, within a few units.
@@ -80,7 +74,7 @@ pub(crate) fn each_lens_slider_lays_its_correction_and_moves_the_canvas() {
         ("Vignetting", 50.0, |l| l.vignetting),
     ] {
         let renders = ctl.state.borrow().renders();
-        press_rail(&rig, w, label, share(at));
+        press_rail(rig, w, label, share(at));
         rig.until(label, Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
         rig.settle();
         assert!((read(lens()) - at).abs() < 8.0, "{label} at {}: {:?}", at, lens());
@@ -90,7 +84,7 @@ pub(crate) fn each_lens_slider_lays_its_correction_and_moves_the_canvas() {
     // Strong corrections both ways, shot to be judged: a pincushion lens's, then a barrel lens's.
     for (shot, distortion) in [("lens-pincushion", 0.0), ("lens-barrel", 0.98)] {
         let renders = ctl.state.borrow().renders();
-        press_rail(&rig, w, "Distortion", distortion);
+        press_rail(rig, w, "Distortion", distortion);
         rig.until(shot, Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
         rig.settle();
         println!("shot {}", rig.shot(shot).display());
@@ -101,8 +95,6 @@ pub(crate) fn each_lens_slider_lays_its_correction_and_moves_the_canvas() {
     rig.settle();
     assert_eq!(lens(), laid, "a film mode keeps the lens for a later Digital");
     assert!(common::placed(w, AccessibleRole::Text, "Lens Corrections").is_empty(), "a negative lays no Lens Corrections");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 const SCAN: (f64, f64) = (480.0, 320.0);
@@ -114,31 +106,19 @@ fn marker(c: &Canvas) -> Option<(f32, f32)> {
 }
 
 pub(crate) fn a_stroke_on_a_distorted_picture_is_kept_under_the_hand() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: strokes under a lens correction are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-dedust-lens-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("dedust-lens");
+    let (folder, caches) = (root.scans(), root.caches());
     common::plain_tiff(&folder.join("A.tif"), SCAN.0 as usize, SCAN.1 as usize, 0.5);
     let mut settings = PipelineSettings::rest(ConversionMode::Digital, false);
     settings.lens_correction.distortion = -60.0;
     sidecar::write(&settings, &folder.join("A.tif"), WriteOptions::default()).unwrap();
     // SAFETY: set before any thread of this process reads it; the patches land in the check's own folder.
     unsafe { std::env::set_var("ONI_CACHES", &caches) };
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = oni_app::app::Options { support, caches, picker: Box::new(|| None), ..Default::default() };
-    let shell = oni_app::app::Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (lib, c) = (w.global::<Library>(), w.global::<Canvas>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
@@ -165,6 +145,4 @@ pub(crate) fn a_stroke_on_a_distorted_picture_is_kept_under_the_hand() {
     let at = marker(&c).unwrap();
     assert!((at.0 - clicked.0).abs() < 1.0 && (at.1 - clicked.1).abs() < 1.0, "the marker at {at:?}, the click at {clicked:?}");
     println!("shot {}", rig.shot("dedust-lens").display());
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

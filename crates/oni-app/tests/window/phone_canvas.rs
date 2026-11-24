@@ -7,7 +7,7 @@ use oni_core::{Archive, EditorStore};
 use oni_link_ffi::{Command, Param, RemoteSession, generate_identity};
 use slint::ComponentHandle;
 use slint::platform::WindowEvent;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use crate::common;
@@ -26,8 +26,7 @@ pub(crate) fn a_phone_step_reaches_the_canvas_with_the_panel_folded() {
     let root = std::env::temp_dir().join(format!("oni-app-phone-canvas-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     common::linear_tiff(&root.join("Roll").join("A.tif"), 96, 64, 0.6);
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| false));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };
     let shell = Shell::new(store, Engine::shared(&gpu), options).unwrap();

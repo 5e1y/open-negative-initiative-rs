@@ -1,11 +1,8 @@
 //! Edit Together over five frames opened every way a hand opens them: each frame takes each step.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Library, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
-use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -17,32 +14,19 @@ fn exposure(path: &Path) -> f32 {
 }
 
 pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_opened() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Edit Together is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-together-all-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("together-all");
+    let folder = root.scans();
     let names = ["A", "B", "C", "D", "E"];
     for (i, n) in names.iter().enumerate() {
         common::graded_tiff(&folder.join(format!("{n}.tif")), 150, 100, 0.3 + 0.1 * i as f32);
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, canvas, g) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Store>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let tile = |name: &str| oni_app::app::tiles(w).iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     let path = |name: &str| folder.join(format!("{name}.tif"));
@@ -102,5 +86,4 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     rig.until("three together", Duration::from_secs(30), || canvas.get_status().as_str() == "3 frames together");
     let fourth = drag("column, D then ⌘A ⌘E", &["A", "D", "E"]);
     assert_eq!((first, second, third, fourth), (0, 0, 0, 0), "a frame together lags behind the step");
-    let _ = std::fs::remove_dir_all(&root);
 }

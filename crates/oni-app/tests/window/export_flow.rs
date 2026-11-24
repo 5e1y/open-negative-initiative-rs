@@ -10,7 +10,6 @@ use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
@@ -31,8 +30,7 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     for (i, n) in names.iter().enumerate() {
         common::linear_tiff(&folder.join(n), 96, 64, 0.4 + 0.1 * i as f32);
     }
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
@@ -230,7 +228,7 @@ pub(crate) fn the_estimate_weighs_the_file_the_export_writes() {
         let v = 0.45 + 0.15 * (x / 41.0).sin() * (y / 37.0).cos() + 0.08 * ((x + 2.0 * y) / 19.0).sin() + 0.05 * ((3.0 * x - y) / 23.0).cos();
         [v, 0.9 * v + 0.05 * (y / 53.0).sin(), 0.8 * v + 0.05 * (x / 61.0).cos()]
     });
-    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { canvas: false, support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();

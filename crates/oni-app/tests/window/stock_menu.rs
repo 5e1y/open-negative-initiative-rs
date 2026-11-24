@@ -15,15 +15,11 @@ use crate::stock_hero::{dropped, drop_menu, point, sidecar};
 /// nothing written, no step and no sidecar; leaving the menu or Escape shows its own film again; a click or
 /// Return writes the stock lit as one step an Undo takes back.
 pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the stocks' menu under the hand is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-stock-menu-hover-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("stock-menu-hover");
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     common::graded_tiff(&root.join("Scans/A.tif"), 1200, 800, 0.7);
-    let (rig, shell) = crate::film_effects::opened(&gpu, &root);
+    let Some(app) = crate::film_effects::opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, menus) = (w.global::<PanelState>(), w.global::<Menus>());
     panel.set_tab(PanelTab::Color);
@@ -44,9 +40,9 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     let (next, third) = (listed[at - 1], listed[at - 2]);
 
     // The pointer on a line shows its film on the photo; nothing is written.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let renders = ctl.state.borrow().renders();
-    point(&rig, common::in_popup(w, Role::Button, next.name()).middle());
+    point(rig, common::in_popup(w, Role::Button, next.name()).middle());
     rig.until("the photo rendered on the stock under the pointer", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     assert_eq!(on(&shown()), Some(next), "the canvas shows the stock under the pointer");
@@ -54,15 +50,15 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     assert_eq!((stored(), menus.get_live().undo), (own.clone(), undo), "nothing written, no step");
     println!("shot {}", rig.shot("stock-menu-hover").display());
     // Another line, then the pointer out of the menu: the photo's own film again, the menu still open.
-    point(&rig, common::in_popup(w, Role::Button, third.name()).middle());
+    point(rig, common::in_popup(w, Role::Button, third.name()).middle());
     rig.settle();
     assert_eq!(on(&shown()), Some(third), "the light follows the pointer");
-    point(&rig, (2.0, 2.0));
+    point(rig, (2.0, 2.0));
     rig.settle();
     assert!(dropped(w), "leaving the menu keeps it open");
     assert_eq!((on(&shown()), ctl.state.borrow().stock_lit()), (Some(VirtualStock::of("kodak-portra-800")), None), "the photo's own film again");
     // Escape shows its own film again too.
-    point(&rig, common::in_popup(w, Role::Button, next.name()).middle());
+    point(rig, common::in_popup(w, Role::Button, next.name()).middle());
     rig.settle();
     assert_eq!(on(&shown()), Some(next));
     rig.key("\u{1b}");
@@ -76,7 +72,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     assert_eq!((stored(), sidecar(&path), menus.get_live().undo), (own.clone(), written.clone(), undo), "no write, no sidecar, no step");
 
     // The arrows light the stocks after the one in use, past the brands' names; Return writes the one lit.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let order: Vec<usize> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).collect();
     let at = order.iter().position(|&i| oni_settings::film::stocks()[i].id == VirtualStock::of("kodak-portra-800").catalogue_id()).unwrap();
     rig.key(&slint::SharedString::from(Key::DownArrow));
@@ -102,9 +98,9 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
 
     // A click writes the stock under the pointer, its light's render the only one; Undo takes it back.
     rig.settle();
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let renders = ctl.state.borrow().renders();
-    common::click(&rig, w, common::in_popup(w, Role::Button, next.name()).middle());
+    common::click(rig, w, common::in_popup(w, Role::Button, next.name()).middle());
     rig.settle();
     assert_eq!(ctl.state.borrow().renders(), renders + 1, "the pick renders nothing past what its light showed");
     assert!(!dropped(w), "a click closes the menu");
@@ -117,6 +113,4 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     ctl.act(oni_app::Act::Undo);
     rig.settle();
     assert_eq!((stored(), shown()), (own.clone(), own), "Undo takes the pick back");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

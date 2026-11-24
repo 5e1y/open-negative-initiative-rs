@@ -69,7 +69,7 @@ fn rigged(check: &str) -> Option<Rigged> {
     let (folder, paths) = frames(&root);
     // Decodes kept on disk, as the app keeps them.
     oni_decode::cache::keep_in(root.join("Decodes"), 8 << 30);
-    let rig = common::rig(std::env::temp_dir());
+    let rig = common::rig();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();

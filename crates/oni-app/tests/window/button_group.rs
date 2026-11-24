@@ -7,7 +7,6 @@ use oni_app::GroupProbe;
 use slint::platform::WindowEvent;
 use slint::platform::software_renderer::Rgb565Pixel;
 use slint::{ComponentHandle, PhysicalSize};
-use std::path::PathBuf;
 
 use crate::common;
 
@@ -26,8 +25,7 @@ fn light(p: Rgb565Pixel) -> u32 {
 }
 
 pub(crate) fn a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_their_faces() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = GroupProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
@@ -67,8 +65,7 @@ pub(crate) fn a_plate_s_keycaps_touch_and_a_group_s_flat_keys_stand_apart_on_the
 
 /// A flat key and a block's title show their words as written; a keycap alone shows its word in capitals.
 pub(crate) fn capitals_are_the_keycap_s_alone() {
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
+    let rig = common::rig();
     let probe = GroupProbe::new().unwrap();
     oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });

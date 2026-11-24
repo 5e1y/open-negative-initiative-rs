@@ -1,14 +1,13 @@
 //! The library column follows the photo the editor opens: the folders holding it unfold, once per
 //! photo so a fold made by hand stays, and its row comes into view; on the projects, its project.
 
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{self};
 use oni_app::fields::Field;
 use oni_app::{Library, Store, TreeRow};
-use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
 use slint::{ComponentHandle, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -65,13 +64,8 @@ fn open_name(ctl: &std::rc::Rc<app::Ctl>) -> String {
 }
 
 pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the column's reveal is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-sidebar-reveal-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("sidebar-reveal");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     // Tones apart, so no two files share a fingerprint.
     for i in 0..20 {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 60.0);
@@ -85,20 +79,12 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     projects.push(Project::new("Trip", at(15.5), vec![member("Roll B/B05.tif"), member("Roll B/B06.tif")]));
     project::save(&support, &ProjectsFile { version: project::FORMAT, projects }).unwrap();
 
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
-    shell.open_folder(&scans);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&scans);
     rig.drawn();
 
     // `openFolder`: the folder opened and every folder under it start unfolded.
@@ -111,7 +97,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     lib.invoke_row_folded(folder(&lib, "Roll B").0 as i32);
     rig.pump();
     assert!(!folder(&lib, "Roll B").1.expanded && photo(&lib, "B18").is_none(), "a folded roll hides its photos");
-    open_tile(&rig, w, "B18");
+    open_tile(rig, w, "B18");
     rig.until("B18 open beside the column", Duration::from_secs(30), || open_name(&ctl) == "B18" && ctl.state.borrow().tree_height() > 0.0);
     let height = ctl.state.borrow().tree_height();
     rig.shot("sidebar-reveal-b18");
@@ -145,7 +131,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     common::scroll_tree(&lib, scrolled);
     let (_, b16) = photo(&lib, "B16").expect("B16 has a row");
     assert!(in_view(&lib, height, &b16), "B16 is in view to be clicked");
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(photo(&lib, "B16").unwrap().0 as i32, false, false);
     rig.pump();
     assert_eq!(open_name(&ctl), "B16");
@@ -167,7 +153,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     rig.pump();
     assert_eq!(open_name(&ctl), "B16", "twin: the chevron opens nothing");
     let still = lib.get_tree_viewport_y();
-    rest(&rig);
+    rest(rig);
     lib.invoke_row_clicked(folder(&lib, "Roll A").0 as i32, false, false);
     rig.pump();
     assert!(open_name(&ctl).starts_with('A'), "the roll's first photo opens: {}", open_name(&ctl));
@@ -183,7 +169,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     assert!(!project_rows()[trip()].expanded, "Trip starts folded");
     assert_eq!(lib.get_project_viewport_y(), 0.0);
     ctl.act(oni_app::Act::ToggleMode);
-    open_tile(&rig, w, "B05");
+    open_tile(rig, w, "B05");
     rig.until("B05 open", Duration::from_secs(30), || open_name(&ctl) == "B05");
     rig.drawn();
     rig.pump();
@@ -201,7 +187,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     assert!((100.0..800.0).contains(&view), "B05's row centred in a list {view} tall");
 
     // A photo row clicked in the projects opens it and leaves the list where it is.
-    rest(&rig);
+    rest(rig);
     lib.invoke_project_row_clicked(at as i32 + 3, false, false);
     rig.pump();
     rig.drawn();
@@ -209,6 +195,4 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     assert_eq!(-lib.get_project_viewport_y(), offset, "a click in the projects never scrolls them");
     rig.settle();
     rig.shot("sidebar-reveal-projects");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

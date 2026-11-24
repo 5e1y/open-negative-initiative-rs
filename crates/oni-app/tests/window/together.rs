@@ -1,13 +1,10 @@
 //! Edit Together on the headless window: three frames selected open six to a row, a drag on one moves
 //! all three alike as one step, a frame left out keeps its own.
 
-use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{Canvas, Library, Store};
-use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
 use slint::{ComponentHandle, Model};
-use slint::platform::WindowEvent;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -18,31 +15,18 @@ fn exposure(path: &Path) -> f32 {
 }
 
 pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: Edit Together is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-together-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("together");
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.9), ("B.tif", 0.7), ("C.tif", 0.5), ("D.tif", 0.3)] {
         common::graded_tiff(&folder.join(name), 150, 100, tone);
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, canvas) = (w.global::<Library>(), w.global::<Canvas>());
-    shell.open_folder(&folder);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&folder);
     rig.settle();
     let tile = |name: &str| oni_app::app::tiles(w).iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     let path = |name: &str| folder.join(format!("{name}.tif"));
@@ -170,5 +154,4 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     // Twin: A taken out again leaves D alone on the canvas.
     lib.invoke_row_clicked(row("A"), true, false);
     rig.until("D alone again", Duration::from_secs(30), || canvas.get_status().contains(" × "));
-    let _ = std::fs::remove_dir_all(&root);
 }

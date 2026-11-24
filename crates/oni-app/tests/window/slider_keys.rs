@@ -182,17 +182,13 @@ fn shots(rig: &common::Rig, w: &oni_app::MainWindow) {
 }
 
 pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the sliders' keys are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-slider-keys-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("slider-keys");
     photo(&root.join("Scans"));
-    let (rig, shell) = opened(&gpu, &root);
+    let Some(app) = opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
-    shots(&rig, w);
+    shots(rig, w);
     // Tall enough for every block of a tab unscrolled.
     rig.window.set_size(slint::PhysicalSize::new(2 * 1512, 2 * 4000));
     rig.settle();
@@ -200,13 +196,13 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     // Each tab's sliders, every one keyed on its row: the digital photo's, then a negative's Roll tab.
     let mut counts = Vec::new();
     for (t, panel) in [(PanelTab::Color, "Colour"), (PanelTab::Details, "Details"), (PanelTab::Roll, "Roll"), (PanelTab::Crop, "Crop"), (PanelTab::Dedust, "De-dust")] {
-        tab(&rig, w, t);
-        unfolded(&rig, w);
+        tab(rig, w, t);
+        unfolded(rig, w);
         counts.push((panel, keyed(w, panel)));
     }
     assert!(counts.iter().all(|(_, n)| *n > 0), "every tab holds sliders: {counts:?}");
     // Twin: the Roll tab's level handles, read as sliders but keyless, would fail the count.
-    tab(&rig, w, PanelTab::Roll);
+    tab(rig, w, PanelTab::Roll);
     let handles: Vec<(String, Placed)> = w
         .root_element()
         .query_descendants()
@@ -219,11 +215,11 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     assert!(!handles.is_empty() && handles.iter().all(|(name, h)| keys_on(w, name, h) == (0, 0)), "keyless handles: {handles:?}");
 
     // Lighting's Exposure: a press renders and is one step of the history, which one undo takes back.
-    tab(&rig, w, PanelTab::Color);
+    tab(rig, w, PanelTab::Color);
     let settings = || ctl.state.borrow().store().settings().clone();
     let (exposure, renders) = (value(w, "Exposure"), ctl.state.borrow().renders());
     let plus = common::slider_key(w, "Exposure", true);
-    common::click(&rig, w, plus.middle());
+    common::click(rig, w, plus.middle());
     rig.until("the keyed render", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     assert_ne!(value(w, "Exposure"), exposure, "the press moved Exposure");
@@ -243,16 +239,16 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     // One slider of each block and tab: Lighting, Colour, Effects, Film Effects, Details, Roll, Crop's dial,
     // De-dust's brush.
     for name in ["Exposure", "Tint", "Vignette", "Grain", "Grain size"] {
-        steps_three(&rig, w, name);
+        steps_three(rig, w, name);
     }
     for (t, name) in [(PanelTab::Details, "Texture"), (PanelTab::Roll, "Distortion"), (PanelTab::Crop, "Angle"), (PanelTab::Dedust, "Brush size")] {
-        tab(&rig, w, t);
-        steps_three(&rig, w, name);
+        tab(rig, w, t);
+        steps_three(rig, w, name);
     }
 
     // The keys' tooltips are the catalogue's texts, so they speak the app's language: the interface read
     // at run time stays English, the compiled one shows the French and Spanish laid for each.
-    tab(&rig, w, PanelTab::Color);
+    tab(rig, w, PanelTab::Color);
     let pattern = format!("{{}} {MINUS}: lower by {{}}");
     let english_words = pattern.replacen("{}", "Exposure", 1).replacen("{}", "0.03 EV", 1);
     assert_eq!(common::placed(w, Role::Button, &english_words).len(), 1, "the − key names Exposure, its way and its press");
@@ -266,9 +262,9 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     // Colour read as C, M and Y: a press three CC, the value editor's one.
     ctl.act(oni_app::Act::FiltrationCmy);
     rig.settle();
-    unfolded(&rig, w);
+    unfolded(rig, w);
     counts.push(("Colour as C, M and Y", keyed(w, "Colour as C, M and Y")));
-    steps_three(&rig, w, "C");
+    steps_three(rig, w, "C");
     ctl.act(oni_app::Act::FiltrationCmy);
     rig.settle();
 
@@ -276,18 +272,16 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
     let n = ctl.state.borrow().renders();
     w.global::<PanelState>().invoke_film_type_picked(0);
     rig.until("the negative rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > n);
-    tab(&rig, w, PanelTab::Roll);
-    unfolded(&rig, w);
+    tab(rig, w, PanelTab::Roll);
+    unfolded(rig, w);
     counts.push(("Roll (negative)", keyed(w, "Roll (negative)")));
-    steps_three(&rig, w, "Ceiling");
+    steps_three(rig, w, "Ceiling");
 
     // The export's Quality.
     ctl.act(oni_app::Act::Export);
     rig.settle();
-    unfolded(&rig, w);
+    unfolded(rig, w);
     counts.push(("Export", keyed(w, "Export")));
-    steps_three(&rig, w, "Quality");
+    steps_three(rig, w, "Quality");
     println!("sliders keyed: {counts:?}");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

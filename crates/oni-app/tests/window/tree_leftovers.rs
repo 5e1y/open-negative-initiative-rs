@@ -1,15 +1,13 @@
 //! The library column's last tree gestures, as `TreeEngine` gives them: the open row pinned, the projects
 //! as names or thumbnails by each mode's key, a drag joining or reordering them, a click on no row.
 
-use oni_app::app::{Options, Shell};
 use oni_app::preferences::Preferences;
 use oni_app::{Library, TreeRow};
-use oni_core::{Archive, EditorStore};
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_settings::Date;
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use crate::common;
@@ -50,13 +48,8 @@ fn release(rig: &common::Rig, to: (f32, f32)) {
 }
 
 pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the trees' last gestures are not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-tree-leftovers-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (scans, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let root = common::Root::new("tree-leftovers");
+    let (scans, support) = (root.join("Scans"), root.join("Support"));
     for i in 0..24 {
         common::plain_tiff(&scans.join("Roll A").join(format!("A{i:02}.tif")), 96, 64, 0.3 + i as f32 / 90.0);
         common::plain_tiff(&scans.join("Roll B").join(format!("B{i:02}.tif")), 96, 64, 0.6 + i as f32 / 90.0);
@@ -72,23 +65,15 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
         projects.into_iter().find(|p| p.name == name).map(|p| p.paths().into_iter().map(str::to_owned).collect()).unwrap_or_default()
     };
 
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
-    shell.window.show().unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let lib = w.global::<Library>();
     let ds = w.global::<oni_app::DS>();
     // The column's one inset, `ShellStyle.column-inset`, is `Space.md`.
     let (h, left) = (ds.get_control_film_sidebar_row_height(), ds.get_space_md());
-    shell.open_folder(&scans);
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    app.read(&scans);
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(0, false, false);
     rig.until("a photo rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
@@ -159,19 +144,19 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     // A click on the pinned row clicks its project and centres it; its chevron folds it.
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
-    rest(&rig);
+    rest(rig);
     let pinned_middle = (left + 120.0, list_top + h / 2.0);
-    drag(&rig, pinned_middle, pinned_middle);
-    release(&rig, pinned_middle);
+    drag(rig, pinned_middle, pinned_middle);
+    release(rig, pinned_middle);
     assert_eq!(open(), "B00", "beside a photo, Trip's first photo opens");
     assert!(project_rows(&lib)[at(&lib, "B00.tif")].selected, "and rings under Trip");
     assert_eq!(lib.get_project_viewport_y(), 0.0, "Trip brought back to the middle, held at the top");
     common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
-    rest(&rig);
+    rest(rig);
     let chevron = (left + ds.get_space_xs() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, list_top + h / 2.0);
-    drag(&rig, chevron, chevron);
-    release(&rig, chevron);
+    drag(rig, chevron, chevron);
+    release(rig, chevron);
     assert!(!project_rows(&lib)[at(&lib, "Trip")].expanded && pin().row.title != "Trip", "the chevron folds Trip, held no more");
     assert_eq!(open(), "B00", "twin: the fold opens nothing");
 
@@ -186,54 +171,54 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
         let r = project_rows(&lib)[at(&lib, title)].clone();
         (left + r.x + r.width / 2.0, list_top + r.y + 2.0)
     };
-    rest(&rig);
+    rest(rig);
     let (from, to) = (middle("A04.tif"), middle("Trip"));
-    drag(&rig, from, to);
+    drag(rig, from, to);
     let mark = lib.get_project_drag();
     let trip_row = project_rows(&lib)[at(&lib, "Trip")].clone();
     assert!(mark.shown && mark.ring && mark.chip == "1 item" && mark.mark_y == trip_row.y, "the ring round Trip: {mark:?}");
     rig.shot("tree-leftovers-drop");
-    release(&rig, to);
+    release(rig, to);
     assert!(!lib.get_project_drag().shown, "the marks leave with the drop");
     assert_eq!(members("Trip").last(), Some(&print("Roll A/A04.tif")), "A04 joins Trip");
     assert!(!members("Walk").contains(&print("Roll A/A04.tif")) && members("Walk").len() == 19, "and leaves Walk");
 
     // Onto a row's top strip it lands before that row; onto a photo's middle it joins nothing.
-    rest(&rig);
+    rest(rig);
     let (from, to) = (middle("A06.tif"), top_strip("A05.tif"));
-    drag(&rig, from, to);
+    drag(rig, from, to);
     assert!(lib.get_project_drag().line, "a line before A05");
-    release(&rig, to);
+    release(rig, to);
     assert_eq!(members("Walk")[..2], [print("Roll A/A06.tif"), print("Roll A/A05.tif")], "A06 lands before A05");
-    rest(&rig);
+    rest(rig);
     let before = members("Walk");
     let (from, to) = (middle("A07.tif"), middle("A05.tif"));
-    drag(&rig, from, to);
-    release(&rig, to);
+    drag(rig, from, to);
+    release(rig, to);
     assert_eq!(members("Walk"), before, "twin: a photo dropped onto a photo joins nothing");
 
     // A project dragged onto another's top strip takes its place among the projects.
-    rest(&rig);
+    rest(rig);
     let (from, to) = (middle("Walk"), top_strip("Trip"));
-    drag(&rig, from, to);
-    release(&rig, to);
+    drag(rig, from, to);
+    release(rig, to);
     let first = project_rows(&lib).into_iter().find(|r| r.kind == 1).unwrap();
     assert_eq!(first.title, "Walk", "Walk now heads the projects");
 
     // Twin: a press moved under the drag distance is a click, ringing its row, and moves nothing.
-    rest(&rig);
+    rest(rig);
     let before = (members("Trip"), members("Walk"));
     let (from, to) = (middle("A08.tif"), middle("A08.tif"));
-    drag(&rig, from, (to.0 + 2.0, to.1));
-    release(&rig, (to.0 + 2.0, to.1));
+    drag(rig, from, (to.0 + 2.0, to.1));
+    release(rig, (to.0 + 2.0, to.1));
     assert!(!lib.get_project_drag().shown && (members("Trip"), members("Walk")) == before, "no drag");
     assert!(project_rows(&lib)[at(&lib, "A08.tif")].selected, "the press clicked A08");
 
     // `clickEmptyProjects`: a click on no row drops the ring and the selection.
-    rest(&rig);
+    rest(rig);
     let gap = (left + 120.0, list_top + 2.0);
-    drag(&rig, gap, gap);
-    release(&rig, gap);
+    drag(rig, gap, gap);
+    release(rig, gap);
     assert!(project_rows(&lib).iter().all(|r| !r.selected), "nothing is ringed: {:?}", project_rows(&lib).iter().filter(|r| r.selected).map(|r| r.title.to_string()).collect::<Vec<_>>());
     assert_eq!(open(), "A08", "the photo open stays open");
 
@@ -254,6 +239,4 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     rig.pump();
     assert_eq!(lib.get_tree_pin().row.title, "Roll B", "twin: over Roll B's photos, Roll B is held");
     rig.shot("tree-leftovers-archive-pin");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }

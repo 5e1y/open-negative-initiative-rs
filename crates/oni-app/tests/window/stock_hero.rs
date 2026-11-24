@@ -3,9 +3,7 @@
 //! undoable step, and a digital photo's Film block, which lists the virtual films alone, drop the stocks' menu.
 
 use i_slint_backend_testing::AccessibleRole as Role;
-use oni_app::app::{Options, Shell};
 use oni_app::{Library, MainWindow, Menus, PanelState, PanelTab, Preparing, Stocks};
-use oni_core::{Archive, EditorStore};
 use oni_settings::{DyeSet, VirtualStock};
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model};
@@ -64,34 +62,21 @@ pub(crate) fn sidecar(path: &Path) -> String {
 }
 
 /// The shell on a folder of two negatives, at `height`.
-fn shell_on(gpu: &oni_app::render::Device, root: &Path, height: u32) -> (common::Rig, Shell, PathBuf) {
-    let folder = root.join("Scans");
+fn shell_on(root: common::Root, height: u32) -> Option<(common::App, PathBuf)> {
+    let folder = root.scans();
     for (name, tone) in [("A.tif", 0.8), ("B.tif", 0.5)] {
         common::graded_tiff(&folder.join(name), 240, 160, tone);
     }
     let folder = PathBuf::from(oni_library::paths::canonical(&folder));
-    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
-    let rig = common::rig(shots);
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(store, oni_app::render::Engine::shared(gpu), options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(slint::PhysicalSize::new(1280, height));
-    shell.window.show().unwrap();
-    shell.open_folder(&folder);
-    let ctl = shell.ctl.clone();
-    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    (rig, shell, folder)
+    let app = common::launch(root).size(1280, height).show()?;
+    app.read(&folder);
+    Some((app, folder))
 }
 
 pub(crate) fn prepare_picks_the_stock_on_its_hero() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the stock's hero in Prepare is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-stock-hero-prepare-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (rig, shell, _) = shell_on(&gpu, &root, 900);
+    let root = common::Root::new("stock-hero-prepare");
+    let Some((app, _)) = shell_on(root, 900) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (p, stocks) = (w.global::<Preparing>(), w.global::<Stocks>());
     ctl.act(oni_app::Act::PrepareRoll);
@@ -101,7 +86,7 @@ pub(crate) fn prepare_picks_the_stock_on_its_hero() {
     assert_eq!(p.get_stock().name.as_str(), "Generic Colour Negative");
     assert!(p.get_stock().has_artwork);
     let key = common::the(w, Role::Button, "Select Film Stock");
-    common::click(&rig, w, key.middle());
+    common::click(rig, w, key.middle());
     rig.pump();
     assert!(stocks.get_shown(), "the key opens the sheet");
     assert_eq!(listed(&stocks).len(), oni_settings::film::offered_stocks().len(), "every stock offered");
@@ -113,22 +98,16 @@ pub(crate) fn prepare_picks_the_stock_on_its_hero() {
     assert!(hero.has_artwork && hero.note.is_empty(), "a stock its own profile measures needs no word: {}", hero.note);
     println!("shot {}", rig.shot("stock-hero-prepare").display());
     // Twin: Done changes nothing.
-    common::click(&rig, w, key.middle());
+    common::click(rig, w, key.middle());
     stocks.invoke_chosen(-1);
     rig.pump();
     assert_eq!(p.get_stock().name.as_str(), "Kodak Portra 400");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Roll tab's stock is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-stock-hero-roll-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
-    let (rig, shell, folder) = shell_on(&gpu, &root, 1200);
+    let root = common::Root::new("stock-hero-roll");
+    let Some((app, folder)) = shell_on(root, 1200) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, stocks, lib, menus) = (w.global::<PanelState>(), w.global::<Stocks>(), w.global::<Library>(), w.global::<Menus>());
     let marker = || oni_library::folders::roll(&folder.to_string_lossy()).and_then(|f| f.stock);
@@ -147,7 +126,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     let undo_before = menus.get_live().undo;
 
     // The key drops the menu on every stock a roll takes, by brand, the sheet's order.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let (names, brands) = menu(&stocks);
     let by_brand: Vec<&str> = oni_app::stocks::by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].display_name).collect();
     assert_eq!(names, by_brand, "every stock offered for a roll, by brand");
@@ -188,7 +167,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     assert_eq!(sidecar(&open), written, "the sidecar never written by a light");
 
     // A pick writes the roll's marker and its dyes on both photos as one step.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let renders = ctl.state.borrow().renders();
     stocks.invoke_picked(stock("fujifilm-c200"));
     rig.key("\u{1b}");
@@ -214,7 +193,7 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     assert_eq!((marker().as_deref(), open_dyes()), (Some("fujifilm-c200"), DyeSet::of("fujifilm-c200")));
     assert_eq!(panel.get_stock().name.as_str(), "Fujifilm C200", "the hero follows the Redo");
     // Twin: the stock in use picked again writes nothing, and the gallery's sidebar shows the stock the editor picked.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     assert_eq!(menu(&stocks).0[usize::try_from(stocks.get_in_use()).unwrap() - brands_before(&stocks)], "Fujifilm C200", "the stock in use checked");
     stocks.invoke_picked(stock("fujifilm-c200"));
     rig.key("\u{1b}");
@@ -224,8 +203,6 @@ pub(crate) fn the_roll_tab_changes_the_rolls_stock_as_one_undoable_step() {
     rig.settle();
     assert_eq!(lib.get_stock().name.as_str(), "Fujifilm C200");
     assert_eq!(family(&open), DyeSet::of("fujifilm-c200"), "the open photo's dyes written to its sidecar");
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 /// The brands' lines before the line in use.
@@ -235,15 +212,11 @@ fn brands_before(stocks: &Stocks) -> usize {
 }
 
 pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
-    let gpu = match oni_app::render::Device::open() {
-        Ok(gpu) => gpu,
-        Err(e) => return eprintln!("{e}: the Film block's stock is not exercised"),
-    };
-    let root = std::env::temp_dir().join(format!("oni-app-stock-hero-film-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&root);
+    let root = common::Root::new("stock-hero-film");
     std::fs::create_dir_all(root.join("Scans")).unwrap();
     common::graded_tiff(&root.join("Scans/A.tif"), 1200, 800, 0.7);
-    let (rig, shell) = crate::film_effects::opened(&gpu, &root);
+    let Some(app) = crate::film_effects::opened(root) else { return };
+    let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
     let (panel, stocks, menus) = (w.global::<PanelState>(), w.global::<Stocks>(), w.global::<Menus>());
     panel.set_tab(PanelTab::Color);
@@ -255,7 +228,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     println!("shot {}", rig.shot("stock-hero-film").display());
 
     // The menu lists the virtual films alone, by brand, the one shot on checked.
-    drop_menu(&rig, w);
+    drop_menu(rig, w);
     let (names, _) = menu(&stocks);
     let by_brand: Vec<&str> = oni_app::stocks::virtual_by_brand().into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].display_name).collect();
     assert_eq!(names, by_brand);
@@ -274,7 +247,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     // Each film picked shoots the photo on it, at its own white, as one step an Undo takes back.
     for &next in VirtualStock::all().iter().rev() {
         let (before, renders, undo) = (film().stock, ctl.state.borrow().renders(), menus.get_live().undo);
-        drop_menu(&rig, w);
+        drop_menu(rig, w);
         stocks.invoke_picked(stock(next.catalogue_id()));
         rig.key("\u{1b}");
         rig.settle();
@@ -299,6 +272,4 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     stocks.invoke_picked(stock("agfaphoto-apx"));
     rig.settle();
     assert_eq!(film(), before);
-    drop(shell);
-    let _ = std::fs::remove_dir_all(&root);
 }
