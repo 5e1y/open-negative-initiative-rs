@@ -1,8 +1,9 @@
-//! The paper: each channel's window share laid back on density, the negative's per-channel printing density, exposes the
-//! matching layer of a colour paper (red the cyan-forming, green the magenta, blue the yellow) through the enlarger's time
-//! and filtration; the layers develop on their curves, each dye absorbing its own Rec. 2020 channel alone, then its ends:
-//! the frame's pick and the paper's white each on its anchor. Brightness moves the enlarger's light as a time does, faded
-//! in from the pick over the deep shadows. Lighting's other sliders and the colour tools act on the negative before it
+//! The paper: each channel's window share laid back on density, the negative's per-channel printing density, exposes
+//! the matching layer of a colour paper (red the cyan-forming, green the magenta, blue the yellow) through the
+//! enlarger's time and filtration; the layers develop their dyes on their curves, each channel reading its own dye and
+//! the others' Status A crosstalk, each density absorbing its own Rec. 2020 channel alone, then its ends: the frame's
+//! pick and the paper's white each on its anchor. Brightness moves the enlarger's light as a time does, faded in from
+//! the pick over the deep shadows. Lighting's other sliders and the colour tools act on the negative before it
 //! (`negative`).
 
 use super::*;
@@ -15,7 +16,7 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 const LOG10_E: f32 = std::f32::consts::LOG10_E;
 
 /// The window's shares printed on a paper: how a share is laid back on density, the enlarger's light, the paper's
-/// curves, read in Rec. 2020 through pure dyes, and the print's ends.
+/// dyes and their crosstalk, read in Rec. 2020 through pure dyes, and the print's ends.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Paper {
     /// A share `t` of the window is the density `span · t^bend` above the bare film: the frame's mean window span, and
@@ -33,10 +34,14 @@ pub struct Paper {
     pub brightness: f32,
     pub pick_log: f32,
     pub reach: f32,
-    /// Each layer's density along the log exposure from `curve_low` by `curve_step`, held at either end.
+    /// Each layer's dye amount over the paper's D-min along the log exposure from `curve_low` by `curve_step`, held at
+    /// either end.
     pub curves: &'static [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
     pub curve_step: f32,
+    /// The paper's D-min, and what each channel reads of each dye's amount, a row a channel: its Status A crosstalk.
+    pub floor: V3,
+    pub crosstalk: [V3; 3],
     /// The print of the frame's pick without Lighting's points, and the paper's own white: the ends the print's light is
     /// read between.
     pub pick: V3,
@@ -50,7 +55,7 @@ pub struct Paper {
 }
 
 impl Paper {
-    /// The uniform: the density, the enlarger, Brightness, the print's ends, then the curves.
+    /// The uniform: the density, the enlarger, Brightness, the print's ends, the dyes, then the curves.
     pub fn rows(&self) -> Vec<V4> {
         let flag = |on: bool| if on { 1.0 } else { 0.0 };
         let m = &self.mix;
@@ -66,6 +71,10 @@ impl Paper {
             v3(self.white, 0.0),
             v3(self.anchor, 0.0),
             v3(self.white_anchor, 0.0),
+            v3(self.floor, 0.0),
+            v3(self.crosstalk[0], 0.0),
+            v3(self.crosstalk[1], 0.0),
+            v3(self.crosstalk[2], 0.0),
         ];
         rows.extend(self.curves.iter().map(|c| v3(*c, 0.0)));
         rows
@@ -100,8 +109,13 @@ impl Paper {
         log.map(|v| v - moved)
     }
 
-    /// Each layer's density at log exposure `log`.
+    /// Each channel's density where the layers develop at log exposure `log`.
     pub fn developed(&self, log: V3) -> V3 {
+        self.dyed(self.amounts(log))
+    }
+
+    /// Each layer's dye amount over the D-min at log exposure `log`.
+    pub fn amounts(&self, log: V3) -> V3 {
         map(log, |c, v| {
             let f = clamp((v - self.curve_low) / self.curve_step, 0.0, (PAPER_CURVE_NODES - 1) as f32);
             let i = f.floor().min((PAPER_CURVE_NODES - 2) as f32);
@@ -110,7 +124,12 @@ impl Paper {
         })
     }
 
-    /// The print holding `density` of each dye, in linear Rec. 2020: each dye absorbs its own channel alone.
+    /// Each channel's density over the paper's D-min holding the dyes' `amounts`.
+    pub fn dyed(&self, amounts: V3) -> V3 {
+        map(self.floor, |c, f| f + dot(self.crosstalk[c], amounts))
+    }
+
+    /// The print holding each channel's `density`, in linear Rec. 2020: each density absorbs its own channel alone.
     pub fn viewed(&self, density: V3) -> V3 {
         viewed(density)
     }

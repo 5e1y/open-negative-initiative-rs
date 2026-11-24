@@ -22,12 +22,17 @@
    "retrieved": "2026-11-22",
    "dataset_id": "fujifilm_crystal_archive_digital_paper_type_dpii",
    "charts": [
+    "spectral_dye_density",
     "characteristic_curves"
    ],
    "measured": [
+    "cyan, magenta and yellow dye shapes (high confidence)",
     "characteristic curves, Status A, as printed (high confidence), each on its D-min"
    ],
    "inferred": [
+    "each dye past its sheet's points (hidden under another curve), falling at its end slope in log",
+    "each dye's unit: a Status A density of 1 in its own channel, by ISO 5-3's Status A products",
+    "the crosstalk: the Status A densities each dye reads at its unit amount, a row a channel, a column a dye",
     "the G curve under its first printed point, hidden on the sheet under the others: their mean",
     "the curves' log H origin: where green prints an 18 % grey over its D-min; the enlarger's time absorbs it",
     "densities held at the sheet's last point past the curves' printed range"
@@ -1572,6 +1577,23 @@
      2.6653,
      2.5298,
      2.4794
+    ]
+   ],
+   "crosstalk": [
+    [
+     1.0,
+     0.119712,
+     0.037762
+    ],
+    [
+     0.161005,
+     1.0,
+     0.125429
+    ],
+    [
+     0.057379,
+     0.167015,
+     1.0
     ]
    ]
   }

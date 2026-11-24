@@ -92,8 +92,8 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
-    // pure dyes, its white on pure white without Print lift.
-    const BEFORE: u64 = 0x4cd6_b1cc_4f5f_f273;
+    // its dyes' crosstalk and pure dyes, its white on pure white without Print lift.
+    const BEFORE: u64 = 0xf08d_10e7_8420_d941;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -260,8 +260,8 @@ fn brightening_on_the_negative_keeps_the_films_colour() {
             let (gain, all_gain) = (100.0 * (kept / lost - 1.0), 100.0 * (all / every - 1.0));
             println!("{label}, Exposure {stops:+}: the {n} colours lighter than the grey keep chroma {kept:.4} on the negative,");
             println!("  {film:.4} shot so, {lost:.4} by the time ({gain:+.1} %); every colour {all:.4} and {every:.4} ({all_gain:+.1} %)");
-            // A digital photo keeps its film's colour; a scan, read on its stock's mean layer, about the time's.
-            let floor = if label == "digital" { film * 0.98 } else { lost * 0.85 };
+            // A digital photo keeps nearly its film's colour, the white held drawing the lighter ones in; a scan about the time's.
+            let floor = if label == "digital" { film * 0.94 } else { lost * 0.85 };
             assert!(all > every * 0.98, "{label}, {stops}");
             // Two stops up, the colours over the grey near the white Exposure holds, and lose some of their chroma there.
             assert!(stops > 1.0 || (n >= 6 && kept > floor), "{label}, {stops}");

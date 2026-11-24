@@ -24,6 +24,7 @@ fn sheet_of() -> Sheet {
         grey - 1.0,
         1.0 / last,
         OWN_LAYERS,
+        PURE_DYES,
     )
 }
 

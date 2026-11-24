@@ -9,7 +9,7 @@ mod frames;
 use common::{V4, graph, judge, mapped, noise, whole};
 use frames::*;
 use oni_graph::Image;
-use oni_pipeline::film;
+use oni_pipeline::film::{self, bake};
 use oni_pipeline::paper::{self, GREY_PRINT};
 use oni_pipeline::{conversion, scanner, stages};
 use oni_render::{Negative, PAPER_CURVE_NODES, Paper, Stage47, cpu};
@@ -26,6 +26,7 @@ fn luma(v: [f32; 3]) -> f32 {
 struct Sheet {
     log_exposure: Vec<f64>,
     density_curves: Vec<[f64; 3]>,
+    crosstalk: [[f64; 3]; 3],
 }
 
 fn sheet_of(paper: PaperStock) -> Sheet {
@@ -45,11 +46,20 @@ fn interp(sheet: &Sheet, c: usize, e: f64) -> f64 {
 }
 
 /// The print of a negative holding `density` over its bare film on each channel, in doubles off the profile: each
-/// layer exposed by its own channel through the time and its filter, developed on the sheet's curves, each read
-/// through a pure dye on its own channel.
+/// layer exposed by its own channel through the time and its filter, its dye amount the one the sheet's grey unmixes
+/// to over the D-min at each node, held where it would fall, at that exposure; each channel reading the dyes through
+/// the crosstalk, then a pure dye.
 fn read_off(sheet: &Sheet, filters: [f64; 3], scale: f64, density: [f64; 3]) -> ([f64; 3], [f64; 3], [f64; 3]) {
     let log: [f64; 3] = std::array::from_fn(|c| (scale * filters[c]).log10() - density[c]);
-    let developed: [f64; 3] = std::array::from_fn(|c| interp(sheet, c, log[c]));
+    let floor = sheet.density_curves[0];
+    let unmix = bake::inverse(&sheet.crosstalk);
+    let mut nodes: Vec<[f64; 3]> = sheet.density_curves.iter().map(|d| bake::apply(&unmix, std::array::from_fn(|c| d[c] - floor[c]))).collect();
+    for i in 1..nodes.len() {
+        nodes[i] = std::array::from_fn(|c| nodes[i][c].max(nodes[i - 1][c]));
+    }
+    let held = Sheet { log_exposure: sheet.log_exposure.clone(), density_curves: nodes, crosstalk: sheet.crosstalk };
+    let amounts: [f64; 3] = std::array::from_fn(|k| interp(&held, k, log[k]));
+    let developed: [f64; 3] = std::array::from_fn(|c| floor[c] + bake::apply(&sheet.crosstalk, amounts)[c]);
     (log, developed, developed.map(|d| 10f64.powf(-d)))
 }
 
@@ -81,12 +91,55 @@ fn every_paper_prints_each_channels_density_on_its_own_layer_as_its_profile_read
         let magenta = [filters[0], filters[1] * 10f64.powf(-0.05), filters[2]];
         let off = densities().into_iter().map(|d| (f64::from(k.exposed(d)[1]) - read_off(&sheet, magenta, scale, d.map(f64::from)).0[1]).abs()).fold(0.0, f64::max);
         assert!(off > 1e-2, "{paper:?}: {off}");
-        // Twin: each dye absorbing a twentieth of its neighbour's density reads another light.
-        let crossed = densities().into_iter().map(|d| {
-            let (v, want) = (k.viewed(k.developed(k.exposed(d))), read_off(&sheet, filters, scale, d.map(f64::from)).1);
-            (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-(want[c] + 0.05 * want[(c + 1) % 3]))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
+        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light.
+        let pure = densities().into_iter().map(|d| {
+            let (e, v) = (k.exposed(d), k.viewed(k.developed(k.exposed(d))));
+            (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-interp(&sheet, c, f64::from(e[c])))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
         }).fold(0.0, f64::max);
-        assert!(crossed > 2e-2, "{paper:?}: {crossed}");
+        assert!(pure > 2e-2, "{paper:?}: {pure}");
+    }
+}
+
+/// CIELAB chroma of a linear Rec. 2020 light on D65.
+fn chroma(v: [f32; 3]) -> f64 {
+    let xyz = bake::apply(&bake::rec2020_to_xyz(), v.map(f64::from));
+    let white = bake::apply(&bake::rec2020_to_xyz(), [1.0; 3]);
+    let f = |t: f64| if t > (6.0f64 / 29.0).powi(3) { t.cbrt() } else { t / (3.0 * (6.0f64 / 29.0).powi(2)) + 4.0 / 29.0 };
+    let [x, y, z] = std::array::from_fn(|c| f(xyz[c] / white[c]));
+    (500.0 * (x - y)).hypot(200.0 * (y - z))
+}
+
+#[test]
+fn a_grey_prints_on_the_sheets_curves_and_a_colour_loses_what_the_dyes_crosstalk_takes() {
+    let s = film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference());
+    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
+        let k = conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper.expect("a negative on its paper");
+        let sheet = sheet_of(paper);
+        let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| sheet.density_curves[i].map(|v| v as f32))));
+        let pure = Paper { curves: densities, floor: [0.0; 3], crosstalk: paper::PURE_DYES.map(|r| r.map(|v| v as f32)), ..k };
+        // A grey, one log exposure on the three layers, prints the sheet's densities: within the 0.004 D of a held dip.
+        let off = |p: &Paper| (0..=400).map(|i| -2.0 + 4.0 * f64::from(i) / 400.0).map(|e| {
+            let d = p.developed([e as f32; 3]);
+            (0..3).map(|c| (f64::from(d[c]) - interp(&sheet, c, e)).abs()).fold(0.0, f64::max)
+        }).fold(0.0, f64::max);
+        let (held, unmixed) = (off(&k), off(&Paper { curves: densities, ..k }));
+        // A cyan: the cyan-forming layer two tenths of log exposure past the middle of its axis, the others there.
+        let mid = f64::from(k.curve_low) + 0.5 * f64::from(k.curve_step) * (PAPER_CURVE_NODES - 1) as f64;
+        let cyan = |p: &Paper| chroma(p.viewed(p.developed([0.2, 0.0, 0.0].map(|v| (v + mid) as f32))));
+        let kept = cyan(&k) / cyan(&pure);
+        // What the crosstalk leaves of its red density over the others': the cyan dye's amount the grey's slopes unmix
+        // to, read in red less its mean reading in green and blue, over the sheet's own red rise.
+        let rise: [f64; 3] = std::array::from_fn(|c| interp(&sheet, c, mid + 0.2) - interp(&sheet, c, mid));
+        let a = &sheet.crosstalk;
+        let expected = bake::apply(&bake::inverse(a), rise)[0] * (a[0][0] - (a[1][0] + a[2][0]) / 2.0) / rise[0];
+        println!("{}: a grey within {held:.1e} D of its sheet, {unmixed:.2} D with no unmixing; a cyan keeps {kept:.3} of its pure dyes' chroma, {expected:.3} expected", paper.name());
+        assert!(held < 5e-3, "{paper:?}: {held}");
+        // Twin: the sheet's densities read as amounts lay the crosstalk on a grey twice.
+        assert!(unmixed > 0.05, "{paper:?}: {unmixed}");
+        // Within 0.06 of the density's share: chroma is not linear in density over two tenths of a log.
+        assert!((kept - expected).abs() < 0.06 && expected < 0.9, "{paper:?}: {kept} {expected}");
+        // Twin: pure dyes over no D-min, #3750's print, lay the sheet's own densities to the bit and keep the whole chroma.
+        assert!(pure.developed([0.3, -0.2, 0.1]) == pure.amounts([0.3, -0.2, 0.1]) && (1.0 - expected).abs() > 0.1);
     }
 }
 
@@ -102,7 +155,7 @@ fn the_enlarger_rests_where_the_grey_prints_a_plain_raws_neutral_on_the_papers_w
         let p = k.paper.expect(label);
         let [black, white, grey] = anchor_scans(&s).map(|q| cpu::stage47(q, &k));
         let shares = paper::layer_shares(&p, paper::shares_of(&s, &k, [0.0; 3]));
-        let dmax = p.viewed(p.curves[PAPER_CURVE_NODES - 1]);
+        let dmax = p.viewed(p.dyed(p.curves[PAPER_CURVE_NODES - 1]));
         let dmax = if p.luma { [oni_render::LUMA.iter().zip(dmax).map(|(w, v)| w * v).sum(); 3] } else { dmax };
         let on_white: [f32; 3] = std::array::from_fn(|c| grey[c] / p.white[c] * luma(p.white));
         println!("{label}: grey {grey:?}, on the paper's white {on_white:?} (a plain RAW's {:.5})", *GREY_PRINT);
