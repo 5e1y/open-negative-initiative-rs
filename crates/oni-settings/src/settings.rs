@@ -45,8 +45,6 @@ pub struct PipelineSettings {
     pub decoded_from_mosaic: bool,
     #[serde(rename = "captureStops")]
     pub capture_stops: f32,
-    #[serde(rename = "lensCorrected")]
-    pub lens_corrected: bool,
     #[serde(rename = "primariesConverted")]
     pub primaries_converted: bool,
     #[serde(rename = "sourceEncoding", skip_serializing_if = "Option::is_none", default)]
@@ -74,8 +72,6 @@ pub struct PipelineSettings {
     pub chroma_decompression_by_hand: bool,
     #[serde(rename = "rollReference", skip_serializing_if = "Option::is_none", default)]
     pub roll_reference: Option<RollReference>,
-    #[serde(rename = "rollReferenceDeclined")]
-    pub roll_reference_declined: bool,
     /// A slide's gains as its gains-only measure placed them, on no roll reference: what its Source
     /// Balance rests on and a reset lands back on (owner's call).
     #[serde(rename = "measuredGains", skip_serializing_if = "Option::is_none", default)]
@@ -126,7 +122,6 @@ impl Default for PipelineSettings {
             sheet: None,
             decoded_from_mosaic: false,
             capture_stops: 0.0,
-            lens_corrected: false,
             primaries_converted: false,
             source_encoding: None,
             rgb_passes: None,
@@ -142,7 +137,6 @@ impl Default for PipelineSettings {
             chroma_decompression: chroma_decompression::BASE,
             chroma_decompression_by_hand: false,
             roll_reference: None,
-            roll_reference_declined: false,
             measured_gains: None,
             balance_method: None,
             balance_filters: None,
@@ -342,17 +336,15 @@ pub mod look_settings {
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 15] = [
+    pub const FRAME_FIELDS: [&str; 13] = [
         "film",
         "manualOrder",
         "sheet",
         "decodedFromMosaic",
-        "lensCorrected",
         "primariesConverted",
         "geometry",
         "corrections",
         "rollReference",
-        "rollReferenceDeclined",
         "measuredGains",
         "balanceMethod",
         "captureStops",

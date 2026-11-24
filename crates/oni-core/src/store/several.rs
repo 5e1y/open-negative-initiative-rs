@@ -105,7 +105,6 @@ impl EditorStore {
         let (was, now) = self.modify(paths, |_, loaded| {
             let mut joined = roll_settings::copied(&all, &donor, loaded);
             joined.roll_reference = Some(reference.clone());
-            joined.roll_reference_declined = false;
             // The windows were placed on the decode the roll read; a joining RAW keeps no primaries.
             joined.primaries_converted = donor.primaries_converted && !loaded.decoded_from_mosaic;
             Some(joined)

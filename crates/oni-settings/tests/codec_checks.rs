@@ -7,7 +7,7 @@ use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
 use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
-use oni_settings::frame::{AspectRatio, Correction, RgbPasses};
+use oni_settings::frame::{AspectRatio, RgbPasses};
 use oni_settings::migrate::before_1_0::{self, former_axis};
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 use oni_settings::sidecar::ExifLine;
@@ -498,8 +498,6 @@ fn a_mosaic_raw_never_balanced_rests_knee_free_and_a_balanced_one_keeps_its_axis
     assert_eq!(slide.levels.green.black, Levels::resting_black(ConversionMode::Positive, density_axis::base()));
     let graded = read(&stamped(&|s| s.gains.stops = [0.4, 0.0, -0.3], v), true);
     assert!((graded.density_ceiling - former_axis(density_axis::base())).abs() < 1e-6);
-    let healed = read(&stamped(&|s| s.corrections = vec![Correction::new(vec![Point::new(0.4, 0.6)])], v), true);
-    assert!(healed.lens_corrected && !rested.lens_corrected);
 }
 
 #[test]
@@ -593,7 +591,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 45);
+    assert_eq!(keys.len(), 43);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];
@@ -686,4 +684,22 @@ fn a_document_from_before_folds_its_scanner_look_and_one_since_carries_none() {
     let newer = read(chain::LOOK_FOLDED_VERSION);
     assert_eq!(newer.density, 0.1);
     assert!(newer.manual_curves.is_neutral());
+}
+
+/// A sidecar still holding the retired `lensCorrected` and `rollReferenceDeclined` reads as one
+/// without them, at its own version or this one, and is written back without them.
+#[test]
+fn the_retired_frame_flags_read_as_absent_and_are_written_no_more() {
+    let placed = full();
+    let flagged = |s: &mut Object| {
+        s.insert("lensCorrected".into(), json!(true));
+        s.insert("rollReferenceDeclined".into(), json!(true));
+    };
+    for version in [0, before_1_0::DENSITY_AXIS_VERSION, VERSION] {
+        assert_eq!(decode(&aged(&placed, version, flagged)), decode(&aged(&placed, version, |_| {})), "version {version}");
+    }
+    // Twin: a key the settings read moves the frame, so the comparison sees a kept key.
+    assert_ne!(decode(&aged(&placed, VERSION, |s| drop(s.insert("captureStops".into(), json!(0.75))))), decode(&aged(&placed, VERSION, |_| {})));
+    let written = String::from_utf8(document::encode(&Document::of(decode(&aged(&placed, VERSION, flagged)))).unwrap()).unwrap();
+    assert!(!written.contains("lensCorrected") && !written.contains("rollReferenceDeclined") && written.contains("captureStops"));
 }

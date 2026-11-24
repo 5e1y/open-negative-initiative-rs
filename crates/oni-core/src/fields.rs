@@ -50,7 +50,6 @@ fields! {
     Sheet => "sheet", sheet;
     DecodedFromMosaic => "decodedFromMosaic", decoded_from_mosaic;
     CaptureStops => "captureStops", capture_stops;
-    LensCorrected => "lensCorrected", lens_corrected;
     PrimariesConverted => "primariesConverted", primaries_converted;
     SourceEncoding => "sourceEncoding", source_encoding;
     RgbPasses => "rgbPasses", rgb_passes;
@@ -66,7 +65,6 @@ fields! {
     ChromaDecompression => "chromaDecompression", chroma_decompression;
     ChromaDecompressionByHand => "chromaDecompressionByHand", chroma_decompression_by_hand;
     RollReference => "rollReference", roll_reference;
-    RollReferenceDeclined => "rollReferenceDeclined", roll_reference_declined;
     MeasuredGains => "measuredGains", measured_gains;
     BalanceMethod => "balanceMethod", balance_method;
     BalanceFilters => "balanceFilters", balance_filters;
@@ -301,7 +299,7 @@ mod tests {
     #[test]
     fn every_field_is_the_rolls_the_looks_or_the_frames_and_one_only() {
         let names = declared_names();
-        assert_eq!(names.len(), 45, "{names:?}");
+        assert_eq!(names.len(), 43, "{names:?}");
         assert_eq!(placement_faults(names, FAMILIES), Vec::<String>::new());
         // Twin: a field the families leave out, and one in two of them, are both refused.
         let mut grown = names.to_vec();

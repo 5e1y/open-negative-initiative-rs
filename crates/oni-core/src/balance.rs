@@ -78,7 +78,6 @@ pub fn written(reference: &RollReference, settings: &PipelineSettings) -> Pipeli
     let mut out = applied(&Balance::of(reference), settings).on_paper();
     out.balance_method = None;
     out.roll_reference = Some(reference.clone());
-    out.roll_reference_declined = false;
     out
 }
 

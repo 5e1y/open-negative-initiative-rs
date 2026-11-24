@@ -96,7 +96,6 @@ pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
         paper_correction: rest.paper_correction,
         manual_order: None,
         film: None,
-        roll_reference_declined: false,
         ..s.clone()
     }
 }

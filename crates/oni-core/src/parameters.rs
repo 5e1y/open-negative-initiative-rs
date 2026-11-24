@@ -295,14 +295,12 @@ pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
     block.geometry = settings.geometry;
     block.flat_field = settings.flat_field.clone();
     block.source_encoding = settings.source_encoding;
-    block.lens_corrected = settings.lens_corrected;
     block.primaries_converted = settings.primaries_converted;
     block.capture_stops = settings.capture_stops;
     block.rgb_passes = settings.rgb_passes.clone();
     block.pass_of = settings.pass_of.clone();
     // The measured dyes name the stock; the dose is a look and returns to rest.
     block.dye_set = settings.dye_set;
-    block.roll_reference_declined = settings.roll_reference_declined;
     // A slide measured on its gains alone stands on them, as a negative stands on its roll.
     if settings.roll_reference.is_none()
         && let Some(gains) = settings.measured_gains
@@ -325,7 +323,7 @@ pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
     block.corrections = settings.corrections.clone();
     block.capture_stops = 0.0;
     block.primaries_converted = false;
-    (block.rgb_passes, block.pass_of, block.roll_reference_declined) = (None, None, false);
+    (block.rgb_passes, block.pass_of) = (None, None);
     block
 }
 
