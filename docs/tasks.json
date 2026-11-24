@@ -13133,5 +13133,13 @@
     "status": "done",
     "detail": "Every call passed RETAINED_SPACE (density) and RETAINED_STATISTIC (mean); the median and the transmittance mean were a research alternative the constants had already refused, and the mode a read took served only the transmittance arm. pipette::read takes the plane, the point and the radius; its mean folds each channel in the same order and bounds the answer onto the window as before, so the base pick, the key and every roll's black read the same.",
     "outcome": "cargo test -p oni-measure green (the example sensor_colours builds); the test of the two spaces goes with them, the rim and edge checks keep their twins."
+  },
+  {
+    "id": 3768,
+    "type": "simplification",
+    "title": "blocks::Report and the cell naming (A1, F5...) go: nothing outside the tests read them",
+    "status": "done",
+    "detail": "Each reading carried three name vectors and a copy of its grid for the Blocks self-check's diagnostics, which no reader took. With Grid::name, name_of, Report and Reading.report gone, the ends are a fold of the kept cells' tail values by the same `<` comparison from the first kept cell on, so they are bit for bit the values first_min and first_max chose, NaN included.",
+    "outcome": "cargo test -p oni-measure green; the naming asserts go, the window check reads the grid over the window itself (Grid::new(right).columns == 8)."
   }
 ]
