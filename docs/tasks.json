@@ -13085,5 +13085,13 @@
     "status": "done",
     "detail": "No app screen or demo scene set Slider.stepped since the Scanner face left (one-face call, 2026-11-21); only the hue probe and the lab did, and step-reads was never set, so Readouts always took per = 0. Gone: the stepped branches of slider.slint (press, drag, release, double click, type-in, held and hand), the unused Typing global and its export, the per parameter of Readouts.steps and Readouts.pressed (typed_steps and pressed in slider_track.rs, the demos' welcome interface), the lab's LiveStepped, StepKey, StepKeyRow, BandKey, KeypadRow, its STEPPED SLIDER, LABSTEPKEYS, SCANNER KEYPAD, STEP KEYS and Pro/Scanner bar specimens, and the 15 lab-only tokens they used (scanner-band-*, scanner-key-*, scanner-keyboard-width, scanner-wide-key-width, control-mode-bar-width). #3063 kept the lab's keypad as a scoping note of the face removal, not an owner's call. The hue probe's C and D are continuous sliders, C's fraction following its count. Every typed number and key tooltip reads as before.",
     "outcome": "slider_track's unit checks green (the per rows gone, a new twin: a readout's tenths count tenths); the lab compiles; window checks slider_hues, slider_keys, slider_rest, slider_hand, slider_relief, dial, keyboard's typed number, design_system and tooltip green (19)."
+  },
+  {
+    "id": 3772,
+    "type": "chore",
+    "title": "The hidden Grain Curve editor leaves: its view, gestures, reset key and fold",
+    "status": "done",
+    "detail": "#2209 took the Grain Curve out of the panel; GrainEditor had no instance in any .slint file since, yet Rust still drew its lines and dots on every editors publish, tracked its drag, owned Reset::Grain and read its fold. Zero anticipation keeps nothing for later. Gone: editors/grain.rs, Plot::Grain (the last plot, so the others keep their numbers), Reset::Grain (the last reset, so beside[0..3] keep theirs), Edit::Grain, the grain branches of the five-point gestures, the drawing cache and beside's grain arm, the Editors properties grain-lines, grain-dots, grain-modified and grain-folded, the Grain Curve fold, the grain half of the reset-beside test and two catalogue texts each in French and Spanish. The render, GrainCurve, its serialisation and its propagation between frames are untouched; the sectionFold.Grain Curve preference is left unread.",
+    "outcome": "oni-app editors and folds unit checks green; window checks editors, editor_leftovers, together, together_all, together_moves, together_tools, grain_colour, film_effects, picture_plots, whole_roll, balance_kept green (17)."
   }
 ]

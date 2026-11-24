@@ -9,7 +9,7 @@ use std::rc::Rc;
 pub const PREFIX: &str = "sectionFold.";
 
 /// The editors' blocks, which hold their fold in `Editors`; each opens folded by default.
-const EDITORS: [&str; 5] = ["Curves", "Per-Channel Levels", "Colour Mixer", "Saturation Curve", "Grain Curve"];
+const EDITORS: [&str; 4] = ["Curves", "Per-Channel Levels", "Colour Mixer", "Saturation Curve"];
 
 /// `DSSection.folded`: an empty or absent value is the default; any other but "folded" is open.
 pub fn folded(stored: Option<&str>, by_default: bool) -> bool {
@@ -47,7 +47,6 @@ impl Ctl {
         editors.set_levels_folded(stored[1]);
         editors.set_spectrogram_folded(stored[2]);
         editors.set_saturation_folded(stored[3]);
-        editors.set_grain_folded(stored[4]);
     }
 }
 

@@ -1,4 +1,4 @@
-//! The five-point curves' gestures, the saturation's and the grain's: a press takes the point under it,
+//! The five-point curve's gestures, the saturation's: a press takes the point under it,
 //! else the closest along the tones, and a double click's second release returns it to its rest.
 
 use super::geometry::{Size, distance, ds};
@@ -98,19 +98,9 @@ impl Gestures {
     pub(super) fn points_press(&mut self, store: &mut EditorStore, plot: Plot, view: &PipelineSettings, at: (f64, f64), now: Instant) -> Then {
         let size = self.sizes[plot as usize];
         let double = self.double(plot as usize, now);
-        let edit = match plot {
-            Plot::Grain => {
-                let mut curve = view.grain.curve;
-                self.grain.press(&mut curve, at, size);
-                Edit::Grain(curve)
-            }
-            _ => {
-                let mut curve = view.saturation.clone();
-                self.saturation.press(&mut curve, at, size);
-                Edit::Saturation(curve)
-            }
-        };
-        self.begin(store, Held::Points { double, at }, edit);
+        let mut curve = view.saturation.clone();
+        self.saturation.press(&mut curve, at, size);
+        self.begin(store, Held::Points { double, at }, Edit::Saturation(curve));
         self.offer(store, now)
     }
 
@@ -122,10 +112,6 @@ impl Gestures {
                 self.saturation.drag(&mut c, at, size);
                 Some(Edit::Saturation(c))
             }
-            Edit::Grain(mut c) if plot == Plot::Grain => {
-                self.grain.drag(&mut c, at, size);
-                Some(Edit::Grain(c))
-            }
             _ => None,
         }
     }
@@ -134,7 +120,6 @@ impl Gestures {
     pub(super) fn points_double(&mut self, at: (f64, f64)) {
         let next = match &self.live {
             Some(Edit::Saturation(c)) => self.saturation.double(c, at, self.sizes[Plot::Saturation as usize]).map(Edit::Saturation),
-            Some(Edit::Grain(c)) => self.grain.double(c, at, self.sizes[Plot::Grain as usize]).map(Edit::Grain),
             _ => None,
         };
         if let Some(next) = next {
@@ -144,7 +129,6 @@ impl Gestures {
 
     pub(super) fn points_released(&mut self) {
         self.saturation.release();
-        self.grain.release();
     }
 
     /// The point under the hand on `plot`, drawn lit.
@@ -154,7 +138,6 @@ impl Gestures {
         }
         match (plot, &self.live) {
             (Plot::Saturation, Some(Edit::Saturation(_))) => self.saturation.dragged,
-            (Plot::Grain, Some(Edit::Grain(_))) => self.grain.dragged,
             _ => None,
         }
     }

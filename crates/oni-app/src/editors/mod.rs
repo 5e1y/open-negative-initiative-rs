@@ -1,10 +1,9 @@
 //! The panel's editors: the manual curves, the levels (a film's per channel, a digital photo's on the
-//! picture), the spectrogram wheel and its band sliders, the saturation curve and the grain curve.
+//! picture), the spectrogram wheel and its band sliders and the saturation curve.
 
 mod bands;
 pub mod curve;
 pub mod geometry;
-pub mod grain;
 pub mod levels;
 pub mod points;
 pub mod saturation;
@@ -17,7 +16,6 @@ use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
 use geometry::Size;
 use oni_core::Command;
 use oni_settings::PipelineSettings;
-use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::LevelsChannel;
 use oni_settings::spectrogram::{Band, Spectrogram};
@@ -35,11 +33,10 @@ pub enum Plot {
     Wheel = 2,
     Saturation = 3,
     LevelsHistogram = 4,
-    Grain = 5,
 }
 
 impl Plot {
-    pub const ALL: [Plot; 6] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram, Plot::Grain];
+    pub const ALL: [Plot; 5] = [Plot::Curves, Plot::Levels, Plot::Wheel, Plot::Saturation, Plot::LevelsHistogram];
 
     pub fn from_index(i: i32) -> Option<Plot> {
         Self::ALL.get(usize::try_from(i).ok()?).copied()
@@ -53,7 +50,6 @@ pub enum Reset {
     Levels = 1,
     Spectrogram = 2,
     Saturation = 3,
-    Grain = 4,
 }
 
 /// What a gesture is changing, kept whole so the store takes it in one write.
@@ -63,7 +59,6 @@ pub enum Edit {
     Levels(levels::Windows),
     Spectrogram(Spectrogram),
     Saturation(SaturationCurve),
-    Grain(GrainCurve),
 }
 
 /// The press under way, decided once at the touch.
@@ -72,7 +67,7 @@ enum Held {
     Curve { index: Option<usize>, double: bool, at: (f64, f64) },
     Level { grip: levels::Grip, start: f32, from: f64 },
     Wheel { grab: spectrogram::Grab, from: (f64, f64) },
-    /// On the saturation's or the grain's five points.
+    /// On the saturation's five points.
     Points { double: bool, at: (f64, f64) },
     Band { field: usize, start: f32 },
 }
@@ -98,7 +93,6 @@ pub struct Gestures {
     /// A band slider's knob under the hand, which stays where the pointer put it.
     pub band_shown: Option<(usize, f32)>,
     saturation: points::Presses,
-    grain: points::Presses,
     /// A scroll moved a knob: the hand drives it, so the next drawing places it unsprung.
     pub scrolled: bool,
     /// Store writes this session, the cadence's check.
@@ -129,7 +123,6 @@ impl Gestures {
             Some(Edit::Levels(l)) => l.lay(&mut f),
             Some(Edit::Spectrogram(s)) => f.spectrogram = *s,
             Some(Edit::Saturation(s)) => f.saturation = s.clone(),
-            Some(Edit::Grain(c)) => f.grain.curve = *c,
             None => {}
         }
         f
@@ -260,7 +253,7 @@ impl Gestures {
                 self.begin(store, Held::Wheel { grab, from: at }, Edit::Spectrogram(s));
                 if double { self.offer(store, now) } else { Then::Draw }
             }
-            Plot::Saturation | Plot::Grain => self.points_press(store, plot, &view, at, now),
+            Plot::Saturation => self.points_press(store, plot, &view, at, now),
             Plot::LevelsHistogram => Then::Nothing,
         }
     }

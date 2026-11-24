@@ -36,7 +36,6 @@ impl Ctl {
             Reset::Levels => e.together_where(Field::Levels, crate::editors::levels_modified),
             Reset::Spectrogram => e.together_where(Field::Spectrogram, |s| s.spectrogram != Default::default()),
             Reset::Saturation => e.together_where(Field::Saturation, |s| !s.saturation.is_neutral()),
-            Reset::Grain => e.together_where(Field::Grain, |s| !s.grain.curve.rests()),
         };
         let beside = Beside { blocks: Block::ALL.map(block), editors: crate::editors::RESETS.map(editor) };
         *together.beside.borrow_mut() = Some((read, beside));

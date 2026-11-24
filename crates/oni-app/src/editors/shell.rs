@@ -3,11 +3,10 @@
 
 use super::geometry::{Dot, Drawing, Ink, Line, Size};
 use crate::motion::Sprung;
-use super::{Gestures, Plot, Reset, Then, curve, grain, levels, saturation, spectrogram};
+use super::{Gestures, Plot, Reset, Then, curve, levels, saturation, spectrogram};
 use crate::app::Ctl;
 use crate::{Editors as Global, Ink as PlotInk, MainWindow, PlotDot, PlotKnob, PlotLine, PlotReadout};
 use oni_settings::ConversionMode;
-use oni_settings::blocks::GrainCurve;
 use oni_settings::curves::{Curve, SaturationCurve};
 use oni_settings::levels::Levels;
 use oni_settings::spectrogram::{Band, Spectrogram};
@@ -80,7 +79,6 @@ struct Drawn {
     levels: Option<(Levels, usize, ConversionMode, f32, Size, Size, Option<levels::Grip>, Vec<bool>, bool)>,
     wheel: Option<(Spectrogram, Size, Option<spectrogram::Grip>, Option<spectrogram::Grip>, Band, Option<(usize, f32)>)>,
     saturation: Option<(SaturationCurve, Size, Option<usize>)>,
-    grain: Option<(GrainCurve, Size, Option<usize>)>,
 }
 
 /// Where a plot sits in the window, for a check that aims the pointer at it.

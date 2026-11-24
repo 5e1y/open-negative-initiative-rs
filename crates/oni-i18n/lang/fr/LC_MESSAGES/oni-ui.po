@@ -913,14 +913,6 @@ msgstr "Saturé"
 msgid "Desaturated"
 msgstr "Désaturé"
 
-#: crates/oni-ui/ui/editors.slint
-msgid "Full grain"
-msgstr "Grain entier"
-
-#: crates/oni-ui/ui/editors.slint
-msgid "No grain"
-msgstr "Sans grain"
-
 #: crates/oni-ui/ui/export.slint
 msgid "Show the EXIF"
 msgstr "Afficher les EXIF"

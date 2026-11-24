@@ -1,5 +1,5 @@
-// The panel's editors: the manual curves, the per-channel levels, the spectrogram, the saturation
-// curve and the grain curve. Rust lays out every line, dot and handle.
+// The panel's editors: the manual curves, the per-channel levels, the spectrogram and the saturation
+// curve. Rust lays out every line, dot and handle.
 import { Plot, LevelsTrack, PlotReadouts, AxisCaptions, PlotLine, PlotDot, PlotKnob, PlotReadout, Tabs, Slider, SliderFill, Label, Tone, TextRole, PlotStyle, SliderStyle, Colour, Space } from "ds/ds.slint";
 
 // The plots' numbers, as `plot` names them in every callback.
@@ -31,10 +31,6 @@ export global Editors {
     in property <[PlotDot]> saturation-dots;
     in property <bool> saturation-modified;
 
-    in property <[PlotLine]> grain-lines;
-    in property <[PlotDot]> grain-dots;
-    in property <bool> grain-modified;
-
     in property <bool> monochrome;
     // An 8-bit source, flagged under Per-Channel Levels.
     in property <bool> low-precision;
@@ -44,7 +40,6 @@ export global Editors {
     in-out property <bool> levels-folded: true;
     in-out property <bool> spectrogram-folded: true;
     in-out property <bool> saturation-folded: true;
-    in-out property <bool> grain-folded: true;
 
 
     // Raised once the window is wired: every plot then reports its size and place again.
@@ -193,18 +188,5 @@ export component SaturationEditor inherits VerticalLayout {
         lines: Editors.saturation-lines;
         dots: Editors.saturation-dots;
         AxisCaptions { axis: Orientation.vertical; start: @tr("Saturated"); end: @tr("Desaturated"); tone: Tone.tertiary; }
-    }
-}
-
-// The grain's share by the photo's tone, from its black point to its white, laid straight across.
-export component GrainEditor inherits VerticalLayout {
-    spacing: Space.xs;
-    AxisCaptions { start: @tr("Black point"); end: @tr("White point"); }
-    EditorPlot {
-        plot: 5;
-        height: PlotStyle.block;
-        lines: Editors.grain-lines;
-        dots: Editors.grain-dots;
-        AxisCaptions { axis: Orientation.vertical; start: @tr("Full grain"); end: @tr("No grain"); tone: Tone.tertiary; }
     }
 }

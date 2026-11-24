@@ -173,19 +173,10 @@ pub(super) fn draw(ctl: &Rc<Ctl>, force: bool) {
         drawn.saturation = Some(key);
     }
 
-    let key = (view.grain.curve, sizes[Plot::Grain as usize], gestures.grain_dragged);
-    if drawn.grain.as_ref() != Some(&key) {
-        let d = grain::drawing(&key.0, key.2, key.1);
-        g.set_grain_lines(lines(&d));
-        g.set_grain_dots(dots(&d));
-        drawn.grain = Some(key);
-    }
-
     g.set_curves_modified(!view.manual_curves.is_neutral() || beside[0]);
     g.set_levels_modified(modified || beside[1]);
     g.set_spectrogram_modified(view.spectrogram != Spectrogram::default() || beside[2]);
     g.set_saturation_modified(!view.saturation.is_neutral() || beside[3]);
-    g.set_grain_modified(!view.grain.curve.rests() || beside[4]);
 
 }
 
@@ -199,7 +190,6 @@ struct Snapshot {
     hovered: Option<spectrogram::Grip>,
     held_grip: Option<levels::Grip>,
     saturation_dragged: Option<usize>,
-    grain_dragged: Option<usize>,
     band_shown: Option<(usize, f32)>,
 }
 
@@ -214,7 +204,6 @@ impl Snapshot {
             hovered: g.hovered,
             held_grip: g.held_grip(),
             saturation_dragged: g.points_dragged(Plot::Saturation),
-            grain_dragged: g.points_dragged(Plot::Grain),
             band_shown: g.band_shown,
         }
     }
