@@ -365,7 +365,6 @@ PAPERS = [
     "kodak_photo_book_paper",
     "fujifilm_crystal_archive_digital_paper_type_dpii",
     "fujifilm_crystal_archive_digital_pearl_paper",
-    "fujifilm_fujiclear_display_material_for_digital_printers",
 ]
 
 def tailed(x, y, floor):

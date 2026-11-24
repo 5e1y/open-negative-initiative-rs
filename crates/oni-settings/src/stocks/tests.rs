@@ -41,7 +41,7 @@ fn every_shipped_file_reads_and_round_trips() {
         assert_eq!(format!("{}.json", file.key()), name, "a file is named by its key");
         count += 1;
     }
-    assert_eq!(count, 111, "102 film stocks and 9 papers");
+    assert_eq!(count, 110, "102 film stocks and 8 papers");
     // Twin: a field dropped on the way is seen.
     let file = file::read(shipped_json().next().unwrap().1).unwrap();
     let mut lost = value(file.to_json().as_bytes());
@@ -75,11 +75,11 @@ fn a_broken_file_is_refused_with_why() {
 #[test]
 fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (files, canisters) = shipped();
-    assert_eq!((files.len(), canisters.len()), (111, 41), "every shipped file reads");
+    assert_eq!((files.len(), canisters.len()), (110, 41), "every shipped file reads");
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();
-    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (104, 78, 47, 9));
+    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (104, 78, 47, 8));
     assert!(VirtualStock::default().is_known() && PaperStock::default().is_known());
     assert!(DyeSet::default().is_generic() && c.dye_set(DyeSet::default()).is_some());
     assert_eq!(c.virtual_film(VirtualStock::of("kodak-portra-800-push-2")).map(|v| (v.catalogue, v.dyes)), Some(("kodak-portra800-push2", DyeSet::of("kodak-portra-800"))));

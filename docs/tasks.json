@@ -13030,5 +13030,12 @@
     "status": "done",
     "detail": "No stored value moves: a slide's Lighting, colour tools, gains and paper stay as written. migrate::slide_projector::marked: a slide of an earlier format takes the profiled reversal film its folder's roll marker names, else its sidecar's own roll's, on the read paths and the on-disk sweep; any other stock leaves its dyes' key. A build before 70 opens these files read-only. Measured move against the canvas build's render through render_corpus at 1500 px, the prototype's crop: the seven Velvia 100 frames (Lighting at rest) ΔE00 mean 5.9, p95 13.7, Projected blacks on 6.7 / 13.0; the eight 1.6 slide copies (Lighting edited, their copy's roll naming a negative stock, so on Ektachrome E100) 7.9 / 11.9, on 7.7 / 11.7. The move is the projector's own, mid-tones L* 3 to 6 darker and its dyes' colour, at rest as edited; Exposure and filters scaled by 0.4, 0.6, 0.8 move further (14.9, 10.5, 9.1), by 1.25 and 1.5 nearer (6.95, 6.8) only by offsetting that darkening, which would treat edited and unedited slides apart: no mapping applied. Adversarial review for data loss: none found; a negative's key on a slide frame is replaced by its roll's reversal film, as a roll's pick replaces it.",
     "outcome": "migrate::slide_projector: an edited slide of 69 reads back whole, its paper kept and unprinted, a digital photo on a reversal film too; the round trip at 70 keeps projectedBlacks (twin: off, unwritten); the marker's film taken, a stock no sheet profiles leaving a negative's key, a sidecar's own roll read with no marker (twins: 70 and a negative untouched); on disk, a slide of 69 brought to 70 beside its marker, its edits whole, Current on the next pass. Corpus goldens: every reading gains projected_blacks: false alone; the newer fixture moved to 71."
+  },
+  {
+    "id": 3744,
+    "type": "chore",
+    "title": "Fujifilm Fujiclear leaves the papers",
+    "status": "done",
+    "detail": "The owner's call (2026-11-24): a display material read as a paper, its tone printed negatives badly. Its stock file goes and the data-sheet script no longer writes it; a frame naming it keeps the key as stored and prints on the default paper, as any key no file defines."
   }
 ]

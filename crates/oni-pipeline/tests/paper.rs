@@ -253,14 +253,13 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
 }
 
 /// Every stock a digital photo is shot on rests on every paper with its grey printed at a plain RAW's share of the
-/// paper's white, neutral, the Frontier's steep curves included, but Fujiclear, a display material whose layers part past
-/// what the filtration reaches. Twin: at the rest's time on another filtration the Frontier prints its grey off neutral.
+/// paper's white, neutral, the Frontier's steep curves included. Twin: at the rest's time on another filtration the Frontier prints its grey off neutral.
 #[test]
 fn every_stock_rests_its_grey_neutral_on_every_paper() {
     let mut missed = Vec::new();
     // A reversal film is projected, never printed.
     for stock in VirtualStock::all().into_iter().filter(|s| !s.entry().reversal) {
-        for p in PaperStock::all().into_iter().filter(|p| *p != PaperStock::of("fujifilm-fujiclear")) {
+        for p in PaperStock::all() {
             let s = PipelineSettings { print_paper: Some(p), ..digital().on_stock(stock) };
             let k = conversion::stage47(&s);
             let grey = cpu::stage47(grey_scan(&s), &k);

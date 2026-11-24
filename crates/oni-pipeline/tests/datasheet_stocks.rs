@@ -58,7 +58,7 @@ fn rendered(g: &mut Graph, s: &PipelineSettings) -> Vec<V4> {
 fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     let (stocks, papers) = (sheet_stocks(), sheet_papers());
     println!("{} films and {} papers from their data sheets", stocks.len(), papers.len());
-    assert_eq!((stocks.len(), papers.len()), (78, 8));
+    assert_eq!((stocks.len(), papers.len()), (78, 7));
     for stock in &stocks {
         let json = stock.entry().profile;
         let read = if stock.is_silver() { film::profile::Silver::read(json.as_bytes()).err() } else { film::profile::Profile::read(json.as_bytes()).err() };
