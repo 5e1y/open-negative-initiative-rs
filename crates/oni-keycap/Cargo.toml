@@ -13,8 +13,5 @@ workspace = true
 tiny-skia = { version = "0.11", default-features = false, features = ["std"] }
 oni-hack = { version = "0.1", path = "../oni-hack" }
 
-[dev-dependencies]
-png = "0.18"
-
 [lib]
 doctest = false

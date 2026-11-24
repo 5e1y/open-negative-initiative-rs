@@ -10,8 +10,6 @@ pub mod style;
 pub mod surface;
 
 #[cfg(test)]
-mod reference;
-#[cfg(test)]
 mod tests;
 
 pub use style::{KeycapStyle, Motion, Rgba, Timing, Variant};

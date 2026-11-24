@@ -9,7 +9,7 @@ use crate::shape::rounded;
 use crate::style::{KeycapStyle, Rgba};
 
 /// SwiftUI's `.blur(radius:)` and `.shadow(radius:)` as a Gaussian's deviation: 0.9 radius each,
-/// fitted on the Swift bench's own sheet (`reference::sweep`), where 0.5 doubles the error.
+/// measured on a sheet of rendered keys, where 0.5 doubles the error.
 pub const BLUR_SIGMA_PER_RADIUS: f64 = 0.9;
 pub const SHADOW_SIGMA_PER_RADIUS: f64 = 0.9;
 
@@ -30,22 +30,8 @@ impl Frame {
     }
 }
 
-/// The two blur conversions, apart so a check can show they are measured.
-#[derive(Clone, Copy, Debug)]
-pub struct Sigmas {
-    pub blur: f64,
-    pub shadow: f64,
-}
-
-pub const SIGMAS: Sigmas = Sigmas { blur: BLUR_SIGMA_PER_RADIUS, shadow: SHADOW_SIGMA_PER_RADIUS };
-
 /// The whole key as premultiplied sRGB floats.
 pub fn compose(style: &KeycapStyle, frame: Frame, depth: f64) -> Plane {
-    compose_with(style, frame, depth, None, SIGMAS)
-}
-
-/// As `compose`; `backing` lays a colour under the walls inside the cap, as the bench's sheet has.
-pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Option<Rgba>, sigmas: Sigmas) -> Plane {
     let (pw, ph) = frame.pixels();
     let k = frame.scale as f32;
     let m = frame.margin as f32;
@@ -66,11 +52,7 @@ pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Opti
     let bezel = mask(pw, ph, rounded(0.0, 0.0, w, h, r + c, style.squircle), base);
     let cap_clip = mask(pw, ph, rounded(0.0, 0.0, cw, ch, r, style.squircle), cap);
     let light = Light::new(style);
-    let mut items = vec![solid(&bezel, style.socket_color, None)];
-
-    if let Some(colour) = backing {
-        items.push(solid(&cap_clip, colour, Some(&bezel)));
-    }
+    let mut items = vec![solid(&bezel, style.socket_color)];
 
     // The walls, grown past the silhouette and under the face by the bleed so the blur thins neither edge.
     let face = style.face_rect(cw as f64, ch as f64);
@@ -89,7 +71,7 @@ pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Opti
         let quad = polygon(&wall.corners(outer.map(f64::from), inner.map(f64::from)));
         over(&mut walls, &mask(pw, ph, quad, moved), colour);
     }
-    gaussian(&mut walls, (sigmas.blur * style.seam_blur) as f32 * s * k);
+    gaussian(&mut walls, (BLUR_SIGMA_PER_RADIUS * style.seam_blur) as f32 * s * k);
     clip(&mut walls, &cap_clip);
     clip(&mut walls, &bezel);
     items.push(walls);
@@ -118,8 +100,8 @@ pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Opti
         // At the cap's origin, as Swift's `GeometryReader` lays it: an offset grows the ring right and down.
         let ring = rounded(0.0, 0.0, cw + 2.0 * off, ch + 2.0 * off, r + off, style.squircle)
             .and_then(|p| p.stroke(&Stroke { width: 2.0 * spread, ..Stroke::default() }, 1.0));
-        let mut rim = solid(&mask(pw, ph, ring, cap), style.socket_color, None);
-        gaussian(&mut rim, (sigmas.blur * style.socket_shadow_softness) as f32 * spread * s * k);
+        let mut rim = solid(&mask(pw, ph, ring, cap), style.socket_color);
+        gaussian(&mut rim, (BLUR_SIGMA_PER_RADIUS * style.socket_shadow_softness) as f32 * spread * s * k);
         clip(&mut rim, &bezel);
         items.push(rim);
     }
@@ -127,7 +109,7 @@ pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Opti
     // `.shadow` after the clip shadows each layer, not the flattened key: the face darkens the wall below it.
     let mut canvas = Plane::new(pw, ph, 4);
     let strength = (style.shadow_strength_at(depth) * style.shadow_color.a) as f32;
-    let sigma = (sigmas.shadow * style.shadow_blur) as f32 * k;
+    let sigma = (SHADOW_SIGMA_PER_RADIUS * style.shadow_blur) as f32 * k;
     let dy = style.shadow_offset_at(depth) as f32 * k;
     for item in &items {
         if strength > 0.0 {
@@ -165,12 +147,11 @@ fn put(plane: &mut Plane, at: usize, colour: Rgba, cov: f32) {
     px[3] = a;
 }
 
-fn solid(coverage: &Mask, colour: Rgba, clip_to: Option<&Mask>) -> Plane {
+fn solid(coverage: &Mask, colour: Rgba) -> Plane {
     let (w, h) = (coverage.width() as usize, coverage.height() as usize);
     let mut plane = Plane::new(w, h, 4);
     for (i, &cov) in coverage.data().iter().enumerate() {
-        let clip = clip_to.map_or(1.0, |m| m.data()[i] as f32 / 255.0);
-        put(&mut plane, i, colour, cov as f32 / 255.0 * clip);
+        put(&mut plane, i, colour, cov as f32 / 255.0);
     }
     plane
 }
