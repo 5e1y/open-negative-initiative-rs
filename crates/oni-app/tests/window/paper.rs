@@ -1,8 +1,8 @@
-//! The Paper section of the Colour tab in the headless window, open right after More Color Settings: a negative printed
-//! on the default paper, ONI Standard, with no switch to turn the enlarger or the paper off; Print lift, off at rest and
-//! rendering anew each way it turns, the paper and the enlarger's filtration, and Lighting Brightness in place of Colour
-//! compensation; another paper picked by its name, the Frontier SP-3000 among them; a slide projected, the Paper section
-//! gone and the Projector's Projected blacks in its place; a digital photo on its paper, its ends pure.
+//! The Paper section of the Colour tab in the headless window, open right after More Color Settings: a negative on no
+//! paper at rest, its field alone; a paper picked by its name, then Print lift, off at rest and rendering anew each way it
+//! turns, the enlarger's filtration and Lighting's Brightness; another paper, the Frontier SP-3000 among them, and no
+//! paper again; a slide projected, the Paper section gone and the Projector's Projected blacks in its place; a digital
+//! photo on no paper at rest.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::app::{Options, Shell};
@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use crate::common;
 
-pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
+pub(crate) fn a_negative_shows_no_paper_then_prints_on_each_it_picks_and_a_slide_is_projected() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the paper is not exercised"),
@@ -47,20 +47,37 @@ pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
     rig.pump();
     let count = |role: Role, label: &str| common::placed(w, role, label).len();
 
-    // A negative never prepared prints on the default paper, ONI Standard, in its own open section: no switch turns the
-    // enlarger or the paper off; Print lift, off at rest, the paper and the enlarger's filtration, and Lighting Brightness
-    // in place of Colour compensation.
+    // A negative never prepared names no paper, its pure inversion: the Paper section, open, holds its field alone, with
+    // no Print lift, no filtration, no Brightness and no Colour compensation.
     let histogram = || ctl.state.borrow().histogram().cloned();
-    assert!(panel.get_paper_shown() && panel.get_paper_title() == "ONI Standard", "{}", panel.get_paper_title());
-    assert_eq!(settings().paper(), Some(PaperStock::default()));
+    let chosen = |paper: PaperStock| PaperStock::all().iter().position(|p| *p == paper).unwrap() as i32 + 1;
+    assert!(panel.get_paper_offered() && !panel.get_paper_shown() && panel.get_paper_title() == "No paper", "{}", panel.get_paper_title());
+    assert!(settings().print_paper.is_none() && settings().shows_inversion());
     let switches = || (count(Role::Checkbox, "Virtual enlarger"), count(Role::Checkbox, "Print on paper"), count(Role::Checkbox, "Print lift"));
+    assert_eq!(switches(), (0, 0, 0));
+    assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), (0, 0));
+    assert_eq!((count(Role::Button, "No paper"), panel.get_paper_filtration().as_str()), (1, ""));
+    section_laid_after_more_color_settings(w);
+    rig.until("the inversion's histogram", Duration::from_secs(60), || ctl.state.borrow().shown_settings().is_some() && histogram().is_some());
+    let inverted = histogram();
+    rig.settle();
+    println!("shot {}", rig.shot("colour-negative-on-no-paper").display());
+    // ONI Standard picked by its name: the negative prints on it, another picture, with Print lift, off at rest, the
+    // enlarger's filtration and Lighting's Brightness.
+    let renders = ctl.state.borrow().renders();
+    panel.invoke_paper_chosen(chosen(PaperStock::of("oni-standard")));
+    rig.pump();
+    assert!(panel.get_paper_offered() && panel.get_paper_shown() && panel.get_paper_title() == "ONI Standard", "{}", panel.get_paper_title());
+    assert_eq!(settings().paper(), Some(PaperStock::of("oni-standard")));
+    rig.until("the frame printed on ONI Standard", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.until("ONI Standard's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != inverted.as_ref()));
     assert_eq!(switches(), (0, 0, 1));
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), (1, 0));
     assert!(!settings().print.print_lift && !panel.get_print_lift(), "pure ends at rest, the switch off");
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
-    let lift = common::the(w, Role::Checkbox, "Print lift");
+    let (field, lift) = (common::the(w, Role::Button, "ONI Standard"), common::the(w, Role::Checkbox, "Print lift"));
     let filtration = common::the(w, Role::Text, &panel.get_paper_filtration());
-    assert!(lift.y < filtration.y, "Print lift, then the paper's own rows");
+    assert!(field.y < lift.y && lift.y < filtration.y, "the paper, then its Print lift and its filtration");
     section_laid_after_more_color_settings(w);
     rig.settle();
     println!("shot {}", rig.shot("colour-negative-on-oni-standard").display());
@@ -90,12 +107,13 @@ pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
     assert!(settings().print.brightness > 0.0, "{}", settings().print.brightness);
     rig.until("the print brightened", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     let (mut names, mut listed) = (papers_listed(&panel), PaperStock::all().iter().map(|p| p.name().to_string()).collect::<Vec<_>>());
+    assert_eq!(names.remove(0), "No paper", "no paper leads the menu");
     names.sort();
     listed.sort();
-    assert_eq!(names, listed, "every paper once");
+    assert_eq!(names, listed, "then every paper once");
     let renders = ctl.state.borrow().renders();
-    let crystal_archive = PaperStock::all().iter().position(|p| *p == PaperStock::of("fujifilm-crystal-archive-digital-dpii")).unwrap();
-    panel.invoke_paper_chosen(crystal_archive as i32);
+    let crystal_archive = chosen(PaperStock::of("fujifilm-crystal-archive-digital-dpii"));
+    panel.invoke_paper_chosen(crystal_archive);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")));
     assert_eq!(panel.get_paper_title(), "Fujifilm Crystal Archive Digital Type DP II");
@@ -105,8 +123,8 @@ pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
     rig.until("Crystal Archive's histogram", Duration::from_secs(60), || shown(PaperStock::of("fujifilm-crystal-archive-digital-dpii")) && histogram().is_some());
     let crystal = histogram();
     let renders = ctl.state.borrow().renders();
-    let frontier = PaperStock::all().iter().position(|p| *p == PaperStock::of("fujifilm-frontier-sp-3000")).unwrap();
-    panel.invoke_paper_chosen(frontier as i32);
+    let frontier = chosen(PaperStock::of("fujifilm-frontier-sp-3000"));
+    panel.invoke_paper_chosen(frontier);
     rig.pump();
     assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-frontier-sp-3000")));
     assert_eq!(panel.get_paper_title(), "Fujifilm Frontier SP-3000");
@@ -114,10 +132,17 @@ pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
     rig.until("the Frontier's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != crystal.as_ref()));
     // Twin: the same paper picked again writes nothing, so nothing renders anew.
     let (renders, revision) = (ctl.state.borrow().renders(), ctl.state.borrow().store().revision());
-    panel.invoke_paper_chosen(frontier as i32);
+    panel.invoke_paper_chosen(frontier);
     rig.pump();
     assert_eq!((ctl.state.borrow().renders(), ctl.state.borrow().store().revision()), (renders, revision));
-    panel.invoke_paper_chosen(crystal_archive as i32);
+    // No paper picked again: the paper's rows leave, its Brightness and Print lift kept for the next paper.
+    panel.invoke_paper_chosen(0);
+    rig.pump();
+    assert!(settings().print_paper.is_none() && !panel.get_paper_shown() && panel.get_paper_title() == "No paper");
+    assert!(settings().print.print_lift && settings().print.brightness > 0.0, "a paper's settings are kept");
+    rig.until("the frame's inversion again", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    assert_eq!((switches(), count(Role::Slider, "Brightness")), ((0, 0, 0), 0));
+    panel.invoke_paper_chosen(crystal_archive);
     rig.pump();
 
     // A slide is projected, never printed: switched to a slide, the Paper section and Colour compensation leave, the
@@ -127,7 +152,7 @@ pub(crate) fn a_negative_prints_on_every_paper_and_a_slide_is_projected() {
     rig.pump();
     assert!(!panel.get_paper_shown() && panel.get_projected(), "a slide takes no paper");
     assert_eq!(settings().print_paper, Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")));
-    assert!(settings().paper().is_none() && oni_pipeline::conversion::stage47(&settings()).paper.is_none());
+    assert!(settings().paper().is_none() && oni_pipeline::conversion::stage47(&settings()).paper().is_none());
     rig.until("the slide projected", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.pump();
     assert_eq!((switches(), count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), ((0, 0, 0), 0, 0));
@@ -172,7 +197,7 @@ fn section_laid_after_more_color_settings(w: &oni_app::MainWindow) {
     assert!(more[0].y < paper[0].y && paper[0].y < lighting[0].y, "{more:?} {paper:?} {lighting:?}");
 }
 
-pub(crate) fn a_digital_photo_prints_on_its_paper_on_pure_black() {
+pub(crate) fn a_digital_photo_names_no_paper_at_rest() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the digital photo's paper is not exercised"),
@@ -203,18 +228,18 @@ pub(crate) fn a_digital_photo_prints_on_its_paper_on_pure_black() {
     panel.invoke_film_type_picked(3);
     rig.pump();
     assert!(settings().mode.is_digital(), "{:?}", settings().mode);
-    rig.until("the photo printed on its film and paper", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    // A digital photo prints on its paper at rest, its ends pure, Print lift shown off.
-    assert!(settings().paper().is_some() && panel.get_paper_shown(), "on its paper");
-    assert!(!settings().print.print_lift && !panel.get_print_lift());
+    rig.until("the photo shot on its film", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    // A digital photo names no paper at rest, its negative's pure inversion: the paper's field alone, no Print lift.
+    assert!(settings().paper().is_none() && settings().shows_inversion(), "on no paper");
+    assert!(panel.get_paper_offered() && !panel.get_paper_shown() && panel.get_paper_title() == "No paper");
     let count = |role: Role, label: &str| common::placed(w, role, label).len();
-    assert_eq!((count(Role::Checkbox, "Print lift"), count(Role::Checkbox, "Colour compensation")), (1, 0));
+    assert_eq!((count(Role::Checkbox, "Print lift"), count(Role::Checkbox, "Colour compensation"), count(Role::Slider, "Brightness")), (0, 0, 0));
     // Twin: the photo's Film block leads the tab, the Paper section still right before Lighting.
     let key = |name: &str| common::placed(w, Role::Button, name);
     let (paper, lighting) = (key("Hide Paper"), key("Hide Lighting"));
     assert!(paper.len() == 1 && lighting.len() == 1 && paper[0].y < lighting[0].y, "{paper:?} {lighting:?}");
     rig.settle();
-    println!("shot {}", rig.shot("colour-digital-on-paper").display());
+    println!("shot {}", rig.shot("colour-digital-on-no-paper").display());
     drop(ctl);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);

@@ -1,4 +1,4 @@
-//! Every print on a paper, Prepare's window laid on the paper's useful range (owner's calls): ONI Standard prints the
+//! A print on a paper, Prepare's window laid on the paper's useful range (owner's calls): ONI Standard prints the
 //! data sheets' mean logistic between pure black and pure white; every paper lays the bare film on its black end and the
 //! window's white on its white end whatever the frame, no grey placed; a neutral ramp prints neutral on ONI Standard. Each
 //! verdict has a twin; a legacy print's own time is `legacy_print`'s.
@@ -24,7 +24,7 @@ fn on(paper: PaperStock) -> PipelineSettings {
 }
 
 fn paper_of(s: &PipelineSettings) -> Paper {
-    conversion::stage47(s).paper.expect("a print on a paper")
+    conversion::stage47(s).paper().expect("a print on a paper")
 }
 
 #[test]

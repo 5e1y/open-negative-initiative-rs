@@ -1,7 +1,7 @@
 //! Format 46 keeps every look: each Scanner-face case and corpus sidecar renders to the bit as `legacy_print/fingerprints.json`
 //! holds, format 45's look on format 66's unmixed data-sheet dyes, Lighting and Saturation at rest or moving the
 //! negative: the whole chain on the GPU, stage 4-7 and the look on the CPU; a slide Pro rendered, on the GPU its
-//! projector's since format 70.
+//! projector's since format 70; a negative Pro rendered naming no paper, its pure inversion since format 73.
 
 use oni_graph::Graph;
 use oni_pipeline::{Inputs, Pipeline, Request, conversion, frontier_look, oni_look, scanner};

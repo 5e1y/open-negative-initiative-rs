@@ -36,11 +36,10 @@ fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> Pipeline
 }
 
 /// A frame of a roll prepared as digital: no film to measure, no roll reference, as a new preparation
-/// replaces the one before, its negative placed on its film's own reference and printed on its paper.
+/// replaces the one before, its negative placed on its film's own reference, on the paper it names or none.
 pub fn digital(settings: &PipelineSettings) -> PipelineSettings {
     let digital = PipelineSettings { roll_reference: None, ..settings.carried(oni_settings::ConversionMode::Digital) };
-    let placed = digital.on_stock(digital.film().map_or_else(Default::default, |f| f.stock));
-    placed.on_paper()
+    digital.on_stock(digital.film().map_or_else(Default::default, |f| f.stock))
 }
 
 /// The undo label of a measure, counting frames, never the passes riding with them.

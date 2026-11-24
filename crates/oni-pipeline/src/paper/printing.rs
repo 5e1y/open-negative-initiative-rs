@@ -1,9 +1,9 @@
-//! Each frame's enlarger on its paper: the window laid on the paper's useful range, its bare film on the paper's black
-//! and its white on the paper's white, through the paper's own filtration (`placing`), no grey placed; Lighting then
+//! Each frame's enlarger on the paper it names: the window laid on the paper's useful range, its bare film on the paper's
+//! black and its white on the paper's white, through the paper's own filtration (`placing`), no grey placed; Lighting then
 //! moves the negative it prints (`lighting`). The reference grey the Lighting sliders turn about is read here too.
 
 use super::*;
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_render::{PAPER_CURVE_NODES, Paper, Shown, Stage47, cpu};
 use oni_settings::axis::pipeline::DMAX;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
@@ -99,7 +99,7 @@ pub fn anchors(s: &PipelineSettings) -> [V3; 3] {
 /// The window's shares of a negative's pixel holding `above` over each channel's bare film, as stage 5 reads it in `k`.
 pub fn shares_of(s: &PipelineSettings, k: &Stage47, above: V3) -> V3 {
     let bare = film_ends(s).0;
-    let read = Stage47 { gain: [1.0; 3], pedestal: 0.0, negative: None, paper: None, ..*k };
+    let read = Stage47 { gain: [1.0; 3], pedestal: 0.0, negative: None, shown: Shown::Curve, ..*k };
     let light: V3 = std::array::from_fn(|c| 10f32.powf(-(bare[c] + above[c])));
     cpu::windowed([light[0], light[1], light[2], 1.0], &read)
 }
@@ -135,7 +135,7 @@ pub(crate) fn spanned(v: f32) -> f32 {
 
 /// The frame's paper at the window's shares: the window's bare film on the paper's black and its white on the paper's
 /// white through its own filtration, then Brightness and the ends on the print of the negative as Lighting develops
-/// it; a legacy print's own time. None while the print is bypassed.
+/// it; a legacy print's own time. None where the frame names no paper, and while the print is bypassed.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
     let sheet = sheet(stock);

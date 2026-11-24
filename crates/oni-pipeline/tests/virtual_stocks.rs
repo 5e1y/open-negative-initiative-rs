@@ -1,4 +1,4 @@
-//! Every virtual stock at rest on its reference and the default paper: a neutral scene lit at its white prints its white
+//! Every virtual stock at rest on its reference, printed on ONI Standard: a neutral scene lit at its white prints its white
 //! as Portra 800's, its sheet's crossovers under a ceiling. Each has a twin.
 
 mod common;
@@ -8,7 +8,7 @@ use oni_pipeline::film::{self, GREY, cie};
 use oni_pipeline::{Pipeline, Request, conversion};
 use oni_render::cpu;
 use oni_settings::virtual_film::Balance;
-use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 /// A neutral ramp of the scene in stops about its grey, the white a 90 % reflectance at +2.3.
 const STOPS: [f32; 7] = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 2.3];
@@ -23,10 +23,12 @@ const WHITE_SPREAD: f32 = 0.1;
 const CHROMA: f32 = 25.0;
 const LIGHT_CHROMA: f32 = 9.0;
 
-/// A digital photo on `stock` at rest, its neighbourhood stages off, on the paper's own black where its enlarger rests.
+/// A digital photo on `stock` at rest, its neighbourhood stages off, on ONI Standard's own black where its enlarger
+/// rests; a slide is projected, no paper named.
 fn on(stock: VirtualStock) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock).per_pixel_only();
     s.print.print_lift = true;
+    s.print_paper = s.takes_paper().then_some(PaperStock::of("oni-standard"));
     s
 }
 
@@ -37,7 +39,7 @@ fn printed(stock: VirtualStock, s: &PipelineSettings, light: f32) -> [f32; 3] {
     let scan = st.scanned(cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table));
     let k = conversion::stage47(s);
     let p = cpu::stage47(scan, &k);
-    let white = k.paper.map_or([1.0; 3], |q| q.white);
+    let white = k.paper().map_or([1.0; 3], |q| q.white);
     let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
     std::array::from_fn(|c| p[c] / white[c] * luma)
 }
@@ -119,7 +121,7 @@ fn a_tungsten_stock_turns_a_daylight_scene_blue() {
         let st = film::stock(stock);
         let k = conversion::stage47(&on(stock));
         let p = cpu::stage47(st.scanned(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table)), &k);
-        let white = k.paper.map_or([1.0; 3], |q| q.white);
+        let white = k.paper().map_or([1.0; 3], |q| q.white);
         let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
         [p[0] / white[0] * luma, p[1] / white[1] * luma, p[2] / white[2] * luma]
     };
@@ -184,7 +186,7 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             pipeline.render(g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1
         };
         // As the eye reads the print on the paper's own white.
-        let white = conversion::stage47(&s).paper.map_or([1.0; 3], |q| q.white);
+        let white = conversion::stage47(&s).paper().map_or([1.0; 3], |q| q.white);
         let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
         let seen = |p: &V4| lab(std::array::from_fn(|c| p[c] / white[c] * luma)).1;
         let lit = render(&mut g, &mut pipeline, &scene(stock.white().unwrap()));

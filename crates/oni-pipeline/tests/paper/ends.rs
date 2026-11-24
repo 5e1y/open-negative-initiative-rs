@@ -5,7 +5,7 @@
 use crate::common::V4;
 use crate::frames::*;
 use oni_pipeline::{conversion, paper};
-use oni_render::{PAPER_CURVE_NODES, Paper, Stage47, cpu};
+use oni_render::{PAPER_CURVE_NODES, Paper, Shown, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{PaperStock, PipelineSettings};
 
@@ -53,7 +53,7 @@ pub fn moved(s: &PipelineSettings, f: impl Fn(&mut PipelineSettings)) -> Pipelin
 }
 
 pub fn paper_of(s: &PipelineSettings) -> Paper {
-    conversion::stage47(s).paper.expect("a paper")
+    conversion::stage47(s).paper().expect("a paper")
 }
 
 /// The print on `k` of the pixel holding `above` over each channel's bare film, through Lighting and the window; the
@@ -78,7 +78,7 @@ pub fn printed_on(s: &PipelineSettings, k: &Stage47) -> [[f32; 3]; 3] {
 
 /// The same print with no ends: the paper's light at its colour density, as before the pick was anchored.
 pub fn unanchored(k: Stage47) -> Stage47 {
-    Stage47 { paper: k.paper.map(|p| Paper { anchor: p.pick, brightness: 0.0, ..p }), ..k }
+    Stage47 { shown: k.paper().map_or(k.shown, |p| Shown::Paper(Paper { anchor: p.pick, brightness: 0.0, ..p })), ..k }
 }
 
 /// The paper's own Dmax as its print shows it.

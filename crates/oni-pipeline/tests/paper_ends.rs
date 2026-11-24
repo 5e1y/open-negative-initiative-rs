@@ -12,7 +12,7 @@ use ends::*;
 use frames::*;
 use oni_pipeline::{conversion, paper};
 use oni_pipeline::paper::BRIGHTNESS_REACH_LIGHT;
-use oni_render::{Paper, Stage47, cpu, fade};
+use oni_render::{Paper, Shown, Stage47, cpu, fade};
 use oni_settings::PipelineSettings;
 
 #[test]
@@ -31,7 +31,7 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
         }
         // On the negative every move leaves the bare film at its fog; twin: an eighth of the enlarger's time lifts it,
         // unanchored, by a tenth of its light at least.
-        let timed = |p: Paper| unanchored(Stage47 { paper: Some(Paper { scale: p.scale / 8.0, ..p }), ..conversion::stage47(&s) });
+        let timed = |p: Paper| unanchored(Stage47 { shown: Shown::Paper(Paper { scale: p.scale / 8.0, ..p }), ..conversion::stage47(&s) });
         let most = rest.iter().copied().fold(0.0f32, f32::max);
         assert!(lifted == 0 && worst(printed_on(&s, &timed(paper_of(&s)))[0], rest) > 0.1 * most, "{label}: {lifted} of {} moves lift the pick", SLIDERS.len());
     }
@@ -230,7 +230,7 @@ fn the_points_still_move_the_ends() {
             let t = moved(&s, |u| (u.print.black_point, u.print.white_point) = (black, white));
             let k = conversion::stage47(&t);
             let [pick, densest, _] = printed_on(&s, &k);
-            let (p, span) = (k.paper.unwrap(), span_of(&s));
+            let (p, span) = (k.paper().unwrap(), span_of(&s));
             // The upper range under the white: Endura Premier prints black and white's 0.7 of the range on its white.
             let (high, rest_high) = (lit_shown(&s, &k, span.map(|a| a * 0.6)), lit_shown(&s, &conversion::stage47(&s), span.map(|a| a * 0.6)));
             let (sank, lightened) = (worst(pick, rest_pick), worst(high, rest_high));
@@ -242,7 +242,7 @@ fn the_points_still_move_the_ends() {
                 assert!(sank > 0.01 * pick_scale && (0..3).all(|c| (pick[c] < rest_pick[c]) == (black > 0.0)), "{label}, {name}");
                 // Twin: the pick anchored through the points stays where the rest prints it.
                 let through = Paper { pick: p.printed(paper::shares_of(&t, &k, k.negative.unwrap().toned([0.0; 3]))), ..p };
-                let held = rgb(cpu::stage47(anchor_scans(&s)[0], &Stage47 { paper: Some(through), ..k }));
+                let held = rgb(cpu::stage47(anchor_scans(&s)[0], &Stage47 { shown: Shown::Paper(through), ..k }));
                 assert!(worst(held, rest_pick) < 1e-6, "{label}, {name}: {held:?}");
             } else {
                 // A white point lightens the upper range toward the paper's white, the pick held.

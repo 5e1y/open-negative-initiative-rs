@@ -12,6 +12,8 @@ pub const NEGATIVE: &str = concat!(include_str!("wgsl/negative.wgsl"), include_s
 pub const NEGATIVE_COLOURED: &str = concat!(include_str!("wgsl/negative.wgsl"), include_str!("wgsl/negative_colour.wgsl"));
 /// `paper_px(t)`, on the window's shares.
 pub const PAPER: &str = include_str!("wgsl/paper.wgsl");
+/// `inversion_px(t)`, on the window's shares where no paper prints.
+pub const INVERSION: &str = include_str!("wgsl/inversion.wgsl");
 /// `stage47_px(s)`.
 pub const STAGE47: &str = include_str!("wgsl/stage47.wgsl");
 /// `output_clip_px(s)`.

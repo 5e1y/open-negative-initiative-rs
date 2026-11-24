@@ -8,7 +8,7 @@ import { Plots, PanelState, RollState } from "state.slint";
 import { StoreSlider, Block, EditorBlock, Pane, SettingsRow } from "parts.slint";
 import { FilmBlock } from "film_block.slint";
 
-// The paper's field, dropping the papers by maker in the stocks' menu: the paper lit shows on the photo unwritten,
+// The paper's field, dropping no paper then the papers by maker in the stocks' menu: the line lit shows on the photo unwritten,
 // the photo's own again once the menu closes, by a choice, Escape or a press outside.
 component PaperPicker inherits Picker {
     property <bool> showing: papers.is-open;
@@ -35,7 +35,7 @@ component PaperPicker inherits Picker {
 // A legacy print's colour compensation, on its own print curve alone as a paper lays none, then the legacy print itself.
 component PrintRows inherits VerticalLayout {
     spacing: Space.s;
-    if !PanelState.monochrome && !PanelState.projected && !PanelState.paper-shown: HorizontalLayout {
+    if PanelState.legacy-laid && !PanelState.monochrome && !PanelState.projected && !PanelState.paper-shown: HorizontalLayout {
         spacing: Space.xs;
         Toggle {
             label: @tr("Colour compensation");
@@ -211,12 +211,13 @@ export component ColorPane inherits Pane {
         }
         if root.channel-tab == 2: StoreSlider { field: 51; label: @tr("Blue contrast"); fraction: Store.blue-contrast-fraction; readout: Store.blue-contrast-readout; value-text: Store.blue-contrast-value; }
     }
-    // The paper every print is made on, where the photo prints on one: its ends, the paper by its name under the block's
-    // title, then the enlarger's filtration.
-    if PanelState.paper-shown: Block {
+    // The paper the photo may print on, none by default: the paper by its name, then, on one, its ends and the enlarger's
+    // filtration.
+    if PanelState.paper-offered: Block {
         title: @tr("Paper");
-        help: @tr("Every photo is printed on a paper, as an enlarger prints it: in true density, the black picked in Prepare the Roll on the paper's black and its white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Lighting then acts as in a darkroom.\n\nONI Standard, the default, lays the mean curve of the makers' papers on a neutral paper; every other paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white.");
-        HorizontalLayout {
+        help: @tr("With no paper, a photo is its pure inversion: each colour's density, read between the black and the white picked in Prepare the Roll, goes straight to the screen, that black on pure black and that white on pure white, with no curve laid over it.\n\nA paper is a choice laid over that inversion, as an enlarger prints it: in true density, that black on the paper's black and that white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Each paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white.");
+        PaperPicker { }
+        if PanelState.paper-shown: HorizontalLayout {
             spacing: Space.xs;
             Toggle {
                 label: @tr("Print lift");
@@ -231,8 +232,7 @@ export component ColorPane inherits Pane {
                 }
             }
         }
-        PaperPicker { }
-        Label { role: TextRole.note; text: PanelState.paper-filtration; }
+        if PanelState.paper-shown: Label { role: TextRole.note; text: PanelState.paper-filtration; }
     }
     // A slide on the projector's screen, never on a paper: the film and lamp it is shown by, then its screen's ends.
     if PanelState.projected: Block {
@@ -265,9 +265,9 @@ export component ColorPane inherits Pane {
         news-note: News.lighting-note;
         news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
-        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn the paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows.");
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThe sliders act on the negative as in a darkroom, the black picked in Prepare the Roll held: Exposure is the light, Temperature and Tint its filters, Contrast the grade. On a paper, Brightness is Exposure sparing that black and the first shadows.");
         StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
-        // The enlarger's print brightened between its paper's black and white; on a legacy print Exposure is that curve.
+        // A paper's print brightened between its black and white: no paper, no Brightness.
         if PanelState.paper-shown: StoreSlider { field: 55; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }
         StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }

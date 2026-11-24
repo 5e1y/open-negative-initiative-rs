@@ -81,14 +81,16 @@ the code; a costly trap keeps its constraint and its number in two lines.
   the film. A slide's lies on its positive; a scanned negative takes none.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
   profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
-  model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. The default paper is
-  ONI Standard (owner's call, 2026-11-24): a neutral paper, one curve on the three layers, pure dyes, no D-min, the logistic in density
-  the six data-sheet papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s − 0.354)))` over the window share
-  (`scripts/oni-standard-paper.py`); a photo naming Portra Endura, a former default, lands on Royal Digital, of its line.
+  model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. ONI Standard
+  is one more paper, never a default (owner's calls, 2026-11-24): a neutral paper, one curve on the three layers, pure dyes, no D-min, the
+  logistic in density the six data-sheet papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s − 0.354)))` over the
+  window share (`scripts/oni-standard-paper.py`).
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
   canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
-  names no stock but the defaults (Portra 800, ONI Standard, the generic C-41 set, Ektachrome E100 for slides); a key no file defines is kept as stored and renders on the default until its file is back.
+  names no stock but the defaults (the neutral film, Portra 800, the generic C-41 set, Ektachrome E100 for slides)
+  and the papers a format's default was (`migrate::optional_paper`); a key no file defines is kept as stored and renders on the
+  default until its file is back, a paper's on no paper.
 - **A digital photo on a colour reversal film is projected** (owner's call, 2026-11-23): its scene exposes the slide on the film's
   sheet (curves falling, its couplers on the first developer's negative image), and the slide's dyes filter a 3200 K projector lamp
   onto a white screen, seen adapted to the bare film's light with a 0.5 % veil (`film::projection`), a band the sheet leaves
@@ -105,15 +107,21 @@ the code; a costly trap keeps its constraint and its number in two lines.
   exactly on the sheet's curves), and each density absorbs its own Rec. 2020 channel alone, as ONI Standard's. The dyes' full
   spectral absorptions cost a third of a scan's chroma and turned reds and skins yellow: a scan hands a paper no masked separation;
   their Status A crosstalk alone takes 10 to 30 % of a colour's chroma, what the curves, measured on a grey, hold of every dye.
-- **Every print is made on a paper, Prepare's window on its useful range** (owner's calls, 2026-11-22 to 24): no ONI print, no
-  enlarger switch and no colour compensation but on a legacy print; the bare film exposes the paper's black end (0.9 Dmax on its
+- **The render is the pure inversion, a paper a choice laid over it** (owner's call, 2026-11-24): a negative already holds the log
+  of the light, so each channel's density, read between Prepare's black on the bare film and its white on the roll's lights, is
+  shown as it is, as a black and white negative's: the window's share the sRGB code of its light in the working space, no curve,
+  and no bound but the output clip's, a share past either end carried on along that code (`kernel::inversion`). `print_paper` absent is no paper, the rest of every new photo and every Prepare, a digital
+  photo's included; Brightness and Print lift are a paper's alone. A photo on its format's default paper, Royal Digital before format
+  72 and ONI Standard at 72, names none at format 73 (`migrate::optional_paper`); any other paper stays.
+- **A paper named lays Prepare's window on its useful range** (owner's calls, 2026-11-22 to 24): no ONI print, no enlarger switch
+  and no colour compensation but on a legacy print; the bare film exposes the paper's black end (0.9 Dmax on its
   neutral) and the window's white its white end (D-min + 0.04, ISO 6846), unless its file states the range (ONI Standard's [0, 1]),
   whatever the frame: no grey placed, no time solved (`paper::placing`). Each layer's offset, the paper's own filtration, is solved
   once by least squares so equal shares print neutral along the whole range. The picked black never lifts and lies on pure black,
   the window's white on pure white (Print lift keeps the paper's own); Lighting but Exposure moves the whites freely. A legacy print
-  keeps its former time on its paper, its reference grey at a plain RAW's grey (`paper::legacy`).
+  keeps its own curve, or its former time on the paper it names, its reference grey at a plain RAW's grey (`paper::legacy`).
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
-  through the stock's curves, and the film is developed again (`negative`); the enlarger prints it at its rest. A
+  through the stock's curves, and the film is developed again (`negative`); the inversion shows it, or the enlarger prints it at its rest. A
   digital photo's scan is read through the model's own curves (three coupled layers, a black and white film's one uncoupled); a scan is read on
   its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
 - **Exposure holds Prepare's black and white** (owner's call, 2026-11-24): on the negative, in the chain before any print, it gains every

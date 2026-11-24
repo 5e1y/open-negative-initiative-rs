@@ -20,7 +20,7 @@ impl Lights {
         }
     }
 
-    /// The menu laid as its key drops it: its lines' places in the catalogue, the one in use left out.
+    /// The menu laid as its key drops it: its lines by the index each lights, the one in use left out.
     fn drop(self, w: &crate::MainWindow) -> Vec<i32> {
         let (lines, own) = match self {
             Lights::Stocks => {
@@ -88,8 +88,8 @@ pub(super) fn lights(ctl: &Rc<Ctl>, menu: Lights, done: impl FnOnce(String) + 's
                 let panel = w.global::<crate::PanelState>();
                 panel.set_tab(crate::PanelTab::Color);
                 panel.invoke_tab_picked(crate::PanelTab::Color);
-                if menu == Lights::Papers && ctl.state.borrow().store().settings().paper().is_none() {
-                    return finish("papers: the photo prints on no paper".into());
+                if menu == Lights::Papers && !crate::app::offers_paper(ctl.state.borrow().store().settings()) {
+                    return finish("papers: the photo takes no paper".into());
                 }
                 *order.borrow_mut() = menu.drop(&w);
                 chain::record();

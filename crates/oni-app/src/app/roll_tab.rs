@@ -221,8 +221,8 @@ impl Ctl {
         self.publish_paper(&panel, &settings);
     }
 
-    /// The Colour tab's print switches: a legacy print's colour compensation, the paper the photo prints on, its name, the
-    /// filtration it prints through and Print lift; a slide's projector and its Projected blacks.
+    /// The Colour tab's print switches: a legacy print's colour compensation, the paper the photo prints on or none, its
+    /// name, the filtration it prints through and Print lift; a slide's projector and its Projected blacks.
     pub(super) fn publish_paper(&self, panel: &PanelState, settings: &PipelineSettings) {
         panel.set_colour_compensation(settings.print.colour_compensation);
         panel.set_print_lift(settings.print.print_lift);
@@ -233,9 +233,14 @@ impl Ctl {
             oni_i18n::tr!("{film} under a {kelvin} K projector lamp", film = f.entry().name, kelvin = oni_pipeline::film::projection::LAMP_KELVIN)
         });
         panel.set_projector_note(note.into());
+        panel.set_paper_offered(super::stock_picker::offers_paper(settings));
         panel.set_paper_shown(settings.paper().is_some());
-        let paper = settings.fitting_paper();
-        panel.set_paper_title(if paper.is_known() { paper.name().into() } else { crate::stocks::missing(paper.key()).into() });
+        let title = match settings.print_paper {
+            Some(paper) if paper.is_known() => paper.name().to_string(),
+            Some(paper) => crate::stocks::missing(paper.key()),
+            None => super::stock_picker::no_paper().to_string(),
+        };
+        panel.set_paper_title(title.into());
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;

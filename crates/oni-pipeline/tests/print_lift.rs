@@ -9,7 +9,7 @@ mod ends;
 
 use ends::*;
 use oni_pipeline::conversion;
-use oni_render::{Paper, Stage47};
+use oni_render::{Paper, Shown, Stage47};
 use oni_settings::PipelineSettings;
 
 /// Amounts far past any the negative holds: the paper's own white, its curves held at their end.
@@ -41,7 +41,7 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_windows_white_on_pure_
         println!("{label}: the paper's own white at {paper_white:?}");
         assert!(paper_white.iter().all(|v| *v > 1.01), "{label}: {paper_white:?}");
         // Twin: the window's white held where the paper prints it, as with Print lift, prints under pure white.
-        let held = Stage47 { paper: k.paper.map(|p| Paper { white_anchor: p.white, ..p }), ..k };
+        let held = Stage47 { shown: k.paper().map_or(k.shown, |p| Shown::Paper(Paper { white_anchor: p.white, ..p })), ..k };
         assert!(printed_on(&s, &held)[1].iter().all(|v| *v < 0.99), "{label}");
     }
 }
@@ -50,7 +50,7 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_windows_white_on_pure_
 fn print_lift_keeps_the_papers_own_ends() {
     for (label, s) in frames() {
         let k = conversion::stage47(&s);
-        let p = k.paper.unwrap();
+        let p = k.paper().unwrap();
         let (pick, white) = (printed_on(&s, &k)[0], printed_on(&s, &k)[1]);
         println!("{label}: Print lift prints the pick at {pick:?}, the window's white at {white:?}");
         let off_white = (0..3).map(|c| (white[c] - p.white[c]).abs()).fold(0.0f32, f32::max);

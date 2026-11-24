@@ -1,6 +1,6 @@
-//! Format 64 keeps every render: a sidecar of format 61 on every pipe, its Exposure at the former rest or off it, reads
-//! Exposure as its departure from the pipe's rest and prints to the bit as format 61 did, stage 4-7 on the CPU and the
-//! whole chain on the GPU. A print on a paper lays Prepare's black and white on its own ends at any Exposure. Each verdict
+//! Format 64 keeps every Exposure: a sidecar of format 61 on every pipe, its Exposure at the former rest or off it, reads
+//! Exposure as its departure from the pipe's rest and prints to the bit as pinned, stage 4-7 on the CPU and the whole
+//! chain on the GPU. A print on a paper lays Prepare's black and white on its own ends at any Exposure. Each verdict
 //! has a twin.
 
 mod common;
@@ -20,11 +20,6 @@ fn former_rest(mode: ConversionMode) -> f32 {
     if mode == ConversionMode::Positive { 0.0 } else { 1.5 }
 }
 
-/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
-fn onis(s: PipelineSettings) -> PipelineSettings {
-    PipelineSettings { print_paper: None, ..s }
-}
-
 fn slide() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
     s.gains.stops = [0.3, 0.0, -0.4];
@@ -33,7 +28,7 @@ fn slide() -> PipelineSettings {
 
 /// Every pipe Exposure reaches, as this build lays it before any Exposure.
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut legacy = onis(prepared_negative());
+    let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut contrasted = onis(prepared_negative());
     contrasted.print.contrast = 0.2;
@@ -48,6 +43,9 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),
+        ("no paper, negative", unpapered(prepared_negative())),
+        ("no paper, digital", unpapered(digital())),
+        ("no paper, black and white", unpapered(mono())),
     ]
 }
 
@@ -66,8 +64,12 @@ fn stored() -> Vec<(String, Value)> {
     out
 }
 
+/// The document read through this format's migration, then on the paper it names again: the migration takes a format's
+/// default paper away.
 fn read(value: &Value) -> PipelineSettings {
-    oni_settings::migrate::document(&serde_json::to_vec(value).unwrap()).unwrap().document.settings
+    let read = oni_settings::migrate::document(&serde_json::to_vec(value).unwrap()).unwrap().document.settings;
+    let named = value["settings"].get("printPaper").map(|key| serde_json::from_value(key.clone()).unwrap());
+    PipelineSettings { print_paper: named, ..read }
 }
 
 /// A scan noise and a virtual negative's scan.
@@ -96,9 +98,10 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
 }
 
 /// Every pipe's print as format 61 stored it, folded on the CPU and on the GPU (Metal on Apple silicon): a legacy print on
-/// its own curve, every other on its paper's useful range, Exposure held at the window's ends; a slide on its projector.
-const BEFORE_CPU: u64 = 0x4137_a4f7_75f4_f909;
-const BEFORE_GPU: u64 = 0x4cc7_7959_7bb7_c120;
+/// its own curve, a paper's on its useful range, Exposure held at the window's ends; a slide on its projector; a frame
+/// naming no paper on its pure inversion.
+const BEFORE_CPU: u64 = 0x8d0e_af5f_d947_084f;
+const BEFORE_GPU: u64 = 0x5630_9e03_4dcc_80c8;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {
@@ -177,7 +180,7 @@ fn at_any_exposure_a_paper_lays_prepares_black_and_white_on_its_own_ends() {
         for exposure in [0.0f32, -1.5, 1.0] {
             let t = PipelineSettings { print: oni_settings::tone::Print { exposure, ..s.print }, ..s.clone() };
             let k = conversion::stage47(&t);
-            let p = k.paper.expect("a paper");
+            let p = k.paper().expect("a paper");
             let [black, white, _] = anchor_scans(&t).map(|q| cpu::stage47(q, &k));
             let off = |v: V4, a: [f32; 3]| (0..3).map(|c| (v[c] - a[c]).abs()).fold(0.0f32, f32::max);
             println!("{label}, Exposure {exposure:+}: black {black:?}, white {white:?}");

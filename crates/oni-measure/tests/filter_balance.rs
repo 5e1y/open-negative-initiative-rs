@@ -12,7 +12,7 @@ use oni_settings::frame::RollReference;
 use oni_settings::levels::{Levels, LevelsSet};
 use oni_settings::settings::roll_settings::dosed;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, Id, LegacyPrint, PipelineSettings};
+use oni_settings::{ConversionMode, Id, LegacyPrint, PaperStock, PipelineSettings};
 
 const W: u32 = 96;
 const H: u32 = 64;
@@ -120,16 +120,20 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_pulls_the_filters_away() {
     let source = scene(&mut graph, &[(0, 96, [0.12, 0.14, 0.17])], Some((44, 28, 8, 8, [0.012, 0.025, 0.04])));
     let copy = Copy { source: &source, full_width: None };
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
+    // On no paper and on one: the dust lies past the window's white, which the stage holds nowhere and a paper prints on
+    // its own white end.
     let narrow = settings(1.2);
-    let kept = key::filters(&mut r, copy, &narrow, printable).unwrap();
-    let blinded = key::filters(&mut r, copy, &narrow, finite).unwrap();
-    let means = key::shades(&mut r, copy, &unlit(&narrow), kept, printable).unwrap();
-    println!("kept {:?}, blinded {:?}", filters_to_axes(kept), filters_to_axes(blinded));
-    assert!(parted(means) < 1e-3 && !stopped(kept), "the rest parts by {} at {:?}", parted(means), filters_to_axes(kept));
-    // Twin: read, the dust pulls the filters a tenth of an axis away; on a paper, past the window's white, it prints on
-    // the paper's own white end, never sending an axis to its stop.
-    let ((t, n), (bt, bn)) = (filters_to_axes(kept), filters_to_axes(blinded));
-    assert!((t - bt).hypot(n - bn) > 0.05, "{:?}", filters_to_axes(blinded));
+    let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..narrow.clone() };
+    for (label, s) in [("no paper", &narrow), ("a paper", &on_paper)] {
+        let kept = key::filters(&mut r, copy, s, printable).unwrap();
+        let blinded = key::filters(&mut r, copy, s, finite).unwrap();
+        let means = key::shades(&mut r, copy, &unlit(s), kept, printable).unwrap();
+        println!("{label}: kept {:?}, blinded {:?}", filters_to_axes(kept), filters_to_axes(blinded));
+        assert!(parted(means) < 1e-3 && !stopped(kept), "{label}: the rest parts by {} at {:?}", parted(means), filters_to_axes(kept));
+        // Twin: read, the dust pulls the filters a tenth of an axis away.
+        let ((t, n), (bt, bn)) = (filters_to_axes(kept), filters_to_axes(blinded));
+        assert!((t - bt).hypot(n - bn) > 0.05, "{label}: {:?}", filters_to_axes(blinded));
+    }
 }
 
 #[test]
@@ -188,8 +192,8 @@ fn on_a_paper_the_key_balances_the_papers_own_print() {
     let source = scene(&mut graph, &[(0, 96, [0.30, 0.22, 0.14]), (32, 64, [0.05, 0.035, 0.022]), (0, 32, [0.55, 0.42, 0.27])], None);
     let copy = Copy { source: &source, full_width: None };
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
-    let paper = PipelineSettings::rest(ConversionMode::Digital, false);
-    assert!(paper.paper().is_some(), "a digital photo at rest prints on the paper");
+    let paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Digital, false) };
+    assert!(paper.paper().is_some(), "a digital photo on the paper it names");
     let found = key::filters(&mut r, copy, &paper, printable).expect("the cast photo reads");
     let balanced = parted(key::shades(&mut r, copy, &unlit(&paper), found, printable).unwrap());
     let unfiltered = parted(key::shades(&mut r, copy, &unlit(&paper), [0.0; 3], printable).unwrap());

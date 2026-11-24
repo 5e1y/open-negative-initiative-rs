@@ -75,7 +75,7 @@ impl Cube {
     }
 }
 
-/// A digital photo's render on `stock` baked through `couplers`, at rest on the enlarger with no paper, as a CPU chain;
+/// A digital photo's render on `stock` baked through `couplers`, at rest on ONI Standard, as a CPU chain;
 /// a slide projected.
 pub struct Render {
     stock: film::Stock,

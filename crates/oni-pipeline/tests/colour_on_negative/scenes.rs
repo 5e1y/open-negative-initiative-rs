@@ -13,11 +13,6 @@ use oni_settings::curves::SaturationCurve;
 use oni_settings::spectrogram::Band;
 use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
-/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
-pub fn onis(s: PipelineSettings) -> PipelineSettings {
-    PipelineSettings { print_paper: None, ..s }
-}
-
 pub fn slide() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
     s.gains.stops = [0.3, 0.0, -0.4];

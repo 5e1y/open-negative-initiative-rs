@@ -301,6 +301,7 @@ fn families() -> Vec<(&'static str, PipelineSettings)> {
     pro.texture.amount = 0.8;
     pro.secret_sauce = 1.2;
     pro.print.black_point = 0.05;
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..pro.clone() };
     let mut joint = pro.clone();
     joint.texture.amount = 0.0;
     let mut mono = pro.clone();
@@ -311,7 +312,8 @@ fn families() -> Vec<(&'static str, PipelineSettings)> {
     frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut oni = frontier.clone();
     oni.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Oni, d: 0, c: 1, m: 0, y: -2, w: -2, laid: true });
-    vec![("Pro", pro), ("Pro, texture resting", joint), ("monochrome", mono), ("positive", positive), ("Frontier legacy print", frontier), ("ONI legacy print", oni)]
+    let families = [("Pro", pro), ("Pro, texture resting", joint), ("Pro on a paper", papered), ("monochrome", mono), ("positive", positive)];
+    families.into_iter().chain([("Frontier legacy print", frontier), ("ONI legacy print", oni)]).collect()
 }
 
 #[test]

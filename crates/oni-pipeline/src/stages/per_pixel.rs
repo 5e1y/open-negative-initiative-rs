@@ -2,7 +2,7 @@
 
 use super::*;
 use oni_graph::Image;
-use oni_render::{HeldBlack, Negative, NeutralNegative, Paper};
+use oni_render::{HeldBlack, Negative, NeutralNegative, Paper, Shown};
 
 /// A kernel's composed shader; for one reading only its input, its source and its call on `v`, the
 /// input at `p`, so `laid` may run several in one pass.
@@ -36,6 +36,7 @@ kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
 kernel!(NEGATIVE, wgsl::NEGATIVE, call "negative_px(v)");
 kernel!(NEGATIVE_COLOURED, wgsl::NEGATIVE_COLOURED, call "negative_px(v)");
 kernel!(PAPER, wgsl::PAPER, call "paper_px(v)");
+kernel!(INVERSION, wgsl::INVERSION, call "inversion_px(v)");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
 kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(NEUTRAL_NEGATIVE, wgsl::NEUTRAL_NEGATIVE, call "neutral_negative_px(v)");
@@ -68,12 +69,21 @@ pub fn paper(k: &Paper) -> PerPixel {
     PerPixel { name: "paper", kernel: &PAPER, params: uniform(HEAD, &k.rows()) }
 }
 
-/// Stages 4 to 7 on `image` as `cpu::stage47` runs them, in one pass: Lighting on the negative, the windows and ONI's
-/// print, or the windows and the paper.
+/// The window's shares shown with no paper, the pure inversion, in the pass past stage 4-7's window.
+pub fn inversion() -> PerPixel {
+    PerPixel { name: "inversion", kernel: &INVERSION, params: uniform(HEAD, &[]) }
+}
+
+/// Stages 4 to 7 on `image` as `cpu::stage47` runs them, in one pass: Lighting on the negative, the windows, then the
+/// pure inversion, the paper, or a legacy print's curve in the windows' own kernel.
 pub fn converted(image: Image, k: &Stage47) -> Image {
     let lit = k.negative.as_ref().map(negative);
-    let printed = k.paper.as_ref().map(paper);
-    laid(image, lit.into_iter().chain([stage47(k)]).chain(printed).collect())
+    let shown = match &k.shown {
+        Shown::Inversion => Some(inversion()),
+        Shown::Paper(p) => Some(paper(p)),
+        Shown::Curve => None,
+    };
+    laid(image, lit.into_iter().chain([stage47(k)]).chain(shown).collect())
 }
 
 /// `CIExposureAdjust` by `ev` stops.

@@ -1,5 +1,5 @@
 //! `stock_strip <raw> <out> [side] [stock profile,...]`: a digital photo rendered headless at its rest on each virtual
-//! stock, as the editor renders it: on the default paper (`paper-<stock>`) and on ONI's own print (`oni-<stock>`), and the
+//! stock, as the editor renders it: on ONI Standard (`paper-<stock>`) and on no paper (`oni-<stock>`), and the
 //! scene each film reads (`scene-<stock>`). `ONI_FILM_EXPOSURE` sets the virtual film's exposure, `ONI_PRINT_EXPOSURE`
 //! moves Lighting's Exposure, `ONI_PAPER` names the paper by its key. Each as `w h` then f32 RGB, linear Rec. 2020.
 
@@ -55,9 +55,7 @@ fn main() {
             f.exposure = film_stops;
         }
         paper.print.exposure += print_stops;
-        if on_paper.is_some() {
-            paper.print_paper = on_paper;
-        }
+        paper.print_paper = Some(on_paper.unwrap_or_default());
         let oni = PipelineSettings { print_paper: None, ..paper.clone() };
         let name = stock.key().replace('/', "-");
         write(out, &format!("paper-{name}"), &e.render(&negative, &paper, Some(side)).unwrap());

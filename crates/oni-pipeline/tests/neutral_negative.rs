@@ -1,14 +1,15 @@
 //! The neutral film against its definition: its kernel on the GPU against its reference, its window's share the screen's
-//! code of the light, the pure inversion giving the scene back, and its grain uniform on the negative; each with a twin.
+//! code of the light, the pure inversion giving the scene back end to end, and its grain uniform on the negative; each
+//! with a twin.
 
 mod common;
 
 use common::{V4, graph, judge, mapped, noise, whole};
 use oni_graph::{Image, Rect};
 use oni_pipeline::film::{self, neutral, saturation};
-use oni_pipeline::{conversion, grain, stages};
-use oni_render::{LUMA, NeutralNegative, Stage47, cpu};
-use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
+use oni_pipeline::{Inputs, Pipeline, Request, conversion, grain, stages};
+use oni_render::{LUMA, NeutralNegative, Shown, Stage47, cpu};
+use oni_settings::{ConversionMode, PaperStock, PipelineSettings, VirtualStock};
 
 const NEUTRAL: VirtualStock = VirtualStock::NEUTRAL;
 
@@ -17,10 +18,24 @@ fn reading() -> Stage47 {
     conversion::stage47(&PipelineSettings::rest(ConversionMode::Digital, true))
 }
 
-/// The pure inversion's light of a window's share: the share, held within 0 and 1, as an sRGB code.
+/// The pure inversion's light of a window's share, by the render's own kernel.
 fn inverted(share: f32) -> f32 {
-    let c = share.clamp(0.0, 1.0);
-    if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
+    cpu::inversion([share; 4])[0]
+}
+
+/// A new digital photo, its grain and its neighbourhood stages off, so each pixel renders alone.
+fn plain() -> PipelineSettings {
+    let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
+    s.grain.amount = 0.0;
+    s
+}
+
+/// How far a render lies off its scene's light over the sensor's saturation, at worst, where that light is 13 stops
+/// under the saturation or over.
+fn off_the_scene(scenes: &[V4], rendered: &[V4]) -> f32 {
+    let floor = (-13f32).exp2();
+    let lights = scenes.iter().zip(rendered).flat_map(|(scene, shown)| (0..3).map(move |c| (scene[c] / saturation(), shown[c])));
+    lights.filter(|(light, _)| *light >= floor).map(|(light, shown)| (shown / light - 1.0).abs()).fold(0.0, f32::max)
 }
 
 /// Scene pixels over the sensor's whole range, each channel its own light: black, the saturation, then thirteen stops.
@@ -142,7 +157,33 @@ fn the_pure_inversion_gives_the_scene_back() {
     println!("round trip: {:.4} %, the twin {:.2} %", worst * 100.0, twin * 100.0);
     assert!(worst < 1e-3, "the scene comes back {:.3} % off", worst * 100.0);
     assert!(twin > 5e-3, "the twin passes at {twin:.2e}");
-    assert_eq!(inverted(cpu::windowed(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0), &reading)[1]), 0.0);
+    assert!(inverted(cpu::windowed(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0), &reading)[1]).abs() < 1e-7);
+}
+
+/// End to end: a new digital photo, on the neutral film and no paper, renders its scene's light over the sensor's
+/// saturation, through the chain's CPU references and whole on the GPU. Twins: on a paper, or on Portra 800, it does not.
+#[test]
+fn a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion() {
+    let s = plain();
+    let k = conversion::stage47(&s);
+    assert!(s.film().map(|f| f.stock) == Some(NEUTRAL) && s.paper().is_none() && k.shown == Shown::Inversion, "the neutral film, no paper");
+    assert!(conversion::scene_white(&s).is_none(), "its scene lit by no light of the film's");
+    let scenes = scenes();
+    let through = |k: &Stage47| -> Vec<V4> { scenes.iter().map(|p| cpu::stage47(film::shot(NEUTRAL, *p, 0.0), k)).collect() };
+    let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..s.clone() };
+    let (cpu_off, cpu_twin) = (off_the_scene(&scenes, &through(&k)), off_the_scene(&scenes, &through(&conversion::stage47(&on_paper))));
+    println!("end to end on the CPU: {:.4} %, the twin on a paper {:.0} %", cpu_off * 100.0, cpu_twin * 100.0);
+    assert!(cpu_off < 1e-3, "the CPU chain renders the scene {:.3} % off", cpu_off * 100.0);
+    assert!(cpu_twin > 0.05, "the paper twin passes at {cpu_twin:.2e}");
+    assert!(cpu::stage47(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0), &k).iter().take(3).all(|v| v.abs() < 1e-7), "no light renders black");
+    let Some(mut g) = graph("a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion") else { return };
+    let source = g.upload(scenes.len() as u32, 1, &scenes).unwrap();
+    let mut render = |s: &PipelineSettings| Pipeline::new().render(&mut g, &source, s, &Request::default(), &Inputs::default(), None).unwrap().1;
+    let on_portra = s.on_stock(VirtualStock::of("kodak-portra-800"));
+    let (gpu_off, gpu_paper, gpu_film) = (off_the_scene(&scenes, &render(&s)), off_the_scene(&scenes, &render(&on_paper)), off_the_scene(&scenes, &render(&on_portra)));
+    println!("end to end on the GPU: {:.4} %, the twins on a paper {:.0} %, on Portra 800 {:.0} %", gpu_off * 100.0, gpu_paper * 100.0, gpu_film * 100.0);
+    assert!(gpu_off < 1e-3, "the GPU chain renders the scene {:.3} % off", gpu_off * 100.0);
+    assert!(gpu_paper > 0.05 && gpu_film > 0.05, "the twins pass at {gpu_paper:.2e} and {gpu_film:.2e}");
 }
 
 #[test]

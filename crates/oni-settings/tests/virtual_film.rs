@@ -138,10 +138,12 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
         assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
         assert_eq!(read(&stored).settings, s, "{stock:?}");
     }
-    // A photo of 46 on its paper, grain off as every photo of then, keeps the paper's own black it printed.
+    // A photo of 46 on the default paper of then, grain off as every photo of then, keeps the paper's own black it printed
+    // and names no paper, its format's default left.
     let mut portra = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800"));
     portra.grain.amount = 0.0;
     let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, ..portra.clone() };
+    portra.print_paper = Some(oni_settings::PaperStock::of("kodak-royal-digital"));
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
     let portra = migrate::datasheet::on_former(&portra, VirtualStock::of("kodak-portra-800"));
     assert_eq!(read(&at(&portra, chain::ONE_FACE_VERSION)).settings, kept);
