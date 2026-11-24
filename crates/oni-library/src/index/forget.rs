@@ -16,8 +16,8 @@ pub(super) fn head_pattern(folder: &str) -> String {
 }
 
 impl LibraryIndex {
-    /// Every row at `folder` or under it, in `all`'s order, whichever spelling holds it; the rows of
-    /// other folders are left in SQLite, never read into rows.
+    /// Every row at `folder` or under it, in `all`'s order; the rows of other folders are left in
+    /// SQLite, never read into rows.
     pub fn under(&self, folder: &str) -> Vec<Entry> {
         let sql = format!("SELECT {COLUMNS} FROM photos WHERE path LIKE ? ESCAPE '\\' ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
         let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };

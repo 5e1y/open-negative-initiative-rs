@@ -13085,5 +13085,13 @@
     "status": "done",
     "detail": "The key was withdrawn (#1053); what it left had no caller outside oni-measure's own tests. The roll measure keeps Classic's two steps inline (roll::measured), and Measured now carries the gains it lands on (`stops`) instead of a Balance whose levels and shift nothing read; the placement stays as the gate a flat channel fails. key::slide_read returns the histogram itself, and Prepare's slides build oni_core::balance::Balance directly, the same stops and resting windows. Nothing stored or rendered moves; ONI_READING_CODE changes with oni-measure/src, so kept Auto WB outcomes are read once again, to the same values.",
     "outcome": "cargo test -p oni-measure green. The piled-channel check runs on roll::measured over the simulated densities (a reading's tails laid on them); roll8's second-press check runs on key::roll_measured on the reference roll (gains 0.0018 / 0.0015 st, tails 2e-4; twin read after the levels 0.47 / 0.55 st), and filter_balance compares the roll measure under a legacy print. Tests of the deleted helpers alone go (a selection's strategies over the dead applied and mean, keyed against two_steps, composite)."
+  },
+  {
+    "id": 3762,
+    "type": "simplification",
+    "title": "The index drops its respelling pass and its dual-spelling keys: every row of a per-schema index file is keyed in the archive's spelling",
+    "status": "done",
+    "detail": "Since each schema keeps its own index-N.sqlite and open refuses any other user_version (#1569), upsert, the only writer of photos, has keyed every row with paths::normal, unchanged since the pass was written. So respell's search always came back empty and the `WHERE path IN (?, ?)` pairs (the path as given and its normal spelling) could only ever match the second. index/spelling.rs and its call go; each lookup, update and delete of photos and stamps keys on `path = normal(path)`. Should paths::normal ever change, a SCHEMA_VERSION bump rebuilds the cache. The index is a disposable cache: no sidecar or render moves.",
+    "outcome": "cargo test -p oni-library green; the two respelling tests go with the pass."
   }
 ]

@@ -9,14 +9,14 @@ use rusqlite::params;
 impl LibraryIndex {
     pub fn set_trashed(&self, date: Option<Date>, path: &str) -> rusqlite::Result<()> {
         self.connection
-            .execute("UPDATE photos SET trashed_at = ? WHERE path IN (?, ?)", params![date.map(reference), path, normal(path)])?;
+            .execute("UPDATE photos SET trashed_at = ? WHERE path = ?", params![date.map(reference), normal(path)])?;
         Ok(())
     }
 
     pub fn set_passes(&self, pass_of: Option<&str>, leads: bool, path: &str) -> rusqlite::Result<()> {
         self.connection.execute(
-            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path IN (?, ?)",
-            params![pass_of, i64::from(leads), path, normal(path)],
+            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path = ?",
+            params![pass_of, i64::from(leads), normal(path)],
         )?;
         Ok(())
     }
@@ -25,7 +25,7 @@ impl LibraryIndex {
     pub fn set_film(&self, film: Option<&Film>, path: &str) -> rusqlite::Result<()> {
         self.connection.execute(
             "UPDATE photos SET film_id = ?, film_name = ?, film_order = ?, film_stock = ?, \
-             film_shot_date = ?, film_camera_body = ?, film_lens = ? WHERE path IN (?, ?)",
+             film_shot_date = ?, film_camera_body = ?, film_lens = ? WHERE path = ?",
             params![
                 film.map(|f| f.id.to_string()),
                 film.map(|f| f.name.clone()),
@@ -34,7 +34,6 @@ impl LibraryIndex {
                 film.and_then(|f| f.shot_date).map(reference),
                 film.and_then(|f| f.camera_body.clone()),
                 film.and_then(|f| f.lens.clone()),
-                path,
                 normal(path)
             ],
         )?;
@@ -42,7 +41,7 @@ impl LibraryIndex {
     }
 
     pub fn set_label(&self, label: Medal, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET label = ? WHERE path IN (?, ?)", params![medal_raw(label), path, normal(path)])?;
+        self.connection.execute("UPDATE photos SET label = ? WHERE path = ?", params![medal_raw(label), normal(path)])?;
         Ok(())
     }
 
@@ -62,7 +61,7 @@ impl LibraryIndex {
         self.in_one(|| {
             rows.iter().try_for_each(|(path, (body, lens))| {
                 self.connection
-                    .execute("UPDATE photos SET marker_body = ?, marker_lens = ? WHERE path IN (?, ?)", params![body, lens, path, normal(path)])
+                    .execute("UPDATE photos SET marker_body = ?, marker_lens = ? WHERE path = ?", params![body, lens, normal(path)])
                     .map(|_| ())
             })
         })

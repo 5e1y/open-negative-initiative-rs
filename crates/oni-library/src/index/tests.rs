@@ -181,61 +181,6 @@ fn a_file_of_another_schema_is_never_opened_nor_written() {
     assert_eq!(rows, 1);
 }
 
-/// Rows an earlier build keyed as the disk listed them take the archive's spelling at the next open:
-/// a row alone is respelt, two rows for one file become one holding what either held.
-#[cfg(any(target_os = "macos", windows))]
-#[test]
-fn an_index_row_keyed_in_another_spelling_is_respelt_and_never_lost() {
-    let scratch = Scratch::new("index-spelling");
-    let file = scratch.path().join("index.sqlite");
-    let stale = |name: &str| {
-        if cfg!(windows) { format!("C:\\Scans\\\u{c9}t\u{e9}\\{name}") } else { format!("/Scans/E\u{301}te\u{301}/{name}") }
-    };
-    let spelt = |name: &str| if cfg!(windows) { format!("C:/Scans/\u{c9}t\u{e9}/{name}") } else { format!("/Scans/\u{c9}t\u{e9}/{name}") };
-    let index = LibraryIndex::open(&file).unwrap();
-    index.upsert(&Entry::new(&spelt("b.NEF"), day1(), "b-1-x")).unwrap();
-    drop(index);
-    let raw = Connection::open(&file).unwrap();
-    let insert = "INSERT INTO photos (path, imported_at, fingerprint, label, manual_order, trashed_at) VALUES (?, 0, ?, ?, ?, NULL)";
-    raw.execute(insert, params![stale("b.NEF"), "b-1-x", "gold", 2.0]).unwrap();
-    raw.execute(insert, params![stale("c.NEF"), "c-1-x", "silver", Option::<f64>::None]).unwrap();
-    // Twin: keyed byte for byte, the stale row is not found under the spelling the survey hands.
-    let found: i64 = raw.query_row("SELECT COUNT(*) FROM photos WHERE path = ?", [spelt("c.NEF")], |r| r.get(0)).unwrap();
-    assert_eq!(found, 0);
-    drop(raw);
-    let index = LibraryIndex::open(&file).unwrap();
-    let all = index.all();
-    let by = |name: &str| all.iter().find(|e| e.path == spelt(name)).cloned().unwrap();
-    assert_eq!(all.len(), 2, "one row per file, none lost: {all:?}");
-    assert_eq!((by("b.NEF").label, by("b.NEF").manual_order), (Medal::Gold, Some(2.0)));
-    assert_eq!(by("c.NEF").label, Medal::Silver);
-    index.set_label(Medal::Bronze, &stale("c.NEF")).unwrap();
-    assert_eq!(index.all().iter().find(|e| e.path == spelt("c.NEF")).unwrap().label, Medal::Bronze);
-}
-
-/// The kept row's EXIF line and folder roll are its own, read off its files: a twin spelling's never fills them,
-/// a line left to derive or cleared being a value, not a gap.
-#[cfg(any(target_os = "macos", windows))]
-#[test]
-fn a_respelt_row_keeps_its_own_line_and_folder_roll() {
-    let scratch = Scratch::new("index-spelling-line");
-    let file = scratch.path().join("index.sqlite");
-    let (stale, spelt) = if cfg!(windows) { ("C:\\Scans\\\u{c9}t\u{e9}\\a.NEF", "C:/Scans/\u{c9}t\u{e9}/a.NEF") } else { ("/Scans/E\u{301}te\u{301}/a.NEF", "/Scans/\u{c9}t\u{e9}/a.NEF") };
-    let index = LibraryIndex::open(&file).unwrap();
-    index.upsert(&Entry { kept_lens: Some(String::new()), ..Entry::new(spelt, day1(), "a-1-x") }).unwrap();
-    drop(index);
-    let raw = Connection::open(&file).unwrap();
-    let insert = "INSERT INTO photos (path, imported_at, fingerprint, kept_camera, kept_lens, marker_body) VALUES (?, 0, 'a-1-x', 'Leica M6', 'Summicron 35', 'Nikon FM2')";
-    raw.execute(insert, [stale]).unwrap();
-    // Twin: the stale row does hold a line and a roll the merge could take.
-    let held: Option<String> = raw.query_row("SELECT kept_camera FROM photos WHERE path = ?", [stale], |r| r.get(0)).unwrap();
-    assert_eq!(held.as_deref(), Some("Leica M6"));
-    drop(raw);
-    let rows = LibraryIndex::open(&file).unwrap().all();
-    assert_eq!(rows.len(), 1);
-    assert_eq!((rows[0].kept_camera.as_deref(), rows[0].kept_lens.as_deref(), rows[0].marker_body.as_deref()), (None, Some(""), None));
-}
-
 /// Another process of this schema may write the file: a write of ours meeting its lock waits.
 #[test]
 fn a_write_waits_for_the_other_apps_write() {
