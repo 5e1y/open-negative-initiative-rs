@@ -4,7 +4,7 @@
 pub mod balance;
 pub mod command;
 pub mod compare;
-pub mod fields;
+pub use oni_settings::fields;
 pub mod knob;
 pub mod parameters;
 pub mod preset_parameters;

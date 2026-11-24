@@ -13117,5 +13117,13 @@
     "status": "done",
     "detail": "lensCorrected was only ever written (its default, the copy on import, before_1_0's mark on a document with dust strokes): the lens warp runs on the separate lensCorrection block, and the pinned decode applies no lens profile. rollReferenceDeclined was never set true nor read, only reset to false or copied. Each leaves its struct member, default, field-table row, frame family entry, preset exclusion, the frame's OWN entry, its copies in imported and unconverted, and its lines in the corpus readings. A sidecar holding either key still reads: PipelineSettings ignores unknown keys, and an older build fills a missing one from its struct default. No migration or render reads them; kept Auto WB fingerprints move once with the settings' shape, to the same outcome.",
     "outcome": "cargo test -p oni-settings, oni-core and oni-measure green; the corpus goldens lose their two lines each. New codec check: a document holding both keys at version 0, 3 and 70 reads equal to one without them and is written back without them (twin: a key the settings read, captureStops, moves the frame). The out-of-repo wide-corpus goldens (ONI_SIDECAR_GOLDENS) need the same two lines dropped."
+  },
+  {
+    "id": 3766,
+    "type": "simplification",
+    "title": "One field table names each field's family: the three hand-kept name lists, the hand-written look copy, the placement checker and the frame's OWN list go",
+    "status": "done",
+    "detail": "Each PipelineSettings field was named in the struct, in the fields! table, and again in look_settings::FIELDS, FRAME_FIELDS or roll_settings::FIELD_NAMES; Field::family searched those lists by string, and two tests existed only to keep them in step. The table now carries each field's family in its row (`Mode => \"mode\", mode, Roll;`), so a field has one family by construction and family() returns Family. The table and FieldSet move to oni-settings (fields.rs, ordered.rs beside it; oni-core re-exports `fields`), so look_settings::copied becomes a loop of Field::carry over the Look family, the same 18 members cloned. Edit Together's OWN (the frame family plus sourceEncoding, which a roll field never reaches outside a slide's own) is the frame family. Serde names and the struct are unchanged: no sidecar byte moves.",
+    "outcome": "cargo test -p oni-settings and oni-core green; the workspace's tests build. The table test (every declared field in order, with its twin) stays the guard; the codec check now holds the serialised document's keys to the table's names (twin: a table short of one field). Preset boxes and lens/paperless pastes read the Look family."
   }
 ]

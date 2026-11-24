@@ -11,6 +11,7 @@ pub mod date;
 pub mod document;
 pub mod dyes;
 pub mod exif;
+pub mod fields;
 pub mod film;
 pub mod frame;
 pub mod geometry;

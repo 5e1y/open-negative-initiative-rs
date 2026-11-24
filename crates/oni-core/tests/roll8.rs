@@ -186,7 +186,7 @@ fn a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte() {
         let after = roll.settings(target);
         let moved = FieldSet::between(before, &after);
         assert!(!moved.is_empty());
-        assert!(moved.iter().all(|f| f.family() == Some(Family::Look)), "{moved:?}");
+        assert!(moved.iter().all(|f| f.family() == Family::Look), "{moved:?}");
         assert_eq!((after.print, after.sharpen), (donor.print, donor.sharpen));
         // Twin: the donor's framing differs, and stays behind.
         assert_ne!(after.geometry, donor.geometry);

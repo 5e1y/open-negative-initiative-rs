@@ -5,6 +5,7 @@ use oni_settings::axis::{density_axis, pipeline};
 use oni_settings::blocks::{ChromaDenoise, Gains, Sharpen, Vignette};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::document::{self, VERSION};
+use oni_settings::fields::Field;
 use oni_settings::migrate::{self, chain};
 use oni_settings::curves::SaturationCurve;
 use oni_settings::frame::{AspectRatio, RgbPasses};
@@ -555,10 +556,11 @@ fn a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not() {
     assert_eq!((decode(&former(before_1_0::LIGHTING_VERSION - 1, true)).print, decode(&former(before_1_0::LIGHTING_VERSION, false)).print), (kept.print, bare.print));
 }
 
-// MARK: - Families
+// MARK: - Fields
 
+/// With its optional fields set, a document writes every field the table names, and no other.
 #[test]
-fn every_field_lives_in_exactly_one_family() {
+fn a_document_writes_every_field_the_table_names() {
     let keys: Vec<String> = {
         let mut s = full();
         s.sheet = Some(oni_settings::frame::ContactSheetGrid {
@@ -580,22 +582,16 @@ fn every_field_lives_in_exactly_one_family() {
         (s.legacy_print, s.paperless) = (Some(Default::default()), true);
         encoded(&s, VERSION)["settings"].as_object().unwrap().keys().cloned().collect()
     };
-    let families = |names: &[&str]| -> Vec<String> {
-        let mut all: Vec<String> = oni_settings::settings::look_settings::FIELDS
-            .iter()
-            .chain(oni_settings::settings::look_settings::FRAME_FIELDS.iter())
-            .chain(names.iter())
-            .map(|s| s.to_string()).collect();
+    let table = |fields: &[Field]| -> Vec<String> {
+        let mut all: Vec<String> = fields.iter().map(|f| f.name().to_string()).collect();
         all.sort();
         all
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 43);
-    assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
-    // Twin: a family missing one field no longer covers the document.
-    let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];
-    assert_ne!(families(short), sorted);
+    assert_eq!(table(Field::ALL), sorted);
+    // Twin: a table missing one field no longer covers the document.
+    assert_ne!(table(&Field::ALL[1..]), sorted);
 }
 
 #[test]

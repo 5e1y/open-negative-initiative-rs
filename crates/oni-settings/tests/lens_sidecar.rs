@@ -4,6 +4,7 @@
 use oni_settings::document::{self, VERSION};
 use oni_settings::lens::LensCorrection;
 use oni_settings::migrate::{self, chain};
+use oni_settings::fields::{Family, Field};
 use oni_settings::settings::look_settings;
 use oni_settings::{ConversionMode, Document, PipelineSettings};
 use serde_json::{Value, json};
@@ -43,7 +44,7 @@ fn a_sidecar_from_before_the_lens_reads_none_and_a_corrected_one_keeps_its_four_
 fn a_paste_carries_the_lens_as_it_carries_the_look() {
     let donor = PipelineSettings { lens_correction: corrected(), ..PipelineSettings::rest(ConversionMode::Digital, true) };
     let target = PipelineSettings::rest(ConversionMode::Digital, false);
-    assert!(look_settings::FIELDS.contains(&"lensCorrection"));
+    assert_eq!(Field::LensCorrection.family(), Family::Look);
     assert_eq!(look_settings::copied(&donor, &target).lens_correction, corrected());
     // Twin: a roll's own fields stay the target's.
     assert!(!look_settings::copied(&donor, &target).decoded_from_mosaic);
