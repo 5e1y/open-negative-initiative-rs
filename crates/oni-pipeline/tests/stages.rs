@@ -109,8 +109,8 @@ fn two_input_kernels_read_their_auxiliary_images_at_the_same_pixel() {
     let t = Texture { gain };
     judge("texture", &out, &each(&|i| cpu::texture(pa[i], pb[i], pc[i], &t)), &each(&|i| cpu::texture(pa[i], pc[i], pb[i], &t)));
 
-    let k = ScannerOutput { warmth_share: 0.6, lift: scanner::LIFT, contrast: 0.3 };
-    let out = whole(&mut g, &Image::new(&c).then_reading(stages::scanner_output(k.warmth_share, k.lift, k.contrast), &[Image::new(&b)]));
+    let k = ScannerOutput { warmth_share: 0.6, lift: scanner::LIFT };
+    let out = whole(&mut g, &Image::new(&c).then_reading(stages::scanner_output(k.warmth_share, k.lift), &[Image::new(&b)]));
     judge("scanner output", &out, &each(&|i| cpu::scanner_output(pc[i], pb[i], &k)), &each(&|i| cpu::scanner_output(pc[i], beside(&pb, i), &k)));
 
     // A patch on part of the frame, through its mask; the frame stays itself outside it.

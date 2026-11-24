@@ -196,11 +196,11 @@ fn saturation_texture_and_scanner_reach_their_other_branches() {
     let warmth = noise(w, h, 25, 0.0, 1.0);
     let warm = g.upload(w, h, &warmth).unwrap();
     for (name, k) in [
-        ("no warmth, no Contrast", ScannerOutput { warmth_share: 0.0, lift: scanner::LIFT, contrast: 0.0 }),
-        ("negative Contrast", ScannerOutput { warmth_share: 0.1, lift: scanner::LIFT, contrast: -0.4 }),
+        ("no warmth", ScannerOutput { warmth_share: 0.0, lift: scanner::LIFT }),
+        ("warmth at a share", ScannerOutput { warmth_share: 0.1, lift: scanner::LIFT }),
     ] {
-        let wrong = ScannerOutput { contrast: k.contrast + 0.02, warmth_share: k.warmth_share + 0.02, ..k };
-        let stage = stages::scanner_output(k.warmth_share, k.lift, k.contrast);
+        let wrong = ScannerOutput { warmth_share: k.warmth_share + 0.02, ..k };
+        let stage = stages::scanner_output(k.warmth_share, k.lift);
         two(&mut g, &format!("scanner output, {name}"), (&input, &pixels), (&warm, &warmth), stage, |c, m| cpu::scanner_output(c, m, &k), |c, m| cpu::scanner_output(c, m, &wrong));
     }
 }

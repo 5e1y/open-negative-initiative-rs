@@ -133,9 +133,9 @@ pub fn scanner_encode(root: f32) -> PerPixel {
     PerPixel { name: "scanner-encode", kernel: &SCANNER_ENCODE, params: uniform(HEAD, &[[root, 0.0, 0.0, 0.0]]) }
 }
 
-/// The warmth look's code as the auxiliary image, at `share`, its `lift` taken off, then `contrast`.
-pub fn scanner_output(share: f32, lift: f32, contrast: f32) -> PerPixel {
-    PerPixel { name: "scanner-output", kernel: &SCANNER_OUTPUT, params: uniform(HEAD, &[[share, lift, contrast, 0.0]]) }
+/// The warmth look's code as the auxiliary image, at `share`, its `lift` taken off.
+pub fn scanner_output(share: f32, lift: f32) -> PerPixel {
+    PerPixel { name: "scanner-output", kernel: &SCANNER_OUTPUT, params: uniform(HEAD, &[[share, lift, 0.0, 0.0]]) }
 }
 
 /// The vignette on `extent`, centred on it; coordinates are the graph's, which only the radius reads.

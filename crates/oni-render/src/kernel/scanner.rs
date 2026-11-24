@@ -23,12 +23,11 @@ pub struct ScannerDensity {
     pub dmax: f32,
 }
 
-/// `scannerOutput(code, warmth, warmthShare, lift, contrast)`.
+/// `scannerOutput(code, warmth, warmthShare, lift)`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScannerOutput {
     pub warmth_share: f32,
     pub lift: f32,
-    pub contrast: f32,
 }
 
 /// `scannerEncode(s, root)`.
@@ -51,14 +50,11 @@ pub fn scanner_density(s: V4, k: &ScannerDensity) -> V4 {
 pub fn scanner_output(code: V4, warmth: V4, k: &ScannerOutput) -> V4 {
     let c = map(rgb(code), |i, v| clamp(v + (warmth[i] - k.lift) * k.warmth_share, 0.0, 1.0));
     let linear = map(c, |_, v| if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) });
-    let mut out = [
+    let out = [
         dot(linear, [0.627_404, 0.329_283, 0.043_313]),
         dot(linear, [0.069_097, 0.919_540, 0.011_362]),
         dot(linear, [0.016_391, 0.088_013, 0.895_595]),
     ];
-    if k.contrast != 0.0 {
-        out = map(out, |_, v| contrasted(v.powf(1.0 / DISPLAY_GAMMA), k.contrast).powf(DISPLAY_GAMMA));
-    }
     with_alpha(out, code[3])
 }
 

@@ -34,7 +34,7 @@ fn printed(colour: V3, s: &PipelineSettings) -> V3 {
     if machine.is_some() && s.paper().is_none() {
         let code = cpu::scanner_encode(out, &ScannerEncode { root: 1.0 });
         let looked = cpu::color_cube(code, &frontier_look::CUBE);
-        out = cpu::scanner_output(looked, looked, &ScannerOutput { warmth_share: 0.0, lift: scanner::LIFT, contrast: 0.0 });
+        out = cpu::scanner_output(looked, looked, &ScannerOutput { warmth_share: 0.0, lift: scanner::LIFT });
     }
     oklab(apply(&TO709, [out[0], out[1], out[2]].map(f64::from)).map(|v| v.clamp(0.0, 1.0)))
 }

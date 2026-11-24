@@ -13133,5 +13133,13 @@
     "status": "done",
     "detail": "No recipe laid stages::scanner_density: a legacy print renders through stage 4-7, then oni_finish or warmed_paper (encode, cube, scanner_output); only tests/stages.rs and tests/branches.rs called it. scanner::replica ran the measured table on the CPU 'as the GPU renders it', which the GPU never did; only its own test in scanner_tests read it, the keypad's offset and on_legacy_print keeping their tests. oni_render::SCANNER_LIFT had no reader: scanner::LIFT is the one read. Gone: scanner_density.wgsl, wgsl::SCANNER_DENSITY, its kernel and stage, ScannerDensity::rows, SCANNER_LIFT, replica and its test, the two GPU checks of the kernel. The CPU scanner_density, ScannerDensity and fitted_density stay for the Look Lab (look_lab/pro.rs, examples/look_lab_strip.rs).",
     "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 unchanged; stages, branches and the pipeline's unit tests green."
+  },
+  {
+    "id": 3782,
+    "type": "chore",
+    "title": "The Scanner output loses the Contrast lane no render sets",
+    "status": "done",
+    "detail": "Every production call of stages::scanner_output (looked, oni_finish, warmed_paper) passed a contrast of 0, so the kernel's k.z != 0 branch never ran; only the removed replica and the offline examples/look_lab_strip.rs passed print.contrast, the example now printing without that bend. Gone: ScannerOutput.contrast, the stage's argument, bent() and the branch in the WGSL and its CPU reference; the branch check now separates warmth at share 0 and 0.1, its twin the share 0.02 off.",
+    "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 and looks unchanged; stages and branches green."
   }
 ]
