@@ -273,8 +273,8 @@ mod tests {
             let shot = |scene: f32| cpu::stage47(stock(kind).shot([scene, scene, scene, 1.0], 0.0), &crate::conversion::stage47(&on_reference(kind, &held)));
             let white = shot(saturation());
             assert!((0..3).all(|c| (white[c] - 1.0).abs() < 2e-3), "{kind:?}: {white:?}");
-            // Twin: a scene a stop under the sensor's saturation prints under that white.
-            assert!(shot(0.5 * saturation())[1] < 1.0 - 1e-3, "{kind:?}: {:?}", shot(0.5 * saturation()));
+            // Twin: a scene a stop over the sensor's saturation, past what a decode holds, prints past that white.
+            assert!(shot(2.0 * saturation())[1] > 1.0 + 1e-3, "{kind:?}: {:?}", shot(2.0 * saturation()));
         }
     }
 }

@@ -10,7 +10,7 @@ pub enum Shown {
     Curve,
     /// A paper printing the shares in place of the curve.
     Paper(super::paper::Paper),
-    /// No paper: the pure inversion, each share the display's code.
+    /// No paper: the pure inversion, each share the display's code, bounded nowhere before the output clip.
     Inversion,
 }
 

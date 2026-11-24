@@ -1,6 +1,6 @@
 //! The pure inversion, the render of a frame naming no paper (owner's call): each channel's density, read between
-//! Prepare's black and white, shown as the sRGB code of its light with no curve, on the scalar reference and through the
-//! graph, against the owner's reference formula written here on its own. Each verdict has a twin.
+//! Prepare's black and white, shown as the sRGB code of its light with no curve and no bound but the output clip's, on
+//! the scalar reference and through the graph, against the owner's reference formula written here. Each has a twin.
 
 mod common;
 
@@ -29,8 +29,8 @@ fn decoded(code: f64) -> f64 {
     if code <= 0.04045 { code / 12.92 } else { ((code + 0.055) / 1.055).powf(2.4) }
 }
 
-/// The reference the owner approved on the reference roll: the scan's density through its gain, between the window's
-/// ends freed of the density guard's pedestal, held within 0 and 1 and read through `curve`, the sRGB code's.
+/// The reference the owner approved on the reference roll, as its screen shows it: the scan's density through its gain,
+/// between the window's ends freed of the density guard's pedestal, held within 0 and 1 and read through `curve`.
 fn reference(scan: V4, s: &PipelineSettings, curve: impl Fn(f64) -> f64) -> V4 {
     let pedestal = 10f64.powf(-f64::from(s.density_ceiling));
     let out: [f64; 3] = std::array::from_fn(|c| {
@@ -73,18 +73,24 @@ fn a_frame_naming_no_paper_shows_each_windows_share_as_the_srgb_code_of_its_ligh
     let k = conversion::stage47(&s);
     assert!(s.print_paper.is_none() && s.shows_inversion() && k.shown == Shown::Inversion && conversion::printing(&s).is_none());
     let scans = scans(&s);
-    let shown = mapped(&scans, |p| cpu::stage47(p, &k));
+    // The reference is the picture on its screen: the stage's own, past the output clip.
+    let shown = mapped(&scans, |p| cpu::output_clip(cpu::stage47(p, &k)));
     let approved = mapped(&scans, |p| reference(p, &s, decoded));
     // The app reads its density over the guard's pedestal, the reference past it: on these gains and windows, 2.5e-3 of
     // light at most at a ceiling of 3.5.
     let off = worst(&shown, &approved);
     println!("the pure inversion off the owner's reference by {off:.2e} of light");
     assert!(off < 3e-3, "{off}");
-    // Prepare's black lies on pure black and its white on pure white, each channel's own, and neither is passed.
+    // Prepare's black lies on pure black and its white on pure white, each channel's own.
     let rgb = |p: V4| [p[0], p[1], p[2]];
     let at = |share: f64| rgb(cpu::stage47(scanned(&s, [share; 3]), &k));
     assert!(at(0.0).iter().all(|v| v.abs() < 1e-5) && at(1.0).iter().all(|v| (v - 1.0).abs() < 1e-4), "{:?} {:?}", at(0.0), at(1.0));
-    assert_eq!((at(-0.2), at(1.3)), ([0.0; 3], [1.0; 3]));
+    // Past either end the stage bounds nothing, so a later stage reads what the film holds there; the output clip, the
+    // chain's only bound, lays it on black or on white.
+    let (under, over) = (at(-0.2), at(1.3));
+    assert!(under.iter().all(|v| *v < -0.01) && over.iter().all(|v| *v > 1.5), "{under:?} {over:?}");
+    let clipped = |share: f64| rgb(cpu::output_clip(cpu::stage47(scanned(&s, [share; 3]), &k)));
+    assert_eq!((clipped(-0.2), clipped(1.3)), ([0.0; 3], [1.0; 3]));
     // A neutral share shows neutral, whatever the channels' gains and windows.
     let grey = at(0.5);
     assert!((grey[0] - grey[1]).abs() < 1e-4 && (grey[2] - grey[1]).abs() < 1e-4 && (grey[1] - 0.214).abs() < 1e-3, "{grey:?}");
@@ -93,7 +99,7 @@ fn a_frame_naming_no_paper_shows_each_windows_share_as_the_srgb_code_of_its_ligh
     let through = |curve: fn(f64) -> f64| worst(&shown, &mapped(&scans, |p| reference(p, &s, curve)));
     let (gamma, linear) = (through(|t| t.powf(2.2)), through(|t| t));
     assert!(gamma > 2.0 * off && linear > 0.2, "{gamma} {linear}");
-    let other = |s: &PipelineSettings| worst(&shown, &mapped(&scans, |p| cpu::stage47(p, &conversion::stage47(s))));
+    let other = |s: &PipelineSettings| worst(&shown, &mapped(&scans, |p| cpu::output_clip(cpu::stage47(p, &conversion::stage47(s)))));
     let on_paper = other(&PipelineSettings { print_paper: Some(STANDARD), ..s.clone() });
     let on_curve = other(&PipelineSettings { legacy_print: Some(LegacyPrint::default()), ..s.clone() });
     println!("twins: gamma 2.2 {gamma:.2e}, linear {linear:.2}, ONI Standard {on_paper:.2}, a legacy print's curve {on_curve:.2}");
@@ -112,7 +118,7 @@ fn the_graph_shows_the_pure_inversion_as_its_reference_does() {
     let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
     let on_paper = conversion::stage47(&PipelineSettings { print_paper: Some(STANDARD), ..s.clone() });
     judge("the pure inversion", &out, &mapped(pixels, |p| cpu::stage47(p, &k)), &mapped(pixels, |p| cpu::stage47(p, &on_paper)));
-    // Its kernel alone, on shares past both ends of the window; twin, a display gamma's power.
+    // Its kernel alone, on shares past both ends of the window; twin, a display gamma's power between them.
     let shares = common::noise(w, h, 7, -0.3, 1.4);
     let input = g.upload(w, h, &shares).unwrap();
     let out = whole(&mut g, &Image::new(&input).then(stages::inversion()));

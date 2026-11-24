@@ -96,8 +96,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   their Status A crosstalk alone takes 10 to 30 % of a colour's chroma, what the curves, measured on a grey, hold of every dye.
 - **The render is the pure inversion, a paper a choice laid over it** (owner's call, 2026-11-24): a negative already holds the log
   of the light, so each channel's density, read between Prepare's black on the bare film and its white on the roll's lights, is
-  shown as it is, as a black and white negative's: the window's share, held within 0 and 1, the sRGB code of its light in the working
-  space, no curve (`kernel::inversion`). `print_paper` absent is no paper, the rest of every new photo and every Prepare, a digital
+  shown as it is, as a black and white negative's: the window's share the sRGB code of its light in the working space, no curve,
+  and no bound but the output clip's, a share past either end carried on along that code (`kernel::inversion`). `print_paper` absent is no paper, the rest of every new photo and every Prepare, a digital
   photo's included; Brightness and Print lift are a paper's alone. A photo on its format's default paper, Royal Digital before format
   72 and ONI Standard at 72, names none at format 73 (`migrate::optional_paper`); any other paper stays.
 - **A paper named lays Prepare's window on its useful range** (owner's calls, 2026-11-22 to 24): no ONI print, no enlarger switch

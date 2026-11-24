@@ -120,21 +120,20 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_pulls_the_filters_away() {
     let source = scene(&mut graph, &[(0, 96, [0.12, 0.14, 0.17])], Some((44, 28, 8, 8, [0.012, 0.025, 0.04])));
     let copy = Copy { source: &source, full_width: None };
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
-    // On no paper and on one: past the window's white the dust shows pure white, or the paper's own white end.
+    // On no paper and on one: the dust lies past the window's white, which the stage holds nowhere and a paper prints on
+    // its own white end.
     let narrow = settings(1.2);
     let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..narrow.clone() };
     for (label, s) in [("no paper", &narrow), ("a paper", &on_paper)] {
         let kept = key::filters(&mut r, copy, s, printable).unwrap();
+        let blinded = key::filters(&mut r, copy, s, finite).unwrap();
         let means = key::shades(&mut r, copy, &unlit(s), kept, printable).unwrap();
-        println!("{label}: kept {:?}", filters_to_axes(kept));
+        println!("{label}: kept {:?}, blinded {:?}", filters_to_axes(kept), filters_to_axes(blinded));
         assert!(parted(means) < 1e-3 && !stopped(kept), "{label}: the rest parts by {} at {:?}", parted(means), filters_to_axes(kept));
+        // Twin: read, the dust pulls the filters a tenth of an axis away.
+        let ((t, n), (bt, bn)) = (filters_to_axes(kept), filters_to_axes(blinded));
+        assert!((t - bt).hypot(n - bn) > 0.05, "{label}: {:?}", filters_to_axes(blinded));
     }
-    // Twin: read on the paper, whose white end keeps the dust's colour, it pulls the filters a tenth of an axis away,
-    // never sending an axis to its stop.
-    let kept = key::filters(&mut r, copy, &on_paper, printable).unwrap();
-    let blinded = key::filters(&mut r, copy, &on_paper, finite).unwrap();
-    let ((t, n), (bt, bn)) = (filters_to_axes(kept), filters_to_axes(blinded));
-    assert!((t - bt).hypot(n - bn) > 0.05, "{:?}", filters_to_axes(blinded));
 }
 
 #[test]

@@ -94,7 +94,7 @@ fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
     // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift,
     // then the pure inversion of a frame naming no paper.
-    const BEFORE: u64 = 0x792a_c9d8_7e3c_e15f;
+    const BEFORE: u64 = 0x8efc_ccf8_8521_c3e3;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
