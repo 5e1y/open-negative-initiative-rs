@@ -333,13 +333,9 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     assert_eq!(shot, ORACLE.map(|(file, _)| file.to_owned()));
     let groups = folders::groups(&copy.root_text(), &index.shown(), &folders::rolls(&members), &Default::default());
     assert_eq!(groups.len(), 1);
-    assert_eq!(groups[0].start, relink::date(ORACLE[0].1).unwrap());
+    assert_eq!(film_group::capture(&groups[0].entries[0]), relink::date(ORACLE[0].1).unwrap());
     let laid: Vec<String> = groups[0].entries.iter().take(ORACLE.len()).map(|e| name(&e.path)).collect();
     assert_eq!(laid, shot);
-    // Without the folder, the ten shot frames fall on their capture day and the rest on today's.
-    let days = film_group::grouped(&all);
-    assert_eq!(days.iter().map(|g| g.entries.len()).collect::<Vec<_>>(), [ORACLE.len(), FRAMES - ORACLE.len()]);
-    assert_eq!(days[0].display_title(), "Monday, September 14, 2026");
 
     // A project from the other app names its photos by print: each is found on its copy.
     let named: Vec<project::Member> =

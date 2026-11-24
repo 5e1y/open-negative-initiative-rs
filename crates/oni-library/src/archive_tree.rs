@@ -116,15 +116,13 @@ pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::film_group::FilmKey;
     use oni_settings::Date;
 
     fn group(folder: &str, paths: &[&str]) -> FilmGroup {
         let base = Date::since_reference_date(8e8);
         FilmGroup {
-            id: FilmKey::Folder(folder.into()),
+            folder: folder.into(),
             film: None,
-            start: base,
             entries: paths
                 .iter()
                 .map(|p| {
@@ -133,7 +131,7 @@ mod tests {
                     e
                 })
                 .collect(),
-            heading: None,
+            heading: folder.into(),
         }
     }
 

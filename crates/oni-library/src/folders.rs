@@ -2,7 +2,7 @@
 //! subfolders and then its own photos in shooting order, the gallery laying them flat the same way.
 
 use crate::archive_tree::Node;
-use crate::film_group::{self, FilmGroup, FilmKey};
+use crate::film_group::{self, FilmGroup};
 use crate::index::Entry;
 use crate::paths::{self, NameKey, holds};
 use oni_settings::{Date, Film, roll_folder};
@@ -50,17 +50,11 @@ pub fn shot(a: &Entry, b: &Entry) -> Ordering {
 }
 
 pub fn group(folder: &str, root: &str, entries: Vec<Entry>, roll: Option<Film>) -> FilmGroup {
-    let start = entries
-        .iter()
-        .map(film_group::capture)
-        .min_by(|a, b| crate::seconds(*a).total_cmp(&crate::seconds(*b)))
-        .unwrap_or(crate::distant_past());
     FilmGroup {
-        id: FilmKey::Folder(folder.to_owned()),
+        folder: folder.to_owned(),
         film: roll,
-        start,
         entries: in_shooting_order(entries),
-        heading: Some(paths::relative(folder, root)),
+        heading: paths::relative(folder, root),
     }
 }
 
@@ -260,7 +254,7 @@ mod tests {
         let groups = groups("/R", &entries(), &rolls, &HashMap::new());
         let headings: Vec<String> = groups.iter().map(FilmGroup::display_title).collect();
         assert_eq!(headings, ["Portra", "2026", "2025", "R"]);
-        let juin = groups.iter().find(|g| g.id == FilmKey::Folder("/R/2026/Juin".into())).unwrap();
+        let juin = groups.iter().find(|g| g.folder == "/R/2026/Juin").unwrap();
         assert_eq!(juin.entries.iter().map(|e| name(&e.path)).collect::<Vec<_>>(), ["f10.RW2", "f2.RW2"]);
         // Twin: without its roll the folder heads with its path.
         let plain: Vec<String> = super::groups("/R", &entries(), &HashMap::new(), &HashMap::new())

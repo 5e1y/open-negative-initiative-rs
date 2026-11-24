@@ -78,7 +78,7 @@ fn a_read_into_the_new_file_gives_every_row_the_shared_one_held() {
     read(&ours);
     assert_eq!(ours.all(), shared.all());
     assert!(ours.all().iter().any(|e| e.label == Medal::Gold && e.film.is_some()) && ours.trashed_frames().len() == 1);
-    // Twin: a value held in the index alone, which no sidecar carries, is what the new file would lack.
-    shared.set_manual_order(Some(2.0), &members[0]).unwrap();
+    // Twin: a value written to one file's rows alone sets the two apart.
+    shared.set_label(Medal::Silver, &members[0]).unwrap();
     assert_ne!(ours.all(), shared.all());
 }

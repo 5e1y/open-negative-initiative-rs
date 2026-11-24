@@ -281,7 +281,7 @@ impl LibraryIndex {
 
     // MARK: - Reading
 
-    /// Capture time ascending, an undated frame on its import time, the order `Film::day_start` cuts on.
+    /// Capture time ascending, an undated frame on its import time, the path breaking a tie.
     pub fn all(&self) -> Vec<Entry> {
         let sql = format!("SELECT {COLUMNS} FROM photos ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
         let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };

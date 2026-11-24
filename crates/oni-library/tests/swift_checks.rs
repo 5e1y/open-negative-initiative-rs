@@ -1,11 +1,9 @@
 //! The Swift app's self-checks on the archive, each on its own adversarial values and with its twin,
 //! a variant built to fail when the property it guards is broken.
 
-use oni_library::film_group::{self, FilmGroup, FilmKey};
 use oni_library::{Entry, LibraryIndex, library, relink};
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{Date, Film, PipelineSettings, roll_folder};
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 fn scratch(name: &str) -> PathBuf {
@@ -15,150 +13,10 @@ fn scratch(name: &str) -> PathBuf {
     PathBuf::from(library::canonical(&dir))
 }
 
-// MARK: - Film.selfCheck
+// MARK: - Film
 
 fn base() -> Date {
     Date::since_reference_date(8e8)
-}
-
-fn at(hours: f64, path: &str, film: Option<&Film>) -> Entry {
-    let mut e = Entry::new(path, base(), path);
-    e.captured_at = Some(oni_library::later(base(), hours * 3600.0));
-    e.film = film.cloned();
-    e
-}
-
-fn placing(film: Option<&Film>, paths: &[&str], entries: &[Entry]) -> Vec<Entry> {
-    entries
-        .iter()
-        .map(|e| {
-            let mut copy = e.clone();
-            if paths.contains(&e.path.as_str()) {
-                copy.film = film.cloned();
-            }
-            copy
-        })
-        .collect()
-}
-
-fn paths(group: &FilmGroup) -> Vec<&str> {
-    group.entries.iter().map(|e| e.path.as_str()).collect()
-}
-
-#[test]
-fn rolls_take_their_frames_out_of_the_days_and_clearing_one_gives_them_back() {
-    let all = [at(1.0, "a", None), at(2.0, "b", None), at(3.0, "c", None), at(30.0, "d", None), at(31.0, "e", None)];
-    let by_day = film_group::grouped(&all);
-    assert!(by_day.len() == 2 && paths(&by_day[0]) == ["a", "b", "c"] && paths(&by_day[1]) == ["d", "e"]);
-    assert!(by_day.iter().all(|g| !g.is_explicit()));
-
-    let roll = Film::new("Portra 400");
-    let crossed = film_group::grouped(&placing(Some(&roll), &["b", "d"], &all));
-    assert_eq!(crossed.len(), 3, "forming a roll leaves what it did not take");
-    let made = crossed.iter().position(|g| g.is_explicit()).unwrap();
-    assert_eq!(paths(&crossed[made]), ["b", "d"]);
-    let starts: Vec<f64> = crossed.iter().map(|g| g.start.time_interval_since_reference_date()).collect();
-    assert!(starts.windows(2).all(|w| w[0] <= w[1]), "the feed stays in capture order");
-    // A roll follows the day that still starts before it.
-    assert!(made == 1 && paths(&crossed[0]) == ["a", "c"] && paths(&crossed[2]) == ["e"]);
-
-    let cleared = film_group::grouped(&placing(None, &["b", "d"], &placing(Some(&roll), &["b", "d"], &all)));
-    assert_eq!(cleared, by_day, "clearing the roll gives every frame back to its day");
-    // Twin: two rolls sharing a name are two rolls, identity being the id.
-    let twin = Film::new("Portra 400");
-    let named = film_group::grouped(&placing(Some(&twin), &["e"], &placing(Some(&roll), &["a"], &all)));
-    assert_eq!(named.iter().filter(|g| g.is_explicit()).count(), 2);
-
-    // Equal starts are decided by the first frame, or the sort shuffles the feed between passes.
-    let tied = film_group::grouped(&[at(1.0, "a", Some(&roll)), at(1.0, "b", None), at(2.0, "c", None)]);
-    assert!(tied.len() == 2 && tied[0].start == tied[1].start && paths(&tied[0])[0] == "a");
-}
-
-#[test]
-fn a_roll_is_offered_the_lowest_free_number() {
-    assert_eq!(film_group::untitled(&[]), "Roll 1");
-    assert_eq!(film_group::untitled(&[Film::new("Roll 1"), Film::new("Portra 400")]), "Roll 2");
-    assert_eq!(film_group::untitled(&[Film::new("Roll 1"), Film::new("Roll 3")]), "Roll 2");
-    // Twin: a count of rolls would answer 3 here and clash.
-    assert_eq!(film_group::untitled(&[Film::new("Roll 2"), Film::new("Roll 3")]), "Roll 1");
-}
-
-#[test]
-fn the_day_is_computed_once_per_frame() {
-    let many: Vec<Entry> =
-        (0..2000).map(|i| Entry::new(&format!("/perf/{i}.RW2"), oni_library::later(base(), i as f64), &format!("p{i}"))).collect();
-    // Twin: the same buckets keyed twice per frame, the cost this cut must not pay.
-    let twice = |entries: &[Entry]| {
-        let mut buckets: HashMap<FilmKey, Vec<Entry>> = HashMap::new();
-        for entry in entries {
-            let first = film_group::key(entry);
-            if first != film_group::key(entry) {
-                continue;
-            }
-            buckets.entry(first).or_default().push(entry.clone());
-        }
-        buckets
-    };
-    // Counted, not timed: a ratio of two timings fails on a loaded machine.
-    let keys = |f: &dyn Fn()| {
-        let before = film_group::keyed();
-        f();
-        film_group::keyed() - before
-    };
-    assert_eq!(keys(&|| drop(film_group::grouped(&many))), many.len(), "one key per frame");
-    assert_eq!(keys(&|| drop(twice(&many))), 2 * many.len(), "twin: the cut keyed twice is counted twice");
-}
-
-#[test]
-fn a_hand_placed_frame_reorders_inside_its_roll_and_never_walks_the_roll() {
-    let mut reordered = vec![at(1.0, "x", None), at(2.0, "y", None), at(3.0, "z", None)];
-    reordered[2].manual_order = Some(film_group::order(&reordered[0]) - 1000.0);
-    let regrouped = film_group::grouped(&reordered);
-    assert!(regrouped.len() == 1 && paths(&regrouped[0]) == ["z", "x", "y"]);
-    // Twin: the roll's place still reads the earliest capture, not the frame moved ahead.
-    assert_eq!(regrouped[0].start, film_group::capture(&reordered[0]));
-
-    assert_eq!(film_group::behind(100.0, Some(50.0)), 50.0);
-    assert_eq!(film_group::behind(100.0, Some(100.0)), 100.0 - 86_400.0);
-    assert_eq!(film_group::behind(100.0, Some(150.0)), 100.0 - 86_400.0);
-    assert_eq!(film_group::behind(100.0, None), 100.0 - 86_400.0);
-
-    let same: Vec<Entry> = ["a", "b", "c", "d", "e"].iter().map(|p| at(0.0, p, None)).collect();
-    let untied = film_group::detied(&same, 1);
-    assert_eq!(untied.iter().map(|u| u.0.as_str()).collect::<Vec<_>>(), ["a", "b"]);
-    assert!(untied[0].1 < untied[1].1 && untied[1].1 < film_group::order(&same[1]));
-    assert!(film_group::detied(&same, 0).is_empty());
-    let staggered = [at(-1.0, "a", None), at(0.0, "b", None), at(1.0, "c", None)];
-    assert!(film_group::detied(&staggered, 2).is_empty(), "a distinct predecessor costs nothing");
-}
-
-#[test]
-fn a_dragged_roll_leads_the_feed_and_a_day_reads_its_own_start() {
-    let group = |film: Option<Film>, start: f64| FilmGroup {
-        id: film.as_ref().map(|f| FilmKey::Roll(f.id)).unwrap_or(FilmKey::Day(0)),
-        film,
-        start: oni_library::later(base(), start),
-        entries: Vec::new(),
-        heading: None,
-    };
-    let earlier = group(Some(Film::new("Earlier")), 3600.0);
-    let mut later_roll = Film::new("Later");
-    let later = group(Some(later_roll.clone()), 7200.0);
-    assert!(film_group::root_order(&earlier) < film_group::root_order(&later));
-    later_roll.manual_order = Some(film_group::root_order(&earlier) - 1.0);
-    let moved = FilmGroup { film: Some(later_roll), ..later.clone() };
-    assert!(film_group::root_order(&moved) < film_group::root_order(&earlier));
-    // Twin: a day has no roll to carry an override.
-    let day = group(None, 1.0);
-    assert_eq!(film_group::root_order(&day), day.start.time_interval_since_reference_date());
-
-    let untouched = Film::new("Untouched");
-    let mut pulled = Film::new("Pulled ahead");
-    let before = film_group::grouped(&[at(1.0, "p", Some(&untouched)), at(2.0, "q", Some(&pulled))]);
-    assert_eq!(paths(&before[0])[0], "p");
-    pulled.manual_order = Some(film_group::root_order(&before[0]) - 1.0);
-    let after = film_group::grouped(&[at(1.0, "p", Some(&untouched)), at(2.0, "q", Some(&pulled))]);
-    assert_eq!(paths(&after[0])[0], "q", "a dragged roll leads `grouped`'s own output");
 }
 
 #[test]

@@ -158,12 +158,8 @@ fn every_column_reads_back_into_its_own_field() {
     index.set_passes(None, false, &row.path).unwrap();
     index.set_trashed(None, &row.path).unwrap();
     assert!(index.in_trash().is_empty(), "twin: restored, it leaves the ONI Trash's rows");
-    index.set_manual_order(None, &row.path).unwrap();
     let cleared = index.all().remove(0);
-    assert_eq!(
-        (cleared.pass_of, cleared.leads_passes, cleared.trashed_at, cleared.manual_order),
-        (None, false, None, None)
-    );
+    assert_eq!((cleared.pass_of, cleared.leads_passes, cleared.trashed_at), (None, false, None));
     assert_eq!(cleared.film, row.film, "a write to one column leaves the roll alone");
 }
 

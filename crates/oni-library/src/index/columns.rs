@@ -46,11 +46,6 @@ impl LibraryIndex {
         Ok(())
     }
 
-    pub fn set_manual_order(&self, order: Option<f64>, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET manual_order = ? WHERE path IN (?, ?)", params![order, path, normal(path)])?;
-        Ok(())
-    }
-
     /// The rows right inside `folder` take the roll its marker now names, `None` when it names none.
     pub fn set_marker(&self, folder: &str, film: Option<&Film>) -> rusqlite::Result<()> {
         let gear = marker_gear(film);
