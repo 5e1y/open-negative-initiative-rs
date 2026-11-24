@@ -18,8 +18,9 @@ What the files hold:
   exposure (its ISO 5800 speed point plus the offset Kodak Gold 200's printed Log H Ref holds over its own); a
   photographic film's cyan, magenta and yellow split of its printed neutral (the Vision3 sheets' mean dyes moved and
   widened to fit it); each dye's unit (Status M or Status A approximated by normal bands); a paper's curve under its first printed point, where its sheet
-  hides it under the others (their mean). The fourth, cyan-sensitive layer some Fujifilm sheets print is left
-  out.
+  hides it under the others (their mean); a reversal film's curve past its last traced point, where its sheet hides it
+  under another's stroke (that one's points: Provia 100F's green and blue under red's). The fourth, cyan-sensitive
+  layer some Fujifilm sheets print is left out.
 
 - A black and white negative's file holds one layer and one development: its sensitivity as printed (Kodak's at
   the 0.3 criterion; Ilford's and Foma's wedge-spectrogram heights read as log sensitivity, one unit of their axis a

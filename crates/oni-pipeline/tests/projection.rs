@@ -81,3 +81,49 @@ fn a_photo_on_a_slide_film_is_projected_on_the_screen_and_never_printed() {
     let shown = mapped(&pixels, |q| clipped(cpu::projection(developed(q), &p.projection, &p.table)));
     judge("a photo on a slide, Projected blacks", &render(&mut pipeline, &mut g, &veiled), &shown, &expected);
 }
+
+const PROVIA: VirtualStock = VirtualStock::of("fujifilm-provia-100f");
+
+/// Where Provia 100F's sheet stops tracing green and blue, in log H over its first point (-3.38): their rest lies under
+/// red's stroke, coincident within line width.
+const TRACED: [(usize, f64); 2] = [(1, -1.50 + 3.38), (2, -2.16 + 3.38)];
+
+/// CIELAB of a screen's linear Rec. 2020 light, its white D65's.
+fn cielab(v: V4) -> [f32; 3] {
+    const XYZ: [[f32; 3]; 3] = [[0.636_958, 0.144_617, 0.168_881], [0.262_700, 0.677_998, 0.059_302], [0.0, 0.028_073, 1.060_985]];
+    const WHITE: [f32; 3] = [0.950_47, 1.0, 1.088_83];
+    let f = |t: f32| if t > (6.0f32 / 29.0).powi(3) { t.cbrt() } else { t / (3.0 * (6.0f32 / 29.0).powi(2)) + 4.0 / 29.0 };
+    let [x, y, z]: [f32; 3] = std::array::from_fn(|r| f((0..3).map(|c| XYZ[r][c] * v[c].max(0.0)).sum::<f32>() / WHITE[r]));
+    [116.0 * y - 16.0, 500.0 * (x - y), 200.0 * (y - z)]
+}
+
+#[test]
+fn provias_profile_reads_falls_with_exposure_and_projects_its_bare_film_as_the_screens_white() {
+    let entry = PROVIA.entry();
+    assert!(PROVIA.is_known() && entry.reversal && entry.offered() && VirtualStock::all().contains(&PROVIA));
+    let profile = film::profile::Profile::read(entry.profile.as_bytes()).unwrap();
+    let stock = film::stock(PROVIA);
+    let pass = |v: f32| cpu::virtual_negative([v, v, v, 1.0], &stock.kernel_at(0.0), &stock.table);
+    let (grey, brighter) = (pass(GREY), pass(GREY * 4.0));
+    assert!((0..3).all(|c| brighter[c] > 2.0 * grey[c]), "{grey:?} {brighter:?}");
+    let p = projection::projected(PROVIA);
+    let white = cpu::projection([1.0; 4], &p.projection, &p.table);
+    assert!((0..3).all(|c| (white[c] - 1.0 - projection::FLARE).abs() < 1e-3), "{white:?}");
+    for slide in [PROVIA, VirtualStock::of("fujifilm-velvia-100"), VirtualStock::SLIDE] {
+        let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(slide);
+        let light = conversion::scene_white(&s).unwrap();
+        let st = film::stock(slide);
+        let shown = projector::shown(cpu::virtual_negative(cpu::color_matrix([GREY, GREY, GREY, 1.0], &light), &st.kernel_at(0.0), &st.table), &s, slide);
+        println!("{}: a scene's 18 % grey projected at L*a*b* {:?}", slide.key(), cielab(shown));
+    }
+    // The sheet's green passes an 18 % grey inside the range the filled curves span, over four log H.
+    let first = profile.log_exposure[0];
+    let span = profile.log_exposure.last().unwrap() - first;
+    let least = |c: usize, to: f64| profile.log_exposure.iter().zip(&profile.sheet_density_curves).filter(|(le, _)| **le <= to).map(|(_, d)| d[c]).fold(f64::INFINITY, f64::min);
+    let grey_density = -(0.18f64).log10();
+    assert!(span > 4.0 && least(1, f64::INFINITY) < grey_density, "{span} {}", least(1, f64::INFINITY));
+    // Twin: green and blue as the sheet traces them, unfilled, end before any 18 % grey, too short a range to lay it.
+    for (c, traced) in TRACED {
+        assert!(least(c, first + traced) > grey_density, "channel {c}: {}", least(c, first + traced));
+    }
+}

@@ -82,8 +82,8 @@ mod tests {
         assert_eq!(PipelineSettings { dye_set: slide.dye_set, ..marked.clone() }, slide, "its dyes' key alone moves");
         // A roll naming a stock no sheet profiles leaves the key a negative's pick wrote: it projects on the default film.
         let portra = PipelineSettings { dye_set: DyeSet::of("kodak-portra-400"), ..slide.clone() };
-        let provia = Film { stock: Some("fujifilm-provia100".into()), ..roll.clone() };
-        std::fs::write(roll_folder::marker(&dir), roll_folder::encode(&provia)).unwrap();
+        let kodachrome = Film { stock: Some("kodak-kodachrome64".into()), ..roll.clone() };
+        std::fs::write(roll_folder::marker(&dir), roll_folder::encode(&kodachrome)).unwrap();
         let kept = super::marked(older, portra.clone(), &dir.join("A.RW2"));
         assert!(kept == portra && kept.projector() == Some(VirtualStock::SLIDE));
         // Twin: a slide of this format keeps the film it names, and a negative is never marked so.
