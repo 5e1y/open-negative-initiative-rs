@@ -1,6 +1,7 @@
 // Lighting on the negative, operation for operation as `cpu::negative`: the density above the bare film read back to
-// each layer's log exposure through the couplers, moved, its colour moved, developed again, toned, then coded on the
-// bare film's own as the light the window reads. `negative_plain` or `negative_colour` follows with `negative_scene`.
+// each layer's log exposure through the couplers, moved, its colour moved, developed again, exposed on its tone share,
+// toned, then coded on the bare film's own as the light the window reads. `negative_plain` or `negative_colour` follows
+// with `negative_scene`.
 
 struct Params {
     head: vec4<u32>,
@@ -20,6 +21,8 @@ struct Params {
     own_slope: vec4<f32>,
     own_shift: vec4<f32>,
     scale: vec4<f32>,
+    // Exposure's gain on each channel's odds, `e^odds`, in x.
+    odds: vec4<f32>,
     colour: vec4<f32>,
     hue_low: vec4<f32>,
     hue_high: vec4<f32>,
@@ -153,6 +156,18 @@ fn negative_toned(density: vec3<f32>) -> vec3<f32> {
     return (toned - vec3<f32>(origin)) * span;
 }
 
+// Exposure on the tone share, its odds `u / (1 - u)` times `e^odds`: the window's ends stay; past them, none.
+fn negative_exposed(density: vec3<f32>) -> vec3<f32> {
+    if (P.odds.x == 1.0) { return density; }
+    let sense = P.pivot_sense.w;
+    let span = P.span_origin.xyz;
+    let origin = P.span_origin.w;
+    let u = vec3<f32>(origin) + sense * density / span;
+    let k = vec3<f32>(P.odds.x);
+    let lit = sense * (k * u / (vec3<f32>(1.0) + (k - vec3<f32>(1.0)) * u) - vec3<f32>(origin)) * span;
+    return select(density, lit, u > vec3<f32>(0.0) & u < vec3<f32>(1.0));
+}
+
 fn negative_px(s: vec4<f32>) -> vec4<f32> {
     let sense = P.pivot_sense.w;
     let guard = P.black_guard.w;
@@ -172,6 +187,6 @@ fn negative_px(s: vec4<f32>) -> vec4<f32> {
         let share = select(vec3<f32>(1.0), clamp((own_density - fog) / max(P.foot.xyz - fog, vec3<f32>(1e-6)), vec3<f32>(0.0), vec3<f32>(1.0)), own_density < P.foot.xyz);
         density = (own_density + share * (negative_developed(pivot + (e - pivot) * slope + shift) - read)) * scale;
     }
-    let printed = negative_toned(sense * density) + P.black_guard.xyz;
+    let printed = negative_toned(sense * negative_exposed(density)) + P.black_guard.xyz;
     return vec4<f32>(exp2(-3.3219280948873623 * printed), s.a);
 }

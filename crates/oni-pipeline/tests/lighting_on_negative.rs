@@ -1,7 +1,7 @@
-//! Lighting on the negative in every pipe: at rest every print as before to the bit; Exposure a stop more light on the
-//! film, the negative shot a stop over; on a digital photo the Film section's Exposure; colour kept as the print
-//! brightens; Contrast about the grey; the filters tinting, the grey's weight held; every print finite and monotone past
-//! the curves' ends; the GPU its reference. Each verdict has a twin.
+//! Lighting on the negative in every pipe: at rest every print as before to the bit; Exposure holding Prepare's black and
+//! white, its grey where the film's own stop lays it, a gain by the black; colour kept as the print brightens; Contrast
+//! about the grey; the filters tinting, the grey's weight held; every print finite and monotone past the curves' ends;
+//! the GPU its reference. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -165,51 +165,60 @@ fn printed(pixels: &[V4], k: &Stage47) -> Vec<[f32; 3]> {
     pixels.iter().map(|p| rgb(cpu::stage47(*p, k))).collect()
 }
 
-#[test]
-fn exposure_on_a_scanned_negative_is_that_negative_shot_a_stop_over() {
-    for stock in [VirtualStock::of("kodak-portra-400"), VirtualStock::of("kodak-ektar-100"), VirtualStock::of("fujifilm-xtra-400")] {
-        for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
-            let s = PipelineSettings { print_paper: paper, ..shot_on(stock) };
-            for stops in [-1.0f32, 1.0] {
-                let over = printed(&scanned(stock, stops), &conversion::stage47(&s));
-                let k = conversion::stage47(&lit(&s, |p| p.exposure += stops));
-                let moved = printed(&scanned(stock, 0.0), &k);
-                let (worst, median) = apart(&moved, &over);
-                let (unmoved, _) = apart(&printed(&scanned(stock, 0.0), &conversion::stage47(&s)), &over);
-                println!("{stock:?} on {pipe}, Exposure {stops:+}: ΔE to the negative shot {stops:+} stop, worst {worst:.2}, median {median:.2}; unmoved {unmoved:.1}");
-                // The scan is read on its stock's mean layer, the shot negative developed on its three coupled ones: the
-                // paper's pure dyes print that gap whole, 5.4 at worst on X-TRA 400 a stop under.
-                assert!(worst < 6.0 && median < 1.5, "{stock:?}, {pipe}, {stops}");
-                // Twin: the enlarger's time a stop the other way, the print-side Exposure, misses the shot negative.
-                if let Some(p) = k.paper {
-                    let timed = Stage47 { negative: None, paper: Some(Paper { scale: p.scale * (-stops).exp2(), ..p }), ..k };
-                    let (by_time, _) = apart(&printed(&scanned(stock, 0.0), &timed), &over);
-                    println!("  the enlarger's time instead: worst {by_time:.2}");
-                    assert!(by_time > 1.5 * worst, "{stock:?}, {stops}");
-                }
-                assert!(unmoved > 5.0, "{stock:?}, {pipe}: the twin, the scan unmoved");
-            }
-        }
-    }
+/// The scan of tone `t` of the frame's window, 0 its bare film and 1 its densest read.
+fn at_share(s: &PipelineSettings, t: f32) -> V4 {
+    let (bare, densest) = oni_pipeline::paper::film_ends(s);
+    scan_of(s, std::array::from_fn(|c| bare[c] + t * (densest[c] - bare[c])))
+}
+
+/// `k`'s Exposure of `stops` laid unanchored, in the film's log exposure as its development takes a stop.
+fn unanchored(k: Stage47, stops: f32) -> Stage47 {
+    Stage47 { negative: k.negative.map(|n| Negative { odds: 0.0, shift: n.shift.map(|v| v + stops * std::f32::consts::LOG10_2), ..n }), ..k }
 }
 
 #[test]
-fn on_a_digital_photo_lightings_exposure_is_the_films() {
-    for stock in [VirtualStock::of("kodak-portra-800"), VirtualStock::of("kodak-portra-800-push-2"), VirtualStock::of("kodak-gold-200")] {
-        for (pipe, paper) in [("ONI's print", None), ("a paper", Some(PaperStock::default()))] {
-            let s = PipelineSettings { print_paper: paper, ..digital().on_stock(stock) };
-            let baked = film::stock(stock);
-            let shoot = |stops: f32| -> Vec<V4> { scene().iter().map(|p| cpu::virtual_negative(*p, &baked.kernel_at(stops), &baked.table)).collect() };
-            let by_film = printed(&shoot(1.0), &conversion::stage47(&s));
-            let by_lighting = printed(&shoot(0.0), &conversion::stage47(&lit(&s, |p| p.exposure += 1.0)));
-            let (worst, median) = apart(&by_lighting, &by_film);
-            println!("{stock:?} on {pipe}: Lighting's Exposure +1 from Film's +1, ΔE worst {worst:.2}, median {median:.2}");
-            assert!(worst < 3.5 && median < 0.3, "{stock:?}, {pipe}");
-            // Twin: half a stop on the film is another print.
-            let (_, half) = apart(&printed(&shoot(0.5), &conversion::stage47(&s)), &by_film);
-            assert!(half > 5.0 * median, "{stock:?}, {pipe}: {half}");
+fn exposure_holds_prepares_black_and_white_and_moves_the_grey_as_the_films_stop() {
+    let mut freed = 0;
+    for (label, s) in pipes().into_iter().filter(|(_, s)| s.projector().is_none()) {
+        let rest = conversion::stage47(&s);
+        let shown = |k: &Stage47, t: f32| luma(rgb(cpu::stage47(at_share(&s, t), k)));
+        let grey_scan = scan_of(&s, oni_pipeline::paper::reference_grey(&s));
+        for stops in [-2.0f32, -1.0, 1.0, 2.0] {
+            let k = conversion::stage47(&lit(&s, |p| p.exposure += stops));
+            let free = unanchored(k, stops);
+            // Prepare's black and white print where the rest prints them.
+            let (black, white) = (shown(&k, 0.0) - shown(&rest, 0.0), shown(&k, 1.0) / shown(&rest, 1.0) - 1.0);
+            let free_white = shown(&free, 1.0) / shown(&rest, 1.0) - 1.0;
+            // The grey, in stops off where the film's own stop lays it, and the mids' worst from a fifth to four fifths.
+            let grey = (luma(rgb(cpu::stage47(grey_scan, &k))) / luma(rgb(cpu::stage47(grey_scan, &free)))).log2();
+            let mids = (6..=14).map(|i| (shown(&k, i as f32 * 0.05) / shown(&free, i as f32 * 0.05)).log2().abs()).fold(0.0f32, f32::max);
+            // By the black a gain: the light's ratio to the rest's alike from a hundredth to a tenth of the window, where
+            // the rest prints a ten-thousandth of light or more.
+            let spread = |k: &Stage47| {
+                let lit = [0.01f32, 0.02, 0.03, 0.05, 0.1].into_iter().filter(|t| shown(&rest, *t) > 1e-4);
+                let r: Vec<f32> = lit.map(|t| (shown(k, t) / shown(&rest, t)).max(1e-9).log2()).collect();
+                r.iter().fold(f32::NEG_INFINITY, |a, v| a.max(*v)) - r.iter().fold(f32::INFINITY, |a, v| a.min(*v))
+            };
+            let (near, free_near) = (spread(&k), spread(&free));
+            println!("{label}, Exposure {stops:+}: black {black:+.1e}, white {white:+.1e} (unanchored {free_white:+.3})");
+            println!("  grey {grey:+.3} stop off the film's, mids {mids:.3}; near black {near:.2} stop (unanchored {free_near:.2})");
+            assert!(black.abs() < 1e-5 && white.abs() < 1e-3, "{label}, {stops}: black {black}, white {white}");
+            // The grey within 0.07 stop of the film's stop a stop away, 0.28 two away; the mids within 0.45 a stop away.
+            assert!(grey.abs() < 0.07 * stops * stops && (stops.abs() > 1.0 || mids < 0.45), "{label}, {stops}: grey {grey}, mids {mids}");
+            // By the black the anchored print lies between the rest and the film's own stop, on ONI's print as by a gain.
+            for t in [0.01f32, 0.02, 0.03, 0.05, 0.1].into_iter().filter(|t| shown(&rest, *t) > 1e-4) {
+                let (from, to) = ((shown(&k, t) / shown(&rest, t)).log2(), (shown(&free, t) / shown(&rest, t)).max(1e-9).log2());
+                assert!(from * stops >= 0.0 && from.abs() <= to.abs() + 1e-3, "{label}, {stops}, {t}: {from} stops, the film's {to}");
+            }
+            assert!(s.paper().is_some() || near < 0.25 * stops.abs() + 0.25, "{label}, {stops}: near black {near}");
+            // Twins: the film's own stop moves the white where a white can move, and jumps by the black.
+            if free_white.abs() > 1e-2 {
+                freed += 1;
+            }
+            assert!(s.paper().is_some() || free_near > 2.0 * near + 0.5, "{label}, {stops}: unanchored {free_near}, anchored {near}");
         }
     }
+    assert!(freed >= 8, "{freed}");
 }
 
 fn luma(v: [f32; 3]) -> f32 {
@@ -253,7 +262,9 @@ fn brightening_on_the_negative_keeps_the_films_colour() {
             println!("  {film:.4} shot so, {lost:.4} by the time ({gain:+.1} %); every colour {all:.4} and {every:.4} ({all_gain:+.1} %)");
             // A digital photo keeps its film's colour; a scan, read on its stock's mean layer, about the time's.
             let floor = if label == "digital" { film * 0.98 } else { lost * 0.85 };
-            assert!(n >= 6 && kept > floor, "{label}, {stops}");
+            assert!(all > every * 0.98, "{label}, {stops}");
+            // Two stops up, the colours over the grey near the white Exposure holds, and lose some of their chroma there.
+            assert!(stops > 1.0 || (n >= 6 && kept > floor), "{label}, {stops}");
             // Twin: the time's print, its grey as bright, is another print.
             assert!(apart(&by_time, &on_negative).0 > 1.0, "{label}, {stops}");
         }
