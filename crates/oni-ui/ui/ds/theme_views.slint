@@ -8,11 +8,11 @@ export global PresetStyle {
     out property <length> card-width: 96px;
     out property <length> card-height: 64px;
     out property <length> peek: DS.space-lg;
-    out property <length> lift: DS.control-card-lift;
-    out property <length> swatch: DS.control-swatch-size;
+    out property <length> lift: 6px;
+    out property <length> swatch: 26px;
     out property <length> editor-list: DS.control-preset-editor-list-width;
     out property <length> editor-width: DS.control-preset-editor-list-width + SheetStyle.wide-width;
-    out property <length> mark: DS.typo-mark-size;
+    out property <length> mark: 22px;
     out property <duration> rise: Motion.quick;
     // The description's three lines at the label's leading, the multiline field's padding around them.
     out property <length> note-height: 3 * DS.typo-label-size * 1.25;
@@ -20,19 +20,19 @@ export global PresetStyle {
 
 // The Help menu's gauges: the console window and the welcome sheet's picture.
 export global HelpStyle {
-    out property <length> console-width: DS.control-console-window-width;
-    out property <length> console-height: DS.control-console-window-height;
+    out property <length> console-width: 620px;
+    out property <length> console-height: 420px;
 }
 
 // `StockPickerSheet` and `FilmStockIcon`: the sheet's gauge, a cell's artwork and the hero's.
 export global StockStyle {
-    out property <length> icon: DS.control-film-stock-icon-size;
-    out property <length> hero: DS.control-film-stock-hero-size;
+    out property <length> icon: 32px;
+    out property <length> hero: 64px;
     // `InfoSidebar`'s count rows: the stock at the icon's size.
     out property <length> row: DS.control-icon-size;
-    out property <length> width: DS.control-stock-sheet-width;
-    out property <length> height: DS.control-stock-sheet-height;
-    out property <float> grow: DS.control-thumb-grow;
+    out property <length> width: 520px;
+    out property <length> height: 560px;
+    out property <float> grow: 1.12;
     // A menu's line: the canister at a tree row's side, a small gap above and under it.
     out property <length> line-icon: DS.control-film-sidebar-stock-icon-size;
     out property <length> line: DS.control-film-sidebar-stock-icon-size + 2 * DS.space-xs;
@@ -41,39 +41,39 @@ export global StockStyle {
 // The canvas's tools, each its own colour while it holds: a ring a stroke wide around the card and a tab
 // under its key in the bar. Sheet orange, Crop verdigris, De-dust violet, Compare pink.
 export global ToolStyle {
-    out property <color> sheet: DS.palette-tool-sheet;
-    out property <color> crop: DS.palette-tool-crop;
-    out property <color> dust: DS.palette-tool-dust;
-    out property <color> compare: DS.palette-tool-compare;
-    out property <length> marker: DS.control-tool-marker-height;
+    out property <color> sheet: #e8873aff;
+    out property <color> crop: #3fae96ff;
+    out property <color> dust: #9d7ff0ff;
+    out property <color> compare: #ec6fa8ff;
+    out property <length> marker: 5px;
     out property <length> ring: DS.stroke-line;
 }
 
 // The Kit's gauges: The Lens DB's mark beside its words, in the column and large where it is offered; the
 // sheet that searches its catalogue, two cards to a row.
 export global KitStyle {
-    out property <length> mark: DS.control-kit-mark;
-    out property <length> mark-large: DS.control-kit-mark-large;
+    out property <length> mark: 18px;
+    out property <length> mark-large: 44px;
     // Facing the column's title, the mark a step larger than the sheet's, its name between label and title.
-    out property <length> mark-header: DS.control-kit-mark-header;
-    out property <length> word-header: DS.control-kit-wordmark-header;
-    out property <length> tracking: DS.control-kit-wordmark-tracking;
+    out property <length> mark-header: 19px;
+    out property <length> word-header: 13px;
+    out property <length> tracking: -0.3px;
     // The arrow after a piece's name that opens its page, a step under the name's capitals.
-    out property <length> link-arrow: DS.control-kit-link-arrow;
-    out property <length> bullet: DS.control-kit-bullet;
+    out property <length> link-arrow: 11px;
+    out property <length> bullet: 12px;
     // The disc beside a name from The Lens DB in a list of gear, at the name's capitals.
-    out property <length> disc: DS.control-kit-disc;
+    out property <length> disc: 12px;
     // The offer's ONI × The Lens DB: both logos at one height, the mark's name between label and title.
-    out property <length> pair-height: DS.control-kit-pair-height;
-    out property <length> pair-word: DS.control-kit-pair-wordmark;
+    out property <length> pair-height: 28px;
+    out property <length> pair-word: 16px;
     // The app's logo over it, its words under its disc needing the taller line to read as wide as the mark.
-    out property <length> pair-logo: DS.control-kit-pair-logo;
+    out property <length> pair-logo: 40px;
     // The × between them, large and light so it joins without weighing.
-    out property <length> times-size: DS.control-kit-times-size;
-    out property <int> times-weight: DS.control-kit-times-weight;
+    out property <length> times-size: 22px;
+    out property <int> times-weight: 200;
     // The offer alone takes wider sides than the column's sections, its few lines held to a narrower measure.
-    out property <length> offer-inset: DS.control-kit-offer-inset;
-    out property <length> sheet-width: DS.control-kit-sheet-width;
-    out property <length> sheet-height: DS.control-kit-sheet-height;
+    out property <length> offer-inset: 32px;
+    out property <length> sheet-width: 660px;
+    out property <length> sheet-height: 620px;
     out property <int> columns: 2;
 }

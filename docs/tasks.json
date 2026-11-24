@@ -13101,5 +13101,13 @@
     "status": "done",
     "detail": "No app screen or demo sets Rail.vertical or Knob.vertical; only the lab's UprightSlider (a mirror of Swift's DSSlider(axis: .vertical)) and a vertical knob specimen did. The property goes from both components and each ternary keeps its horizontal arm as written, so every rail and knob the app draws is the same; the lab loses UprightSlider, its DSSLIDER, VERTICAL row and the vertical knob specimen, the DS README its line on the vertical rail.",
     "outcome": "The lab compiles; window checks design_system, slider_*, dial, toggles, levels, plots, guides, compare and welcome green (27)."
+  },
+  {
+    "id": 3774,
+    "type": "chore",
+    "title": "A design-system value one style alone reads lives on that style: 114 single-use DS tokens collapse",
+    "status": "done",
+    "detail": "tokens.slint mirrored the Swift tokens, so a value one style alone used had two names (DS.control-kit-mark-large and KitStyle.mark-large) and a change two places; with Swift dead the mirror has no reason. Each DS token named exactly once, by a whole `property <T> x: DS.token;` line in ui/ds/, and by nothing else (no screen, lab page, Rust getter, check or script) moves its literal onto that line and leaves tokens.slint: 114 of 224, in theme.slint (37), theme_views (31), forms (9), wrapped (9), theme_fields, theme_scanner, theme_type (5 each), roll, theme_sliders (3 each), theme_tabs, welcome (2 each), badge, folders, splash (1 each). Every literal is a plain value moved as written (deck-depth's 3 binds an int as before); the slider press keeps its owner's-call note on its style line. Tokens read from Rust (geometry's check, tree_column, the window checks' getters) or by the lab stay. The DS README's rule and theme.slint's and tokens.slint's headers say it: a value of one style is written there, a shared one is a DS token.",
+    "outcome": "The lab's five pages render byte-identical before and after (KeysPage, TabsPage, FieldsPage, SlidersPage, MiscPage at 2800 x 4800); the catalogue check (Inter on a family line) and the lab compile green; window checks in the final run."
   }
 ]

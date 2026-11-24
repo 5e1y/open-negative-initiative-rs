@@ -34,7 +34,7 @@ export global TabsStyle {
 // The switch, a slide lever: the slider's knob travels one of `DSToggle`'s cells along a slot whose
 // gauge is its own, so a slider's rail made thinner never makes a switch read as one.
 export global ToggleStyle {
-    out property <length> travel: DS.control-toggle-cell-width;
+    out property <length> travel: 24px;
     out property <length> slot: DS.control-track-height;
     // The stretch the knob uncovers while on, in a lit lamp's phosphor.
     out property <color> lit: DS.palette-lcd-ink;
@@ -57,7 +57,7 @@ export global MedalStyle {
     // A medal given lands from `landing` of its side and settles within the curtain's 140 ms.
     out property <float> landing: 1.3;
     out property <duration> settle: DS.motion-curtain-duration;
-    in-out property <float> press: DS.control-medal-press;
+    in-out property <float> press: 0.86;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
     in-out property <float> foil-spin: 0.7;
     // `DSFoil.Metal.ramp`: deep, body and bright, by podium place: none, gold, silver, bronze.

@@ -9,14 +9,14 @@ export global FieldStyle {
     out property <length> down: DS.space-sm;
     out property <color> ground: DS.palette-canvas;
     // Focus lights the face's own edge, where a system field draws a blue ring.
-    out property <color> rim: DS.palette-rim;
+    out property <color> rim: #ffffff66;
     // A multiline field's lines unless told, a report's message.
-    out property <length> lines: DS.control-report-message-height;
+    out property <length> lines: 160px;
     // AppKit's dark label alpha, 0.85; the placeholder and a disabled field's words take the tertiary ink.
     out property <color> ink: DS.system-primary;
     // AppKit's selected-text background in the dark appearance, which no Swift token names.
     out property <color> selection: #3f638bff;
-    out property <length> size-box: DS.control-export-size-field-width;
-    out property <length> date-box: DS.control-date-field-width;
-    out property <length> year-box: DS.control-year-field-width;
+    out property <length> size-box: 64px;
+    out property <length> date-box: 28px;
+    out property <length> year-box: 46px;
 }

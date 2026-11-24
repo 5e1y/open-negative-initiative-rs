@@ -1,4 +1,4 @@
-// The semantic tokens: what each value is for, bound to the generated Swift tokens wherever one exists.
+// The semantic tokens: what each value is for, a shared one bound to its `DS` constant.
 // One edit here restyles every component that reads the group; screens never read `DS` directly.
 import { DS } from "tokens.slint";
 export { DS }
@@ -21,44 +21,44 @@ export global Colour {
     out property <color> ink-on-fill: DS.palette-text-on-fill;
     out property <color> ink-on-light: DS.palette-text-on-light;
     out property <color> warning: DS.palette-warning;
-    out property <color> warning-surface: DS.palette-warning-surface;
+    out property <color> warning-surface: #ff9f0ad9;
     out property <color> ink-on-warning: DS.palette-text-on-warning;
     out property <color> accent: DS.palette-accent;
     out property <color> on: DS.system-primary;
-    out property <color> caution: DS.tint-undoable;
+    out property <color> caution: #e0a814ff;
     out property <color> destructive: DS.tint-destructive;
     // A light red: a destructive key's glyph or word, AA's 4.5:1 on a key's face.
     out property <color> destructive-ink: #ff6961;
-    out property <color> confirm: DS.tint-confirm;
+    out property <color> confirm: #2ea062ff;
     out property <color> separator: DS.palette-separator;
-    out property <color> guide: DS.palette-guide;
+    out property <color> guide: #ffffffe6;
     out property <color> guide-faint: DS.palette-guide-faint;
     out property <color> marker: DS.palette-marker;
-    out property <color> handle-idle: DS.palette-handle-idle;
-    out property <color> scrim: DS.palette-scrim;
+    out property <color> handle-idle: #ffffff8c;
+    out property <color> scrim: #0000008c;
     // `DS.Palette.overlay`: a dark badge's fill over the photo, black at 60 %.
-    out property <color> overlay: DS.palette-overlay;
-    out property <color> canvas-cropping: DS.palette-canvas-cropping;
+    out property <color> overlay: #00000099;
+    out property <color> canvas-cropping: #0c0c0cff;
     // Frames shown together: their numbers in a film's edge print, an amber softened to OKLab chroma
     // 0.08 so it nods to the film beside the photos and never competes with them; 9:1 on the black.
     out property <color> edge-print: #cba372;
     out property <color> unaligned-balance: DS.tint-unaligned-balance;
-    out property <color> contrast-edge-idle: DS.palette-contrast-edge-idle;
-    out property <color> sharpen: DS.tint-sharpen;
+    out property <color> contrast-edge-idle: #0000004d;
+    out property <color> sharpen: #ff9f0aff;
     // `NegativeView`'s live stroke: red at 55 %, the one colour the canvas paints with.
     out property <color> stroke-live: #ff00008c;
-    out property <color> handle-active: DS.palette-handle-active;
-    out property <color> contrast-edge: DS.palette-contrast-edge;
-    out property <color> hover: DS.palette-hover;
+    out property <color> handle-active: #ffffffff;
+    out property <color> contrast-edge: #0000008c;
+    out property <color> hover: #ffffff11;
     out property <color> row-selected: DS.palette-track;
     out property <color> selected: DS.palette-selected;
     out property <color> track: DS.palette-track;
-    out property <color> track-fill: DS.palette-track-fill;
-    out property <color> skeleton: DS.palette-skeleton;
-    out property <color> white: DS.system-white;
-    out property <color> black: DS.system-black;
-    out property <color> metal-dark: DS.scanner-metal-dark;
-    out property <color> metal-light: DS.scanner-metal-light;
+    out property <color> track-fill: #ffffff56;
+    out property <color> skeleton: #ffffff13;
+    out property <color> white: #ffffffff;
+    out property <color> black: #000000ff;
+    out property <color> metal-dark: #8c8c8cff;
+    out property <color> metal-light: #ebebebff;
     // `GainChannel`'s hues and complements: the system's, which no Swift token holds but the blue, the accent's.
     out property <color> channel-red: #ff453a;
     out property <color> channel-cyan: #64d2ff;
@@ -89,7 +89,7 @@ export global Radius {
     out property <length> card: DS.radius-card;
     out property <length> control: DS.radius-control;
     // A small picture among others, so its corners never eat into what it shows.
-    out property <length> picture: DS.radius-picture;
+    out property <length> picture: 4px;
 }
 
 export global Stroke {
@@ -105,8 +105,8 @@ export global State {
     // label (0.55), so a key that cannot act never reads as one merely not chosen.
     out property <float> disabled: 0.36;
     // A missing original, a folder away, a frame left out: faded, its name and picture still read.
-    out property <float> missing: DS.state-missing;
-    out property <float> idle: DS.state-idle-label;
+    out property <float> missing: 0.4;
+    out property <float> idle: 0.55;
 }
 
 export global Motion {
@@ -161,7 +161,7 @@ export global ButtonStyle {
     out property <length> small-icon: DS.control-toggle-glyph;
     out property <length> mini-glyph: DS.control-icon-size * 0.75;
     out property <length> tracking: Stroke.hairline;
-    out property <length> lamp: DS.control-lamp-size;
+    out property <length> lamp: 6px;
     // A flat key's face, the keycap's grey laid flat, and the plate keycaps share as one socket.
     out property <color> face: Colour.raised;
     // The lit face of a key that is on, a flat key's or a cap's, lit as a selected row is, never tinted:
@@ -202,7 +202,7 @@ export global SectionStyle {
     out property <length> before: Space.m;
     out property <length> after: Space.m;
     out property <length> gap: Space.s;
-    out property <length> help-mark: DS.control-help-mark-size;
+    out property <length> help-mark: 14px;
     // The fold's chevron before the title, the tree's own: one look for folding across the app.
     out property <length> fold: DS.control-toggle-glyph;
 }
@@ -232,16 +232,16 @@ export global TileStyle {
     out property <length> badge-inset: Space.s;
     // A missing original's disc in the corner, its glyph inside, a seal's height across.
     out property <length> away: DS.control-seal-height * 1px;
-    out property <length> away-glyph: DS.control-medal-size;
+    out property <length> away-glyph: 12px;
     // `GalleryEngine`'s tile carried by a reorder, and `InfoSidebar.cardStack`'s two cards behind.
     out property <float> ghost: 0.85;
     out property <float> stack-middle: 0.8;
     out property <float> stack-back: 0.55;
-    out property <length> heading: DS.control-roll-header-height;
+    out property <length> heading: 37px;
 }
 
 export global SheetStyle {
-    out property <length> width: DS.control-dialog-width;
+    out property <length> width: 360px;
     out property <length> wide-width: DS.control-dialog-wide-width;
     out property <length> padding: Space.l;
     out property <length> gap: Space.m;
@@ -253,7 +253,7 @@ export global SheetStyle {
     out property <length> rise: Space.m;
     out property <length> slide: Space.l;
     // `noticeWidth`: the notices' gauge.
-    out property <length> notice-width: DS.control-notice-width;
+    out property <length> notice-width: 420px;
     // A transient notice's stay, long enough to read two lines twice; Swift's waited for its key.
     out property <duration> linger: 8s;
     // The card's lift off the window.
@@ -297,17 +297,17 @@ export global TipStyle {
 }
 
 export global CardStyle {
-    out property <length> inset: DS.control-card-inset;
+    out property <length> inset: 8px;
     out property <length> radius: Radius.card;
-    out property <length> padding: DS.control-canvas-padding;
+    out property <length> padding: 40px;
 }
 
 // `FrameOverlay`'s brackets, edge bars and the halo under them, clamped by the frame shown.
 export global CropStyle {
-    out property <length> corner: DS.control-crop-corner;
-    out property <length> edge: DS.control-crop-edge;
-    out property <length> stroke: DS.control-crop-stroke;
-    out property <length> halo: DS.control-crop-halo;
+    out property <length> corner: 22px;
+    out property <length> edge: 44px;
+    out property <length> stroke: 3px;
+    out property <length> halo: 2px;
     out property <length> well-radius: Radius.picture;
     // A De-dust reminder's least side in the tab, and the row under it: its number and its key.
     out property <length> dust-original: 56px;
@@ -324,11 +324,11 @@ export global DustStyle {
 export global SplitStyle {
     out property <length> grab: DS.control-grab-size;
     out property <length> grow: DS.control-guide-grow;
-    out property <length> label-inset: DS.control-split-label-inset;
+    out property <length> label-inset: 34px;
 }
 
 export global StatusStyle {
-    out property <length> height: DS.control-status-row-height;
+    out property <length> height: 18px;
     // The card's content inset, the grid's and the deck's: the line starts and the medals end where they do.
     out property <length> inset: Space.l;
 }
@@ -346,7 +346,7 @@ export global ShellStyle {
     out property <length> bar-height: ButtonStyle.bar-key + 2 * Space.s;
     // The export slot a hair narrower than `AppBar`'s (owner's call).
     out property <length> export-width: DS.control-app-bar-export-width - Space.m;
-    out property <length> filter-width: DS.control-app-bar-filter-width;
+    out property <length> filter-width: 92px;
     out property <length> library-width: DS.control-film-sidebar-width;
     // A column's one inset: its tab bar, its header rows and its rows' bands share it, so their edges line up.
     out property <length> column-inset: Space.m;

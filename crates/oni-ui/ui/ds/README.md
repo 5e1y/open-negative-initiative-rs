@@ -7,8 +7,8 @@ and every screen picks it up.
 
 | File | What it holds | Who writes it |
 |---|---|---|
-| `tokens.slint` | `DS`, the design system's constants under flat names, each named by a screen, the lab or the Rust side | By hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever one exists |
+| `tokens.slint` | `DS`, the design system's shared constants under flat names, each named by two places, the lab or the Rust side | By hand |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. A value one style alone reads is written there, a shared one bound to its `DS` token |
 | `theme_type.slint` | `Type`, the type scale, re-exported by `theme.slint` | By hand |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
 | `theme_sliders.slint` | `SliderStyle`, `DialStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
@@ -23,12 +23,13 @@ and every screen picks it up.
 
 - **Restyle one kind of element** (all buttons, all sliders): edit its group in `theme.slint`, for example
   `ButtonStyle.radius` or `SliderStyle.track`.
-- **Change a constant of `DS`** (a space, a colour of the palette): edit it in `tokens.slint`; a token nothing names is deleted.
+- **Change a constant of `DS`** (a space, a colour of the palette): edit it in `tokens.slint`; a token nothing names is deleted,
+  and one a single style alone names moves onto that style's line.
 - **One name per value**: a group never renames another's value (a field's height is
   `ButtonStyle.height`, a socket `Colour.well`); it names only a role of its own that borrows a step
   of a scale (`SectionStyle.gap: Space.s`).
-- **A value with no Swift token** (a channel hue, a medal foil, the tooltip ground): it is written once
-  in `theme.slint`, with a comment saying why.
+- **A value of one style alone** (a channel hue, a medal foil, the tooltip ground): it is written once
+  on that style's line, never as a `DS` token.
 
 To see the result, run `scripts/ds-lab`: the 2.5D lab (`crates/oni-ui/lab`) shows every family in its
 states, reloads on each save and tunes `Depth` live; `scripts/ds-lab --shot FILE PAGE WxH` renders a page.

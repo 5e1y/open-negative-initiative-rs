@@ -10,17 +10,17 @@ export global WrappedStyle {
     // `Color.black`, the ground the year is told on, whatever the theme.
     out property <color> ground: Colour.black;
     out property <color> title-ink: Colour.selected;
-    out property <length> card-width: DS.control-wrapped-card-width;
-    out property <length> card-height: DS.control-wrapped-card-height;
-    out property <length> photo-side: DS.control-wrapped-photo-side;
-    out property <float> deck-shrink: DS.control-wrapped-deck-shrink;
-    out property <length> deck-step: DS.control-wrapped-deck-step;
-    out property <int> deck-depth: DS.control-wrapped-deck-depth;
-    out property <float> title-start: DS.control-wrapped-title-start;
+    out property <length> card-width: 440px;
+    out property <length> card-height: 540px;
+    out property <length> photo-side: 92px;
+    out property <float> deck-shrink: 0.05;
+    out property <length> deck-step: 14px;
+    out property <int> deck-depth: 3;
+    out property <float> title-start: 0.6;
     out property <duration> reveal: DS.motion-wrapped-reveal-response * 1s;
     out property <duration> settle: DS.motion-settle-response * 1s;
-    out property <duration> stagger: DS.motion-wrapped-stagger;
-    out property <duration> hold: DS.motion-wrapped-hold;
+    out property <duration> stagger: 120ms;
+    out property <duration> hold: 2400ms;
     // One frame at 60 Hz: a value set as the view is laid would not animate.
     out property <duration> frame: 16ms;
 }

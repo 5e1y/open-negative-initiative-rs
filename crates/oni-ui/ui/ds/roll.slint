@@ -10,9 +10,9 @@ import { Inward } from "depth.slint";
 import { Icons } from "icons.slint";
 
 export global RollStyle {
-    out property <int> columns: DS.control-roll-columns;
-    out property <int> sheet-columns: DS.control-roll-sheet-columns;
-    out property <length> loupe: DS.control-base-loupe-side;
+    out property <int> columns: 3;
+    out property <int> sheet-columns: 6;
+    out property <length> loupe: 160px;
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
     out property <length> hollow: DS.control-tab-bar-height;

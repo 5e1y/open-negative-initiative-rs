@@ -5,18 +5,18 @@ import { DS } from "tokens.slint";
 export global ScannerStyle {
     // A fill this light in Rec. 709 luma takes the dark ink.
     out property <float> light-luma: 0.55;
-    out property <color> glass: DS.palette-lcd-glass;
+    out property <color> glass: #0d0d0dff;
     out property <color> lcd-ink: DS.palette-lcd-ink;
-    out property <length> screen-label: DS.scanner-screen-label-size;
-    out property <length> screen-value: DS.scanner-screen-value-size;
-    out property <length> scanline-pitch: DS.scanner-scanline-pitch;
+    out property <length> screen-label: 12px;
+    out property <length> screen-value: 30px;
+    out property <length> scanline-pitch: 3px;
     // The screen's scanlines: black at 35 %.
     out property <color> scanline: #00000059;
     // The screen's face, the system's monospaced design.
     out property <string> mono: "monospace";
     out property <int> value-weight: 700;
     // The screen's glow: the ink at 80 % within `phosphorGlow` of every stroke it lights.
-    out property <length> phosphor-glow: DS.scanner-phosphor-glow;
+    out property <length> phosphor-glow: 5px;
     out property <float> phosphor-glow-ink: 0.8;
 }
 

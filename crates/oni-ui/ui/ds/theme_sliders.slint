@@ -19,7 +19,7 @@ export global SliderStyle {
     in-out property <length> grip: DS.control-knob-line * 1px;
     in-out property <length> grip-gap: DS.control-knob-line-gap * 1px;
     out property <color> knob: DS.palette-keycap;
-    out property <color> knob-edge: DS.palette-track-line;
+    out property <color> knob-edge: #000000ff;
     // `DSBarHandle.gripLine`: the text-on-fill white, the on-light ink on a cap past `grip-turn` in OKLab
     // lightness, where the two inks' contrasts cross (a white cap's lines would vanish).
     out property <color> grip-ink: DS.palette-text-on-fill;
@@ -61,7 +61,8 @@ export global SliderStyle {
     // Every slider's − and + keycaps as tall as its knob, their sign larger than a word; a press is
     // `press` steps of the value editor's own − and +, so three shown units.
     in-out property <length> step-key: SliderStyle.knob-height;
-    out property <int> press: DS.control-slider-press;
+    // Three, the owner's call.
+    out property <int> press: 3;
     // A value typed between its minus and plus: room for its widest figure alone, as −100.0.
     out property <length> figure: 52px;
     in-out property <length> step-legend: Type.section;
@@ -91,7 +92,7 @@ export global DialStyle {
 // The plots: the panel's main histogram and an editor's screen, its round and engraved quarters, then
 // the handles' and bands' inks Swift's views write as literals, which no token holds.
 export global PlotStyle {
-    out property <length> main: DS.control-main-histogram-height;
+    out property <length> main: 150px;
     out property <length> block: DS.control-histogram-height;
     in-out property <length> radius: DS.radius-track;
     // The panel's readout runs edge to edge, square against the canvas card it meets.
