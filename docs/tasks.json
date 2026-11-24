@@ -13083,5 +13083,12 @@
     "title": "The Apple-against-LibRaw decoder research tools leave: decoder_fit, blocks and dump",
     "status": "done",
     "detail": "decoder_fit fitted LibRaw to the CIRAWFilter dumps the Swift app wrote, blocks and dump wrote the matching LibRaw grids and RenderDump files; they served the camera-matrix decision, withdrawn on 2026-11-02, and their driver scripts/decoder-gap is gone. 208 lines; nothing in crates or scripts ran them. docs/research/decoder-apple-vs-libraw.md stays as history with a line saying where they went. No render moves: examples only."
+  },
+  {
+    "id": 3777,
+    "type": "chore",
+    "title": "The sensor-colours prototype leaves with the decode colours only it read: examples/sensor_colours.rs, Colours and decode_in",
+    "status": "done",
+    "detail": "sensor_colours compared the roll in three decode colours against the Swift app's base and rendered the removed faces; its proposal (#181) was never adopted, and it was the only caller of decode_in with Colours::Sensor or SensorUnbalanced. The decode now has its one conversion, the camera's matrix: Colours, decode_in, the colours parameter of converted_on, decoded and decoded_by, and the two Sensor checks go; the singular-matrix check reads the matrix conversion (still refused on a zero matrix, its twin accepted on the Z f). The cache key keeps the literal Matrix, so every decode kept on disk stays valid; the Matrix arm is unchanged, so no render moves. docs/research/sensor-colours.md stays as history with a line saying where the prototype went. cargo test -p oni-decode --lib green (38)."
   }
 ]

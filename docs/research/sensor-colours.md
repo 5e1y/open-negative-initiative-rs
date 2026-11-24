@@ -4,6 +4,8 @@ Measured on 2026-10-20 (#181) on roll #8 (Nikon Z f, 38 NEF) and the Kodak Color
 digitised on a Lumix S1R (38 RW2), both on copies with the Swift sidecars. A prototype only: no setting, no
 interface, and the app's decode is unchanged (`Colours::Matrix` is still the only path the app calls).
 
+History: the prototype (`Colours`, `decode_in`, `oni-measure/examples/sensor_colours.rs`) left unadopted; git holds it (#3777).
+
 ## Short answer
 
 - **What it is.** LibRaw demosaics exactly as today, on the same 5000 K multipliers. Then the 3×3 camera
