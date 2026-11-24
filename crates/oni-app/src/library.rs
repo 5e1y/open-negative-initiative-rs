@@ -257,7 +257,7 @@ impl Archive {
         first(self, archive_tree::find(&self.nodes, id)?)
     }
 
-    /// The photos under `node` the filter shows, summed as `Node::count` sums them all.
+    /// The photos under `node` the filter shows, summed rather than copied out of the tree.
     fn shown_count(&self, node: &Node) -> usize {
         match node {
             Node::Photo(e) => usize::from(self.shows(e)),

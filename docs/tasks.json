@@ -13093,5 +13093,13 @@
     "status": "done",
     "detail": "Since each schema keeps its own index-N.sqlite and open refuses any other user_version (#1569), upsert, the only writer of photos, has keyed every row with paths::normal, unchanged since the pass was written. So respell's search always came back empty and the `WHERE path IN (?, ?)` pairs (the path as given and its normal spelling) could only ever match the second. index/spelling.rs and its call go; each lookup, update and delete of photos and stamps keys on `path = normal(path)`. Should paths::normal ever change, a SCHEMA_VERSION bump rebuilds the cache. The index is a disposable cache: no sidecar or render moves.",
     "outcome": "cargo test -p oni-library green; the two respelling tests go with the pass."
+  },
+  {
+    "id": 3763,
+    "type": "simplification",
+    "title": "The library's test-only tree and navigator API goes: archive_tree's flatten, first_path, Node::entries and count, project_tree's Node::entries, folders::tree_and_groups, ProjectGroup's display_title and explicit_name, Navigation::toggle_trash",
+    "status": "done",
+    "detail": "The app lays its tree through archive_tree::walk and find, and filters its own first photo and counts (Archive::first_shown, shown_count); it calls folders::tree and groups_of apart, and folds the trash row through `unfolded` itself. The removed functions were the unfiltered twins of those or forwarders, reached only by their own tests. folders::groups calls groups_of on the tree directly.",
+    "outcome": "cargo test -p oni-library green. archive_tree's fold test now reads walk alone, with its twin; the tree-and-groups check compares groups_of on a tree holding the survey's empty folders with groups, with its twin. roll8's an_index_rebuilt_from_the_sidecars_finds_every_frame fails on the reference roll on a line this change does not reach: the folder's marker on disk names another roll id and stock than its oracle (folders::rolls, untouched)."
   }
 ]

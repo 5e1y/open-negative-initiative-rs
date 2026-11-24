@@ -121,16 +121,6 @@ pub struct ProjectGroup {
     pub entries: Vec<Entry>,
 }
 
-impl ProjectGroup {
-    pub fn display_title(&self) -> &str {
-        &self.project.name
-    }
-
-    pub fn explicit_name(&self) -> Option<&str> {
-        Some(&self.project.name)
-    }
-}
-
 /// Every project with the rows its members stand for, newest first; a member no row shows is
 /// skipped, never pruned.
 pub fn grouped(projects: &[Project], reach: &Reach) -> Vec<ProjectGroup> {
