@@ -19,6 +19,8 @@ fn narrow() -> Paper {
         curves: &CURVES,
         curve_low: -2.0,
         curve_step: 0.01,
+        floor: [0.0; 3],
+        crosstalk: IDENTITY,
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
@@ -232,4 +234,25 @@ fn the_print_reads_each_dye_on_its_own_channel_and_a_black_and_white_print_its_l
     let mono = Paper { luma: true, ..k }.printed([0.3, 0.6, 0.9]);
     assert!(mono[0] == mono[1] && mono[1] == mono[2]);
     assert_ne!(k.printed([0.3, 0.6, 0.9])[0], k.printed([0.3, 0.6, 0.9])[1]);
+}
+
+#[test]
+fn each_channel_reads_its_own_dye_and_the_others_crosstalk_over_the_d_min() {
+    let crossed = [[1.0, 0.07, 0.01], [0.11, 1.0, 0.09], [0.04, 0.09, 1.0]];
+    let k = Paper { floor: [0.08, 0.1, 0.06], crosstalk: crossed, ..narrow() };
+    let a = [0.5, 1.0, 1.5];
+    let d = k.dyed(a);
+    let want = [0.08 + 0.5 + 0.07 + 0.015, 0.1 + 0.055 + 1.0 + 0.135, 0.06 + 0.02 + 0.09 + 1.5];
+    assert!((0..3).all(|c| (d[c] - want[c]).abs() < 1e-6), "{d:?}");
+    assert_eq!(k.developed([-1.0; 3]), k.dyed(k.amounts([-1.0; 3])));
+    // Twin: the crosstalk turned, a row read as a column, reads other densities.
+    let turned: [V3; 3] = std::array::from_fn(|r| std::array::from_fn(|c| crossed[c][r]));
+    assert!((Paper { crosstalk: turned, ..k }.dyed(a)[0] - d[0]).abs() > 0.05);
+    // Pure dyes on no D-min print the amounts as the densities, to the bit.
+    let pure = narrow();
+    for log in [[-1.9, -1.2, -0.4], [-0.3, -1.0, 0.2], [3.0, -3.0, -1.5]] {
+        let amounts = pure.amounts(log);
+        assert_eq!(pure.developed(log), amounts, "{log:?}");
+        assert_eq!(pure.printed([0.2, 0.5, 0.9]), viewed(pure.developed(pure.exposed(pure.density([0.2, 0.5, 0.9])))));
+    }
 }

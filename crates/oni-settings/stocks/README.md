@@ -70,7 +70,7 @@ A `colour-slide` stock's film is a reversal film: its profile's curves fall with
 }
 ```
 
-A paper holds a data sheet's `profile`, or, for the Frontier SP-3000, `frontier`: the fit of its measured table that `docs/research/frontier/frontier_print_fit.py` writes (`neutral`, `matrix` and each layer's `curves`), with its provenance. A paper is its curves: its profile's `data` holds `log_exposure`, 256 evenly spaced log H, and `density_curves`, each node's Status A red, green and blue densities as its sheet prints them, D-min included; each layer's density then absorbs its own channel alone. The paper menu lists the papers by brand and name.
+A paper holds a data sheet's `profile`, or, for the Frontier SP-3000, `frontier`: the fit of its measured table that `docs/research/frontier/frontier_print_fit.py` writes (`neutral`, `matrix` and each layer's `curves`), with its provenance. A paper is its curves: its profile's `data` holds `log_exposure`, 256 evenly spaced log H, and `density_curves`, each node's Status A red, green and blue densities as its sheet prints them, D-min included, and `crosstalk`, the Status A densities each dye reads at a unit amount (a row a channel, a column a dye); each layer's dye amount is what a grey's densities unmix to through it, each channel reads the dyes through it, and each density then absorbs its own channel alone. The paper menu lists the papers by brand and name.
 
 ## Writing the files
 
