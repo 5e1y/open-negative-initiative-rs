@@ -31,7 +31,12 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     // The check's own Trash: the owner's never receives a fixture.
     let bin = root.join("Trash");
     std::fs::create_dir_all(&bin).unwrap();
-    let Some(app) = common::launch(root).with(|o| { o.mask_picker = Box::new(move || asked.borrow().clone()); o.show_folder = Box::new(move |p| seen.borrow_mut().push(p.to_path_buf())); o.discard = Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap()))); }).show() else { return };
+    let options = |o: &mut oni_app::app::Options| {
+        o.mask_picker = Box::new(move || asked.borrow().clone());
+        o.show_folder = Box::new(move |p| seen.borrow_mut().push(p.to_path_buf()));
+        o.discard = Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap())));
+    };
+    let Some(app) = common::launch(root).with(options).show() else { return };
     let common::App { rig, shell, root, .. } = &app;
     let ctl = shell.ctl.clone();
     let w = &shell.window;

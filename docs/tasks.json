@@ -13288,5 +13288,12 @@
     "status": "done",
     "detail": "Stage47 is built from settings only by conversion::unprinted, reached only through lit() on print.unlit(), which zeroes contrast, shadows, highlights, the three filters and each channel's contrast and mids; every other producer copies it or starts from Stage47::rest(). So contrasted(x, 0) returned x, and the zones, the mids and the filters' luma levelling never ran. Gone from the kernel, its CPU reference and its uniform (13 rows to 9): print_contrast, print_zones, own_stops, own_contrast and own_mid, the WGSL quarter_pass, quartered and midded, the contrast family of both preludes, which nothing else read, the levelling block, the branch cases 'negative contrast, double quarters', 'channel tone with filters' and 'channel tone', and each_channel_s_own_tone_reaches_the_kernel. The carry held + (p − held) stays in both: a share past 2 rounds through it, and the pinned renders keep that rounding. The Rust quartered and midded stay for kernel/negative.rs. kernel_oracle.rs keeps judging the 1.0 migration's replica (Print::rendered) against an independent reference: the former print block frozen in the test file, on the kernel's own windows (cpu::windowed). oni-colour's roll #8 fixture no longer passes its sidecar's Contrast to a kernel that has none.",
     "outcome": "Every pinned render is bit for bit unchanged: colour_on_negative and lighting_on_negative at rest, exposure_departure CPU and GPU (format 61), legacy_print CPU and GPU (format 45). kernel_oracle: the replica against the frozen print 2.98e-7 (twins unfiltered 6.1e-2, apart 8.1e-2, untoned 2.7e-1); a former document through it worst 0.0599 against 0.1188 unmigrated. branches, stages, channel_points and digital_negative green."
+  },
+  {
+    "id": 3787,
+    "type": "chore",
+    "title": "The window checks' launcher in a file of its own, under the size ceiling, and the masks check's options on lines of their own",
+    "status": "done",
+    "detail": "common/mod.rs had grown past 400 lines with the shared launcher (#3780): Root, App and Launch move to common/launch.rs; the masks check's one 300-character launch line is split, the wide-line ratchet held at 78."
   }
 ]
