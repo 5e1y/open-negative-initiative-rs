@@ -23,21 +23,6 @@ pub struct ScannerDensity {
     pub dmax: f32,
 }
 
-impl ScannerDensity {
-    pub fn rows(&self) -> Vec<V4> {
-        vec![
-            v3(self.gain, self.pedestal),
-            v3(self.median, self.log_guard),
-            v3(self.sep_r, self.scale),
-            v3(self.sep_g, self.low),
-            v3(self.sep_b, self.span),
-            v3(self.shift, self.invert),
-            v3(self.reached_low, self.dmax),
-            v3(self.reached_high, 0.0),
-        ]
-    }
-}
-
 /// `scannerOutput(code, warmth, warmthShare, lift, contrast)`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScannerOutput {
@@ -45,9 +30,6 @@ pub struct ScannerOutput {
     pub lift: f32,
     pub contrast: f32,
 }
-
-/// `ScannerRender.lift`: the warmth looks' moves stored raised by it.
-pub const SCANNER_LIFT: f32 = 0.5;
 
 /// `scannerEncode(s, root)`.
 #[derive(Clone, Copy, Debug, PartialEq)]

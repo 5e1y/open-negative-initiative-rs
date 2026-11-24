@@ -52,8 +52,6 @@ pub const TEXTURE: &str = include_str!("wgsl/texture.wgsl");
 pub const DETAIL_ROWS: &str = include_str!("wgsl/detail_rows.wgsl");
 /// `detail_columns_px(s, x, y)`, reading `detail_row(x, y)`; needs `DETAIL_TAPS`.
 pub const DETAIL_COLUMNS: &str = include_str!("wgsl/detail_columns.wgsl");
-/// `scanner_density_px(s)`.
-pub const SCANNER_DENSITY: &str = include_str!("wgsl/scanner_density.wgsl");
 /// `scanner_output_px(code, warmth)`.
 pub const SCANNER_OUTPUT: &str = include_str!("wgsl/scanner_output.wgsl");
 /// `scanner_encode_px(s)`.

@@ -1,25 +1,5 @@
 use super::*;
 
-/// `ScannerKey.selfCheck`'s render half: the keypad's letters read through the measured table.
-#[test]
-fn a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off() {
-    let roll = check_roll();
-    let mid = CHECK_GREY.map(|d| 10f32.powf(-d));
-    let keyed = |d: i64, c: i64, w: i64| LegacyPrint { machine: LegacyMachine::Frontier, d, c, w, ..LegacyPrint::default() };
-    let rendered = |l: LegacyPrint| replica(mid, &PipelineSettings { legacy_print: Some(l), ..roll.clone() }).unwrap();
-    let rest = rendered(keyed(0, 0, 0));
-    let (lighter, darker) = (rendered(keyed(2, 0, 0)), rendered(keyed(-2, 0, 0)));
-    let (cooler, redder) = (rendered(keyed(0, 2, 0)), rendered(keyed(0, -2, 0)));
-    assert!(lighter[1] > rest[1] && darker[1] < rest[1], "D + lightens: green {} against {}", lighter[1], rest[1]);
-    assert!(cooler[0] < rest[0] && redder[0] > rest[0], "C + takes red off: {} against {}", cooler[0], rest[0]);
-    // Twin: off the Frontier no table is read, so a check through it cannot pass by default; nor with it not laid.
-    assert!(replica(mid, &PipelineSettings { legacy_print: Some(LegacyPrint { machine: LegacyMachine::Oni, ..keyed(0, 0, 0) }), ..roll.clone() }).is_none());
-    assert!(replica(mid, &PipelineSettings { legacy_print: Some(LegacyPrint { laid: false, ..keyed(0, 0, 0) }), ..roll.clone() }).is_none());
-    // And TEMP + warms the grey: more red than blue than at rest.
-    let warm = rendered(keyed(0, 0, 4));
-    assert!(warm[0] - warm[2] > rest[0] - rest[2], "{warm:?} against {rest:?}");
-}
-
 #[test]
 fn the_look_lab_s_coordinates_unmix_as_the_swift_machine_did() {
     let roll = check_roll();

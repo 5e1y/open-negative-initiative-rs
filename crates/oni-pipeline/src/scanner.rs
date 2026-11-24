@@ -2,7 +2,7 @@
 //! with its warmth looks, its keys the Frontier's measured clicks laid in the gains of ONI's conversion.
 
 use crate::conversion::{M3, IDENTITY};
-use oni_render::{ColorCube, ScannerDensity, ScannerOutput, cpu};
+use oni_render::{ColorCube, ScannerDensity, cpu};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PipelineSettings};
@@ -223,17 +223,6 @@ pub fn on_legacy_print(s: &PipelineSettings) -> Option<PipelineSettings> {
     let stops = gain_stops(s);
     out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
     Some(out)
-}
-
-/// `ScannerRender.replica`: one transmittance through the measured Frontier table on the CPU, as the GPU renders it;
-/// `None` off a Frontier legacy print.
-pub fn replica(t: [f32; 3], s: &PipelineSettings) -> Option<[f32; 3]> {
-    let legacy = s.legacy().filter(|l| l.machine == LegacyMachine::Frontier)?;
-    let m = &*MACHINE;
-    let code = cpu::color_cube(cpu::scanner_density([t[0], t[1], t[2], 1.0], &fitted_density(s)), &m.render);
-    let (warmth, share) = m.warmth(legacy.w).map_or((code, 0.0), |(cube, share)| (cpu::color_cube(code, cube), share));
-    let out = cpu::scanner_output(code, warmth, &ScannerOutput { warmth_share: share, lift: LIFT, contrast: s.print.contrast });
-    Some([out[0], out[1], out[2]])
 }
 
 /// `ScannerRender.checkGrey`: a mid grey's densities on a colour negative, its orange mask included.

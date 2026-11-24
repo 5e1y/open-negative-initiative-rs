@@ -86,11 +86,6 @@ fn per_pixel_kernels_match_their_references() {
     let coeff = |relative| TextureCoeff { relative };
     per_pixel(&mut g, "texture coefficients", &moment_source, &moments, stages::texture_coeff(&coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.125)), |p| cpu::texture_coeff(p, &coeff(0.13)));
 
-    let mut frontier = negative();
-    frontier.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: -2, m: 3, ..LegacyPrint::default() });
-    let d = scanner::fitted_density(&frontier);
-    let steeper = oni_render::ScannerDensity { scale: d.scale * 1.01, ..d };
-    per_pixel(&mut g, "scanner density", &film, &transmitted, stages::scanner_density(&d), |p| cpu::scanner_density(p, &d), |p| cpu::scanner_density(p, &steeper));
     let root = |root| ScannerEncode { root };
     per_pixel(&mut g, "scanner encode", &input, &pixels, stages::scanner_encode(oni_look::ROOT), |p| cpu::scanner_encode(p, &root(oni_look::ROOT)), |p| cpu::scanner_encode(p, &root(2.1)));
 }
