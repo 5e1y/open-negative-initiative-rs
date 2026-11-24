@@ -26,7 +26,7 @@ pub use kernel::paper::{PAPER_CURVE_NODES, Paper, fade, lifted, share, viewed};
 pub use kernel::saturation_curve::SaturationCurve;
 pub use kernel::scanner::{ScannerDensity, ScannerOutput, ScannerEncode};
 pub use kernel::spectrogram::Spectrogram;
-pub use kernel::stage47::{Stage47, Packed};
+pub use kernel::stage47::{Packed, Shown, Stage47};
 pub use kernel::stroke_mask::StrokeMask;
 pub use kernel::texture::{TextureCoeff, Texture};
 pub use kernel::vignette::{VIGNETTE_MIDPOINT, Vignette};

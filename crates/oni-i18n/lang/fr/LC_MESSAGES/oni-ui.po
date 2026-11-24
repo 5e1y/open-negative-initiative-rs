@@ -1990,8 +1990,8 @@ msgid "Paper"
 msgstr "Papier"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Every photo is printed on a paper, as an enlarger prints it: in true density, the black picked in Prepare the Roll on the paper's black and its white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Lighting then acts as in a darkroom.\n\nONI Standard, the default, lays the mean curve of the makers' papers on a neutral paper; every other paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white."
-msgstr "Chaque photo est tirée sur un papier, comme le fait un agrandisseur : en densité vraie, le noir choisi dans Préparer la pellicule sur le noir du papier et son blanc sur le blanc du papier, la filtration propre au papier gardant un gris neutre de l’un à l’autre. Lumière agit alors comme en chambre noire.\n\nONI Standard, le papier par défaut, pose la courbe moyenne des papiers des fabricants sur un papier neutre ; chaque autre papier apporte ses propres courbes, colorants et blanc.\n\nNoirs et blancs du papier garde le noir et le blanc propres au papier, comme sur un tirage tenu en main ; désactivé, ce noir repose sur le noir pur et ce blanc sur le blanc pur."
+msgid "With no paper, a photo is its pure inversion: each colour's density, read between the black and the white picked in Prepare the Roll, goes straight to the screen, that black on pure black and that white on pure white, with no curve laid over it.\n\nA paper is a choice laid over that inversion, as an enlarger prints it: in true density, that black on the paper's black and that white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Each paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white."
+msgstr "Sans papier, une photo est son inversion pure : la densité de chaque couleur, lue entre le noir et le blanc choisis dans Préparer la pellicule, va droit à l’écran, ce noir sur le noir pur et ce blanc sur le blanc pur, sans aucune courbe par-dessus.\n\nUn papier est un choix posé sur cette inversion, comme le fait un agrandisseur : en densité vraie, ce noir sur le noir du papier et ce blanc sur le blanc du papier, la filtration propre au papier gardant un gris neutre de l’un à l’autre. Chaque papier apporte ses propres courbes, colorants et blanc.\n\nNoirs et blancs du papier garde le noir et le blanc propres au papier, comme sur un tirage tenu en main ; désactivé, ce noir repose sur le noir pur et ce blanc sur le blanc pur."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Print lift"
@@ -2018,8 +2018,8 @@ msgid "On, the slide keeps its screen's own ends: its film's densest under the r
 msgstr "Activé, la diapositive garde les extrémités de sa toile : le plus dense de son film sous le voile de la pièce, un peu au-dessus du noir, et le blanc du film nu, comme dans une pièce obscure. Désactivé, ce noir se pose sur le noir pur et ce blanc sur le blanc pur, comme une diapositive montrée sur un écran."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn the paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows."
-msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même.\n\nSur le papier, les curseurs agissent comme en chambre noire, le noir choisi dans Préparer la pellicule tenu : Exposition est la lumière de l’agrandisseur, Température et Teinte ses filtres, Contraste la gradation du papier. Luminosité est Exposition épargnant ce noir et le début des ombres."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThe sliders act on the negative as in a darkroom, the black picked in Prepare the Roll held: Exposure is the light, Temperature and Tint its filters, Contrast the grade. On a paper, Brightness is Exposure sparing that black and the first shadows."
+msgstr "Le négatif ramené à la lumière selon une ligne droite : le point noir sur le noir pur, le blanc sur le blanc pur.\n\nChaque curseur sauf Contraste éclaircit vers la droite ; Contraste courbe le tirage en S autour d’un gris moyen, extrémités tenues. Point noir et Point blanc déplacent les extrémités du scan lui-même.\n\nLes curseurs agissent sur le négatif comme en chambre noire, le noir choisi dans Préparer la pellicule tenu : Exposition est la lumière, Température et Teinte ses filtres, Contraste la gradation. Sur un papier, Luminosité est Exposition épargnant ce noir et le début des ombres."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Brightness"
@@ -4922,6 +4922,10 @@ msgstr "{file} n’est pas pris tel quel, sa dernière version lisible reste en 
 #: crates/oni-app/src/app/stock_files.rs
 msgid "{file} is not used: {why}"
 msgstr "{file} n’est pas pris : {why}"
+
+#: crates/oni-app/src/app/stock_picker.rs
+msgid "No paper"
+msgstr "Aucun papier"
 
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"

@@ -10,32 +10,40 @@ use oni_settings::{PaperStock, PipelineSettings};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
 
-/// What an editor's menu lights on the open photo, nothing written: a stock by its place in the catalogue, or a paper.
+/// What an editor's menu lights on the open photo, nothing written: a stock by its place in the catalogue, or a paper,
+/// none the photo's pure inversion.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Lit {
     Stock(usize),
-    Paper(PaperStock),
+    Paper(Option<PaperStock>),
 }
 
 impl Lit {
     /// What its pick writes on `settings`, which the menu shows unwritten while it lights it; `own`, the stock in use.
-    /// A paper changes the one the enlarger prints on, where the photo prints on one.
+    /// A paper, or none, is the one the photo prints on, where its menu offers them.
     pub(super) fn picked(self, settings: &PipelineSettings, own: Option<&str>) -> PipelineSettings {
         match self {
             Lit::Stock(i) => stocks().get(i).map_or_else(|| settings.clone(), |kind| picked(settings, kind, own)),
-            Lit::Paper(paper) if settings.paper().is_some() => PipelineSettings { print_paper: Some(paper), ..settings.clone() },
+            Lit::Paper(paper) if offers_paper(settings) => PipelineSettings { print_paper: paper, ..settings.clone() },
             Lit::Paper(_) => settings.clone(),
         }
     }
 
-    /// The paper at `i` in the catalogue, -1 none.
+    /// The papers' menu's line `i`: its first no paper, then the catalogue's papers; -1 lights none.
     fn paper(i: i32) -> Option<Lit> {
-        usize::try_from(i).ok().and_then(|i| PaperStock::all().get(i).copied()).map(Lit::Paper)
+        let i = usize::try_from(i).ok()?;
+        if i == 0 { Some(Lit::Paper(None)) } else { PaperStock::all().get(i - 1).map(|p| Lit::Paper(Some(*p))) }
     }
 
     fn stock(i: i32) -> Option<Lit> {
         usize::try_from(i).ok().map(Lit::Stock)
     }
+}
+
+/// Whether the papers' menu is offered on `settings`: a frame a paper may print, but a legacy print laid on its own curve,
+/// which keeps the print it was edited on.
+pub(crate) fn offers_paper(settings: &PipelineSettings) -> bool {
+    settings.paper().is_some() || settings.shows_inversion()
 }
 
 /// What a pick of `kind` writes on the open photo, which the menu shows unwritten while it lights it: a digital
@@ -112,17 +120,19 @@ impl Ctl {
         self.state.borrow_mut().menu_baked = false;
     }
 
-    /// The Colour tab's menu on the open photo's paper: every paper of the catalogue by maker, the one in use checked.
+    /// The Colour tab's menu on the open photo's paper: no paper first, then every paper of the catalogue by maker, a
+    /// line's index its place past that first; the one in use checked.
     pub(super) fn lay_paper_menu(&self) {
         let Some(w) = self.window() else { return };
-        let own = self.state.borrow().store.settings().fitting_paper();
+        let own = self.state.borrow().store.settings().print_paper;
         let papers = PaperStock::all();
-        let mut lines = Vec::new();
+        let mut lines = vec![StockLine { index: 0, name: no_paper().into(), ..Default::default() }];
         for (maker, listed) in crate::stocks::papers_by_maker() {
             lines.push(StockLine { index: -1, name: maker.into(), brand: true, ..Default::default() });
-            lines.extend(listed.into_iter().map(|i| StockLine { index: i as i32, name: papers[i].name().into(), ..Default::default() }));
+            lines.extend(listed.into_iter().map(|i| StockLine { index: i as i32 + 1, name: papers[i].name().into(), ..Default::default() }));
         }
-        let in_use = lines.iter().position(|l| !l.brand && papers[l.index as usize] == own).map_or(-1, |i| i as i32);
+        let line = |l: &StockLine| if l.index == 0 { None } else { Some(papers[l.index as usize - 1]) };
+        let in_use = lines.iter().position(|l| !l.brand && line(l) == own).map_or(-1, |i| i as i32);
         let panel = w.global::<PanelState>();
         panel.set_paper_lines(ModelRc::new(VecModel::from(lines)));
         panel.set_paper_in_use(in_use);
@@ -168,7 +178,7 @@ impl Ctl {
                     let listed = if base.film().is_some() { crate::stocks::virtual_by_brand() } else { crate::stocks::by_brand(own) };
                     listed.into_iter().flat_map(|(_, l)| l).map(Lit::Stock).collect()
                 }
-                Lit::Paper(_) => PaperStock::all().into_iter().map(Lit::Paper).collect(),
+                Lit::Paper(_) => PaperStock::all().into_iter().map(|p| Lit::Paper(Some(p))).collect(),
             };
             listed.into_iter().map(|l| l.picked(&base, own)).collect()
         };
@@ -181,7 +191,7 @@ impl Ctl {
     }
 
     /// A stock or paper chosen in its menu, written as one step: a digital photo shot on the stock, else the open
-    /// photo's roll on it for every photo of the roll; the photo printed on the paper; what is in use writes nothing.
+    /// photo's roll on it for every photo of the roll; the photo printed on the paper, or none; what is in use writes nothing.
     /// The light it ends showed what is written, so the canvas renders nothing again.
     fn menu_picked(self: &Rc<Self>, lit: Option<Lit>) {
         let (film, own, open) = {
@@ -285,6 +295,11 @@ impl Ctl {
     }
 }
 
+/// The papers' menu's first line and the paper's field on a photo no paper prints.
+pub(crate) fn no_paper() -> &'static str {
+    oni_i18n::tr("No paper")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -324,22 +339,29 @@ mod tests {
         assert_ne!(negative.dye_set, DyeSet::of("fujifilm-c200"));
     }
 
-    /// A photo lit on a paper prints on it and moves nothing else; lit on its own paper, it is as it was.
+    /// A photo lit on a paper prints on it and moves nothing else; lit on its own paper, or on none where it names none,
+    /// it is as it was.
     #[test]
     fn a_photo_lit_on_a_paper_is_what_its_pick_writes() {
-        let digital = PipelineSettings { mode: ConversionMode::Digital, ..PipelineSettings::default() }.on_paper();
-        let own = digital.paper().unwrap();
-        let other = PaperStock::all().into_iter().find(|p| *p != own).unwrap();
-        let lit = Lit::Paper(other).picked(&digital, None);
+        let unnamed = PipelineSettings { mode: ConversionMode::Digital, ..PipelineSettings::default() };
+        assert!(unnamed.print_paper.is_none() && unnamed.shows_inversion() && offers_paper(&unnamed));
+        let papers = PaperStock::all();
+        let (own, other) = (papers[0], papers[1]);
+        let digital = Lit::Paper(Some(own)).picked(&unnamed, None);
+        assert_eq!(digital, PipelineSettings { print_paper: Some(own), ..unnamed.clone() });
+        let lit = Lit::Paper(Some(other)).picked(&digital, None);
         assert_eq!(lit, PipelineSettings { print_paper: Some(other), ..digital.clone() });
-        assert_eq!(Lit::Paper(own).picked(&digital, None), digital, "its own paper writes nothing");
-        // A legacy print laid on its own curve takes no paper; a frame naming none prints on the default and takes one.
-        let legacy = PipelineSettings { print_paper: None, legacy_print: Some(Default::default()), ..digital.clone() };
-        assert_eq!(Lit::Paper(other).picked(&legacy, None), legacy, "a legacy print stays on its own curve");
-        let unnamed = PipelineSettings { print_paper: None, ..digital.clone() };
-        assert_eq!(Lit::Paper(other).picked(&unnamed, None).print_paper, Some(other));
-        let at = PaperStock::all().iter().position(|p| *p == other).unwrap() as i32;
-        assert_eq!((Lit::paper(at), Lit::paper(-1), Lit::paper(PaperStock::all().len() as i32)), (Some(Lit::Paper(other)), None, None));
+        assert_eq!(Lit::Paper(Some(own)).picked(&digital, None), digital, "its own paper writes nothing");
+        assert_eq!(Lit::Paper(None).picked(&unnamed, None), unnamed, "no paper on a photo naming none writes nothing");
+        assert_eq!(Lit::Paper(None).picked(&digital, None), unnamed, "no paper takes the paper away");
+        // A legacy print laid on its own curve keeps it, its menu never offered.
+        let legacy = PipelineSettings { legacy_print: Some(Default::default()), ..unnamed.clone() };
+        assert!(!offers_paper(&legacy));
+        assert_eq!(Lit::Paper(Some(other)).picked(&legacy, None), legacy, "a legacy print stays on its own curve");
+        // The menu's first line is no paper, the catalogue's papers past it.
+        let last = papers.len() as i32;
+        assert_eq!((Lit::paper(0), Lit::paper(2), Lit::paper(-1), Lit::paper(last + 1)), (Some(Lit::Paper(None)), Some(Lit::Paper(Some(other))), None, None));
+        assert_eq!(Lit::paper(last), Some(Lit::Paper(Some(papers[papers.len() - 1]))));
         // Twin: lit on another paper, the photo is no longer as it was.
         assert_ne!(lit, digital);
     }

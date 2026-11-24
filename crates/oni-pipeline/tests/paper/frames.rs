@@ -1,6 +1,6 @@
 //! The frames the paper's checks print: a digital photo, a prepared negative, black and white, and their anchors' scans.
 //! Each prints on Royal Digital, a data sheet's paper and its dyes' crosstalk, on the paper's own black (Print lift), so
-//! a check reads the paper's print itself; pure black is `paper_ends`'.
+//! a check reads the paper's print itself; pure black is `paper_ends`'. The same frames on ONI Standard, or on no paper.
 
 #![allow(dead_code)]
 
@@ -11,6 +11,19 @@ use oni_settings::{ConversionMode, DyeSet, PaperStock, PipelineSettings};
 
 /// The data-sheet paper the frames print on.
 pub const SHEET_PAPER: PaperStock = PaperStock::of("kodak-royal-digital");
+
+/// ONI Standard, the neutral paper.
+pub const STANDARD: PaperStock = PaperStock::of("oni-standard");
+
+/// `s` on ONI Standard.
+pub fn onis(s: PipelineSettings) -> PipelineSettings {
+    PipelineSettings { print_paper: Some(STANDARD), ..s }
+}
+
+/// `s` naming no paper: its pure inversion, or a legacy print's own curve.
+pub fn unpapered(s: PipelineSettings) -> PipelineSettings {
+    PipelineSettings { print_paper: None, ..s }
+}
 
 fn on_print_lift(mut s: PipelineSettings) -> PipelineSettings {
     s.print.print_lift = true;

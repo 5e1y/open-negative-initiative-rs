@@ -22,6 +22,7 @@ pub(crate) mod grain;
 pub(crate) mod halation;
 pub(crate) mod held_black;
 pub(crate) mod grid;
+pub(crate) mod inversion;
 pub(crate) mod negative;
 pub(crate) mod orient;
 pub(crate) mod paper;

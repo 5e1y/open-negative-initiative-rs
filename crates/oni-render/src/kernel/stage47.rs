@@ -1,7 +1,18 @@
-//! The fused conversion kernel: Lighting on the negative, then each channel's density read through its window, then the
-//! paper the window's shares expose, its own ends included, or a legacy print's own curve.
+//! The fused conversion kernel: Lighting on the negative, then each channel's density read through its window, then what
+//! shows the window's shares: nothing but the pure inversion, a paper they expose, or a legacy print's own curve.
 
 use super::*;
+
+/// What shows the window's shares, laid in the same GPU pass.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Shown {
+    /// A legacy print's own curve, or the shares as they are where `print_on` is off, for a measure upstream.
+    Curve,
+    /// A paper printing the shares in place of the curve.
+    Paper(super::paper::Paper),
+    /// No paper: the pure inversion, each share the display's code.
+    Inversion,
+}
 
 /// The fused kernel's arguments, named as the Metal kernel names them.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -25,8 +36,7 @@ pub struct Stage47 {
     pub film_share: f32,
     /// Lighting on the negative, in the pass the print reads; none while Lighting rests.
     pub negative: Option<super::negative::Negative>,
-    /// The window's shares printed on a paper in place of the print curve, laid in the same GPU pass.
-    pub paper: Option<super::paper::Paper>,
+    pub shown: Shown,
 }
 
 impl Stage47 {
@@ -51,7 +61,15 @@ impl Stage47 {
             balance_span: [1.0; 3],
             film_share: 0.0,
             negative: None,
-            paper: None,
+            shown: Shown::Curve,
+        }
+    }
+
+    /// The paper printing the shares, where one does.
+    pub fn paper(&self) -> Option<super::paper::Paper> {
+        match self.shown {
+            Shown::Paper(p) => Some(p),
+            Shown::Curve | Shown::Inversion => None,
         }
     }
 
@@ -73,7 +91,7 @@ impl Stage47 {
                 v3(self.blue, self.log_guard),
                 v3(self.low_points, self.window),
                 v3(self.high_points, self.print_on),
-                [self.print_stops, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }, self.film_share],
+                [self.print_stops, self.hunt, if self.shown == Shown::Curve { 0.0 } else { 1.0 }, self.film_share],
                 v3(self.balance_low, 0.0),
                 v3(self.balance_span, self.decompression),
             ],
@@ -154,8 +172,8 @@ fn printed(n: f32, stops: f32) -> f32 {
     carried(shaped(n, stops)).max(0.0).powf(DISPLAY_GAMMA)
 }
 
-/// Stages 4 to 7 on one pixel: Lighting on the negative, each channel's window, then ONI's print, its chroma
-/// decompression first, or the paper.
+/// Stages 4 to 7 on one pixel: Lighting on the negative, each channel's window, then the pure inversion, the paper, or
+/// a legacy print's curve, its chroma decompression first.
 pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     let s = match &k.negative {
         Some(n) => super::negative::negative(s, n),
@@ -164,9 +182,10 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     let k = k.after_negative();
     let film = density(s, &k);
     let shares = window(film, &k);
-    match &k.paper {
-        Some(p) => super::paper::paper(with_alpha(shares, s[3]), p),
-        None => with_alpha(printed3(decompressed(film, shares, &k), &k), s[3]),
+    match &k.shown {
+        Shown::Inversion => super::inversion::inversion(with_alpha(shares, s[3])),
+        Shown::Paper(p) => super::paper::paper(with_alpha(shares, s[3]), p),
+        Shown::Curve => with_alpha(printed3(decompressed(film, shares, &k), &k), s[3]),
     }
 }
 

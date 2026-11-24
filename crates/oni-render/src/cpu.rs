@@ -15,6 +15,7 @@ pub use crate::kernel::grain::grain;
 pub use crate::kernel::halation::{halation, halation_source};
 pub use crate::kernel::held_black::held_black;
 pub use crate::kernel::grid::Grid;
+pub use crate::kernel::inversion::inversion;
 pub use crate::kernel::negative::negative;
 pub use crate::kernel::orient::orient;
 pub use crate::kernel::output_clip::output_clip;

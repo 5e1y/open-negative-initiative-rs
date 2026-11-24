@@ -73,12 +73,17 @@ fn a_cube_in_the_stocks_folder_is_a_film_a_digital_photo_is_read_through() {
     // Twin: the same cube without the film's exposure.
     judge("a photo through its look", &out, &expected, &mapped(&pixels, |p| reference(p, 0.0, 9, &look.nodes)));
 
-    // Every print is made on a paper: the positive prints through the internegative, which reads it at unit light, the
-    // paper's print laid; a measure reads no copy.
-    let on_paper = s.clone();
+    // Naming no paper, the photo shows its look as it is; on a paper the positive prints through the internegative, which
+    // reads it at unit light, the paper's print laid; a measure reads no copy.
+    assert!(paper::internegative::copy(&s).is_none());
+    let shown = render(&mut pipeline, &mut g, &s);
+    let clip = |p: V4| [p[0].clamp(0.0, 1.0), p[1].clamp(0.0, 1.0), p[2].clamp(0.0, 1.0), p[3]];
+    // Twin: the same look printed on a paper is another picture.
+    let on_paper = PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..s.clone() };
+    judge("a look on no paper", &shown, &mapped(&expected, clip), &render(&mut pipeline, &mut g, &on_paper));
     let copy = paper::internegative::copy(&on_paper).expect("a look on a paper is copied");
-    let measured = PipelineSettings { print: oni_settings::tone::Print { bypassed: true, ..s.print }, ..s.clone() };
-    assert!(conversion::stage47(&on_paper).paper.is_some() && paper::internegative::copy(&measured).is_none());
+    let measured = PipelineSettings { print: oni_settings::tone::Print { bypassed: true, ..s.print }, ..on_paper.clone() };
+    assert!(conversion::stage47(&on_paper).paper().is_some() && paper::internegative::copy(&measured).is_none());
     let printed = render(&mut pipeline, &mut g, &on_paper);
     let positive = g.upload(w, h, &expected).unwrap();
     let filmed = pipeline.filmed(&mut g, oni_graph::Image::new(&positive), &copy).unwrap();

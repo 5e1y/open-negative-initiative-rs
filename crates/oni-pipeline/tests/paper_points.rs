@@ -55,7 +55,7 @@ fn moved(s: &PipelineSettings, f: impl Fn(&mut Print)) -> PipelineSettings {
 }
 
 fn paper_of(s: &PipelineSettings) -> Paper {
-    conversion::stage47(s).paper.expect("a paper")
+    conversion::stage47(s).paper().expect("a paper")
 }
 
 /// The window's shares of a density `above` each channel's bare film, as the frame's window reads it.

@@ -1,7 +1,7 @@
 //! Stages 4 to 7: the fused kernel's arguments as `Pipeline.apply` passes them, with the models they
 //! read (the points reaching the windows, chroma decompression, the roll's factor).
 
-use oni_render::{ColorMatrix, Negative, Stage47};
+use oni_render::{ColorMatrix, Negative, Shown, Stage47};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::levels::Levels;
 use oni_settings::tone::Print;
@@ -40,9 +40,9 @@ pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
     Some(ColorMatrix { r_vector: row(m[0]), g_vector: row(m[1]), b_vector: row(m[2]), ..ColorMatrix::default() })
 }
 
-/// The fused kernel's arguments, in `Pipeline.apply`'s order: Lighting on the negative, the windows and the print at
-/// its rest of every mode; a black and white print, no channel's own tone; the frame's paper on the windows' shares in
-/// place of the print, the print's ends its own; a look on a paper, its internegative's.
+/// The fused kernel's arguments, in `Pipeline.apply`'s order: Lighting on the negative, the windows, then the pure
+/// inversion of their shares, or the frame's paper on them, the print's ends its own; a legacy print's curve at its rest,
+/// a black and white print's no channel's own tone; a look on a paper, its internegative's.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return stage47(&copy);
@@ -50,7 +50,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
     printed(s).0
 }
 
-/// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none on a legacy print's own curve.
+/// The frame's paper and the enlarger's filtration, as stage 4-7 prints it; none where no paper prints.
 pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     if let Some(copy) = crate::paper::internegative::copy(s) {
         return printing(&copy);
@@ -58,10 +58,12 @@ pub fn printing(s: &PipelineSettings) -> Option<crate::paper::Printing> {
     printed(s).1
 }
 
-/// `k` printed on the frame's paper, with its printing; on a legacy print's own curve, as it is.
+/// `k` printed on the frame's paper, with its printing, or shown as its pure inversion where it names none; on a legacy
+/// print's own curve and for a measure upstream of the print, as it is.
 fn on_paper(s: &PipelineSettings, k: Stage47) -> (Stage47, Option<crate::paper::Printing>) {
     match crate::paper::printing(s, &k) {
-        Some(p) => (Stage47 { print_on: 0.0, hunt: 0.0, paper: Some(p.paper), ..k }, Some(p)),
+        Some(p) => (Stage47 { print_on: 0.0, hunt: 0.0, shown: Shown::Paper(p.paper), ..k }, Some(p)),
+        None if s.shows_inversion() && !s.print.bypassed => (Stage47 { print_on: 0.0, hunt: 0.0, shown: Shown::Inversion, ..k }, None),
         None => (k, None),
     }
 }
@@ -124,7 +126,7 @@ fn unprinted(s: &PipelineSettings) -> Stage47 {
         balance_span: windows.map(|w| signed_span(&w)),
         film_share,
         negative: None,
-        paper: None,
+        shown: Shown::Curve,
     }
 }
 

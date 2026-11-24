@@ -107,7 +107,7 @@ fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
         x = cpu::negative(x, n);
     }
     let after = k.after_negative();
-    let paper = after.paper.map(|p| {
+    let paper = after.paper().map(|p| {
         let a = p.density(cpu::windowed(x, &after));
         let e = p.brightened(p.exposed(a));
         (a, e, p.developed(e))
@@ -210,7 +210,7 @@ impl Run<'_> {
         let tint = chroma.zip(&st).filter(|(_, s)| (-4.0..=3.0).contains(*s)).map(|(c, _)| c).fold(0.0f32, f32::max);
         self.line(format!("{} {name}: {} | stage 4-7 alone against the render, max dL* {cpu_miss:.2} | grey ramp channel spread (-4..+3) {tint:.3}", self.tag, measures(&st, &ls, &ys)));
         let k = conversion::stage47(s);
-        if let Some(p) = k.after_negative().paper {
+        if let Some(p) = k.after_negative().paper() {
             let f = curve_facts(&p);
             let at = |sv: f32| received[st.iter().position(|v| (*v - sv).abs() < 1e-4).unwrap()];
             let (m4, p4, z) = (at(-4.0), at(4.0), at(0.0));
@@ -327,7 +327,8 @@ fn main() {
             vec![("as-set", at_rest.clone())]
         } else {
             vec![
-                ("standard", at_rest.clone().on_paper()),
+                ("inversion", at_rest.clone()),
+                ("standard", PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..at_rest.clone() }),
                 ("royal", PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-royal-digital")), ..at_rest.clone() }),
             ]
         };
@@ -338,7 +339,7 @@ fn main() {
         }
         run.image(&mut e, raw, &format!("{stem}-edited"), &edited);
         if std::env::var("PAPER").is_err() {
-            run.image(&mut e, raw, &format!("{stem}-edited-paper"), &edited.clone().on_paper());
+            run.image(&mut e, raw, &format!("{stem}-edited-paper"), &PipelineSettings { print_paper: Some(edited.print_paper.unwrap_or_default()), ..edited.clone() });
         }
     }
 }

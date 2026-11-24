@@ -26,7 +26,7 @@ fn frames() -> [(&'static str, PipelineSettings); 3] {
 }
 
 fn paper_of(s: &PipelineSettings) -> Paper {
-    conversion::stage47(s).paper.expect("a negative on the Frontier")
+    conversion::stage47(s).paper().expect("a negative on the Frontier")
 }
 
 /// The print at the table's own time and no filtration, each share its density: the table's coordinates read as `x`.
@@ -81,7 +81,7 @@ fn strays(p: &Paper) -> f32 {
 #[test]
 fn the_rest_prints_a_grey_neutral_along_the_window_with_no_offset_of_the_machines() {
     for (label, s) in frames() {
-        let p = conversion::stage47(&s).paper.expect(label);
+        let p = conversion::stage47(&s).paper().expect(label);
         let filtration = conversion::printing(&s).unwrap().filtration;
         println!("{label}: a grey strays {:.4} from neutral, filtration {filtration:?} CC, pick {:?}, white {:?}", strays(&p), p.pick, p.white);
         assert!(strays(&p) < 0.03, "{label}: {}", strays(&p));
@@ -115,7 +115,7 @@ fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
             let mut t = s.clone();
             f(&mut t.print);
             let k = conversion::stage47(&t);
-            let p = k.paper.unwrap();
+            let p = k.paper().unwrap();
             // Black and white reads no filter.
             let filtered = name == "warmer" && label == "black and white";
             assert!(k.negative.is_some() != filtered, "{label}, {name}: Lighting lays its move on the negative");
@@ -164,7 +164,7 @@ fn the_gpu_prints_the_frontier_as_its_reference_does() {
         // Print lift off lays the pick on pure black.
         let dark = conversion::stage47(&PipelineSettings { print: Print { print_lift: true, ..lit.print }, ..lit.clone() });
         let lifted = error(&reference, &mapped(&pixels, |p| cpu::stage47(p, &dark)));
-        println!("{label}: pure black moves the print {lifted:.1e}, its pick printed at {:?}", dark.paper.unwrap().anchor);
+        println!("{label}: pure black moves the print {lifted:.1e}, its pick printed at {:?}", dark.paper().unwrap().anchor);
         assert!(lifted > 0.0, "{label}");
     }
 }

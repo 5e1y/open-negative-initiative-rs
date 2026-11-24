@@ -261,7 +261,7 @@ fn the_paper_s_gpu_time_on_a_full_screen_region() {
         })
         .collect();
     let source = g.upload(w, h, &pixels).unwrap();
-    let printed = stages::laid(Image::new(&source), vec![stages::stage47(&k), stages::paper(&k.paper.expect("a digital photo's paper"))]);
+    let printed = stages::laid(Image::new(&source), vec![stages::stage47(&k), stages::paper(&k.paper().expect("a digital photo's paper"))]);
     let onis = oni_pipeline::conversion::stage47(&PipelineSettings { print_paper: None, ..paper.clone() });
     let plain = Image::new(&source).then(stages::stage47(&onis));
     let (mut a, mut b) = (Vec::new(), Vec::new());

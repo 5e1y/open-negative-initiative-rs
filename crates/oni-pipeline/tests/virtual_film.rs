@@ -246,11 +246,11 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
 }
 
-/// A digital photo at rest on the paper's own black, where the enlarger's rest solves the grey, its grain and neighbourhood
-/// stages off so a pixel prints alone.
+/// A digital photo at rest on ONI Standard's own black, its grain and neighbourhood stages off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
     s.print.print_lift = true;
+    s.print_paper = Some(oni_settings::PaperStock::of("oni-standard"));
     s.grain.amount = 0.0;
     s
 }
@@ -280,7 +280,7 @@ fn the_film_prints_a_grey_and_its_negative_is_read_as_any_negative() {
     let pure = PipelineSettings { print: oni_settings::tone::Print { print_lift: false, ..digital.print }, ..digital.clone() };
     let stretched = pipeline.render(&mut g, &source, &pure, &Request::default(), &Default::default(), None).unwrap().1[0];
     println!("a scene grey: the film {:?}, on pure black {stretched:?}", on[0]);
-    let white = oni_pipeline::conversion::stage47(&digital).paper.expect("a digital photo's paper").white;
+    let white = oni_pipeline::conversion::stage47(&digital).paper().expect("a digital photo's paper").white;
     let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
     for c in 0..3 {
         assert!(stretched[c] > 0.05 && stretched[c] < 0.95, "channel {c}: {stretched:?}");

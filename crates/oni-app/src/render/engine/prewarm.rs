@@ -17,9 +17,10 @@ pub(crate) fn digital_busy() -> PipelineSettings {
     busy
 }
 
-/// A digital photo's busy edit on a legacy print: its keys and TEMP's warmth over its paper's print.
+/// A digital photo's busy edit on a legacy print: its keys and TEMP's warmth over a paper's print.
 pub(crate) fn digital_legacy_busy() -> PipelineSettings {
-    PipelineSettings { legacy_print: Some(LegacyPrint { d: 2, w: 1, ..LegacyPrint::default() }), ..digital_busy() }
+    let legacy_print = Some(LegacyPrint { d: 2, w: 1, ..LegacyPrint::default() });
+    PipelineSettings { legacy_print, print_paper: Some(oni_settings::PaperStock::default()), ..digital_busy() }
 }
 
 fn busied(mut busy: PipelineSettings) -> PipelineSettings {
@@ -58,7 +59,14 @@ fn variants() -> Vec<PipelineSettings> {
     plain.secret_sauce = 0.0;
     variants.push(plain);
     variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
-    // A digital photo's scene on its film, then its negative as a negative's, on its paper and with a legacy TEMP.
+    // Lighting alone on the negative, a first Exposure notch's pass.
+    let mut lit = PipelineSettings::rest(ConversionMode::Negative, true);
+    lit.print.exposure = 0.5;
+    variants.push(lit.clone());
+    // A paper's print in place of the inversion: with the colour tools on the negative, with Lighting alone, at rest.
+    let on_paper = |s: &PipelineSettings| PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..s.clone() };
+    variants.extend([on_paper(&busy), on_paper(&lit), on_paper(&PipelineSettings::rest(ConversionMode::Negative, true))]);
+    // A digital photo's scene on its film, then its negative as a negative's, and with a legacy TEMP.
     variants.push(digital_busy());
     variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
     variants.push(digital_legacy_busy());

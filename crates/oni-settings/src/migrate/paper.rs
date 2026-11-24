@@ -20,8 +20,7 @@ mod tests {
     #[test]
     fn a_photo_edited_before_the_paper_stays_on_onis_print_and_a_new_one_keeps_its_paper() {
         let older = PAPER_VERSION - 1;
-        let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-        assert_eq!(digital.print_paper, Some(PaperStock::default()), "a digital photo at rest prints on the paper");
+        let digital = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Digital, true) };
         assert_eq!(caught_up(older, digital.clone()).print_paper, None);
         let negative = PipelineSettings { print_paper: Some(PaperStock::of("kodak-ektacolor-edge")), ..PipelineSettings::rest(ConversionMode::Negative, true) };
         assert_eq!(caught_up(older, negative.clone()), PipelineSettings { print_paper: None, ..negative.clone() }, "nothing else moves");

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ONI Standard, the default paper: a neutral paper whose characteristic curve is the mean shape of the six data-sheet
+"""ONI Standard: a neutral paper whose characteristic curve is the mean shape of the six data-sheet
 colour papers ONI ships (Royal Digital, Endura Premier, Endura Metallic, Ektacolor Edge, Photo Book, Crystal Archive
 DPII), each read over its useful range (D-min + 0.04 to 0.9 Dmax on its grey-balanced neutral) as Prepare's window
 lays the frame on it; a logistic in density fits their mean within 0.12 L* rms.

@@ -1,6 +1,6 @@
 # Film stocks and papers
 
-Everything ONI knows of a film stock or a paper is in one JSON file here, named by its key: who it is, the canister it draws, the stock curve a roll on it is read back through, and the data sheet's profile a digital photo is shot on. Every file here is built into the app; nothing else in the code names a stock, except the defaults (Portra 800 for a digital photo, ONI Standard for a paper), which are the app's constants since a photo storing no stock reads them.
+Everything ONI knows of a film stock or a paper is in one JSON file here, named by its key: who it is, the canister it draws, the stock curve a roll on it is read back through, and the data sheet's profile a digital photo is shot on. Every file here is built into the app; nothing else in the code names a stock, except the default film (Portra 800 for a digital photo), the app's constant since a photo storing no film reads it; a photo storing no paper prints on none.
 
 ## Your own stocks and papers, without building the app
 
@@ -15,9 +15,9 @@ A file that does not read is refused with a notice saying why, and the version o
 
 ## A look from a 3D LUT
 
-Drop a `.cube` file in the same folder and it is a film of its own for digital photos, listed under the brand LUT, named by its `TITLE` (else its file name) and stored as `lut-` and its file name in lower case. A photo on it is read through the cube in place of a negative: the film's exposure first, then the scene in display sRGB code, through the cube, back to linear light. Every print being made on a paper, that positive prints through the internegative. Its grain is the default film's. A cube is refused when it gives no `LUT_3D_SIZE` from 2 to 128, is a 1D table, has a domain other than 0 to 1, or holds a node more or less than its size needs. ONI ships no look.
+Drop a `.cube` file in the same folder and it is a film of its own for digital photos, listed under the brand LUT, named by its `TITLE` (else its file name) and stored as `lut-` and its file name in lower case. A photo on it is read through the cube in place of a negative: the film's exposure first, then the scene in display sRGB code, through the cube, back to linear light. On no paper that positive shows as it is; on a paper it prints through the internegative. Its grain is the default film's. A cube is refused when it gives no `LUT_3D_SIZE` from 2 to 128, is a 1D table, has a domain other than 0 to 1, or holds a node more or less than its size needs. ONI ships no look.
 
-A photo keeps the key it was edited on even while no file defines it: it renders on the default stock or paper meanwhile, its key shown marked missing, and finds its stock again when the file comes back.
+A photo keeps the key it was edited on even while no file defines it: it renders on the default stock, or on no paper, meanwhile, its key shown marked missing, and finds its stock again when the file comes back.
 
 ## A film stock
 

@@ -46,8 +46,8 @@ impl State {
         }
     }
 
-    /// The paper the Colour tab's menu lights, which the canvas shows unwritten.
-    pub fn paper_lit(&self) -> Option<oni_settings::PaperStock> {
+    /// What the Colour tab's menu lights, a paper or no paper, which the canvas shows unwritten; none while it lights nothing.
+    pub fn paper_lit(&self) -> Option<Option<oni_settings::PaperStock>> {
         match self.lit? {
             super::stock_picker::Lit::Paper(p) => Some(p),
             super::stock_picker::Lit::Stock(_) => None,

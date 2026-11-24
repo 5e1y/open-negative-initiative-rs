@@ -36,9 +36,9 @@ fn brightness_and_print_lift_are_written_only_when_moved_and_read_back() {
 }
 
 #[test]
-fn a_new_photo_prints_on_pure_black() {
+fn a_new_photo_names_no_paper_and_print_lift_rests_off() {
     let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-    assert!(digital.paper().is_some() && !digital.print.print_lift, "a digital photo on its paper, its black pure");
+    assert!(digital.paper().is_none() && digital.shows_inversion() && !digital.print.print_lift, "a new photo on no paper, Print lift off");
     // Twin: the switch, once on, is what a sidecar keeps.
     let on = PipelineSettings { print: oni_settings::tone::Print { print_lift: true, ..digital.print }, ..digital.clone() };
     assert!(read(&stored(&on)).print.print_lift);

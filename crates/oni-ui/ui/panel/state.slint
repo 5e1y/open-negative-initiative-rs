@@ -81,7 +81,9 @@ export global PanelState {
     in property <bool> slide;
     // A digital photo: shot on its virtual film, its negative read as any negative is; no flat-field or roll.
     in property <bool> digital;
-    // The paper the enlarger prints the photo on, where it prints on one: its name, and the enlarger's filtration.
+    // Whether the photo may print on a paper, its menu offered, and whether it prints on one; the paper's name, or no
+    // paper's, and the enlarger's filtration.
+    in property <bool> paper-offered;
     in property <bool> paper-shown;
     in property <string> paper-title;
     in property <string> paper-filtration;

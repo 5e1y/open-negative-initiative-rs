@@ -1990,8 +1990,8 @@ msgid "Paper"
 msgstr "Papel"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Every photo is printed on a paper, as an enlarger prints it: in true density, the black picked in Prepare the Roll on the paper's black and its white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Lighting then acts as in a darkroom.\n\nONI Standard, the default, lays the mean curve of the makers' papers on a neutral paper; every other paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white."
-msgstr "Cada foto se positiva en un papel, como lo hace una ampliadora: en densidad real, el negro elegido en Preparar el rollo en el negro del papel y su blanco en el blanco del papel, con la filtración propia del papel manteniendo un gris neutro de uno a otro. Luz actúa entonces como en el cuarto oscuro.\n\nONI Standard, el papel por defecto, lleva la curva media de los papeles de los fabricantes a un papel neutro; cada otro papel aporta sus propias curvas, colorantes y blanco.\n\nNegros y blancos del papel conserva el negro y el blanco propios del papel, como en una copia en la mano; desactivado, ese negro queda en el negro puro y ese blanco en el blanco puro."
+msgid "With no paper, a photo is its pure inversion: each colour's density, read between the black and the white picked in Prepare the Roll, goes straight to the screen, that black on pure black and that white on pure white, with no curve laid over it.\n\nA paper is a choice laid over that inversion, as an enlarger prints it: in true density, that black on the paper's black and that white on the paper's white, the paper's own filtration keeping a grey neutral from one to the other. Each paper brings its own curves, dyes and white.\n\nPrint lift keeps the paper's own black and white, as on a print held in the hand; off, that black lies on pure black and that white on pure white."
+msgstr "Sin papel, una foto es su inversión pura: la densidad de cada color, leída entre el negro y el blanco elegidos en Preparar el rollo, va directa a la pantalla, ese negro en el negro puro y ese blanco en el blanco puro, sin ninguna curva encima.\n\nUn papel es una elección que se pone sobre esa inversión, como lo hace una ampliadora: en densidad real, ese negro en el negro del papel y ese blanco en el blanco del papel, con la filtración propia del papel manteniendo un gris neutro de uno a otro. Cada papel aporta sus propias curvas, colorantes y blanco.\n\nNegros y blancos del papel conserva el negro y el blanco propios del papel, como en una copia en la mano; desactivado, ese negro queda en el negro puro y ese blanco en el blanco puro."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Print lift"
@@ -2018,8 +2018,8 @@ msgid "On, the slide keeps its screen's own ends: its film's densest under the r
 msgstr "Activado, la diapositiva conserva los extremos de su pantalla: lo más denso de su película bajo el velo de la sala, un poco por encima del negro, y el blanco de la película desnuda, como en una sala a oscuras. Desactivado, ese negro se posa en el negro puro y ese blanco en el blanco puro, como una diapositiva mostrada en una pantalla de ordenador."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nOn the paper the sliders act as in a darkroom, the black picked in Prepare the Roll held: Exposure is the enlarger's light, Temperature and Tint its filters, Contrast the paper's grade. Brightness is Exposure sparing that black and the first shadows."
-msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo.\n\nEn el papel, los reguladores actúan como en un cuarto oscuro, con el negro elegido en Preparar el rollo fijo: Exposición es la luz de la ampliadora, Temperatura y Matiz sus filtros, Contraste el grado del papel. Luminosidad es Exposición respetando ese negro y el comienzo de las sombras."
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThe sliders act on the negative as in a darkroom, the black picked in Prepare the Roll held: Exposure is the light, Temperature and Tint its filters, Contrast the grade. On a paper, Brightness is Exposure sparing that black and the first shadows."
+msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro.\n\nCada regulador salvo Contraste aclara hacia la derecha; Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Punto negro y Punto blanco mueven los extremos del propio escaneo.\n\nLos reguladores actúan sobre el negativo como en un cuarto oscuro, con el negro elegido en Preparar el rollo fijo: Exposición es la luz, Temperatura y Matiz sus filtros, Contraste el grado. En un papel, Luminosidad es Exposición respetando ese negro y el comienzo de las sombras."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Brightness"
@@ -4922,6 +4922,10 @@ msgstr "{file} no se usa tal cual, su última versión legible sigue en uso: {wh
 #: crates/oni-app/src/app/stock_files.rs
 msgid "{file} is not used: {why}"
 msgstr "{file} no se usa: {why}"
+
+#: crates/oni-app/src/app/stock_picker.rs
+msgid "No paper"
+msgstr "Sin papel"
 
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"

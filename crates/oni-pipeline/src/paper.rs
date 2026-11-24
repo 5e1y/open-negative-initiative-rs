@@ -1,4 +1,4 @@
-//! The paper every print is made on, printing the window's shares: a paper is its curves, each channel reading its own
+//! The paper a frame may be printed on, printing the window's shares: a paper is its curves, each channel reading its own
 //! dye and the others' Status A crosstalk through a pure dye on its own Rec. 2020 channel; its tables baked once from
 //! its profile or the Frontier's fit (`frontier`), laid under Prepare's window with its own filtration (`placing`),
 //! Lighting on the negative it prints (`lighting`). A legacy print keeps the time it was edited under (`legacy`); a

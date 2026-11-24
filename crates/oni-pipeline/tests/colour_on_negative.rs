@@ -25,7 +25,7 @@ use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings};
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut uncompensated = onis(prepared_negative());
     uncompensated.print.colour_compensation = false;
-    let mut legacy = onis(prepared_negative());
+    let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     let mut bright = prepared_negative();
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
@@ -42,6 +42,9 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
+        ("no paper, negative", unpapered(prepared_negative())),
+        ("no paper, digital", unpapered(digital())),
+        ("no paper, black and white", unpapered(mono())),
     ]
 }
 
@@ -83,7 +86,7 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0xc642_7165_25ff_27fa;
+    const BEFORE: u64 = 0xa6c2_fbf6_eade_f139;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
@@ -124,7 +127,7 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && p.white_anchor == p.white && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
         // The Frontier prints its fitted table, not its dyes' own light.
         let fitted = s.paper().and_then(|p| oni_settings::stocks::current().paper(p).map(|e| matches!(e.print, oni_settings::stocks::Print::Frontier(_))));
-        if let Some(p) = conversion::stage47(&s).paper.filter(dyed).filter(|_| fitted != Some(true)) {
+        if let Some(p) = conversion::stage47(&s).paper().filter(dyed).filter(|_| fitted != Some(true)) {
             println!("    {label}: read on its paper's dyes");
             checked += 1;
             for t in [-1.0f32, 1.0] {

@@ -1,12 +1,12 @@
-//! The papers every print is made on: ONI Standard, the neutral default, the colour papers each profiled from its maker's
-//! data sheet, and the Frontier SP-3000's print refitted from its measured table; a look reaches them through an
+//! The papers a print may be made on: ONI Standard, a neutral one, the colour papers each profiled from its maker's data
+//! sheet, and the Frontier SP-3000's print refitted from its measured table; a look reaches them through an
 //! internegative.
 
 use crate::stocks::{PaperEntry, Print};
 
 crate::stocks::keyed!(
-    /// A paper by the key a sidecar stores, its file's (`crate::stocks`); the default is ONI Standard, the data-sheet
-    /// papers' mean curve on a neutral paper. A key no file defines is kept as stored and prints on the default meanwhile.
+    /// A paper by the key a sidecar stores, its file's (`crate::stocks`). A key no file defines is kept as stored and
+    /// prints on no paper until its file is back, its entry read as ONI Standard's meanwhile.
     PaperStock, Paper, "oni-standard"
 );
 
@@ -19,10 +19,10 @@ impl PaperStock {
         crate::stocks::current().papers().iter().map(|p| p.paper).collect()
     }
 
-    /// Its file's entry; a key no file defines reads the default paper's.
+    /// Its file's entry; a key no file defines reads ONI Standard's.
     pub fn entry(self) -> PaperEntry {
         let catalogue = crate::stocks::current();
-        catalogue.paper(self).or_else(|| catalogue.paper(PaperStock::default())).cloned().expect("the default paper is shipped")
+        catalogue.paper(self).or_else(|| catalogue.paper(PaperStock::default())).cloned().expect("ONI Standard is shipped")
     }
 
     pub fn is_known(self) -> bool {
@@ -49,7 +49,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_paper_keeps_its_key_and_the_default_is_oni_standard() {
+    fn every_paper_keeps_its_key_and_an_unnamed_one_reads_oni_standard() {
         assert_eq!(serde_json::to_string(&PaperStock::default()).unwrap(), "\"oni-standard\"");
         for p in PaperStock::all() {
             let back: PaperStock = serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
@@ -76,7 +76,7 @@ mod tests {
         let crystal = read("fujifilm-crystal-archive-type-ii");
         assert_eq!(crystal, PaperStock::of("fujifilm-crystal-archive-digital-dpii"));
         assert_eq!(serde_json::to_string(&crystal).unwrap(), "\"fujifilm-crystal-archive-digital-dpii\"", "written under its own key");
-        // Twin: an unknown key is kept as stored, never read as another, and prints on the default.
+        // Twin: an unknown key is kept as stored, never read as another.
         let unknown = read("kodak-ektachrome-radiance-iv");
         assert_eq!((unknown.key(), unknown.is_known()), ("kodak-ektachrome-radiance-iv", false));
         assert_eq!(serde_json::to_string(&unknown).unwrap(), "\"kodak-ektachrome-radiance-iv\"");

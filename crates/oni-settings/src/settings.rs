@@ -83,8 +83,8 @@ pub struct PipelineSettings {
     #[serde(rename = "balanceStrength")]
     pub balance_strength: f32,
     pub print: Print,
-    /// The paper the enlarger prints the negative on; none names the default, but on a legacy print, which then keeps
-    /// the print it was edited on.
+    /// The paper the enlarger prints the negative on; none shows the pure inversion, or on a legacy print the print it
+    /// was edited on.
     #[serde(rename = "printPaper", skip_serializing_if = "Option::is_none", default)]
     pub print_paper: Option<PaperStock>,
     /// The former Scanner face's print a photo edited there keeps; none on every other photo.
@@ -159,42 +159,34 @@ impl Default for PipelineSettings {
 }
 
 impl PipelineSettings {
-    /// `Parameters.rest`: the state a photograph is imported in; a digital photo on its default film, printed on
-    /// the default paper, with its grain (owner's call: a scan takes its paper at Prepare the Roll).
+    /// `Parameters.rest`: the state a photograph is imported in, on no paper; a digital photo on its default film, with
+    /// its grain.
     pub fn rest(mode: ConversionMode, mosaic: bool) -> PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };
         block.density_ceiling = density_axis::rest(mosaic, mode);
         block.levels = LevelsSet::neutral(mode, block.density_ceiling);
         if mode.is_digital() {
             block = block.on_stock(VirtualStock::default());
-            block.print_paper = Some(PaperStock::default());
             block.grain.amount = Grain::DIGITAL_AMOUNT;
         }
         block
     }
 
-    /// Whether a paper prints this frame: every one but a slide, scanned or shot on a reversal film, which is projected.
+    /// Whether a paper may print this frame: every one but a slide, scanned or shot on a reversal film, which is projected.
     pub fn takes_paper(&self) -> bool {
         !self.mode.is_slide() && self.projector().is_none()
     }
 
-    /// The paper the render prints on where the frame takes one: the chosen one, else the default; a legacy print keeps
-    /// the one it was edited on, none its own print (owner's call: every other print is made on a paper).
+    /// The paper the render prints on: the one the frame names, where it takes one and a file defines it (owner's call:
+    /// a paper is a choice laid over the inversion, never a default).
     pub fn paper(&self) -> Option<PaperStock> {
-        if !self.takes_paper() {
-            return None;
-        }
-        if self.legacy().is_some() { self.print_paper } else { Some(self.fitting_paper()) }
+        self.print_paper.filter(|p| self.takes_paper() && p.is_known())
     }
 
-    /// The paper chosen, else the default.
-    pub fn fitting_paper(&self) -> PaperStock {
-        self.print_paper.unwrap_or_default()
-    }
-
-    /// These settings on their paper named, as a prepared frame is.
-    pub fn on_paper(self) -> PipelineSettings {
-        PipelineSettings { print_paper: Some(self.fitting_paper()), ..self }
+    /// Whether the frame shows its pure inversion, the window's shares as they are: one a paper may print that prints on
+    /// none, off a legacy print's own curve.
+    pub fn shows_inversion(&self) -> bool {
+        self.takes_paper() && self.legacy().is_none() && self.paper().is_none()
     }
 
     /// The former Scanner face's print the render lays, while it is laid.
@@ -211,12 +203,9 @@ impl PipelineSettings {
         out.gains.stops = reference.stops;
         out.levels = reference.levels();
         out.dye_set = stock.dye_set();
-        // A slide is projected, not printed; a negative taken after one prints on the default paper again.
-        let was_slide = self.film().is_some_and(|f| f.stock.entry().reversal);
+        // A slide is projected, never printed.
         if stock.entry().reversal {
             out.print_paper = None;
-        } else if was_slide && out.print_paper.is_none() {
-            out.print_paper = Some(PaperStock::default());
         }
         out
     }
@@ -249,9 +238,6 @@ impl PipelineSettings {
             }
             if self.virtual_film == from.virtual_film {
                 moved.virtual_film = to.virtual_film;
-            }
-            if self.print_paper == from.print_paper {
-                moved.print_paper = to.print_paper;
             }
             if self.grain.amount == from.grain.amount {
                 moved.grain.amount = to.grain.amount;

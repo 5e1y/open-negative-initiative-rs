@@ -46,7 +46,7 @@ pub(crate) fn opened_with(name: &str, seed: impl FnOnce(&std::path::Path)) -> Op
     let common::App { rig, shell, .. } = &app;
     app.edit_first();
     rig.settle();
-    // The Paper section folded, as every frame prints on a paper: open, it lays Lighting past a short window's edge.
+    // The Paper section folded: open, it lays Lighting past a short window's edge.
     if let [key] = common::placed(&shell.window, Role::Button, "Hide Paper")[..] {
         click(rig, key.middle().0, key.middle().1);
         rig.settle();

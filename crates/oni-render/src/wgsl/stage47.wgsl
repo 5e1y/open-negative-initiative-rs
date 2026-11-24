@@ -107,7 +107,7 @@ fn stage47_printed(windowed_in: vec3<f32>) -> vec3<f32> {
     return e;
 }
 
-// The window's shares go on to the paper's pass where one prints, else through ONI's print.
+// The window's shares go on to the pass that shows them, the pure inversion's or a paper's, else through ONI's print.
 fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     let film = stage47_density(s);
     let shares = stage47_window(film);

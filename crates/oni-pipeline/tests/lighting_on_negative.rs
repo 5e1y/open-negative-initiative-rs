@@ -12,14 +12,9 @@ use frames::*;
 use oni_graph::Image;
 use oni_pipeline::look_lab::measure;
 use oni_pipeline::{conversion, film, stages};
-use oni_render::{Negative, Paper, Stage47, cpu};
+use oni_render::{Negative, Paper, Shown, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, LegacyMachine, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
-
-/// A frame naming no paper: it prints on the default, ONI Standard, a legacy print on its own.
-fn onis(s: PipelineSettings) -> PipelineSettings {
-    PipelineSettings { print_paper: None, ..s }
-}
 
 fn slide() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
@@ -36,7 +31,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
 fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut uncompensated = onis(prepared_negative());
     uncompensated.print.colour_compensation = false;
-    let mut legacy = onis(prepared_negative());
+    let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
     // At its machine's entry, as format 58 stored it.
     legacy.print.exposure = oni_settings::migrate::one_face::look_entry_exposure(legacy.mode) - oni_settings::migrate::departure::former_rest(legacy.mode);
@@ -55,6 +50,9 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
         ("paper, digital", digital()),
         ("paper, black and white", mono()),
         ("paper, Frontier", frontier),
+        ("no paper, negative", unpapered(prepared_negative())),
+        ("no paper, digital", unpapered(digital())),
+        ("no paper, black and white", unpapered(mono())),
     ]
 }
 
@@ -67,12 +65,13 @@ fn pixels() -> Vec<V4> {
 }
 
 /// `s` as a sidecar of format 58 held it, a digital photo on its film's reference of then, read through this format's
-/// migration.
+/// migration, then on its paper named again: the migration takes a format's default paper away.
 fn stored(s: &PipelineSettings) -> PipelineSettings {
     let then = s.film().map_or_else(|| s.clone(), |f| oni_settings::migrate::datasheet::on_former(s, f.stock));
     let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(then), 58)).unwrap();
     value["version"] = 58.into();
-    oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings
+    let read = oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings;
+    PipelineSettings { print_paper: s.print_paper, ..read }
 }
 
 /// The bits of every pipe's print of `pixels`, folded by FNV-1a.
@@ -93,8 +92,9 @@ fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
 #[test]
 fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
-    // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift.
-    const BEFORE: u64 = 0x0deb_39b8_db2c_d513;
+    // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift,
+    // then the pure inversion of a frame naming no paper.
+    const BEFORE: u64 = 0x792a_c9d8_7e3c_e15f;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -206,18 +206,19 @@ fn exposure_holds_prepares_black_and_white_and_moves_the_grey_as_the_films_stop(
             assert!(black.abs() < 1e-5 && white.abs() < 1e-3, "{label}, {stops}: black {black}, white {white}");
             // The grey within 0.07 stop of the film's stop a stop away, 0.28 two away; the mids within 0.45 a stop away.
             assert!(grey.abs() < 0.07 * stops * stops && (stops.abs() > 1.0 || mids < 0.45), "{label}, {stops}: grey {grey}, mids {mids}");
-            // By the black the anchored print lies between the rest and the film's own stop, on ONI's print as by a gain.
+            // By the black the anchored print lies between the rest and the film's own stop, on a legacy print's curve as by a gain.
             // A paper's toe holds its first tones within a ten-thousandth of a stop of its black.
             for t in [0.01f32, 0.02, 0.03, 0.05, 0.1].into_iter().filter(|t| shown(&rest, *t) > 1e-4) {
                 let (from, to) = ((shown(&k, t) / shown(&rest, t)).log2(), (shown(&free, t) / shown(&rest, t)).max(1e-9).log2());
                 assert!(from * stops >= -1e-4 && from.abs() <= to.abs() + 1e-3, "{label}, {stops}, {t}: {from} stops, the film's {to}");
             }
-            assert!(s.paper().is_some() || near < 0.25 * stops.abs() + 0.25, "{label}, {stops}: near black {near}");
+            let on_curve = rest.shown == Shown::Curve;
+            assert!(!on_curve || near < 0.25 * stops.abs() + 0.25, "{label}, {stops}: near black {near}");
             // Twins: the film's own stop moves the white where a white can move, and jumps by the black.
             if free_white.abs() > 1e-2 {
                 freed += 1;
             }
-            assert!(s.paper().is_some() || free_near > 2.0 * near + 0.5, "{label}, {stops}: unanchored {free_near}, anchored {near}");
+            assert!(!on_curve || free_near > 2.0 * near + 0.5, "{label}, {stops}: unanchored {free_near}, anchored {near}");
         }
     }
     assert!(freed >= 8, "{freed}");
@@ -235,8 +236,8 @@ fn chroma(print: &[[f32; 3]], above: f64) -> (f64, usize) {
 
 /// The enlarger's time, in stops, that prints `scan`'s grey as bright as `target`, from the frame's rest `k`.
 fn timed_to(scan: &[V4], k: &Stage47, target: f32) -> Stage47 {
-    let p = k.paper.unwrap();
-    let timed = |t: f32| Stage47 { paper: Some(Paper { scale: p.scale * (-t).exp2(), ..p }), ..*k };
+    let p = k.paper().unwrap();
+    let timed = |t: f32| Stage47 { shown: Shown::Paper(Paper { scale: p.scale * (-t).exp2(), ..p }), ..*k };
     let (mut low, mut high) = (-6.0f32, 6.0f32);
     for _ in 0..50 {
         let mid = 0.5 * (low + high);

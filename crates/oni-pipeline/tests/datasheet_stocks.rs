@@ -23,7 +23,7 @@ fn finite(pixels: &[V4]) -> bool {
     pixels.iter().all(|p| p.iter().all(|v| v.is_finite()))
 }
 
-/// A digital photo at rest on `stock`, printed on the default paper or on `paper`.
+/// A digital photo at rest on `stock`, on no paper or printed on `paper`.
 fn shot(stock: VirtualStock, paper: Option<PaperStock>) -> PipelineSettings {
     let s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only().on_stock(stock);
     PipelineSettings { print_paper: paper, ..s }
