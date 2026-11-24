@@ -13141,5 +13141,13 @@
     "status": "done",
     "detail": "Every production call of stages::scanner_output (looked, oni_finish, warmed_paper) passed a contrast of 0, so the kernel's k.z != 0 branch never ran; only the removed replica and the offline examples/look_lab_strip.rs passed print.contrast, the example now printing without that bend. Gone: ScannerOutput.contrast, the stage's argument, bent() and the branch in the WGSL and its CPU reference; the branch check now separates warmth at share 0 and 0.1, its twin the share 0.02 off.",
     "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 and looks unchanged; stages and branches green."
+  },
+  {
+    "id": 3783,
+    "type": "chore",
+    "title": "Pipeline::image lays the chain itself: no drawn, no chain taking the legacy print's settings apart",
+    "status": "done",
+    "detail": "image called drawn, which called chain with the frame and a precomputed copy of it, behind a clippy allow on too many arguments. That copy was always scanner::on_legacy_print(frame), which moves only the gains, so legacy.and_then(PipelineSettings::legacy) always equalled the frame's own legacy(). image now derives the laid settings itself and reads s.legacy(); every stage reads the same settings, so the graph is the same. tests/scanner_positive.rs renders through Pipeline::image with a default request (scale 1, reference 128, as the bench passed); its test 'a negative on a legacy print renders as before bit for bit' compared a render with itself, former adding 1.5 − 1.5 stops on a negative and a monochrome, and leaves; the slide's twin renders the frame 1.5 stops over, as on_legacy_print reads no print exposure.",
+    "outcome": "No render moves: legacy_print's CPU and GPU fingerprints of format 45 unchanged; scanner_positive green, its twin still refusing the slide 1.5 stops over."
   }
 ]
