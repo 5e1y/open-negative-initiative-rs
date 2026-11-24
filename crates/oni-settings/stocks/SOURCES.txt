@@ -27,8 +27,7 @@ What the files hold:
   over 0.05 log H to lift a raster trace's steps. Its development is the sheet's reference developer (D-76 where
   the sheet prints it) at the time whose ISO 6 average gradient is nearest 0.62, among the curves traced from their
   foot; its grey sits 1.01 log over the curve's ISO 6 speed point (ISO 6's speed and ISO 2720's meter), which holds
-  on a relative log exposure axis as on an absolute one. Every other development the sheet prints is kept in
-  "developments", on the same axis, unread. Left out: ADOX HR-50 (no log exposure scale), Fujifilm Neopan SS (its toe
+  on a relative log exposure axis as on an absolute one. The sheet's other developments are left out, as are ADOX HR-50 (no log exposure scale), Fujifilm Neopan SS (its toe
   untraced), and Rollei's (no characteristic curve).
 
 Licence. The files are measurements: the numbers the makers publish about their products, read off their public

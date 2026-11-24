@@ -13295,5 +13295,12 @@
     "title": "The window checks' launcher in a file of its own, under the size ceiling, and the masks check's options on lines of their own",
     "status": "done",
     "detail": "common/mod.rs had grown past 400 lines with the shared launcher (#3780): Root, App and Launch move to common/launch.rs; the masks check's one 300-character launch line is split, the wide-line ratchet held at 78."
+  },
+  {
+    "id": 3788,
+    "type": "chore",
+    "title": "The black and white profiles drop the other developments nothing read",
+    "status": "done",
+    "detail": "Each of the 27 black and white stock files carried every other development its sheet prints, 57,000 lines built into the binary that no code read (Silver::read takes the chosen curve alone). The data-sheet script no longer writes them; the chosen development and every render unchanged."
   }
 ]

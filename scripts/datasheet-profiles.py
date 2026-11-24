@@ -688,7 +688,6 @@ def convert_bw(stock_id, name, prefix, spectrum_of):
             "development": {"chart": chosen["chart_id"], "condition": chosen["condition"], "average_gradient": round(gradient, 4)},
             "log_exposure": [round(float(v), 6) for v in le - grey],
             "density_curve": [round(float(v), 6) for v in density],
-            "developments": others,
         },
     }
     place(profile)
@@ -792,7 +791,7 @@ def main():
         name, inferred, others = convert_bw(stock_id, name, prefix, spectrum_of)
         names.append(name)
         print(f"{name}: " + "; ".join(i for i in inferred if i.startswith(("the development", "the spectral", "the sensitivity's")))
-              + f"; {others} other development{'s' if others != 1 else ''} kept")
+              + f"; {others} other development{'s' if others != 1 else ''} left out")
     taken = {s for s, *_ in BW_STOCKS}
     for s in STOCK.values():
         if s["type"] == "bw_negative" and s["id"] not in taken:
