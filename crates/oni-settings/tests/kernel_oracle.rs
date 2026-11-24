@@ -1,6 +1,6 @@
-//! The print replica and the Lighting catch-up judged by the fused kernel's own scalar reference,
-//! so a fit that leans on a wrong replica cannot pass by agreeing with itself. The kernel lays no colour density on
-//! its print, Saturation acting on the negative, so the replica is judged at Saturation's rest.
+//! The print replica and the Lighting catch-up judged by the kernel's scalar windows and the print it laid on them,
+//! so a fit that leans on a wrong replica cannot pass by agreeing with itself. That print lays no colour density,
+//! Saturation acting on the negative, so the replica is judged at Saturation's rest.
 
 use oni_render::{Stage47, cpu};
 use oni_settings::axis::density_axis;
@@ -13,27 +13,101 @@ use serde_json::{Value, json};
 
 type V3 = [f32; 3];
 
+/// The print block the 1.0 replica and catch-up were fitted to, operation for operation as the kernel laid it on its
+/// windows' shares while Lighting acted on the print: the RGB curve, each channel's own tone and filter, then Hunt's colour.
+mod former {
+    use super::V3;
+    use oni_settings::tone::Print;
+
+    const LUMA: V3 = [0.2627, 0.6780, 0.0593];
+    const GAMMA: f32 = 2.2;
+    const WARP: f32 = 0.889_272_9;
+
+    fn dot(a: V3, b: V3) -> f32 {
+        a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+    }
+
+    fn contrasted(x: f32, travel: f32) -> f32 {
+        let b = travel.abs() * 15.2;
+        if b <= 1e-4 {
+            return x;
+        }
+        let mut t = x.max(0.0).min(1.0).powf(WARP);
+        let (low, high) = (1.0 / (1.0 + (b * 0.5).exp()), 1.0 / (1.0 + (-b * 0.5).exp()));
+        if travel > 0.0 {
+            t = (1.0 / (1.0 + (-b * (t - 0.5)).exp()) - low) / (high - low);
+        } else {
+            let g = low + t * (high - low);
+            t = (0.5 - (1.0 / g - 1.0).ln() / b).max(0.0).min(1.0);
+        }
+        t.powf(1.0 / WARP)
+    }
+
+    fn quarter_pass(p: f32, t: f32, high: bool) -> f32 {
+        if high { p + t * 4.0 * p * p * p * (1.0 - p) } else { p + t * 4.0 * p * (1.0 - p) * (1.0 - p) * (1.0 - p) }
+    }
+
+    fn quartered(p: f32, travel: f32, high: bool) -> f32 {
+        if travel.abs() <= 0.25 {
+            return quarter_pass(p, travel, high);
+        }
+        let first = if travel > 0.0 { 0.25 } else { -0.25 };
+        quarter_pass(quarter_pass(p, first, high), travel - first, high)
+    }
+
+    fn shaped(p_in: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
+        let held = p_in.max(0.0).min(1.0);
+        let mut p = contrasted(held, contrast) + (p_in - held);
+        if stops != 0.0 && p > 0.0 {
+            let top = p.min(1.0);
+            let (g, v) = (stops.exp2(), top.powf(GAMMA));
+            p = (v * g / (1.0 + v * (g - 1.0))).powf(1.0 / GAMMA) + (p - top);
+        }
+        if zones != [0.0, 0.0] && (0.0..=1.0).contains(&p) {
+            p = quartered(quartered(p, zones[0], false), zones[1], true);
+        }
+        p
+    }
+
+    fn midded(p: f32, mids: f32) -> f32 {
+        if mids == 0.0 || !(0.0..=1.0).contains(&p) { p } else { p + mids * 16.0 * p * p * (1.0 - p) * (1.0 - p) }
+    }
+
+    /// `print` on the windows' shares `e`, its Exposure `stops` on the curve, Hunt's colour on.
+    pub fn printed(print: &Print, stops: f32, e: V3) -> V3 {
+        let zones = [print.shadows, print.highlights];
+        let channel = |c: usize, x: f32, own: f32| {
+            let p = shaped(x, stops, print.contrast, zones);
+            midded(shaped(p, own, print.channel_contrast[c], [0.0, 0.0]), print.channel_mid[c]).max(0.0).powf(GAMMA)
+        };
+        let filters = print.filters();
+        let mut out: V3 = std::array::from_fn(|c| channel(c, e[c], filters[c]));
+        if filters != [0.0; 3] {
+            // The luma held is the channels' own tone's, so a filter alone is levelled out.
+            let plain: V3 = std::array::from_fn(|c| channel(c, e[c], 0.0));
+            let filtered = dot(out, LUMA);
+            if filtered > 1e-6 {
+                let f = dot(plain, LUMA) / filtered;
+                out = out.map(|x| x * f);
+            }
+        }
+        let g = (e[0] + e[1] + e[2]) / 3.0;
+        let density = (-(shaped(g, stops, print.contrast, zones) - g)).exp();
+        if density == 1.0 {
+            return out;
+        }
+        let pw = out.map(|x| x.max(0.0).powf(density));
+        let p = dot(pw, LUMA);
+        if p > 1e-12 { pw.map(|x| x * p.powf(1.0 / density - 1.0)) } else { out }
+    }
+}
+
 /// The kernel's print block on window outputs `n`, as `Print.arguments` hands it over in colour.
 fn kernel_print(print: &Print, n: V3) -> V3 {
-    let k = Stage47 {
-        // Windows reading `n = D` straight: black 0, white 1, gamma 1.
-        red: [0.0, 1.0, 1.0],
-        green: [0.0, 1.0, 1.0],
-        blue: [0.0, 1.0, 1.0],
-        log_guard: 1e-30,
-        print_on: 1.0,
-        print_stops: print.exposure,
-        print_contrast: print.contrast,
-        print_zones: [print.shadows, print.highlights],
-        own_stops: print.filters(),
-        own_contrast: print.channel_contrast,
-        own_mid: print.channel_mid,
-        hunt: 1.0,
-        ..Stage47::rest()
-    };
+    // Windows reading `n = D` straight: black 0, white 1, gamma 1.
+    let k = Stage47 { red: [0.0, 1.0, 1.0], green: [0.0, 1.0, 1.0], blue: [0.0, 1.0, 1.0], log_guard: 1e-30, ..Stage47::rest() };
     let source = n.map(|v| 10f32.powf(-v));
-    let out = cpu::stage47([source[0], source[1], source[2], 1.0], &k);
-    [out[0], out[1], out[2]]
+    former::printed(print, print.exposure, cpu::windowed([source[0], source[1], source[2], 1.0], &k))
 }
 
 fn samples() -> Vec<V3> {
@@ -117,18 +191,9 @@ fn kernel_grey(settings: &PipelineSettings, t: f32) -> V3 {
         blue: [0.0, 2.0, 1.0],
         pedestal: density_axis::pedestal(ceiling),
         log_guard: density_axis::log_guard(ceiling),
-        print_on: 1.0,
-        print_stops: print.exposure,
-        print_contrast: print.contrast,
-        print_zones: [print.shadows, print.highlights],
-        own_stops: print.filters(),
-        own_contrast: print.channel_contrast,
-        own_mid: print.channel_mid,
-        hunt: 1.0,
         ..Stage47::rest()
     };
-    let out = cpu::stage47([t, t, t, 1.0], &k);
-    [out[0], out[1], out[2]]
+    former::printed(&print, print.exposure, cpu::windowed([t, t, t, 1.0], &k))
 }
 
 #[test]

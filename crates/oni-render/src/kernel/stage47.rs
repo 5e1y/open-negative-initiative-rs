@@ -18,12 +18,6 @@ pub struct Stage47 {
     pub high_points: [f32; 3],
     pub print_on: f32,
     pub print_stops: f32,
-    pub print_contrast: f32,
-    pub print_zones: [f32; 2],
-    pub own_stops: [f32; 3],
-    /// Each channel's own contrast and mids, after the RGB curve and before its filter's stops.
-    pub own_contrast: [f32; 3],
-    pub own_mid: [f32; 3],
     pub hunt: f32,
     pub decompression: f32,
     pub balance_low: [f32; 3],
@@ -51,11 +45,6 @@ impl Stage47 {
             high_points: [0.75; 3],
             print_on: 0.0,
             print_stops: 0.0,
-            print_contrast: 0.0,
-            print_zones: [0.0; 2],
-            own_stops: [0.0; 3],
-            own_contrast: [0.0; 3],
-            own_mid: [0.0; 3],
             hunt: 0.0,
             decompression: 1.0,
             balance_low: [0.0; 3],
@@ -84,13 +73,9 @@ impl Stage47 {
                 v3(self.blue, self.log_guard),
                 v3(self.low_points, self.window),
                 v3(self.high_points, self.print_on),
-                [self.print_stops, self.print_contrast, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }],
-                v3(self.own_stops, self.film_share),
+                [self.print_stops, self.hunt, if self.paper.is_some() { 1.0 } else { 0.0 }, self.film_share],
                 v3(self.balance_low, 0.0),
                 v3(self.balance_span, self.decompression),
-                v22(self.print_zones, [0.0; 2]),
-                v3(self.own_contrast, 0.0),
-                v3(self.own_mid, 0.0),
             ],
             count: [count, 0, 0, 0],
         }
@@ -100,7 +85,7 @@ impl Stage47 {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Packed {
-    rows: [[f32; 4]; 13],
+    rows: [[f32; 4]; 9],
     count: [u32; 4],
 }
 
@@ -138,18 +123,20 @@ pub(super) fn quartered(p: f32, travel: f32, high: bool) -> f32 {
     quarter_pass(quarter_pass(p, first, high), travel - first, high)
 }
 
-fn shaped(p_in: f32, stops: f32, contrast: f32, zones: [f32; 2]) -> f32 {
-    let held = clamp(p_in, 0.0, 1.0);
-    let mut p = contrasted(held, contrast) + (p_in - held);
+/// A share carried past 0 to 1 straight on: a share past 2 rounds to a neighbour, which every pinned render keeps.
+fn carried(p: f32) -> f32 {
+    let held = clamp(p, 0.0, 1.0);
+    held + (p - held)
+}
+
+/// ONI's print curve, its stops on the display value under 1, straight on past it.
+fn shaped(p_in: f32, stops: f32) -> f32 {
+    let mut p = carried(p_in);
     if stops != 0.0 && p > 0.0 {
         let top = p.min(1.0);
         let g = stops.exp2();
         let v = top.powf(DISPLAY_GAMMA);
         p = (v * g / (1.0 + v * (g - 1.0))).powf(1.0 / DISPLAY_GAMMA) + (p - top);
-    }
-    if zones != [0.0, 0.0] && (0.0..=1.0).contains(&p) {
-        p = quartered(p, zones[0], false);
-        p = quartered(p, zones[1], true);
     }
     p
 }
@@ -162,10 +149,9 @@ pub(super) fn midded(p: f32, mids: f32) -> f32 {
     p + mids * 16.0 * p * p * (1.0 - p) * (1.0 - p)
 }
 
-/// One channel printed: the RGB curve, then its own contrast, filter and mids.
-fn printed(n: f32, stops: f32, contrast: f32, zones: [f32; 2], own: f32, own_contrast: f32, own_mid: f32) -> f32 {
-    let p = shaped(n, stops, contrast, zones);
-    midded(shaped(p, own, own_contrast, [0.0, 0.0]), own_mid).max(0.0).powf(DISPLAY_GAMMA)
+/// One channel printed: the print curve, then the display's power.
+fn printed(n: f32, stops: f32) -> f32 {
+    carried(shaped(n, stops)).max(0.0).powf(DISPLAY_GAMMA)
 }
 
 /// Stages 4 to 7 on one pixel: Lighting on the negative, each channel's window, then ONI's print, its chroma
@@ -216,27 +202,17 @@ fn decompressed(film: V3, e: V3, k: &Stage47) -> V3 {
     map(held, |_, x| x + shift)
 }
 
-/// Stages 6 and 7 on a windowed pixel: the print, its filters and Hunt's colour, each channel's light to a power and
-/// the luma's own power undone.
+/// Stages 6 and 7 on a windowed pixel: the print and Hunt's colour, each channel's light to a power and the luma's
+/// own power undone.
 fn printed3(windowed_in: V3, k: &Stage47) -> V3 {
     let mut density = 1.0f32;
     let mut e = windowed_in;
     if k.print_on > 0.5 {
-        let (ps, pc, pz) = (k.print_stops, k.print_contrast, k.print_zones);
         let windowed = e;
-        e = map(e, |c, x| printed(x, ps, pc, pz, k.own_stops[c], k.own_contrast[c], k.own_mid[c]));
-        if k.own_stops != [0.0; 3] {
-            // The luma held is the channels' own tone's, so a filter alone is levelled out.
-            let plain = map(windowed, |c, x| printed(x, ps, pc, pz, 0.0, k.own_contrast[c], k.own_mid[c]));
-            let filtered = dot(e, LUMA);
-            if filtered > 1e-6 {
-                let f = dot(plain, LUMA) / filtered;
-                e = map(e, |_, x| x * f);
-            }
-        }
+        e = map(e, |_, x| printed(x, k.print_stops));
         if k.hunt > 0.0 {
             let g = (windowed[0] + windowed[1] + windowed[2]) / 3.0;
-            density *= (-k.hunt * (shaped(g, ps, pc, pz) - g)).exp();
+            density *= (-k.hunt * (shaped(g, k.print_stops) - g)).exp();
         }
     }
     coloured(e, density)

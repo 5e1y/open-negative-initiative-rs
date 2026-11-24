@@ -1,4 +1,4 @@
-//! The scalar side of `wgsl/prelude.wgsl`: luminance, the display gamma, the contrast family, vector helpers.
+//! The scalar side of `wgsl/prelude.wgsl`: luminance, the display gamma, vector helpers.
 
 use crate::Image;
 
@@ -21,8 +21,6 @@ pub const LUMA: [f32; 3] = [0.2627, 0.6780, 0.0593];
 
 pub(crate) const DISPLAY_GAMMA: f32 = 2.2;
 
-pub(crate) const CONTRAST_WARP: f32 = 0.889_272_9;
-
 pub(crate) type V3 = [f32; 3];
 
 /// Metal's `clamp`, `fmin(fmax(x, low), high)`: a NaN takes the low bound, and crossed bounds
@@ -37,23 +35,6 @@ pub(crate) fn dot(a: V3, b: V3) -> f32 {
 
 pub(crate) fn map(a: V3, f: impl Fn(usize, f32) -> f32) -> V3 {
     [f(0, a[0]), f(1, a[1]), f(2, a[2])]
-}
-
-pub(crate) fn contrasted(x: f32, travel: f32) -> f32 {
-    let b = travel.abs() * 15.2;
-    if b <= 1e-4 {
-        return x;
-    }
-    let mut t = clamp(x, 0.0, 1.0).powf(CONTRAST_WARP);
-    let low = 1.0 / (1.0 + (b * 0.5).exp());
-    let high = 1.0 / (1.0 + (-b * 0.5).exp());
-    if travel > 0.0 {
-        t = (1.0 / (1.0 + (-b * (t - 0.5)).exp()) - low) / (high - low);
-    } else {
-        let g = low + t * (high - low);
-        t = clamp(0.5 - (1.0 / g - 1.0).ln() / b, 0.0, 1.0);
-    }
-    t.powf(1.0 / CONTRAST_WARP)
 }
 
 pub(crate) type V2 = [f32; 2];

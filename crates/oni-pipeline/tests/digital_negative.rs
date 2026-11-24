@@ -35,7 +35,7 @@ fn a_digital_photo_decompresses_as_an_unprepared_negative() {
     let k = conversion::stage47(&s);
     assert_eq!(s.dye_set, VirtualStock::of("kodak-portra-800").dye_set());
     assert_eq!((k.decompression, k.film_share), (0.5, 0.5));
-    assert_eq!((k.invert, k.own_stops), (1.0, s.print.filters()));
+    assert_eq!(k.invert, 1.0);
     // Twin: a slide on the same settings keeps its film's colour.
     let slide = conversion::stage47(&PipelineSettings { mode: ConversionMode::Positive, ..s.clone() });
     assert_eq!((slide.decompression, slide.film_share), (1.0, 0.0));

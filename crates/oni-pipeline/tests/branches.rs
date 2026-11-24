@@ -52,17 +52,11 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
     let printed = Stage47 {
         print_on: 1.0,
         print_stops: 1.5,
-        print_contrast: 0.3,
-        print_zones: [0.2, -0.4],
-        own_stops: [0.1, -0.05, -0.08],
         hunt: 0.4,
         ..decompressed
     };
     let dense = Stage47 { hunt: 1.0, ..printed };
     let positive = Stage47 { invert: 0.0, window: 3.0, ..dense };
-    let flattened = Stage47 { print_contrast: -0.5, print_zones: [0.6, -0.7], ..dense };
-    let toned = Stage47 { own_contrast: [0.4, -0.3, 0.0], own_mid: [0.2, -0.25, 0.1], ..printed };
-    let toned_alone = Stage47 { own_stops: [0.0; 3], ..toned };
     let resting = oni_pipeline::conversion::NEGATIVE_PRINT_STOPS;
     let over = Stage47 { print_stops: resting + 4.0, ..printed };
     let under = Stage47 { print_stops: resting - 4.0, ..printed };
@@ -71,12 +65,9 @@ fn stage47_cases() -> Vec<(&'static str, Stage47)> {
         ("gains and levels", gains),
         ("window handles", windows),
         ("chroma decompression", decompressed),
-        ("print, filters, Hunt", printed),
+        ("print, Hunt", printed),
         ("colour density", dense),
         ("positive mode", positive),
-        ("negative contrast, double quarters", flattened),
-        ("channel tone with filters", toned),
-        ("channel tone", toned_alone),
         ("Exposure +2", over),
         ("Exposure -2", under),
     ]
@@ -92,19 +83,6 @@ fn stage47_reaches_every_branch() {
         // A 1 % green gain the reference does not see must break the tolerance.
         let shifted = Stage47 { gain: [k.gain[0], k.gain[1] * 1.01, k.gain[2]], ..k };
         judge(&format!("stage47, {name}"), &out, &mapped(&pixels, |p| cpu::stage47(p, &k)), &mapped(&pixels, |p| cpu::stage47(p, &shifted)));
-    }
-}
-
-#[test]
-fn each_channel_s_own_tone_reaches_the_kernel() {
-    let Some(mut g) = graph("each_channel_s_own_tone_reaches_the_kernel") else { return };
-    let pixels = transmittances(256 * 256);
-    let film = g.upload(256, 256, &pixels).unwrap();
-    for (name, k) in stage47_cases().into_iter().filter(|(_, k)| k.own_mid != [0.0; 3]) {
-        let out = whole(&mut g, &stages::converted(Image::new(&film), &k));
-        // Twin: a kernel deaf to each channel's contrast and mids.
-        let deaf = Stage47 { own_contrast: [0.0; 3], own_mid: [0.0; 3], ..k };
-        judge(&format!("stage47, {name}, its tone"), &out, &mapped(&pixels, |p| cpu::stage47(p, &k)), &mapped(&pixels, |p| cpu::stage47(p, &deaf)));
     }
 }
 
