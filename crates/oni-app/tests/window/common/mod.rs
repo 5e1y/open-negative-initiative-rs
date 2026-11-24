@@ -5,7 +5,7 @@
 
 use slint::platform::software_renderer::{MinimalSoftwareWindow, Rgb565Pixel};
 use slint::platform::{EventLoopProxy, Platform, WindowAdapter, WindowEvent};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
