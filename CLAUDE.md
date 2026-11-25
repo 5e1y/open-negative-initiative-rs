@@ -77,8 +77,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
   photo storing no film, or a key no file defines, reads.
 - **The grain lies on the developed film** (owner's call, 2026-11-24): a digital photo's alone, uniform in the film's density after
   its curve (`grain`), so the inversion weakens it toward the white and strengthens it in the shadows as on film; Amount's top
-  spreads a sixteenth of the stock's window (`GRAIN_WINDOW`), its curve by tone rests flat, and halation stays on the scene before
-  the film. A slide's lies on its positive; a scanned negative takes none.
+  spreads a sixteenth of the stock's window (`GRAIN_WINDOW`), its curve by tone rests flat. Halation has no threshold (owner's call,
+  2026-11-25): a dose of each layer's blurred exposure, before the film's curve, which alone shows it around the highlights; each
+  film's file gives its rests (halation, Bloom from its MTF, grain width), the sliders free on top. A slide's lies on
+  its positive; a scanned negative takes none.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
   profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
   model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. ONI Standard
