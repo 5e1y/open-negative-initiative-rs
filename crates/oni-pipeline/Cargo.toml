@@ -12,6 +12,7 @@ workspace = true
 oni-graph = { path = "../oni-graph" }
 oni-render.workspace = true
 oni-settings.workspace = true
+oni-decode.workspace = true
 bytemuck.workspace = true
 png = "0.18"
 serde = { workspace = true }
@@ -19,7 +20,6 @@ serde_json.workspace = true
 oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
-oni-decode.workspace = true
 oni-fixtures.workspace = true
 
 [lib]

@@ -14,27 +14,26 @@
   "dyes": "fujifilm-pro-160c",
   "reference": {
    "stops": [
+    -1.2605646,
     0.0,
-    0.0,
-    0.0
+    0.43353972
    ],
    "black": [
-    0.10443662,
-    0.10443662,
-    0.10443662
+    0.3532261,
+    0.3530635,
+    0.35296577
    ],
    "white": [
-    0.5326091,
-    0.46069703,
-    0.43217593
+    0.6744581,
+    0.68599725,
+    0.7025325
    ]
   },
   "filtration": [
-   0.13889,
+   0.16911,
    0.0,
-   -0.06482
+   -0.08432
   ],
-  "read_by": "fujifilm-crystal-archive-super-type-p",
   "couplers": [
    [
     0.0,
@@ -91,10 +90,10 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +22.5 nm x1.20, M +5.0 nm x0.90, Y +0.0 nm x1.00) to fit the mid-scale neutral less D-min (rms 0.0311 D)",
+     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ],
-    "read_by": "the owner's choice for a Fujifilm professional film: its sheet names no paper"
+    ]
    },
    "data": {
     "wavelengths": [

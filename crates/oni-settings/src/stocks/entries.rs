@@ -14,15 +14,6 @@ pub enum Space {
     Paper,
 }
 
-/// The paper reading a colour negative: its key, its spectral sensitivities as its file holds them, and the film's own
-/// filtration through it, each layer's exposure offset in log exposure.
-#[derive(Debug, Clone)]
-pub struct Reader {
-    pub paper: &'static str,
-    pub sensitivity: Arc<str>,
-    pub filtration: [f64; 3],
-}
-
 /// A virtual film: its stock's name and key, its light, its dyes, its reference and its data sheet's profile.
 #[derive(Debug, Clone)]
 pub struct VirtualEntry {
@@ -38,8 +29,8 @@ pub struct VirtualEntry {
     pub reversal: bool,
     /// A film of no colour of its own, its profile its density range and its tone curve.
     pub neutral: bool,
-    /// The paper whose gaze reads its negative; none scans it as a camera does.
-    pub reader: Option<Reader>,
+    /// A colour negative's filtration through the scanner, each layer's exposure offset in log exposure.
+    pub filtration: Option<[f64; 3]>,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
     /// The rests a digital photo's film effects take on it.

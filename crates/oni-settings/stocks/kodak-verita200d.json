@@ -16,21 +16,43 @@
   "dyes": "kodak-verita-200d",
   "reference": {
    "stops": [
-    -1.0046501,
+    -0.94407433,
     0.0,
-    0.9290177
+    0.74446404
    ],
    "black": [
-    0.2943861,
-    0.29429713,
-    0.294137
+    0.29920754,
+    0.29911914,
+    0.29899496
    ],
    "white": [
-    0.5563389,
-    0.5832267,
-    0.66381735
+    0.5655937,
+    0.60126215,
+    0.73275346
    ]
   },
+  "filtration": [
+   -0.04139,
+   0.0,
+   0.54822
+  ],
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "effects": {
    "halation": {
     "dose": 0.1,
@@ -69,6 +91,7 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +5.0 nm x0.90, M +2.5 nm x1.25, Y -5.0 nm x1.25) to fit the mid-scale neutral less D-min (rms 0.0199 D)",
+     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
     ]

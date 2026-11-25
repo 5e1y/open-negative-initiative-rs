@@ -13,27 +13,26 @@
   "dyes": "fujifilm-nexia-400",
   "reference": {
    "stops": [
+    -1.0252551,
     0.0,
-    0.0,
-    0.0
+    0.7960425
    ],
    "black": [
-    0.10443662,
-    0.10443662,
-    0.10443662
+    0.35692075,
+    0.35677463,
+    0.35656348
    ],
    "white": [
-    0.502962,
-    0.49393192,
-    0.5430495
+    0.6824561,
+    0.7368651,
+    0.8146817
    ]
   },
   "filtration": [
-   -0.039,
+   0.02756,
    0.0,
-   0.14284
+   0.17102
   ],
-  "read_by": "fujifilm-crystal-archive-supreme",
   "couplers": [
    [
     0.0,
@@ -89,10 +88,10 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +7.5 nm x0.90, M -2.5 nm x1.25, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0278 D)",
+     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ],
-    "read_by": "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
+    ]
    },
    "data": {
     "wavelengths": [

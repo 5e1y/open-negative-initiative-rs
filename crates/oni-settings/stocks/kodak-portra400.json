@@ -17,27 +17,26 @@
   "dyes": "kodak-portra-400",
   "reference": {
    "stops": [
+    -0.915065,
     0.0,
-    0.0,
-    0.0
+    0.58948374
    ],
    "black": [
-    0.10443662,
-    0.10443662,
-    0.10443662
+    0.2808767,
+    0.28080165,
+    0.28072104
    ],
    "white": [
-    0.50708425,
-    0.4775318,
-    0.48832908
+    0.5582507,
+    0.59707016,
+    0.68597
    ]
   },
   "filtration": [
-   -0.01165,
+   0.10472,
    0.0,
-   -0.16318
+   -0.05522
   ],
-  "read_by": "kodak-endura-premier",
   "couplers": [
    [
     0.0,
@@ -93,10 +92,10 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +40.0 nm x1.25, M +0.0 nm x1.05, Y +0.0 nm x1.00) to fit the mid-scale neutral less D-min (rms 0.0186 D)",
+     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ],
-    "read_by": "the paper the film's own data sheet names for printing it"
+    ]
    },
    "data": {
     "wavelengths": [

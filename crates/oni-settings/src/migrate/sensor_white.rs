@@ -94,7 +94,7 @@ const GREY_PLACED: [(VirtualStock, StockReference); 75] = {
 
 /// The reference a document of format 71 laid for `stock`; a stock this step leaves unmoved, its own.
 pub fn grey_placed(stock: VirtualStock) -> StockReference {
-    GREY_PLACED.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    GREY_PLACED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::scanner::formerly_read(stock), |(_, r)| *r)
 }
 
 /// `settings` of `version` on its stock's reference of the sensor's saturation, but on a legacy print.

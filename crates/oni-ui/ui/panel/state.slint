@@ -125,6 +125,8 @@ export global PanelState {
     in property <string> film-gains;
     in property <string> film-black;
     in property <string> film-ends;
+    // What reads the film's negative, where a scanner does: its sensor and its lamp.
+    in property <string> film-scanner;
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

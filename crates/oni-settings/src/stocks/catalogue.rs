@@ -191,14 +191,6 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
         defined.extend(wanted.into_iter().map(|c| (c, at)));
     }
     let mut means: Vec<(usize, &'static str, Vec<String>)> = Vec::new();
-    // Each paper's spectral sensitivities and its file's content, which a film it reads is baked on.
-    let sensitivities: HashMap<&str, (Arc<str>, u64)> = files
-        .iter()
-        .filter_map(|l| match &l.file {
-            File::Paper(p) => p.sensitivity.as_ref().map(|s| (p.key.as_str(), (Arc::from(s.get()), l.hash))),
-            File::Film(_) => None,
-        })
-        .collect();
     for (at, l) in files.iter().enumerate() {
         match &l.file {
             File::Film(f) => {
@@ -233,17 +225,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                         let reference = b.reference.ok_or_else(|| (at, format!("the film \"{}\" holds no reference", b.key)))?;
                         let set = canonical_in(&defined, files, Space::Dyes, &b.dyes).ok_or_else(|| (at, missing(Space::Dyes, &b.dyes)))?;
                         let profile: Arc<str> = Arc::from(b.profile.get());
-                        let mut revision = super::mixed(l.hash, super::hash(b.key.as_bytes()));
-                        let reader = match &b.read_by {
-                            Some(named) => {
-                                let paper = canonical_in(&defined, files, Space::Paper, named).ok_or_else(|| (at, missing(Space::Paper, named)))?;
-                                let (sensitivity, content) = sensitivities.get(paper).ok_or_else(|| (at, format!("it names the paper \"{named}\", whose file holds no spectral sensitivity")))?;
-                                let filtration = b.filtration.ok_or_else(|| (at, format!("the film \"{}\" holds no filtration", b.key)))?;
-                                revision = super::mixed(revision, *content);
-                                Some(Reader { paper, sensitivity: sensitivity.clone(), filtration })
-                            }
-                            None => None,
-                        };
+                        let revision = super::mixed(l.hash, super::hash(b.key.as_bytes()));
                         c.virtuals.push(VirtualEntry {
                             stock: VirtualStock::of(intern(&b.key)),
                             name: kind.display_name,
@@ -255,7 +237,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             silver: f.kind == FilmType::BlackAndWhite,
                             reversal: f.kind == FilmType::ColourSlide,
                             neutral: b.neutral,
-                            reader,
+                            filtration: b.filtration,
                             couplers: b.couplers,
                             effects: b.effects.unwrap_or_default().rests(),
                             look: b.look.clone(),
@@ -275,8 +257,6 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                 let print = match (&p.profile, &p.frontier) {
                     (Some(profile), _) => Print::Profile(Arc::from(profile.get())),
                     (None, Some(fit)) => Print::Frontier(Arc::from(fit.get())),
-                    // A paper holding its sensitivities alone reads films and prints nothing: no menu lists it.
-                    (None, None) if p.sensitivity.is_some() => continue,
                     (None, None) => return Err((at, "a paper holds a profile or a frontier fit".into())),
                 };
                 c.papers.push(PaperEntry { paper: PaperStock::of(intern(&p.key)), name: intern(&p.name), brand: intern(&p.brand), print, revision: l.hash });

@@ -26,11 +26,9 @@ What each part of a profile is:
   less D-min. Each dye is then scaled to a Status M density of 1 in its own channel, the amounts' unit.
 - base_density: the sheet's D-min, printed.
 
-A paper reading films holds its sheet's spectral sensitivities ("sensitivity" in its file), on the same grid and by the
-same rule past its printed points; each still colour negative names its paper ("read_by": its maker's sheet's, else
-the owner's choice, said in the profile's provenance) and states couplers of zero, and its filtration, each layer's
-exposure offset that lays a mid grey on one share of the three windows through that paper's gaze under a 3200 K lamp,
-is derived with its reference by the pipeline.
+Every colour negative is read by ONI's scanner (crates/oni-pipeline/src/film/scanner.rs) and states couplers of zero;
+its filtration, each layer's exposure offset that lays a mid grey on one share of the three windows through that
+reading, is derived with its reference by the pipeline.
 
 Status M and Status A are ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), on the dyes' known
 wavelengths. A colour paper's profile is its curves alone: its sheet's Status A characteristic curves as printed, each
@@ -317,6 +315,7 @@ def convert(stock_id, push, reference_offset, basis):
         moves = ", ".join(f"{n} {s:+.1f} nm x{w:.2f}" for n, (s, w) in zip("CMY", params))
         inferred.append(f"the three dyes: the Vision3 sheets' mean dyes moved and widened ({moves}) to fit the "
                         f"mid-scale neutral less D-min (rms {residual:.4f} D)")
+        inferred.append(BORROWED)
     band = ~np.isnan(base) & ~np.isnan(dyes).any(axis=1)
     dyes[~band] = np.nan
     base = np.where(band, base, np.nan)
@@ -446,86 +445,29 @@ def convert_paper(stock_id):
     return name, inferred
 
 
-# The papers whose gaze reads a film: the dataset's id, the paper's key and, for a paper with no file yet, its name. A
-# sheet printing no characteristic curve gives a file of the sensitivities alone, which reads films and prints nothing.
-READERS = [
-    ("kodak_endura_premier_paper", "kodak-endura-premier", None),
-    ("kodak_ektacolor_edge_paper", "kodak-ektacolor-edge", None),
-    ("fujifilm_crystal_archive_paper_super_type_p", "fujifilm-crystal-archive-super-type-p", "Fujifilm Crystal Archive Super Type P"),
-    ("fujifilm_crystal_archive_paper_supreme", "fujifilm-crystal-archive-supreme", "Fujifilm Crystal Archive Supreme"),
-]
-
-# A still colour negative's paper where its maker's sheet names one: "optimized for printing to" ENDURA Premier (Portra
-# 160, 400, 800, Ektar 100), "optimized for printing on" EDGE first (Gold 200, UltraMax 400).
-SHEET_PAPERS = {
-    "kodak-portra160": "kodak-endura-premier", "kodak-portra400": "kodak-endura-premier", "kodak-portra800": "kodak-endura-premier",
-    "kodak-ektar100": "kodak-endura-premier", "kodak-gold200": "kodak-ektacolor-edge", "kodak-ultramax400": "kodak-ektacolor-edge",
-}
-# A Fujifilm professional stock's file, by its key less the brand: the Pros, the 160N line, New Pro 400 and Reala Ace.
-FUJI_PROFESSIONAL = ("pro", "160n", "new-pro400", "reala-ace")
+# What a negative's borrowed dyes cost its render: Portra 800 read by the scanner with Vision3's cyan as printed, held
+# to peak at 700 nm, and as fitted here.
+BORROWED = ("the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes "
+            "(Portra 800 read with three cyans)")
 
 
-def paper_for(file_key):
-    """The paper whose gaze reads the stock of `file_key`, and where the pairing comes from: its maker's sheet, else
-    the owner's choice (2026-11-25), no sheet of the dataset naming a paper for it."""
-    if file_key in SHEET_PAPERS:
-        return SHEET_PAPERS[file_key], "the paper the film's own data sheet names for printing it"
-    if file_key.startswith("kodak"):
-        return "kodak-endura-premier", "the owner's choice: the papers its sheet names (Supra, Ultra Endura) print no spectral sensitivity"
-    rest = file_key.removeprefix("fujifilm-")
-    if rest.startswith(FUJI_PROFESSIONAL[:2]) or rest in FUJI_PROFESSIONAL[2:]:
-        return "fujifilm-crystal-archive-super-type-p", "the owner's choice for a Fujifilm professional film: its sheet names no paper"
-    return "fujifilm-crystal-archive-supreme", "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
-
-
-def convert_reader(stock_id, key, name):
-    """A paper's three layers' spectral sensitivities on the grid, laid as the `sensitivity` of its file: what its gaze
-    on a film's dyes is computed from, under an enlarger's lamp."""
-    stock = STOCK[stock_id]
-    log_sensitivity, c = sensitivity(stock)
-    source = stock["source"]
-    block = {
-        "provenance": {
-            "data_sheet": source.get("doc_id"),
-            "url": source.get("url"),
-            "sha256": source.get("sha256"),
-            "retrieved": source.get("retrieved"),
-            "dataset_id": stock_id,
-            "charts": [c["chart_id"]],
-            "measured": [f"spectral sensitivity, three layers, as printed ({c['confidence']} confidence)"],
-            "inferred": ["each layer's sensitivity past the sheet's first and last point, falling at its end slope"],
-        },
-        "data": {
-            "wavelengths": [float(w) for w in WAVELENGTHS],
-            "log_sensitivity": [[round(float(v), 6) for v in row] for row in log_sensitivity],
-        },
-    }
-    path = STOCKS_DIR / f"{key}.json"
-    if path.exists():
-        paper = json.loads(path.read_text())
-    else:
-        paper = {"oni": "paper", "format": 1, "key": key, "name": name, "brand": name.split(" ")[0]}
-        print(f"{key}.json: a new file, a paper reading films and printing nothing")
-    if paper.get("sensitivity") != block:
-        paper["sensitivity"] = block
-        path.write_text(json.dumps(paper, indent=1, ensure_ascii=False) + "\n")
-    return key
-
-
-def pair_papers():
-    """Each still colour negative whose file holds its sheet's profile is read by its paper's gaze, its dyes uncoupled:
-    its reference and its filtration are then derived again."""
+def scanned():
+    """Each colour negative whose file holds its sheet's profile is read by ONI's scanner, its dyes uncoupled: its
+    reference and its filtration are then derived again."""
     uncoupled = [[0.0, 0.0, 0.0] for _ in range(3)]
     for path in stock_files():
         stock_file = json.loads(path.read_text())
-        if stock_file.get("oni") != "film" or stock_file.get("type") != "colour-negative":
+        if stock_file.get("oni") != "film" or stock_file.get("type") not in ("colour-negative", "cine-negative"):
             continue
         moved = False
         for block in blocks(stock_file):
             if block.get("neutral") or "channel_density" not in block["profile"].get("data", {}):
                 continue
-            paper, why = paper_for(stock_file["key"])
-            if (block.get("read_by"), block.get("couplers"), block["profile"]["provenance"].get("read_by")) == (paper, uncoupled, why) and "filtration" in block:
+            provenance = block["profile"]["provenance"]
+            inferred = provenance.get("inferred", [])
+            dyes = next((i for i, line in enumerate(inferred) if line.startswith("the three dyes: the Vision3")), None)
+            noted = dyes is None or BORROWED in inferred
+            if "read_by" not in block and "read_by" not in provenance and block.get("couplers") == uncoupled and "filtration" in block and noted:
                 continue
             laid = {}
             for k, v in block.items():
@@ -533,16 +475,17 @@ def pair_papers():
                     continue
                 laid[k] = v
                 if k == "dyes":
-                    laid["read_by"] = paper
                     laid["couplers"] = uncoupled
-            laid["profile"]["provenance"]["read_by"] = why
+            laid["profile"]["provenance"].pop("read_by", None)
+            if not noted:
+                inferred.insert(dyes + 1, BORROWED)
             block.clear()
             block.update(laid)
             moved = True
         if moved:
             path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
             MOVED.append(path)
-            print(f"{path.name}: read by {paper}")
+            print(f"{path.name}: read by the scanner")
 
 
 # The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, that film's key, and
@@ -832,9 +775,6 @@ def place(profile):
         for block in blocks(stock_file):
             if block["profile"]["info"]["stock"] != name:
                 continue
-            # Where its reading paper comes from is laid by the pairing, kept across a profile written again.
-            if "read_by" in block["profile"].get("provenance", {}):
-                profile["provenance"]["read_by"] = block["profile"]["provenance"]["read_by"]
             if block["profile"] != profile:
                 block["profile"] = profile
                 if stock_file["oni"] == "film":
@@ -866,8 +806,8 @@ def float32(v):
 
 
 def refresh_references():
-    """Each film whose profile or paper moved takes the reference, and the filtration where a paper reads it, that the
-    pipeline derives from its sheets, laid beside its dyes."""
+    """Each film whose profile or reading moved takes the reference, and a colour negative the filtration, that the
+    pipeline derives from its sheet, laid beside its dyes."""
     moved = sorted(set(MOVED))
     if not moved:
         return
@@ -1012,8 +952,6 @@ def main():
         name, inferred = convert_paper(stock_id)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred))
-    for stock_id, key, name in READERS:
-        convert_reader(stock_id, key, name)
     for stock_id, file_key, film_key, hidden in SLIDES:
         name, inferred = convert_slide(stock_id, file_key, film_key, hidden)
         names.append(name)
@@ -1027,7 +965,7 @@ def main():
     for s in STOCK.values():
         if s["type"] == "bw_negative" and s["id"] not in taken:
             print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
-    pair_papers()
+    scanned()
     refresh_references()
     lay_effects()
     neutral_curve()

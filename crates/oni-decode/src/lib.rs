@@ -156,6 +156,18 @@ fn bradford(from: [f64; 3], to: [f64; 3]) -> M3 {
     )
 }
 
+/// A camera's channels to working Rec. 2020 as a decode lays them, less its scale: `cam_xyz` inverted, the light of
+/// `neutral` adapted by Bradford to D65; none where the matrix has no inverse.
+fn working_from(cam_xyz: &M3, neutral: Neutral) -> Option<M3> {
+    let to_2020 = mul(&rec2020_from_xyz(), &bradford(white_xyz(neutral), xyz(D65_XY)));
+    Some(mul(&to_2020, &inverse(cam_xyz)?))
+}
+
+/// `working_from` for a negative's 5000 K, as a scanned negative's RAW is decoded: what ONI's own scanner reads through.
+pub fn working_from_camera(cam_xyz: &[[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
+    working_from(cam_xyz, Neutral::Swift)
+}
+
 /// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
 /// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
 fn converted_on(cam_xyz: &M3, stops: f64, neutral: Neutral) -> Option<Conversion> {
@@ -170,8 +182,7 @@ fn converted_on(cam_xyz: &M3, stops: f64, neutral: Neutral) -> Option<Conversion
     );
     // LibRaw scales channel c by (1 / n_c) / max(1 / n), so its output o_c is r_c * lo / n_c.
     let undo = [0, 1, 2].map(|c| hi * n[c] / lo * stops.exp2());
-    let to_2020 = mul(&rec2020_from_xyz(), &bradford(white, xyz(D65_XY)));
-    let m = mul(&to_2020, &inverse(cam_xyz)?);
+    let m = working_from(cam_xyz, neutral)?;
     Some(Conversion {
         mul: n.map(|v| (1.0 / v) as f32),
         matrix: [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),

@@ -1,8 +1,7 @@
 //! Light through a film's dyes. A reversal film's slide projected on a white screen: its dyes over the base filter a
 //! projector's tungsten-halogen lamp, and the eye, adapted to the bare film's light on the screen, sees the rest with the
 //! room's veil laid over. A scanned slide is read back to those dyes first, its light under the scanner's lamp solved for
-//! their amounts. A colour negative no paper reads is scanned as a real one is: the scanner's lamp through its dyes and
-//! its orange base, seen by an RGB camera balanced on the lamp.
+//! their amounts. A colour negative's scan, by ONI's own scanner, shares the kernel and its table of dyes.
 
 use super::{bake, cie, profile::Profile};
 use crate::baked::Baked;
@@ -117,15 +116,6 @@ pub(super) fn tabled(dyes: &[[f64; 3]], base: &[f64], seen: &[[f64; 3]]) -> Vec<
         table[n + i] = [seen[i][0] as f32, seen[i][1] as f32, seen[i][2] as f32, 0.0];
     }
     table
-}
-
-/// A colour negative of `profile` scanned under the scanner's daylight lamp, the 1931 observer standing in for an RGB
-/// camera balanced on the lamp through no film: each layer's amount, coded as `10^-amount`, to the scan's light.
-pub fn scanner(profile: &Profile) -> Scan {
-    let (dyes, base) = dyes(profile);
-    let (seen, to_working) = seen(SCAN_KELVIN, &[0.0; cie::WAVELENGTHS]);
-    let projection = Projection { to_working: to_working.map(|r| r.map(|v| v as f32)), flare: 0.0, bands: cie::WAVELENGTHS };
-    Scan { projection, table: tabled(&dyes, &base, &seen) }
 }
 
 fn read(entry: &VirtualEntry) -> Profile {

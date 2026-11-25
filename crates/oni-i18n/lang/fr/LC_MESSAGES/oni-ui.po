@@ -4782,6 +4782,10 @@ msgid "{kelvin} K, the light the stock is balanced for"
 msgstr "{kelvin} K, la lumière pour laquelle la pellicule est équilibrée"
 
 #: crates/oni-app/src/app/roll_tab.rs
+msgid "{sensor} sensor, {lamp} lamp"
+msgstr "Capteur {sensor}, lampe {lamp}"
+
+#: crates/oni-app/src/app/roll_tab.rs
 msgid "{film} under a {kelvin} K projector lamp"
 msgstr "{film} sous une lampe de projecteur à {kelvin} K"
 

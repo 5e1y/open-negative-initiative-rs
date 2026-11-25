@@ -118,8 +118,9 @@ pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSetting
     }
 }
 
-/// The Film block's read-only lines: the stock's own white, then the reference its negative is read on.
-pub fn film_lines(s: &PipelineSettings) -> [String; 4] {
+/// The Film block's read-only lines: the stock's own white, the reference its negative is read on, then the scanner
+/// reading it, a colour negative's alone.
+pub fn film_lines(s: &PipelineSettings) -> [String; 5] {
     let Some(film) = s.film() else { return Default::default() };
     let r = film.stock.reference();
     let stops = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x), 2, true, crate::fields::Unit::Stops));
@@ -129,11 +130,18 @@ pub fn film_lines(s: &PipelineSettings) -> [String; 4] {
         Some(white) => oni_i18n::tr!("{kelvin} K, the light the stock is balanced for", kelvin = (white.kelvin / 10.0).round() * 10.0),
         None => oni_i18n::tr("The scene's own light, as its decode balanced it").to_owned(),
     };
+    let entry = film.stock.entry();
+    let scanned = !entry.silver && !entry.reversal && !entry.neutral && entry.look.is_none();
+    let scanner = match scanned {
+        true => oni_i18n::tr!("{sensor} sensor, {lamp} lamp", sensor = oni_pipeline::film::scanner::SENSOR_NAME, lamp = oni_pipeline::film::scanner::LAMP_NAME),
+        false => String::new(),
+    };
     [
         light,
         channels(stops(r.stops)),
         channels(shares(r.black)),
         channels(shares(r.white)),
+        scanner,
     ]
 }
 
@@ -267,7 +275,8 @@ impl Ctl {
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.is_monochrome());
         panel.set_stock(self.open_canister());
-        let [white, gains, black, ends] = film_lines(&settings);
+        let [white, gains, black, ends, scanner] = film_lines(&settings);
+        panel.set_film_scanner(scanner.into());
         panel.set_film_white(white.into());
         panel.set_film_gains(gains.into());
         panel.set_film_black(black.into());

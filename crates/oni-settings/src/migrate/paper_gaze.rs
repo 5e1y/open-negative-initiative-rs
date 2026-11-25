@@ -62,13 +62,13 @@ const CAMERA_SCANNED: [(VirtualStock, StockReference); 43] = {
 
 /// The reference a document of format 73 laid for `stock`; a stock this step leaves unmoved, its own.
 pub fn camera_scanned(stock: VirtualStock) -> StockReference {
-    CAMERA_SCANNED.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
+    CAMERA_SCANNED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::scanner::formerly_read(stock), |(_, r)| *r)
 }
 
-/// `settings` of `version` on its stock's reference as its paper's gaze reads it.
+/// `settings` of `version` on its stock's reference as its paper's gaze read it, format 77's.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
-        Some(film) if version < PAPER_GAZE_VERSION => onto(settings, camera_scanned(film.stock), film.stock.reference()),
+        Some(film) if version < PAPER_GAZE_VERSION => onto(settings, camera_scanned(film.stock), super::scanner::formerly_read(film.stock)),
         _ => settings,
     }
 }

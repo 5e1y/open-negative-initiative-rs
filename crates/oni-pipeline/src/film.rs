@@ -1,14 +1,14 @@
 //! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, a colour negative's
-//! dyes read by its paper's gaze, the neutral film's code, and the reference that reading stands on, derived as Prepare
+//! dyes read by ONI's scanner, the neutral film's code, and the reference that reading stands on, derived as Prepare
 //! measures a roll's.
 
 pub mod bake;
 pub mod cie;
 pub mod dyes;
-pub mod gaze;
 pub mod neutral;
 pub mod profile;
 pub mod projection;
+pub mod scanner;
 
 use bake::M3;
 use oni_render::{VirtualNegative, cpu};
@@ -31,8 +31,8 @@ pub const CEILING: f32 = density_axis::MOSAIC_REST;
 pub struct Stock {
     pub kernel: VirtualNegative,
     pub table: Vec<[f32; 4]>,
-    /// A colour negative's dyes as its paper's gaze reads them, or as a camera scans them where no paper does; none on a
-    /// slide, projected instead, or on silver, whose neutral density a white lamp reads alike on every channel.
+    /// A colour negative's dyes as ONI's scanner reads them; none on a slide, projected instead, or on silver, whose
+    /// neutral density a white lamp reads alike on every channel.
     pub scan: Option<Scan>,
     pub reference: StockReference,
     pub revision: u64,
@@ -71,36 +71,15 @@ struct Layers {
     scan: Option<Scan>,
 }
 
-/// The paper reading a colour negative, as its film's file names it: its sensitivities' file text, and the film's
-/// filtration through it, derived from the two sheets where the file leaves it out.
-#[derive(Clone, Copy)]
-pub struct Reader<'a> {
-    pub sensitivity: &'a str,
-    pub filtration: Option<[f64; 3]>,
-}
-
-impl<'a> Reader<'a> {
-    /// The reader a catalogue's entry holds.
-    pub fn of(entry: &'a VirtualEntry) -> Option<Reader<'a>> {
-        entry.reader.as_ref().map(|r| Reader { sensitivity: &r.sensitivity, filtration: Some(r.filtration) })
-    }
-}
-
 /// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative; a
-/// negative read by `reader`'s gaze under its filtration, else scanned as a camera does.
-fn colour(profile: Profile, couplers: M3, reversal: bool, reader: Option<Reader>) -> Result<Layers, String> {
+/// negative scanned under `filtration`, derived from its sheet where the file leaves it out.
+fn colour(profile: Profile, couplers: M3, reversal: bool, filtration: Option<[f64; 3]>) -> Result<Layers, String> {
     let develop = if reversal { bake::curves_falling } else { bake::curves_through };
     let (before, after) = develop(&profile.log_exposure, &profile.density_curves, &couplers);
-    let (filtration, scan) = match reader.filter(|_| !reversal) {
-        Some(r) => {
-            let paper = gaze::Sensitivity::read(r.sensitivity.as_bytes())?;
-            let filtration = match r.filtration {
-                Some(held) => held,
-                None => gaze::filtration(&profile, &paper)?,
-            };
-            (filtration, Some(gaze::scan(&profile, &paper)))
-        }
-        None => ([0.0; 3], (!reversal).then(|| projection::scanner(&profile))),
+    let (filtration, scan) = match (reversal, filtration) {
+        (true, _) => ([0.0; 3], None),
+        (false, Some(held)) => (held, Some(scanner::scan(&profile))),
+        (false, None) => (scanner::filtration(&profile)?, Some(scanner::scan(&profile))),
     };
     Ok(Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers, filtration, scan })
 }
@@ -119,13 +98,13 @@ fn silver(profile: Silver) -> Layers {
     }
 }
 
-/// A film's layers as its profile holds them, a colour one's developed through `couplers` and read by `reader`, or why
-/// the profile or the paper's sensitivities do not read.
-fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3, reader: Option<Reader>) -> Result<Layers, String> {
+/// A film's layers as its profile holds them, a colour one's developed through `couplers` and scanned under
+/// `filtration`, or why the profile does not read.
+fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3, filtration: Option<[f64; 3]>) -> Result<Layers, String> {
     if is_silver {
         return Ok(silver(Silver::read(profile.as_bytes())?));
     }
-    colour(Profile::read(profile.as_bytes())?, couplers, reversal, reader)
+    colour(Profile::read(profile.as_bytes())?, couplers, reversal, filtration)
 }
 
 /// The coupler matrix a film develops through: its file's own, else the common one.
@@ -135,7 +114,7 @@ pub fn couplers(entry: &VirtualEntry) -> M3 {
 
 /// `entry` baked through `couplers` in place of its own, its reference derived again.
 pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers, Reader::of(entry))?;
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers, entry.filtration)?;
     Ok(stock_of(layers, entry))
 }
 
@@ -187,7 +166,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 }
 
 fn bake(entry: &VirtualEntry) -> Stock {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry), Reader::of(entry)).expect("a stock's profile reads once its file is taken");
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry), entry.filtration).expect("a stock's profile reads once its file is taken");
     stock_of(layers, entry)
 }
 
@@ -199,21 +178,21 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
     STOCKS.get((entry.stock, entry.revision), || bake(&entry))
 }
 
-/// What a film's file leaving them out takes: its reference, and its filtration where a paper reads it.
+/// What a film's file leaving them out takes: its reference, and a colour negative's filtration through the scanner.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Derived {
     pub reference: StockReference,
     pub filtration: Option<[f64; 3]>,
 }
 
-/// What a film's `profile` derives at `balance`, read by `reader`: its filtration where the file leaves it out, then its
-/// reference; or why the profile or the paper does not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3, reader: Option<Reader>) -> Result<Derived, String> {
+/// What a film's `profile` derives at `balance`: a colour negative's filtration where `filtration` leaves it out, then
+/// its reference; or why the profile does not read or bakes no finite reference.
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3, filtration: Option<[f64; 3]>) -> Result<Derived, String> {
     if light_of(balance).is_none() {
         return Err("a data sheet's film is balanced for daylight or tungsten".into());
     }
-    let layers = layers(profile, is_silver, reversal, couplers, reader)?;
-    let filtration = reader.filter(|_| !is_silver && !reversal).map(|_| layers.filtration);
+    let layers = layers(profile, is_silver, reversal, couplers, filtration)?;
+    let filtration = (!is_silver && !reversal).then_some(layers.filtration);
     if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }

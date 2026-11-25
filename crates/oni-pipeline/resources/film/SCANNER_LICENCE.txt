@@ -1,0 +1,15 @@
+scanner_nikon_d850.json: the Nikon D850's measured spectral sensitivities, from the rawtoaces-data project of the
+Academy Software Foundation (https://github.com/AcademySoftwareFoundation/rawtoaces-data, commit 28801d1,
+data/camera/Nikon_D850_380_780_5.json), rounded to six decimals and laid red, green, blue; its colour matrix is
+LibRaw's for that camera.
+
+Copyright Contributors to the rawtoaces Project.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.

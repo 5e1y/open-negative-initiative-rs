@@ -17,27 +17,26 @@
   "dyes": "fujifilm-c200",
   "reference": {
    "stops": [
+    -0.74759644,
     0.0,
-    0.0,
-    0.0
+    0.729221
    ],
    "black": [
-    0.10443662,
-    0.10443662,
-    0.10443662
+    0.27735943,
+    0.27729654,
+    0.27719432
    ],
    "white": [
-    0.5143732,
-    0.47364444,
-    0.45144385
+    0.60421467,
+    0.6317985,
+    0.6415432
    ]
   },
   "filtration": [
-   0.08078,
+   0.12621,
    0.0,
-   -0.04221
+   -0.04279
   ],
-  "read_by": "fujifilm-crystal-archive-supreme",
   "couplers": [
    [
     0.0,
@@ -93,10 +92,10 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +32.5 nm x1.25, M +7.5 nm x1.15, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0206 D)",
+     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ],
-    "read_by": "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
+    ]
    },
    "data": {
     "wavelengths": [

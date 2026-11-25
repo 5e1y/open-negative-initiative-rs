@@ -22,3 +22,5 @@ data sheet (datasheet/, SOURCES.txt there). What remains:
 2026-11-22: all of them removed, each stock and paper replaced by its data-sheet profile.
 2026-11-23: the TH-KG3 lamp, the dichroic filters and schott_kg3.csv removed: each paper layer is exposed by its own
 channel's density, no spectral negative.
+2026-11-25: scanner_nikon_d850.json added, the sensor ONI's scanner reads a colour negative with (rawtoaces-data,
+Apache-2.0, SCANNER_LICENCE.txt); nothing of spektrafilm's.

@@ -73,7 +73,7 @@ pub struct FilmEffects {
 mod tests;
 
 impl VirtualEntry {
-    /// A digital photo is offered it: a colour film whose file states its couplers, none for a still negative its paper
+    /// A digital photo is offered it: a colour film whose file states its couplers, none for a negative the scanner
     /// reads; a black and white or a neutral one, which have none; or a look.
     pub fn offered(&self) -> bool {
         self.silver || self.neutral || self.couplers.is_some() || self.look.is_some()

@@ -13480,5 +13480,19 @@
     "title": "CLAUDE.md: the full check's real times and when it runs",
     "status": "done",
     "detail": "The Build section said 30 s and 2 min; it now gives the measured times and the owner's rule of 2026-11-25: the full check runs at the end of a work stream, at a milestone or before a release, the app built and tested live by the owner in between."
+  },
+  {
+    "id": 3850,
+    "type": "feature",
+    "title": "A colour negative's virtual film is read by ONI's scanner: a D850's measured sensitivities under a D50 lamp, decoded as a RAW is",
+    "status": "done",
+    "detail": "Owner's call of 2026-11-25. film::scanner replaces the paper's gaze (film::gaze) and the 1931-observer camera scan: a D50 lamp through the dyes and the D-min, the Nikon D850's sensitivities (resources/film/scanner_nikon_d850.json, rawtoaces-data, Apache-2.0), then oni_decode::working_from_camera, the conversion a RAW's decode lays (LibRaw's matrix, 5000 K, Bradford to D65), through the projection kernel unchanged. Stock files: read_by gone from 43 still negatives, the five cine negatives uncoupled as they are, each filtration and reference derived again by examples/stock_references; a paper's sensitivity and the two reading-only Fujicolor papers gone; borrowed dyes say what they cost (3 degrees of hue at most). The Film block names the scanner under its reference. Validated outside the app on two real Portra 800 rolls (bare film within 0.1 D, channel contrasts 0.82 : 1 : 1.24 against 0.86 : 1 : 1.3 measured). Checks owed at the end of the work stream: a scanner test in place of tests/paper_gaze.rs, the stocks' counts and pinned renders."
+  },
+  {
+    "id": 3851,
+    "type": "feature",
+    "title": "Sidecar format 78: a digital photo on a colour negative moves onto its stock's reference as the scanner reads it",
+    "status": "done",
+    "detail": "migrate::scanner holds each of the 48 colour negatives' references as format 77 laid them (the paper's gaze, a cine negative's camera scan) and moves gains and windows onto the new one, every hand's move kept; paper_gaze and sensor_white land on format 77's table, no longer on the current reference."
   }
 ]
