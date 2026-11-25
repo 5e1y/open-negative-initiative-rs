@@ -119,7 +119,7 @@ mod tests {
         assert_eq!((landed.gains, landed.levels, landed.dye_set), (own.gains, own.levels, own.dye_set), "a reference laid whole lands whole");
         // Nothing else moves but the film effects, which format 75 lays on the film's rests.
         let rests = VirtualStock::of("kodak-gold-200").effects();
-        let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, ..gold.clone() };
+        let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, grain: rests.grain, ..gold.clone() };
         assert_eq!(PipelineSettings { gains: gold.gains, levels: gold.levels, ..landed.clone() }, effects, "nothing else moves");
         let mut hand = gold.clone();
         (hand.gains.stops[2], hand.levels.red.white) = (hand.gains.stops[2] + 0.25, hand.levels.red.white - 0.1);

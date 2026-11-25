@@ -174,7 +174,7 @@ impl PipelineSettings {
         block.levels = LevelsSet::neutral(mode, block.density_ceiling);
         if mode.is_digital() {
             block = block.on_stock(VirtualStock::NEUTRAL);
-            block.grain.amount = Grain::DIGITAL_AMOUNT;
+            block.grain = VirtualStock::NEUTRAL.effects().grain;
         }
         block
     }
@@ -221,7 +221,7 @@ impl PipelineSettings {
     pub fn picking(&self, stock: VirtualStock) -> PipelineSettings {
         let mut out = self.on_stock(stock);
         let effects = stock.effects();
-        (out.halation, out.bloom) = (effects.halation, effects.bloom);
+        (out.halation, out.bloom, out.grain) = (effects.halation, effects.bloom, effects.grain);
         out
     }
 

@@ -105,6 +105,16 @@ pub struct Effects {
     /// The emulsion's own blur, its deviation, as the sheet's MTF holds it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bloom: Option<f32>,
+    /// Its grain: Grain's Amount and a grain's width.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grain: Option<Grain>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Grain {
+    pub amount: f32,
+    pub size: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -121,6 +131,7 @@ impl Effects {
         FilmEffects {
             halation: self.halation.map_or(own.halation, |h| crate::blocks::Halation { amount: h.dose, size: h.size }),
             bloom: self.bloom.map_or(own.bloom, |size| crate::blocks::Bloom { size }),
+            grain: self.grain.map_or(own.grain, |g| crate::blocks::Grain { amount: g.amount, size: g.size }),
         }
     }
 }

@@ -72,7 +72,7 @@ fn picking_a_film_lays_its_effects_and_preparing_keeps_the_photos() {
     let mut photo = PipelineSettings::rest(ConversionMode::Digital, true);
     (photo.grain.size, photo.halation.amount) = (40.0, 0.2);
     let picked = photo.picking(stock);
-    assert_eq!((picked.halation, picked.bloom, picked.grain.size), (rests.halation, rests.bloom, photo.grain.size));
+    assert_eq!((picked.halation, picked.bloom, picked.grain), (rests.halation, rests.bloom, rests.grain));
     assert_eq!((picked.gains, picked.levels), (photo.on_stock(stock).gains, photo.on_stock(stock).levels), "its reference as Prepare lays it");
     // Twin: Prepare places the film's reference and keeps the photo's own effects.
     let prepared = photo.on_stock(stock);

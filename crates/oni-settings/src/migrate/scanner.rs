@@ -1,4 +1,4 @@
-//! Before format 78 a still colour negative's virtual scan was its paper's gaze and a cine negative's a camera's, the
+//! Before format 79 a still colour negative's virtual scan was its paper's gaze and a cine negative's a camera's, the
 //! 1931 observer under a 5500 K lamp. ONI's scanner reads them all now: a digital photo moves onto its stock's new
 //! reference, every hand's move kept.
 
@@ -11,7 +11,7 @@ const fn reference(stops: [f32; 3], black: [f32; 3], white: [f32; 3]) -> StockRe
     StockReference { stops, black, white }
 }
 
-/// Each colour negative the scanner came to read, its reference as format 77 laid it.
+/// Each colour negative the scanner came to read, its reference as format 78 laid it.
 const FORMERLY_READ: [(VirtualStock, StockReference); 48] = {
     [
         (VirtualStock::of("fujifilm-160nc"), reference([0.0, 0.0, 0.0], [0.10443662, 0.10443662, 0.10443662], [0.5183451, 0.4695056, 0.48685804])),
@@ -65,7 +65,7 @@ const FORMERLY_READ: [(VirtualStock, StockReference); 48] = {
     ]
 };
 
-/// The reference a document of format 77 laid for `stock`; a stock this step leaves unmoved, its own.
+/// The reference a document of format 78 laid for `stock`; a stock this step leaves unmoved, its own.
 pub fn formerly_read(stock: VirtualStock) -> StockReference {
     FORMERLY_READ.iter().find(|(s, _)| *s == stock).map_or_else(|| stock.reference(), |(_, r)| *r)
 }

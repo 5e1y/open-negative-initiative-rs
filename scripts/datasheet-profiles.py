@@ -841,6 +841,18 @@ HALATION = {"none": 0.0, "low": 0.10, "medium": 0.31, "high": 0.92}
 # 450 µm.
 HALATION_WIDTH = 200.0
 LEVELS = json.loads((Path(__file__).resolve().parent / "halation-levels.json").read_text())
+# A film's grain by the intensity and size a survey of photographers' reports gives it (`scripts/grain-levels.json`, 1 to 5
+# each, sources kept): each grain's deviation in shares of its window, written as Grain's Amount over the pipeline's
+# `grain::GRAIN_TOP`, 0.1454; and a grain's width in micrometres. A film out of the survey keeps a new photo's grain.
+GRAIN_DEVIATION = {1: 0.016, 2: 0.025, 3: 0.037, 4: 0.055, 5: 0.083}
+GRAIN_SIZE = {1: 19.0, 2: 24.0, 3: 30.0, 4: 38.0, 5: 48.0}
+GRAIN_TOP = 0.1454
+GRAIN_LEVELS = {g["key"]: g for g in json.loads((Path(__file__).resolve().parent / "grain-levels.json").read_text())}
+# The owner's corrections of the survey's intensities for Kodak's colour negatives, by their Print Grain Index.
+GRAIN_PGI = {"kodak-ektar100": 1, "kodak-portra160": 1, "kodak-portra160nc": 1, "kodak-portra160vc": 1,
+             "kodak-portra400": 2, "kodak-portra400nc": 2, "kodak-portra400vc": 2, "kodak-portra": 2,
+             "kodak-gold200": 3, "kodak-gold": 3, "kodak-colorplus": 3, "kodak-ultramax400": 3, "kodak-ultramax": 3,
+             "kodak-portra800": 3}
 
 
 def sheet_of(profile_name):
@@ -874,7 +886,7 @@ def bloom(stock):
 
 def lay_effects():
     """Each film's own effects laid before its profile: its halation by the level reported for it, its emulsion's blur
-    from its sheet's MTF."""
+    from its sheet's MTF, its grain by the intensity and size reported for it."""
     for path in stock_files():
         stock_file = json.loads(path.read_text())
         if stock_file.get("oni") != "film":
@@ -889,7 +901,11 @@ def lay_effects():
             soft = bloom(sheet) if sheet is not None else None
             if soft is not None:
                 effects["bloom"] = soft
-            print(f"{block['key']}: halation {level}; bloom {soft}")
+            surveyed = GRAIN_LEVELS.get(stock_file["key"])
+            if surveyed is not None:
+                intensity = GRAIN_PGI.get(stock_file["key"], surveyed["intensity"])
+                effects["grain"] = {"amount": round(GRAIN_DEVIATION[intensity] / GRAIN_TOP, 4), "size": GRAIN_SIZE[surveyed["size"]]}
+            print(f"{block['key']}: halation {level}; bloom {soft}; grain {effects.get('grain')}")
             if block.get("effects") != effects:
                 laid = {}
                 for k, v in block.items():

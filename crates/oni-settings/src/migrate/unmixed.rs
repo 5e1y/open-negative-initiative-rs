@@ -103,7 +103,7 @@ mod tests {
             assert_eq!((landed.gains, landed.levels), (own.gains, own.levels), "{stock:?}: a reference laid whole lands whole");
             // Nothing else moves but the film effects, which format 75 lays on the film's rests.
             let (rests, stored) = (stock.effects(), on_mixed(stock));
-            let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, ..stored };
+            let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, grain: rests.grain, ..stored };
             assert_eq!(PipelineSettings { gains: own.gains, levels: own.levels, ..effects }, landed, "{stock:?}: nothing else moves");
             let mut hand = on_mixed(stock);
             (hand.gains.stops[0], hand.levels.blue.white) = (hand.gains.stops[0] - 0.2, hand.levels.blue.white + 0.05);

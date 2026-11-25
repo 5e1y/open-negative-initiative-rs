@@ -65,7 +65,7 @@ pub fn camera_scanned(stock: VirtualStock) -> StockReference {
     CAMERA_SCANNED.iter().find(|(s, _)| *s == stock).map_or_else(|| super::scanner::formerly_read(stock), |(_, r)| *r)
 }
 
-/// `settings` of `version` on its stock's reference as its paper's gaze read it, format 77's.
+/// `settings` of `version` on its stock's reference as its paper's gaze read it, format 78's.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
         Some(film) if version < PAPER_GAZE_VERSION => onto(settings, camera_scanned(film.stock), super::scanner::formerly_read(film.stock)),

@@ -100,7 +100,7 @@ impl Reference {
 
 /// A film's filtration, each layer's exposure offset in log exposure; none where no paper reads it.
 fn filtration(stock: VirtualStock) -> [f64; 3] {
-    stock.entry().reader.map_or([0.0; 3], |r| r.filtration)
+    stock.entry().filtration.unwrap_or([0.0; 3])
 }
 
 /// The colour negatives, whose three layers and couplers this reference develops; silver has checks of its own.
