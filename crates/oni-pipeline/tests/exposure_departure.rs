@@ -101,7 +101,7 @@ fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
 /// its own curve, a paper's on its useful range, Exposure held at the window's ends; a slide on its projector; a frame
 /// naming no paper on its pure inversion.
 const BEFORE_CPU: u64 = 0xb83c_3386_8abf_021d;
-const BEFORE_GPU: u64 = 0x431f_9f96_a801_369c;
+const BEFORE_GPU: u64 = 0x5b44_4d39_4309_7687;
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {

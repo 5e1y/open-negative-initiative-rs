@@ -45,8 +45,6 @@ impl Field {
             Field::BlueBlackPoint => "blue-black-point",
             Field::GrainAmount => "grain-amount",
             Field::GrainSize => "grain-size",
-            Field::GrainColourBlack => "grain-colour-black",
-            Field::GrainColourWhite => "grain-colour-white",
             Field::HalationAmount => "halation-amount",
             Field::HalationSize => "halation-size",
             Field::Distortion => "distortion",

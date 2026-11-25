@@ -106,7 +106,7 @@ fn a_films_effects_keep_their_width_on_the_film_at_half_size_as_at_full() {
         assert!((a / b - 2.0).abs() < 1e-9 && width(&s, portrait) == a, "{a} {b}");
     }
     assert!((layers::bloom(&s, full) - 3.3 * 6048.0 / 36_000.0).abs() < 1e-6, "3.3 µm of a 36 mm frame, in pixels");
-    assert!((halation::deviation(&s, full) - 125.0 * 6048.0 / 36_000.0).abs() < 1e-6);
+    assert!((halation::deviation(&s, full) - 200.0 * 6048.0 / 36_000.0).abs() < 1e-6);
     // Twin: a width in pixels whatever the scan is twice as wide on the half-size picture.
     let fixed = |scan: Rect| layers::bloom(&s, full) / f64::from(scan.w.max(scan.h));
     assert!((fixed(half) / fixed(full) - 2.0).abs() < 1e-9);

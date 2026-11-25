@@ -4,10 +4,8 @@ use crate::axis::pipeline;
 use serde::{Deserialize, Serialize};
 
 mod grain;
-mod grain_colour;
 
-pub use grain::{Grain, GrainCurve, Strength};
-pub use grain_colour::GrainColour;
+pub use grain::Grain;
 
 /// Stage 4: per-channel gains, in stops, `gain = 2^s`.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
@@ -48,8 +46,8 @@ impl Vignette {
     pub const RANGE: (f32, f32) = (-2.0, 2.0);
 }
 
-/// The light a film's base sends back into its layers, before their development: its dose, the share of a layer's
-/// exposure sent back, and the glow's deviation on the film, in micrometres of a 135 frame.
+/// The light a film's base sends back into its layers, before their development: its dose, the share of a clipped
+/// light's exposure its glow adds, and the glow's deviation on the film, in micrometres of a 135 frame.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Halation {
@@ -64,12 +62,12 @@ impl Default for Halation {
 }
 
 impl Halation {
-    /// To a quarter of a layer's exposure, well past a film with no anti-halation layer.
-    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 0.25);
-    /// From a fifth of a 135 film's base to twice it.
-    pub const SIZE_RANGE: (f32, f32) = (25.0, 250.0);
-    /// A 135 film's triacetate base, 0.125 mm: the glow's deviation is about the thickness the light crosses twice.
-    pub const SIZE_REST: f32 = 125.0;
+    /// To past the films reported to glow most, whose dose is 0.92.
+    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
+    /// From an eighth of the rest's width to twice it.
+    pub const SIZE_RANGE: (f32, f32) = (25.0, 400.0);
+    /// Portra 800's red glow past a lamp, which falls as this Gaussian's from 150 to 450 µm on the film.
+    pub const SIZE_REST: f32 = 200.0;
 
     /// The glow's deviation in pixels of a scan whose long side is `long` pixels.
     pub fn pixels(&self, long: f64) -> f64 {

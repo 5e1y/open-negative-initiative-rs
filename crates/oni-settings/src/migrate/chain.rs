@@ -136,6 +136,9 @@ pub const PAPER_GAZE_VERSION: i64 = 74;
 /// The version the halation came to be a dose of each film layer's exposure, with no threshold: its Amount and Size keep
 /// their place on their tracks, its sensitivity dropped, and a film's own blur a key a build before it cannot read.
 pub const HALATION_ON_LAYERS_VERSION: i64 = 75;
+/// The version the halation came to add a dose of each layer's clipped light and the grain to be made of grains, every
+/// film's resting at 30 µm: an effect at its former rest takes its film's new one, the grain's curve and colour dropped.
+pub const FILM_EFFECTS_VERSION: i64 = 76;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

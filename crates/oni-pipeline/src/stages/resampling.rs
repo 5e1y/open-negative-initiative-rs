@@ -8,6 +8,7 @@ shader!(GAUSSIAN, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre
 shader!(GAUSSIAN_LUMA, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ let y = dot(v.rgb, LUMA); return vec4<f32>(y, y, y, v.a); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_moments_of(v); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
+shader!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(p); }");
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
 shader!(WARP, [wgsl::WARP], "fn pixel(p: vec2<i32>) -> vec4<f32> { return warp_px(p); }");
@@ -228,3 +229,34 @@ impl Stage for Warped {
         Rect::from_corners(rx0.floor() as i32 - 1, ry0.floor() as i32 - 1, rx1.ceil() as i32 + 1, ry1.ceil() as i32 + 1)
     }
 }
+
+/// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there; it reads the
+/// film where the grains over each pixel are centred.
+pub struct Grained(pub Grain);
+
+impl Stage for Grained {
+    fn name(&self) -> &'static str {
+        "grain"
+    }
+
+    fn shader(&self) -> &'static str {
+        GRAIN.as_str()
+    }
+
+    fn params(&self) -> Vec<u8> {
+        uniform(self.0.head(), &self.0.rows())
+    }
+
+    fn input_region(&self, output: Rect) -> Rect {
+        let [x, y] = self.0.render;
+        let scale = (x[0] * y[1] - x[1] * y[0]).abs().sqrt();
+        let margin = (self.0.reach() * scale).ceil() as i32 + 1;
+        output.outset(margin, margin)
+    }
+}
+
+/// The grain `k`.
+pub fn grain(k: &Grain) -> Grained {
+    Grained(*k)
+}
+

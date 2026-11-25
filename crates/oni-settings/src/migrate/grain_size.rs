@@ -13,10 +13,12 @@ use serde_json::Value;
 const FORMER_FINEST: f64 = 1.0 / 6000.0;
 const FORMER_STOPS: f64 = 2.0;
 const FORMER_REST: f64 = 0.5;
+/// A grain's mean width along a line, in cells of the former texture's lattice.
+const FORMER_CLUMP_CELLS: f64 = 2.64;
 
 /// The width on the film a former `share` laid on a scan whose width is `aspect` of its long side.
 pub fn microns(share: f64, aspect: f64) -> f32 {
-    (FORMER_FINEST * libm::exp2(FORMER_STOPS * share) * aspect * Grain::FRAME_LONG * Grain::CLUMP_CELLS) as f32
+    (FORMER_FINEST * libm::exp2(FORMER_STOPS * share) * aspect * Grain::FRAME_LONG * FORMER_CLUMP_CELLS) as f32
 }
 
 /// The settings with Grain size on the film; `stored` is the document's own settings object as written. A grain
@@ -64,10 +66,11 @@ mod tests {
         let portrait = caught_up(older, grained(0.4), Some(&stored), &|_| Ok((4032.0, 6048.0))).unwrap();
         // The former cell, 4^0.4 pixels of a scan 6000 wide, laid back as this format's cell on the long side.
         let former = |w: f64| w * 4f64.powf(0.4) / 6000.0;
-        assert!((landscape.grain.cell(6048.0) / former(6048.0) - 1.0).abs() < 1e-6, "{}", landscape.grain.size);
-        assert!((portrait.grain.cell(6048.0) / former(4032.0) - 1.0).abs() < 1e-6, "{}", portrait.grain.size);
+        let cell = |s: &PipelineSettings| Grain::pixels(s.grain.size, 6048.0) / FORMER_CLUMP_CELLS;
+        assert!((cell(&landscape) / former(6048.0) - 1.0).abs() < 1e-6, "{}", landscape.grain.size);
+        assert!((cell(&portrait) / former(4032.0) - 1.0).abs() < 1e-6, "{}", portrait.grain.size);
         // Twin: the portrait read as wide as it is long lays a cell half as coarse again.
-        assert!((landscape.grain.cell(6048.0) / former(4032.0) - 1.0).abs() > 0.4);
+        assert!((cell(&landscape) / former(4032.0) - 1.0).abs() > 0.4);
         // A document of this format keeps its value, which a second pass would move.
         assert_eq!(caught_up(GRAIN_ON_FILM_VERSION, landscape.clone(), Some(&stored), &|_| Err(Refusal::ScanUnknown)).unwrap(), landscape);
     }
@@ -87,18 +90,11 @@ mod tests {
     }
 
     #[test]
-    fn the_rest_is_the_owners_forty_percent_on_a_landscape_scan() {
-        assert!((Grain::SIZE_REST - microns(0.4, 1.0)).abs() < 0.05, "{} µm against {}", Grain::SIZE_REST, microns(0.4, 1.0));
-        // Twin: the former rest, 50%, lies a whole micrometre and more away.
-        assert!((Grain::SIZE_REST - microns(FORMER_REST, 1.0)).abs() > 1.0);
-    }
-
-    #[test]
     fn a_document_of_no_file_reads_its_photo_wider_than_tall() {
         let older = GRAIN_ON_FILM_VERSION - 1;
         let s = unfiled(older, grained(0.5), Some(&json!({ "grain": { "amount": 0.5, "size": 0.0 } })));
         assert!((s.grain.size - microns(0.0, 1.0)).abs() < 1e-6);
-        assert!((microns(0.0, 1.0) - 6.0 * Grain::CLUMP_CELLS as f32).abs() < 1e-4, "the former finest is 6 µm of a 36 mm frame");
+        assert!((microns(0.0, 1.0) - 6.0 * FORMER_CLUMP_CELLS as f32).abs() < 1e-4, "the former finest is 6 µm of a 36 mm frame");
     }
 
     #[test]

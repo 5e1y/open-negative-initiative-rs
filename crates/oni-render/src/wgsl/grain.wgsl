@@ -1,115 +1,120 @@
-// `grain`: a texture in stops of the film's light on a cubic B-spline lattice anchored on the scan's full-resolution grid,
-// each pixel the field's mean over its own footprint, its share read off its light, its own colour deepened where the picture darkens.
+// `grain`: grains on a jittered lattice anchored on the scan's full-resolution grid, each the soft union of four clouds;
+// a pixel reads the film where the grains over it are centred, then each layer's own grains' deviations, through the gaze.
 
 struct Params {
-    // x, y: the photo's seed, added to every lattice index, so each photo lays its own arrangement.
+    // x, y: the photo's seed, added to every lattice index; z: the fields, the sampling one then one a layer.
     head: vec4<u32>,
-    // The output centre to the scan's full grid, its x row then its y row; w: one over the cell side,
-    // then half the footprint in cells.
-    row_x: vec4<f32>,
-    row_y: vec4<f32>,
-    // x: the stops a unit of the mean moves the light by; y, z: the table's first stop and its nodes a stop.
-    dose: vec4<f32>,
-    // x: the share of the blurred film a clump takes at the whole share; y: one over the field's spread
-    // at full resolution, which a clump's edge is measured in; z: the share of it laid between clumps.
-    mix: vec4<f32>,
-    // A negative's light on each layer's bare film, its reading's pedestal added; w: that pedestal.
+    // The output centre to the scan's full grid, its x row then its y row; w: a grain's radius, then its clouds'.
+    scan_x: vec4<f32>,
+    scan_y: vec4<f32>,
+    // That grid back to the output's pixels; w: how far a grain covering a pixel is centred.
+    render_x: vec4<f32>,
+    render_y: vec4<f32>,
+    // Each layer's deviation, in shares of its window.
+    deviation: vec4<f32>,
+    // A negative's light on each layer's bare film, its pedestal added; w: that pedestal.
     bare: vec4<f32>,
-    // Each layer's window over their mean; w: 1 on a negative, read as shares of its windows, 0 on a positive.
-    layers: vec4<f32>,
-    // A node's share, the next node's, its colour and the next one's, `GRAIN_NODES` of them: one row
-    // read a pixel, no lane indexed.
-    nodes: array<vec4<f32>, 64>,
+    // Each layer's window in density; w: 1 on a negative, 0 on a positive read as its screen code.
+    window: vec4<f32>,
+    // Each channel's mix of the layers' deviations.
+    gaze: array<vec4<f32>, 3>,
 }
 
-// The table at the light of `s`: its share, then its colour, each a line between two nodes.
-fn grain_node(s: vec3<f32>) -> vec2<f32> {
-    let t = clamp((log2(max(dot(s, LUMA), 1e-30)) - P.dose.y) * P.dose.z, 0.0, 63.0);
-    let i = min(floor(t), 62.0);
-    let n = P.nodes[i32(i)];
-    return n.xz + (n.yw - n.xz) * (t - i);
+// PCG-4D: four words, exact on every device.
+fn grain_hash(v0: vec4<u32>) -> vec4<u32> {
+    var v = v0 * 1664525u + 1013904223u;
+    v.x += v.y * v.w;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v.w += v.y * v.z;
+    v = v ^ (v >> vec4<u32>(16u));
+    v.x += v.y * v.w;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v.w += v.y * v.z;
+    return v;
 }
 
-// ∫ B from −2 to `u`, B the cubic B-spline.
-fn grain_ramp(u: f32) -> f32 {
-    let a = min(abs(u), 2.0);
-    let far = 2.0 - a;
-    var tail = 0.5 - (4.0 * a - 2.0 * a * a * a + 0.75 * a * a * a * a) / 6.0;
-    if (a >= 1.0) { tail = far * far * far * far / 24.0; }
-    return select(tail, 1.0 - tail, u >= 0.0);
+fn grain_byte(w: u32, i: u32) -> f32 {
+    return (f32((w >> (8u * i)) & 0xffu) + 0.5) / 256.0;
 }
 
-// Four 16-bit uniforms at a lattice node: PCG-2D, exact on every device.
-fn grain_hash(i: vec2<i32>) -> vec4<f32> {
-    var v = (bitcast<vec2<u32>>(i) + P.head.xy) * 1664525u + 1013904223u;
-    // Two rounds written out: naga bounds every loop on Metal (force_loop_bounding), which blocks its
-    // unrolling and kept the kernel 30 to 45 % slower.
-    v.x += v.y * 1664525u;
-    v.y += v.x * 1664525u;
-    v = v ^ (v >> vec2<u32>(16u));
-    v.x += v.y * 1664525u;
-    v.y += v.x * 1664525u;
-    v = v ^ (v >> vec2<u32>(16u));
-    return (vec4<f32>(vec4<u32>(v.x & 0xffffu, v.x >> 16u, v.y & 0xffffu, v.y >> 16u)) + 0.5) * (1.0 / 65536.0);
+fn grain_half(w: u32, i: u32) -> f32 {
+    return (f32((w >> (16u * i)) & 0xffffu) + 0.5) / 65536.0;
 }
 
-// The light's standard normal: the four uniforms summed, so no transcendental is needed.
-fn grain_normal(u: vec4<f32>) -> f32 {
-    return (u.x + u.y + u.z + u.w - 2.0) * 1.7320508;
+fn grain_normal(w: u32) -> f32 {
+    return (grain_byte(w, 0u) + grain_byte(w, 1u) + grain_byte(w, 2u) + grain_byte(w, 3u) - 2.0) * 1.7320508;
 }
 
-// `s` moved `a` stops, each channel's ratio to the luma raised to 2^(colour × `darkened`, the stops the picture
-// darkens): its own hue deepened, a grey kept grey, its luma the grain's; a channel at or under zero is kept.
-fn grain_laid(s: vec3<f32>, a: f32, colour: f32, darkened: f32) -> vec3<f32> {
-    let k = exp2(a);
-    let darker = colour * max(darkened, 0.0);
-    let y = dot(s, LUMA);
-    if (darker <= 0.0 || y <= 0.0) { return s * k; }
-    let r = s / y;
-    let p = select(r, exp2(exp2(darker) * log2(r)), r > vec3<f32>(0.0));
-    let q = dot(p, LUMA);
-    if (q <= 0.0) { return s * k; }
-    return p * (k * y / q);
+// A cloud's offset from its grain's centre, in grain radii.
+fn grain_offset(w: u32) -> vec2<f32> {
+    let a = grain_byte(w, 0u) + grain_byte(w, 1u) - 1.0;
+    let b = grain_byte(w, 2u) + grain_byte(w, 3u) - 1.0;
+    return vec2<f32>(a, b) * (0.32 / 0.4082483);
 }
 
-// `at` is the pixel's centre in the graph's pixels, `b` the film blurred under a grain; a light given no share is kept.
-fn grain_px(s: vec4<f32>, b: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
-    let node = grain_node(s.rgb);
-    if (node.x <= 0.0) { return s; }
-    let q = vec2<f32>(P.row_x.x * at.x + P.row_x.y * at.y + P.row_x.z, P.row_y.x * at.x + P.row_y.y * at.y + P.row_y.z) * P.row_x.w;
-    let lo = q - P.row_y.w;
-    let hi = q + P.row_y.w;
-    let span = hi - lo;
-    let first = vec2<i32>(floor(lo)) - 1;
-    let count = min(vec2<i32>(ceil(hi)) + 2 - first, vec2<i32>(8));
-    var wx: array<f32, 8>;
-    var wy: array<f32, 8>;
-    for (var j = 0; j < count.x; j++) {
-        let i = f32(first.x + j);
-        wx[j] = (grain_ramp(hi.x - i) - grain_ramp(lo.x - i)) / span.x;
+fn grain_profile(d: f32, rc: f32) -> f32 {
+    let w = clamp((1.3 - d / rc) / 0.6, 0.0, 1.0);
+    return w * w;
+}
+
+// A light's share of each window, or its screen code on a positive.
+fn grain_shared(s: vec3<f32>) -> vec3<f32> {
+    if (P.window.w > 0.5) {
+        return -log2(max((s + P.bare.w) / P.bare.xyz, vec3<f32>(1e-30))) * 0.30102999566398120 / P.window.xyz;
     }
-    for (var j = 0; j < count.y; j++) {
-        let i = f32(first.y + j);
-        wy[j] = (grain_ramp(hi.y - i) - grain_ramp(lo.y - i)) / span.y;
+    return select(1.055 * pow(max(s, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.4)) - 0.055, 12.92 * s, s <= vec3<f32>(0.0031308));
+}
+
+fn grain_coded(s: vec3<f32>) -> vec3<f32> {
+    if (P.window.w > 0.5) {
+        return P.bare.xyz * exp2(-3.3219280948873623 * P.window.xyz * s) - P.bare.w;
     }
-    var field = 0.0;
-    for (var r = 0; r < count.y; r++) {
-        var row = 0.0;
-        for (var c = 0; c < count.x; c++) {
-            row += wx[c] * grain_normal(grain_hash(first + vec2<i32>(c, r)));
+    return select(pow(max((s + 0.055) / 1.055, vec3<f32>(0.0)), vec3<f32>(2.4)), s / 12.92, s <= vec3<f32>(0.04045));
+}
+
+fn grain_px(p: vec2<i32>) -> vec4<f32> {
+    let at = vec2<f32>(p) + 0.5;
+    let own = load(p);
+    let q = vec2<f32>(dot(P.scan_x.xyz, vec3<f32>(at, 1.0)), dot(P.scan_y.xyz, vec3<f32>(at, 1.0)));
+    let r = P.scan_x.w;
+    let rc = P.scan_y.w;
+    let reach = P.render_x.w;
+    let step = 0.7 * r;
+    let lo = vec2<i32>(floor((q - reach) / step));
+    let count = min(vec2<i32>(floor((q + reach) / step)) - lo + 1, vec2<i32>(8));
+    var sample = vec3<f32>(0.0);
+    var sampled = 0.0;
+    var noise = vec3<f32>(0.0);
+    var noised = vec3<f32>(0.0);
+    for (var field = 0u; field < P.head.z; field++) {
+        let lane = vec3<f32>(f32(field == 1u), f32(field == 2u), f32(field == 3u));
+        for (var j = 0; j < count.y; j++) {
+            for (var i = 0; i < count.x; i++) {
+                let cell = lo + vec2<i32>(i, j);
+                let a = grain_hash(vec4<u32>(bitcast<vec2<u32>>(cell) + P.head.xy, field, 0u));
+                let centre = (vec2<f32>(cell) + vec2<f32>(grain_half(a.x, 0u), grain_half(a.x, 1u))) * step;
+                let to = q - centre;
+                if (length(to) > reach) { continue; }
+                let b = grain_hash(a);
+                let w = grain_profile(length(to - grain_offset(a.z) * r), rc) + grain_profile(length(to - grain_offset(a.w) * r), rc)
+                    + grain_profile(length(to - grain_offset(b.x) * r), rc) + grain_profile(length(to - grain_offset(b.y) * r), rc);
+                if (w <= 0.0) { continue; }
+                if (field == 0u) {
+                    let rp = vec2<f32>(dot(P.render_x.xyz, vec3<f32>(centre, 1.0)), dot(P.render_y.xyz, vec3<f32>(centre, 1.0)));
+                    sample += w * grain_shared(load(vec2<i32>(floor(rp))).rgb);
+                    sampled += w;
+                } else {
+                    noise += lane * (w * grain_normal(a.y) * dot(lane, P.deviation.xyz));
+                    noised += lane * w;
+                }
+            }
         }
-        field += wy[r] * row;
     }
-    // Inside a clump the film gives way to its blur, so detail finer than a grain follows the grain; a haze of it between.
-    let clump = smoothstep(0.5, 1.5, abs(field) * P.mix.y);
-    let w = P.mix.x * node.x * (P.mix.z + (1.0 - P.mix.z) * clump);
-    let base = s.rgb + w * (b.rgb - s.rgb);
-    let a = P.dose.x * node.x * field;
-    if (P.layers.w > 0.5) {
-        // A negative: each layer read as its share of its window, a lighter film a darker picture, then coded back.
-        let read = pow(max((base + P.bare.w) / P.bare.xyz, vec3<f32>(1e-30)), 1.0 / P.layers.xyz);
-        let laid = grain_laid(read, a, node.y, a);
-        return vec4<f32>(P.bare.xyz * pow(max(laid, vec3<f32>(0.0)), P.layers.xyz) - P.bare.w, s.a);
-    }
-    return vec4<f32>(grain_laid(base, a, node.y, -a), s.a);
+    let base = select(grain_shared(own.rgb), sample / sampled, sampled > 0.05);
+    var delta = select(vec3<f32>(0.0), noise / max(noised, vec3<f32>(1e-30)), noised > vec3<f32>(0.05));
+    var laid = vec3<f32>(dot(P.gaze[0].xyz, delta), dot(P.gaze[1].xyz, delta), dot(P.gaze[2].xyz, delta));
+    if (P.head.z == 2u) { laid = vec3<f32>(delta.x); }
+    return vec4<f32>(grain_coded(base + laid), own.a);
 }

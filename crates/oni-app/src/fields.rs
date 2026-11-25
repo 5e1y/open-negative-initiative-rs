@@ -2,7 +2,7 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
-use oni_settings::blocks::{Bloom, ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
+use oni_settings::blocks::{Bloom, ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette};
 use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
@@ -73,8 +73,6 @@ pub enum Field {
     RedContrast,
     GreenContrast,
     BlueContrast,
-    GrainColourBlack,
-    GrainColourWhite,
     FilmExposure,
     Brightness,
     /// Temperature and Tint read as an enlarger's C, M and Y, a choice of Settings.
@@ -97,7 +95,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 59] = [
+    pub const ALL: [Field; 57] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -150,8 +148,6 @@ impl Field {
         Field::RedContrast,
         Field::GreenContrast,
         Field::BlueContrast,
-        Field::GrainColourBlack,
-        Field::GrainColourWhite,
         Field::FilmExposure,
         Field::Brightness,
         Field::Cyan,
@@ -176,7 +172,7 @@ impl Field {
     pub fn shown_in(self, settings: &oni_settings::PipelineSettings) -> bool {
         let mode = settings.mode;
         match self {
-            Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => mode.is_digital(),
+            Field::GrainAmount | Field::GrainSize => mode.is_digital(),
             Field::HalationAmount | Field::HalationSize | Field::Bloom => mode.is_digital(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
             Field::FilmExposure => mode.is_digital(),
@@ -250,8 +246,6 @@ impl Field {
             // A grain's width on the film, which `readout_on` writes in the photo's own pixels.
             Field::GrainSize => s("Grain size", Grain::SIZE_RANGE, Readout::Microns),
             // The grain's colour line, its saturation at the picture's black and at its white.
-            Field::GrainColourBlack => s("Grain colour at the black point", GrainColour::RANGE, Readout::Percent),
-            Field::GrainColourWhite => s("Grain colour at the white point", GrainColour::RANGE, Readout::Percent),
             Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
             Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Microns),
             // Stops the threshold is lowered by: right, the dimmer light glows too.

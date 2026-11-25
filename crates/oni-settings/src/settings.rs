@@ -216,7 +216,7 @@ impl PipelineSettings {
     pub fn picking(&self, stock: VirtualStock) -> PipelineSettings {
         let mut out = self.on_stock(stock);
         let effects = stock.effects();
-        (out.halation, out.bloom, out.grain.size) = (effects.halation, effects.bloom, effects.grain_size);
+        (out.halation, out.bloom) = (effects.halation, effects.bloom);
         out
     }
 

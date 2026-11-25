@@ -1,0 +1,786 @@
+{
+ "agfaphoto-apx": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/agfaphoto-apx-100-is-it-kentmere-100-or-modified-kentmere-100.214611/post-2913941",
+   "https://www.photrio.com/forum/threads/developing-agfaphoto-apx-400-in-adonal.206041/page-2"
+  ]
+ },
+ "cinestill-400d": {
+  "level": "medium",
+  "confidence": "medium",
+  "sources": [
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t",
+   "https://emulsive.org/articles/film-stock-review-cinestill-400d-by-ryan-gabbard",
+   "https://www.photrio.com/forum/posts/3000075/"
+  ]
+ },
+ "cinestill-50d": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t",
+   "https://www.wikipedia.org/wiki/Cinestill",
+   "https://petapixel.com/2026/07/17/cinestill-50d-is-a-perfect-slow-speed-film-for-bright-summer-days/"
+  ]
+ },
+ "cinestill-800t": {
+  "level": "high",
+  "confidence": "high",
+  "sources": [
+   "https://petapixel.com/2026/09/11/a-glowing-endorsement-of-cinestills-super-popular-800t-film/",
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t",
+   "https://www.wikipedia.org/wiki/Cinestill"
+  ]
+ },
+ "foma-cine-ortho400": {
+  "level": "high",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-3",
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.bhphotovideo.com/c/product/1936660-REG/foma_14742_ortho_400_black_and.html"
+  ]
+ },
+ "foma-fomapan-cine100": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.35mmc.com/28/09/2023/foma-100-classic-and-a-small-town-in-the-middle-of-nowhere/"
+  ]
+ },
+ "foma-fomapan-cine400": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://analoguewonderland.co.uk/blogs/film-review/film-review-fomapan-action-400",
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-3"
+  ]
+ },
+ "foma-fomapan100": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.photrio.com/forum/threads/fomapan-100-and-400.183982",
+   "https://www.35mmc.com/28/09/2023/foma-100-classic-and-a-small-town-in-the-middle-of-nowhere/"
+  ]
+ },
+ "foma-fomapan200": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.photrio.com/forum/threads/fomapan-100-and-400.183982"
+  ]
+ },
+ "foma-fomapan400": {
+  "level": "medium",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-3",
+   "https://analoguewonderland.co.uk/blogs/film-review/film-review-fomapan-action-400",
+   "https://www.35mmc.com/04/03/2020/battle-of-the-budgets-fomapan-400-kentmere-400-by-simon-king"
+  ]
+ },
+ "foma-fomapan401": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-3"
+  ]
+ },
+ "foma-ortho400": {
+  "level": "high",
+  "confidence": "medium",
+  "sources": [
+   "https://www.bhphotovideo.com/c/product/1936660-REG/foma_14742_ortho_400_black_and.html",
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.photrio.com/forum/threads/new-ortho-120-film-from-foma.199377/page-5?amp=1"
+  ]
+ },
+ "foma-retropan320": {
+  "level": "medium",
+  "confidence": "medium",
+  "sources": [
+   "https://photo-analogue.blogspot.nl/2015/08/",
+   "https://www.l-camera-forum.com/topic/309627-retropan-320-anti-halation-question/",
+   "https://www.l-camera-forum.com/topic/296643-fomapan-retropan-320-soft",
+   "https://www.foma.cz/en/catalogue-retropan-320-soft-detail-1767"
+  ]
+ },
+ "fujifilm-160nc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://Www.wikipedia.org/wiki/Fujicolor_Pro",
+   "https://www.photrio.com/forum/threads/fuji-160ns.140157/latest"
+  ]
+ },
+ "fujifilm-160nl": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://Www.wikipedia.org/wiki/Fujicolor_Pro"
+  ]
+ },
+ "fujifilm-160npc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://Www.wikipedia.org/wiki/Fujicolor_Pro"
+  ]
+ },
+ "fujifilm-160ns": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fuji-160ns.140157/latest",
+   "https://Www.wikipedia.org/wiki/Fujicolor_Pro"
+  ]
+ },
+ "fujifilm-200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-400": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/",
+   "https://blog.dehancer.com/halation/",
+   "https://www.photrio.com/forum/threads/the-bold-experiment.133205/post-1750033"
+  ]
+ },
+ "fujifilm-acros": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://analog.cafe/r/fujifilm-neopan-acros-film-review-1mba",
+   "https://www.diyphotography.net/comparing-fujifilm-neopan-100-acros-ii-to-original-acros-whats-the-difference/"
+  ]
+ },
+ "fujifilm-c200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-fujicolor": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-fujicolor-pro": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://Www.wikipedia.org/wiki/Fujicolor_Pro",
+   "https://www.photrio.com/forum/threads/fuji-160ns.140157/latest"
+  ]
+ },
+ "fujifilm-fujicolor100": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-natura1600": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://analog.cafe/r/fujicolor-natura-1600-film-review-4dvx",
+   "https://casualphotophile.com/2017/08/21/fujifilm-superia-1600-natura-1600-everything-you-need-to-know-about-this-super-fast-color-film/"
+  ]
+ },
+ "fujifilm-neopan-ortho": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://dehancer.com/profiles/film/rollei-ortho-25-plus",
+   "https://www.photrio.com/forum/threads/new-ortho-120-film-from-foma.199377/page-5"
+  ]
+ },
+ "fujifilm-neopan1600": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/20/08/2020/5-frames-with-fujifilm-neopan-1600-by-simon-king/",
+   "https://www.photrio.com/forum/threads/neopan1600-troubleshooting.32052/latest"
+  ]
+ },
+ "fujifilm-neopan400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/03/08/2019/fujifilm-neopan-400-review/",
+   "https://medium.com/camera-obscura/film-spotlight-fujifilm-neopan400cn-e1389a834d47"
+  ]
+ },
+ "fujifilm-new-pro400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/",
+   "https://analog.cafe/r/fujifilm-fujicolor-pro-400h-film-review-rau5"
+  ]
+ },
+ "fujifilm-nexia-a200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/",
+   "https://fujixweekly.com/tag/fujicolor-superia/"
+  ]
+ },
+ "fujifilm-nexia-zoom-master800": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/",
+   "https://fujixweekly.com/tag/fujicolor-superia/"
+  ]
+ },
+ "fujifilm-nexia400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/",
+   "https://fujixweekly.com/tag/fujicolor-superia/"
+  ]
+ },
+ "fujifilm-pro160c": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-pro160nc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-pro160nh": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-pro160ns": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://www.Wikipedia.org/wiki/Remjet"
+  ]
+ },
+ "fujifilm-pro160s": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-pro400h": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://analog.cafe/r/fujifilm-fujicolor-pro-400h-film-review-rau5",
+   "https://casualphotophile.com/2018/11/28/fujifilm-fujicolor-pro-400h-film-profile/",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-pro800": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://blog.dehancer.com/halation/",
+   "https://fujixweekly.com/tag/fujicolor-superia/"
+  ]
+ },
+ "fujifilm-pro800z": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://manualsonline.com/manuals/mfg/fujifilm/af3177e.html?p=2",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "fujifilm-provia100": {
+  "level": "none",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/provia-100f.108130",
+   "https://emulsive.org/reviews/fuji-provia-100f-rdp-iii-in-120-format"
+  ]
+ },
+ "fujifilm-reala-ace": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://fujixweekly.com/tag/superia-reala/"
+  ]
+ },
+ "fujifilm-superia": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/",
+   "https://violin-carillon-zpck.squarespace.com/blog/shooting-fuji-superia-x-tra-400"
+  ]
+ },
+ "fujifilm-superia-premium400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.analog.cafe/r/fujifilm-superia-premium-400-film-review-zl9n",
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-superia-reala": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://50mmf2.com/writings/fujifilm-superia-reala-100-film-review",
+   "https://fujixweekly.com/tag/superia-reala/"
+  ]
+ },
+ "fujifilm-superia-venus400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/ec34b04900f0718db637a1bb5a9f019b/datasheet_superiavenus400_01.pdf",
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-superia-venus800": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://richardhaw.com/2019/02/23/review-fujifilm-venus-800/",
+   "https://casualphotophile.com/2020/10/27/fujifilm-venus-800-superia-800/"
+  ]
+ },
+ "fujifilm-superia-xtra400": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/",
+   "https://violin-carillon-zpck.squarespace.com/blog/shooting-fuji-superia-x-tra-400"
+  ]
+ },
+ "fujifilm-superia-xtra800": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://casualphotophile.com/2020/10/27/fujifilm-venus-800-superia-800/",
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-superia100": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-superia1600": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://casualphotophile.com/2017/08/21/fujifilm-superia-1600-natura-1600-everything-you-need-to-know-about-this-super-fast-color-film/",
+   "https://www.photrio.com/forum/threads/how-good-is-fujis-1600-color-film.20437/unread"
+  ]
+ },
+ "fujifilm-superia200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/19/01/2021/fuji-superia-400-single-roll-review-by-christian-schroeder/"
+  ]
+ },
+ "fujifilm-velvia100": {
+  "level": "none",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/slide-film-at-night-time.168531",
+   "https://en.wikipedia.org/wiki/Anti-halation_backing"
+  ]
+ },
+ "fujifilm-velvia50": {
+  "level": "none",
+  "confidence": "low",
+  "sources": [
+   "https://medium.com/camera-obscura/film-spotlight-fujifilm-velvia-50-b7e788ae1d6",
+   "https://www.photrio.com/forum/threads/slide-film-at-night-time.168531"
+  ]
+ },
+ "harman-phoenix": {
+  "level": "high",
+  "confidence": "medium",
+  "sources": [
+   "https://petapixel.com/2025/02/14/harman-red-125-is-a-new-pro-finished-redscale-color-negative-film",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "harman-phoenixII": {
+  "level": "high",
+  "confidence": "low",
+  "sources": [
+   "https://petapixel.com/2025/02/14/harman-red-125-is-a-new-pro-finished-redscale-color-negative-film",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "harman-red": {
+  "level": "high",
+  "confidence": "high",
+  "sources": [
+   "https://petapixel.com/2025/02/14/harman-red-125-is-a-new-pro-finished-redscale-color-negative-film",
+   "https://cinestillfilm.com/collections/harman-r/products/harman-red-125-color-negative-film-35mm"
+  ]
+ },
+ "ilford-delta100": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/no-fancy-coloured-anti-halo-for-ilford.21082",
+   "https://www.photrio.com/forum/threads/black-and-white-films-with-two-emulsions.210102"
+  ]
+ },
+ "ilford-delta3200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://amateurphotographer.com/technique/film-photography/how-to-film/how-to-shoot-film-at-night/",
+   "https://emulsive.org/articles/film-notes-current-high-speed-films-ilford-delta-3200-and-kodak-t-max-3200-by-simon-king-and-andrew-blowers"
+  ]
+ },
+ "ilford-delta400": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.imaging-resource.com/news/ilford-launches-delta-400-collectors-edition-with-anti-halation-layer/",
+   "https://www.photrio.com/forum/threads/no-fancy-coloured-anti-halo-for-ilford.21082"
+  ]
+ },
+ "ilford-fp4": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fp4-and-anti-halation-layers.2488",
+   "https://www.photrio.com/forum/threads/ilford-fp4-plus.49171/page-2"
+  ]
+ },
+ "ilford-hp5": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/no-fancy-coloured-anti-halo-for-ilford.21082",
+   "https://www.photrio.com/forum/threads/ilford-fp4-plus.49171/page-2"
+  ]
+ },
+ "ilford-ortho": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.ilfordphoto.com/amfile/file/download/file/1948/product/698",
+   "https://www.photrio.com/forum/threads/orthochromatic-film-at-night.12404"
+  ]
+ },
+ "ilford-panf": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/no-fancy-coloured-anti-halo-for-ilford.21082"
+  ]
+ },
+ "ilford-sfx": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/ilford-sfx-200.104977",
+   "https://petapixel.com/2026/10/02/ilford-sfx-is-a-superpanchromatic-film-that-works-wonders-with-a-red-filter/"
+  ]
+ },
+ "ilford-xp2": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.ilfordphoto.com/amfile/file/download/file/1909/product/704",
+   "https://www.photrio.com/forum/threads/ilford-xp-2-super-400-iso-film-is-it-really-super.160122"
+  ]
+ },
+ "kodak-320txp": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://brooklynfilmcamera.com/blogs/guides/after-dark-the-best-film-stocks-for-cinematic-night-photography",
+   "https://www.photrio.com/forum/threads/who-likes-halation.188637/"
+  ]
+ },
+ "kodak-400tx": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://brooklynfilmcamera.com/blogs/guides/after-dark-the-best-film-stocks-for-cinematic-night-photography",
+   "https://www.photrio.com/forum/threads/fomapan-400-anti-halation-lack-thereof.201814/page-4",
+   "https://www.photrio.com/forum/threads/glow-in-low-light-black-and-white-photography.144160"
+  ]
+ },
+ "kodak-colorplus": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.Wikipedia.org/wiki/Remjet",
+   "https://www.kodak.com/en/still-film/product/gold-200-film"
+  ]
+ },
+ "kodak-double-x": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://emulsive.org/articles/film-stock-review-kodak-eastman-double-x-5222-35mm-format-by-alexander-laurent",
+   "https://www.l-camera-forum.com/topic/294523-anti-halation",
+   "https://www.photrio.com/forum/threads/some-quick-thoughts-on-double-x-5222-v-tri-x.178166/page-2"
+  ]
+ },
+ "kodak-ektachrome": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://phillipreeve.net/blog/analogue-adventures-part-38-kodak-ektachrome-100-5294",
+   "https://www.wikipedia.org/wiki/Remjet"
+  ]
+ },
+ "kodak-ektar100": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.kodak.com/en/still-film/product/professional/ektar-100-film/",
+   "https://www.thephoblographer.com/2017/02/22/review-kodak-ektar-100-35mm-and-120-various-formats/"
+  ]
+ },
+ "kodak-gold": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.Wikipedia.org/wiki/Remjet",
+   "https://www.kodak.com/en/still-film/product/gold-200-film"
+  ]
+ },
+ "kodak-gold200": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.Wikipedia.org/wiki/Remjet",
+   "https://www.kodak.com/en/still-film/product/gold-200-film",
+   "https://blog.dehancer.com/halation/"
+  ]
+ },
+ "kodak-kodachrome64": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/21/12/2020/kodachrome-64-digitising-for-the-look-by-david-hume/",
+   "https://www.Wikipedia.org/wiki/Remjet"
+  ]
+ },
+ "kodak-portra": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://brooklynfilmcamera.com/blogs/guides/cinestill-400d",
+   "https://brooklynfilmcamera.com/blogs/guides/after-dark-the-best-film-stocks-for-cinematic-night-photography"
+  ]
+ },
+ "kodak-portra160": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://brooklynfilmcamera.com/blogs/guides/cinestill-400d"
+  ]
+ },
+ "kodak-portra160nc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/kodak-portra-400vc-for-night-photography.44050"
+  ]
+ },
+ "kodak-portra160vc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/kodak-portra-400vc-for-night-photography.44050"
+  ]
+ },
+ "kodak-portra400": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://brooklynfilmcamera.com/blogs/guides/cinestill-400d",
+   "https://brooklynfilmcamera.com/blogs/guides/after-dark-the-best-film-stocks-for-cinematic-night-photography",
+   "https://www.35mmc.com/26/05/2020/yet-another-night-shift-long-time-exposures-on-kodak-portra-by-christian-schroeder/"
+  ]
+ },
+ "kodak-portra400nc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/kodak-portra-400vc-for-night-photography.44050"
+  ]
+ },
+ "kodak-portra400vc": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/kodak-portra-400vc-for-night-photography.44050"
+  ]
+ },
+ "kodak-portra800": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://www.optik-oldschool.com/blogs/blog/kodak-portra-800-vs-cinestill-800t",
+   "https://www.uniquephoto.com/photoinsider/cinestill-800t-vs-kodak-portra-800-which-fast-color-film-for-night-photography",
+   "https://analogreference.substack.com/p/kodak-portra-800-one-roll-review"
+  ]
+ },
+ "kodak-tmax-p3200": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/tmax-without-anti-halation-dye.82329",
+   "https://www.photrio.com/forum/threads/tm100-anti-halation-layer-just-wont-go-away.182271/latest"
+  ]
+ },
+ "kodak-tmax100": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://www.photrio.com/forum/threads/tm100-anti-halation-layer-just-wont-go-away.182271/latest",
+   "https://www.photrio.com/forum/threads/tmax-without-anti-halation-dye.82329"
+  ]
+ },
+ "kodak-tmax400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.photrio.com/forum/threads/tmax-without-anti-halation-dye.82329",
+   "https://www.wikipedia.org/wiki/Kodak_T-MAX"
+  ]
+ },
+ "kodak-ultramax": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.Wikipedia.org/wiki/Remjet",
+   "https://www.kodak.com/en/still-film/product/consumer/ultramax-400-film/"
+  ]
+ },
+ "kodak-ultramax400": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://www.kodak.com/en/still-film/product/consumer/ultramax-400-film/",
+   "https://www.photrio.com/forum/threads/kodak-hawkeye-400-red-cast.146322",
+   "https://www.Wikipedia.org/wiki/Remjet"
+  ]
+ },
+ "kodak-verita200d": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://theasc.com/articles/kodak-enhances-vision3",
+   "https://www.photrio.com/forum/threads/cinestill-films-from-kodak-stock.198724"
+  ]
+ },
+ "kodak-vision3-200t": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://theasc.com/articles/kodak-enhances-vision3",
+   "https://www.photrio.com/forum/threads/kodak-planning-to-replace-remjet-on-vision-3-films.213976/page-3",
+   "https://dehancer.com/profiles/film/kodak-vision3-200t"
+  ]
+ },
+ "kodak-vision3-250d": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://theasc.com/articles/kodak-enhances-vision3",
+   "https://emulsive.org/reviews/film-review-35mm-kodak-vision3-250d-motion-picture-film-5207",
+   "https://www.photrio.com/forum/threads/kodak-planning-to-replace-remjet-on-vision-3-films.213976/page-3"
+  ]
+ },
+ "kodak-vision3-500t": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://theasc.com/articles/kodak-enhances-vision3",
+   "https://www.photrio.com/forum/threads/kodak-planning-to-replace-remjet-on-vision-3-films.213976/page-3",
+   "https://www.photographytalk.com/cinestill-800t-kodak-vision3-explained/"
+  ]
+ },
+ "kodak-vision3-50d": {
+  "level": "low",
+  "confidence": "medium",
+  "sources": [
+   "https://theasc.com/articles/kodak-enhances-vision3",
+   "https://dehancer.com/profiles/film/kodak-vision3-50d",
+   "https://www.photrio.com/forum/threads/kodak-planning-to-replace-remjet-on-vision-3-films.213976/page-3"
+  ]
+ },
+ "lomography-lomo-turquoise": {
+  "level": "low",
+  "confidence": "low",
+  "sources": [
+   "https://lomography.com/magazine/350713-lomochrome-turquoise-review-by-hodachrome",
+   "https://lomography.com/magazine/347414-colorshifting-101-lomochrome-turquoise",
+   "https://www.analog.cafe/r/harman-switch-azure-film-review-d49s"
+  ]
+ },
+ "lucky-color200": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://www.35mmc.com/09/10/2025/lucky-c200-vs-colorplus-vs-phoenix-ii/",
+   "https://www.photrio.com/forum/threads/lucky-c200-vs-phoenix-ii.215261/",
+   "https://shootitwithfilm.com/lucky-200-film-review/"
+  ]
+ },
+ "mira-color400": {
+  "level": "medium",
+  "confidence": "low",
+  "sources": [
+   "https://analoguewonderland.co.uk/products/mira-400-35mm-film"
+  ]
+ },
+ "mira-color800": {
+  "level": "high",
+  "confidence": "low",
+  "sources": [
+   "https://analoguewonderland.co.uk/products/mira-800-35mm-film",
+   "https://analogueshop.com/products/mira-color-800"
+  ]
+ }
+}

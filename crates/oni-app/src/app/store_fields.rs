@@ -75,8 +75,6 @@ fields! {
     RedContrast => set_red_contrast_fraction, get_red_contrast_fraction, set_red_contrast_readout, set_red_contrast_value;
     GreenContrast => set_green_contrast_fraction, get_green_contrast_fraction, set_green_contrast_readout, set_green_contrast_value;
     BlueContrast => set_blue_contrast_fraction, get_blue_contrast_fraction, set_blue_contrast_readout, set_blue_contrast_value;
-    GrainColourBlack => set_grain_colour_black_fraction, get_grain_colour_black_fraction, set_grain_colour_black_readout, set_grain_colour_black_value;
-    GrainColourWhite => set_grain_colour_white_fraction, get_grain_colour_white_fraction, set_grain_colour_white_readout, set_grain_colour_white_value;
     FilmExposure => set_film_exposure_fraction, get_film_exposure_fraction, set_film_exposure_readout, set_film_exposure_value;
     Brightness => set_brightness_fraction, get_brightness_fraction, set_brightness_readout, set_brightness_value;
     Cyan => set_cyan_fraction, get_cyan_fraction, set_cyan_readout, set_cyan_value;

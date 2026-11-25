@@ -203,12 +203,12 @@ fn the_film_s_exposure_moves_the_light_and_nothing_else() {
 
 /// The relative spread of the pure inversion's light on a flat grey `stops` under the white, and its share's spread,
 /// the film grained by `k`.
-fn grained(g: &mut oni_graph::Graph, k: &oni_render::Grain, stops: f32, on_scene: bool) -> (f32, f32) {
+fn grained(g: &mut oni_graph::Graph, k: &oni_render::Grain, stops: f32) -> (f32, f32) {
     let (w, h) = (192u32, 192u32);
     let grey = saturation() * stops.exp2();
     let scene = Image::new(&g.upload(w, h, &vec![[grey, grey, grey, 1.0]; (w * h) as usize]).unwrap());
     let film = stages::neutral_negative(&neutral::kernel(NEUTRAL).unwrap());
-    let image = if on_scene { grain::grained(scene, k, 0.0).then(film) } else { grain::grained(scene.then(film), k, 0.0) };
+    let image = grain::grained(scene.then(film), k);
     let reading = reading();
     let shares: Vec<f32> = whole(g, &image).iter().map(|p| cpu::windowed(*p, &reading)[1]).collect();
     let spread = |v: &[f32]| {
@@ -225,22 +225,20 @@ fn the_grain_is_uniform_on_the_negative_and_weakens_as_the_tone_rises() {
     let Some(mut g) = graph("the_grain_is_uniform_on_the_negative_and_weakens_as_the_tone_rises") else { return };
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only();
     s.grain.amount = 1.0;
-    let scan = Rect::new(0, 0, 192, 192);
+    // A region of a 24 Mpx scan, its grains a few pixels wide.
+    let scan = Rect::new(0, 0, 6048, 4032);
     let k = grain::grain(&s, scan, 1.0).expect("a grain");
-    assert!(k.negative.is_some_and(|n| n.layers == [1.0; 3] && n.bare == [1.0 + n.veil; 3]), "laid on a negative, its three layers alike on a clear bare film");
-    assert!(k.share.iter().all(|v| *v == 1.0), "the rest curve lays the whole grain at every tone");
-    assert!((grain::spread(NEUTRAL) - grain::GRAIN_WINDOW).abs() < 1e-6, "Amount's top spreads a sixteenth of the neutral film's window");
+    assert!(k.negative.is_some_and(|n| n.bare == [1.0 + n.veil; 3] && n.window.iter().all(|w| (w - n.window[0]).abs() < 1e-6)), "laid on a negative, its three layers alike on a clear bare film");
     let tones = [-7.0, -5.0, -3.0, -1.0];
-    let on_negative: Vec<(f32, f32)> = tones.iter().map(|t| grained(&mut g, &k, *t, false)).collect();
+    let on_negative: Vec<(f32, f32)> = tones.iter().map(|t| grained(&mut g, &k, *t)).collect();
     println!("on the negative, relative spread and share's spread from 7 stops under the white to 1: {on_negative:?}");
     assert!(on_negative.windows(2).all(|w| w[0].0 > 1.3 * w[1].0), "the grain's relative strength falls as the tone rises: {on_negative:?}");
     let shares: Vec<f32> = on_negative.iter().map(|v| v.1).collect();
     let (low, high) = (shares.iter().cloned().fold(f32::INFINITY, f32::min), shares.iter().cloned().fold(0.0, f32::max));
     assert!(high / low < 1.03, "its spread in the window's share is one at every tone: {shares:?}");
-    // Twin: the same field laid in stops on the scene before the film keeps one relative strength at every tone.
-    let before: Vec<f32> = tones.iter().map(|t| grained(&mut g, &oni_render::Grain { negative: None, ..k }, *t, true).0).collect();
-    println!("on the scene: {before:?}");
-    assert!(before.windows(2).all(|w| (w[0] / w[1] - 1.0).abs() < 0.1), "{before:?}");
+    // Twin: the same judge refuses the light's own spreads, which fall as the tone rises.
+    let lights: Vec<f32> = on_negative.iter().map(|v| v.0).collect();
+    assert!(lights.iter().cloned().fold(0.0, f32::max) / lights.iter().cloned().fold(f32::INFINITY, f32::min) > 1.03);
 }
 
 #[test]
@@ -254,29 +252,8 @@ fn a_real_negative_takes_no_grain() {
     // Twin: a digital photo with the same Amount is grained, on its negative.
     let mut digital = PipelineSettings::rest(ConversionMode::Digital, true);
     digital.grain.amount = 1.0;
-    assert!(grain::grain(&digital, scan, 1.0).is_some_and(|k| k.negative.is_some() && k.stops > 0.0));
+    assert!(grain::grain(&digital, scan, 1.0).is_some_and(|k| k.negative.is_some() && k.deviation[1] > 0.0));
     let luma = |p: V4| p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2];
     assert!(luma(film::shot(NEUTRAL, [0.1, 0.1, 0.1, 1.0], 0.0)) < luma(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0)), "the film thins as its scene dims");
 }
 
-/// A negative film's tones are read on its own light: its densest, the scene's highlights, shows light, and its bare
-/// film black. Twin: read as a positive's own light, the tones turn over.
-#[test]
-fn the_grain_s_tones_are_the_picture_s_on_the_film_s_light() {
-    let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
-    s.grain.amount = 0.5;
-    let stock = s.film().expect("a digital photo's film").stock;
-    let tones = grain::tones(&s);
-    let stops = |i: usize| oni_render::grain_node_light(i).log2();
-    let node = |y: f32| (0..oni_render::GRAIN_NODES).min_by(|a, b| (stops(*a) - y.log2()).abs().total_cmp(&(stops(*b) - y.log2()).abs())).unwrap();
-    let film = |scene: f32| {
-        let p = film::shot(stock, [scene, scene, scene, 1.0], 0.0);
-        p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]
-    };
-    let white = saturation();
-    let (bare, shadow, highlight) = (tones[node(film(0.0))], tones[node(film(white / 64.0))], tones[node(film(white * 0.9))]);
-    println!("tones: bare film {bare:.3}, shadow {shadow:.3}, highlight {highlight:.3}");
-    assert!(bare < 0.05 && shadow > bare + 0.05 && highlight > shadow + 0.3, "bare {bare}, shadow {shadow}, highlight {highlight}");
-    let positive = |y: f32| y.powf(1.0 / 2.2);
-    assert!(positive(film(white * 0.9)) < positive(film(white / 64.0)), "twin: the film read as a positive turns the tones over");
-}

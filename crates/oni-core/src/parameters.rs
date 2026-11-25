@@ -163,8 +163,7 @@ pub fn all() -> &'static [Row] {
                 sliders: vec![slider("vignette.stops", carry!(vignette.stops))],
                 carry: carry!(vignette),
             },
-            Row { id: "grain", covers: &["grain"], carry: carry!(grain), sliders: vec![slider("grain.amount", carry!(grain.amount)), slider("grain.size", carry!(grain.size)),
-                slider("grain.colour.black", carry!(grain.colour.black)), slider("grain.colour.white", carry!(grain.colour.white))] },
+            Row { id: "grain", covers: &["grain"], carry: carry!(grain), sliders: vec![slider("grain.amount", carry!(grain.amount)), slider("grain.size", carry!(grain.size))] },
             Row {
                 id: "halation",
                 covers: &["halation"],

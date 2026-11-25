@@ -1,362 +1,133 @@
-//! The grain's lattice, its table and its colour against their laws, each verdict with a twin.
-
 use super::*;
 
-const WHOLE: [f32; GRAIN_NODES] = [1.0; GRAIN_NODES];
-/// The colour slider's top.
-const TOP: f32 = 3.0;
+/// The identity from a render's pixels to the scan's grid.
+const SAME: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+const PURE: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
+/// A 30 µm grain on a 47 Mpx frame's grid, 8368 pixels long, as the real Portra 800 scan was measured.
+fn portra(deviation: f32) -> Grain {
+    Grain::on(SAME, 0.5 * 30.0 * 8368.0 / 36_000.0, 1.0, [0.85 * deviation, deviation, deviation], PURE)
+}
+
+fn flat(side: usize, v: V4) -> Grid {
+    Grid::new(0, 0, side, side, vec![v; side * side])
+}
+
+fn grained(input: &Grid, k: &Grain) -> Vec<V4> {
+    (0..input.height).flat_map(|y| (0..input.width).map(move |x| [x as f32 + 0.5, y as f32 + 0.5])).map(|at| grain(input, at, k)).collect()
+}
+
+/// The mean deviation of channel `c`'s screen code in tiles of 32 pixels, as the scan's grain was measured.
+fn tiled(pixels: &[V4], side: usize, c: usize) -> f32 {
+    let tiles = side / 32;
+    let mut sum = 0.0;
+    for t in 0..tiles * tiles {
+        let (tx, ty) = (t % tiles * 32, t / tiles * 32);
+        let v: Vec<f32> = (0..32 * 32).map(|i| super::super::neutral_negative::screen_code(pixels[(ty + i / 32) * side + tx + i % 32][c])).collect();
+        let mean = v.iter().sum::<f32>() / v.len() as f32;
+        sum += (v.iter().map(|x| (x - mean) * (x - mean)).sum::<f32>() / v.len() as f32).sqrt();
+    }
+    sum / (tiles * tiles) as f32
+}
 
 #[test]
-fn the_ramp_is_the_splines_integral() {
-    let b = |u: f32| {
-        let a = u.abs();
-        if a >= 2.0 {
-            0.0
-        } else if a >= 1.0 {
-            (2.0 - a).powi(3) / 6.0
-        } else {
-            (4.0 - 6.0 * a * a + 3.0 * a * a * a) / 6.0
-        }
+fn a_flat_film_is_its_own_share_where_grains_stray_by_none() {
+    let input = flat(48, [0.18, 0.3, 0.05, 1.0]);
+    let still = grained(&input, &portra(0.0));
+    let worst = still.iter().map(|p| (0..3).map(|c| (p[c] / input.pixels[0][c] - 1.0).abs()).fold(0.0, f32::max)).fold(0.0, f32::max);
+    assert!(worst < 2e-6, "a grain sampling a flat film moved it by {worst}");
+    // Twin: grains that stray move it.
+    let moved = grained(&input, &portra(0.04));
+    assert!(moved.iter().any(|p| (p[1] / input.pixels[0][1] - 1.0).abs() > 1e-2));
+}
+
+#[test]
+fn the_grain_measured_as_the_scan_was_is_its_deviation_through_the_grains() {
+    let side = 256;
+    let input = flat(side, [0.18, 0.18, 0.18, 1.0]);
+    let sd = tiled(&grained(&input, &portra(0.037)), side, 1);
+    println!("a 30 µm grain of deviation 0.037 on a 47 Mpx grid: {sd:.4} of the window in 32-pixel tiles");
+    assert!((0.008..0.02).contains(&sd), "{sd}");
+    // Twin: each pixel its own draw, no grain, spreads the whole deviation.
+    let noisy = Grid::generated(0, 0, side, side, |q| {
+        let h = hash([q[0] as u32, q[1] as u32, 9, 0]);
+        let v = super::super::neutral_negative::screen_code(0.18) + 0.037 * normal(h[0]);
+        [screen_light(v); 4]
+    });
+    assert!((tiled(&noisy.pixels, side, 1) - 0.037).abs() < 0.003);
+}
+
+#[test]
+fn detail_finer_than_a_grain_goes() {
+    let side = 64;
+    // A one-pixel checker of two greys.
+    let input = Grid::generated(0, 0, side, side, |q| if (q[0] + q[1]) % 2 == 0 { [0.1, 0.1, 0.1, 1.0] } else { [0.3, 0.3, 0.3, 1.0] });
+    let out = grained(&input, &portra(0.0));
+    let spread = |p: &[V4]| {
+        let mean = p.iter().map(|v| v[1]).sum::<f32>() / p.len() as f32;
+        (p.iter().map(|v| (v[1] - mean).powi(2)).sum::<f32>() / p.len() as f32).sqrt()
     };
-    let steps = 4000;
-    let mut sum = 0.0f64;
-    for k in 0..steps {
-        let u = -2.0 + 4.0 * (k as f32 + 0.5) / steps as f32;
-        sum += f64::from(b(u)) * 4.0 / f64::from(steps);
-        let at = u + 2.0 / steps as f32;
-        assert!((ramp(at) as f64 - sum).abs() < 1e-4, "at {at}: {} against {sum}", ramp(at));
-    }
-    assert_eq!((ramp(-2.5), ramp(2.5), ramp(0.0)), (0.0, 1.0, 0.5));
-    // Twin: the quadratic spline's integral, a narrower bell, reaches 5/6 at a half.
-    assert!((ramp(0.5) - 5.0 / 6.0).abs() > 0.01);
-}
-
-/// Mean, variance and the largest correlation with the next node across or down, on 256² nodes.
-fn moments(node: impl Fn([i32; 2]) -> f32) -> (f64, f64, f64) {
-    let n = 256;
-    let at = |x: i32, y: i32| f64::from(node([x - n / 2, y - n / 2]));
-    let all = (n * n) as f64;
-    let mean = (0..n).flat_map(|y| (0..n).map(move |x| (x, y))).map(|(x, y)| at(x, y)).sum::<f64>() / all;
-    let var = (0..n).flat_map(|y| (0..n).map(move |x| (x, y))).map(|(x, y)| (at(x, y) - mean).powi(2)).sum::<f64>() / all;
-    let next = |dx: i32, dy: i32| (0..n - 1).flat_map(|y| (0..n - 1).map(move |x| (x, y))).map(|(x, y)| (at(x, y) - mean) * (at(x + dx, y + dy) - mean)).sum::<f64>() / all / var;
-    (mean, var, next(1, 0).abs().max(next(0, 1).abs()))
+    println!("a one-pixel checker's spread {:.4}, under the grains {:.4}", spread(&input.pixels), spread(&out));
+    assert!(spread(&out) < 0.5 * spread(&input.pixels), "{} {}", spread(&out), spread(&input.pixels));
+    // Twin: a detail far coarser than a grain, a 32-pixel checker, stays.
+    let coarse = Grid::generated(0, 0, side, side, |q| if (q[0] / 32 + q[1] / 32) % 2 == 0 { [0.1, 0.1, 0.1, 1.0] } else { [0.3, 0.3, 0.3, 1.0] });
+    assert!(spread(&grained(&coarse, &portra(0.0))) > 0.8 * spread(&coarse.pixels));
 }
 
 #[test]
-fn the_nodes_are_standard_normals_and_uncorrelated() {
-    let (mean, var, next) = moments(|i| normal(hash(i, [0, 0])));
-    assert!(mean.abs() < 0.01 && (var - 1.0).abs() < 0.02 && next < 0.01, "mean {mean}, variance {var}, neighbours {next}");
-    // Twin: a hash of one coordinate alone repeats down the other.
-    let (_, _, striped) = moments(|i| normal(hash([i[0], 0], [0, 0])));
-    assert!(striped > 0.5, "the twin's neighbours correlate at {striped}");
-}
-
-#[test]
-fn a_point_s_spread_is_the_splines_and_a_mean_s_falls_as_its_footprint_grows() {
-    // A point: ∫ B² of the cubic B-spline, 151/315 an axis.
-    assert!((mean_spread(1e-3) - 151.0 / 315.0).abs() < 1e-4, "{}", mean_spread(1e-3));
-    // A wide footprint: the mean of F cells falls as 1/F, less the spline's reach.
-    for f in [8.0f32, 20.0, 50.0] {
-        let wide = mean_spread(f);
-        assert!((wide * f - 1.0).abs() < 1.0 / f, "{f}: {wide}");
-    }
-    // Twin: the spread of a sum, not of a mean, grows instead.
-    assert!(mean_spread(2.0) < mean_spread(1.0));
-}
-
-#[test]
-fn the_mean_over_a_footprint_is_the_mean_of_its_quarters() {
-    let k = |reach: f32| Grain { per_cell: 0.7, reach, stops: 1.0, ..Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0, WHOLE) };
-    let field = |at: V2, reach: f32| grain([1.0; 4], [1.0; 4], at, &k(reach))[0].log2();
-    for at in [[3.25f32, 10.5], [40.0, 7.75], [-12.5, 3.0]] {
-        // Two pixels a side, 1.4 cells, against its four pixels of 0.7.
-        let whole = field(at, 0.7);
-        let quarters = [(-0.5, -0.5), (0.5, -0.5), (-0.5, 0.5), (0.5, 0.5)].map(|(dx, dy)| field([at[0] + dx, at[1] + dy], 0.35));
-        let mean = quarters.iter().sum::<f32>() / 4.0;
-        assert!((whole - mean).abs() < 1e-5, "at {at:?}: {whole} against {mean}");
-        // Twin: the field at the centre alone is not the mean.
-        assert!((field(at, 1e-3) - whole).abs() > 1e-3, "at {at:?}");
-    }
-}
-
-#[test]
-fn the_share_and_the_colour_pass_through_each_node_and_hold_past_the_ends() {
-    let mut k = Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 1.0, 1.0, 1.0, [0.0; GRAIN_NODES]);
-    k.share.iter_mut().enumerate().for_each(|(i, v)| *v = (i as f32 * 0.37).sin().abs());
-    k.colour.iter_mut().enumerate().for_each(|(i, v)| *v = 2.0 * (i as f32 * 0.21).cos().abs());
-    let colour = |y: f32, k: &Grain| between(&k.colour, place(y));
-    for i in 0..GRAIN_NODES {
-        let y = grain_node_light(i);
-        assert!((share(y, &k) - k.share[i]).abs() < 1e-5 && (colour(y, &k) - k.colour[i]).abs() < 1e-5, "node {i}");
-    }
-    let half = (grain_node_light(10) * grain_node_light(11)).sqrt();
-    assert!((share(half, &k) - (k.share[10] + k.share[11]) / 2.0).abs() < 1e-5, "halfway in stops");
-    assert!((colour(half, &k) - (k.colour[10] + k.colour[11]) / 2.0).abs() < 1e-5, "halfway in stops");
-    assert_eq!((share(0.0, &k), share(-1.0, &k), share(8.0, &k)), (k.share[0], k.share[0], k.share[GRAIN_NODES - 1]));
-    // Twin: the table read a node over misses every node.
-    let mut over = k;
-    over.share.rotate_left(1);
-    let gap = (0..GRAIN_NODES).map(|i| (share(grain_node_light(i), &over) - k.share[i]).abs()).fold(0.0, f32::max);
-    assert!(gap > 0.1, "the twin passes at {gap}");
-}
-
-
-/// A grain of 0.4 stop on cells of 0.7 pixel, the whole share and `colour` at every light.
-fn at_colour(colour: f32) -> Grain {
-    Grain::on([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], 0.7, 1.0, 0.4, WHOLE).coloured([colour; GRAIN_NODES])
-}
-
-/// 4096 pixel centres, 64 a side.
-fn centres() -> impl Iterator<Item = V2> {
-    (0..64).flat_map(|y| (0..64).map(move |x| [x as f32 + 0.5, y as f32 + 0.5]))
-}
-
-/// The stops the pixel's red lies over its blue: its colour, in a log space the law scales.
-fn red_over_blue(p: V4) -> f32 {
-    (p[0] / p[2]).log2()
-}
-
-/// The zero-sum offsets of a coloured grain drawn at random: three more normals of each node's hash.
-fn random_offsets(at: V2, k: &Grain) -> V3 {
-    let [x, y] = k.scan;
-    let q = [(x[0] * at[0] + x[1] * at[1] + x[2]) * k.per_cell, (y[0] * at[0] + y[1] * at[1] + y[2]) * k.per_cell];
-    let ((fx, wx), (fy, wy)) = (weights(q[0] - k.reach, q[0] + k.reach), weights(q[1] - k.reach, q[1] + k.reach));
-    let mut c = [0.0f32; 3];
-    for (r, wr) in wy.iter().enumerate() {
-        for (j, wc) in wx.iter().enumerate() {
-            let u = hash([fx + j as i32, fy + r as i32], k.seed);
-            let n = [u[0] + u[1] - u[2] - u[3], u[0] - u[1] + u[2] - u[3], u[0] - u[1] - u[2] + u[3]];
-            (0..3).for_each(|l| c[l] += wr * wc * n[l] * 1.732_050_8);
-        }
-    }
-    let mean = (c[0] + c[1] + c[2]) / 3.0;
-    c.map(|v| (v - mean) * 1.224_744_9)
-}
-
-#[test]
-fn a_neutral_pixel_stays_neutral_to_the_bit() {
-    let (k, mono) = (at_colour(TOP), at_colour(0.0));
-    let (mut parted, mut off, mut twin) = (0usize, 0.0f32, 0.0f32);
-    for light in [0.001f32, 0.01, 0.05, 0.2, 0.8] {
-        let grey = [light, light, light, 1.0];
-        for at in centres() {
-            let (p, m) = (grain(grey, grey, at, &k), grain(grey, grey, at, &mono));
-            parted += usize::from(p[0].to_bits() != p[1].to_bits() || p[1].to_bits() != p[2].to_bits());
-            off = off.max((p[0] / m[0] - 1.0).abs());
-            // Twin: a hue drawn at random each clump, a colour out of nothing.
-            let lanes = random_offsets(at, &k).map(|d| k.stops * (field(at, &k) + TOP * d));
-            twin = twin.max(lanes.iter().fold(f32::MIN, |a, &b| a.max(b)) - lanes.iter().fold(f32::MAX, |a, &b| a.min(b)));
-        }
-    }
-    assert!(parted == 0 && off < 1e-6, "{parted} greys part, {off:.2e} off the monochrome grain");
-    assert!(twin > 0.01, "the twin parts a grey by {twin} stop");
-}
-
-#[test]
-fn the_colour_deepens_the_pixel_s_own_hue_only_where_the_grain_darkens_it() {
-    let (k, mono) = (at_colour(2.0), at_colour(0.0));
-    let skin = [0.05, 0.032, 0.0215, 1.0];
-    // The symmetric law, which greys the lighter grains as much as it deepens the darker.
-    let symmetric = |s: V4, a: f32| {
-        let (y, gamma) = (dot(rgb(s), LUMA), (-2.0 * a).exp2());
-        let p = map(rgb(s), |_, v| (v / y).powf(gamma));
-        with_alpha(map(p, |_, v| v * a.exp2() * y / dot(p, LUMA)), s[3])
+fn each_layer_has_its_own_grains_and_the_gaze_mixes_them() {
+    let side = 64;
+    let input = flat(side, [0.18, 0.18, 0.18, 1.0]);
+    let devs = |k: &Grain| -> Vec<V3> {
+        let base = shared(input.pixels[0], k);
+        grained(&input, k).iter().map(|p| map(shared(*p, k), |c, v| v - base[c])).collect()
     };
-    let (mut lighter, mut darker, mut worst, mut greyed) = (0usize, 0usize, 0.0f32, 0usize);
-    for at in centres() {
-        let a = k.stops * field(at, &k);
-        let (p, m) = (grain(skin, skin, at, &k), grain(skin, skin, at, &mono));
-        if a >= 0.0 {
-            lighter += 1;
-            assert_eq!(p, m, "at {at:?}: a lighter grain moves the colour");
-            greyed += usize::from((red_over_blue(symmetric(skin, a)) / red_over_blue(m) - 1.0).abs() > 1e-3);
-        } else {
-            darker += 1;
-            // The colour in stops scales by 2^(colour × the stops darkened), so it rises with them.
-            worst = worst.max((red_over_blue(p) / red_over_blue(skin) / (2.0 * -a).exp2() - 1.0).abs());
-        }
-    }
-    assert!(lighter > 1000 && darker > 1000, "{lighter} lighter, {darker} darker");
-    assert!(worst < 1e-4, "the colour is {worst:.2e} off its law");
-    // Twin: the symmetric law moves the lighter grains' colour.
-    assert!(greyed > lighter / 2, "the twin moves {greyed} of {lighter}");
-}
-
-#[test]
-fn the_luma_is_the_monochrome_grain_s_and_the_channels_keep_their_order() {
-    let (k, mono) = (at_colour(TOP), at_colour(0.0));
-    let patches = [[0.05, 0.032, 0.0215, 1.0], [0.02, 0.0024, 0.0016, 1.0], [0.003, 0.0045, 0.03, 1.0], [0.03, 0.055, 0.015, 1.0]];
-    let (mut off, mut twin) = (0.0f32, 0.0f32);
-    for (n, s) in patches.into_iter().enumerate() {
-        for at in centres() {
-            let (p, m) = (grain(s, s, at, &k), grain(s, s, at, &mono));
-            off = off.max((dot(rgb(p), LUMA) / dot(rgb(m), LUMA) - 1.0).abs());
-            for (i, j) in [(0, 1), (1, 2), (0, 2)] {
-                assert_eq!(s[i] > s[j], p[i] > p[j], "at {at:?}: channels {i} and {j} swap");
-            }
-            // Twin, on the red: the vignette's renormalisation, which puts back a power mean, not the luma.
-            let power = (TOP * (-k.stops * field(at, &k)).max(0.0)).exp2();
-            let e = map(rgb(m), |_, v| v.powf(power));
-            let back = map(e, |_, v| v * dot(e, LUMA).powf(1.0 / power - 1.0));
-            if n == 1 {
-                twin = twin.max((dot(back, LUMA) / dot(rgb(m), LUMA) - 1.0).abs());
-            }
-        }
-    }
-    assert!(off < 1e-6, "the luma is {off:.2e} off the monochrome grain's");
-    assert!(twin > 1e-3, "the twin's luma is {twin:.2e} off");
-}
-
-#[test]
-fn a_channel_at_or_under_zero_carries_no_chroma_and_is_kept() {
-    let k = at_colour(TOP);
-    let (zero, under, black, dark) = ([0.04, 0.0, 0.02, 1.0], [0.04, -0.003, 0.02, 1.0], [0.0, 0.0, 0.0, 1.0], [-0.01, 0.002, 0.001, 1.0]);
-    let mut twin = 0.0f32;
-    for at in centres().take(512) {
-        let a = k.stops * field(at, &k);
-        for s in [zero, under, black, dark] {
-            assert!(grain(s, s, at, &k).iter().all(|v| v.is_finite()), "at {at:?}: {s:?}");
-        }
-        assert_eq!(grain(zero, zero, at, &k)[1], 0.0, "at {at:?}: a zero channel stays zero");
-        assert_eq!(grain(black, black, at, &k), black);
-        assert_eq!(grain(dark, dark, at, &k), with_alpha(map(rgb(dark), |_, v| v * a.exp2()), 1.0), "at {at:?}: a luma under zero takes the grain alone");
-        // Under zero, the channel stays under and only follows the luma, the grain's.
-        let (p, y) = (grain(under, under, at, &k), dot(rgb(under), LUMA));
-        assert!(p[1] < 0.0 && (dot(rgb(p), LUMA) / (a.exp2() * y) - 1.0).abs() < 1e-6, "at {at:?}: {p:?}");
-        // Twin: the channel floored at zero first.
-        let floored = laid(with_alpha(map(rgb(under), |_, v| v.max(0.0)), 1.0), a, TOP, -a);
-        twin = twin.max((floored[1] - p[1]).abs() / under[1].abs());
-    }
-    assert!(twin > 0.5, "the twin moves the channel {twin}");
-}
-
-#[test]
-fn the_share_scales_the_stops_the_colour_reads() {
-    let whole = at_colour(2.0);
-    let half = Grain { share: [0.5; GRAIN_NODES], ..whole };
-    let s = [0.05, 0.02, 0.2, 1.0];
-    let mut twin = 0.0f32;
-    for at in centres().take(512) {
-        let b = grain(s, s, at, &half);
-        assert_eq!(b, laid(s, half.stops * 0.5 * field(at, &half), 2.0, -half.stops * 0.5 * field(at, &half)), "at {at:?}");
-        // Twin: the colour read off the whole stops, the light's alone halved.
-        let a = whole.stops * field(at, &whole);
-        let unshared = map(rgb(laid(s, a, 2.0, -a)), |_, v| v * (-0.5 * a).exp2());
-        twin = twin.max((0..3).map(|c| (unshared[c] / b[c] - 1.0).abs()).fold(0.0, f32::max));
-    }
-    assert!(twin > 1e-3, "the twin passes at {twin:.2e}");
-    // A light given no share is kept to the bit.
-    assert_eq!(grain(s, s, [3.25, 10.5], &Grain { share: [0.0; GRAIN_NODES], ..whole }), s);
-}
-
-/// Seeds far apart, near none and at the top of the range.
-const SEEDS: [[u32; 2]; 3] = [[0x9e37_79b9, 0x7f4a_7c15], [12_345, 678], [u32::MAX, 1]];
-
-#[test]
-fn seed_zero_is_the_lattice_as_it_was() {
-    // The hash with no seed, as every grained render laid it before photos had their own.
-    let unseeded = |i: [i32; 2]| {
-        let mut v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
-        for _ in 0..2 {
-            v[0] = v[0].wrapping_add(v[1].wrapping_mul(1_664_525));
-            v[1] = v[1].wrapping_add(v[0].wrapping_mul(1_664_525));
-            v = v.map(|x| x ^ (x >> 16));
-        }
-        [v[0] & 0xffff, v[0] >> 16, v[1] & 0xffff, v[1] >> 16].map(|n| (n as f32 + 0.5) * (1.0 / 65536.0))
+    let correlation = |d: &[V3], a: usize, b: usize| {
+        let (sa, sb, sab) = d.iter().fold((0.0f32, 0.0f32, 0.0f32), |(x, y, z), v| (x + v[a] * v[a], y + v[b] * v[b], z + v[a] * v[b]));
+        sab / (sa * sb).sqrt()
     };
-    let nodes = || (-32..32).flat_map(|y| (-32..32).map(move |x| [x, y]));
-    assert!(nodes().all(|i| hash(i, [0, 0]) == unseeded(i)), "seed 0 moves the lattice");
-    // Twin: a seed of one moves every node.
-    assert!(nodes().all(|i| hash(i, [1, 0]) != unseeded(i)));
+    let own = devs(&portra(0.04));
+    println!("red and green's grains correlate {:.3} on their own", correlation(&own, 0, 1));
+    assert!(correlation(&own, 0, 1).abs() < 0.15, "{}", correlation(&own, 0, 1));
+    // Twins: one layer's grains on the three channels correlate whole, and a gaze seeing two layers alike mixes them.
+    let silver = devs(&portra(0.04).on_silver());
+    assert!(correlation(&silver, 0, 1) > 0.999);
+    let mixed = Grain { gaze: [[0.5, 0.5, 0.0], [0.5, 0.5, 0.0], [0.0, 0.0, 1.0]], ..portra(0.04) };
+    assert!(correlation(&devs(&mixed), 0, 1) > 0.95);
 }
 
 #[test]
-fn every_seed_lays_standard_normals_uncorrelated_with_another_seed_s() {
-    for seed in SEEDS {
-        let (mean, var, next) = moments(|i| normal(hash(i, seed)));
-        assert!(mean.abs() < 0.01 && (var - 1.0).abs() < 0.01 && next < 0.01, "{seed:?}: mean {mean}, variance {var}, neighbours {next}");
-    }
-    // Twin: the seeded index read with no round, whose neighbours step by one constant.
-    let linear = |i: [i32; 2]| {
-        let v = [i[0] as u32, i[1] as u32].map(|x| x.wrapping_add(SEEDS[0][0]).wrapping_mul(1_664_525).wrapping_add(1_013_904_223));
-        normal([v[0] & 0xffff, v[0] >> 16, v[1] & 0xffff, v[1] >> 16].map(|n| (n as f32 + 0.5) * (1.0 / 65536.0)))
-    };
-    let (_, _, stepped) = moments(linear);
-    assert!(stepped > 0.1, "the twin's neighbours correlate at {stepped}");
-    let correlation = |a: [u32; 2], b: [u32; 2], read: &dyn Fn([i32; 2], [u32; 2]) -> f32| {
-        let nodes: Vec<[i32; 2]> = (-128..128).flat_map(|y| (-128..128).map(move |x| [x, y])).collect();
-        let (x, y): (Vec<f64>, Vec<f64>) = nodes.iter().map(|&i| (f64::from(read(i, a)), f64::from(read(i, b)))).unzip();
-        let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
-        let (mx, my) = (mean(&x), mean(&y));
-        let cov = x.iter().zip(&y).map(|(p, q)| (p - mx) * (q - my)).sum::<f64>();
-        let norm = (x.iter().map(|p| (p - mx).powi(2)).sum::<f64>() * y.iter().map(|q| (q - my).powi(2)).sum::<f64>()).sqrt();
-        cov / norm
-    };
-    let seeded = |i: [i32; 2], s: [u32; 2]| normal(hash(i, s));
-    for (a, b) in [([0, 0], SEEDS[0]), (SEEDS[0], SEEDS[1]), (SEEDS[1], SEEDS[2])] {
-        let c = correlation(a, b, &seeded);
-        assert!(c.abs() < 0.01, "{a:?} and {b:?} correlate at {c}");
-    }
-    // Twin: a seed the hash ignores lays one arrangement on every photo.
-    let ignored = correlation(SEEDS[0], SEEDS[1], &|i, _| normal(hash(i, [0, 0])));
-    assert!(ignored > 0.99, "the twin correlates at {ignored}");
-}
-
-/// A masked negative: an orange bare film under its reading's pedestal, its blue layer's window the widest.
-const MASKED: GrainedNegative = GrainedNegative { bare: [0.5003, 0.2503, 0.1003], veil: 0.0003, layers: [0.8, 1.0, 1.2] };
-
-/// The film's light holding `share` of each layer's window, the mean window `window` of density.
-fn film(share: V3, window: f32) -> V4 {
-    with_alpha(map(share, |c, u| MASKED.bare[c] * 10f32.powf(-window * MASKED.layers[c] * u) - MASKED.veil), 1.0)
-}
-
-/// Each layer's share of its window `p` holds.
-fn shares(p: V4, window: f32) -> V3 {
-    map(rgb(p), |c, v| -((v + MASKED.veil) / MASKED.bare[c]).log10() / (window * MASKED.layers[c]))
+fn a_photos_seed_lays_its_own_arrangement_of_the_same_grain() {
+    let side = 96;
+    let input = flat(side, [0.18, 0.18, 0.18, 1.0]);
+    let (a, b) = (grained(&input, &portra(0.04)), grained(&input, &portra(0.04).seeded([7, 3])));
+    let gap = a.iter().zip(&b).map(|(x, y)| (x[1] - y[1]).abs()).fold(0.0, f32::max);
+    assert!(gap > 1e-2, "another seed lays the same grains");
+    assert!((tiled(&a, side, 1) / tiled(&b, side, 1) - 1.0).abs() < 0.2, "with the same strength");
+    // Twin: the same seed lays the same grains, to the bit.
+    assert_eq!(a, grained(&input, &portra(0.04)));
 }
 
 #[test]
-fn on_a_negative_the_grain_moves_one_share_of_every_window_and_a_grey_stays_grey() {
-    let k = at_colour(2.0).on_negative(MASKED);
-    let grey = film([0.4; 3], 1.0);
-    let (mut apart, mut off, mut twin) = (0.0f32, 0.0f32, 0.0f32);
-    for at in centres().take(512) {
-        let a = k.stops * field(at, &k);
-        let u = shares(grain(grey, grey, at, &k), 1.0);
-        apart = apart.max((u[0] - u[1]).abs().max((u[2] - u[1]).abs()));
-        off = off.max((u[1] - (0.4 - a * std::f32::consts::LOG10_2)).abs());
-        // Twin: the same grain laid on the film's light as on a positive's parts the layers and tints the grey.
-        let plain = shares(grain(grey, grey, at, &Grain { negative: None, ..k }), 1.0);
-        twin = twin.max((plain[2] - plain[0]).abs());
-    }
-    assert!(apart < 2e-5, "a grey's layers part by {apart:.2e} of their windows");
-    assert!(off < 2e-5, "the share is {off:.2e} off the stops laid");
-    assert!(twin > 5e-3, "the twin's layers part by {twin:.2e} only");
+fn a_negatives_grain_lies_in_its_windows_shares() {
+    let negative = GrainedNegative { bare: [0.5003, 0.2503, 0.1003], veil: 0.0003, window: [0.8, 1.0, 1.2] };
+    let k = portra(0.0).on_negative(negative);
+    let light = [0.3, 0.05, 0.03, 1.0];
+    let share = shared(light, &k);
+    let back = coded(share, &k);
+    assert!((0..3).all(|c| (back[c] / light[c] - 1.0).abs() < 1e-5), "{back:?}");
+    assert!((share[1] - (-(0.0503f32 / 0.2503).log10() / 1.0)).abs() < 1e-6, "green's share of its window");
+    // Twin: read as a positive's code, the same light is another share.
+    assert!((shared(light, &portra(0.0))[1] - share[1]).abs() > 0.05);
 }
 
 #[test]
-fn on_a_negative_a_grain_deepens_the_hue_where_the_picture_darkens() {
-    let k = at_colour(2.0).on_negative(MASKED);
-    let s = film([0.3, 0.4, 0.55], 1.0);
-    let chroma = |p: V4| {
-        let u = shares(p, 1.0);
-        u[2] - u[0]
-    };
-    let (mut lighter, mut denser, mut twin) = (0, 0, 0.0f32);
-    for at in centres().take(512) {
-        let a = k.stops * field(at, &k);
-        let p = grain(s, s, at, &k);
-        if a > 0.01 {
-            assert!(chroma(p) > chroma(s) + 1e-4, "at {at:?}: a lighter negative, a darker picture, spreads its layers");
-            lighter += 1;
-        } else if a < -0.01 {
-            assert!((chroma(p) - chroma(s)).abs() < 2e-5, "at {at:?}: a denser negative keeps its hue");
-            denser += 1;
-        }
-        // Twin: without its colour the grain spreads no layer.
-        let mono = grain(s, s, at, &Grain { colour: [0.0; GRAIN_NODES], ..k });
-        twin = twin.max((chroma(mono) - chroma(s)).abs());
-    }
-    assert!(lighter > 100 && denser > 100, "{lighter} lighter and {denser} denser");
-    assert!(twin < 2e-5, "the monochrome twin spreads its layers by {twin:.2e}");
+fn a_wide_footprint_takes_in_no_more_cells_than_the_bound_and_lays_the_mean_of_its_grains() {
+    let wide = Grain::on(SAME, 3.0, 40.0, [0.1; 3], PURE);
+    let cells = 2.0 * wide.reach() / (GRAIN_STEP * wide.radius) + 1.0;
+    assert!(cells <= GRAIN_CELLS as f32 + 1e-4, "{cells} cells");
+    assert!(wide.deviation[0] < 0.1 && wide.deviation[0] > 0.0, "a footprint past the bound spreads less: {:?}", wide.deviation);
+    // Twin: at full resolution the deviation is the grain's own.
+    let full = Grain::on(SAME, 3.0, 1.0, [0.1; 3], PURE);
+    assert!((full.deviation[0] - 0.1).abs() < 1e-6 && (full.cloud - (GRAIN_CLOUD * 3.0).hypot(0.5)).abs() < 1e-6);
 }

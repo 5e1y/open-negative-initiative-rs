@@ -17,7 +17,7 @@ pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
-pub use kernel::grain::{GRAIN_FOOTPRINT_CAP, GRAIN_HIGH_STOPS, GRAIN_LOW_STOPS, GRAIN_NODES, Grain, GrainedNegative, grain_node_light};
+pub use kernel::grain::{GRAIN_CELLS, GRAIN_CLOUD, GRAIN_STEP, Grain, GrainedNegative};
 pub use kernel::halation::{HALATION_COLOUR, Halation};
 pub use kernel::held_black::HeldBlack;
 pub use kernel::negative::{LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, NEGATIVE_CURVE_NODES, NEGATIVE_STEPS, Development, Negative};

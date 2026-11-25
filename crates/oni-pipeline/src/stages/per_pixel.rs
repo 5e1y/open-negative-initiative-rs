@@ -49,7 +49,7 @@ kernel!(TEXTURE, [wgsl::TEXTURE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return 
 kernel!(SCANNER_ENCODE, wgsl::SCANNER_ENCODE, call "scanner_encode_px(v)");
 kernel!(SCANNER_OUTPUT, [wgsl::SCANNER_OUTPUT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_output_px(load(p), load1(p)); }");
 kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
-kernel!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(load(p), load1(p), vec2<f32>(p) + 0.5); }");
+kernel!(HALATION_SOURCE, wgsl::HALATION_SOURCE, call "halation_source_px(v)");
 kernel!(HALATION, [wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
 /// The fused stages 4 to 7 past Lighting on the negative, which `converted` lays before them.
@@ -168,13 +168,12 @@ pub fn optical_vignette(extent: Rect, stops: f32) -> PerPixel {
     PerPixel { name: "optical-vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
 }
 
-/// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there;
-/// the scene blurred under a grain as the auxiliary image.
-pub fn grain(k: &Grain) -> PerPixel {
-    PerPixel { name: "grain", kernel: &GRAIN, params: uniform(k.head(), &k.rows()) }
+/// The light each pixel of a film's layers' exposures sends into its glow.
+pub fn halation_source(k: &Halation) -> PerPixel {
+    PerPixel { name: "halation-source", kernel: &HALATION_SOURCE, params: uniform(HEAD, &k.rows()) }
 }
 
-/// The halation on a film's layers' exposures, their blur the auxiliary image.
+/// The halation on a film's layers' exposures, their glow the auxiliary image.
 pub fn halation(k: &Halation) -> PerPixel {
     PerPixel { name: "halation", kernel: &HALATION, params: uniform(HEAD, &k.rows()) }
 }

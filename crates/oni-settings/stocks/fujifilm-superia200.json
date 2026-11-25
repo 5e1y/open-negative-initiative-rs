@@ -54,11 +54,10 @@
   ],
   "effects": {
    "halation": {
-    "dose": 0.01,
-    "size": 125.0
+    "dose": 0.1,
+    "size": 200.0
    },
-   "bloom": 2.8,
-   "grain_size": 14.3
+   "bloom": 2.8
   },
   "profile": {
    "info": {

@@ -35,9 +35,9 @@ impl Pipeline {
         let effects = (!measuring && s.mode.is_digital()).then_some(scan);
         // The grain lies on the developed film, a pass of its own: a print notch starts from the grained film the
         // canvas's cache keeps.
-        let grain = effects.and_then(|scan| grain::grain(s, scan, scale)).map(|k| (k.seeded(inputs.seed), grain::dissolve(s, scan)));
+        let grain = effects.and_then(|scan| grain::grain(s, scan, scale)).map(|k| k.seeded(inputs.seed));
         let grained = |film: Image| match &grain {
-            Some((k, sigma)) => grain::grained(film, k, *sigma),
+            Some(k) => grain::grained(film, k),
             None => film,
         };
         // The virtual film takes that scene as a pass of its own too, the halation on its layers before their curve: its

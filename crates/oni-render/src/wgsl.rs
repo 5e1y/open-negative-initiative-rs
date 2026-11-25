@@ -30,9 +30,11 @@ pub const CURVES: &str = include_str!("wgsl/curves.wgsl");
 pub const SATURATION_CURVE: &str = include_str!("wgsl/saturation_curve.wgsl");
 /// `vignette_px(s, at)`.
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
-/// `grain_px(s, at)`.
+/// `grain_px(p)`, reading its input through `load` around `p`.
 pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
-/// `halation_px(e, blurred)`.
+/// `halation_source_px(e)`.
+pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
+/// `halation_px(e, glow)`.
 pub const HALATION: &str = include_str!("wgsl/halation.wgsl");
 /// `color_matrix_px(s)`.
 pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");

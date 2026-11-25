@@ -70,7 +70,7 @@ impl Block {
                 GreenContrast,
                 BlueContrast,
             ],
-            Block::FilmEffects => &[GrainAmount, GrainSize, GrainColourBlack, GrainColourWhite, HalationAmount, HalationSize, Bloom],
+            Block::FilmEffects => &[GrainAmount, GrainSize, HalationAmount, HalationSize, Bloom],
             Block::LensCorrections => &[Distortion, FringeRed, FringeBlue, LensVignetting],
             Block::Film => &[FilmExposure],
         }

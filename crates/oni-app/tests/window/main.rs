@@ -32,7 +32,6 @@ mod frame_gesture;
 mod frame_owner;
 mod folder_owner;
 mod film_effects;
-mod grain_colour;
 mod lens;
 mod density;
 mod picture_plots;

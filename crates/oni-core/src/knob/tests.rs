@@ -88,18 +88,6 @@ fn a_strength_redoses_as_the_panes_do() {
 }
 
 #[test]
-fn the_grains_colour_ends_write_the_grain_alone_and_hold_their_range() {
-    let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    let black = Knob::GrainColourBlack.set(&s, 9.0);
-    assert_eq!(black.grain.colour, GrainColour { black: GrainColour::RANGE.1, white: GrainColour::REST.white });
-    assert_eq!(FieldSet::between(&s, &black).iter().collect::<Vec<_>>(), vec![Field::Grain]);
-    let white = Knob::GrainColourWhite.set(&s, 0.6);
-    assert_eq!((Knob::GrainColourWhite.get(&white), Knob::GrainColourBlack.get(&white)), (0.6, GrainColour::REST.black));
-    // Twin: the black end is not the white's, and stays where it was.
-    assert_ne!(Knob::GrainColourWhite.get(&black), GrainColour::RANGE.1);
-}
-
-#[test]
 fn the_film_exposure_moves_a_digital_photos_film_alone() {
     let s = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
     let over = Knob::FilmExposure.set(&s, 9.0);

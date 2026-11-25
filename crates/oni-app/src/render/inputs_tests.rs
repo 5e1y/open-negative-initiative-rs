@@ -306,8 +306,10 @@ fn a_film_effect_notch_reads_no_distribution_again() {
     let (ran, read) = passes(&mut engine, &s);
     assert_eq!(ran, 0, "a film effect's notch read the distributions again");
     assert_eq!((read.levels, read.curves), (first.levels, first.curves));
-    s.grain.colour.black = 1.2;
-    assert_eq!(passes(&mut engine, &s).0, 0, "a grain colour notch read the distributions again");
+    s.grain.size = 45.0;
+    assert_eq!(passes(&mut engine, &s).0, 0, "a grain size notch read the distributions again");
+    s.bloom.size = 3.0;
+    assert_eq!(passes(&mut engine, &s).0, 0, "a Bloom notch read the distributions again");
     // Twin: a film exposure notch moves the negative both readings read, so it is read again.
     s.virtual_film = s.film().map(|f| oni_settings::VirtualFilm { exposure: 1.0, ..f });
     assert!(passes(&mut engine, &s).0 > 0, "a film exposure notch kept a stale reading");

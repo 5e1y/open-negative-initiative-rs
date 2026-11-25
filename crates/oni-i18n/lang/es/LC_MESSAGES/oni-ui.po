@@ -589,7 +589,7 @@ msgstr "Luces"
 msgid "Shadows"
 msgstr "Sombras"
 
-#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/grain_colour.slint
+#: crates/oni-ui/ui/ds/welcome_edit.slint crates/oni-ui/ui/ds/welcome_focus.slint crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "White point"
 msgstr "Punto blanco"
 
@@ -901,15 +901,15 @@ msgstr "Tono"
 msgid "Luminance"
 msgstr "Luminancia"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/grain_colour.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
 msgid "Black point"
 msgstr "Punto negro"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/grain_colour.slint
+#: crates/oni-ui/ui/editors.slint
 msgid "Saturated"
 msgstr "Saturado"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/grain_colour.slint
+#: crates/oni-ui/ui/editors.slint
 msgid "Desaturated"
 msgstr "Desaturado"
 
@@ -2062,8 +2062,8 @@ msgid "Film Effects"
 msgstr "Efectos de película"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain is laid on the developed film, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation is the light the film's base sends back into its layers, the red one's most: a share of each layer's exposure, spread and laid back before the film's curve, which shows it only around the highlights. Halation size is the glow's width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free."
-msgstr "El grano se posa sobre la película revelada, sus granos formados enteros a cualquier intensidad, más contrastados con Grano, más gruesos con Tamaño del grano, dispuestos de otro modo en cada foto; se queda en la foto al recortarla, girarla o ampliarla. Tamaño del grano es el ancho de un grano en un fotograma de 35 mm, mostrado en píxeles de la foto a resolución completa, de modo que el mismo grano se posa igual en cualquier resolución. Un grano grueso absorbe en sus cúmulos el detalle más fino que un grano y lo deja nítido entre ellos.\n\nHalación es la luz que el soporte de la película devuelve a sus capas, sobre todo a la roja: una parte de la exposición de cada capa, extendida y devuelta antes de la curva de la película, que solo la muestra alrededor de las altas luces. Tamaño de la halación es el ancho del resplandor en un fotograma de 35 mm.\n\nDifusión es el desenfoque propio de la película, la luz que su emulsión difunde antes del revelado, su ancho en un fotograma de 35 mm.\n\nUna película posa sus propios valores al elegirla; cada control sigue libre."
+msgid "Grain is made of grains on the developed film, each its own: every layer has its own grains, each grain reading the film where it lies, so detail finer than a grain goes and the edges follow the grains. Grain sets how far each grain strays from the film around it, the same at every tone, the inversion alone shaping it from the shadows to the highlights; Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. The grains stay on the photo as it is cropped, turned or zoomed.\n\nHalation is the light the film's base sends back into its layers, the red one's most: the brighter a light, the more of it glows, so a mid tone barely moves and a clipped lamp glows. Halation sets the glow's dose, Halation size its width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free."
+msgstr "El grano está hecho de granos sobre la película revelada, cada uno el suyo: cada capa tiene sus propios granos, cada grano leyendo la película donde está, de modo que el detalle más fino que un grano desaparece y los bordes siguen los granos. Grano ajusta cuánto se aparta cada grano de la película que lo rodea, igual en todos los tonos, y la inversión sola lo modela de las sombras a las altas luces; Tamaño del grano es el ancho de un grano en un fotograma de 35 mm, mostrado en píxeles de la foto a resolución completa, de modo que el mismo grano se posa igual en cualquier resolución. Los granos se quedan en la foto al recortarla, girarla o ampliarla.\n\nHalación es la luz que el soporte de la película devuelve a sus capas, sobre todo a la roja: cuanto más viva una luz, más brilla, de modo que un tono medio apenas se mueve y una lámpara saturada resplandece. Halación ajusta la dosis del resplandor, Tamaño de la halación su ancho en un fotograma de 35 mm.\n\nDifusión es el desenfoque propio de la película, la luz que su emulsión difunde antes del revelado, su ancho en un fotograma de 35 mm.\n\nUna película posa sus propios valores al elegirla; cada control sigue libre."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -2336,14 +2336,6 @@ msgstr "Negro"
 #: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/film_block.slint
 msgid "White"
 msgstr "Blanco"
-
-#: crates/oni-ui/ui/panel/grain_colour.slint
-msgid "Grain colour at the black point"
-msgstr "Color del grano en el punto negro"
-
-#: crates/oni-ui/ui/panel/grain_colour.slint
-msgid "Grain colour at the white point"
-msgstr "Color del grano en el punto blanco"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Prepared Roll"

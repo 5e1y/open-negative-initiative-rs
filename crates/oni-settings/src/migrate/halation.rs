@@ -34,9 +34,6 @@ pub fn caught_up(version: i64, mut settings: PipelineSettings, stored: Option<&V
         settings.halation.amount = settings.halation.amount.clamp(0.0, 1.0) * Halation::AMOUNT_RANGE.1;
     }
     settings.bloom = rests.bloom;
-    if settings.grain.size == Grain::SIZE_REST {
-        settings.grain.size = rests.grain_size;
-    }
     settings
 }
 
@@ -68,12 +65,12 @@ mod tests {
         assert!(rests.halation.amount > 0.0 && rests.bloom.size > 0.0, "the film gives its own: {rests:?}");
         let on_film = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
         let read = caught_up(older, on_film.clone(), Some(&json!({})));
-        assert_eq!((read.halation, read.bloom, read.grain.size), (rests.halation, rests.bloom, rests.grain_size));
-        // Twin: a grain the hand sized and a halation it laid keep their place.
+        assert_eq!((read.halation, read.bloom), (rests.halation, rests.bloom));
+        // Twin: a halation the hand laid keeps its place.
         let mut held = on_film.clone();
-        (held.grain.size, held.halation.amount) = (40.0, 0.2);
+        held.halation.amount = 0.2;
         let read = caught_up(older, held, Some(&json!({ "halation": { "amount": 0.2, "size": 0.5 } })));
-        assert_eq!((read.grain.size, read.halation.amount, read.halation.size), (40.0, 0.2 * Halation::AMOUNT_RANGE.1, 72.0));
+        assert_eq!((read.halation.amount, read.halation.size), (0.2 * Halation::AMOUNT_RANGE.1, 72.0));
         // The neutral film gives no effect: a new photo's rest.
         let neutral = caught_up(older, PipelineSettings::rest(ConversionMode::Digital, true), Some(&json!({})));
         assert_eq!((neutral.halation, neutral.bloom), (Halation::default(), crate::blocks::Bloom::default()));

@@ -103,15 +103,12 @@ pub struct FilmBlock {
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Effects {
-    /// The share of a layer's exposure the base sends back, and the glow's deviation.
+    /// The share of a clipped light's exposure its glow adds, and the glow's deviation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub halation: Option<Halation>,
     /// The emulsion's own blur, its deviation, as the sheet's MTF holds it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bloom: Option<f32>,
-    /// A grain's width.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub grain_size: Option<f32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -128,7 +125,6 @@ impl Effects {
         FilmEffects {
             halation: self.halation.map_or(own.halation, |h| crate::blocks::Halation { amount: h.dose, size: h.size }),
             bloom: self.bloom.map_or(own.bloom, |size| crate::blocks::Bloom { size }),
-            grain_size: self.grain_size.unwrap_or(own.grain_size),
         }
     }
 }

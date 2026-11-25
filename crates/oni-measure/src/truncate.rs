@@ -2,7 +2,7 @@
 //! recipe every reading is taken through.
 
 use oni_settings::axis::graduation;
-use oni_settings::blocks::{ChromaDenoise, Grain, Halation, Texture, Vignette};
+use oni_settings::blocks::{Bloom, ChromaDenoise, Grain, Halation, Texture, Vignette};
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::levels::LevelsSet;
 use oni_settings::spectrogram::Spectrogram;
@@ -24,9 +24,10 @@ pub fn truncated(s: &PipelineSettings, before: Stage) -> PipelineSettings {
     // Chroma denoise runs downstream of the levels, so a measurement of what enters them carries none.
     out.chroma = ChromaDenoise::OFF;
     out.spectrogram = Spectrogram::default();
-    // A measure renders neither film effect, so a notch on one reads nothing again.
+    // A measure renders no film effect, so a notch on one reads nothing again.
     out.grain = Grain::default();
     out.halation = Halation::default();
+    out.bloom = Bloom::default();
     out.saturation = SaturationCurve::default();
     out.secret_sauce = 0.0;
     out.texture = Texture::default();

@@ -133,17 +133,17 @@ export component ColorPane inherits Pane {
         // The same filters, each band's alone, in stops either way.
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
-            field: 56; label: @tr("C"); fraction: Store.cyan-fraction; readout: Store.cyan-readout; value-text: Store.cyan-value;
+            field: 54; label: @tr("C"); fraction: Store.cyan-fraction; readout: Store.cyan-readout; value-text: Store.cyan-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
-            field: 57; label: @tr("M"); fraction: Store.magenta-fraction; readout: Store.magenta-readout; value-text: Store.magenta-value;
+            field: 55; label: @tr("M"); fraction: Store.magenta-fraction; readout: Store.magenta-readout; value-text: Store.magenta-value;
             fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
         }
         if PanelState.filtration-cmy: StoreSlider {
             near: colour-block.hovered;
-            field: 58; label: @tr("Y"); fraction: Store.yellow-fraction; readout: Store.yellow-readout; value-text: Store.yellow-value;
+            field: 56; label: @tr("Y"); fraction: Store.yellow-fraction; readout: Store.yellow-readout; value-text: Store.yellow-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
         StoreSlider { field: 2; label: @tr("Saturation"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
@@ -268,7 +268,7 @@ export component ColorPane inherits Pane {
         help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThe sliders act on the negative as in a darkroom, the black picked in Prepare the Roll held: Exposure is the light, Temperature and Tint its filters, Contrast the grade. On a paper, Brightness is Exposure sparing that black and the first shadows.");
         StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
         // A paper's print brightened between its black and white: no paper, no Brightness.
-        if PanelState.paper-shown: StoreSlider { field: 55; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }
+        if PanelState.paper-shown: StoreSlider { field: 53; label: @tr("Brightness"); fraction: Store.brightness-fraction; readout: Store.brightness-readout; value-text: Store.brightness-value; }
         StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
         StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
@@ -327,7 +327,7 @@ export component ColorPane inherits Pane {
         title: @tr("Film Effects");
         block: 11;
         modified: Store.film-effects-modified;
-        help: @tr("Grain is laid on the developed film, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation is the light the film's base sends back into its layers, the red one's most: a share of each layer's exposure, spread and laid back before the film's curve, which shows it only around the highlights. Halation size is the glow's width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free.");
+        help: @tr("Grain is made of grains on the developed film, each its own: every layer has its own grains, each grain reading the film where it lies, so detail finer than a grain goes and the edges follow the grains. Grain sets how far each grain strays from the film around it, the same at every tone, the inversion alone shaping it from the shadows to the highlights; Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. The grains stay on the photo as it is cropped, turned or zoomed.\n\nHalation is the light the film's base sends back into its layers, the red one's most: the brighter a light, the more of it glows, so a mid tone barely moves and a clipped lamp glows. Halation sets the glow's dose, Halation size its width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free.");
         StoreSlider { field: 37; label: @tr("Grain"); fraction: Store.grain-amount-fraction; readout: Store.grain-amount-readout; value-text: Store.grain-amount-value; }
         StoreSlider { field: 38; label: @tr("Grain size"); fraction: Store.grain-size-fraction; readout: Store.grain-size-readout; value-text: Store.grain-size-value; }
         StoreSlider { field: 39; label: @tr("Halation"); fraction: Store.halation-amount-fraction; readout: Store.halation-amount-readout; value-text: Store.halation-amount-value; }
