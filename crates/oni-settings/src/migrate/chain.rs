@@ -142,6 +142,8 @@ pub const FILM_EFFECTS_VERSION: i64 = 76;
 /// The version a RAW came to be readable in its camera's own channels, a key a build before it cannot read: no step, as
 /// every older document reads it through the camera's matrix.
 pub const CAMERA_CHANNELS_VERSION: i64 = 77;
+/// The version a film's file came to give its own grain: a digital photo's grain at the common rest takes its film's.
+pub const FILM_GRAIN_VERSION: i64 = 78;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

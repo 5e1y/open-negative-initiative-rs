@@ -2,7 +2,7 @@
 //! reference each stock brings, which its negative is read on as a roll's measure is; a new photo's is the neutral film.
 
 use crate::axis::graduation;
-use crate::blocks::{Bloom, Halation};
+use crate::blocks::{Bloom, Grain, Halation};
 use crate::dyes::DyeSet;
 use crate::levels::{Levels, LevelsSet};
 use crate::modes::ConversionMode;
@@ -62,11 +62,19 @@ impl StockReference {
     }
 }
 
-/// The rests of a digital photo's film effects on a stock: its halation and its emulsion's blur.
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+/// The rests of a digital photo's film effects on a stock: its halation, its emulsion's blur and its grain.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FilmEffects {
     pub halation: Halation,
     pub bloom: Bloom,
+    pub grain: Grain,
+}
+
+impl Default for FilmEffects {
+    /// A film whose file gives none: no glow, no blur, the grain a new photo opens with.
+    fn default() -> Self {
+        FilmEffects { halation: Halation::default(), bloom: Bloom::default(), grain: Grain { amount: Grain::DIGITAL_AMOUNT, size: Grain::SIZE_REST } }
+    }
 }
 
 #[cfg(test)]

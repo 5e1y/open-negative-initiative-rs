@@ -32,7 +32,11 @@
     "dose": 0.1,
     "size": 200.0
    },
-   "bloom": 1.5
+   "bloom": 1.5,
+   "grain": {
+    "amount": 0.11,
+    "size": 19.0
+   }
   },
   "profile": {
    "info": {

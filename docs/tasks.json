@@ -13480,5 +13480,13 @@
     "title": "CLAUDE.md: the full check's real times and when it runs",
     "status": "done",
     "detail": "The Build section said 30 s and 2 min; it now gives the measured times and the owner's rule of 2026-11-25: the full check runs at the end of a work stream, at a milestone or before a release, the app built and tested live by the owner in between."
+  },
+  {
+    "id": 3845,
+    "type": "feature",
+    "title": "Each film's grain in its file: Grain's Amount and a grain's width beside its halation and Bloom, laid when the film is picked; sidecar format 78",
+    "status": "done",
+    "detail": "Owner's go (2026-11-25). A film's effects may hold grain { amount, size }, which a photo picking that film takes as its rest, as it takes its halation and Bloom; a person's own file in Stocks carries it too, read again as the folder is watched. scripts/datasheet-profiles.py (lay_effects) writes it from scripts/grain-levels.json, a survey of photographers' reports (97 keys, intensity and size 1 to 5, sources kept): each grain's deviation 0.016, 0.025, 0.037, 0.055 or 0.083 of its window, written as Amount over grain::GRAIN_TOP (0.1454), and a width of 19, 24, 30, 38 or 48 um. The owner's corrections for Kodak's colour negatives by their Print Grain Index: Ektar 100 and Portra 160, NC and VC at intensity 1; Portra 400, NC and VC at 2; Gold 200, UltraMax 400 and Portra 800 at 3 (Portra 800 keeps size 3); the generic keys kodak-portra, kodak-gold, kodak-colorplus and kodak-ultramax hold no virtual film, so no effect is written for them. Only the files' effects blocks moved. A film whose file gives no grain keeps a new photo's (Amount 0.25, 30 um). Sidecar format 78 (migrate::film_grain): a digital photo's grain still at that common rest takes its film's; a hand's stays.",
+    "outcome": "Every one of the 79 films holding a virtual film is in the survey and takes its grain (for instance Portra 160 Amount 0.110 at 19 um, Portra 400 0.172 at 24 um, Portra 800 0.2545 at 30 um, Delta 3200 0.571 at 48 um). oni-settings' tests ran (picking lays the film's grain, the migration's twin keeps a hand's grain); oni-app and oni-pipeline compile. The full check and lint did not run (owner's rule during a work in progress); the presets test app was not rebuilt (the colour session does it)."
   }
 ]

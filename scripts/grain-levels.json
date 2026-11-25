@@ -1,0 +1,1144 @@
+[
+ {
+  "key": "fujifilm-neopan400",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "N&B ISO 400 à émulsion Super Fine-Sigma, réputée à grain fin pour sa vitesse, plus discrète que Tri-X. Intensité moyenne (contraste marqué des grains en N&B), taille plutôt fine. Classement par ISO et technologie, sans chiffre vérifié.",
+  "sources": [
+   "Fiches techniques Fujifilm (Neopan 400 Presto)",
+   "Critiques et comparatifs N&B 400 ISO (Photrio, r/analog)"
+  ],
+  "data": "RMS diffuse publiée non retrouvée ; ordre de grandeur attendu ~12-13 pour un 400 ISO N&B (estimation)."
+ },
+ {
+  "key": "fujifilm-new-pro400",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Successeur de la Pro 400H, négatif couleur 400 ISO à quatre couches, grain fin et lisse comparable à Portra 400. Intensité moyenne, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 400H",
+   "Comparatifs Portra 400 vs Pro 400H (blogs, r/AnalogCommunity)"
+  ],
+  "data": "RMS ~4 (×1000) pour la famille Pro 400H selon la fiche Fuji (de mémoire, à confirmer)."
+ },
+ {
+  "key": "fujifilm-nexia-a200",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Film grand public APS 200 ISO, équivalent Superia 200 : grain fin, peu visible en tirage courant. Intensité faible, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Nexia / Superia",
+   "Avis de revues de pellicules 200 ISO"
+  ],
+  "data": "RMS ~5 pour la famille Superia 200 (estimation, non confirmée)."
+ },
+ {
+  "key": "fujifilm-nexia-zoom-master800",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Film APS 800 ISO de type Superia 800 : grain nettement présent, moyen à gros. Intensité forte, taille moyenne.",
+  "sources": [
+   "Fiche technique Fujifilm Superia 800",
+   "Avis de revues de pellicules 800 ISO"
+  ],
+  "data": "RMS ~5 (estimation par la famille Superia 800)."
+ },
+ {
+  "key": "fujifilm-nexia400",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Film APS 400 ISO type Superia 400 : grain modéré et fin pour un 400. Intensité moyenne, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Superia 400",
+   "Comparatifs 400 ISO couleur"
+  ],
+  "data": "RMS ~4 pour la famille Superia 400 (estimation)."
+ },
+ {
+  "key": "fujifilm-pro160c",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Négatif pro 160 ISO à grain très fin, saturé en couleurs froides. Intensité faible, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 160 series",
+   "Critiques Pro 160NS/NC sur blogs de scan"
+  ],
+  "data": "RMS ~4 (×1000) pour la série Pro 160 selon Fuji (de mémoire)."
+ },
+ {
+  "key": "fujifilm-pro160nc",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Version Natural Color de la série 160, grain fin et discret, rendu des peaux doux. Intensité faible, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 160NC",
+   "Revues de pellicules 160 ISO"
+  ],
+  "data": "RMS ~4 (série Pro 160, de mémoire)."
+ },
+ {
+  "key": "fujifilm-pro160nh",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Variante 160 ISO de la famille Pro (type NPH 160 / Pro 160S), à grain fin. Intensité faible, taille fine, classement par famille.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 160 series",
+   "Avis sur la gamme Pro 160"
+  ],
+  "data": "RMS ~4 estimé par la famille."
+ },
+ {
+  "key": "fujifilm-pro160ns",
+  "intensity": 2,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Pro 160NS, quatre couches, réputée parmi les négatifs 160 ISO les plus fins, très proche de Portra 160. Intensité faible, taille très fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 160NS",
+   "Comparatifs Portra 160 vs Pro 160NS (blogs, forums)"
+  ],
+  "data": "RMS ~4 (×1000) selon la fiche Fuji (de mémoire)."
+ },
+ {
+  "key": "fujifilm-pro160s",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Pro 160S, ancêtre de la 160NS : grain fin, un peu plus visible que la NS. Intensité faible, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 160S",
+   "Revues de pellicules 160 ISO"
+  ],
+  "data": "RMS ~4 (série Pro 160, de mémoire)."
+ },
+ {
+  "key": "fujifilm-pro400h",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Négatif 400 ISO à quatre couches, grain fin et lisse, souvent jugé aussi fin que Portra 400. Intensité moyenne, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 400H",
+   "Comparatifs Portra 400 vs Pro 400H (blogs, r/AnalogCommunity)"
+  ],
+  "data": "RMS ~4 (×1000) selon Fuji (de mémoire, à confirmer)."
+ },
+ {
+  "key": "fujifilm-pro800",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Film pro 800 ISO type Superia 800 : grain bien visible, moyen. Intensité forte, taille moyenne.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 800",
+   "Avis sur les 800 ISO couleur"
+  ],
+  "data": "RMS ~4-5 estimé pour un 800 ISO Fuji."
+ },
+ {
+  "key": "fujifilm-pro800z",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Pro 800Z avec quatrième couche et grain fin pour un 800 ISO, plus doux que la Pro 800 classique. Intensité moyenne, taille moyenne.",
+  "sources": [
+   "Fiche technique Fujifilm Pro 800Z",
+   "Revues de pellicules 800 ISO Fuji"
+  ],
+  "data": "RMS ~4 estimé."
+ },
+ {
+  "key": "fujifilm-provia100",
+  "intensity": 1,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Diapositive 100 ISO à grain très peu visible, plus visible seulement sous fort agrandissement. Intensité très faible, taille fine.",
+  "sources": [
+   "Fiche technique Fujifilm Provia 100F / RDP",
+   "Comparatifs diapositives (Velvia, Provia, Ektachrome)"
+  ],
+  "data": "RMS ~8-9 (×1000) pour la famille Provia/Velvia selon Fuji (de mémoire)."
+ },
+ {
+  "key": "kodak-colorplus",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Pas de fiche PGI trouvée pour cette ISO 200 d'entrée de gamme, qui partage la technologie de la Gold 200 : grain moyen, visible, sans finesse particulière. Classée par analogie avec la Gold 200.",
+  "sources": [
+   "https://petapixel.com/2026/09/04/kodak-gold-is-somehow-both-very-popular-and-underappreciated/"
+  ],
+  "data": "Aucun chiffre publié trouvé ; analogie Gold 200 (PGI 44)"
+ },
+ {
+  "key": "kodak-ektar100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Kodak donne un PGI inférieur à 25, soit sous le seuil de visibilité du grain : très faible et très fin, la référence des négatifs couleur à grain fin.",
+  "sources": [
+   "https://petapixel.com/2026/09/04/kodak-gold-is-somehow-both-very-popular-and-underappreciated/",
+   "https://www.photrio.com/forum/threads/which-color-film-do-you-think-has-the-most-attractive-grain.178007"
+  ],
+  "data": "Kodak PGI < 25 (4x6 depuis 35 mm) ; granularité RMS environ 8 (échelle Kodak historique)"
+ },
+ {
+  "key": "kodak-gold",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Entrée générique de la famille Gold (100/200/400) : grain d'intensité moyenne et de taille moyenne, plus visible que Portra. Niveau typique pris sur la Gold 200.",
+  "sources": [
+   "https://petapixel.com/2026/09/04/kodak-gold-is-somehow-both-very-popular-and-underappreciated/",
+   "https://www.photrio.com/forum/threads/kodak-pro-image-100-vs-gold-200-100.186525"
+  ],
+  "data": "PGI 44 (Gold 200) ; Gold 100 environ 42 (forum)"
+ },
+ {
+  "key": "kodak-gold200",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "PGI 44, nettement au-dessus du seuil de 25 : grain visible mais d'amplitude moyenne, émulsion cubique classique ISO 200, taille moyenne. Un peu plus marquée que la Portra 400 (37).",
+  "sources": [
+   "https://petapixel.com/2026/09/04/kodak-gold-is-somehow-both-very-popular-and-underappreciated/",
+   "https://www.photrio.com/forum/threads/kodak-pro-image-100-vs-gold-200-100.186525"
+  ],
+  "data": "Kodak PGI 44 (4x6 depuis 35 mm)"
+ },
+ {
+  "key": "kodak-portra",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Entrée générique de la famille Portra : niveau typique de la Portra 400 actuelle, grain d'intensité moyenne mais fin, lisse et discret.",
+  "sources": [
+   "https://petapixel.com/2026/10/16/kodak-portra-160-might-be-the-best-fine-grain-color-negative-film/",
+   "https://www.photrio.com/forum/threads/which-color-film-do-you-think-has-the-most-attractive-grain.178007"
+  ],
+  "data": "PGI 37 (Portra 400)"
+ },
+ {
+  "key": "kodak-portra160",
+  "intensity": 2,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "PGI 28, juste au-dessus du seuil de visibilité : grain faible et très fin (T-Grain), très peu visible sur les aplats ; Kodak dit qu'elle se scanne mieux.",
+  "sources": [
+   "https://petapixel.com/2026/10/16/kodak-portra-160-might-be-the-best-fine-grain-color-negative-film/",
+   "https://www.photrio.com/forum/threads/is-the-new-portra-400-much-finer-grained-than-portra-400nc-or-vc.69144"
+  ],
+  "data": "Kodak PGI 28 (4x6 depuis 35 mm)"
+ },
+ {
+  "key": "kodak-portra160nc",
+  "intensity": 2,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Ancienne version à contraste naturel, de grain très proche de la 160 actuelle : faible et très fin. Son contraste plus bas rend le grain encore moins visible.",
+  "sources": [
+   "https://www.photrio.com/forum/threads/is-the-new-portra-400-much-finer-grained-than-portra-400nc-or-vc.69144",
+   "https://laundry.manualsonline.com/manuals/mfg/kodak/400uc.html?p=8"
+  ],
+  "data": "Fiche E-190 : PGI par format ; pas de valeur confirmée ici ; proche de 28"
+ },
+ {
+  "key": "kodak-portra160vc",
+  "intensity": 2,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Version à contraste et saturation plus élevés : même émulsion fine que la 160NC, grain faible et très fin, un peu plus visible avec le contraste accru.",
+  "sources": [
+   "https://www.photrio.com/forum/threads/is-the-new-portra-400-much-finer-grained-than-portra-400nc-or-vc.69144",
+   "https://laundry.manualsonline.com/manuals/mfg/kodak/400uc.html?p=8"
+  ],
+  "data": "Granularité mesurée proche de la 160NC (dit Kodak, forum) ; pas de chiffre confirmé"
+ },
+ {
+  "key": "kodak-portra400",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "haute",
+  "summary": "PGI 37 : grain d'intensité moyenne (la référence de l'échelle) mais fin, doux et régulier, plus fin que les anciennes 400NC et 400VC.",
+  "sources": [
+   "https://petapixel.com/2026/10/16/kodak-portra-160-might-be-the-best-fine-grain-color-negative-film/",
+   "https://analog.cafe/r/kodak-ultramax-400-film-review-a3vy"
+  ],
+  "data": "Kodak PGI 37 (4x6 depuis 35 mm)"
+ },
+ {
+  "key": "kodak-portra400nc",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Ancienne Portra 400 à contraste naturel : grain d'intensité moyenne et assez fin, un peu plus grossier que la 400 actuelle selon les comparaisons de forum.",
+  "sources": [
+   "https://www.photrio.com/forum/threads/is-the-new-portra-400-much-finer-grained-than-portra-400nc-or-vc.69144",
+   "https://www.photo.net/discuss/posts/4126070/"
+  ],
+  "data": "RMS d'environ 3,0 à 3,1 cité par une base tierce (peu fiable) ; pas de PGI confirmé"
+ },
+ {
+  "key": "kodak-portra400vc",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Même émulsion que la 400NC avec plus de contraste : grain très semblable, d'intensité moyenne et fin, jugé un peu plus fin que la 400NC par certains mais l'écart est mince.",
+  "sources": [
+   "https://www.photrio.com/forum/threads/is-the-new-portra-400-much-finer-grained-than-portra-400nc-or-vc.69144",
+   "https://www.photo.net/discuss/posts/4126070/"
+  ],
+  "data": "RMS d'environ 3,0 à 3,1 cité par une base tierce (peu fiable)"
+ },
+ {
+  "key": "kodak-portra800",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "haute",
+  "summary": "PGI de 46 à 48 selon les sources : grain nettement plus fort que la Portra 400, d'intensité forte ; la technologie T-Grain garde une taille moyenne, sans arriver aux gros grains des films 1600 et plus.",
+  "sources": [
+   "https://analog.cafe/r/kodak-portra-800-film-review-pvm3",
+   "https://petapixel.com/2026/10/16/kodak-portra-160-might-be-the-best-fine-grain-color-negative-film/"
+  ],
+  "data": "Kodak PGI 46 à 48 (4x6 depuis 35 mm)"
+ },
+ {
+  "key": "kodak-ultramax",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Entrée générique de la famille UltraMax : niveau typique de l'UltraMax 400, grain d'intensité forte et de taille moyenne, plus grossier que celui de la Portra 400.",
+  "sources": [
+   "https://petapixel.com/2026/08/14/the-excellent-kodak-ultramax-400-is-an-unfortunate-victim-of-bad-branding/",
+   "https://analog.cafe/r/kodak-ultramax-400-film-review-a3vy"
+  ],
+  "data": "PGI 44 à 46 (UltraMax 400)"
+ },
+ {
+  "key": "kodak-ultramax400",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "haute",
+  "summary": "PGI de 44 à 46 : grain fort, émulsion cubique classique ISO 400 ; un test le juge plus gros que la Portra 400 mais d'apparence plus douce, car les grains sont moins tranchés.",
+  "sources": [
+   "https://petapixel.com/2026/08/14/the-excellent-kodak-ultramax-400-is-an-unfortunate-victim-of-bad-branding/",
+   "https://analog.cafe/r/kodak-ultramax-400-film-review-a3vy"
+  ],
+  "data": "Kodak PGI 44 à 46 (4x6 depuis 35 mm)"
+ },
+ {
+  "key": "cinestill-400d",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Base Vision3 250D retirée de son rem-jet, poussée à EI 400 : les critiques parlent d'un grain présent mais très contrôlé. Intensité faible, taille fine.",
+  "sources": [
+   "https://emulsive.org/articles/film-stock-review-cinestill-400d-by-ryan-gabbard",
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t"
+  ],
+  "data": "Aucun chiffre publié ; base Vision3 250D."
+ },
+ {
+  "key": "cinestill-50d",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Base Vision3 50D : grain ultra fin et quasi invisible selon les critiques, la référence des fins grains en négatif couleur.",
+  "sources": [
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t",
+   "https://www.kodak.com/content/pdfs/KODAK-VISION3-50D-5203-7203-brochure.pdf"
+  ],
+  "data": "Aucun chiffre lisible dans le texte ; Kodak annonce le grain le plus fin de sa gamme cinéma."
+ },
+ {
+  "key": "cinestill-800t",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Base Vision3 500T sans couche anti-halo. Grain fin pour 800 ISO mais plus visible que le 50D, surtout dans les ombres sous-exposées. Intensité moyenne, taille moyenne.",
+  "sources": [
+   "https://www.shopmoment.com/reviews/cinestill-800t-first-impressions",
+   "https://www.shopmoment.com/articles/cinestill-50d-vs-800t"
+  ],
+  "data": "Aucun chiffre publié ; base Vision3 500T."
+ },
+ {
+  "key": "kodak-320txp",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Tri-X 320 en sujet portrait de studio : grain cubique classique, un peu plus fin et plus doux que le 400 mais de même famille. Intensité et taille moyennes.",
+  "sources": [
+   "https://cdn.shopify.com/s/files/1/0339/5113/files/f4017_trix_320400.pdf",
+   "https://www.cacreeks.com/films.htm"
+  ],
+  "data": "Fiche Kodak F-4017 : granularité RMS diffuse de l'ordre de 15 (ancienne version), lecture à confirmer."
+ },
+ {
+  "key": "kodak-400tx",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "haute",
+  "summary": "Tri-X 400 : grain cubique marqué et visible, caractère emblématique, sensiblement plus gros que les T-Grain 400. Kodak le range pourtant en « fin ».",
+  "sources": [
+   "https://cdn.shopify.com/s/files/1/0339/5113/files/f4017_trix_320400.pdf",
+   "https://analog.cafe/r/kodak-tri-x-400-film-review-5pbm",
+   "https://125px.com/articles/photography/film/txtmytmz/"
+  ],
+  "data": "RMS diffuse 17 (« fine », fiche Kodak F-4017, ancienne version, densité 1,0, ouverture 48 µm)."
+ },
+ {
+  "key": "kodak-double-x",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Double-X (Eastman 5222), émulsion cinéma cubique à 250 ISO : grain typé classique, entre un 100 et un 400. Classé d'après l'ISO et la technologie, sans chiffre trouvé.",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ],
+  "data": "Pas de chiffre trouvé."
+ },
+ {
+  "key": "kodak-ektachrome",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Ektachrome E100 : diapositive très fine, grain quasi invisible, comparable à Velvia et Provia.",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ],
+  "data": "Kodak annonce environ RMS 8 pour l'E100 ; chiffre non vérifié dans les résultats."
+ },
+ {
+  "key": "kodak-kodachrome64",
+  "intensity": 1,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Kodachrome 64 : grain très discret et fin pour son époque, légèrement plus visible qu'un E100 moderne. Classé d'après ISO 64 et sa réputation de finesse.",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ],
+  "data": "RMS diffuse d'environ 9 à 10 selon les fiches d'époque ; chiffre à confirmer."
+ },
+ {
+  "key": "kodak-tmax-p3200",
+  "intensity": 5,
+  "size": 4,
+  "confidence": "moyenne",
+  "summary": "T-Max P3200 : grain très présent et contrasté, mais amas fins de T-Grain, donc plus fin qu'un cubique poussé à 3200. Intensité très forte, taille grosse mais pas maximale.",
+  "sources": [
+   "https://125px.com/articles/photography/film/txtmytmz/",
+   "https://125px.com/docs/unsorted/kodak/f4016.pdf"
+  ],
+  "data": "Aucun RMS lu dans les résultats ; la fiche F-4016 contient la valeur."
+ },
+ {
+  "key": "kodak-tmax100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "T-Max 100 : T-Grain, parmi les plus fins des noir et blanc, grain presque invisible.",
+  "sources": [
+   "https://125px.com/docs/unsorted/kodak/f4016.pdf",
+   "https://Www.wikipedia.org/wiki/Kodak_T-MAX"
+  ],
+  "data": "RMS diffuse d'environ 8 dans la fiche Kodak F-4016, valeur non relue ici."
+ },
+ {
+  "key": "kodak-tmax400",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "haute",
+  "summary": "T-Max 400 : T-Grain nettement plus fin et plus lisse que Tri-X à même sensibilité.",
+  "sources": [
+   "https://analog.cafe/r/kodak-tri-x-400-film-review-5pbm",
+   "https://125px.com/articles/photography/film/txtmytmz/"
+  ],
+  "data": "RMS diffuse 10 d'après un comparatif secondaire, contre 17 pour Tri-X 400."
+ },
+ {
+  "key": "kodak-verita200d",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Verita 200D, film cinéma négatif de la famille Vision3 à 200 ISO : grain fin, entre le 50D et le 250D. Classé d'après la famille, sans chiffre.",
+  "sources": [
+   "https://www.kodak.com/content/pdfs/KODAK-VISION3-250D-5207-7207-brochure.pdf"
+  ],
+  "data": "Pas de chiffre trouvé."
+ },
+ {
+  "key": "kodak-vision3-200t",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Vision3 200T : grain fin, un cran au-dessus du 50D. Les fiches Vision3 ne donnent que des courbes de granularité.",
+  "sources": [
+   "https://www.kodak.com/content/pdfs/KODAK-VISION3-250D-5207-7207-brochure.pdf"
+  ],
+  "data": "Courbes RMS diffuse uniquement, pas de valeur lue."
+ },
+ {
+  "key": "kodak-vision3-250d",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Vision3 250D : Kodak parle d'une granularité exceptionnellement basse pour sa vitesse. Intensité faible, taille fine.",
+  "sources": [
+   "https://www.kodak.com/content/pdfs/KODAK-VISION3-250D-5207-7207-brochure.pdf"
+  ],
+  "data": "Courbes RMS diffuse uniquement, pas de valeur lue."
+ },
+ {
+  "key": "kodak-vision3-500t",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Vision3 500T : grain moyen, réduit dans les ombres selon Kodak mais plus visible que les 50D à 250D. Intensité et taille moyennes.",
+  "sources": [
+   "https://www.kodak.com/content/products-brochures/motion-picture/KODAK-VISION3-500T-5219-7219-brochure.pdf",
+   "https://www.shopmoment.com/reviews/cinestill-800t-first-impressions"
+  ],
+  "data": "Courbes RMS diffuse uniquement, pas de valeur lue."
+ },
+ {
+  "key": "kodak-vision3-50d",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Vision3 50D : présenté par Kodak comme sa pellicule couleur cinéma au grain le plus fin, quasi invisible.",
+  "sources": [
+   "https://www.kodak.com/content/pdfs/KODAK-VISION3-50D-5203-7203-brochure.pdf"
+  ],
+  "data": "Granularité « faible » selon la fiche ; courbe seule, pas de valeur lue."
+ },
+ {
+  "key": "foma-cine-ortho400",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "basse",
+  "summary": "Pas de chiffre publié trouvé. Film cinéma orthochromatique 400 ISO à émulsion cubique classique : grain net et assez marqué, plutôt gros. Classement d'après l'ISO et la technologie.",
+  "sources": [
+   "https://foma.cz/en/catalogue_bw_photo_materials_and_developing_information"
+  ],
+  "data": "Aucune granularité RMS trouvée"
+ },
+ {
+  "key": "foma-fomapan-cine100",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Version cinéma du Fomapan 100 : même famille d'émulsion, grain fin mais visible, un peu plus marqué que les T-Grain modernes. Estimation par analogie avec le Fomapan 100 (RMS 13,5).",
+  "sources": [
+   "https://www.foma.cz/en/catalogue-fomapan-cine-100-detail-1887",
+   "https://foma.cz/en/fomapan-100"
+  ],
+  "data": "Pas de RMS propre ; Fomapan 100 : RMS 13,5 (Microphen, D=1,0)"
+ },
+ {
+  "key": "foma-fomapan-cine400",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Version cinéma du Fomapan 400 : grain franc de film 400 ISO classique. Estimation par analogie avec le Fomapan 400 (RMS 17,5).",
+  "sources": [
+   "https://foma.cz/fr/fomapan-400",
+   "https://www.foma.cz/en/catalogue-fomapan-cine-100-detail-1887"
+  ],
+  "data": "Pas de RMS propre ; Fomapan 400 : RMS 17,5"
+ },
+ {
+  "key": "foma-fomapan100",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "haute",
+  "summary": "La fiche Foma donne un RMS de 13,5, contre environ 8 pour le T-Max 100 et 9 à 10 pour les Plus-X et APX 100 (forum Photrio). Grain fin mais visible, plus présent que sur les films 100 modernes à grains tabulaires.",
+  "sources": [
+   "https://foma.cz/en/fomapan-100",
+   "https://www.bhphotovideo.com/lit_files/574216.pdf",
+   "https://www.photrio.com/forum/threads/fomapan-100.39752/page-2"
+  ],
+  "data": "RMS 13,5 (Microphen 20 °C, gamma 0,6, D=1,0) ; 110 lignes/mm"
+ },
+ {
+  "key": "foma-fomapan200",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Pas de RMS publié. Foma annonce des cristaux en T et un grain très faible, mais des avis parlent d'un rendu plus brut, proche du Tri-X. On le place au milieu, entre le 100 et le 400.",
+  "sources": [
+   "https://foma.cz/fr/fomapan-200",
+   "https://bluemooncamera.com/museum/exhibit/591/fomapan-200--120"
+  ],
+  "data": "Aucun RMS trouvé"
+ },
+ {
+  "key": "foma-fomapan400",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "haute",
+  "summary": "La fiche Foma donne un RMS de 17,5, nettement au-dessus du Fomapan 100. Grain 400 ISO classique, marqué et bien visible, de taille moyenne.",
+  "sources": [
+   "https://foma.cz/fr/fomapan-400",
+   "https://www.scribd.com/document/446556955/fomapan-400-pdf"
+  ],
+  "data": "RMS 17,5 (Microphen 20 °C, gamma 0,6, D=1,0) ; 90 lignes/mm"
+ },
+ {
+  "key": "foma-fomapan401",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Variante du Fomapan 400 (Action, 401 pour le développement inversible/spécial) : même émulsion de base. On reprend les valeurs du 400 avec une confiance moindre, faute de fiche propre trouvée.",
+  "sources": [
+   "https://foma.cz/fr/fomapan-400",
+   "https://foma.cz/en/catalogue_bw_photo_materials_and_developing_information"
+  ],
+  "data": "Par analogie avec le Fomapan 400 : RMS 17,5"
+ },
+ {
+  "key": "foma-ortho400",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "basse",
+  "summary": "Film orthochromatique 400 ISO à émulsion cubique classique : grain net, marqué et plutôt gros. Aucune donnée précise trouvée.",
+  "sources": [
+   "https://foma.cz/en/catalogue_bw_photo_materials_and_developing_information"
+  ],
+  "data": "Aucune granularité RMS trouvée"
+ },
+ {
+  "key": "foma-retropan320",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Film 320 ISO d'esprit rétro à émulsion classique, grain moyen assez présent. Classement d'après l'ISO et la famille Foma, sans chiffre publié.",
+  "sources": [
+   "https://foma.cz/en/catalogue_bw_photo_materials_and_developing_information"
+  ],
+  "data": "Aucun RMS trouvé"
+ },
+ {
+  "key": "lomography-lomo-turquoise",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Lomography annonce un grain fin, mais un testeur le note moyen. Film à décalage de couleurs, 100-400 ISO, grain peu discuté. On le range au milieu pour les deux critères.",
+  "sources": [
+   "https://shop.lomography.com/2021-lomochrome-turquoise-35-mm-iso-100-400",
+   "https://www.35mmc.com/16/01/2023/lomography-turquoise-35mm-film-review-by-molly-kate/",
+   "https://emulsive.org/reviews/lomochrome-turquoise-xr-100-400-plus-bonus-rant"
+  ],
+  "data": "Aucun chiffre publié"
+ },
+ {
+  "key": "lucky-color200",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Avis partagés : grain fin pour certains (plus fin que le Kodak Gold 200, Shoot It With Film), moyen pour d'autres (proche du ColorPlus 200 selon 35mmc, et entre ColorPlus et Fuji C200 pour Reflx Lab). Classé moyen sur les deux critères.",
+  "sources": [
+   "https://shootitwithfilm.com/lucky-200-film-review/",
+   "https://www.35mmc.com/09/10/2025/lucky-c200-vs-colorplus-vs-phoenix-ii/",
+   "https://reflxlab.com/blogs/news/new-lucky-color-film-review",
+   "https://petapixel.com/2025/08/21/the-first-real-look-at-luckys-hyped-new-color-200-film/"
+  ],
+  "data": "Aucun chiffre publié"
+ },
+ {
+  "key": "mira-color400",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Revendeurs : grain modéré, film contrasté et irrégulier selon certains utilisateurs. Aucun test de grain contrôlé trouvé.",
+  "sources": [
+   "https://analoguewonderland.co.uk/products/mira-400-35mm-film",
+   "https://analogueshop.com/products/mira-color-400"
+  ],
+  "data": "Aucun chiffre publié"
+ },
+ {
+  "key": "mira-color800",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "basse",
+  "summary": "Les descriptions parlent d'un grain visible, texturé. Une fiche revendeur annonce un grain très fin mais se contredit sur l'ISO. Classé d'après les 800 ISO, plus fort et plus gros que le 400.",
+  "sources": [
+   "https://analoguewonderland.co.uk/products/mira-800-35mm-film",
+   "https://analogueshop.com/products/mira-color-800"
+  ],
+  "data": "Aucun chiffre publié"
+ },
+ {
+  "key": "fujifilm-160nc",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Pas de fiche trouvée ; négatif pro ISO 160 à grain fin de la famille NS/NC, classé d'après l'ISO et la technologie, légèrement plus grossier que la 160NS. Intensité faible, taille fine.",
+  "data": "RMS non trouvé (estimé 4 à 5)",
+  "sources": [
+   "https://www.fujifilm.com/jp/ja/consumer/support/films/negative-and-reversal/datasheet"
+  ]
+ },
+ {
+  "key": "fujifilm-160nl",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Variante de la gamme Pro 160 (rendu plus doux), même émulsion fine ; aucune donnée propre trouvée. Classée comme la 160NC.",
+  "data": "RMS non trouvé (estimé 4)",
+  "sources": [
+   "https://www.fujifilm.com/jp/ja/consumer/support/films/negative-and-reversal/datasheet"
+  ]
+ },
+ {
+  "key": "fujifilm-160npc",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Ancienne Pro 160 (NPC), grain fin de la même famille ; classée d'après l'ISO et la famille, sans chiffre publié retrouvé.",
+  "data": "RMS non trouvé (estimé 4)",
+  "sources": [
+   "https://www.fujifilm.com/jp/ja/consumer/support/films/negative-and-reversal/datasheet"
+  ]
+ },
+ {
+  "key": "fujifilm-160ns",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "La fiche donne une granularité RMS diffuse de 3, très fine pour une pellicule couleur de cette sensibilité (grain très discret sur les aplats, taille très petite).",
+  "data": "RMS diffuse 3 (ouverture 48 µm), fiche Pro 160NS",
+  "sources": [
+   "https://www.yumpu.com/en/document/view/50462960/fujicolor-pro-160-ns-professional",
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf"
+  ]
+ },
+ {
+  "key": "fujifilm-200",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Entrée générique Fujicolor/Superia 200 : grain faible à moyen, fin à moyen-fin, comme les ISO 200 grand public de Fuji (RMS typique 5 à 6).",
+  "data": "RMS typique 5 à 6 (estimation de famille)",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ]
+ },
+ {
+  "key": "fujifilm-400",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Entrée générique Superia/Pro 400 : grain moyen, bon pour l'ISO 400 grâce aux couches à 4 couleurs ; la Pro 400H est annoncée à RMS 8 par Fuji, la Superia 400 un peu plus grenue.",
+  "data": "Pro 400H RMS 8 (page Fujifilm) ; Superia 400 typique 7 à 9",
+  "sources": [
+   "https://fujifilm.com/th/en/consumer/films/negative-and-reversal",
+   "https://asset.fujifilm.com/www/jp/files/2024-04/198fe31ee57628013d29171770b28218/datasheet_pro400h_01.pdf"
+  ]
+ },
+ {
+  "key": "fujifilm-acros",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Acros 100 : grain extrêmement fin, parmi les plus fins en noir et blanc, plus fin que le T-Max 100 ; presque invisible.",
+  "data": "RMS 7 (Acros 100, T-Max 100 à 8)",
+  "sources": [
+   "https://petapixel.com/2026/07/10/fujifilm-acros-ii-is-the-king-of-fine-grain-black-and-white-film/",
+   "https://analog.cafe/r/fujifilm-neopan-acros-film-review-1mba"
+  ]
+ },
+ {
+  "key": "fujifilm-c200",
+  "intensity": 2,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Fujicolor C200, film grand public d'entrée de gamme à émulsion classique : grain visible mais doux, un peu plus gros que les Superia ; classé d'après l'ISO et la gamme.",
+  "data": "RMS non trouvé (estimé 5 à 6)",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ]
+ },
+ {
+  "key": "fujifilm-fujicolor-pro",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Entrée générique Fujicolor Pro (160/400H) : grain fin et discret ; niveau typique de la famille Pro, entre 160NS et 400H.",
+  "data": "RMS typique 3 à 8 selon la sensibilité",
+  "sources": [
+   "https://asset.fujifilm.com/www/jp/files/2024-04/6b75b1c1cb4253623fb2cd7a56ff7443/datasheet_pro160ns_01.pdf",
+   "https://asset.fujifilm.com/www/jp/files/2024-04/198fe31ee57628013d29171770b28218/datasheet_pro400h_01.pdf"
+  ]
+ },
+ {
+  "key": "fujifilm-fujicolor",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Entrée générique Fujicolor grand public (C200, Superia 400) : grain moyen, taille moyenne, niveau typique de la famille.",
+  "data": "RMS typique 5 à 9",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ]
+ },
+ {
+  "key": "fujifilm-fujicolor100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Fujicolor 100 (type Reala/Superia 100) : grain très fin et très discret, ISO 100 à émulsion fine.",
+  "data": "RMS Reala 100 environ 4 (estimation d'après la fiche Reala)",
+  "sources": [
+   "https://juneleung.github.io/filmdoc/fuji/superia_reala_datasheet.pdf"
+  ]
+ },
+ {
+  "key": "fujifilm-natura1600",
+  "intensity": 4,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Natura 1600 : la fiche annonce RMS 4, plus fin que bien des ISO 100, donc grain peu gros pour l'ISO ; il reste visible et marqué sur les aplats en ISO 1600.",
+  "data": "RMS 4 (fiche japonaise, d'après analog.cafe)",
+  "sources": [
+   "https://analog.cafe/r/fujicolor-natura-1600-film-review-4dvx",
+   "https://asset.fujifilm.com/www/jp/files/2024-04/96b634a89ec6a5abda6b70437f4d75a4/datasheet_natura1600_01.pdf",
+   "https://www.photrio.com/forum/threads/fuji-superia-1600-vs-natura-1600.28859/latest"
+  ]
+ },
+ {
+  "key": "fujifilm-neopan-ortho",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Neopan Ortho, film lent orthochromatique : grain fin, mais l'émulsion lente et contrastée garde un grain net ; peu de données, classé d'après l'ISO et le type.",
+  "data": "RMS non trouvé (estimé 6 à 8)",
+  "sources": [
+   "https://www.cacreeks.com/films.htm"
+  ]
+ },
+ {
+  "key": "fujifilm-neopan1600",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "basse",
+  "summary": "Neopan 1600 : film noir et blanc rapide, grain bien visible et gros ; un témoignage le juge plus propre que les films 3200. Aucun chiffre fiable retrouvé.",
+  "data": "RMS 16 possible (tableau cacreeks illisible, non confirmé)",
+  "sources": [
+   "https://www.35mmc.com/20/08/2020/5-frames-with-fujifilm-neopan-1600-by-simon-king/",
+   "https://www.cacreeks.com/films.htm"
+  ]
+ },
+ {
+  "key": "fujifilm-reala-ace",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Reala Ace 100 (4e couche, Super Fine-Σ) : grain ultra fin et très discret pour du ISO 100, réputé parmi les plus lisses des négatifs couleur. Intensité et taille classées d'après l'ISO et la technologie, pas d'une mesure.",
+  "sources": [
+   "https://www.fujifilm.com/ca/en/consumer/films/consumer-film/superia-400/specifications",
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun chiffre RMS publié retrouvé (estimation RMS ~4 à 5, non vérifiée)"
+ },
+ {
+  "key": "fujifilm-superia-premium400",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Superia Premium 400 (sans 4e couche, base X-TRA 400 Super Fine-Σ) : grain fin, doux, un peu plus visible que Reala. Classé d'après l'ISO 400 et la technologie Σ.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia",
+   "https://www.fujifilm.com/ca/fr/consumer/films/consumer-film/superia-400"
+  ],
+  "data": "Aucun RMS publié retrouvé (Fuji décrit le grain comme fin et lisse)"
+ },
+ {
+  "key": "fujifilm-superia-reala",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Superia Reala 100 : ISO 100 à 4 couches, grain très fin et peu marqué. Pas de chiffre retrouvé, classement d'après l'ISO et la famille.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé (estimation ~4 à 5)"
+ },
+ {
+  "key": "fujifilm-superia-venus400",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Venus 400 (emballage Venus de la famille X-TRA 400, Fine-Σ) : grain fin et lisse pour du 400, comparable à X-TRA 400. Aucune donnée spécifique retrouvée.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun chiffre publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia-venus800",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Venus 800 partage l'émulsion de X-TRA 800 (technologie nano-grain / Fine-Σ) : grain moyen, plus visible qu'un 400 mais bien plus discret qu'un 800 classique.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia-xtra400",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "X-TRA 400 : Fuji vante un Super Fine-Σ très uniforme, grain fin et lisse pour un ISO 400, plus doux que Portra 400 en intensité perçue selon les critiques usuelles. Pas de RMS retrouvé.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia",
+   "https://www.fujifilm.com/ca/en/consumer/films/consumer-film/superia-400/specifications"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia-xtra800",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "X-TRA 800 : nano-grain / Fine-Σ, grain moyen, visible mais régulier ; rendement honorable pour du 800. Classé d'après l'ISO et la technologie.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Entrée générique Superia : niveau typique d'un négatif couleur grand public ISO 200 à 400, grain fin à moyen, intensité moyenne.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun chiffre pour l'entrée générique"
+ },
+ {
+  "key": "fujifilm-superia100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Superia 100 : ISO 100, grain très fin et discret ; classé d'après l'ISO et la famille, aucun RMS retrouvé.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia1600",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "moyenne",
+  "summary": "Superia 1600 (Nano-structured Σ) : grain nettement visible comme tout ISO 1600, mais Fuji le contient mieux qu'un 1600 classique ; gros et marqué sur les aplats.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-superia200",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Superia 200 : Wikipédia cite un grain lisse et fin ; ISO 200, intensité faible et taille fine.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Fujifilm_Superia"
+  ],
+  "data": "Aucun RMS publié retrouvé"
+ },
+ {
+  "key": "fujifilm-velvia100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Velvia 100 : Fuji publie un grain RMS 8 (ultra fin, parmi les plus fins) ; grain quasi invisible, très fin.",
+  "sources": [
+   "https://www.fujifilm.com/us/en/business/professional-photography/film/velvia-100",
+   "https://wikipedia.com/wiki/Velvia"
+  ],
+  "data": "Granularité RMS 8 (Fuji)"
+ },
+ {
+  "key": "fujifilm-velvia50",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "haute",
+  "summary": "Velvia 50 : RMS 9 selon la fiche citée par Wikipédia, grain ultra fin ; le contraste élevé le rend un peu plus visible dans les ombres que Velvia 100 mais il reste très discret.",
+  "sources": [
+   "https://wikipedia.com/wiki/Velvia",
+   "https://asset.fujifilm.com/www/jp/files/2024-04/7d7888aab11c548b2acd50f0fee9e504/datasheet_velvia50_01.pdf"
+  ],
+  "data": "Granularité RMS 9 (Wikipédia, non revérifié sur la fiche Fuji)"
+ },
+ {
+  "key": "agfaphoto-apx",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Entrée générique APX (100 et 400, aujourd'hui sous marque AgfaPhoto). L'APX 400 a un grain présent mais discret, très fin pour sa vitesse, proche d'un T-Grain selon Parallax. L'APX 100 d'origine Agfa avait un RMS de 9 (Plus-X : 10). Des forums disent que les APX actuels sont des Kentmere rebadgés, donc l'ancien chiffre ne vaut pas forcément pour eux. Niveau typique retenu pour la famille : intensité 2, taille 2.",
+  "data": "APX 100 d'origine Agfa : RMS 9 (chiffre cité sur Photrio d'après une fiche Agfa, non recoupé) ; pas de chiffre pour les APX actuels",
+  "sources": [
+   "https://www.digitalcameraworld.com/cameras/film-cameras/agfaphoto-apx-400-review",
+   "https://parallaxphotographic.coop/?p=80164",
+   "https://www.photrio.com/forum/threads/so-tell-me-about-agfa-apx-100.8054/latest"
+  ]
+ },
+ {
+  "key": "harman-phoenix",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "moyenne",
+  "summary": "Phoenix 200 d'origine : grain jugé lourd et gênant même en bonne lumière (Digital Camera World). Intensité et taille classées fortes pour un ISO 200 couleur. Les sources ne séparent pas vraiment intensité et taille ; le grain est dit à la fois visible et grossier.",
+  "data": "Aucune valeur RMS ou PGI publiée trouvée",
+  "sources": [
+   "https://www.digitalcameraworld.com/reviews/harman-phoenix-200-35mm-film-review"
+  ]
+ },
+ {
+  "key": "harman-phoenixII",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "Harman annonce un grain réduit par rapport au Phoenix d'origine. Les tests sont partagés : encore visible, voire « crunchy » en 35 mm (PetaPixel, Kamerastore), mais jugé raisonnable et texturé par Shopmoment, comparable à un Kodak Gold 200. Intensité et taille moyennes, un cran sous le Phoenix.",
+  "data": "Aucune valeur chiffrée publiée trouvée",
+  "sources": [
+   "https://petapixel.com/2025/07/16/harman-phoenix-ii-is-a-brand-new-color-35mm-and-120-film-stock",
+   "https://petapixel.com/2025/07/18/harman-phoenix-ii-film-review-crunchy-pastels/",
+   "https://www.shopmoment.com/articles/harman-phoenix-ii-film-review",
+   "https://kamerastore.com/en-au/blogs/posts/harman-phoenix-ii-the-newest-film-from-harman"
+  ]
+ },
+ {
+  "key": "harman-red",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "basse",
+  "summary": "Redscale basé sur l'émulsion Phoenix 200, vendu ISO 125. Harman lie le grain à l'exposition : plus gros et plus marqué en sous-exposition, normal à l'exposition normale, plus fin en surexposition. Les revendeurs parlent de grain fin, argument commercial sans test indépendant. Classé moyen par héritage de Phoenix.",
+  "data": "Aucune valeur chiffrée trouvée",
+  "sources": [
+   "https://petapixel.com/2025/04/09/harman-red-125-film-review-paint-the-town-red/",
+   "https://www.digitalcameraworld.com/cameras/film-cameras/seeing-red-harman-releases-new-harman-red-125-film-based-on-phoenix-emulsion"
+  ]
+ },
+ {
+  "key": "ilford-delta100",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Film T-Grain ISO 100 de la même classe que T-Max 100, une des émulsions les plus fines à cette vitesse. Aucune source de cette recherche ne donne de chiffre. Classé d'après la technologie et l'ISO.",
+  "data": "RMS non retrouvé dans cette recherche (la fiche Ilford n'est pas apparue dans les résultats)",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Ilford_Delta"
+  ]
+ },
+ {
+  "key": "ilford-delta3200",
+  "intensity": 5,
+  "size": 5,
+  "confidence": "moyenne",
+  "summary": "Grain très texturé, bien plus marqué que le HP5 (filtergrade), décrit comme prononcé mais maîtrisé par un revendeur. Film le plus rapide de la liste, il pousse bien plus loin que ses pairs (ISO 400 à 25000 dans la fiche). Grain gros et très visible, mais de structure T-Grain.",
+  "data": "Aucun RMS trouvé (la fiche technique Ilford ne montre pas de tableau de granularité dans les extraits)",
+  "sources": [
+   "https://www.ilfordphoto.com/amfile/file/download/file/1913/product/682",
+   "https://filtergrade.com/?p=179885",
+   "https://www.camtecphoto.com/en/product/ilford-delta-3200-135-36"
+  ]
+ },
+ {
+  "key": "ilford-delta400",
+  "intensity": 3,
+  "size": 2,
+  "confidence": "basse",
+  "summary": "Film T-Grain ISO 400 : grain plus fin que les cubiques de même vitesse comme le HP5, mais visible. Peut être poussé à ISO 3200. Aucune mesure trouvée ; classé d'après la technologie T-Grain et la vitesse, avec un grain peu gros mais présent.",
+  "data": "Aucune valeur chiffrée trouvée",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Ilford_Delta"
+  ]
+ },
+ {
+  "key": "ilford-fp4",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "ISO 125 cubique classique : très net, mais son grain n'égale pas celui des T-Grain modernes (analog.cafe). Sur un tirage courant il se distingue mal de celui du HP5. Fin et discret, un cran au-dessus du Delta 100.",
+  "data": "Ilford ne publie pas de RMS selon Photrio ; rien de chiffré trouvé",
+  "sources": [
+   "https://analog.cafe/r/ilford-fp4-plus-film-review-osps",
+   "https://www.photrio.com/forum/threads/fp4-what-am-i-missing.206635/page-6"
+  ]
+ },
+ {
+  "key": "ilford-hp5",
+  "intensity": 3,
+  "size": 3,
+  "confidence": "moyenne",
+  "summary": "ISO 400 cubique classique : grain moyen, plus apparent que celui du FP4 sur grand tirage, mais plus doux que celui du Delta 3200. Référence de grain traditionnel. Classé d'après la vitesse, la technologie et les comparaisons des forums.",
+  "data": "Aucun RMS publié trouvé",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fp4-what-am-i-missing.206635/page-6",
+   "https://filtergrade.com/?p=179885"
+  ]
+ },
+ {
+  "key": "ilford-ortho",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Ortho Plus 80 : grain presque invisible, résolution élevée (Shoot It With Film, Analogue Wonderland). Le contraste est fort, mais cela concerne le rendu tonal, pas le grain. Un des plus fins de la liste.",
+  "data": "Aucune valeur chiffrée trouvée",
+  "sources": [
+   "https://shootitwithfilm.com/ilford-ortho-plus-80-film-stock-review/",
+   "https://analoguewonderland.co.uk/blogs/film-review/film-review-ilford-ortho-80-plus"
+  ]
+ },
+ {
+  "key": "ilford-panf",
+  "intensity": 1,
+  "size": 1,
+  "confidence": "moyenne",
+  "summary": "Pan F Plus, ISO 50 : film le plus lent et le plus fin de la gamme Ilford, décrit sur Photrio comme nettement plus net et plus lisse. Contraste élevé, latitude limitée. Pas de chiffre trouvé ; classement d'après l'ISO 50 et les avis.",
+  "data": "Aucun RMS trouvé",
+  "sources": [
+   "https://www.photrio.com/forum/threads/fp4-what-am-i-missing.206635/page-6"
+  ]
+ },
+ {
+  "key": "ilford-sfx",
+  "intensity": 4,
+  "size": 4,
+  "confidence": "moyenne",
+  "summary": "SFX 200, sensible à l'infrarouge proche : tous les utilisateurs le disent grainu, certains en font un atout. On peut réduire le grain avec un révélateur type ID-11 ou D-76 pur. Aucune donnée constructeur trouvée.",
+  "data": "Aucune valeur chiffrée trouvée",
+  "sources": [
+   "https://www.photrio.com/forum/threads/sfx-200.31610"
+  ]
+ },
+ {
+  "key": "ilford-xp2",
+  "intensity": 2,
+  "size": 2,
+  "confidence": "moyenne",
+  "summary": "Chromogène noir et blanc (procédé C-41) ISO 400, grain fin, net et contrasté. Atypique : la fiche Ilford indique que le grain s'affine en sous-développant ou en surexposant (EI 400, puis 200, puis 50), l'inverse des films classiques. Très fin pour un ISO 400.",
+  "data": "Fiche Ilford : grain le plus fin à EI 50, plus fin à EI 200 qu'à EI 400 ; pas de RMS chiffré dans les extraits",
+  "sources": [
+   "https://www.ilfordphoto.com/amfile/file/download/file/1909/product/703",
+   "https://www.digitalcameraworld.com/reviews/ilford-xp2-super-35mm-film-review-where-black-and-white-meets-color"
+  ]
+ }
+]
