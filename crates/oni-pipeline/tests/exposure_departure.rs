@@ -1,7 +1,7 @@
 //! Format 64 keeps every Exposure: a sidecar of format 61 on every pipe, its Exposure at the former rest or off it, reads
-//! Exposure as its departure from the pipe's rest and prints to the bit as pinned, stage 4-7 on the CPU and the whole
-//! chain on the GPU. A print on a paper lays Prepare's black and white on its own ends at any Exposure. Each verdict
-//! has a twin.
+//! Exposure as its departure from the pipe's rest and prints to the bit as format 64 holding that departure, stage 4-7
+//! on the CPU and the whole chain on the GPU. A print on a paper lays Prepare's black and white on its own ends at any
+//! Exposure. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -50,15 +50,18 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
 }
 
 /// Each pipe as a sidecar of format 61 held it, its Exposure `by` stops off that format's rest, each a sum f32 holds
-/// exactly.
-fn stored() -> Vec<(String, Value)> {
+/// exactly, beside the same document as format 64 holds it, its Exposure the departure `by`.
+fn stored() -> Vec<(String, Value, Value)> {
     let mut out = Vec::new();
     for (label, s) in pipes() {
         for by in [0.0f32, 0.5, -0.75] {
             let mut value = serde_json::to_value(oni_settings::document::Document::of(s.clone())).unwrap();
             value["version"] = 61.into();
             value["settings"]["print"]["exposure"] = f64::from(former_rest(s.mode) + by).into();
-            out.push((format!("{label}, {by:+}"), value));
+            let mut departed = value.clone();
+            departed["version"] = 64.into();
+            departed["settings"]["print"]["exposure"] = f64::from(by).into();
+            out.push((format!("{label}, {by:+}"), value, departed));
         }
     }
     out
@@ -80,32 +83,31 @@ fn pixels() -> Vec<V4> {
     pixels
 }
 
-fn fold(hash: &mut u64, px: &[V4]) {
-    for b in px.iter().flatten().flat_map(|v| v.to_bits().to_le_bytes()) {
-        *hash = (*hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3);
-    }
-}
-
-/// The bits of every stored pipe's stage 4-7 print of `pixels`, each read through `read`, folded by FNV-1a.
-fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> u64 {
+/// Each stored pipe's stage 4-7 print of `pixels` on the CPU, read through `read`, as its bits.
+fn cpu_bits(read: impl Fn(&Value) -> PipelineSettings) -> Vec<Vec<u32>> {
     let pixels = pixels();
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for (_, value) in stored() {
-        let k = conversion::stage47(&read(&value));
-        fold(&mut hash, &pixels.iter().map(|p| cpu::stage47(*p, &k)).collect::<Vec<_>>());
-    }
-    hash
+    stored().iter().map(|(_, value, _)| printed(&pixels, &read(value))).collect()
 }
 
-/// Every pipe's print as format 61 stored it, folded on the CPU and on the GPU (Metal on Apple silicon): a legacy print on
-/// its own curve, a paper's on its useful range, Exposure held at the window's ends; a slide on its projector; a frame
-/// naming no paper on its pure inversion.
-const BEFORE_CPU: u64 = 0xb83c_3386_8abf_021d;
-const BEFORE_GPU: u64 = 0x5b44_4d39_4309_7687;
+fn printed(pixels: &[V4], s: &PipelineSettings) -> Vec<u32> {
+    let k = conversion::stage47(s);
+    bits(&pixels.iter().map(|p| cpu::stage47(*p, &k)).collect::<Vec<_>>())
+}
+
+fn bits(px: &[V4]) -> Vec<u32> {
+    px.iter().flatten().map(|v| v.to_bits()).collect()
+}
+
+/// Read as this format's, its Exposure taken whole: what the migration is there to avoid.
+fn unmigrated(v: &Value) -> PipelineSettings {
+    let mut v = v.clone();
+    v["version"] = oni_settings::document::VERSION.into();
+    read(&v)
+}
 
 #[test]
 fn every_stored_exposure_reads_as_its_departure() {
-    for (label, value) in stored() {
+    for (label, value, _) in stored() {
         let mode = read(&value).mode;
         let kept = value["settings"]["print"]["exposure"].as_f64().unwrap() as f32;
         assert_eq!(read(&value).print.exposure, kept - former_rest(mode), "{label}");
@@ -115,54 +117,39 @@ fn every_stored_exposure_reads_as_its_departure() {
     assert_eq!((negative["settings"]["print"]["exposure"].as_f64(), read(negative).print.exposure), (Some(1.5), 0.0));
     assert_eq!((slide["settings"]["mode"].as_str(), read(slide).print.exposure), (Some("positive"), 0.0));
     // Twin: a document of this format keeps the value it holds.
-    let mut current = negative.clone();
-    current["version"] = oni_settings::document::VERSION.into();
-    assert_eq!(read(&current).print.exposure, 1.5);
+    assert_eq!(unmigrated(negative).print.exposure, 1.5);
 }
 
 #[test]
 fn every_pipe_prints_as_format_61_did_on_the_cpu() {
-    let folded = cpu_bits(read);
-    println!("every stored pipe folds to {folded:#018x} on the CPU");
-    assert_eq!(folded, BEFORE_CPU);
-    // Twin: the same documents read as this format's, their Exposure taken whole, move.
-    let unmigrated = |v: &Value| {
-        let mut v = v.clone();
-        v["version"] = oni_settings::document::VERSION.into();
-        read(&v)
-    };
-    assert_ne!(cpu_bits(unmigrated), BEFORE_CPU);
+    // Each stored pipe prints to the bit as format 64 holding its departure does, every later format read alike.
+    let pixels = pixels();
+    let migrated = cpu_bits(read);
+    for ((label, _, departed), got) in stored().iter().zip(&migrated) {
+        assert!(*got == printed(&pixels, &read(departed)), "{label}: format 61 prints otherwise");
+    }
+    // Twin: the same documents read unmigrated move.
+    assert_ne!(cpu_bits(unmigrated), migrated);
 }
 
-/// The whole chain on the GPU, bit for bit, where the fold was drawn: Metal on Apple silicon.
+/// The whole chain on the GPU, bit for bit: each stored pipe as format 64 holding its departure renders.
 #[test]
 fn every_pipe_renders_whole_as_format_61_did_on_the_gpu() {
-    if !cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        return println!("SKIPPED every_pipe_renders_whole_as_format_61_did_on_the_gpu: its bits are Metal's on Apple silicon");
-    }
     let Ok(mut g) = Graph::new() else { return println!("SKIPPED every_pipe_renders_whole_as_format_61_did_on_the_gpu: no GPU") };
     let pixels = pixels();
     let source = g.upload(17, 26, &pixels).unwrap();
-    let mut render = |read: &dyn Fn(&Value) -> PipelineSettings| {
-        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-        for (_, value) in stored() {
-            let image = Pipeline::new().image(&mut g, &source, &read(&value), &Request::default(), &Inputs::default()).unwrap();
-            fold(&mut hash, &g.render(&image, image.extent(), None).unwrap());
-        }
-        hash
+    let mut render = |s: &PipelineSettings| {
+        let image = Pipeline::new().image(&mut g, &source, s, &Request::default(), &Inputs::default()).unwrap();
+        bits(&g.render(&image, image.extent(), None).unwrap())
     };
-    let folded = render(&read);
-    println!("every stored pipe folds to {folded:#018x} on the GPU");
-    assert_eq!(folded, BEFORE_GPU);
-    // Twin: a stop's tenth more on the first negative moves it.
-    let nudged = |v: &Value| {
-        let mut s = read(v);
-        if v == &stored()[0].1 {
-            s.print.exposure += 0.1;
-        }
-        s
-    };
-    assert_ne!(render(&nudged), BEFORE_GPU);
+    let mut moved = 0;
+    for (label, value, departed) in stored() {
+        let migrated = render(&read(&value));
+        assert!(migrated == render(&read(&departed)), "{label}: format 61 renders otherwise");
+        // Twin: read unmigrated, a pipe off its former rest moves.
+        moved += usize::from(render(&unmigrated(&value)) != migrated);
+    }
+    assert!(moved >= stored().len() / 2, "{moved} moved unmigrated");
 }
 
 /// The reference grey's print on `s`, its luma.
@@ -193,3 +180,4 @@ fn at_any_exposure_a_paper_lays_prepares_black_and_white_on_its_own_ends() {
     }
     assert!(seen >= 6, "{seen}");
 }
+
