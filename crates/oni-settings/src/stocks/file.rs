@@ -81,8 +81,8 @@ pub struct FilmBlock {
     /// mid grey on one share of the three windows. Derived from the two sheets when left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub filtration: Option<[f64; 3]>,
-    /// A film of no character: no spectrum, no coupler, pure dyes; its profile's `data` then holds `range` alone, the
-    /// density from its bare film to the sensor's white.
+    /// A film of no colour of its own: no spectrum, no coupler, pure dyes; its profile's `data` holds `range`, the density
+    /// from its bare film to the sensor's white, and its tone curve, `density` on `log_exposure` about a grey.
     #[serde(default, skip_serializing_if = "is_false")]
     pub neutral: bool,
     /// The data sheet's profile as `scripts/datasheet-profiles.py` writes it: `info`, `provenance` and `data`.

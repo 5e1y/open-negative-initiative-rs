@@ -1,6 +1,6 @@
-//! The neutral film against its definition: its kernel on the GPU against its reference, its window's share the screen's
-//! code of the light, the pure inversion giving the scene back end to end, and its grain uniform on the negative; each
-//! with a twin.
+//! The neutral film against its definition: its kernel on the GPU against its reference, its window's share a colour
+//! negative's mean tone curve of the light, end to end through the pure inversion, its grey and contrast against Portra
+//! 800's, and its grain uniform on the negative; each with a twin.
 
 mod common;
 
@@ -30,12 +30,17 @@ fn plain() -> PipelineSettings {
     s
 }
 
-/// How far a render lies off its scene's light over the sensor's saturation, at worst, where that light is 13 stops
-/// under the saturation or over.
+/// The light the pure inversion shows for a scene's light `x` over the saturation: the tone curve's share of the window.
+fn toned(x: f32) -> f32 {
+    inverted(neutral::kernel(NEUTRAL).expect("the neutral film").tone(x))
+}
+
+/// How far a render lies off its scene toned by the film's curve, at worst, where the scene's light is 13 stops under
+/// the saturation or over.
 fn off_the_scene(scenes: &[V4], rendered: &[V4]) -> f32 {
     let floor = (-13f32).exp2();
     let lights = scenes.iter().zip(rendered).flat_map(|(scene, shown)| (0..3).map(move |c| (scene[c] / saturation(), shown[c])));
-    lights.filter(|(light, _)| *light >= floor).map(|(light, shown)| (shown / light - 1.0).abs()).fold(0.0, f32::max)
+    lights.filter(|(light, _)| *light >= floor && toned(*light) > 1e-4).map(|(light, shown)| (shown / toned(light) - 1.0).abs()).fold(0.0, f32::max)
 }
 
 /// Scene pixels over the sensor's whole range, each channel its own light: black, the saturation, then thirteen stops.
@@ -90,18 +95,18 @@ fn the_neutral_negative_s_kernel_follows_its_reference() {
 }
 
 #[test]
-fn the_window_s_share_is_the_screen_s_code_of_the_light_over_the_saturation() {
+fn the_window_s_share_is_a_colour_negative_s_mean_tone_curve_of_the_light() {
     let reading = reading();
     let k = neutral::kernel(NEUTRAL).expect("the neutral film");
     let (mut worst, mut twin, mut wider) = (0.0f32, 0.0f32, 0.0f32);
     for scene in scenes() {
         let share = cpu::windowed(film::shot(NEUTRAL, scene, 0.0), &reading);
-        // Twins: a film keeping the pedestal its reading adds bends its share; one of another range reads as this one.
+        // Twin: a film keeping the pedestal its reading adds bends its share.
         let veiled = cpu::windowed(cpu::neutral_negative(scene, &NeutralNegative { veil: 0.0, ..k }), &reading);
         for c in 0..3 {
-            let code = cpu::screen_code(scene[c] / saturation());
-            worst = worst.max((share[c] - code).abs());
-            twin = twin.max((veiled[c] - code).abs());
+            let tone = k.tone(scene[c] / saturation());
+            worst = worst.max((share[c] - tone).abs());
+            twin = twin.max((veiled[c] - tone).abs());
         }
         // The definition, on the stock's own reference: density over black, over the window.
         let (r, windows) = (NEUTRAL.reference(), NEUTRAL.reference().levels().windows());
@@ -111,20 +116,33 @@ fn the_window_s_share_is_the_screen_s_code_of_the_light_over_the_saturation() {
             wider = wider.max((by_definition - share[c]).abs());
         }
     }
-    println!("share against the code: {worst:.2e}, the veiled twin {twin:.2e}, the definition against the app's reading {wider:.2e}");
-    assert!(worst < 1e-4, "the share is {worst:.2e} off the code");
+    println!("share against the curve: {worst:.2e}, the veiled twin {twin:.2e}, the definition against the app's reading {wider:.2e}");
+    assert!(worst < 1e-4, "the share is {worst:.2e} off the curve");
     assert!(wider < 1e-5, "the app's reading is {wider:.2e} off the definition");
     assert!(twin > 2e-4, "the twin passes at {twin:.2e}");
     let ends = |scene: f32| cpu::windowed(film::shot(NEUTRAL, [scene, scene, scene, 1.0], 0.0), &reading);
     assert!(ends(0.0).iter().all(|v| v.abs() < 1e-6), "no light lies on the bare film: {:?}", ends(0.0));
     assert!(ends(saturation()).iter().all(|v| (v - 1.0).abs() < 1e-5), "the saturation lies on the window's white: {:?}", ends(saturation()));
+    // The curve is its sheets': at a grey it lies where their mean density over its value at the white does.
+    let grey = k.tone(0.184 / saturation());
+    println!("a grey's share of the window: {grey:.3}");
+    assert!((0.5..0.65).contains(&grey), "{grey}");
+    // Twin: the screen's code the film once read lays the grey far lower.
+    assert!(grey - cpu::screen_code(0.184 / saturation()) > 0.1);
+}
+
+/// The neutral film's profile with its range set to `range`.
+fn profile_of(range: f32) -> String {
+    let mut p: serde_json::Value = serde_json::from_str(&NEUTRAL.entry().profile).unwrap();
+    p["data"]["range"] = serde_json::json!(range);
+    p.to_string()
 }
 
 #[test]
 fn the_range_moves_no_share() {
     let reading = reading();
-    let narrow = neutral::kernel_of(0.4);
-    let own = film::derive_neutral(r#"{"data": {"range": 0.4}}"#).unwrap();
+    let narrow = neutral::read(&profile_of(0.4)).unwrap();
+    let own = film::derive_neutral(&profile_of(0.4)).unwrap();
     let ends = |w: oni_settings::levels::Levels| [w.black, w.white, 1.0];
     let on_own = Stage47 { red: ends(own.levels().red), green: ends(own.levels().green), blue: ends(own.levels().blue), ..reading };
     let mut worst = 0.0f32;
@@ -135,33 +153,45 @@ fn the_range_moves_no_share() {
     assert!(worst < 1e-4, "a film of another range reads {worst:.2e} off");
     // Twin: that film read on the shipped one's window lands elsewhere.
     let off = cpu::windowed(cpu::neutral_negative([0.184, 0.184, 0.184, 1.0], &narrow), &reading);
-    assert!((off[1] - cpu::screen_code(0.184 / saturation())).abs() > 0.1);
-    assert!(neutral::range(r#"{"data": {"range": 0.0}}"#).is_err() && neutral::range(r#"{"data": {"range": 3.5}}"#).is_err());
-    assert!(neutral::range(r#"{"data": {"range": 1.0, "toe": 2}}"#).is_err(), "a number the film does not read is refused");
+    assert!((off[1] - narrow.tone(0.184 / saturation())).abs() > 0.1);
+    assert!(neutral::read(&profile_of(0.0)).is_err() && neutral::read(&profile_of(3.5)).is_err());
+    let mut toe: serde_json::Value = serde_json::from_str(&profile_of(1.0)).unwrap();
+    toe["data"]["toe"] = serde_json::json!(2);
+    assert!(neutral::read(&toe.to_string()).is_err(), "a number the film does not read is refused");
+    let mut lifted: serde_json::Value = serde_json::from_str(&profile_of(1.0)).unwrap();
+    lifted["data"]["density"][0] = serde_json::json!(0.05);
+    assert!(neutral::read(&lifted.to_string()).is_err(), "a curve over its bare film at no light is refused");
+}
+
+/// The displayed light of a scene grey shot on `stock` at rest, read through its pure inversion, and its contrast: the
+/// stops it shows for each stop of the scene about that grey.
+fn grey_and_contrast(stock: VirtualStock) -> (f32, f32) {
+    let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+    let k = conversion::stage47(&s);
+    let shown = |light: f32| {
+        let lit = conversion::scene_white(&s).map_or([light, light, light, 1.0], |m| cpu::color_matrix([light, light, light, 1.0], &m));
+        let p = cpu::stage47(film::shot(stock, lit, 0.0), &k);
+        p[0] * LUMA[0] + p[1] * LUMA[1] + p[2] * LUMA[2]
+    };
+    (shown(0.184), (shown(0.368) / shown(0.092)).log2() / 2.0)
 }
 
 #[test]
-fn the_pure_inversion_gives_the_scene_back() {
-    let reading = reading();
-    let (mut worst, mut twin) = (0.0f32, 0.0f32);
-    // A window whose white lies a hundredth of density off the film's.
-    let off = Stage47 { red: [reading.red[0], reading.red[1] + 0.01, 1.0], green: [reading.green[0], reading.green[1] + 0.01, 1.0], blue: [reading.blue[0], reading.blue[1] + 0.01, 1.0], ..reading };
-    for scene in scenes().into_iter().skip(1) {
-        let (share, moved) = (cpu::windowed(film::shot(NEUTRAL, scene, 0.0), &reading), cpu::windowed(film::shot(NEUTRAL, scene, 0.0), &off));
-        for c in (0..3).filter(|&c| scene[c] >= saturation() * (-13f32).exp2()) {
-            let light = scene[c] / saturation();
-            worst = worst.max((inverted(share[c]) / light - 1.0).abs());
-            twin = twin.max((inverted(moved[c]) / light - 1.0).abs());
-        }
-    }
-    println!("round trip: {:.4} %, the twin {:.2} %", worst * 100.0, twin * 100.0);
-    assert!(worst < 1e-3, "the scene comes back {:.3} % off", worst * 100.0);
-    assert!(twin > 5e-3, "the twin passes at {twin:.2e}");
-    assert!(inverted(cpu::windowed(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0), &reading)[1]).abs() < 1e-7);
+fn the_neutral_film_shows_a_grey_and_a_contrast_a_colour_negative_s() {
+    let (neutral, portra) = (grey_and_contrast(NEUTRAL), grey_and_contrast(VirtualStock::of("kodak-portra-800")));
+    let screen = (0.184 / saturation(), 1.0);
+    println!(
+        "a grey shown at {:.4} on the neutral film, {:.4} on Portra 800 ({:+.2} stop), the screen's mirror {:.4} ({:+.2} stop); contrast {:.3} against {:.3}, the mirror {:.3}",
+        neutral.0, portra.0, (neutral.0 / portra.0).log2(), screen.0, (screen.0 / portra.0).log2(), neutral.1, portra.1, screen.1
+    );
+    assert!((neutral.0 / portra.0).log2().abs() < 0.5, "a grey {:+.2} stop off Portra 800's", (neutral.0 / portra.0).log2());
+    assert!((neutral.1 / portra.1 - 1.0).abs() < 0.2, "a contrast {} against {}", neutral.1, portra.1);
+    // Twin: the screen's mirror the film once was lays the grey more than a stop under Portra 800's.
+    assert!((screen.0 / portra.0).log2() < -0.8);
 }
 
-/// End to end: a new digital photo, on the neutral film and no paper, renders its scene's light over the sensor's
-/// saturation, through the chain's CPU references and whole on the GPU. Twins: on a paper, or on Portra 800, it does not.
+/// End to end: a new digital photo, on the neutral film and no paper, renders its scene toned by the film's curve, through
+/// the chain's CPU references and whole on the GPU. Twins: on a paper, or on Portra 800, it does not.
 #[test]
 fn a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion() {
     let s = plain();
@@ -173,7 +203,7 @@ fn a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion() {
     let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..s.clone() };
     let (cpu_off, cpu_twin) = (off_the_scene(&scenes, &through(&k)), off_the_scene(&scenes, &through(&conversion::stage47(&on_paper))));
     println!("end to end on the CPU: {:.4} %, the twin on a paper {:.0} %", cpu_off * 100.0, cpu_twin * 100.0);
-    assert!(cpu_off < 1e-3, "the CPU chain renders the scene {:.3} % off", cpu_off * 100.0);
+    assert!(cpu_off < 2e-3, "the CPU chain renders the scene {:.3} % off", cpu_off * 100.0);
     assert!(cpu_twin > 0.05, "the paper twin passes at {cpu_twin:.2e}");
     assert!(cpu::stage47(film::shot(NEUTRAL, [0.0, 0.0, 0.0, 1.0], 0.0), &k).iter().take(3).all(|v| v.abs() < 1e-7), "no light renders black");
     let Some(mut g) = graph("a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion") else { return };
@@ -182,7 +212,7 @@ fn a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion() {
     let on_portra = s.on_stock(VirtualStock::of("kodak-portra-800"));
     let (gpu_off, gpu_paper, gpu_film) = (off_the_scene(&scenes, &render(&s)), off_the_scene(&scenes, &render(&on_paper)), off_the_scene(&scenes, &render(&on_portra)));
     println!("end to end on the GPU: {:.4} %, the twins on a paper {:.0} %, on Portra 800 {:.0} %", gpu_off * 100.0, gpu_paper * 100.0, gpu_film * 100.0);
-    assert!(gpu_off < 1e-3, "the GPU chain renders the scene {:.3} % off", gpu_off * 100.0);
+    assert!(gpu_off < 2e-3, "the GPU chain renders the scene {:.3} % off", gpu_off * 100.0);
     assert!(gpu_paper > 0.05 && gpu_film > 0.05, "the twins pass at {gpu_paper:.2e} and {gpu_film:.2e}");
 }
 

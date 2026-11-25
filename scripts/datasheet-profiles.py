@@ -965,6 +965,37 @@ def lay_effects():
             path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
 
 
+# The colour negatives whose sheets give the neutral film its tone curve: the photographers' common Kodak stocks.
+NEUTRAL_SOURCES = ["kodak_portra_160", "kodak_portra_400", "kodak_portra_800", "kodak_ektar_100", "kodak_gold_200",
+                   "kodak_ultra_max_400"]
+NEUTRAL_NODES = 64
+
+
+def neutral_curve():
+    """The neutral film's tone curve: the mean, over its sources' three layers, of their sheets' density above D-min on log
+    H about a grey, on the span they all cover, nought at its foot; its own colour none, the same on its three layers."""
+    curves = []
+    for path in stock_files():
+        stock_file = json.loads(path.read_text())
+        for block in blocks(stock_file):
+            if stock_file.get("oni") == "film" and block["profile"]["info"]["stock"] in NEUTRAL_SOURCES:
+                data = block["profile"]["data"]
+                curves.append((np.array(data["log_exposure"]), np.array(data["sheet_density_curves"], dtype=float)))
+    assert len(curves) == len(NEUTRAL_SOURCES), f"{len(curves)} sources found"
+    low, high = max(le[0] for le, _ in curves), min(le[-1] for le, _ in curves)
+    grid = np.linspace(low, high, NEUTRAL_NODES)
+    mean = np.mean([np.interp(grid, le, d[:, c]) for le, d in curves for c in range(3)], axis=0)
+    mean -= mean[0]
+    path = STOCKS_DIR / "generic-neutral.json"
+    stock_file = json.loads(path.read_text())
+    data = stock_file["film"]["profile"]["data"]
+    data["log_exposure"] = [round(float(v), 6) for v in grid]
+    data["density"] = [round(float(v), 6) for v in mean]
+    stock_file["film"]["profile"]["provenance"] = {"density": "the mean of " + ", ".join(NEUTRAL_SOURCES) + "'s sheet curves, their three layers each"}
+    path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+    print(f"neutral: the mean of {len(curves)} sheets' layers on log H {low:+.2f} to {high:+.2f}, {mean[-1]:.3f} at its top")
+
+
 def main():
     global STOCK
     dataset = Path(sys.argv[1])
@@ -999,6 +1030,7 @@ def main():
     pair_papers()
     refresh_references()
     lay_effects()
+    neutral_curve()
 
 
 if __name__ == "__main__":

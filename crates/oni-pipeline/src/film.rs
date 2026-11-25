@@ -258,7 +258,7 @@ pub fn shot(stock: VirtualStock, lit: [f32; 4], stops: f32) -> [f32; 4] {
 
 /// The reference a neutral film's `profile` derives, as its file leaving it out takes; or why the profile does not read.
 pub fn derive_neutral(profile: &str) -> Result<StockReference, String> {
-    let k = neutral::kernel_of(neutral::range(profile)?);
+    let k = neutral::read(profile)?;
     Ok(derived_on(|scene| cpu::neutral_negative([scene, scene, scene, 1.0], &k)))
 }
 

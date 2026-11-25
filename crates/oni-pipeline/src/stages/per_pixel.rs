@@ -96,7 +96,7 @@ pub fn reciprocal(k: f32, floor: f32) -> PerPixel {
     PerPixel { name: "reciprocal", kernel: &RECIPROCAL, params: uniform(HEAD, &[[k, floor, 0.0, 0.0]]) }
 }
 
-/// The neutral negative: a scene exposed and developed as the screen's code of its light.
+/// The neutral negative: a scene exposed and developed on a colour negative's mean tone curve, its three layers alike.
 pub fn neutral_negative(k: &NeutralNegative) -> PerPixel {
     PerPixel { name: "neutral-negative", kernel: &NEUTRAL_NEGATIVE, params: uniform(HEAD, &k.rows()) }
 }

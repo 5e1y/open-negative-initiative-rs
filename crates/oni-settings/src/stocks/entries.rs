@@ -36,7 +36,7 @@ pub struct VirtualEntry {
     pub silver: bool,
     /// A colour reversal film: its curves fall, and its slide is projected.
     pub reversal: bool,
-    /// A film of no character, its profile its density range alone.
+    /// A film of no colour of its own, its profile its density range and its tone curve.
     pub neutral: bool,
     /// The paper whose gaze reads its negative; none scans it as a camera does.
     pub reader: Option<Reader>,

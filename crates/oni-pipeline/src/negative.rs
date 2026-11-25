@@ -131,8 +131,8 @@ fn tabled(le: &[f64], normal: &[[f64; 3]], after: &[[f64; 3]], couplers: [V3; 3]
 fn developed(film: Film) -> Development {
     match film {
         Film::Stock(stock) if stock.entry().neutral => {
-            let range = crate::film::neutral::range(&stock.entry().profile).expect("a profile reads once its file is taken");
-            let (le, density) = crate::film::neutral::curve(range, NEGATIVE_CURVE_NODES);
+            let k = crate::film::neutral::kernel(stock).expect("a neutral film's kernel");
+            let (le, density) = crate::film::neutral::curve(&k, NEGATIVE_CURVE_NODES);
             developing(&le, &density, None)
         }
         Film::Stock(stock) if stock.is_silver() => {
