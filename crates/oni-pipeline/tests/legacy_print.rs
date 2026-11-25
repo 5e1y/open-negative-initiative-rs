@@ -1,7 +1,7 @@
 //! Format 46 keeps every look: each Scanner-face case and corpus sidecar renders to the bit as `legacy_print/fingerprints.json`
 //! holds, format 45's look on format 66's unmixed data-sheet dyes, Lighting and Saturation at rest or moving the
-//! negative: the whole chain on the GPU, stage 4-7 and the look on the CPU; a slide Pro rendered, on the GPU its
-//! projector's since format 70; a negative Pro rendered naming no paper, its pure inversion since format 73.
+//! negative: the whole chain on the GPU, stage 4-7 and the look on the CPU. A photo Pro rendered, which the file names
+//! with no fingerprint, takes no legacy print and renders as this build lays its settings.
 
 use oni_graph::Graph;
 use oni_pipeline::{Inputs, Pipeline, Request, conversion, frontier_look, oni_look, scanner};
@@ -69,10 +69,10 @@ fn here() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests")
 }
 
-/// Every document the fixture names, as stored, and its two fingerprints of format 45.
-fn documents() -> Vec<(String, Vec<u8>, [String; 2])> {
+/// Every document the fixture names, as stored, and its two fingerprints of format 45 where the Scanner face rendered it.
+fn documents() -> Vec<(String, Vec<u8>, Option<[String; 2]>)> {
     let text = std::fs::read(here().join("legacy_print/fingerprints.json")).unwrap();
-    let kept: BTreeMap<String, [String; 2]> = serde_json::from_slice(&text).unwrap();
+    let kept: BTreeMap<String, Option<[String; 2]>> = serde_json::from_slice(&text).unwrap();
     let corpus = here().join("../../oni-settings/tests/corpus");
     kept.into_iter()
         .map(|(name, prints)| {
@@ -99,12 +99,13 @@ fn on_face(bytes: &[u8], face: &str) -> PipelineSettings {
 #[test]
 fn every_photo_prints_its_machine_s_look_as_format_45_did_on_the_cpu() {
     let (mut scanned, mut pro) = (0, 0);
-    for (name, bytes, [_, want]) in documents() {
+    for (name, bytes, prints) in documents() {
         let s = read(&bytes);
         let print = |t: &PipelineSettings| fingerprint(&cpu_print(&scene(), t));
-        assert_eq!(print(&s), want, "{name} moved");
         let stored: Value = serde_json::from_slice(&bytes).unwrap();
-        if stored["settings"]["face"] == "scanner" {
+        assert_eq!(stored["settings"]["face"] == "scanner", prints.is_some(), "{name}: a fingerprint for a Scanner photo alone");
+        if let Some([_, want]) = prints {
+            assert_eq!(print(&s), want, "{name} moved");
             // Twins: a photo the Scanner face rendered, read as Pro's or migrated without its legacy print, moves.
             scanned += 1;
             assert_ne!(print(&on_face(&bytes, "pro")), want, "{name} read as Pro's");
@@ -112,9 +113,10 @@ fn every_photo_prints_its_machine_s_look_as_format_45_did_on_the_cpu() {
                 assert_ne!(print(&PipelineSettings { legacy_print: None, ..s.clone() }), want, "{name} without its legacy print");
             }
         } else {
-            // Twin: a photo Pro rendered, its Scanner settings taken instead, moves.
+            // A photo Pro rendered takes no legacy print; twin: its Scanner settings taken instead, it moves.
             pro += 1;
-            assert_ne!(print(&on_face(&bytes, "scanner")), want, "{name} read as the Scanner's");
+            assert!(s.legacy().is_none(), "{name} takes a legacy print");
+            assert_ne!(print(&on_face(&bytes, "scanner")), print(&s), "{name} read as the Scanner's");
         }
     }
     println!("{scanned} photos the Scanner face rendered and {pro} Pro rendered print to the bit");
@@ -134,7 +136,7 @@ fn every_photo_renders_whole_as_format_45_did_on_the_gpu() {
         let image = Pipeline::new().image(&mut g, &source, s, &Request::default(), &Inputs::default()).unwrap();
         fingerprint(&g.render(&image, image.extent(), None).unwrap())
     };
-    for (name, bytes, [want, _]) in documents() {
+    for (name, bytes, [want, _]) in documents().into_iter().filter_map(|(n, b, p)| Some((n, b, p?))) {
         let s = read(&bytes);
         assert_eq!(render(&s), want, "{name} moved");
         // Twin: off its legacy print, laid no more, a Scanner photo moves.

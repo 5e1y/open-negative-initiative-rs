@@ -217,10 +217,12 @@ pub(crate) fn de_dust_is_read_once_its_tab_is_left_never_stroke_by_stroke() {
     let (fx, fy, fw, fh) = (c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height());
     for k in 0..2 {
         let y = fy + fh * (0.3 + 0.2 * k as f32);
+        // A long stroke on a whole scan is laid as several short corrections.
+        let before = corrections();
         c.invoke_paint_start(fx + fw * 0.4, y);
         c.invoke_paint_move(fx + fw * 0.5, y);
         c.invoke_paint_end();
-        r.rig.until("the stroke", Duration::from_secs(10), || corrections() == k + 1);
+        r.rig.until("the stroke", Duration::from_secs(10), || corrections() > before);
         rested();
     }
     r.rig.until("the patches", Duration::from_secs(60), || {

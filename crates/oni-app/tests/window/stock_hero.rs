@@ -250,7 +250,8 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
         drop_menu(rig, w);
         stocks.invoke_picked(stock(next.catalogue_id()));
         rig.key("\u{1b}");
-        rig.settle();
+        // Each step reads the store and the panel, which land with the posts: no spring of the eighty to wait out.
+        rig.pump();
         assert_eq!((film().stock, panel.get_stock().name.as_str()), (next, next.name()));
         let light = next.white().map_or("The scene's own light".to_string(), |w| format!("{} K", (w.kelvin / 10.0).round() * 10.0));
         assert!(panel.get_film_white().starts_with(&light), "{} lights the scene at {light}: {}", next.name(), panel.get_film_white());
@@ -262,10 +263,10 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
         let s = ctl.state.borrow().store().settings().clone();
         assert_eq!((s.gains.stops, s.dye_set), (next.reference().stops, next.dye_set()), "placed on its own reference");
         ctl.act(oni_app::Act::Undo);
-        rig.settle();
+        rig.pump();
         assert_eq!(film().stock, before, "one Undo takes the film back");
         ctl.act(oni_app::Act::Redo);
-        rig.settle();
+        rig.pump();
     }
     // Twin: a stock no digital photo is shot on, chosen anyway, leaves the film as it is.
     let before = film();

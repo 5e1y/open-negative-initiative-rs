@@ -15,23 +15,33 @@ if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     exit 1
 fi
 
-# One binary: its output into its own log, its verdict into a marker the summary reads. A binary
-# still running after ONI_CHECK_LIMIT seconds (240: the window checks alone take two minutes) is stopped and fails, so a hang never holds the loop.
+# One binary: its output into its own log, its verdict into a marker the summary reads, its seconds into the
+# timings. A binary still running after ONI_CHECK_LIMIT seconds (1800: the window checks take 10 minutes on a busy
+# Mac) is stopped and fails, so a hang never holds the loop.
 run() {
-    local exe=$1 manifest=$2 log pid watchdog
+    local exe=$1 manifest=$2 log pid watchdog began
     log="$out/$(basename "$exe").log"
+    began=$(date +%s)
     (cd "$(dirname "$manifest")" && CARGO_MANIFEST_DIR=$(dirname "$manifest") exec "$exe" -q --show-output) >"$log" 2>&1 &
     pid=$!
-    (sleep "${ONI_CHECK_LIMIT:-240}" && kill "$pid" 2>/dev/null && echo "stopped after ${ONI_CHECK_LIMIT:-240} s" >>"$log") &
+    (sleep "${ONI_CHECK_LIMIT:-1800}" && kill "$pid" 2>/dev/null && echo "stopped after ${ONI_CHECK_LIMIT:-1800} s" >>"$log") &
     watchdog=$!
     if wait "$pid"; then
         touch "$log.ok"
     fi
     kill "$watchdog" 2>/dev/null
+    printf '%s\t%s\n' "$(($(date +%s) - began))" "$(basename "$exe")" >>"$out/times"
 }
 export -f run
 export out
-tr '\t' '\n' <"$out/bins" | xargs -n 2 -P "${ONI_BINARIES:-12}" bash -c 'run "$0" "$1"'
+# The longest binary on the last run starts first, one never timed before it, so none holds the end alone.
+times="${CARGO_TARGET_DIR:-target}/tmp/check-times.tsv"
+mkdir -p "$(dirname "$times")"
+touch "$times"
+while IFS=$'\t' read -r exe manifest; do
+    printf '%s\t%s\t%s\n' "$(awk -F '\t' -v b="$(basename "$exe")" '$2 == b { print $1 }' "$times" | grep . || echo 99999)" "$exe" "$manifest"
+done <"$out/bins" | sort -rn | cut -f 2- | tr '\t' '\n' | xargs -n 2 -P "${ONI_BINARIES:-12}" bash -c 'run "$0" "$1"'
+cp "$out/times" "$times"
 
 failed=0
 while IFS=$'\t' read -r exe _; do
@@ -76,5 +86,6 @@ if [ -s "$out/skipped" ]; then
 else
     echo "SKIPPED 0 checks"
 fi
+echo "SLOWEST $(sort -rn "$out/times" | head -10 | sed -E 's/-[0-9a-f]{16}$//' | awk -F '\t' '{ printf "%s%s %d s", (NR > 1 ? ", " : ""), $2, $1 }')"
 echo "$(wc -l <"$out/bins" | tr -d ' ') binaries, $failed failed, $(($(date +%s) - started)) s"
 [ "$failed" -eq 0 ]

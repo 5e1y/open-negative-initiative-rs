@@ -161,9 +161,13 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 ## Build
 
-`scripts/check` runs every check: one build, then every test binary at once (about 30 s);
-`--release` is the shipped build and the benches' only. LibRaw is vendored in `crates/oni-libraw/libraw` (0.22.2) and
-built by `build.rs`, so a new camera arrives by updating that copy, never from the system.
+`scripts/check` runs every check: one build (8 min from nothing, seconds when incremental), then every test binary at
+once, the longest on the last run first: about 10 minutes on the M2 Max, nearly all of them the window checks, every
+other binary under 30 s but roll #8's when `ONI_RAW_DIR` names it (up to 6 minutes). It runs at the end of a work
+stream, at a milestone or before a release (owner's call, 2026-11-25); in between, the app is built and the owner tests
+it live. `--release` is the shipped build and the
+benches' only. LibRaw is vendored in `crates/oni-libraw/libraw` (0.22.2) and built by `build.rs`, so a new camera
+arrives by updating that copy, never from the system.
 
 - **`scripts/lint`** runs clippy on every target with warnings denied (`[workspace.lints.clippy]`); it is outside `scripts/check`. A lint is
   allowed once at workspace level with its reason, never per site, and no fix may rewrite arithmetic in the render, pipeline, colour or measure crates.
@@ -175,7 +179,7 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
   change, run `cargo hakari generate && cargo hakari manage-deps`. The phone-link crates stay outside it.
 - **Dev and test builds read the interface at run time** (Slint's live preview, set by `oni-ui/build.rs` for
   the `debug` profile): `oni-ui` is a thin layer compiled in seconds, a `.slint` edit reaches a window
-  check in about 15 s, the full check runs in about 2 min. Its `@tr` texts stay English, so a French
+  check in about 15 s; each window check compiles the interface again, 3 s. Its `@tr` texts stay English, so a French
   look is judged on the app profile. `--profile app` and `--release` compile the interface (about 12 min).
 - **An interface edit needs no build in `scripts/live`**: the app reads the `.slint` files at launch and
   reloads them on each save (Slint's live preview), in `target/live`.
@@ -184,7 +188,9 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 - **The app the owner runs is `--profile app`** (release's numbers, incremental, 256 units): an edit
   relinks in seconds. `--release` stays the shipped build. Debug objects are not kept (`split-debuginfo
   = "off"`), so `target/` holds what is linked and nothing older. The window checks are one binary (`tests/window`) that runs each
-  check in a process of its own, as Slint takes one platform a process. Never wait on a build: work on
+  check in a process of its own, as Slint takes one platform a process and a check's workers outlive its shell: one a
+  core, the longest on the last run first (`target/tmp/window-timings.tsv`), 303 checks in 540 to 580 s. A check mostly
+  waits: a `settle` is 900 ms of real time, the springs running on the real clock. Never wait on a build: work on
   the next package while one builds.
 
 - **Where the Xcode licence is not accepted**, the `/usr/bin` shims (`cc`, `clang`, `ar`, `git`) refuse to

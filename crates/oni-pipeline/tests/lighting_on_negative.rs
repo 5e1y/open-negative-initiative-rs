@@ -1,7 +1,7 @@
-//! Lighting on the negative in every pipe: at rest every print as before to the bit; Exposure holding Prepare's black and
-//! white, its grey where the film's own stop lays it, a gain by the black; colour kept as the print brightens; Contrast
-//! about the grey; the filters tinting, the grey's weight held; every print finite and monotone past the curves' ends;
-//! the GPU its reference. Each verdict has a twin.
+//! Lighting on the negative in every pipe: at rest laid nowhere, a print of format 58 as format 64's; Exposure
+//! holding Prepare's black and white, its grey where the film's own stop lays it, a gain by the black; colour kept as the
+//! print brightens; Contrast about the grey; the filters tinting, the grey's weight held; every print finite and
+//! monotone past the curves' ends; the GPU its reference. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -67,42 +67,44 @@ fn pixels() -> Vec<V4> {
 /// `s` as a sidecar of format 58 held it, a digital photo on its film's reference of then, read through this format's
 /// migration, then on its paper named again: the migration takes a format's default paper away.
 fn stored(s: &PipelineSettings) -> PipelineSettings {
+    stored_as(s, 58)
+}
+
+/// `s` as a sidecar of `format` held it, read as `stored` reads it.
+fn stored_as(s: &PipelineSettings, format: i64) -> PipelineSettings {
     let then = s.film().map_or_else(|| s.clone(), |f| oni_settings::migrate::datasheet::on_former(s, f.stock));
-    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(then), 58)).unwrap();
-    value["version"] = 58.into();
+    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(then), format)).unwrap();
+    value["version"] = format.into();
     let read = oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings;
     PipelineSettings { print_paper: s.print_paper, ..read }
 }
 
-/// The bits of every pipe's print of `pixels`, folded by FNV-1a.
-fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
-    let pixels = pixels();
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for (_, s) in pipes() {
-        let k = twin(conversion::stage47(&s));
-        for v in pixels.iter().flat_map(|p| cpu::stage47(*p, &k)) {
-            for b in v.to_bits().to_le_bytes() {
-                hash = (hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3);
-            }
-        }
-    }
-    hash
+/// Each pipe's print of `pixels` on the CPU, as its bits.
+fn bits(s: &PipelineSettings) -> Vec<u32> {
+    let k = conversion::stage47(s);
+    pixels().iter().flat_map(|p| cpu::stage47(*p, &k)).map(f32::to_bits).collect()
 }
 
 #[test]
-fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
-    // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
-    // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift,
-    // then the pure inversion of a frame naming no paper.
-    const BEFORE: u64 = 0x0a23_764e_bc60_cc61;
+fn every_pipe_at_lightings_rest_lays_nothing_and_format_58_prints_as_64() {
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
-    let folded = bits(|k| k);
-    println!("every pipe at rest folds to {folded:#018x}");
-    assert_eq!(folded, BEFORE);
-    // Twin: a gain a thousandth off on red moves it.
-    assert_ne!(bits(|k| Stage47 { gain: [k.gain[0] * 1.001, k.gain[1], k.gain[2]], ..k }), BEFORE);
+    // At Lighting's rest, format 58 prints every scanned pipe to the bit as format 64 holding Exposure as its departure
+    // does, every later format read alike. A digital photo moves onto its data sheet at format 60, and a legacy print off
+    // that rest keeps its released render, pinned by `legacy_print`.
+    let mut compared = 0;
+    for ((label, then), (_, s)) in pipes().into_iter().zip(stored_pipes()).filter(|(_, (_, s))| s.legacy().is_none() && s.film().is_none()) {
+        assert!(bits(&then) == bits(&stored_as(&s, 64)), "{label}: format 58 prints otherwise");
+        compared += 1;
+    }
+    assert!(compared >= 8, "{compared} pipes compared");
+    // Twin: a negative stored at 58 read as 64's, its Exposure the former rest taken whole, moves.
+    let (label, negative) = stored_pipes().remove(0);
+    let mut value = serde_json::to_value(oni_settings::migrate::departure::stored_at(&oni_settings::document::Document::of(negative.clone()), 58)).unwrap();
+    value["version"] = 64.into();
+    let unmigrated = oni_settings::migrate::document(&serde_json::to_vec(&value).unwrap()).unwrap().document.settings;
+    assert!(bits(&unmigrated) != bits(&stored(&negative)), "{label}: read unmigrated, it prints the same");
 }
 
 /// Scene patches in linear Rec. 2020: greys over seven stops, then colours at three levels.

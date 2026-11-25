@@ -13413,5 +13413,40 @@
     "title": "CLAUDE.md: halation has no threshold and each film's file gives its effects' rests",
     "status": "done",
     "detail": "The grain paragraph said halation stays on the scene before the film; since #3804 and #3805 it is a dose of each layer's blurred exposure before the film's curve, its rests (halation, Bloom, grain width) from the film's file."
+  },
+  {
+    "id": 3840,
+    "type": "perf",
+    "title": "The full check starts its longest binary and its longest window checks first, one window check a core",
+    "status": "done",
+    "detail": "Measured on the M2 Max with another session building: scripts/check took 928 s, 894 of them the window binary (303 checks, six at a time); every other binary under 30 s. A window check costs 0.04 s to start a process, 3 s for the live-preview interface's compile, the rest its own waits (springs on the real clock, 900 ms a settle) and renders. Running checks one after another in a few processes was measured and dropped: it saves only the 0.04 s start, while a check's background decodes outlive its shell and hold the process-wide decode gate, so later checks timed out on thumbnails and Slint's animation clock jumped. Kept instead: the window runner orders the checks by their last run's seconds (target/tmp/window-timings.tsv), longest first, and runs one a core (12: 540 s, 8: 681 s, 6: 773 s); it prints its ten slowest checks. scripts/check starts the binaries by their last seconds (target/tmp/check-times.tsv), prints the ten slowest, and its watchdog rises from 240 to 1800 s, which a whole window run fits."
+  },
+  {
+    "id": 3841,
+    "type": "perf",
+    "title": "stock_hero picks the eighty virtual films without waiting out a spring each",
+    "status": "done",
+    "detail": "The check waited three settles of 900 ms for each of the eighty films, 250 s, for assertions that read the store and the panel, which land with the posts: a pump each, 47 s. Every assertion and its twin unchanged."
+  },
+  {
+    "id": 3842,
+    "type": "test",
+    "title": "Render fingerprints kept for legacy prints alone; the others become properties with twins",
+    "status": "done",
+    "detail": "colour_on_negative: the fold of every pipe at the colour tools' rest becomes the colour tools laid nowhere at rest, Lighting moved or not (their kernel keeps a layer's log exposure to the bit), twin each tool moved lays itself. lighting_on_negative: the fold becomes Lighting at rest laid nowhere and every scanned pipe of format 58 printing to the bit as format 64 holding Exposure as its departure, twin read unmigrated moves. exposure_departure: BEFORE_CPU and BEFORE_GPU become each format 61 pipe printing (CPU) and rendering (GPU, now on every system) to the bit as format 64 holding its departure, twins read unmigrated move. legacy_print/fingerprints.json keeps the 23 Scanner-face photos' fingerprints; the 27 Pro-rendered photos lose theirs and are checked to take no legacy print, twin read as the Scanner's moves."
+  },
+  {
+    "id": 3843,
+    "type": "test",
+    "title": "balance_kept's De-dust check waits for a stroke's corrections, not for exactly one",
+    "status": "done",
+    "detail": "A long stroke is laid as short corrections since #2400: on a whole NEF of roll #8 the check's stroke gives 25 and the wait for exactly one more timed out at every run with ONI_RAW_DIR set; it now waits for more than before the stroke, green on the NEF and on the TIFF fallback."
+  },
+  {
+    "id": 3844,
+    "type": "docs",
+    "title": "CLAUDE.md: the full check's real times and when it runs",
+    "status": "done",
+    "detail": "The Build section said 30 s and 2 min; it now gives the measured times and the owner's rule of 2026-11-25: the full check runs at the end of a work stream, at a milestone or before a release, the app built and tested live by the owner in between."
   }
 ]

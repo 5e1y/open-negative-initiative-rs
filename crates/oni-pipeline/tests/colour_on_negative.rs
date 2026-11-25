@@ -1,7 +1,7 @@
-//! The colour tools on the negative in every pipe: at their rest every print as before to the bit, Lighting moved or
-//! not; Saturation spreading the layers about the neutral, its colours inside the paper's dyes at its track's ends;
-//! a hue range's move touching that range alone; the saturation curve read on the print's own lightness; the GPU its
-//! reference. Each verdict has a twin.
+//! The colour tools on the negative in every pipe: at their rest laid nowhere, Lighting moved or not; Saturation
+//! spreading the layers about the neutral, its colours inside the paper's dyes at its track's ends; a hue range's move
+//! touching that range alone; the saturation curve read on the print's own lightness; the GPU its reference. Each verdict
+//! has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -66,35 +66,41 @@ fn lit(s: &PipelineSettings, f: impl Fn(&mut Print)) -> PipelineSettings {
     t
 }
 
-/// The bits of every pipe's print of `pixels` under every Lighting, folded by FNV-1a.
-fn bits(twin: impl Fn(Stage47) -> Stage47) -> u64 {
-    let pixels = pixels();
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for (_, s) in pipes() {
-        for (_, f) in lightings() {
-            let k = twin(conversion::stage47(&lit(&s, f)));
-            for v in pixels.iter().flat_map(|p| cpu::stage47(*p, &k)) {
-                for b in v.to_bits().to_le_bytes() {
-                    hash = (hash ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3);
-                }
-            }
+/// Every pipe under every Lighting, its colour tools as `colour` lays them.
+fn kernels(colour: impl Fn(&mut PipelineSettings)) -> Vec<(String, Stage47)> {
+    let mut out = Vec::new();
+    for (label, s) in pipes() {
+        for (lighting, f) in lightings() {
+            out.push((format!("{label}, {lighting}"), conversion::stage47(&with(&lit(&s, f), &colour))));
         }
     }
-    hash
+    out
 }
 
 #[test]
-fn every_pipe_at_the_colour_tools_rest_prints_as_before_to_the_bit() {
-    // The fold of every pipe's print at the colour tools' rest, under Lighting at rest and moved.
-    const BEFORE: u64 = 0x7c0d_dbc6_ea25_2f11;
+fn every_pipe_at_the_colour_tools_rest_lays_them_nowhere() {
+    // At rest the negative carries no colour tool, under Lighting at rest or moved: its kernel then keeps every layer's
+    // log exposure to the bit (`saturation_spreads_the_scenes_chroma_about_its_neutral_and_holds_its_luminance`).
+    for (label, k) in kernels(|_| {}) {
+        assert!(k.negative.is_none_or(|n| !n.colours()), "{label}: the colour tools at rest lay something on the negative");
+    }
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: the colour tools at rest lay nothing on the negative");
     }
-    let folded = bits(|k| k);
-    println!("every pipe at the colour tools' rest folds to {folded:#018x}");
-    assert_eq!(folded, BEFORE);
-    // Twin: a gain a thousandth off on red moves it.
-    assert_ne!(bits(|k| Stage47 { gain: [k.gain[0] * 1.001, k.gain[1], k.gain[2]], ..k }), BEFORE);
+    // Twin: each colour tool moved lays itself on the negative of every pipe in colour, Lighting moved or not.
+    let moves: [(&str, fn(&mut PipelineSettings)); 3] = [
+        ("Saturation", |u| u.density = 0.4),
+        ("a hue's range", |u| u.spectrogram.set(Band::Blue, 15.0, 0.6, 0.3)),
+        ("the saturation curve", |u| {
+            let points = [(0.0, 0.0), (0.25, 0.2), (0.5, 0.5), (0.75, 0.5), (1.0, 0.5)];
+            u.saturation = SaturationCurve { points: points.map(|(x, y)| Point::new(x, y)).to_vec() };
+        }),
+    ];
+    for (tool, moved) in moves {
+        for (label, k) in kernels(moved).into_iter().filter(|(label, _)| !label.contains("black and white")) {
+            assert!(k.negative.is_some_and(|n| n.colours()), "{label}: {tool} moved lays nothing");
+        }
+    }
 }
 
 #[test]
