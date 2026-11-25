@@ -4,11 +4,13 @@
 pub mod cube;
 pub mod file;
 mod catalogue;
+mod entries;
 mod order;
 #[cfg(test)]
 mod tests;
 
 pub use catalogue::*;
+pub use entries::*;
 pub use order::natural;
 
 use std::collections::HashSet;

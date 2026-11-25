@@ -17,22 +17,44 @@
   "dyes": "fujifilm-pro-400h",
   "reference": {
    "stops": [
-    -1.1131481,
     0.0,
-    1.0613128
+    0.0,
+    0.0
    ],
    "black": [
-    0.3045687,
-    0.3044656,
-    0.30425733
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.6013355,
-    0.62359434,
-    0.6396436
+    0.52111685,
+    0.4399502,
+    0.41831246
    ]
   },
-  "couplers": [[0.336, 0.578, 0.279], [0.459, 0.319, 0.392], [0.218, 0.04, 0.273]],
+  "filtration": [
+   0.06068,
+   0.0,
+   -0.08943
+  ],
+  "read_by": "fujifilm-crystal-archive-super-type-p",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_pro_400h",
@@ -67,7 +89,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +27.5 nm x1.20, M +2.5 nm x1.10, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0165 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm professional film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

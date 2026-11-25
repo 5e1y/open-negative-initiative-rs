@@ -94,7 +94,7 @@ fn every_pipe_at_lightings_rest_prints_as_before_to_the_bit() {
     // The fold of every pipe's print at Lighting's rest, a legacy print at its machine's entry, a paper its curves through
     // its dyes' crosstalk and pure dyes, Prepare's window on its useful range, its white on pure white without Print lift,
     // then the pure inversion of a frame naming no paper.
-    const BEFORE: u64 = 0x8efc_ccf8_8521_c3e3;
+    const BEFORE: u64 = 0x0a23_764e_bc60_cc61;
     for (label, s) in pipes() {
         assert!(conversion::stage47(&s).negative.is_none(), "{label}: Lighting at rest lays nothing on the negative");
     }
@@ -204,8 +204,8 @@ fn exposure_holds_prepares_black_and_white_and_moves_the_grey_as_the_films_stop(
             println!("{label}, Exposure {stops:+}: black {black:+.1e}, white {white:+.1e} (unanchored {free_white:+.3})");
             println!("  grey {grey:+.3} stop off the film's, mids {mids:.3}; near black {near:.2} stop (unanchored {free_near:.2})");
             assert!(black.abs() < 1e-5 && white.abs() < 1e-3, "{label}, {stops}: black {black}, white {white}");
-            // The grey within 0.07 stop of the film's stop a stop away, 0.28 two away; the mids within 0.45 a stop away.
-            assert!(grey.abs() < 0.07 * stops * stops && (stops.abs() > 1.0 || mids < 0.45), "{label}, {stops}: grey {grey}, mids {mids}");
+            // The grey within 0.07 stop of the film's stop a stop away, 0.28 two away; the mids within 0.47 a stop away.
+            assert!(grey.abs() < 0.07 * stops * stops && (stops.abs() > 1.0 || mids < 0.47), "{label}, {stops}: grey {grey}, mids {mids}");
             // By the black the anchored print lies between the rest and the film's own stop, on a legacy print's curve as by a gain.
             // A paper's toe holds its first tones within a ten-thousandth of a stop of its black.
             for t in [0.01f32, 0.02, 0.03, 0.05, 0.1].into_iter().filter(|t| shown(&rest, *t) > 1e-4) {

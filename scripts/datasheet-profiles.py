@@ -26,6 +26,12 @@ What each part of a profile is:
   less D-min. Each dye is then scaled to a Status M density of 1 in its own channel, the amounts' unit.
 - base_density: the sheet's D-min, printed.
 
+A paper reading films holds its sheet's spectral sensitivities ("sensitivity" in its file), on the same grid and by the
+same rule past its printed points; each still colour negative names its paper ("read_by": its maker's sheet's, else
+the owner's choice, said in the profile's provenance) and states couplers of zero, and its filtration, each layer's
+exposure offset that lays a mid grey on one share of the three windows through that paper's gaze under a 3200 K lamp,
+is derived with its reference by the pipeline.
+
 Status M and Status A are ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), on the dyes' known
 wavelengths. A colour paper's profile is its curves alone: its sheet's Status A characteristic curves as printed, each
 on its own D-min, which ONI reads through pure dyes, each on its own channel; only a paper whose sheet prints them is
@@ -440,6 +446,105 @@ def convert_paper(stock_id):
     return name, inferred
 
 
+# The papers whose gaze reads a film: the dataset's id, the paper's key and, for a paper with no file yet, its name. A
+# sheet printing no characteristic curve gives a file of the sensitivities alone, which reads films and prints nothing.
+READERS = [
+    ("kodak_endura_premier_paper", "kodak-endura-premier", None),
+    ("kodak_ektacolor_edge_paper", "kodak-ektacolor-edge", None),
+    ("fujifilm_crystal_archive_paper_super_type_p", "fujifilm-crystal-archive-super-type-p", "Fujifilm Crystal Archive Super Type P"),
+    ("fujifilm_crystal_archive_paper_supreme", "fujifilm-crystal-archive-supreme", "Fujifilm Crystal Archive Supreme"),
+]
+
+# A still colour negative's paper where its maker's sheet names one: "optimized for printing to" ENDURA Premier (Portra
+# 160, 400, 800, Ektar 100), "optimized for printing on" EDGE first (Gold 200, UltraMax 400).
+SHEET_PAPERS = {
+    "kodak-portra160": "kodak-endura-premier", "kodak-portra400": "kodak-endura-premier", "kodak-portra800": "kodak-endura-premier",
+    "kodak-ektar100": "kodak-endura-premier", "kodak-gold200": "kodak-ektacolor-edge", "kodak-ultramax400": "kodak-ektacolor-edge",
+}
+# A Fujifilm professional stock's file, by its key less the brand: the Pros, the 160N line, New Pro 400 and Reala Ace.
+FUJI_PROFESSIONAL = ("pro", "160n", "new-pro400", "reala-ace")
+
+
+def paper_for(file_key):
+    """The paper whose gaze reads the stock of `file_key`, and where the pairing comes from: its maker's sheet, else
+    the owner's choice (2026-11-25), no sheet of the dataset naming a paper for it."""
+    if file_key in SHEET_PAPERS:
+        return SHEET_PAPERS[file_key], "the paper the film's own data sheet names for printing it"
+    if file_key.startswith("kodak"):
+        return "kodak-endura-premier", "the owner's choice: the papers its sheet names (Supra, Ultra Endura) print no spectral sensitivity"
+    rest = file_key.removeprefix("fujifilm-")
+    if rest.startswith(FUJI_PROFESSIONAL[:2]) or rest in FUJI_PROFESSIONAL[2:]:
+        return "fujifilm-crystal-archive-super-type-p", "the owner's choice for a Fujifilm professional film: its sheet names no paper"
+    return "fujifilm-crystal-archive-supreme", "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
+
+
+def convert_reader(stock_id, key, name):
+    """A paper's three layers' spectral sensitivities on the grid, laid as the `sensitivity` of its file: what its gaze
+    on a film's dyes is computed from, under an enlarger's lamp."""
+    stock = STOCK[stock_id]
+    log_sensitivity, c = sensitivity(stock)
+    source = stock["source"]
+    block = {
+        "provenance": {
+            "data_sheet": source.get("doc_id"),
+            "url": source.get("url"),
+            "sha256": source.get("sha256"),
+            "retrieved": source.get("retrieved"),
+            "dataset_id": stock_id,
+            "charts": [c["chart_id"]],
+            "measured": [f"spectral sensitivity, three layers, as printed ({c['confidence']} confidence)"],
+            "inferred": ["each layer's sensitivity past the sheet's first and last point, falling at its end slope"],
+        },
+        "data": {
+            "wavelengths": [float(w) for w in WAVELENGTHS],
+            "log_sensitivity": [[round(float(v), 6) for v in row] for row in log_sensitivity],
+        },
+    }
+    path = STOCKS_DIR / f"{key}.json"
+    if path.exists():
+        paper = json.loads(path.read_text())
+    else:
+        paper = {"oni": "paper", "format": 1, "key": key, "name": name, "brand": name.split(" ")[0]}
+        print(f"{key}.json: a new file, a paper reading films and printing nothing")
+    if paper.get("sensitivity") != block:
+        paper["sensitivity"] = block
+        path.write_text(json.dumps(paper, indent=1, ensure_ascii=False) + "\n")
+    return key
+
+
+def pair_papers():
+    """Each still colour negative whose file holds its sheet's profile is read by its paper's gaze, its dyes uncoupled:
+    its reference and its filtration are then derived again."""
+    uncoupled = [[0.0, 0.0, 0.0] for _ in range(3)]
+    for path in stock_files():
+        stock_file = json.loads(path.read_text())
+        if stock_file.get("oni") != "film" or stock_file.get("type") != "colour-negative":
+            continue
+        moved = False
+        for block in blocks(stock_file):
+            if block.get("neutral") or "channel_density" not in block["profile"].get("data", {}):
+                continue
+            paper, why = paper_for(stock_file["key"])
+            if (block.get("read_by"), block.get("couplers"), block["profile"]["provenance"].get("read_by")) == (paper, uncoupled, why) and "filtration" in block:
+                continue
+            laid = {}
+            for k, v in block.items():
+                if k in ("reference", "filtration", "read_by", "couplers"):
+                    continue
+                laid[k] = v
+                if k == "dyes":
+                    laid["read_by"] = paper
+                    laid["couplers"] = uncoupled
+            laid["profile"]["provenance"]["read_by"] = why
+            block.clear()
+            block.update(laid)
+            moved = True
+        if moved:
+            path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+            MOVED.append(path)
+            print(f"{path.name}: read by {paper}")
+
+
 # The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, that film's key, and
 # each curve the sheet hides under another's stroke (coincident within line width, the dataset's notes say) with that one.
 SLIDES = [
@@ -703,6 +808,11 @@ def convert_bw(stock_id, name, prefix, spectrum_of):
     return name, inferred, len(others)
 
 
+def stock_files():
+    """The folder's stock and paper files, hidden ones left out as the build leaves them."""
+    return sorted(p for p in STOCKS_DIR.glob("*.json") if not p.name.startswith("."))
+
+
 def blocks(stock_file):
     """Every profile a stock's or a paper's file holds, with the block holding it."""
     if stock_file.get("oni") == "paper":
@@ -717,15 +827,19 @@ MOVED = []
 def place(profile):
     """`profile` laid into the file holding the profile of its name, every other field kept; else a file of its own."""
     name = profile["info"]["stock"]
-    for path in sorted(STOCKS_DIR.glob("*.json")):
+    for path in stock_files():
         stock_file = json.loads(path.read_text())
         for block in blocks(stock_file):
             if block["profile"]["info"]["stock"] != name:
                 continue
+            # Where its reading paper comes from is laid by the pairing, kept across a profile written again.
+            if "read_by" in block["profile"].get("provenance", {}):
+                profile["provenance"]["read_by"] = block["profile"]["provenance"]["read_by"]
             if block["profile"] != profile:
                 block["profile"] = profile
                 if stock_file["oni"] == "film":
                     block.pop("reference", None)
+                    block.pop("filtration", None)
                     MOVED.append(path)
                 path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
             return
@@ -752,7 +866,8 @@ def float32(v):
 
 
 def refresh_references():
-    """Each film whose profile moved takes the reference the pipeline derives from it, laid beside its dyes."""
+    """Each film whose profile or paper moved takes the reference, and the filtration where a paper reads it, that the
+    pipeline derives from its sheets, laid beside its dyes."""
     moved = sorted(set(MOVED))
     if not moved:
         return
@@ -763,13 +878,16 @@ def refresh_references():
         stock_file = json.loads(path.read_text())
         for block in blocks(stock_file):
             reference = {k: [float32(v) for v in derived[path.name][block["key"]][k]] for k in ("stops", "black", "white")}
+            filtration = derived[path.name][block["key"]]["filtration"]
             laid = {}
             for k, v in block.items():
-                if k == "reference":
+                if k in ("reference", "filtration"):
                     continue
                 laid[k] = v
                 if k == "dyes":
                     laid["reference"] = reference
+                    if filtration is not None:
+                        laid["filtration"] = [round(v, 5) for v in filtration]
             block.clear()
             block.update(laid)
         path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
@@ -792,6 +910,8 @@ def main():
         name, inferred = convert_paper(stock_id)
         names.append(name)
         print(f"{name}: " + "; ".join(inferred))
+    for stock_id, key, name in READERS:
+        convert_reader(stock_id, key, name)
     for stock_id, file_key, film_key, hidden in SLIDES:
         name, inferred = convert_slide(stock_id, file_key, film_key, hidden)
         names.append(name)
@@ -805,6 +925,7 @@ def main():
     for s in STOCK.values():
         if s["type"] == "bw_negative" and s["id"] not in taken:
             print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
+    pair_papers()
     refresh_references()
 
 

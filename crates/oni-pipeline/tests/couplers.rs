@@ -8,11 +8,12 @@ use oni_settings::VirtualStock;
 
 #[test]
 fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
-    let v = VirtualStock::of("kodak-portra-800");
+    let v = VirtualStock::of("kodak-vision3-250d");
     let own = film::couplers(&v.entry());
-    assert_ne!(own, COUPLERS, "Portra 800's file holds its own matrix");
-    // Twin: a file holding none reads the common matrix.
-    assert_eq!(film::couplers(&VirtualStock::of("fujifilm-160nc").entry()), COUPLERS);
+    assert_ne!(own, COUPLERS, "Vision3 250D's file holds its own matrix");
+    // Twins: a file holding none reads the common matrix; a still negative its paper reads is uncoupled.
+    assert_eq!(film::couplers(&VirtualStock::of("kodak-vision3-50d").entry()), COUPLERS);
+    assert_eq!(film::couplers(&VirtualStock::of("kodak-portra-800").entry()), [[0.0; 3]; 3]);
     let f32s = own.map(|r| r.map(|x| x as f32));
     assert_eq!((film::stock(v).kernel.couplers, negative::development(Film::Stock(v)).couplers), (f32s, f32s));
 

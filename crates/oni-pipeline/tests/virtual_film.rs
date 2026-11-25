@@ -66,6 +66,9 @@ impl Reference {
         let white = film::reference_light(stock);
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile), white);
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
+        // A film its paper reads takes its filtration, a gain on each layer's light.
+        let gains = filtration(stock).map(|d| 10f64.powf(d));
+        let light: Vec<[f64; 3]> = light.iter().map(|v| std::array::from_fn(|c| v[c] * gains[c])).collect();
         let (couplers, reversal) = (film::couplers(&stock.entry()), stock.entry().reversal);
         let develop = if reversal { bake::curves_falling } else { bake::curves_through };
         let curves = develop(&profile.log_exposure, &profile.density_curves, &couplers);
@@ -93,6 +96,11 @@ impl Reference {
     fn scan(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
         self.developed(rgb, stops).map(|d| 10f64.powf(-d))
     }
+}
+
+/// A film's filtration, each layer's exposure offset in log exposure; none where no paper reads it.
+fn filtration(stock: VirtualStock) -> [f64; 3] {
+    stock.entry().reader.map_or([0.0; 3], |r| r.filtration)
 }
 
 /// The colour negatives, whose three layers and couplers this reference develops; silver has checks of its own.
@@ -165,7 +173,7 @@ fn the_kernel_reads_the_negative_the_reference_develops() {
         let bound = if kind.entry().reversal { 0.002 } else { 0.001 };
         assert!(gap < bound && edge < 0.015, "{kind:?}: {gap} {edge}");
         let uncoupled = VirtualNegative { couplers: [[0.0; 3]; 3], ..stock.kernel.clone() };
-        assert!(worst(&uncoupled, &stock.table, &reference, &inside) > 0.001, "{kind:?}");
+        assert!(uncoupled == stock.kernel || worst(&uncoupled, &stock.table, &reference, &inside) > 0.001, "{kind:?}");
         let off = VirtualNegative { to_film: stock.kernel.to_film.map(|r| r.map(|v| v * 1.072)), ..stock.kernel.clone() };
         assert!(worst(&off, &stock.table, &reference, &inside) > 0.001, "{kind:?}");
     }
@@ -190,8 +198,10 @@ fn grey_on(kind: VirtualStock) -> f64 {
     let reference = Reference::new(kind);
     let log = reference.log_raw([f64::from(GREY); 3], 0.0);
     eprintln!("{kind:?}: grey's log exposure {log:?}");
-    assert!(log.iter().all(|v| v.abs() < 0.05), "{kind:?}: {log:?}");
-    assert!(reference.log_raw([f64::from(GREY); 3], 1.0).iter().all(|v| v.abs() > 0.2));
+    let offset = filtration(kind);
+    assert!((0..3).all(|c| (log[c] - offset[c]).abs() < 0.05), "{kind:?}: {log:?} about its filtration {offset:?}");
+    let over = reference.log_raw([f64::from(GREY); 3], 1.0);
+    assert!((0..3).all(|c| (over[c] - offset[c]).abs() > 0.2), "{kind:?}: {over:?}");
     let le = &reference.profile.log_exposure;
     // The gap to the data sheet of a grey ramp developed through `second`, the curve the couplers act on.
     let gap = |second: &[[f64; 3]]| {
@@ -210,7 +220,8 @@ fn grey_on(kind: VirtualStock) -> f64 {
     };
     let held = gap(&reference.curves.1);
     eprintln!("{kind:?}: a grey's development off the data sheet, {held:.5} density at worst");
-    assert!(gap(&reference.curves.0) > 0.1, "{kind:?}");
+    // Twin, on a coupled film: the couplers acting on the data sheet's own curves move the ramp off it.
+    assert!(reference.couplers == [[0.0; 3]; 3] || gap(&reference.curves.0) > 0.1, "{kind:?}");
     held
 }
 

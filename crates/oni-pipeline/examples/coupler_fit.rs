@@ -5,8 +5,11 @@
 //! fitted matrix.
 
 mod chart;
+#[path = "chart/cube.rs"]
+mod cube;
 
-use chart::{Cube, M3, RAMP, Render, V3, colours, judged, oklab, printed};
+use chart::{M3, RAMP, Render, V3, oklab};
+use cube::{Cube, colours, judged, printed};
 use oni_pipeline::film::{self, bake::COUPLERS, profile::Profile};
 use oni_settings::VirtualStock;
 use std::io::Write;

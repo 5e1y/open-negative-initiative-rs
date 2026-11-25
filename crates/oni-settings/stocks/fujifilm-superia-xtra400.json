@@ -17,21 +17,44 @@
   "dyes": "fujifilm-xtra-400",
   "reference": {
    "stops": [
-    -0.76449656,
     0.0,
-    0.9420355
+    0.0,
+    0.0
    ],
    "black": [
-    0.26812172,
-    0.26806217,
-    0.26792884
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.5967247,
-    0.6389474,
-    0.6661002
+    0.51560014,
+    0.49265444,
+    0.47441983
    ]
   },
+  "filtration": [
+   -0.01973,
+   0.0,
+   0.04322
+  ],
+  "read_by": "fujifilm-crystal-archive-supreme",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_superia_x_tra_400",
@@ -65,7 +88,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +27.5 nm x1.25, M +7.5 nm x1.05, Y +5.0 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0180 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

@@ -17,22 +17,44 @@
   "dyes": "kodak-portra-400",
   "reference": {
    "stops": [
-    -0.97359693,
     0.0,
-    0.7493512
+    0.0,
+    0.0
    ],
    "black": [
-    0.27577725,
-    0.27570185,
-    0.27559727
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.5394989,
-    0.5825401,
-    0.69326246
+    0.50708425,
+    0.4775318,
+    0.48832908
    ]
   },
-  "couplers": [[0.336, 0.613, 0.385], [0.047, 0.319, 0.1], [0.433, 0.078, 0.273]],
+  "filtration": [
+   -0.01165,
+   0.0,
+   -0.16318
+  ],
+  "read_by": "kodak-endura-premier",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "kodak_portra_400",
@@ -66,7 +88,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +40.0 nm x1.25, M +0.0 nm x1.05, Y +0.0 nm x1.00) to fit the mid-scale neutral less D-min (rms 0.0186 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the paper the film's own data sheet names for printing it"
    },
    "data": {
     "wavelengths": [

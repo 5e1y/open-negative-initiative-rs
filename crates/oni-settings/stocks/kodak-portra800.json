@@ -17,22 +17,44 @@
   "dyes": "kodak-portra-800",
   "reference": {
    "stops": [
-    -0.82687217,
     0.0,
-    1.2164922
+    0.0,
+    0.0
    ],
    "black": [
-    0.26587287,
-    0.26581076,
-    0.26562253
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.5095668,
-    0.56159407,
-    0.6319505
+    0.4944812,
+    0.4784341,
+    0.4846847
    ]
   },
-  "couplers": [[0.336, 0.609, 0.274], [0.0, 0.319, 0.212], [0.42, 0.128, 0.273]],
+  "filtration": [
+   0.08614,
+   0.0,
+   0.16036
+  ],
+  "read_by": "kodak-endura-premier",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "kodak_portra_800",
@@ -66,7 +88,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +32.5 nm x1.20, M -2.5 nm x1.00, Y +0.0 nm x0.95) to fit the mid-scale neutral less D-min (rms 0.0145 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the paper the film's own data sheet names for printing it"
    },
    "data": {
     "wavelengths": [
@@ -3889,22 +3912,44 @@
     "dyes": "kodak-portra-800",
     "reference": {
      "stops": [
-      -0.82687217,
       0.0,
-      1.2164922
+      0.0,
+      0.0
      ],
      "black": [
-      0.26587287,
-      0.26581076,
-      0.26562253
+      0.10443662,
+      0.10443662,
+      0.10443662
      ],
      "white": [
-      0.5391925,
-      0.59079474,
-      0.6599107
+      0.5138217,
+      0.5108578,
+      0.51248485
      ]
     },
-    "couplers": [[0.336, 0.609, 0.274], [0.0, 0.319, 0.212], [0.42, 0.128, 0.273]],
+    "filtration": [
+     -0.07761,
+     0.0,
+     0.1296
+    ],
+    "read_by": "kodak-endura-premier",
+    "couplers": [
+     [
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0
+     ]
+    ],
     "profile": {
      "info": {
       "stock": "kodak_portra_800_push1",
@@ -3938,7 +3983,8 @@
        "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +32.5 nm x1.20, M -2.5 nm x1.00, Y +0.0 nm x0.95) to fit the mid-scale neutral less D-min (rms 0.0145 D)",
        "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
        "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-      ]
+      ],
+      "read_by": "the paper the film's own data sheet names for printing it"
      },
      "data": {
       "wavelengths": [
@@ -7761,22 +7807,44 @@
     "dyes": "kodak-portra-800",
     "reference": {
      "stops": [
-      -0.82687217,
       0.0,
-      1.2164922
+      0.0,
+      0.0
      ],
      "black": [
-      0.26587287,
-      0.26581076,
-      0.26562253
+      0.10443662,
+      0.10443662,
+      0.10443662
      ],
      "white": [
-      0.52452505,
-      0.58000964,
-      0.6292395
+      0.49694368,
+      0.49893385,
+      0.47323388
      ]
     },
-    "couplers": [[0.336, 0.609, 0.274], [0.0, 0.319, 0.212], [0.42, 0.128, 0.273]],
+    "filtration": [
+     -0.02598,
+     0.0,
+     0.07692
+    ],
+    "read_by": "kodak-endura-premier",
+    "couplers": [
+     [
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0
+     ]
+    ],
     "profile": {
      "info": {
       "stock": "kodak_portra_800_push2",
@@ -7810,7 +7878,8 @@
        "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +32.5 nm x1.20, M -2.5 nm x1.00, Y +0.0 nm x0.95) to fit the mid-scale neutral less D-min (rms 0.0145 D)",
        "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
        "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-      ]
+      ],
+      "read_by": "the paper the film's own data sheet names for printing it"
      },
      "data": {
       "wavelengths": [

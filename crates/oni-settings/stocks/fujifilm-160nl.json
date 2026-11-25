@@ -14,21 +14,44 @@
   "dyes": "fujifilm-160nl",
   "reference": {
    "stops": [
-    -1.005971,
     0.0,
-    0.87908447
+    0.0,
+    0.0
    ],
    "black": [
-    0.28062552,
-    0.28054544,
-    0.28041172
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.5597701,
-    0.60903186,
-    0.70729846
+    0.49459338,
+    0.45696637,
+    0.46693733
    ]
   },
+  "filtration": [
+   0.07037,
+   0.0,
+   -0.09662
+  ],
+  "read_by": "fujifilm-crystal-archive-super-type-p",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_160nl",
@@ -62,7 +85,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +35.0 nm x1.25, M +5.0 nm x0.95, Y +5.0 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0428 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm professional film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

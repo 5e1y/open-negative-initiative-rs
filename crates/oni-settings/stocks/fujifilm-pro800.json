@@ -14,21 +14,44 @@
   "dyes": "fujifilm-pro-800",
   "reference": {
    "stops": [
-    -0.97177553,
     0.0,
-    1.2240151
+    0.0,
+    0.0
    ],
    "black": [
-    0.29034182,
-    0.29025754,
-    0.2900282
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.61077833,
-    0.64319277,
-    0.65526134
+    0.57702804,
+    0.4794521,
+    0.46035284
    ]
   },
+  "filtration": [
+   0.09373,
+   0.0,
+   0.02587
+  ],
+  "read_by": "fujifilm-crystal-archive-super-type-p",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_pro_800",
@@ -63,7 +86,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +35.0 nm x1.20, M +2.5 nm x1.10, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0243 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm professional film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

@@ -13,21 +13,44 @@
   "dyes": "fujifilm-nexia-a200",
   "reference": {
    "stops": [
-    -1.0455583,
     0.0,
-    1.2149187
+    0.0,
+    0.0
    ],
    "black": [
-    0.3602102,
-    0.36005837,
-    0.35966995
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.6779901,
-    0.7168207,
-    0.77844137
+    0.49941188,
+    0.47630435,
+    0.4798122
    ]
   },
+  "filtration": [
+   -0.09788,
+   0.0,
+   -0.14001
+  ],
+  "read_by": "fujifilm-crystal-archive-supreme",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_nexia_a200",
@@ -61,7 +84,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +20.0 nm x1.15, M +2.5 nm x1.05, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0389 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

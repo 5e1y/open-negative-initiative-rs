@@ -14,22 +14,44 @@
   "dyes": "fujifilm-superia-200",
   "reference": {
    "stops": [
-    -0.82888764,
     0.0,
-    0.6216013
+    0.0,
+    0.0
    ],
    "black": [
-    0.280883,
-    0.2808132,
-    0.28072718
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.6436673,
-    0.69111156,
-    0.6996226
+    0.5438273,
+    0.52572316,
+    0.49151066
    ]
   },
-  "couplers": [[0.336, 0.124, 0.496], [0.203, 0.319, 0.01], [0.286, 0.226, 0.273]],
+  "filtration": [
+   -0.05915,
+   0.0,
+   -0.04739
+  ],
+  "read_by": "fujifilm-crystal-archive-supreme",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "fujifilm_superia_200",
@@ -64,7 +86,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +15.0 nm x0.95, M +15.0 nm x1.15, Y +7.5 nm x1.00) to fit the mid-scale neutral less D-min (rms 0.0296 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice for a Fujifilm consumer film: its sheet names no paper"
    },
    "data": {
     "wavelengths": [

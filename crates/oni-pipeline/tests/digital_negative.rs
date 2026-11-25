@@ -22,7 +22,8 @@ fn a_digital_photos_stage_4_to_7_is_a_colour_negatives_on_the_same_settings() {
     let (photo, scan) = (conversion::stage47(&s), conversion::stage47(&negative));
     // Lighting develops a digital photo's negative on its film's own layers, a scan's on its stock's mean layer.
     let developed = |k: &oni_render::Stage47| k.negative.expect("Lighting moved").development.clone();
-    assert!(developed(&photo).couplers != [[0.0; 3]; 3] && developed(&scan).couplers == [[0.0; 3]; 3]);
+    let layers_apart = |d: &oni_render::Development| d.normal.iter().any(|n| (n[0] - n[2]).abs() > 1e-3);
+    assert!(layers_apart(&developed(&photo)) && !layers_apart(&developed(&scan)));
     // Twin: the same settings read as a slide are no negative.
     let slide = PipelineSettings { mode: ConversionMode::Positive, ..s.clone() };
     assert_ne!(unlit(&s), unlit(&slide));

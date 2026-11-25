@@ -14,22 +14,44 @@
   "dyes": "kodak-portra-160nc",
   "reference": {
    "stops": [
-    -0.54341143,
+    1.7198263e-07,
     0.0,
-    0.41908747
+    0.0
    ],
    "black": [
-    0.31149137,
-    0.31142783,
-    0.31135964
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.6583049,
-    0.67724556,
-    0.7263157
+    0.5033095,
+    0.4650072,
+    0.5362317
    ]
   },
-  "couplers": [[0.336, 0.374, 0.469], [0.9, 0.319, 0.0], [0.161, 0.452, 0.273]],
+  "filtration": [
+   0.07879,
+   0.0,
+   -0.16107
+  ],
+  "read_by": "kodak-endura-premier",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "kodak_portra_160nc",
@@ -63,7 +85,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +30.0 nm x1.25, M +30.0 nm x1.25, Y +20.0 nm x1.10) to fit the mid-scale neutral less D-min (rms 0.0385 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the owner's choice: the papers its sheet names (Supra, Ultra Endura) print no spectral sensitivity"
    },
    "data": {
     "wavelengths": [

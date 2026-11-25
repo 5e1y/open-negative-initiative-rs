@@ -131,6 +131,9 @@ pub const EVERY_PAPER_VERSION: i64 = 72;
 /// as they are: one on its format's default paper, Kodak Royal Digital before 72 and ONI Standard at 72, names none, and
 /// a build before it would print a frame naming none on a paper.
 pub const OPTIONAL_PAPER_VERSION: i64 = 73;
+/// The version a still colour negative's virtual film came to be read by its paper's gaze, its bare film on one, under
+/// its own filtration and uncoupled: a digital photo's gains and windows move onto its stock's new reference.
+pub const PAPER_GAZE_VERSION: i64 = 74;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

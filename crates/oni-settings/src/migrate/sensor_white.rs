@@ -100,7 +100,7 @@ pub fn grey_placed(stock: VirtualStock) -> StockReference {
 /// `settings` of `version` on its stock's reference of the sensor's saturation, but on a legacy print.
 pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
     match settings.film() {
-        Some(film) if version < EVERY_PAPER_VERSION && settings.legacy_print.is_none() => onto(settings, grey_placed(film.stock), film.stock.reference()),
+        Some(film) if version < EVERY_PAPER_VERSION && settings.legacy_print.is_none() => onto(settings, grey_placed(film.stock), super::paper_gaze::camera_scanned(film.stock)),
         _ => settings,
     }
 }
@@ -119,7 +119,7 @@ mod tests {
         photo.levels = was.levels();
         photo.levels.green.white += 0.03;
         let landed = caught_up(EVERY_PAPER_VERSION - 1, photo.clone());
-        let now = stock.reference();
+        let now = super::super::paper_gaze::camera_scanned(stock);
         assert!(now.white != was.white, "the sensor's saturation moves Portra 800's white");
         assert!((0..3).all(|c| (landed.gains.stops[c] - (now.stops[c] + 0.25)).abs() < 1e-6), "{:?}", landed.gains.stops);
         assert!((landed.levels.green.white - (now.levels().green.white + 0.03)).abs() < 1e-5, "{:?}", landed.levels.green);

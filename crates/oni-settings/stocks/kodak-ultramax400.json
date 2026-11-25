@@ -17,22 +17,44 @@
   "dyes": "kodak-ultramax-400",
   "reference": {
    "stops": [
-    -0.80550206,
     0.0,
-    1.1800703
+    0.0,
+    0.0
    ],
    "black": [
-    0.26377177,
-    0.26371184,
-    0.26353472
+    0.10443662,
+    0.10443662,
+    0.10443662
    ],
    "white": [
-    0.50806046,
-    0.5602547,
-    0.627706
+    0.4889207,
+    0.47498095,
+    0.47217107
    ]
   },
-  "couplers": [[0.336, 0.681, 0.284], [0.0, 0.319, 0.329], [0.475, 0.031, 0.273]],
+  "filtration": [
+   0.03241,
+   0.0,
+   0.0766
+  ],
+  "read_by": "kodak-ektacolor-edge",
+  "couplers": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
   "profile": {
    "info": {
     "stock": "kodak_ultra_max_400",
@@ -66,7 +88,8 @@
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +37.5 nm x1.25, M -2.5 nm x1.00, Y +0.0 nm x0.95) to fit the mid-scale neutral less D-min (rms 0.0163 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
      "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
-    ]
+    ],
+    "read_by": "the paper the film's own data sheet names for printing it"
    },
    "data": {
     "wavelengths": [

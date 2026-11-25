@@ -1,11 +1,11 @@
 //! The person's own stocks and papers read beside the shipped ones and baked to be checked: one that fails is refused
-//! with why, its version taken before staying in use; a film leaving out its reference takes its profile's.
+//! with why, its version taken before staying in use; a film leaving out its reference or its filtration takes its
+//! sheets'.
 
 use crate::film;
 use crate::paper::{self, frontier};
 use oni_settings::stocks::file::{self, File, FilmBlock};
 use oni_settings::stocks::{self, Catalogue, Loaded, Origin, Refusal};
-use oni_settings::virtual_film::StockReference;
 use oni_settings::film::FilmType;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -29,8 +29,10 @@ pub struct Loader {
     folder: PathBuf,
     shipped: Vec<Loaded>,
     shipped_svgs: Vec<(String, Origin, Arc<[u8]>)>,
-    /// Each content's verdict: the references its films derive, or why it is refused.
-    checked: HashMap<u64, Result<Vec<StockReference>, String>>,
+    /// Each content's verdict, with its films' papers' sensitivities: what its films derive, or why it is refused.
+    checked: HashMap<u64, Result<Vec<film::Derived>, String>>,
+    /// Each paper's spectral sensitivities by its key, the shipped ones and the folder's as last read.
+    readers: HashMap<String, Arc<str>>,
     /// The bytes each file was last taken with, which stand in while an edit of it is refused.
     in_use: HashMap<PathBuf, Vec<u8>>,
     told: HashSet<Refusal>,
@@ -41,7 +43,7 @@ pub struct Loader {
 impl Loader {
     pub fn new(folder: PathBuf) -> Loader {
         let (shipped, shipped_svgs) = stocks::shipped();
-        Loader { folder, shipped, shipped_svgs, checked: HashMap::new(), in_use: HashMap::new(), told: HashSet::new(), seen: None }
+        Loader { folder, shipped, shipped_svgs, checked: HashMap::new(), readers: HashMap::new(), in_use: HashMap::new(), told: HashSet::new(), seen: None }
     }
 
     pub fn folder(&self) -> &Path {
@@ -72,6 +74,15 @@ impl Loader {
         if self.seen.replace(seen) == Some(seen) {
             return None;
         }
+        // The papers a film may name: the folder's own stand in for the shipped ones of their key.
+        let own_papers = candidates.iter().filter_map(|(_, bytes)| file::read(bytes).ok());
+        let papers = self.shipped.iter().map(|l| l.file.clone()).chain(own_papers);
+        self.readers = papers
+            .filter_map(|f| match f {
+                File::Paper(p) => p.sensitivity.map(|s| (p.key, Arc::from(s.get()))),
+                File::Film(_) => None,
+            })
+            .collect();
         let mut refused = Vec::new();
         let mut own: Vec<(PathBuf, Vec<u8>, Loaded)> = Vec::new();
         for (path, bytes) in candidates {
@@ -123,18 +134,21 @@ impl Loader {
         }
         let hash = stocks::hash(bytes);
         let mut file = file::read(bytes)?;
-        let references = match self.checked.get(&hash) {
+        // A film's verdict stands on its papers' sensitivities too.
+        let read: u64 = named_papers(&file).iter().filter_map(|k| self.readers.get(*k)).fold(hash, |h, s| stocks::hash(&[h.to_le_bytes().as_slice(), s.as_bytes()].concat()));
+        let derived = match self.checked.get(&read) {
             Some(verdict) => verdict.clone()?,
             None => {
-                let verdict = checked(&file);
-                self.checked.insert(hash, verdict.clone());
+                let verdict = checked(&file, &self.readers);
+                self.checked.insert(read, verdict.clone());
                 verdict?
             }
         };
         if let File::Film(f) = &mut file {
             let blocks = f.film.iter_mut().chain(f.developments.iter_mut().filter_map(|d| d.film.as_mut()));
-            for (b, derived) in blocks.zip(references) {
-                b.reference.get_or_insert(derived);
+            for (b, derived) in blocks.zip(derived) {
+                b.reference.get_or_insert(derived.reference);
+                b.filtration = b.filtration.or(derived.filtration);
             }
         }
         Ok(Loaded { name: file_name(path), origin: Origin::Own(path.to_owned()), file, hash })
@@ -180,7 +194,15 @@ pub fn look_key(stem: &str) -> String {
     key.trim_end_matches('-').chars().take(80).collect()
 }
 
-fn checked(file: &File) -> Result<Vec<StockReference>, String> {
+/// The papers a film's file names to read its negatives.
+fn named_papers(file: &File) -> Vec<&str> {
+    match file {
+        File::Film(f) => f.film.iter().chain(f.developments.iter().filter_map(|d| d.film.as_ref())).filter_map(|b| b.read_by.as_deref()).collect(),
+        File::Paper(_) => Vec::new(),
+    }
+}
+
+fn checked(file: &File, readers: &HashMap<String, Arc<str>>) -> Result<Vec<film::Derived>, String> {
     match file {
         File::Film(f) => {
             let silver = f.kind == FilmType::BlackAndWhite;
@@ -190,9 +212,16 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
                 .map(|b| {
                     let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
                     let reversal = f.kind == FilmType::ColourSlide;
+                    let reader = match &b.read_by {
+                        Some(paper) => {
+                            let sensitivity = readers.get(paper).ok_or_else(|| format!("the film \"{}\" names the paper \"{paper}\", which holds no spectral sensitivity", b.key))?;
+                            Some(film::Reader { sensitivity, filtration: b.filtration })
+                        }
+                        None => None,
+                    };
                     let derived = match b.neutral {
-                        true => film::derive_neutral(b.profile.get()),
-                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
+                        true => film::derive_neutral(b.profile.get()).map(|reference| film::Derived { reference, filtration: None }),
+                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers, reader),
                     };
                     derived.map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })
@@ -204,6 +233,9 @@ fn checked(file: &File) -> Result<Vec<StockReference>, String> {
             }
             if let Some(fit) = &p.frontier {
                 frontier::read(fit.get())?;
+            }
+            if let Some(sensitivity) = &p.sensitivity {
+                film::gaze::Sensitivity::read(sensitivity.get().as_bytes())?;
             }
             Ok(Vec::new())
         }

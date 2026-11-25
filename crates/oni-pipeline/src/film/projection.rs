@@ -1,8 +1,8 @@
 //! Light through a film's dyes. A reversal film's slide projected on a white screen: its dyes over the base filter a
 //! projector's tungsten-halogen lamp, and the eye, adapted to the bare film's light on the screen, sees the rest with the
 //! room's veil laid over. A scanned slide is read back to those dyes first, its light under the scanner's lamp solved for
-//! their amounts. A colour negative is scanned as a real one is: the scanner's lamp through its dyes and its orange base,
-//! seen by an RGB camera balanced on the lamp.
+//! their amounts. A colour negative no paper reads is scanned as a real one is: the scanner's lamp through its dyes and
+//! its orange base, seen by an RGB camera balanced on the lamp.
 
 use super::{bake, cie, profile::Profile};
 use crate::baked::Baked;
@@ -91,7 +91,7 @@ fn held(values: &[Option<f64>]) -> Vec<f64> {
 }
 
 /// A film's dyes at unit amount and its base, band by band, every band held.
-fn dyes(profile: &Profile) -> (Vec<[f64; 3]>, Vec<f64>) {
+pub(super) fn dyes(profile: &Profile) -> (Vec<[f64; 3]>, Vec<f64>) {
     let columns: [Vec<f64>; 3] = std::array::from_fn(|c| held(&profile.channel_density.iter().map(|d| d[c]).collect::<Vec<_>>()));
     let dyes = (0..cie::WAVELENGTHS).map(|i| std::array::from_fn(|c| columns[c][i])).collect();
     (dyes, held(&profile.base_density))
@@ -109,7 +109,7 @@ fn seen(kelvin: f64, base: &[f64]) -> (Vec<[f64; 3]>, M3) {
 }
 
 /// The dyes and the base, then the lamp as seen, as the projection kernel reads them.
-fn tabled(dyes: &[[f64; 3]], base: &[f64], seen: &[[f64; 3]]) -> Vec<[f32; 4]> {
+pub(super) fn tabled(dyes: &[[f64; 3]], base: &[f64], seen: &[[f64; 3]]) -> Vec<[f32; 4]> {
     let n = cie::WAVELENGTHS;
     let mut table = vec![[0.0f32; 4]; 2 * n];
     for i in 0..n {
@@ -215,7 +215,7 @@ pub fn pure(p: &Projected) -> ColorMatrix {
 }
 
 /// Planck's law at `nm` for a body at `kelvin`, to a constant factor.
-fn planck(nm: f64, kelvin: f64) -> f64 {
+pub(super) fn planck(nm: f64, kelvin: f64) -> f64 {
     let m = nm * 1e-9;
     1.0 / (m.powi(5) * ((1.438_776_877e-2 / (m * kelvin)).exp() - 1.0))
 }

@@ -4,84 +4,14 @@
 use super::file::{Describes, File, FilmBlock};
 use super::order::natural;
 use super::{Loaded, Origin, Refusal, intern};
+use super::entries::*;
 use crate::dyes::DyeSet;
 use crate::film::{FilmStockKind, FilmType};
 use crate::paper::PaperStock;
-use crate::virtual_film::{Balance, StockReference, VirtualStock};
+use crate::virtual_film::VirtualStock;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering as Atomic};
-
-/// The four kinds of key a sidecar stores, each its own space: one key may name a roll's stock and a virtual film.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Space {
-    Film,
-    Virtual,
-    Dyes,
-    Paper,
-}
-
-/// A virtual film: its stock's name and key, its light, its dyes, its reference and its data sheet's profile.
-#[derive(Debug, Clone)]
-pub struct VirtualEntry {
-    pub stock: VirtualStock,
-    pub name: &'static str,
-    pub catalogue: &'static str,
-    pub balance: Balance,
-    pub dyes: DyeSet,
-    pub reference: StockReference,
-    pub profile: Arc<str>,
-    pub silver: bool,
-    /// A colour reversal film: its curves fall, and its slide is projected.
-    pub reversal: bool,
-    /// A film of no character, its profile its density range alone.
-    pub neutral: bool,
-    /// Its own DIR coupler matrix, the common one where none.
-    pub couplers: Option<[[f64; 3]; 3]>,
-    /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
-    pub look: Option<super::cube::Look>,
-    /// Its file's content: a bake made of another is never served for it.
-    pub revision: u64,
-}
-
-/// Where a dye set's dyes are read: a colour profile, or the mean of other sets.
-#[derive(Debug, Clone)]
-pub enum DyeSource {
-    Profile(Arc<str>),
-    Mean(Vec<DyeSet>),
-}
-
-#[derive(Debug, Clone)]
-pub struct DyeEntry {
-    pub set: DyeSet,
-    /// The stock whose profile measured them; none for a mean.
-    pub name: Option<&'static str>,
-    pub source: DyeSource,
-    pub revision: u64,
-}
-
-/// What a paper prints with: a data sheet's profile, or the Frontier SP-3000's fit.
-#[derive(Debug, Clone)]
-pub enum Print {
-    Profile(Arc<str>),
-    Frontier(Arc<str>),
-}
-
-#[derive(Debug, Clone)]
-pub struct PaperEntry {
-    pub paper: PaperStock,
-    pub name: &'static str,
-    pub brand: &'static str,
-    pub print: Print,
-    pub revision: u64,
-}
-
-/// A canister's SVG and its bytes' hash, which a drawn image is kept under.
-#[derive(Debug, Clone)]
-pub struct Canister {
-    pub bytes: Arc<[u8]>,
-    pub hash: u64,
-}
 
 /// One space's keys: each entry's place, and each retired key's entry.
 #[derive(Debug, Default)]
@@ -261,13 +191,22 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
         defined.extend(wanted.into_iter().map(|c| (c, at)));
     }
     let mut means: Vec<(usize, &'static str, Vec<String>)> = Vec::new();
+    // Each paper's spectral sensitivities and its file's content, which a film it reads is baked on.
+    let sensitivities: HashMap<&str, (Arc<str>, u64)> = files
+        .iter()
+        .filter_map(|l| match &l.file {
+            File::Paper(p) => p.sensitivity.as_ref().map(|s| (p.key.as_str(), (Arc::from(s.get()), l.hash))),
+            File::Film(_) => None,
+        })
+        .collect();
     for (at, l) in files.iter().enumerate() {
         match &l.file {
             File::Film(f) => {
                 let missing = |space: Space, key: &str| format!("it names \"{key}\", which no file defines as {}", match space {
                     Space::Dyes => "a dye set",
                     Space::Virtual => "a virtual film",
-                    _ => "a stock",
+                    Space::Paper => "a paper",
+                    Space::Film => "a stock",
                 });
                 let parent = FilmStockKind {
                     id: intern(&f.key),
@@ -294,7 +233,17 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                         let reference = b.reference.ok_or_else(|| (at, format!("the film \"{}\" holds no reference", b.key)))?;
                         let set = canonical_in(&defined, files, Space::Dyes, &b.dyes).ok_or_else(|| (at, missing(Space::Dyes, &b.dyes)))?;
                         let profile: Arc<str> = Arc::from(b.profile.get());
-                        let revision = super::mixed(l.hash, super::hash(b.key.as_bytes()));
+                        let mut revision = super::mixed(l.hash, super::hash(b.key.as_bytes()));
+                        let reader = match &b.read_by {
+                            Some(named) => {
+                                let paper = canonical_in(&defined, files, Space::Paper, named).ok_or_else(|| (at, missing(Space::Paper, named)))?;
+                                let (sensitivity, content) = sensitivities.get(paper).ok_or_else(|| (at, format!("it names the paper \"{named}\", whose file holds no spectral sensitivity")))?;
+                                let filtration = b.filtration.ok_or_else(|| (at, format!("the film \"{}\" holds no filtration", b.key)))?;
+                                revision = super::mixed(revision, *content);
+                                Some(Reader { paper, sensitivity: sensitivity.clone(), filtration })
+                            }
+                            None => None,
+                        };
                         c.virtuals.push(VirtualEntry {
                             stock: VirtualStock::of(intern(&b.key)),
                             name: kind.display_name,
@@ -306,6 +255,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             silver: f.kind == FilmType::BlackAndWhite,
                             reversal: f.kind == FilmType::ColourSlide,
                             neutral: b.neutral,
+                            reader,
                             couplers: b.couplers,
                             look: b.look.clone(),
                             revision,
@@ -324,6 +274,8 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                 let print = match (&p.profile, &p.frontier) {
                     (Some(profile), _) => Print::Profile(Arc::from(profile.get())),
                     (None, Some(fit)) => Print::Frontier(Arc::from(fit.get())),
+                    // A paper holding its sensitivities alone reads films and prints nothing: no menu lists it.
+                    (None, None) if p.sensitivity.is_some() => continue,
                     (None, None) => return Err((at, "a paper holds a profile or a frontier fit".into())),
                 };
                 c.papers.push(PaperEntry { paper: PaperStock::of(intern(&p.key)), name: intern(&p.name), brand: intern(&p.brand), print, revision: l.hash });

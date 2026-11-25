@@ -73,6 +73,14 @@ pub struct FilmBlock {
     /// Derived from the profile when left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<StockReference>,
+    /// The paper whose gaze reads its negative, by key: an enlarger's lamp through the film's dyes exposes that paper's
+    /// three layers, each channel the density its layer sees; none scans it as a camera does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read_by: Option<String>,
+    /// The film's own filtration through that paper: each layer's exposure offset, in log exposure, which lays a scene's
+    /// mid grey on one share of the three windows. Derived from the two sheets when left out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub filtration: Option<[f64; 3]>,
     /// A film of no character: no spectrum, no coupler, pure dyes; its profile's `data` then holds `range` alone, the
     /// density from its bare film to the sensor's white.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -113,7 +121,8 @@ pub struct MeanSet {
     pub mean_of: Vec<String>,
 }
 
-/// A colour paper: a data sheet's profile, or the Frontier SP-3000's fit of its measured table.
+/// A colour paper: a data sheet's profile, or the Frontier SP-3000's fit of its measured table, which print; and its
+/// sheet's spectral sensitivities, which read a film. A paper holding the sensitivities alone prints nothing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PaperFile {
@@ -129,6 +138,9 @@ pub struct PaperFile {
     /// The fit `docs/research/frontier/frontier_print_fit.py` writes, with its provenance.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub frontier: Option<Box<RawValue>>,
+    /// Its three layers' spectral sensitivities as `scripts/datasheet-profiles.py` writes them: `provenance` and `data`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sensitivity: Option<Box<RawValue>>,
 }
 
 /// One file read: a stock or a paper.
@@ -214,8 +226,11 @@ impl File {
             File::Paper(p) => {
                 named(&p.key, &p.aliases, &p.name)?;
                 text("brand", &p.brand)?;
-                if p.profile.is_some() == p.frontier.is_some() {
+                if p.profile.is_some() && p.frontier.is_some() {
                     return Err("a paper holds a profile or a frontier fit, one of them".into());
+                }
+                if p.profile.is_none() && p.frontier.is_none() && p.sensitivity.is_none() {
+                    return Err("a paper holds a profile, a frontier fit or its spectral sensitivities".into());
                 }
             }
         }
@@ -226,6 +241,10 @@ impl File {
 fn block(film: &FilmBlock) -> Result<(), String> {
     named(&film.key, &film.aliases, "film")?;
     key(&film.dyes)?;
+    film.read_by.as_deref().map_or(Ok(()), key)?;
+    if film.filtration.is_some_and(|f| !f.iter().all(|v| v.is_finite())) {
+        return Err("a filtration holding a number that is not finite".into());
+    }
     match film.reference {
         Some(r) if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) => Err("a reference holding a number that is not finite".into()),
         _ => Ok(()),

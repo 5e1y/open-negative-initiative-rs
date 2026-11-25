@@ -261,8 +261,9 @@ mod tests {
         // Twin: a roll's stock no virtual film stands for is neither listed nor taken.
         assert!(!listed.contains(&"agfaphoto-apx") && virtual_stock("agfaphoto-apx").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
-        // A colour film whose couplers are not measured is not offered; a black and white one is.
-        assert!(!listed.contains(&"fujifilm-160nc") && listed.contains(&"kodak-portra400") && listed.contains(&"ilford-hp5"));
+        // A cine film no paper reads and whose couplers are not measured is not offered; a still negative its paper
+        // reads and a black and white one are.
+        assert!(!listed.contains(&"kodak-vision3-50d") && listed.contains(&"fujifilm-160nc") && listed.contains(&"kodak-portra400") && listed.contains(&"ilford-hp5"));
     }
 
     #[test]
