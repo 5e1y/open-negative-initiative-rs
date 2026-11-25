@@ -117,7 +117,10 @@ mod tests {
         let landed = read(&stored(&gold, older, None));
         let own = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-gold-200"));
         assert_eq!((landed.gains, landed.levels, landed.dye_set), (own.gains, own.levels, own.dye_set), "a reference laid whole lands whole");
-        assert_eq!(PipelineSettings { gains: gold.gains, levels: gold.levels, ..landed.clone() }, gold, "nothing else moves");
+        // Nothing else moves but the film effects, which format 75 lays on the film's rests.
+        let rests = VirtualStock::of("kodak-gold-200").effects();
+        let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, grain: crate::blocks::Grain { size: rests.grain_size, ..gold.grain }, ..gold.clone() };
+        assert_eq!(PipelineSettings { gains: gold.gains, levels: gold.levels, ..landed.clone() }, effects, "nothing else moves");
         let mut hand = gold.clone();
         (hand.gains.stops[2], hand.levels.red.white) = (hand.gains.stops[2] + 0.25, hand.levels.red.white - 0.1);
         let kept = read(&stored(&hand, older, None));
@@ -132,7 +135,8 @@ mod tests {
             (s.gains.stops, s.levels) = (mixed(stock).stops, mixed(stock).levels());
             s
         };
-        let own = |stock: VirtualStock| PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+        // Each lands as a photo the hand put on its film, format 75 laying the film's effects.
+        let own = |stock: VirtualStock| PipelineSettings::rest(ConversionMode::Digital, true).picking(stock);
         let twin = on_mixed(VirtualStock::of("kodak-portra-800"));
         assert_eq!(read(&stored(&twin, older, Some("kodak-portra-800-datasheet"))), own(VirtualStock::of("kodak-portra-800")));
         let reala = on_mixed(VirtualStock::of("fujifilm-superia-reala"));

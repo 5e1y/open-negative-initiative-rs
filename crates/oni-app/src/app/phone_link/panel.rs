@@ -263,7 +263,7 @@ mod tests {
         let tone = [Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
         let film = Field::ALL.into_iter().filter(|f| f.block() == Some(crate::fields::Block::Film)).collect::<Vec<_>>();
         let filtration = [Field::Cyan, Field::Magenta, Field::Yellow];
-        let later = [[Field::HalationSensitivity].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite], &film, &[Field::Brightness], &filtration].concat();
+        let later = [[Field::Bloom].as_slice(), &tone, &[Field::GrainColourBlack, Field::GrainColourWhite], &film, &[Field::Brightness], &filtration].concat();
         assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &effects, &lens, &later[..]].concat());
         // A digital photo's Roll tab is a negative's but for the flat-field, its colour a negative's print's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);

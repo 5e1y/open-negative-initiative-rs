@@ -55,6 +55,13 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 2.8
+  },
   "profile": {
    "info": {
     "stock": "kodak_portra_160",

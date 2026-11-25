@@ -27,6 +27,12 @@
     0.4525994
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_neopan_1600",

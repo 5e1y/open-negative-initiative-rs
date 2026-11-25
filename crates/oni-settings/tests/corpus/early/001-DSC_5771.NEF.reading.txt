@@ -327,8 +327,10 @@ settings: PipelineSettings {
     },
     halation: Halation {
         amount: 0.0,
-        size: 0.5,
-        sensitivity: 0.0,
+        size: 125.0,
+    },
+    bloom: Bloom {
+        size: 0.0,
     },
     lens_correction: LensCorrection {
         distortion: 0.0,

@@ -101,7 +101,10 @@ mod tests {
             let own = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
             let landed = read(&on_mixed(stock), older);
             assert_eq!((landed.gains, landed.levels), (own.gains, own.levels), "{stock:?}: a reference laid whole lands whole");
-            assert_eq!(PipelineSettings { gains: own.gains, levels: own.levels, ..on_mixed(stock) }, landed, "{stock:?}: nothing else moves");
+            // Nothing else moves but the film effects, which format 75 lays on the film's rests.
+            let (rests, stored) = (stock.effects(), on_mixed(stock));
+            let effects = PipelineSettings { halation: rests.halation, bloom: rests.bloom, grain: crate::blocks::Grain { size: rests.grain_size, ..stored.grain }, ..stored };
+            assert_eq!(PipelineSettings { gains: own.gains, levels: own.levels, ..effects }, landed, "{stock:?}: nothing else moves");
             let mut hand = on_mixed(stock);
             (hand.gains.stops[0], hand.levels.blue.white) = (hand.gains.stops[0] - 0.2, hand.levels.blue.white + 0.05);
             let kept = read(&hand, older);
@@ -117,7 +120,7 @@ mod tests {
         let hp5 = VirtualStock::of("ilford-hp5-plus");
         let silver = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(hp5);
         let then = PipelineSettings { levels: super::super::sensor_white::grey_placed(hp5).levels(), ..silver.clone() };
-        assert_eq!(read(&then, older), silver);
+        assert_eq!(read(&then, older), silver.picking(hp5), "format 75 lays the film's effects");
         let scan = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_eq!(read(&scan, older), read(&scan, VERSION));
     }

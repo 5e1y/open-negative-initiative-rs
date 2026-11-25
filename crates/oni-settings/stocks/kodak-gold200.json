@@ -55,6 +55,12 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "kodak_gold_200",

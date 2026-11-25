@@ -27,6 +27,13 @@
     0.48398888
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 4.3
+  },
   "profile": {
    "info": {
     "stock": "kodak_double_x",

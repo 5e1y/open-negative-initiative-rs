@@ -1,5 +1,6 @@
 // A virtual negative: the scene exposed on the film's light per chromaticity, developed on its curves
-// with its DIR couplers, each layer's density coded as its own channel's light; alpha kept.
+// with its DIR couplers, each layer's density coded as its own channel's light; alpha kept. Its exposure and its
+// development are passes of their own where an effect lies between them.
 
 struct Params {
     head: vec4<u32>,
@@ -31,17 +32,26 @@ fn negative_curve(e: vec3<f32>, row: u32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
-fn virtual_negative_px(s: vec4<f32>) -> vec4<f32> {
+// The exposure a scene pixel lays on each layer, the film's own exposure in.
+fn virtual_exposure_px(s: vec4<f32>) -> vec4<f32> {
     let xyz = vec3<f32>(dot(P.to_film[0].xyz, s.rgb), dot(P.to_film[1].xyz, s.rgb), dot(P.to_film[2].xyz, s.rgb));
     let b = xyz.x + xyz.y + xyz.z;
     let safe = max(b, 1e-10);
     let x = xyz.x / safe;
     let tc = clamp(vec2<f32>((1.0 - x) * (1.0 - x), (xyz.y / safe) / max(1.0 - x, 1e-10)), vec2<f32>(0.0), vec2<f32>(1.0));
-    let raw = negative_light(tc) * b * P.to_film[0].w;
-    let log = log2(max(raw, vec3<f32>(0.0)) + 1e-10) * 0.30102999566398120;
+    return vec4<f32>(negative_light(tc) * b * P.to_film[0].w, s.a);
+}
+
+// The layers' exposures developed on the curves, the couplers acting between them.
+fn virtual_development_px(e: vec4<f32>) -> vec4<f32> {
+    let log = log2(max(e.rgb, vec3<f32>(0.0)) + 1e-10) * 0.30102999566398120;
     let first = negative_curve(log, 0u);
     let c = P.couplers;
     let inhibited = log - (first.x * c[0].xyz + first.y * c[1].xyz + first.z * c[2].xyz);
     let density = negative_curve(inhibited, 1u);
-    return vec4<f32>(exp2(-3.3219280948873623 * density), s.a);
+    return vec4<f32>(exp2(-3.3219280948873623 * density), e.a);
+}
+
+fn virtual_negative_px(s: vec4<f32>) -> vec4<f32> {
+    return virtual_development_px(virtual_exposure_px(s));
 }

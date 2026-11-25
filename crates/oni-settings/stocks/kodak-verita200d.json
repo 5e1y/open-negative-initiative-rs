@@ -31,6 +31,13 @@
     0.66381735
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.0,
+    "size": 125.0
+   },
+   "bloom": 4.2
+  },
   "profile": {
    "info": {
     "stock": "kodak_verita_200d",

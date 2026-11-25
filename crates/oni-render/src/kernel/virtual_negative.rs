@@ -70,16 +70,30 @@ fn curve(e: f32, c: usize, row: usize, k: &VirtualNegative, table: &[V4]) -> f32
 
 /// One scene pixel to the light its negative passes, each layer's density on its own channel; alpha kept.
 pub fn virtual_negative(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
-    with_alpha(map(virtual_dyes(s, k, table), |_, d| (-std::f32::consts::LOG2_10 * d).exp2()), s[3])
+    virtual_development(virtual_exposure(s, k, table), k, table)
 }
 
 /// Each layer's density one scene pixel develops on the negative.
 pub fn virtual_dyes(s: V4, k: &VirtualNegative, table: &[V4]) -> V3 {
+    developed_dyes(rgb(virtual_exposure(s, k, table)), k, table)
+}
+
+/// The exposure one scene pixel lays on each of the film's layers, the film's own exposure in; alpha kept.
+pub fn virtual_exposure(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
     let xyz = k.to_film.map(|row| dot(row, rgb(s)));
     let b = xyz[0] + xyz[1] + xyz[2];
     let safe = b.max(1e-10);
-    let raw = map(light(quad(xyz[0] / safe, xyz[1] / safe), k, table), |_, v| v * b * k.exposure);
-    let log = map(raw, |_, v| (v.max(0.0) + 1e-10).log10());
+    with_alpha(map(light(quad(xyz[0] / safe, xyz[1] / safe), k, table), |_, v| v * b * k.exposure), s[3])
+}
+
+/// The layers' exposures `e` developed to the light their negative passes; alpha kept.
+pub fn virtual_development(e: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
+    with_alpha(map(developed_dyes(rgb(e), k, table), |_, d| (-std::f32::consts::LOG2_10 * d).exp2()), e[3])
+}
+
+/// Each layer's density the exposures `e` develop, its couplers acting between the curves.
+fn developed_dyes(e: V3, k: &VirtualNegative, table: &[V4]) -> V3 {
+    let log = map(e, |_, v| (v.max(0.0) + 1e-10).log10());
     let first = map(log, |c, e| curve(e, c, 0, k, table));
     let inhibited = map(log, |m, e| e - (0..3).map(|d| first[d] * k.couplers[d][m]).sum::<f32>());
     map(inhibited, |c, e| curve(e, c, 1, k, table))

@@ -63,3 +63,18 @@ fn a_film_missing_its_exposure_reads_at_the_films_speed_and_a_stock_by_its_key()
     let twin: VirtualFilm = serde_json::from_str(r#"{"stock":"fujifilm-pro-800-datasheet"}"#).unwrap();
     assert!(!twin.stock.is_known(), "a twin's key only where the stock had one");
 }
+
+#[test]
+fn picking_a_film_lays_its_effects_and_preparing_keeps_the_photos() {
+    use crate::PipelineSettings;
+    let stock = VirtualStock::of("kodak-portra-800");
+    let rests = stock.effects();
+    let mut photo = PipelineSettings::rest(ConversionMode::Digital, true);
+    (photo.grain.size, photo.halation.amount) = (40.0, 0.2);
+    let picked = photo.picking(stock);
+    assert_eq!((picked.halation, picked.bloom, picked.grain.size), (rests.halation, rests.bloom, rests.grain_size));
+    assert_eq!((picked.gains, picked.levels), (photo.on_stock(stock).gains, photo.on_stock(stock).levels), "its reference as Prepare lays it");
+    // Twin: Prepare places the film's reference and keeps the photo's own effects.
+    let prepared = photo.on_stock(stock);
+    assert_eq!((prepared.grain.size, prepared.halation.amount), (40.0, 0.2));
+}

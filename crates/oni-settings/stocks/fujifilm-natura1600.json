@@ -51,6 +51,14 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.6,
+   "grain_size": 28.6
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_natura_1600",

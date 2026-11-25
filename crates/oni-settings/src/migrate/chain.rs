@@ -31,8 +31,7 @@ pub const CHANNEL_POINTS_VERSION: i64 = 24;
 pub const PICTURE_LEVELS_VERSION: i64 = 27;
 /// The version a digital photo came to keep its lens corrections, absent read as none.
 pub const LENS_CORRECTION_VERSION: i64 = 28;
-/// The version each channel came to keep its own mids and contrast, and the halation its sensitivity,
-/// absent read as rest.
+/// The version each channel came to keep its own mids and contrast, absent read as rest.
 pub const CHANNEL_TONE_VERSION: i64 = 29;
 /// The version a digital photo came to print on the Scanner face's machine, one stored there before on Pro.
 pub const DIGITAL_SCANNER_VERSION: i64 = 30;
@@ -134,6 +133,9 @@ pub const OPTIONAL_PAPER_VERSION: i64 = 73;
 /// The version a still colour negative's virtual film came to be read by its paper's gaze, its bare film on one, under
 /// its own filtration and uncoupled: a digital photo's gains and windows move onto its stock's new reference.
 pub const PAPER_GAZE_VERSION: i64 = 74;
+/// The version the halation came to be a dose of each film layer's exposure, with no threshold: its Amount and Size keep
+/// their place on their tracks, its sensitivity dropped, and a film's own blur a key a build before it cannot read.
+pub const HALATION_ON_LAYERS_VERSION: i64 = 75;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

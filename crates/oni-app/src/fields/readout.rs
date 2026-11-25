@@ -92,6 +92,8 @@ pub enum Readout {
     Pixels,
     /// Micrometres, whole.
     Microns,
+    /// Micrometres, one place.
+    FineMicrons,
     /// Signed and whole: DNG's tint, a lens correction's share.
     SignedWhole,
 }
@@ -120,6 +122,11 @@ impl Readout {
         number(self.scaled(v), places, signed, unit)
     }
 
+    /// The places after the point `format` writes.
+    pub fn places(self) -> usize {
+        self.shape().0
+    }
+
     /// The places, the sign and the unit `format` writes.
     fn shape(self) -> (usize, bool, Unit) {
         match self {
@@ -132,6 +139,7 @@ impl Readout {
             Readout::SignedTimes => (2, true, Unit::Times),
             Readout::Pixels => (1, false, Unit::Pixels),
             Readout::Microns => (0, false, Unit::Microns),
+            Readout::FineMicrons => (1, false, Unit::Microns),
             Readout::SignedWhole => (0, true, Unit::Bare),
         }
     }

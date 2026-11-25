@@ -28,6 +28,12 @@
     0.52621657
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "ilford_fp4_plus",

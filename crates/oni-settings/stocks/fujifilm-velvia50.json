@@ -45,6 +45,13 @@
     1.0
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.9
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_velvia_50",

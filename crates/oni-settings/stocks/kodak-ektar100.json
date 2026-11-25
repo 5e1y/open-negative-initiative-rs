@@ -54,6 +54,13 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.5
+  },
   "profile": {
    "info": {
     "stock": "kodak_ektar_100",

@@ -3,7 +3,7 @@
 
 use crate::axis::density_axis;
 use crate::blocks::{
-    ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, chroma_decompression,
+    Bloom, ChromaDenoise, Gains, Grain, Halation, PaperCorrection, Sharpen, Texture, Vignette, chroma_decompression,
     filter_balance,
 };
 use crate::curves::{CurveSet, SaturationCurve};
@@ -104,6 +104,7 @@ pub struct PipelineSettings {
     pub sharpen: Sharpen,
     pub grain: Grain,
     pub halation: Halation,
+    pub bloom: Bloom,
     /// A digital photo's lens, corrected by hand; a film mode keeps it unrendered.
     #[serde(rename = "lensCorrection")]
     pub lens_correction: LensCorrection,
@@ -153,6 +154,7 @@ impl Default for PipelineSettings {
             sharpen: Sharpen::default(),
             grain: Grain::default(),
             halation: Halation::default(),
+            bloom: Bloom::default(),
             lens_correction: LensCorrection::default(),
         }
     }
@@ -207,6 +209,14 @@ impl PipelineSettings {
         if stock.entry().reversal {
             out.print_paper = None;
         }
+        out
+    }
+
+    /// These settings as a hand picks `stock` for them: shot on it, their film effects on the rests the stock gives.
+    pub fn picking(&self, stock: VirtualStock) -> PipelineSettings {
+        let mut out = self.on_stock(stock);
+        let effects = stock.effects();
+        (out.halation, out.bloom, out.grain.size) = (effects.halation, effects.bloom, effects.grain_size);
         out
     }
 

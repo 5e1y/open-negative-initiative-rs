@@ -28,6 +28,12 @@
     0.56159955
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "ilford_pan_f_plus",

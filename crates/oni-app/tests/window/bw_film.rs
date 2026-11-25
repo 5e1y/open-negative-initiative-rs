@@ -90,7 +90,7 @@ pub(crate) fn a_black_and_white_film_lit_and_picked_shows_the_photo_in_black_and
     drop_menu(rig, w);
     common::click(rig, w, common::in_popup(w, Role::Button, VirtualStock::of("ilford-hp5-plus").name()).middle());
     rig.settle();
-    assert_eq!(stored(), own.on_stock(VirtualStock::of("ilford-hp5-plus")), "the pick writes the film lit");
+    assert_eq!(stored(), own.picking(VirtualStock::of("ilford-hp5-plus")), "the pick writes the film lit");
     assert_eq!((panel.get_stock().name.as_str(), panel.get_stock().has_artwork), (VirtualStock::of("ilford-hp5-plus").name(), true));
     assert!(chroma(&frame(w)) <= 2 && menus.get_live().undo);
     println!("shot {}", rig.shot("bw-film-picked").display());

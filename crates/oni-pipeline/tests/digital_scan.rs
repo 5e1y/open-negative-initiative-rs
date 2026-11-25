@@ -31,7 +31,7 @@ fn the_gpu_scans_a_digital_negative_as_its_reference_does() {
     let source = g.upload(w, h, &pixels).unwrap();
     let s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(CINE);
     let exposure = s.film().unwrap().exposure;
-    let filmed = Pipeline::new().filmed(&mut g, oni_graph::Image::new(&source), &s).unwrap();
+    let filmed = Pipeline::new().filmed(&mut g, oni_graph::Image::new(&source), &s, None).unwrap();
     let out = whole(&mut g, &filmed);
     let stock = film::stock(CINE);
     let reference = mapped(&pixels, |p| stock.shot(p, exposure));

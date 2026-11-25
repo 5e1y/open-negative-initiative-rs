@@ -2,6 +2,7 @@
 //! reference each stock brings, which its negative is read on as a roll's measure is; a new photo's is the neutral film.
 
 use crate::axis::graduation;
+use crate::blocks::{Bloom, Grain, Halation};
 use crate::dyes::DyeSet;
 use crate::levels::{Levels, LevelsSet};
 use crate::modes::ConversionMode;
@@ -61,6 +62,20 @@ impl StockReference {
     }
 }
 
+/// The rests of a digital photo's film effects on a stock: its halation, its emulsion's blur and its grain's width.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FilmEffects {
+    pub halation: Halation,
+    pub bloom: Bloom,
+    pub grain_size: f32,
+}
+
+impl Default for FilmEffects {
+    fn default() -> Self {
+        FilmEffects { halation: Halation::default(), bloom: Bloom::default(), grain_size: Grain::SIZE_REST }
+    }
+}
+
 #[cfg(test)]
 mod tests;
 
@@ -95,6 +110,11 @@ impl VirtualStock {
     pub fn entry(self) -> VirtualEntry {
         let catalogue = crate::stocks::current();
         catalogue.virtual_film(self).or_else(|| catalogue.virtual_film(VirtualStock::default())).cloned().expect("the default stock is shipped")
+    }
+
+    /// The rests its file gives a photo's film effects.
+    pub fn effects(self) -> FilmEffects {
+        self.entry().effects
     }
 
     /// Its file's entry and the look its `.cube` file gives, where a file defines it with one.

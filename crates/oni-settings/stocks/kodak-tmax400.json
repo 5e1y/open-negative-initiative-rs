@@ -27,6 +27,13 @@
     0.46550652
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 2.3
+  },
   "profile": {
    "info": {
     "stock": "kodak_t_max_400",

@@ -32,6 +32,13 @@
    ]
   },
   "couplers": [[0.336, 0.678, 0.505], [0.038, 0.319, 0.002], [0.439, 0.029, 0.273]],
+  "effects": {
+   "halation": {
+    "dose": 0.0,
+    "size": 125.0
+   },
+   "bloom": 3.5
+  },
   "profile": {
    "info": {
     "stock": "kodak_vision3_250d",

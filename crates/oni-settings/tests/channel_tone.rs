@@ -1,4 +1,4 @@
-//! Each channel's own mids and contrast, and the halation's sensitivity, in the sidecar: a document from
+//! Each channel's own mids and contrast in the sidecar: a document from
 //! before them reads them at rest, one of this format keeps them, a frame at rest writes no channel key.
 
 use oni_settings::document::VERSION;
@@ -18,22 +18,18 @@ fn stored(settings: &PipelineSettings, version: i64) -> Vec<u8> {
 fn a_document_from_before_the_channels_tone_reads_it_at_rest_and_a_current_one_keeps_it() {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.print.channel_white = [0.0, 0.0625, 0.0];
-    s.halation.amount = 0.5;
-    let mut older: serde_json::Value = serde_json::from_slice(&stored(&s, chain::CHANNEL_TONE_VERSION - 1)).unwrap();
-    older["settings"]["halation"].as_object_mut().unwrap().remove("sensitivity");
-    let older = serde_json::to_vec(&older).unwrap();
+    let older = stored(&s, chain::CHANNEL_TONE_VERSION - 1);
     assert_eq!(migrate::standing(&older), migrate::Standing::Older(chain::CHANNEL_TONE_VERSION - 1));
     let read = migrate::document(&older).unwrap().document.settings;
-    assert_eq!((read.print.channel_mid, read.print.channel_contrast, read.halation.sensitivity), ([0.0; 3], [0.0; 3], 0.0));
+    assert_eq!((read.print.channel_mid, read.print.channel_contrast), ([0.0; 3], [0.0; 3]));
     assert_eq!(read, migrate::departure::read_back(chain::CHANNEL_TONE_VERSION - 1, s.clone()), "the older document reads whole");
-    // Twin: a document of this format keeps a channel's own tone and the sensitivity to the bit.
+    // Twin: a document of this format keeps a channel's own tone to the bit.
     s.print.channel_mid = [0.0, -0.1373, 0.0];
     s.print.channel_contrast = [0.0625, 0.0, -0.25];
-    s.halation.sensitivity = 1.25;
     let current = stored(&s, VERSION);
     assert_eq!(migrate::standing(&current), migrate::Standing::Current);
     let kept = migrate::document(&current).unwrap().document.settings;
-    assert_eq!((kept.print.channel_mid, kept.print.channel_contrast, kept.halation.sensitivity), ([0.0, -0.1373, 0.0], [0.0625, 0.0, -0.25], 1.25));
+    assert_eq!((kept.print.channel_mid, kept.print.channel_contrast), ([0.0, -0.1373, 0.0], [0.0625, 0.0, -0.25]));
 }
 
 #[test]

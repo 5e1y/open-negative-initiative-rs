@@ -52,6 +52,14 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.2,
+   "grain_size": 14.3
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_superia_premium_400",

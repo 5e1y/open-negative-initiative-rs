@@ -27,6 +27,12 @@
     0.4350572
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "foma_retropan_320",

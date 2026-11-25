@@ -68,7 +68,7 @@ fields! {
     FringeRed => set_fringe_red_fraction, get_fringe_red_fraction, set_fringe_red_readout, set_fringe_red_value;
     FringeBlue => set_fringe_blue_fraction, get_fringe_blue_fraction, set_fringe_blue_readout, set_fringe_blue_value;
     LensVignetting => set_lens_vignetting_fraction, get_lens_vignetting_fraction, set_lens_vignetting_readout, set_lens_vignetting_value;
-    HalationSensitivity => set_halation_sensitivity_fraction, get_halation_sensitivity_fraction, set_halation_sensitivity_readout, set_halation_sensitivity_value;
+    Bloom => set_bloom_fraction, get_bloom_fraction, set_bloom_readout, set_bloom_value;
     RedMid => set_red_mid_fraction, get_red_mid_fraction, set_red_mid_readout, set_red_mid_value;
     GreenMid => set_green_mid_fraction, get_green_mid_fraction, set_green_mid_readout, set_green_mid_value;
     BlueMid => set_blue_mid_fraction, get_blue_mid_fraction, set_blue_mid_readout, set_blue_mid_value;

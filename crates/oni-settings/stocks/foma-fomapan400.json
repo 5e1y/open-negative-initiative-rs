@@ -28,6 +28,13 @@
     0.54627216
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "grain_size": 60.0
+  },
   "profile": {
    "info": {
     "stock": "foma_fomapan_400",

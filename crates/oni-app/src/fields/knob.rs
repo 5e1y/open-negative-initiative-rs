@@ -54,7 +54,7 @@ impl Field {
             Field::FringeRed => Knob::LensRed,
             Field::FringeBlue => Knob::LensBlue,
             Field::LensVignetting => Knob::LensVignetting,
-            Field::HalationSensitivity => Knob::HalationSensitivity,
+            Field::Bloom => Knob::Bloom,
             Field::FilmExposure => Knob::FilmExposure,
             Field::Brightness => Knob::Brightness,
             Field::Cyan => Knob::Filtration(Channel::Red),

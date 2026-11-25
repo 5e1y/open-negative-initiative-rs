@@ -2,7 +2,7 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
+use oni_settings::blocks::{Bloom, ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
 use oni_settings::frame::FlatField;
 use oni_settings::lens::LensCorrection;
 use oni_settings::tone::{Print, color_density};
@@ -66,7 +66,7 @@ pub enum Field {
     FringeRed,
     FringeBlue,
     LensVignetting,
-    HalationSensitivity,
+    Bloom,
     RedMid,
     GreenMid,
     BlueMid,
@@ -143,7 +143,7 @@ impl Field {
         Field::FringeRed,
         Field::FringeBlue,
         Field::LensVignetting,
-        Field::HalationSensitivity,
+        Field::Bloom,
         Field::RedMid,
         Field::GreenMid,
         Field::BlueMid,
@@ -177,7 +177,7 @@ impl Field {
         let mode = settings.mode;
         match self {
             Field::GrainAmount | Field::GrainSize | Field::GrainColourBlack | Field::GrainColourWhite => mode.is_digital(),
-            Field::HalationAmount | Field::HalationSize | Field::HalationSensitivity => mode.is_digital(),
+            Field::HalationAmount | Field::HalationSize | Field::Bloom => mode.is_digital(),
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
             Field::FilmExposure => mode.is_digital(),
             Field::Brightness => settings.paper().is_some(),
@@ -253,9 +253,9 @@ impl Field {
             Field::GrainColourBlack => s("Grain colour at the black point", GrainColour::RANGE, Readout::Percent),
             Field::GrainColourWhite => s("Grain colour at the white point", GrainColour::RANGE, Readout::Percent),
             Field::HalationAmount => s("Halation", Halation::AMOUNT_RANGE, Readout::Percent),
-            Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Percent),
+            Field::HalationSize => s("Halation size", Halation::SIZE_RANGE, Readout::Microns),
             // Stops the threshold is lowered by: right, the dimmer light glows too.
-            Field::HalationSensitivity => s("Halation sensitivity", Halation::SENSITIVITY_RANGE, Readout::Stops),
+            Field::Bloom => s("Bloom", Bloom::RANGE, Readout::FineMicrons),
             // A lens's corrections, each a share of its slider's reach.
             Field::Distortion => s("Distortion", LensCorrection::RANGE, Readout::SignedWhole),
             Field::FringeRed => s("Red fringe", LensCorrection::RANGE, Readout::SignedWhole),
@@ -283,6 +283,10 @@ impl Field {
             let stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).or(film).unwrap_or([0.0; 3]);
             rest = settings.clone();
             rest.gains.stops = stops;
+        }
+        // A digital photo's film effects rest where its own film lays them.
+        if let Some(film) = settings.film().filter(|_| self.block() == Some(Block::FilmEffects)) {
+            rest = rest.picking(film.stock);
         }
         self.knob().get(&rest)
     }

@@ -52,6 +52,14 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 2.6,
+   "grain_size": 10.6
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_pro_160nh",

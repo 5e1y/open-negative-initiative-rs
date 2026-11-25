@@ -27,6 +27,13 @@
     0.55074614
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 2.2
+  },
   "profile": {
    "info": {
     "stock": "kodak_t_max_p3200",

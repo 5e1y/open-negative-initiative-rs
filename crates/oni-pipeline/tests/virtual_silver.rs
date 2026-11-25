@@ -171,7 +171,7 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
         let on = pipeline.render(&mut g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1;
         assert!(on.iter().all(|p| (p[0] - p[1]).abs() < 1e-5 && (p[2] - p[1]).abs() < 1e-5), "a black and white print");
         let image = Image::new(&source).then(stages::color_matrix(&conversion::scene_white(&s).unwrap()));
-        let scanned = pipeline.filmed(&mut g, image, &s).unwrap();
+        let scanned = pipeline.filmed(&mut g, image, &s, None).unwrap();
         let read_back = whole(&mut g, &scanned);
         let scan = g.upload(w, h, &read_back).unwrap();
         let mut read = |mode| {

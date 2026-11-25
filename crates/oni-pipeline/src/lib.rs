@@ -11,6 +11,7 @@ pub mod flat_field;
 pub mod geometry;
 pub mod grain;
 pub mod halation;
+pub mod layers;
 mod healing;
 pub mod look_lab;
 pub mod negative;
@@ -157,11 +158,15 @@ impl Pipeline {
     }
 
     /// A digital photo's scene on its virtual film: exposed, developed and, a colour negative, scanned through its dyes
-    /// as a real negative is; a slide's layers as they are, for the projector; the neutral film's code as it is.
-    pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
+    /// as a real negative is; a slide's layers as they are, for the projector; the neutral film's code as it is. On a
+    /// scan of extent `effects` the film's layers take its blur and its halation between exposure and development.
+    pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, effects: Option<Rect>) -> Result<Image> {
         let Some(f) = s.film() else { return Ok(image) };
+        let on_layers = |exposed: Image| effects.and_then(|scan| layers::laid(exposed, s, scan));
+        // The neutral film's layers are the scene's own channels, their exposure its light.
         if let Some(k) = film::neutral::kernel(f.stock) {
-            return Ok(image.then(stages::neutral_negative(&film::neutral::exposed(k, f.exposure))));
+            let scene = on_layers(image.clone()).unwrap_or(image);
+            return Ok(scene.then(stages::neutral_negative(&film::neutral::exposed(k, f.exposure))));
         }
         let stock = film::stock(f.stock);
         let key = (f.stock, stock.revision);
@@ -171,7 +176,12 @@ impl Pipeline {
             e.insert((graph.upload(w as u32, h as u32, &stock.table)?, scan));
         }
         let (table, scan) = self.films[&key].clone();
-        let developed = image.then_reading(stages::virtual_negative(&stock.kernel_at(f.exposure)), &[Image::new(&table)]);
+        let (k, table) = (stock.kernel_at(f.exposure), [Image::new(&table)]);
+        // No effect on its layers: the exposure and the development are one pass.
+        let developed = match on_layers(image.clone().then_reading(stages::virtual_exposure(&k), &table)) {
+            Some(laid) => laid.then_reading(stages::virtual_development(&k), &table),
+            None => image.then_reading(stages::virtual_negative(&k), &table),
+        };
         Ok(match (&stock.scan, scan) {
             (Some(k), Some(table)) => developed.then_reading(stages::projection(&k.projection), &[Image::new(&table)]),
             _ => developed,

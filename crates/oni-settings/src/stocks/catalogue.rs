@@ -257,6 +257,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             neutral: b.neutral,
                             reader,
                             couplers: b.couplers,
+                            effects: b.effects.unwrap_or_default().rests(),
                             look: b.look.clone(),
                             revision,
                         });

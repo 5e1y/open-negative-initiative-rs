@@ -3,7 +3,7 @@
 
 use crate::fields::Field;
 use oni_settings::axis::density_axis;
-use oni_settings::blocks::{ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
+use oni_settings::blocks::{Bloom, ChromaDenoise, Gains, Grain, GrainColour, Halation, PaperCorrection, Sharpen, Texture, Vignette};
 use oni_settings::frame::{FlatField, Geometry};
 use oni_settings::lens::LensCorrection;
 use oni_settings::levels::Levels;
@@ -94,7 +94,8 @@ pub enum Knob {
     GrainColourWhite,
     HalationAmount,
     HalationSize,
-    HalationSensitivity,
+    /// A film's own blur, its deviation on the film.
+    Bloom,
     /// A digital photo's lens corrections, each a share of its slider.
     LensDistortion,
     LensRed,
@@ -136,7 +137,8 @@ impl Knob {
             Knob::FlatFieldAmount | Knob::FlatFieldTemperature | Knob::FlatFieldTint => Field::FlatField,
             Knob::Angle => Field::Geometry,
             Knob::GrainAmount | Knob::GrainSize | Knob::GrainColourBlack | Knob::GrainColourWhite => Field::Grain,
-            Knob::HalationAmount | Knob::HalationSize | Knob::HalationSensitivity => Field::Halation,
+            Knob::HalationAmount | Knob::HalationSize => Field::Halation,
+            Knob::Bloom => Field::Bloom,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => Field::LensCorrection,
             Knob::FilmExposure => Field::VirtualFilm,
         }
@@ -188,7 +190,7 @@ impl Knob {
             Knob::GrainColourBlack | Knob::GrainColourWhite => GrainColour::RANGE,
             Knob::HalationAmount => Halation::AMOUNT_RANGE,
             Knob::HalationSize => Halation::SIZE_RANGE,
-            Knob::HalationSensitivity => Halation::SENSITIVITY_RANGE,
+            Knob::Bloom => Bloom::RANGE,
             Knob::LensDistortion | Knob::LensRed | Knob::LensBlue | Knob::LensVignetting => LensCorrection::RANGE,
             Knob::FilmExposure => VirtualFilm::EXPOSURE_RANGE,
         })
@@ -237,7 +239,7 @@ impl Knob {
             Knob::GrainColourWhite => s.grain.colour.white,
             Knob::HalationAmount => s.halation.amount,
             Knob::HalationSize => s.halation.size,
-            Knob::HalationSensitivity => s.halation.sensitivity,
+            Knob::Bloom => s.bloom.size,
             Knob::LensDistortion => s.lens_correction.distortion,
             Knob::LensRed => s.lens_correction.red,
             Knob::LensBlue => s.lens_correction.blue,
@@ -309,7 +311,7 @@ impl Knob {
             Knob::GrainColourWhite => out.grain.colour.white = v,
             Knob::HalationAmount => out.halation.amount = v,
             Knob::HalationSize => out.halation.size = v,
-            Knob::HalationSensitivity => out.halation.sensitivity = v,
+            Knob::Bloom => out.bloom.size = v,
             Knob::LensDistortion => out.lens_correction.distortion = v,
             Knob::LensRed => out.lens_correction.red = v,
             Knob::LensBlue => out.lens_correction.blue = v,

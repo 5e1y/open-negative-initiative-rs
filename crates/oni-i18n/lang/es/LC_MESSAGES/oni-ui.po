@@ -2062,8 +2062,8 @@ msgid "Film Effects"
 msgstr "Efectos de película"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain lays a film-like texture over the scene, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation lays the film's red glow around the brightest highlights, the light that crossed the base and came back to the red layer; Halation size widens it, Halation sensitivity lets dimmer light glow too, or only the brightest.\n\nBoth act on the scene before Lighting and Colour, as on the film."
-msgstr "Grano pone una textura de película sobre la escena, sus granos formados enteros a toda intensidad, más contrastados con Grano, más gruesos con Tamaño del grano, dispuesta de nuevo en cada foto; se queda en la foto al recortarla, girarla o ampliarla. Tamaño del grano es el ancho de un grano en un fotograma de 35 mm, mostrado en píxeles de la foto a resolución completa, de modo que el mismo grano se posa igual en cualquier resolución. Un grano grueso absorbe en sus grumos el detalle más fino que un grano, y lo deja nítido entre ellos.\n\nHalación pone el brillo rojo de la película alrededor de las luces más altas, la luz que cruzó el soporte y volvió a la capa roja; Tamaño de la halación lo ensancha, Sensibilidad de la halación hace brillar también una luz más débil, o solo la más viva.\n\nAmbos actúan sobre la escena antes de Luz y Color, como en la película."
+msgid "Grain is laid on the developed film, its grains of every strength drawn whole, more contrasted with Grain, coarser with Grain size, arranged anew on each photo; it stays on the photo as it is cropped, turned or zoomed. Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. A coarse grain takes in the detail finer than a grain inside its clumps, and leaves it sharp between them.\n\nHalation is the light the film's base sends back into its layers, the red one's most: a share of each layer's exposure, spread and laid back before the film's curve, which shows it only around the highlights. Halation size is the glow's width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free."
+msgstr "El grano se posa sobre la película revelada, sus granos formados enteros a cualquier intensidad, más contrastados con Grano, más gruesos con Tamaño del grano, dispuestos de otro modo en cada foto; se queda en la foto al recortarla, girarla o ampliarla. Tamaño del grano es el ancho de un grano en un fotograma de 35 mm, mostrado en píxeles de la foto a resolución completa, de modo que el mismo grano se posa igual en cualquier resolución. Un grano grueso absorbe en sus cúmulos el detalle más fino que un grano y lo deja nítido entre ellos.\n\nHalación es la luz que el soporte de la película devuelve a sus capas, sobre todo a la roja: una parte de la exposición de cada capa, extendida y devuelta antes de la curva de la película, que solo la muestra alrededor de las altas luces. Tamaño de la halación es el ancho del resplandor en un fotograma de 35 mm.\n\nDifusión es el desenfoque propio de la película, la luz que su emulsión difunde antes del revelado, su ancho en un fotograma de 35 mm.\n\nUna película posa sus propios valores al elegirla; cada control sigue libre."
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -2081,9 +2081,9 @@ msgstr "Halación"
 msgid "Halation size"
 msgstr "Tamaño de la halación"
 
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Halation sensitivity"
-msgstr "Sensibilidad de la halación"
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Bloom"
+msgstr "Difusión"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"

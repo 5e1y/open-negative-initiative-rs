@@ -43,6 +43,7 @@ its end slope; a reversal film's curve hidden under another's stroke takes that 
 
 import json
 import math
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -894,6 +895,111 @@ def refresh_references():
         print(f"{path.name}: its reference derived again")
 
 
+# A film's halation by its base's family, a share of each layer's exposure sent back: a cine negative's rem-jet backing
+# absorbs it whole, an anti-halation layer leaves about a hundredth, a base with none sends back a dozen times that.
+HALATION = {"rem-jet": 0.0, "anti-halation": 0.01, "none": 0.08}
+# A 135 film's triacetate base, in micrometres, where its sheet states no thickness.
+BASE_135 = 125.0
+GRAIN_SIZES = (10.0, 60.0)
+
+
+def sheet_of(profile_name):
+    """The dataset's stock a profile's name was converted from."""
+    names = {file_name(i, push): i for i, push in STOCKS}
+    names.update({i: i for i, *_ in SLIDES})
+    names.update({name: i for i, name, *_ in BW_STOCKS})
+    return STOCK.get(names.get(profile_name, profile_name))
+
+
+def bloom(stock):
+    """The emulsion's blur, a Gaussian's deviation in micrometres: the one whose response meets the sheet's MTF where it
+    first falls to a half, the green layer's on a colour film, or at the chart's last frequency where it never does."""
+    c = chart(stock, "mtf")
+    if c is None:
+        return None
+    channel = "G" if "G" in c["channels"] else next(iter(c["channels"]))
+    f, r = series(c, channel)
+    r = r / (100.0 if c["y"]["unit"] == "%" else 1.0)
+    below = np.nonzero(r <= 0.5)[0]
+    if len(below) and below[0] > 0:
+        i = below[0]
+        at = f[i - 1] + (f[i] - f[i - 1]) * (r[i - 1] - 0.5) / (r[i - 1] - r[i])
+        level = 0.5
+    else:
+        at, level = f[-1], r[-1]
+    if not 0.0 < level < 1.0:
+        return None
+    return round(1000.0 * math.sqrt(-math.log(level) / (2.0 * math.pi**2)) / at, 1)
+
+
+def granularity(stock):
+    """The sheet's diffuse RMS granularity, times 1000 through a 48 µm aperture, where it publishes one."""
+    if isinstance(stock.get("rms_granularity"), dict):
+        return float(stock["rms_granularity"]["value"])
+    text = json.dumps({k: v for k, v in stock.items() if k != "charts"}, ensure_ascii=False).replace("(×1000)", "")
+    found = re.search(r"RMS(?: granularity)?\s*=?\s*(\d+(?:\.\d+)?)", text)
+    return float(found.group(1)) if found else None
+
+
+def base_135(stock):
+    """The 135 base's thickness in micrometres, where the sheet states it."""
+    base = stock.get("base")
+    text = base.get("135") if isinstance(base, dict) else base
+    if not text:
+        return None
+    if "35 mm:" in text:
+        text = text.split("35 mm:")[1]
+    elif re.match(r"\s*120:", text):
+        return None
+    found = re.search(r"(\d+(?:\.\d+)?)\s*(mm|µm)", text)
+    return float(found.group(1)) * (1000.0 if found.group(2) == "mm" else 1.0) if found else None
+
+
+def lay_effects():
+    """Each film's own effects laid before its profile: its halation by its base's family and thickness, its emulsion's
+    blur from its sheet's MTF, its grain's width where the sheet publishes an RMS granularity."""
+    out = subprocess.run(["cargo", "run", "-q", "-p", "oni-pipeline", "--example", "grain_granularity"],
+                         cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    model = json.loads(out)
+    for path in stock_files():
+        stock_file = json.loads(path.read_text())
+        if stock_file.get("oni") != "film":
+            continue
+        changed = False
+        for block in blocks(stock_file):
+            if block.get("neutral"):
+                continue
+            sheet = sheet_of(block["profile"]["info"]["stock"])
+            if sheet is None:
+                print(f"{path.name}: {block['key']}: no sheet in the dataset, its effects left as they are")
+                continue
+            text = json.dumps({k: v for k, v in sheet.items() if k != "charts"}).lower()
+            family = "rem-jet" if stock_file["type"] == "cine-negative" else "none" if "without antihalo" in text.split("35 mm:")[-1] else "anti-halation"
+            effects = {"halation": {"dose": HALATION[family], "size": base_135(sheet) or BASE_135}}
+            soft = bloom(sheet)
+            if soft is not None:
+                effects["bloom"] = soft
+            rms = granularity(sheet)
+            if rms is not None:
+                size = float(np.interp(rms, model["rms"], model["sizes"]))
+                effects["grain_size"] = round(min(max(size, GRAIN_SIZES[0]), GRAIN_SIZES[1]), 1)
+            print(f"{block['key']}: {family}, base {effects['halation']['size']:.0f} µm; bloom {soft}; RMS {rms} -> grain {effects.get('grain_size')}"
+                  + ("" if rms is None or model["rms"][0] <= rms <= model["rms"][-1] else " (past the track's end)"))
+            if block.get("effects") != effects:
+                laid = {}
+                for k, v in block.items():
+                    if k == "effects":
+                        continue
+                    if k == "profile":
+                        laid["effects"] = effects
+                    laid[k] = v
+                block.clear()
+                block.update(laid)
+                changed = True
+        if changed:
+            path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+
+
 def main():
     global STOCK
     dataset = Path(sys.argv[1])
@@ -927,6 +1033,7 @@ def main():
             print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
     pair_papers()
     refresh_references()
+    lay_effects()
 
 
 if __name__ == "__main__":

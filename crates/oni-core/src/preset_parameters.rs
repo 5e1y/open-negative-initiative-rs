@@ -63,7 +63,7 @@ pub const BLOCKS: [Block; 4] = [
     Block {
         id: "FilmEffects",
         title: marked("Film Effects"),
-        entries: &[entry("grain", marked("Grain"), &["grain"]), entry("halation", marked("Halation"), &["halation"])],
+        entries: &[entry("grain", marked("Grain"), &["grain"]), entry("halation", marked("Halation"), &["halation"]), entry("bloom", marked("Bloom"), &["bloom"])],
     },
 ];
 

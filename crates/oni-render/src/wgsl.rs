@@ -32,9 +32,7 @@ pub const SATURATION_CURVE: &str = include_str!("wgsl/saturation_curve.wgsl");
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
 /// `grain_px(s, at)`.
 pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
-/// `halation_source(s, threshold)`, pure, for a blur's taps or a pass.
-pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
-/// `halation_px(s, blurred)`; needs `HALATION_SOURCE`.
+/// `halation_px(e, blurred)`.
 pub const HALATION: &str = include_str!("wgsl/halation.wgsl");
 /// `color_matrix_px(s)`.
 pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");
@@ -62,7 +60,7 @@ pub const HELD_BLACK: &str = include_str!("wgsl/held_black.wgsl");
 pub const PROJECTION: &str = include_str!("wgsl/projection.wgsl");
 /// `neutral_negative_px(s)`.
 pub const NEUTRAL_NEGATIVE: &str = include_str!("wgsl/neutral_negative.wgsl");
-/// `virtual_negative_px(s)`, reading `negative_table(i, j)`.
+/// `virtual_negative_px(s)`, its `virtual_exposure_px(s)` and `virtual_development_px(e)`, reading `negative_table(i, j)`.
 pub const VIRTUAL_NEGATIVE: &str = include_str!("wgsl/virtual_negative.wgsl");
 
 /// `gaussian_px(p)`, `CIGaussianBlur` along one axis; needs `DETAIL_TAPS`.

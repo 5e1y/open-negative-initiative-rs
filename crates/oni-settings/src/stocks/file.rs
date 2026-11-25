@@ -2,7 +2,7 @@
 //! misspelt one is seen; a profile is kept as written, the pipeline reading its numbers.
 
 use crate::film::FilmType;
-use crate::virtual_film::{Balance, StockReference};
+use crate::virtual_film::{Balance, FilmEffects, StockReference};
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 
@@ -91,9 +91,46 @@ pub struct FilmBlock {
     /// one where left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub couplers: Option<[[f64; 3]; 3]>,
+    /// The rests a digital photo's film effects take on this film; one left out is the effect's own rest.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effects: Option<Effects>,
     /// A `.cube` file's look, which a digital photo on this film is read through in place of its negative.
     #[serde(skip)]
     pub look: Option<super::cube::Look>,
+}
+
+/// A film's own effects, each on the film: lengths in micrometres of a 135 frame.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Effects {
+    /// The share of a layer's exposure the base sends back, and the glow's deviation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub halation: Option<Halation>,
+    /// The emulsion's own blur, its deviation, as the sheet's MTF holds it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bloom: Option<f32>,
+    /// A grain's width.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grain_size: Option<f32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Halation {
+    pub dose: f32,
+    pub size: f32,
+}
+
+impl Effects {
+    /// The rests a photo on this film takes, each effect the file leaves out at its own.
+    pub fn rests(&self) -> FilmEffects {
+        let own = FilmEffects::default();
+        FilmEffects {
+            halation: self.halation.map_or(own.halation, |h| crate::blocks::Halation { amount: h.dose, size: h.size }),
+            bloom: self.bloom.map_or(own.bloom, |size| crate::blocks::Bloom { size }),
+            grain_size: self.grain_size.unwrap_or(own.grain_size),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

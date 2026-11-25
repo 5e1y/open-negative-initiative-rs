@@ -1,19 +1,8 @@
 //! A field's value and its place on its slider's track, on the fixed range or on a frame's own.
 
-use crate::fields::{Field, Readout};
+use crate::fields::Field;
 use crate::track;
 use std::ops::RangeInclusive;
-
-/// One unit of a readout's last shown digit, in the value's own terms.
-fn unit(readout: Readout) -> f32 {
-    match readout {
-        Readout::Ceiling => 0.001,
-        Readout::Pixels => 0.1,
-        Readout::SignedWhole | Readout::Microns => 1.0,
-        Readout::Stops | Readout::Degrees | Readout::Times | Readout::SignedTimes => 0.01,
-        Readout::SignedPercent | Readout::Percent => 0.01,
-    }
-}
 
 /// An arrow's step, or a number typed over the readout: `by` units of its last digit from the figure shown,
 /// laid on that digit's grid, held on the track.
@@ -24,8 +13,10 @@ pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f
 /// `stepped` on a photo whose scan's long side is `long` full-resolution pixels, the digit its readout shows.
 pub fn stepped_on(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>, long: Option<f64>) -> f32 {
     let (readout, figure) = f.figure(stored, long);
-    let unit = unit(readout);
-    let shown = f.unfigured(((figure / unit).round() + by as f32) * unit, long);
+    // Counted in units of the digit the readout writes, rounded as it writes it: a tie to the even one.
+    let per_unit = readout.scaled(1.0) * 10f64.powi(readout.places() as i32);
+    let digit = (f64::from(figure) * per_unit).round_ties_even();
+    let shown = f.unfigured(((digit + f64::from(by)) / per_unit) as f32, long);
     f.shown(shown.clamp(*track.start(), *track.end()))
 }
 

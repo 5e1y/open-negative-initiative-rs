@@ -87,6 +87,7 @@ fields! {
     Sharpen => "sharpen", sharpen, Look;
     Grain => "grain", grain, Look;
     Halation => "halation", halation, Look;
+    Bloom => "bloom", bloom, Look;
     LensCorrection => "lensCorrection", lens_correction, Look;
 }
 

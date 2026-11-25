@@ -36,9 +36,9 @@ fn a_channels_mid_and_contrast_write_their_own_channel_and_hold_their_tracks() {
     assert_eq!(FieldSet::between(&s, &green).iter().collect::<Vec<_>>(), vec![Field::Print]);
     assert_eq!(Knob::ChannelMid(Channel::Red).set(&s, 9.0).print.channel_mid[0], Print::ZONE_RANGE.1);
     assert_eq!(Knob::ChannelContrast(Channel::Blue).set(&s, -9.0).print.channel_contrast[2], Print::CONTRAST_RANGE.0);
-    let keen = Knob::HalationSensitivity.set(&s, 9.0);
-    assert_eq!(keen.halation.sensitivity, oni_settings::blocks::Halation::SENSITIVITY_RANGE.1);
-    assert_eq!(FieldSet::between(&s, &keen).iter().collect::<Vec<_>>(), vec![Field::Halation]);
+    let soft = Knob::Bloom.set(&s, 99.0);
+    assert_eq!(soft.bloom.size, oni_settings::blocks::Bloom::RANGE.1);
+    assert_eq!(FieldSet::between(&s, &soft).iter().collect::<Vec<_>>(), vec![Field::Bloom]);
     // Twin: Lighting's own contrast is not the channel's, and stays where it was.
     let red = Knob::ChannelContrast(Channel::Red).set(&s, 0.3);
     assert_eq!((red.print.contrast, Knob::Contrast.get(&red)), (s.print.contrast, s.print.contrast));

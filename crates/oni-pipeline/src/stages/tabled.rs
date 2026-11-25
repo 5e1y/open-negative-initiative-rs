@@ -46,6 +46,22 @@ fn negative_table(i: u32, j: u32) -> vec4<f32> { return load1(vec2<i32>(i32(i), 
 fn pixel(p: vec2<i32>) -> vec4<f32> { return virtual_negative_px(load(p)); }
 "#
 );
+kernel!(
+    FILM_EXPOSURE,
+    [wgsl::VIRTUAL_NEGATIVE],
+    r#"
+fn negative_table(i: u32, j: u32) -> vec4<f32> { return load1(vec2<i32>(i32(i), i32(j))); }
+fn pixel(p: vec2<i32>) -> vec4<f32> { return virtual_exposure_px(load(p)); }
+"#
+);
+kernel!(
+    FILM_DEVELOPMENT,
+    [wgsl::VIRTUAL_NEGATIVE],
+    r#"
+fn negative_table(i: u32, j: u32) -> vec4<f32> { return load1(vec2<i32>(i32(i), i32(j))); }
+fn pixel(p: vec2<i32>) -> vec4<f32> { return virtual_development_px(load(p)); }
+"#
+);
 
 /// A kernel reading whole tables beside its input: the curves' two rows, or a cube laid `n²` by `n`.
 pub struct Tabled {
@@ -109,9 +125,20 @@ pub fn dye_amounts(k: &DyeAmounts) -> Tabled {
 
 /// The virtual negative, its film's table the auxiliary image.
 pub fn virtual_negative(k: &VirtualNegative) -> Tabled {
+    on_film("virtual-negative", &NEGATIVE, k)
+}
+
+/// The virtual negative's exposure alone, each layer's on its channel, its film's table the auxiliary image.
+pub fn virtual_exposure(k: &VirtualNegative) -> Tabled {
+    on_film("virtual-exposure", &FILM_EXPOSURE, k)
+}
+
+/// The virtual negative's development of its layers' exposures, its film's table the auxiliary image.
+pub fn virtual_development(k: &VirtualNegative) -> Tabled {
+    on_film("virtual-development", &FILM_DEVELOPMENT, k)
+}
+
+fn on_film(name: &'static str, kernel: &'static Kernel, k: &VirtualNegative) -> Tabled {
     let (w, h) = k.table_size();
-    Tabled {
-        inner: PerPixel { name: "virtual-negative", kernel: &NEGATIVE, params: uniform(k.head(), &k.rows()) },
-        tables: Rect::new(0, 0, w as u32, h as u32),
-    }
+    Tabled { inner: PerPixel { name, kernel, params: uniform(k.head(), &k.rows()) }, tables: Rect::new(0, 0, w as u32, h as u32) }
 }

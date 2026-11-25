@@ -27,6 +27,12 @@
     0.51306415
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "kodak_tri_x_320",

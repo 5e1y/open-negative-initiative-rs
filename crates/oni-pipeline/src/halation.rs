@@ -1,33 +1,33 @@
-//! The halation's arguments: the highlights' light past a threshold, blurred over a share of the frame
-//! and laid back on the scene before the print, its red layer's most.
+//! The halation's arguments: a dose of each film layer's exposure, blurred over its width on the film and laid back
+//! on the layers before their development, the red layer's most.
 
-use crate::stages::{self, Before};
+use crate::stages;
 use oni_graph::{Image, Rect};
-use oni_render::{HALATION_THRESHOLD, Halation};
+use oni_render::Halation;
 use oni_settings::PipelineSettings;
 
-/// The narrowest glow's deviation, a share of the scan's width: six pixels on a scan 6000 wide.
-pub const HALATION_NARROWEST: f64 = 0.001;
-/// How many times Size's top widens the narrowest glow.
-pub const HALATION_WIDEST: f64 = 4.0;
-
-/// The glow's deviation in this render's pixels, on a scan of extent `scan`: a share of its width
-/// whatever its scale.
+/// The glow's deviation in this render's pixels, on a scan of extent `scan`: its width on the film whatever the
+/// scale.
 pub fn deviation(s: &PipelineSettings, scan: Rect) -> f64 {
-    f64::from(scan.w) * HALATION_NARROWEST * HALATION_WIDEST.powf(f64::from(s.halation.size))
+    s.halation.pixels(f64::from(scan.w.max(scan.h)))
 }
 
-/// The light past which a highlight halates: the rest's threshold lowered by the sensitivity's stops.
-pub fn threshold(s: &PipelineSettings) -> f32 {
-    HALATION_THRESHOLD * (-s.halation.sensitivity).exp2()
+/// The dose each layer of the film of `s` takes: a silver film's one layer the same on its three channels.
+pub fn kernel(s: &PipelineSettings) -> Halation {
+    Halation::on(s.halation.amount, s.film().is_some_and(|f| f.stock.is_silver()))
 }
 
-/// `image` with the halation of `s`, on a scan of extent `scan`; itself at rest, with no stage.
-pub fn halated(image: Image, s: &PipelineSettings, scan: Rect) -> Image {
-    if s.halation.amount == 0.0 {
-        return image;
+/// Whether `s` lays a halation: none at rest.
+pub fn lays(s: &PipelineSettings) -> bool {
+    s.halation.amount != 0.0
+}
+
+/// `exposed`, a film's layers' exposures or the scene a film of no layer reads, with the halation of `s` on a scan
+/// of extent `scan`; itself at rest, with no stage.
+pub fn halated(exposed: Image, s: &PipelineSettings, scan: Rect) -> Image {
+    if !lays(s) {
+        return exposed;
     }
-    let threshold = threshold(s);
-    let glow = stages::blurred_of(image.clone(), deviation(s, scan), Before::Halation(threshold));
-    image.then_reading(stages::halation(&Halation { amount: s.halation.amount, threshold }), &[glow])
+    let glow = stages::blurred(exposed.clone(), deviation(s, scan), false);
+    exposed.then_reading(stages::halation(&kernel(s)), &[glow])
 }

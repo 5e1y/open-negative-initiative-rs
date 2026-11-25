@@ -86,7 +86,7 @@ fn a_cube_in_the_stocks_folder_is_a_film_a_digital_photo_is_read_through() {
     assert!(conversion::stage47(&on_paper).paper().is_some() && paper::internegative::copy(&measured).is_none());
     let printed = render(&mut pipeline, &mut g, &on_paper);
     let positive = g.upload(w, h, &expected).unwrap();
-    let filmed = pipeline.filmed(&mut g, oni_graph::Image::new(&positive), &copy).unwrap();
+    let filmed = pipeline.filmed(&mut g, oni_graph::Image::new(&positive), &copy, None).unwrap();
     let through = whole(&mut g, &oni_pipeline::stages::converted(filmed, &conversion::stage47(&on_paper)));
     let clipped = mapped(&through, |p| [p[0].clamp(0.0, 1.0), p[1].clamp(0.0, 1.0), p[2].clamp(0.0, 1.0), p[3]]);
     // Twin: the positive shown as the cube gives it.

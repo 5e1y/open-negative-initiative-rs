@@ -2,7 +2,7 @@
 
 use crate::dyes::DyeSet;
 use crate::paper::PaperStock;
-use crate::virtual_film::{Balance, StockReference, VirtualStock};
+use crate::virtual_film::{Balance, FilmEffects, StockReference, VirtualStock};
 use std::sync::Arc;
 
 /// The four kinds of key a sidecar stores, each its own space: one key may name a roll's stock and a virtual film.
@@ -42,6 +42,8 @@ pub struct VirtualEntry {
     pub reader: Option<Reader>,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
+    /// The rests a digital photo's film effects take on it.
+    pub effects: FilmEffects,
     /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
     pub look: Option<super::cube::Look>,
     /// Its file's content: a bake made of another is never served for it.

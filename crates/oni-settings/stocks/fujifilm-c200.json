@@ -55,6 +55,13 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.2
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_c200",

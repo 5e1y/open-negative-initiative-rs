@@ -63,7 +63,7 @@ fn main() {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
         };
-        let scan = pipeline.filmed(graph, scene.clone(), s).unwrap();
+        let scan = pipeline.filmed(graph, scene.clone(), s, None).unwrap();
         for (name, image) in [("scene", scene), ("scan", scan)] {
             let region = image.extent();
             let pixels = graph.render(&image, region, None).unwrap();

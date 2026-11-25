@@ -109,11 +109,11 @@ pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
 }
 
 /// The Film block's tab for a photo: its stock's place.
-/// The photo shot on `stock`: the one it stands on kept, another placed on its own reference, as Prepare the
+/// The photo shot on `stock`: the one it stands on kept, another placed on its own reference and effects, as Prepare the
 /// Roll places a roll's; a photo shot on no film left as it is.
 pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSettings {
     match s.film() {
-        Some(f) if f.stock != stock => s.on_stock(stock),
+        Some(f) if f.stock != stock => s.picking(stock),
         _ => s.clone(),
     }
 }

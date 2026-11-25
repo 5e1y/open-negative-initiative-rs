@@ -48,27 +48,51 @@ impl Vignette {
     pub const RANGE: (f32, f32) = (-2.0, 2.0);
 }
 
-/// The highlights' glow through the film's base, before the print: its strength and its width, each a
-/// share of its track, and its sensitivity, the stops its threshold is lowered by.
+/// The light a film's base sends back into its layers, before their development: its dose, the share of a layer's
+/// exposure sent back, and the glow's deviation on the film, in micrometres of a 135 frame.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Halation {
     pub amount: f32,
     pub size: f32,
-    pub sensitivity: f32,
 }
 
 impl Default for Halation {
     fn default() -> Self {
-        Halation { amount: 0.0, size: 0.5, sensitivity: 0.0 }
+        Halation { amount: 0.0, size: Halation::SIZE_REST }
     }
 }
 
 impl Halation {
-    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 1.0);
-    pub const SIZE_RANGE: (f32, f32) = (0.0, 1.0);
-    /// From light past a JPEG's white alone, 1.2, to the upper midtones, 0.15, about the rest's 0.6.
-    pub const SENSITIVITY_RANGE: (f32, f32) = (-1.0, 2.0);
+    /// To a quarter of a layer's exposure, well past a film with no anti-halation layer.
+    pub const AMOUNT_RANGE: (f32, f32) = (0.0, 0.25);
+    /// From a fifth of a 135 film's base to twice it.
+    pub const SIZE_RANGE: (f32, f32) = (25.0, 250.0);
+    /// A 135 film's triacetate base, 0.125 mm: the glow's deviation is about the thickness the light crosses twice.
+    pub const SIZE_REST: f32 = 125.0;
+
+    /// The glow's deviation in pixels of a scan whose long side is `long` pixels.
+    pub fn pixels(&self, long: f64) -> f64 {
+        Grain::pixels(self.size, long)
+    }
+}
+
+/// A film's own blur, the light its emulsion spreads before its development: its deviation on the film, in micrometres
+/// of a 135 frame, none at rest.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Bloom {
+    pub size: f32,
+}
+
+impl Bloom {
+    /// To six times the softest sheet's, a 20 cycles/mm film's.
+    pub const RANGE: (f32, f32) = (0.0, 20.0);
+
+    /// The blur's deviation in pixels of a scan whose long side is `long` pixels.
+    pub fn pixels(&self, long: f64) -> f64 {
+        Grain::pixels(self.size, long)
+    }
 }
 
 /// Mid-frequency local contrast on the luma.

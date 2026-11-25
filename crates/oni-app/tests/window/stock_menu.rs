@@ -53,7 +53,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     rig.until("the photo rendered on the stock under the pointer", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     assert_eq!(on(&shown()), Some(next), "the canvas shows the stock under the pointer");
-    assert_eq!(shown(), own.on_stock(next), "as the pick would write it");
+    assert_eq!(shown(), own.picking(next), "as the pick would write it");
     assert_eq!((stored(), menus.get_live().undo), (own.clone(), undo), "nothing written, no step");
     println!("shot {}", rig.shot("stock-menu-hover").display());
     // Another line, then the pointer out of the menu: the photo's own film again, the menu still open.
@@ -73,7 +73,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     assert!(!dropped(w), "Escape closes the menu");
     assert_eq!(shown(), own, "Escape shows the photo's own film");
     // Twin: the shown settings did move while a stock was lit, so the checks above see a preview.
-    assert_ne!(own.on_stock(next), own);
+    assert_ne!(own.picking(next), own);
     rig.advance(Duration::from_secs(5));
     rig.settle();
     assert_eq!((stored(), sidecar(&path), menus.get_live().undo), (own.clone(), written.clone(), undo), "no write, no sidecar, no step");
@@ -112,7 +112,7 @@ pub(crate) fn a_stock_under_the_pointer_shows_on_the_photo_unwritten() {
     assert_eq!(ctl.state.borrow().renders(), renders + 1, "the pick renders nothing past what its light showed");
     assert!(!dropped(w), "a click closes the menu");
     assert_eq!(on(&stored()), Some(next), "the click writes the stock under the pointer");
-    assert_eq!(stored(), own.on_stock(next), "as the light showed it");
+    assert_eq!(stored(), own.picking(next), "as the light showed it");
     assert_eq!(shown(), stored());
     rig.advance(Duration::from_secs(5));
     rig.settle();

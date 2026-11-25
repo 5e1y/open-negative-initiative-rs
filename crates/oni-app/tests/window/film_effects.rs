@@ -1,6 +1,6 @@
 //! The Film Effects block of a digital photo through the window's pointer: a press on Grain's or
-//! Halation's rail lays it, the block's Reset shows and the frame renders again; Halation sensitivity
-//! decides which light glows; a film mode shows none.
+//! Halation's rail lays it, the block's Reset shows and the frame renders again; a fainter dose glows less, never
+//! none; a film mode shows none.
 
 use i_slint_backend_testing::AccessibleRole;
 use oni_app::{Canvas, Library, PanelState, Store};
@@ -145,25 +145,23 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
         press_rail(rig, w, "Halation size", 0.95);
     });
     let laid = halation();
-    assert!((laid.amount - 0.95).abs() < 0.03 && (laid.size - 0.95).abs() < 0.03, "the presses lay Halation and its size: {laid:?}");
-    assert_eq!(laid.sensitivity, 0.0, "Halation sensitivity rests");
+    let (top, size) = (oni_settings::blocks::Halation::AMOUNT_RANGE.1, oni_settings::blocks::Halation::SIZE_RANGE);
+    let on_track = |v: f32, (low, high): (f32, f32)| (v - low) / (high - low);
+    assert!((on_track(laid.amount, (0.0, top)) - 0.95).abs() < 0.03 && (on_track(laid.size, size) - 0.95).abs() < 0.03, "the presses lay Halation and its size: {laid:?}");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the presses reached Halation alone, the grain at rest.
     assert_eq!(ctl.state.borrow().store().settings().grain.amount, oni_settings::blocks::Grain::DIGITAL_AMOUNT);
     println!("shot {}", rig.shot("film-effects-halation-fit").display());
     let glow = ring();
-    // Near Sensitivity's left end the threshold stands over the window's light: nothing glows.
-    rendered(rig, "the dull halation rendered", &|| press_rail(rig, w, "Halation sensitivity", 0.02));
-    let dull = ring();
-    println!("the ring's red: {unlit:.1} unlit, {glow:.1} at rest, {dull:.1} at sensitivity {:.2}", halation().sensitivity);
-    let threshold = oni_pipeline::halation::threshold(ctl.state.borrow().store().settings());
-    assert!(threshold > 1.0 && glow > unlit + 4.0, "the window glows at rest, {unlit} then {glow}, and not past {threshold}");
-    assert!((dull - unlit).abs() <= 1.0, "a threshold over the window's light lays no glow: {unlit} then {dull}");
-    // Twin: near its right end the dimmer light glows too, more than at rest.
-    rendered(rig, "the keen halation rendered", &|| press_rail(rig, w, "Halation sensitivity", 0.95));
-    let keen = ring();
-    println!("the ring's red at sensitivity {:.2}: {keen:.1}", halation().sensitivity);
-    assert!(keen > glow + 2.0, "a keener halation glows more: {glow} then {keen}");
+    assert!(glow > unlit + 4.0, "the window glows, {unlit} then {glow}");
+    // A faint dose still glows, less: no threshold leaves a light dark.
+    rendered(rig, "the faint halation rendered", &|| press_rail(rig, w, "Halation", 0.15));
+    let faint = ring();
+    println!("the ring's red: {unlit:.1} unlit, {glow:.1} at a dose of {:.3}, {faint:.1} at {:.3}", laid.amount, halation().amount);
+    assert!(faint > unlit + 0.5 && faint < glow - 2.0, "a fainter dose glows less: {unlit}, {faint}, {glow}");
+    // Bloom lays the film's own blur, its readout on the film.
+    rendered(rig, "the film's blur rendered", &|| press_rail(rig, w, "Bloom", 0.95));
+    assert!(ctl.state.borrow().store().settings().bloom.size > 15.0, "Bloom's press lays the blur");
     at_full_size(rig, &ctl);
     println!("shot {}", rig.shot("film-effects-halation-100").display());
 }

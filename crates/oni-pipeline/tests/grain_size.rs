@@ -54,6 +54,8 @@ fn every_resolution_lays_the_same_grain_on_the_picture() {
     // 24 and 47 Mpx, a portrait, and a reduced render of the 47: as many cells along the long side.
     let (z, s1r) = (cells(6048, 4032), cells(8368, 5584));
     assert!((z / s1r - 1.0).abs() < 1e-6 && (cells(4032, 6048) / z - 1.0).abs() < 1e-6, "{z} {s1r}");
+    // A RAW decoded at half size holds the same frame on half the pixels: as many cells again.
+    assert!((cells(3024, 2016) / z - 1.0).abs() < 1e-6, "{} {z}", cells(3024, 2016));
     let reduced = grain::grain(&s, Rect::new(0, 0, 2092, 1396), 0.25).unwrap();
     assert!((8368.0 * f64::from(reduced.per_cell) / s1r - 1.0).abs() < 1e-6);
     // Its width in pixels follows the resolution: 20 µm of a 36 mm frame.

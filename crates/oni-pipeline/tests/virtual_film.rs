@@ -302,7 +302,7 @@ fn the_film_prints_a_grey_and_its_negative_is_read_as_any_negative() {
     assert!(lighter[0][1] > on[0][1] + 0.02, "twin: a stop over prints lighter");
     // The film's scan, then that scan read by the negative's own pipeline on the photo's settings.
     let image = Image::new(&source).then(stages::color_matrix(&oni_pipeline::conversion::scene_white(&digital).unwrap()));
-    let scanned = pipeline.filmed(&mut g, image, &digital).unwrap();
+    let scanned = pipeline.filmed(&mut g, image, &digital, None).unwrap();
     let read_back = whole(&mut g, &scanned);
     let scan = g.upload(w, h, &read_back).unwrap();
     let mut read = |mode| {

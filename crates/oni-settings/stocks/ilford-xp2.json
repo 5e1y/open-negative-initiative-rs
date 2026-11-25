@@ -28,6 +28,12 @@
     0.48342606
    ]
   },
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   }
+  },
   "profile": {
    "info": {
     "stock": "ilford_xp2_super",

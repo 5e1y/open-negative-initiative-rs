@@ -171,10 +171,10 @@ pub fn all() -> &'static [Row] {
                 sliders: vec![
                     slider("halation.amount", carry!(halation.amount)),
                     slider("halation.size", carry!(halation.size)),
-                    slider("halation.sensitivity", carry!(halation.sensitivity)),
                 ],
                 carry: carry!(halation),
             },
+            Row { id: "bloom", covers: &["bloom"], sliders: vec![slider("bloom.size", carry!(bloom.size))], carry: carry!(bloom) },
             Row {
                 id: "lensCorrection",
                 covers: &["lensCorrection"],

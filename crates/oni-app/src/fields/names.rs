@@ -53,7 +53,7 @@ impl Field {
             Field::FringeRed => "fringe-red",
             Field::FringeBlue => "fringe-blue",
             Field::LensVignetting => "lens-vignetting",
-            Field::HalationSensitivity => "halation-sensitivity",
+            Field::Bloom => "bloom",
             Field::RedMid => "red-mid",
             Field::GreenMid => "green-mid",
             Field::BlueMid => "blue-mid",

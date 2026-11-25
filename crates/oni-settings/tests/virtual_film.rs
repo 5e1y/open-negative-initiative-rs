@@ -38,8 +38,9 @@ fn plain_37() -> Value {
     doc["label"] = json!("gold");
     doc["exifLine"] = json!({ "camera": "Lumix" });
     let settings = doc["settings"].as_object_mut().unwrap();
-    // Grain size in that format's share of its track.
+    // Grain size and Halation size in that format's shares of their tracks.
     settings["grain"]["size"] = json!(0.5);
+    settings["halation"]["size"] = json!(0.5);
     settings.insert("white".into(), json!({ "kelvin": 4300.0, "tint": 5.0 }));
     settings.insert("shotWhite".into(), json!({ "kelvin": 5210.0, "tint": 12.9 }));
     settings.insert("blackAndWhite".into(), json!(true));
@@ -60,7 +61,9 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     assert!((s.print.exposure - 0.2).abs() < 1e-6, "Lighting's move kept on the negative's rest, on its curve: {}", s.print.exposure);
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
     let grain = oni_settings::blocks::Grain { size: migrate::grain_size::microns(0.5, 1.0), ..before.grain };
-    assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, grain, before.halation));
+    // The halation keeps its place on its tracks.
+    let halation = oni_settings::blocks::Halation { amount: 0.3 * oni_settings::blocks::Halation::AMOUNT_RANGE.1, size: migrate::halation::microns(0.5) };
+    assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, grain, halation));
     assert_eq!((s.lens_correction, s.geometry, &s.corrections), (before.lens_correction, before.geometry, &before.corrections));
     assert_eq!((doc.label, doc.exif_line.camera.as_deref()), (Medal::Gold, Some("Lumix")));
     let written = serde_json::to_value(&doc).unwrap();
@@ -142,7 +145,9 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     // and names no paper, its format's default left.
     let mut portra = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800"));
     portra.grain.amount = 0.0;
-    let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, ..portra.clone() };
+    // Its film effects at rest take the film's own.
+    let rests = VirtualStock::of("kodak-portra-800").effects();
+    let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, halation: rests.halation, bloom: rests.bloom, ..portra.clone() };
     portra.print_paper = Some(oni_settings::PaperStock::of("kodak-royal-digital"));
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
     let portra = migrate::datasheet::on_former(&portra, VirtualStock::of("kodak-portra-800"));

@@ -8,8 +8,6 @@ shader!(GAUSSIAN, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre
 shader!(GAUSSIAN_LUMA, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ let y = dot(v.rgb, LUMA); return vec4<f32>(y, y, y, v.a); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_moments_of(v); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
-const HALATION_PRE: &str = "fn gaussian_pre(v: vec4<f32>) -> vec4<f32> { return halation_source(v, P.sigma_reach.z); }";
-shader!(GAUSSIAN_HALATION, [wgsl::DETAIL_TAPS, wgsl::HALATION_SOURCE, wgsl::GAUSSIAN], &format!("{HALATION_PRE}\n{BLUR_PIXEL}"));
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
 shader!(WARP, [wgsl::WARP], "fn pixel(p: vec2<i32>) -> vec4<f32> { return warp_px(p); }");
@@ -45,8 +43,6 @@ pub enum Before {
     Moments,
     /// `texture_coeff` at its `relative` edge contrast.
     Coeff(f32),
-    /// `halation_source` past its `threshold`.
-    Halation(f32),
 }
 
 /// The rows' axis of `CIGaussianBlur` reading its input through `Before`, edges repeated.
@@ -58,7 +54,6 @@ impl Stage for BlurOf {
             Before::Luma => "gaussian-luma",
             Before::Moments => "gaussian-moments",
             Before::Coeff(_) => "gaussian-coeff",
-            Before::Halation(_) => "gaussian-halation",
         }
     }
 
@@ -67,13 +62,12 @@ impl Stage for BlurOf {
             Before::Luma => GAUSSIAN_LUMA.as_str(),
             Before::Moments => GAUSSIAN_MOMENTS.as_str(),
             Before::Coeff(_) => GAUSSIAN_COEFF.as_str(),
-            Before::Halation(_) => GAUSSIAN_HALATION.as_str(),
         }
     }
 
     fn params(&self) -> Vec<u8> {
         let mut bytes = self.0.bytes();
-        if let Before::Coeff(lane) | Before::Halation(lane) = self.1 {
+        if let Before::Coeff(lane) = self.1 {
             bytes[8..12].copy_from_slice(&lane.to_ne_bytes());
         }
         bytes

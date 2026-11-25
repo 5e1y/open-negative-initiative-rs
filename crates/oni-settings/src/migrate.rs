@@ -31,6 +31,7 @@ pub mod reshape;
 pub mod scan_line;
 pub mod sensor_white;
 pub mod paper_gaze;
+pub mod halation;
 pub mod slide_paper;
 pub mod slide_projector;
 pub mod measured_dyes;
@@ -319,7 +320,7 @@ fn typed_steps(
     let s = one_face::caught_up(version, exposure::caught_up(version, paper::caught_up(version, s)), scanner);
     let s = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, s, former), raw));
     let s = sensor_white::caught_up(version, digital_scan::caught_up(version, layer_densities::caught_up(version, s)));
-    let s = paper_gaze::caught_up(version, s);
+    let s = halation::caught_up(version, paper_gaze::caught_up(version, s), raw);
     optional_paper::caught_up(version, departure::caught_up(version, lighting_on_negative::caught_up(version, s)), raw)
 }
 

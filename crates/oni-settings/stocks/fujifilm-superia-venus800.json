@@ -52,6 +52,14 @@
     0.0
    ]
   ],
+  "effects": {
+   "halation": {
+    "dose": 0.01,
+    "size": 125.0
+   },
+   "bloom": 3.1,
+   "grain_size": 18.7
+  },
   "profile": {
    "info": {
     "stock": "fujifilm_superia_venus_800",
