@@ -47,6 +47,10 @@ pub struct PipelineSettings {
     pub capture_stops: f32,
     #[serde(rename = "primariesConverted")]
     pub primaries_converted: bool,
+    /// A RAW read in its camera's own channels, balanced at its decode's white, with no colour matrix: the hand's choice,
+    /// false and unwritten at rest, where the camera's matrix carries them into the working primaries.
+    #[serde(rename = "cameraChannels", skip_serializing_if = "std::ops::Not::not", default)]
+    pub camera_channels: bool,
     #[serde(rename = "sourceEncoding", skip_serializing_if = "Option::is_none", default)]
     pub source_encoding: Option<SourceEncoding>,
     #[serde(rename = "rgbPasses", skip_serializing_if = "Option::is_none", default)]
@@ -122,6 +126,7 @@ impl Default for PipelineSettings {
             decoded_from_mosaic: false,
             capture_stops: 0.0,
             primaries_converted: false,
+            camera_channels: false,
             source_encoding: None,
             rgb_passes: None,
             pass_of: None,

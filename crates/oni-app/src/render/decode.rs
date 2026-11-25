@@ -47,7 +47,7 @@ pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
 /// at LibRaw's half size, or whole when the Settings ask it, so the full resolution costs no second decode.
 pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => mosaic(path, if FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed) { 0 } else { oni_decode::HALF }, reading.slide),
+        oni_decode::Branch::Mosaic => mosaic(path, if FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed) { 0 } else { oni_decode::HALF }, &reading),
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or(tr("its container is unreadable"))?;
             linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)
@@ -60,7 +60,7 @@ pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
 /// long, which skips the demosaic; the measuring copies and the roll's previews never need more.
 pub fn decode_for(path: &Path, reading: Reading, side: usize) -> Result<Decoded, String> {
     let one = |p: &Path, r: Reading| match oni_decode::route(p) {
-        oni_decode::Branch::Mosaic => mosaic(p, side, r.slide),
+        oni_decode::Branch::Mosaic => mosaic(p, side, &r),
         _ => alone(p, r),
     };
     match reading.passes.clone() {
@@ -74,7 +74,7 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     let one = |p: &Path, r: Reading| match oni_decode::route(p) {
         oni_decode::Branch::LinearRgb => linear_scan(p, None, r, 0),
         oni_decode::Branch::Plain => plain(p, None, r),
-        oni_decode::Branch::Mosaic => mosaic(p, 0, r.slide),
+        oni_decode::Branch::Mosaic => mosaic(p, 0, &r),
     };
     match reading.passes.clone() {
         Some(passes) => composed(path, &passes, |p| one(p, reading.clone())),
@@ -92,11 +92,12 @@ fn place() -> Result<crate::decode_gate::Slot<'static>, String> {
     crate::decode_gate::slot().ok_or_else(String::new)
 }
 
-/// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor.
-fn mosaic(path: &Path, side: usize, slide: bool) -> Result<Decoded, String> {
+/// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor, in its camera's own channels where
+/// `reading` asks it.
+fn mosaic(path: &Path, side: usize, reading: &Reading) -> Result<Decoded, String> {
     let _slot = place()?;
-    let neutral = if slide { oni_decode::Neutral::Slide } else { oni_decode::Neutral::Swift };
-    let (d, factor) = oni_decode::decode_on(path, 1.0, side, neutral).map_err(|e| match e {
+    let neutral = if reading.slide { oni_decode::Neutral::Slide } else { oni_decode::Neutral::Swift };
+    let (d, factor) = oni_decode::decode_with(path, 1.0, side, neutral, !reading.camera_channels).map_err(|e| match e {
         e if e.is_cut_short() => cut_short(),
         e if e.is_nikon_he() => tr("it is Nikon’s High Efficiency RAW (HE or HE*), which LibRaw does not read yet: set the camera to Lossless compressed RAW").into(),
         e => tr!("LibRaw cannot decode it (code {code})", code = e.0),
@@ -109,7 +110,7 @@ fn mosaic(path: &Path, side: usize, slide: bool) -> Result<Decoded, String> {
 pub fn decode_alone(path: &Path, side: Option<f64>) -> Result<Decoded, String> {
     let reading = Reading::default();
     let mut d = match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => mosaic(path, side.map_or(0, |s| s.ceil() as usize), false)?,
+        oni_decode::Branch::Mosaic => mosaic(path, side.map_or(0, |s| s.ceil() as usize), &reading)?,
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or(tr("its container is unreadable"))?;
             linear_scan(path, side, reading, full)?

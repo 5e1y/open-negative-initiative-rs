@@ -55,6 +55,10 @@ export global PanelState {
     in property <bool> encoding-modified;
     callback encoding-picked(int);
     callback encoding-reset();
+    // A RAW, read through its camera's colour matrix or in the camera's own channels.
+    in property <bool> raw-file;
+    in property <bool> camera-matrix: true;
+    callback camera-matrix-toggled(bool);
     // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
     in property <bool> monochrome;
     in property <string> mask-title;

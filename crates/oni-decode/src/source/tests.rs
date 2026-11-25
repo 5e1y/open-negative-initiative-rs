@@ -8,7 +8,7 @@ use oni_fixtures::scratch;
 use std::path::PathBuf;
 
 fn decode_by(path: &Path, route: Route, side: usize, gain: f32) -> Result<Linear, DecodeError> {
-    decoded_by(path, gain, side, crate::Neutral::Swift, route).map(|(linear, _)| linear)
+    decoded_by(path, gain, side, crate::Neutral::Swift, route, true).map(|(linear, _)| linear)
 }
 
 /// Every channel of every pixel, as its bits, so two decodes compare exactly.

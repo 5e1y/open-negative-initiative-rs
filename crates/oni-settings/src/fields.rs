@@ -55,6 +55,7 @@ fields! {
     DecodedFromMosaic => "decodedFromMosaic", decoded_from_mosaic, Frame;
     CaptureStops => "captureStops", capture_stops, Frame;
     PrimariesConverted => "primariesConverted", primaries_converted, Frame;
+    CameraChannels => "cameraChannels", camera_channels, Frame;
     SourceEncoding => "sourceEncoding", source_encoding, Roll;
     RgbPasses => "rgbPasses", rgb_passes, Frame;
     PassOf => "passOf", pass_of, Frame;

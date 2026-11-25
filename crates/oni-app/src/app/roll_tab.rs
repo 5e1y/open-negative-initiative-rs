@@ -149,6 +149,8 @@ impl Ctl {
         let p = me.clone();
         panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
         let p = me.clone();
+        panel.on_camera_matrix_toggled(move |on| p.write_settings(|s| s.camera_channels = !on));
+        let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
         panel.on_colour_compensation_toggled(move |on| p.write_settings(|s| s.print.colour_compensation = on));
@@ -287,6 +289,8 @@ impl Ctl {
         let encoding = settings.source_encoding.unwrap_or(SourceEncoding::Srgb);
         panel.set_encoding(ENCODINGS.iter().position(|e| *e == encoding).unwrap_or(0) as i32);
         panel.set_encoding_modified(settings.source_encoding.is_some());
+        panel.set_raw_file(settings.decoded_from_mosaic);
+        panel.set_camera_matrix(!settings.camera_channels);
     }
 }
 

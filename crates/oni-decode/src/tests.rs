@@ -41,6 +41,24 @@ fn the_5000_k_white_reads_neutral_at_the_baseline() {
     assert!(d65[2] / d65[0] > 1.15, "{d65:?}");
 }
 
+#[test]
+fn without_the_matrix_the_camera_s_channels_read_the_same_white_and_their_own_colours() {
+    let conv = converted_by(&Z_F, DEFAULT_BASELINE_EV).unwrap();
+    let raw = Conversion { matrix: unconverted(&conv.matrix), ..conv };
+    let level = DEFAULT_BASELINE_EV.exp2();
+    assert!(rendered(&raw, neutral_xyz()).iter().all(|v| (v - level).abs() < 1e-5), "the white reads (1, 1, 1) at the baseline");
+    // A saturated colour lands on the camera's own channels, balanced on the white: no channel feeds another.
+    let red = [0.4, 0.21, 0.02];
+    let (n, w) = (apply(&Z_F, red), apply(&Z_F, neutral_xyz()));
+    // The colour's most sensitive channel reaches the white level, as the white's does: each channel over the white's.
+    let top = |v: [f64; 3]| v.iter().cloned().fold(0.0, f64::max);
+    let own = rendered(&raw, red).map(|v| v / level);
+    assert!((0..3).all(|c| (own[c] - n[c] / w[c] * top(w) / top(n)).abs() < 1e-5), "{own:?} against {n:?}");
+    // Twin: through the matrix the same colour lands elsewhere.
+    let through = rendered(&conv, red).map(|v| v / level);
+    assert!((0..3).any(|c| (through[c] - own[c]).abs() > 0.05), "{through:?} {own:?}");
+}
+
 /// True when `w` has the chromaticity of a 5000 K Planckian radiator, (0.3451, 0.3516).
 fn planckian_5000(w: [f64; 3]) -> bool {
     let (x, y) = (w[0] / w.iter().sum::<f64>(), w[1] / w.iter().sum::<f64>());

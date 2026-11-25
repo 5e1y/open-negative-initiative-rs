@@ -139,6 +139,9 @@ pub const HALATION_ON_LAYERS_VERSION: i64 = 75;
 /// The version the halation came to add a dose of each layer's clipped light and the grain to be made of grains, every
 /// film's resting at 30 µm: an effect at its former rest takes its film's new one, the grain's curve and colour dropped.
 pub const FILM_EFFECTS_VERSION: i64 = 76;
+/// The version a RAW came to be readable in its camera's own channels, a key a build before it cannot read: no step, as
+/// every older document reads it through the camera's matrix.
+pub const CAMERA_CHANNELS_VERSION: i64 = 77;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

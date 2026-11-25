@@ -2485,6 +2485,18 @@ msgstr "Lineal"
 msgid "Display P3"
 msgstr "Display P3"
 
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Camera Matrix"
+msgstr "Matriz de la cámara"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "A RAW holds its camera's own channels. ONI carries them into its working colours with the colour matrix LibRaw holds for the camera, Adobe's, which already gives the colours a look. Off, the camera's own channels, balanced at the same 5000 K white, are the working colours as they are: no matrix shapes the colours before the film or the negative's inversion. The photograph is read again; a roll prepared one way reads its windows the other way, so prepare it again after a change."
+msgstr "Un RAW contiene los canales propios de su cámara. ONI los lleva a sus colores de trabajo con la matriz de color que LibRaw tiene para la cámara, la de Adobe, que ya da un aspecto a los colores. Desactivada, los canales propios de la cámara, equilibrados al mismo blanco de 5000 K, son los colores de trabajo tal cual: ninguna matriz da forma a los colores antes de la película o de la inversión del negativo. La fotografía se vuelve a leer; un rollo preparado de un modo lee sus ventanas del otro, así que prepárelo de nuevo tras un cambio."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Camera colour matrix"
+msgstr "Matriz de color de la cámara"
+
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Lens Corrections"
 msgstr "Correcciones de lente"

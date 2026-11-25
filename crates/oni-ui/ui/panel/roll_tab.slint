@@ -133,6 +133,16 @@ export component RollPane inherits Pane {
             }
         }
     }
+    if PanelState.raw-file: Block {
+        title: @tr("Camera Matrix");
+        help: @tr("A RAW holds its camera's own channels. ONI carries them into its working colours with the colour matrix LibRaw holds for the camera, Adobe's, which already gives the colours a look. Off, the camera's own channels, balanced at the same 5000 K white, are the working colours as they are: no matrix shapes the colours before the film or the negative's inversion. The photograph is read again; a roll prepared one way reads its windows the other way, so prepare it again after a change.");
+        // No store block: the switch writes the reading alone.
+        block: 0;
+        modified: !PanelState.camera-matrix;
+        reset(b) => { PanelState.camera-matrix-toggled(true); }
+        folded-by-default: true;
+        Toggle { label: @tr("Camera colour matrix"); on: PanelState.camera-matrix; toggled(on) => { PanelState.camera-matrix-toggled(on); } }
+    }
     // A digital photo's lens, corrected on the scan before the crop, the turns and the angle.
     if PanelState.digital: lens-block := Block {
         title: @tr("Lens Corrections");

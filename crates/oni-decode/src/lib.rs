@@ -299,11 +299,25 @@ pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral)
     decoded(path, exposure_gain, side, neutral)
 }
 
-fn decoded(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
-    decoded_by(path, exposure_gain, side, neutral, Route::PLATFORM)
+/// `decode_on` with or without the camera's colour matrix: without it, the camera's own channels balanced at `neutral`
+/// are the working space.
+pub fn decode_with(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, matrix: bool) -> Result<(Linear, usize), DecodeError> {
+    decoded_by(path, exposure_gain, side, neutral, Route::PLATFORM, matrix)
 }
 
-fn decoded_by(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
+fn decoded(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
+    decoded_by(path, exposure_gain, side, neutral, Route::PLATFORM, true)
+}
+
+/// The camera's own channels in place of `matrix`'s conversion: each balanced as `matrix` balances its neutral, its row
+/// sums, all one, so the white still reads (1, 1, 1) times the baseline's gain.
+fn unconverted(matrix: &[[f32; 3]; 3]) -> [[f32; 3]; 3] {
+    let gain = matrix.iter().map(|r| r.iter().sum::<f32>()).sum::<f32>() / 3.0;
+    [[gain, 0.0, 0.0], [0.0, gain, 0.0], [0.0, 0.0, gain]]
+}
+
+fn decoded_by(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, route: Route, converted: bool) -> Result<(Linear, usize), DecodeError> {
+    let laid = |m: [[f32; 3]; 3]| if converted { m } else { unconverted(&m) };
     // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's;
     // its key keeps the word `Matrix`, so the decodes already kept stay valid.
     let slide = if neutral == Neutral::Slide { "|slide" } else { "" };
@@ -313,7 +327,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, ro
     let half = (side > HALF).then(|| keyed(HALF)).flatten();
     let kept = key.as_deref().and_then(cache::read).or_else(|| half.as_deref().and_then(cache::read).filter(|k| k.factor == 2 && k.width.max(k.height) >= side));
     if let Some(k) = kept {
-        let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &k.matrix);
+        let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &laid(k.matrix));
         let (width, height) = linear::upright(k.flip, (k.width, k.height));
         return Ok((Linear { width, height, pixels }, k.factor));
     }
@@ -353,7 +367,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral, ro
         let head = cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: Vec::new() };
         cache::write(&key, &head, (y0..y0 + h_out).map(|row| &raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3]));
     }
-    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &matrix);
+    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &laid(matrix));
     let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
         eprintln!(
