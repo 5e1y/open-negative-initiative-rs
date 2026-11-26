@@ -13654,42 +13654,42 @@
     "id": 4000,
     "type": "ui",
     "title": "Gallery to editor: the column's photos rise from its foot under the rows, the gallery's filter tucks under the tab bar; back, they sink",
-    "status": "in progress",
+    "status": "done",
     "detail": "One list of rows in both modes (NavigatorSection), the photos laid once at their resting height inside a part that grows from the column's foot (Tree.unfold on Motion.travel, Ease.weighted), so no row is laid again while it moves; the rows keep their folder centred as they shorten. The photos stay laid while they sink, so entering the editor centres the column from tree-moded too, not only from a new list's shown."
   },
   {
     "id": 4001,
     "type": "ui",
     "title": "The photo flies between the screens: the tile lifts into the canvas, the canvas shrinks into its tile, the canvas moves onto the export's lone preview and back",
-    "status": "in progress",
-    "detail": "Flight (flight.slint, app/flight.rs): Rust names the thumbnail, the route and where it leaves; the window lays the landing place live (the canvas's frame, the tile the grid lays, the export's preview) and springs the picture there, turned back midway as a gesture reverses it; the place under it stands back until it lands and fades. Nothing waits on it; Reduce Motion flies nothing."
+    "status": "done",
+    "detail": "Flight (ds/flight.slint, app/flight.rs): Rust names the thumbnail, the route and where it leaves; the window lays the landing place live (the canvas's frame, the tile the grid lays, the export's preview) and springs the picture there, turned back midway as a gesture reverses it; the place under it stands back until it lands and fades. Nothing waits on it; Reduce Motion flies nothing. ONI_BENCH=motion at 3456 x 2034 px: every journey 120 Hz at the median while it moves, draw p50 under 3 ms, no spike the screens lacked laid at once."
   },
   {
     "id": 4002,
     "type": "ui",
     "title": "Pop-ups move: menus, pickers and popovers grow out of their anchor; sheets rise on a spring, and the scrim of the last one closed lightens behind it",
-    "status": "in progress",
+    "status": "done",
     "detail": "Popover (every menu and popover) grows from its tail or top edge on Motion.pop; Sheet comes in on Ease.weighted. A closing sheet goes at once, so every press and key reaches the window behind it, and ScrimFade lightens its scrim on overlay-out: a sheet kept laid while it sank swallowed the presses and keys of the next gesture (gallery, gestures, migration and sheet checks)."
   },
   {
     "id": 4003,
     "type": "ui",
     "title": "Edit to export morphs: the bar slides up out of its room, the export card opens out of the editor's card, the export panel slides in; back, the bar, the column and the panel slide in",
-    "status": "in progress",
+    "status": "done",
     "detail": "One spring (MainWindow.exporting, Ease.firm) drives the bar, the card's frame (its content laid once at its own place, clipped while it opens) and the columns, each moved in its own slot so no layout changes while it travels."
   },
   {
     "id": 4004,
     "type": "ui",
     "title": "A section folds and unfolds sliding, its chevron turning; the tooltip fades in",
-    "status": "in progress",
+    "status": "done",
     "detail": "Section's content laid at its own height, the block's height sliding on the hand's fold alone (Ease.firm, Motion.travel), a content changing height laid at once; FoldMark one chevron turned by Button.turned, which turns on Motion.quick; TipView fades in on Motion.quick."
   },
   {
     "id": 4005,
     "type": "ui",
     "title": "A canvas tool's ring fades out as it leaves and the rings inside close in; the help card rises into place",
-    "status": "in progress",
+    "status": "done",
     "detail": "Held (ds/containers.slint) keeps a ring laid while it fades on overlay-out, its inset sliding on Motion.quick; the rings take no press. HelpLayer comes in as a popover does, on Motion.pop."
   },
   {
