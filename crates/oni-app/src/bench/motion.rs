@@ -6,6 +6,8 @@ use super::*;
 
 /// What a journey's frames are counted over: the travel's pace and its landing, and a breath after.
 const WATCHED: Duration = Duration::from_millis(900);
+/// How long a step may wait for the window to reach it before the bench gives up.
+const STALL: Duration = Duration::from_secs(30);
 
 #[derive(Clone, Copy, PartialEq)]
 enum Step {
@@ -53,6 +55,12 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         };
         // Each journey watched for its whole pace before the next starts.
         let watched = || since.get().elapsed() >= WATCHED;
+        // A step waiting past its due ends the bench, saying where: a bench never waits without end.
+        let stalled = |why: &str| {
+            if since.get().elapsed() > STALL {
+                finish(format!("motion: stalled, {why}\n{}", lines.borrow().join("\n")));
+            }
+        };
         let journey = |name: &str| {
             let moving = if pass.get() == 0 { "laid at once" } else { "moving" };
             lines.borrow_mut().push(format!("{name}, {moving}: {}", frames_since(&drawn.borrow(), since.get())));
@@ -79,11 +87,14 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 step.set(Step::Gallery);
             }
             Step::Gallery => {
+                // Any tile laid on screen but the open photo's, wherever the gallery landed.
+                let open = ctl.state.borrow().open_path().map(str::to_string);
+                let laid = crate::app::tiles(&w).into_iter().filter(|t| t.width > 0.0 && open.as_deref().is_none_or(|o| !o.ends_with(t.caption.as_str())));
+                let Some(t) = laid.into_iter().nth(pass.get()) else { return stalled("no tile laid in the gallery") };
                 if !watched() || !app.get_gallery() {
-                    return;
+                    return stalled("the gallery never showed");
                 }
                 journey("editor to gallery");
-                let Some(t) = tile(&w, FLOW_TILES[pass.get()]) else { return };
                 let at = slint::LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
                 click_at(&w, at);
                 click_at(&w, at);
@@ -91,7 +102,7 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             Step::Picked => {
                 if !watched() || app.get_gallery() {
-                    return;
+                    return stalled("the double click opened no photo");
                 }
                 journey("gallery to editor");
                 pick(&w, PANES[0]);

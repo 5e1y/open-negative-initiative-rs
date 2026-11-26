@@ -13852,5 +13852,12 @@
     "title": "The welcome's contest as the owner set it: its page on the site, always offered; monthly top five, the winner opening the next version with its author's name; #madewithoni to spread the word",
     "status": "done",
     "detail": "help::CONTEST is the site's contest page (https://open-negative-initiative.com/contest), which holds the form and the rules, so the key Enter the Contest always shows and the app depends on no form id. The message's note says: every month the community's top five, the winning photo opens the next version of ONI for everyone with its author's name, anyone can enter with a photo where no one is recognisable, one step (the form), #ONIsplash to share; a line under 'spread the word' names #madewithoni (help::MADE_WITH). Clippy: three needless borrows in welcome_card.rs and the stage thread's send whose large error is dropped. Checks: clippy on oni-app's lib, examples and window tests; help unit tests (both hashtags well formed, links pages not addresses); window checks design_system, welcome_card, help, sheets, welcome_reel; catalogue translated (its one failure, 'Zalando Sans Expanded' in theme_type.slint, is canvas's own)."
+  },
+  {
+    "id": 4013,
+    "type": "perf",
+    "title": "ONI_BENCH=motion never waits without end: it opens any tile the gallery lays and stops, naming the step, past 30 s",
+    "status": "done",
+    "detail": "It double-clicked the tile at a fixed place, which a gallery landed on its open photo far down never laid: it waited forever, logging the editor-to-gallery journey anew at each tick. It now takes any tile laid but the open photo's, records a journey once its tile is found, and a step whose window never comes ends the bench with motion: stalled, and why."
   }
 ]
