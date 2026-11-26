@@ -36,7 +36,7 @@ fn opened(require_roll: bool, name: &str) {
         at = step;
         rig.shot(&format!("{name}-{step:03}"));
         // A roll never prepared opens on Prepare as its roll is read, the clock held mid-flight.
-        if require_roll && step == 160 {
+        if require_roll && step == 0 {
             rig.until("Prepare the Roll", Duration::from_secs(30), || w.global::<Preparing>().get_shown());
             assert!(!flight.get_flying(), "{name}: a flight into the editor ends as Prepare takes the screen");
             rig.shot(&format!("{name}-prepared"));

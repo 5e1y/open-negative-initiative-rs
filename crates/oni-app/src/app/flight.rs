@@ -124,4 +124,15 @@ impl Ctl {
         walk.set_serial(walk.get_serial() + 1);
         walk.set_walking(true);
     }
+
+    /// Prepare takes the screen, as a photo of a roll never prepared opens it once its roll is read: a photo
+    /// flying into the editor never lands on a canvas no longer shown.
+    pub(super) fn flight_left(&self) {
+        let Some(w) = self.window() else { return };
+        let f = w.global::<Flight>();
+        if f.get_route() == FlightRoute::IntoEditor {
+            f.set_flying(false);
+            f.set_landing(false);
+        }
+    }
 }

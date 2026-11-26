@@ -13991,7 +13991,7 @@
     "type": "ui",
     "title": "Opening a photo shows one picture at a time: the screen's own photo only once the tile has landed, and no flight over Prepare the Roll",
     "status": "done",
-    "detail": "The owner saw the tile's picture and the editor's together. Two causes: landed, the flight faded over the canvas's picture already shown, two pictures seen together wherever their places differed by a hair; and a photo of a roll never prepared opens Prepare as its roll is read, mid-flight, the flight going on to land on a canvas no longer shown, beside Prepare's frame. A flight landing on the same picture now hands over at once (the export's preview, another render, still fades), and a flight into the editor ends as another screen takes its place (Travels). motion_open shoots both openings on a held clock."
+    "detail": "The owner saw the tile's picture and the editor's together. Two causes: landed, the flight faded over the canvas's picture already shown, two pictures seen together wherever their places differed by a hair; and a photo of a roll never prepared opens Prepare as its roll is read, mid-flight, the flight going on to land on a canvas no longer shown, beside Prepare's frame. A flight landing on the same picture now hands over at once (the export's preview, another render, still fades), and entering Prepare ends a flight into the editor (Ctl::flight_left): a change watched in the window missed a Prepare shown before the editor was ever drawn. motion_open shoots both openings on a held clock, Prepare landing before the editor draws."
   },
   {
     "id": 4018,

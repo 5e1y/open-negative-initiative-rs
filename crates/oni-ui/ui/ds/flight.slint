@@ -123,10 +123,7 @@ export component WalkView {
 
 // Every photo travelling over the screens, laid in the window's space: the flight, and the walk beside a photo.
 export component Travels {
-    // The editor beside a photo: a flight into it ends where another screen takes its place, as Prepare the
-    // Roll does when the photo opened belongs to a roll never prepared, never landing on a canvas unseen.
     in property <bool> walk;
-    changed walk => { if (!root.walk && Flight.route == FlightRoute.into-editor) { Flight.flying = false; Flight.landing = false; } }
     in property <Place> frame;
     in property <Place> room;
     if Flight.flying: FlightView { x: 0; y: 0; width: root.width; height: root.height; frame: root.frame; room: root.room; }
