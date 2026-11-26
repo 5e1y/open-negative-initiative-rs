@@ -3,7 +3,7 @@
 //! moves the negative it prints (`lighting`). The reference grey the Lighting sliders turn about is read here too.
 
 use super::*;
-use oni_render::{PAPER_CURVE_NODES, Paper, Shown, Stage47, cpu};
+use oni_render::{Paper, Shown, Stage47, cpu};
 use oni_settings::axis::pipeline::DMAX;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
@@ -114,13 +114,6 @@ pub(super) fn damped(now: f32, miss_at: impl Fn(f32) -> f32) -> Option<f32> {
 pub fn filtration(at: V3) -> V3 {
     let most = at.iter().copied().fold(f32::NEG_INFINITY, f32::max);
     at.map(|e| (most - e) * CC_PER_DENSITY)
-}
-
-/// Each layer's dye amount under the window's `shares`, as a share of its curve's range.
-pub fn layer_shares(p: &Paper, shares: V3) -> V3 {
-    let (low, high) = (p.curves[0], p.curves[PAPER_CURVE_NODES - 1]);
-    let amounts = p.amounts(p.exposed(p.density(shares)));
-    std::array::from_fn(|c| (amounts[c] - low[c]) / (high[c] - low[c]))
 }
 
 /// Whether the print keeps the paper's own ends: Print lift.

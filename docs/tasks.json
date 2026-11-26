@@ -13607,5 +13607,19 @@
     "title": "The grain's plate drawn only when the canvas asks a grain again at another footprint, never for a film lit in its menu, a grain size dragged or the histogram",
     "status": "done",
     "detail": "Each film its grain size, a light in the films' menu drew a plate (116 ms): hovering went from 57 to 147 ms p50 after #3869. The plate is now drawn when the canvas asks the same grain on the same film again at another footprint, as a zoom or a pinch does; a first ask, a film lit, a grain size dragged (21 ms a notch) or the histogram's picture (now drawing its own) draws its field for itself, over the framed scan so a notch at one footprint keeps it. A render drawing its own field is #3861's again (grained_over). Measured in the app on a 47 Mpx RW2 on Portra 800: hovering the films 54 ms p50, 63 p90 (55 before #3868); a pinch's render shown 33 ms p50, 2 frames of 362 past 25 ms; RSS 1.28 GB."
+  },
+  {
+    "id": 4050,
+    "type": "refactor",
+    "title": "Dead code out: two public functions no code calls and a script for a check that no longer exists",
+    "status": "done",
+    "detail": "film::bake::view_matrix (and the CAT02 cone space only it read) and paper::printing::layer_shares had no caller in any crate, example or test; scripts/synthetic-sources.py wrote the sources of a decode parity check gone since; oni-fixtures' description no longer names the Swift app's dumps. Nothing renders differently: no caller existed. Proof: cargo check of oni-pipeline and oni-fixtures on every target, no warning."
+  },
+  {
+    "id": 4051,
+    "type": "check",
+    "title": "The source files' ceilings: the entries of files gone or under the limit dropped, the others at their size today",
+    "status": "done",
+    "detail": "architecture.rs still listed oni-settings/src/json.rs and tests/window/extended.rs, both gone, and editors/mod.rs, now 369 lines; decode's swift_checks (466 -> 460) and pipeline's (728 -> 722) come down to their size. The files other streams may grow before the freeze (editors/tests.rs, codec_checks.rs) keep theirs. Proof: the architecture check and its twins green."
   }
 ]

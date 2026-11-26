@@ -48,8 +48,6 @@ fn adaptation(m: &M3, from: [f64; 3], to: [f64; 3]) -> M3 {
 
 /// CAT16's cone space (Li et al. 2017), the adaptation spektrafilm exposes its films through.
 const CAT16: M3 = [[0.401288, 0.650173, -0.051461], [-0.250268, 1.204414, 0.045854], [-0.002079, 0.048952, 0.953127]];
-/// CAT02's cone space (CIECAM02), the adaptation spektrafilm views its prints through.
-const CAT02: M3 = [[0.7328, 0.4296, -0.1624], [-0.7036, 1.6975, 0.0061], [0.0030, 0.0136, 0.9834]];
 
 /// The D65 white the working space's encoding stands on.
 pub const D65_XY: [f64; 2] = [0.3127, 0.3290];
@@ -69,11 +67,6 @@ pub fn rec2020_to_xyz() -> M3 {
 /// The working space to XYZ adapted by CAT16 to the film's reference white: a working grey lands on it.
 pub fn to_film(reference: &[f64; WAVELENGTHS]) -> M3 {
     mul(&adaptation(&CAT16, xyz_of_xy(D65_XY), white_of(reference)), &rec2020_to_xyz())
-}
-
-/// A print seen under `light`: XYZ, the light's white CAT02-adapted to the working D65, in Rec. 2020.
-pub fn view_matrix(light: &[f64; WAVELENGTHS]) -> M3 {
-    mul(&inverse(&rec2020_to_xyz()), &adaptation(&CAT02, white_of(light), xyz_of_xy(D65_XY)))
 }
 
 /// Abramowitz and Stegun's 7.1.26, within 1.5e-7 of the error function.
