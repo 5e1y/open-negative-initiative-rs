@@ -136,6 +136,10 @@ fn a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did() {
     let sd = tiled(&share(&k), side, 32);
     println!("Portra 800 at its rest, 30 µm on a 47 Mpx grid: {sd:.5} of green's window in 32-pixel tiles; each grain's deviation {:.4}", k.deviation[1]);
     assert!((sd / 0.014 - 1.0).abs() < 0.08, "{sd} against the scan's 0.014");
+    // Twin: each layer carrying the whole Amount, as no scan shows it, lays a third more.
+    let carried = Grain { deviation: k.deviation.map(|d| d / grain::READ_ALONE), ..k };
+    let unread = tiled(&share(&carried), side, 32);
+    assert!((unread / 0.014 - 1.0).abs() > 0.08, "twin: {unread}");
     // Twin: Amount's top on the same film lays four times the scan's grain.
     let top = grain::grain(&with_amount(&s, 1.0), Rect::new(0, 0, 8368, 5584), 1.0).unwrap();
     assert!((tiled(&share(&top), side, 32) / sd - 4.0).abs() < 0.2);

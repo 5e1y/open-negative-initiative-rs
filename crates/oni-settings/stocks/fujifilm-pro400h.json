@@ -17,35 +17,35 @@
   "dyes": "fujifilm-pro-400h",
   "reference": {
    "stops": [
-    -1.060365,
+    -1.726871,
     0.0,
-    0.7722454
+    0.8866628
    ],
    "black": [
-    0.30813426,
-    0.30803165,
-    0.3078922
+    0.32161018,
+    0.32145754,
+    0.32127213
    ],
    "white": [
-    0.6092463,
-    0.6289468,
-    0.639689
+    0.69619304,
+    0.68267655,
+    0.6748518
    ]
   },
   "couplers": [
    [
     0.0,
     0.0,
-    0.0
+    0.2596
    ],
    [
     0.0,
     0.0,
-    0.0
+    0.0774
    ],
    [
-    0.0,
-    0.0,
+    0.0685,
+    0.0375,
     0.0
    ]
   ],
@@ -92,9 +92,9 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +27.5 nm x1.20, M +2.5 nm x1.10, Y +2.5 nm x0.90) to fit the mid-scale neutral less D-min (rms 0.0165 D)",
-     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
-     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
+     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band",
+     "the layers' inhibition (couplers), fitted by scripts/derive-couplers.py on the sheet alone: the final positive's Oklab (a, b) against measured spectra under the film's light (ColorChecker BabelColor Average 24, CIE D skies at 7500 to 25000 K), at the model's own lightness; a development takes its film's"
     ]
    },
    "data": {

@@ -312,12 +312,12 @@ fn on_a_sheets_film_the_halation_lies_on_its_layers_exposures_before_their_curve
     let sigma = halation::deviation(&s, scan) as f32;
     let n = side as usize;
     let exposed = mapped(&pixels, |p| cpu::virtual_exposure(p, &k, &stock.table));
-    let reference = mapped(&glowing(&exposed, n, n, sigma, &dose), |e| stock.scanned(cpu::virtual_development(e, &k, &stock.table)));
+    let reference = mapped(&glowing(&exposed, n, n, sigma, &dose), |e| cpu::virtual_development(e, &k, &stock.table));
     // Twin: the glow laid on the scene's own channels, before the film reads them.
-    let on_scene = mapped(&glowing(&pixels, n, n, sigma, &dose), |p| stock.scanned(cpu::virtual_negative(p, &k, &stock.table)));
+    let on_scene = mapped(&glowing(&pixels, n, n, sigma, &dose), |p| cpu::virtual_negative(p, &k, &stock.table));
     judge("halation on the layers", &out, &reference, &on_scene);
     // Twin: the glow laid on the developed negative, past its curve.
-    let on_negative = mapped(&glowing(&mapped(&exposed, |e| cpu::virtual_development(e, &k, &stock.table)), n, n, sigma, &dose), |p| stock.scanned(p));
+    let on_negative = mapped(&glowing(&mapped(&exposed, |e| cpu::virtual_development(e, &k, &stock.table)), n, n, sigma, &dose), |p| p);
     judge("halation before the curve", &out, &reference, &on_negative);
 }
 

@@ -17,35 +17,35 @@
   "dyes": "kodak-portra-160",
   "reference": {
    "stops": [
-    -0.95093185,
+    -1.4879699,
     0.0,
-    0.59615415
+    0.5957119
    ],
    "black": [
-    0.2760334,
-    0.27595904,
-    0.27588034
+    0.29058945,
+    0.29047865,
+    0.29039067
    ],
    "white": [
-    0.5306029,
-    0.5797424,
-    0.6683553
+    0.6313577,
+    0.6508943,
+    0.7076992
    ]
   },
   "couplers": [
    [
     0.0,
+    0.1242,
+    0.3444
+   ],
+   [
+    0.0985,
     0.0,
-    0.0
+    0.351
    ],
    [
     0.0,
-    0.0,
-    0.0
-   ],
-   [
-    0.0,
-    0.0,
+    0.1106,
     0.0
    ]
   ],
@@ -91,9 +91,9 @@
      "the grey's exposure: ISO 5800 speed point + 1.03 log (Kodak Gold 200's Log H Ref)",
      "densities held at the sheet's last point past the curves' printed range",
      "the three dyes: the Vision3 sheets' mean dyes moved and widened (C +40.0 nm x1.20, M +0.0 nm x1.00, Y +2.5 nm x0.95) to fit the mid-scale neutral less D-min (rms 0.0168 D)",
-     "the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes (Portra 800 read with three cyans)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
-     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
+     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band",
+     "the layers' inhibition (couplers), fitted by scripts/derive-couplers.py on the sheet alone: the final positive's Oklab (a, b) against measured spectra under the film's light (ColorChecker BabelColor Average 24, CIE D skies at 7500 to 25000 K), at the model's own lightness; a development takes its film's"
     ]
    },
    "data": {

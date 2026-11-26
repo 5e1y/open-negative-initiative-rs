@@ -11,7 +11,9 @@ use oni_pipeline::{Pipeline, Request, stages};
 use oni_render::{VirtualNegative, cpu};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 
-const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
+/// The spectra a colour negative reads, and those a slide reads.
+const NEGATIVE_SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_otsu2018.npy");
+const SHEET_SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
 
 fn mitchell(t: f64) -> f64 {
     let (b, c) = (1.0 / 3.0, 1.0 / 3.0);
@@ -62,13 +64,20 @@ struct Reference {
 impl Reference {
     fn new(stock: VirtualStock) -> Self {
         let profile = Profile::read(stock.entry().profile.as_bytes()).unwrap();
-        let spectra = film::profile::Spectra::read(SPECTRA).unwrap();
+        let spectra = film::profile::Spectra::read(if stock.entry().reversal { SHEET_SPECTRA } else { NEGATIVE_SPECTRA }).unwrap();
         let white = film::reference_light(stock);
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile));
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
         let (couplers, reversal) = (film::couplers(&stock.entry()), stock.entry().reversal);
-        let develop = if reversal { bake::curves_falling } else { bake::curves_through };
-        let curves = develop(&profile.log_exposure, &profile.density_curves, &couplers);
+        // A slide develops its dyes; a negative its sheet's Status M curves over its bare film's D-min.
+        let curves = match reversal {
+            true => bake::curves_falling(&profile.log_exposure, &profile.density_curves, &couplers),
+            false => {
+                let (first, inhibited) = bake::curves_through(&profile.log_exposure, &profile.sheet_density_curves, &couplers);
+                let base = film::status::read(&profile.base_density);
+                (first, inhibited.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect())
+            }
+        };
         Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile, couplers }
     }
 
@@ -142,7 +151,9 @@ fn worst(kernel: &VirtualNegative, table: &[[f32; 4]], reference: &Reference, sc
         .map(|(rgb, stops)| {
             let k = VirtualNegative { exposure: (*stops as f32).exp2(), ..kernel.clone() };
             let out = cpu::virtual_negative([rgb[0] as f32, rgb[1] as f32, rgb[2] as f32, 1.0], &k, table);
-            let got = density([out[0], out[1], out[2]].map(f64::from));
+            // The light written less its reading's veil, read back as the film's own.
+            let veil = f64::from(kernel.veil);
+            let got = density([out[0], out[1], out[2]].map(|t| (f64::from(t) + veil) / (1.0 + veil)));
             let want = density(reference.scan(*rgb, *stops));
             (0..3).map(|c| (got[c] - want[c]).abs()).fold(0.0, f64::max)
         })
@@ -161,8 +172,9 @@ fn the_kernel_reads_the_negative_the_reference_develops() {
         let stock = film::stock(kind);
         let (gap, edge) = (worst(&stock.kernel, &stock.table, &reference, &inside), worst(&stock.kernel, &stock.table, &reference, &locus));
         eprintln!("{kind:?}: kernel against the reference, {gap:.5} density at worst, {edge:.5} on the locus");
-        // A slide's curves are three to four times a negative's slope, read on the same 256 nodes.
-        let bound = if kind.entry().reversal { 0.002 } else { 0.001 };
+        // A slide's curves are three to four times a negative's dyes' slope, a negative's printed Status M curves steeper
+        // than its dyes' (0.0013 on Fujifilm 200), read on the same 256 nodes.
+        let bound = 0.002;
         assert!(gap < bound && edge < 0.015, "{kind:?}: {gap} {edge}");
         let uncoupled = VirtualNegative { couplers: [[0.0; 3]; 3], ..stock.kernel.clone() };
         assert!(uncoupled == stock.kernel || worst(&uncoupled, &stock.table, &reference, &inside) > 0.001, "{kind:?}");
@@ -195,6 +207,8 @@ fn grey_on(kind: VirtualStock) -> f64 {
     let over = reference.log_raw([f64::from(GREY); 3], 1.0);
     assert!((0..3).all(|c| over[c].abs() > 0.2), "{kind:?}: {over:?}");
     let le = &reference.profile.log_exposure;
+    // A negative's sheet lies over its bare film's D-min.
+    let base = if kind.entry().reversal { [0.0; 3] } else { film::status::read(&reference.profile.base_density) };
     // The gap to the data sheet of a grey ramp developed through `second`, the curve the couplers act on.
     let gap = |second: &[[f64; 3]]| {
         let mut gap: f64 = 0.0;
@@ -204,7 +218,7 @@ fn grey_on(kind: VirtualStock) -> f64 {
             for m in 0..3 {
                 let inhibited = log[m] - (0..3).map(|k| first[k] * reference.couplers[k][m]).sum::<f64>();
                 // A negative's sheet is its first curve; a reversal film's, the dyes its curves leave.
-                let sheet = if kind.entry().reversal { bake::interpolate(log[m], le, &reference.profile.density_curves, m) } else { first[m] };
+                let sheet = if kind.entry().reversal { bake::interpolate(log[m], le, &reference.profile.density_curves, m) } else { first[m] + base[m] };
                 gap = gap.max((bake::interpolate(inhibited, le, second, m) - sheet).abs());
             }
         }
@@ -213,7 +227,8 @@ fn grey_on(kind: VirtualStock) -> f64 {
     let held = gap(&reference.curves.1);
     eprintln!("{kind:?}: a grey's development off the data sheet, {held:.5} density at worst");
     // Twin, on a coupled film: the couplers acting on the data sheet's own curves move the ramp off it.
-    assert!(reference.couplers == [[0.0; 3]; 3] || gap(&reference.curves.0) > 0.1, "{kind:?}");
+    let uncorrected: Vec<[f64; 3]> = reference.curves.0.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect();
+    assert!(reference.couplers == [[0.0; 3]; 3] || gap(&uncorrected) > 0.02, "{kind:?}");
     held
 }
 

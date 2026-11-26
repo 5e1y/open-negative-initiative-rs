@@ -27,7 +27,7 @@ fn printed(colour: V3, s: &PipelineSettings) -> V3 {
     let lit = conversion::scene_white(s).map_or([colour[0] as f32, colour[1] as f32, colour[2] as f32, 1.0], |m| {
         cpu::color_matrix([colour[0] as f32, colour[1] as f32, colour[2] as f32, 1.0], &m)
     });
-    let negative = stock.scanned(cpu::virtual_negative(lit, &stock.kernel, &stock.table));
+    let negative = cpu::virtual_negative(lit, &stock.kernel, &stock.table);
     let machine = scanner::on_legacy_print(s);
     let k = conversion::stage47(machine.as_ref().unwrap_or(s));
     let mut out = cpu::stage47(negative, &k);

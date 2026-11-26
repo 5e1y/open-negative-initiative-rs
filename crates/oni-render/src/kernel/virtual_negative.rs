@@ -18,6 +18,9 @@ pub struct VirtualNegative {
     pub log_span: f32,
     pub tc_nodes: usize,
     pub curve_nodes: usize,
+    /// The pedestal a negative's reading adds, taken off the light the negative passes, so the density read is the
+    /// development's: a colour negative read as its sheet; none on a slide or silver.
+    pub veil: f32,
 }
 
 impl VirtualNegative {
@@ -28,7 +31,7 @@ impl VirtualNegative {
     pub fn rows(&self) -> Vec<V4> {
         let t = &self.to_film;
         let c = &self.couplers;
-        vec![v3(t[0], self.exposure), v3(t[1], self.log_low), v3(t[2], self.log_span), v3(c[0], 0.0), v3(c[1], 0.0), v3(c[2], 0.0)]
+        vec![v3(t[0], self.exposure), v3(t[1], self.log_low), v3(t[2], self.log_span), v3(c[0], self.veil), v3(c[1], 0.0), v3(c[2], 0.0)]
     }
 
     /// The table's width and height as one image.
@@ -86,9 +89,9 @@ pub fn virtual_exposure(s: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
     with_alpha(map(light(quad(xyz[0] / safe, xyz[1] / safe), k, table), |_, v| v * b * k.exposure), s[3])
 }
 
-/// The layers' exposures `e` developed to the light their negative passes; alpha kept.
+/// The layers' exposures `e` developed to the light their negative passes, less its reading's veil; alpha kept.
 pub fn virtual_development(e: V4, k: &VirtualNegative, table: &[V4]) -> V4 {
-    with_alpha(map(developed_dyes(rgb(e), k, table), |_, d| (-std::f32::consts::LOG2_10 * d).exp2()), e[3])
+    with_alpha(map(developed_dyes(rgb(e), k, table), |_, d| (1.0 + k.veil) * (-std::f32::consts::LOG2_10 * d).exp2() - k.veil), e[3])
 }
 
 /// Each layer's density the exposures `e` develop, its couplers acting between the curves.

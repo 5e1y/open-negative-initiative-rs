@@ -36,7 +36,7 @@ fn on(stock: VirtualStock) -> PipelineSettings {
 /// the paper's own white: each channel over that white's, the white's luma kept.
 fn printed(stock: VirtualStock, s: &PipelineSettings, light: f32) -> [f32; 3] {
     let st = film::stock(stock);
-    let scan = st.scanned(cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table));
+    let scan = cpu::virtual_negative([light, light, light, 1.0], &st.kernel_at(0.0), &st.table);
     let k = conversion::stage47(s);
     let p = cpu::stage47(scan, &k);
     let white = k.paper().map_or([1.0; 3], |q| q.white);
@@ -81,7 +81,7 @@ impl Ramp {
 }
 
 /// The table: every stock's neutral ramp and white, each checked; its twin, the red gain a fifth of a stop off the
-/// stock's reference, prints the ramp further off neutral. A black and white film's ramp prints without a hue, its twin
+/// stock's reference, moves the ramp's colour. A black and white film's ramp prints without a hue, its twin
 /// Lighting's exposure off, which moves its grey.
 #[test]
 fn every_stock_prints_its_white_as_portra_800s_and_its_crossovers_under_a_ceiling() {
@@ -104,7 +104,9 @@ fn every_stock_prints_its_white_as_portra_800s_and_its_crossovers_under_a_ceilin
         }
         assert!((held.white / portra).log2().abs() < WHITE_SPREAD, "{stock:?}: its white {}, Portra 800's {portra}", held.white);
         assert!(held.chroma() < CHROMA && held.light_chroma() < LIGHT_CHROMA, "{stock:?}: a neutral prints at C*ab {}", held.chroma());
-        assert!(twin.chroma() > held.chroma() + 1.0, "{stock:?}: twin, the red gain off its reference, its ramp at C*ab {} only", twin.chroma());
+        // The red gain moves the ramp's colour, toward the film's own cast or away from it.
+        let moved = held.steps.iter().zip(&twin.steps).map(|(a, b)| (a.1 - b.1).abs()).fold(0.0f32, f32::max);
+        assert!(moved > 1.0, "{stock:?}: twin, the red gain off its reference, moves the ramp's C*ab by {moved} only");
     }
 }
 
@@ -120,7 +122,7 @@ fn a_tungsten_stock_turns_a_daylight_scene_blue() {
         let lit: [f64; 3] = std::array::from_fn(|r| (0..3).map(|c| f64::from(to_white[r][c]) * decoded[c]).sum());
         let st = film::stock(stock);
         let k = conversion::stage47(&on(stock));
-        let p = cpu::stage47(st.scanned(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table)), &k);
+        let p = cpu::stage47(cpu::virtual_negative([lit[0] as f32, lit[1] as f32, lit[2] as f32, 1.0], &st.kernel_at(0.0), &st.table), &k);
         let white = k.paper().map_or([1.0; 3], |q| q.white);
         let luma = oni_render::LUMA.iter().zip(white).map(|(w, v)| w * v).sum::<f32>();
         [p[0] / white[0] * luma, p[1] / white[1] * luma, p[2] / white[2] * luma]

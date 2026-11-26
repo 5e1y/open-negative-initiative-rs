@@ -51,7 +51,7 @@ fn main() {
         for paper in [None, Some(PaperStock::default())] {
             let s = shot(stock, paper);
             let k = conversion::stage47(&s);
-            let cpu: Vec<V4> = scenes().into_iter().map(|p| cpu::stage47(baked.scanned(cpu::virtual_negative(p, &baked.kernel, &baked.table)), &k)).collect();
+            let cpu: Vec<V4> = scenes().into_iter().map(|p| cpu::stage47(cpu::virtual_negative(p, &baked.kernel, &baked.table), &k)).collect();
             let on = paper.map_or("none".into(), |p| serde_json::to_string(&p).unwrap());
             println!("stock {key} {on} cpu {:016x} gpu {} name {} white {:?} ref {:?}", fnv(&cpu), gpu(&s), stock.name(), stock.white(), stock.reference());
         }

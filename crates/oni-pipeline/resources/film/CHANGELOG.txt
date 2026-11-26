@@ -24,3 +24,7 @@ data sheet (datasheet/, SOURCES.txt there). What remains:
 channel's density, no spectral negative.
 2026-11-25: scanner_nikon_d850.json added, the sensor ONI's scanner reads a colour negative with (rawtoaces-data,
 Apache-2.0, SCANNER_LICENCE.txt); nothing of spektrafilm's.
+2026-11-26: scanner_nikon_d850.json and SCANNER_LICENCE.txt removed: a colour negative is read as its sheet's Status M
+densities, layer by layer.
+2026-11-26: irradiance_xy_otsu2018.npy added, the spectra a colour negative's virtual film reads (Otsu 2018, wide spectra
+of real objects); irradiance_xy_tc.npy kept for slides and black and white films.

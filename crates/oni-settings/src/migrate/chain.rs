@@ -150,6 +150,9 @@ pub const UNIVERSAL_SCANNER_VERSION: i64 = 79;
 /// The version a colour negative's virtual film came to expose its three layers alike, no layer offset and no gamut
 /// compressed: a digital photo's gains and windows move onto its stock's two points.
 pub const TWO_POINTS_VERSION: i64 = 80;
+/// The version a colour negative's virtual film came to be read as its data sheet's Status M densities, each channel its
+/// own layer, no scanner between: a digital photo's gains and windows move onto its stock's new reference.
+pub const MODEL_S_VERSION: i64 = 81;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

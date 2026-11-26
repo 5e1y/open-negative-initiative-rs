@@ -49,7 +49,9 @@ fn virtual_development_px(e: vec4<f32>) -> vec4<f32> {
     let c = P.couplers;
     let inhibited = log - (first.x * c[0].xyz + first.y * c[1].xyz + first.z * c[2].xyz);
     let density = negative_curve(inhibited, 1u);
-    return vec4<f32>(exp2(-3.3219280948873623 * density), e.a);
+    // The light passed less the veil its reading adds (couplers[0].w).
+    let veil = c[0].w;
+    return vec4<f32>((1.0 + veil) * exp2(-3.3219280948873623 * density) - veil, e.a);
 }
 
 fn virtual_negative_px(s: vec4<f32>) -> vec4<f32> {

@@ -22,7 +22,6 @@ export component FilmBlock inherits Block {
         Label { role: TextRole.note; text: PanelState.film-white; vertical-alignment: center; wrap: word-wrap; }
     }
     StoreSlider { field: 52; label: @tr("Shooting exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
-    if root.settings && PanelState.film-scanner != "": Field { label: @tr("Scanner"); Label { role: TextRole.note; text: PanelState.film-scanner; } }
     if root.settings: Field { label: @tr("Gains"); Label { role: TextRole.note; text: PanelState.film-gains; } }
     if root.settings: Field { label: @tr("Black"); Label { role: TextRole.note; text: PanelState.film-black; } }
     if root.settings: Field { label: @tr("White"); Label { role: TextRole.note; text: PanelState.film-ends; } }

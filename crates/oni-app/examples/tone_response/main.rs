@@ -281,7 +281,7 @@ fn main() {
     let white = conversion::scene_white(&digital);
     let f = digital.film().expect("a virtual film");
     let (stock, kernel) = (film::stock(f.stock), film::stock(f.stock).kernel_at(f.exposure));
-    let to_film = move |v: V4| stock.scanned(cpu::virtual_negative(white.as_ref().map_or(v, |m| cpu::color_matrix(v, m)), &kernel, &stock.table));
+    let to_film = move |v: V4| cpu::virtual_negative(white.as_ref().map_or(v, |m| cpu::color_matrix(v, m)), &kernel, &stock.table);
     for (name, paper) in [("digital-paper", None), ("digital-royal", Some("kodak-royal-digital"))] {
         let mut s = digital.clone();
         if let Some(k) = paper {

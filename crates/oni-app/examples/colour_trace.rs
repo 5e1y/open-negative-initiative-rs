@@ -54,7 +54,7 @@ fn main() {
     let reference = stock.reference;
     let scan: Vec<[f32; 4]> = if args[3] == "scene" {
         let k = stock.kernel_at(0.0);
-        input.iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &k, &stock.table))).collect()
+        input.iter().map(|p| cpu::virtual_negative(*p, &k, &stock.table)).collect()
     } else {
         input.clone()
     };

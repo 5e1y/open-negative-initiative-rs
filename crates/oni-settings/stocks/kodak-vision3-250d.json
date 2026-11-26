@@ -16,34 +16,34 @@
   "dyes": "kodak-vision3-250d",
   "reference": {
    "stops": [
-    -0.6818431,
+    -1.1358682,
     0.0,
-    0.80664283
+    0.99280095
    ],
    "black": [
-    0.26541534,
-    0.2653619,
-    0.26525572
+    0.26910377,
+    0.26902422,
+    0.2688799
    ],
    "white": [
-    0.52122426,
-    0.5731309,
-    0.5917949
+    0.5758388,
+    0.6234414,
+    0.610686
    ]
   },
   "couplers": [
    [
     0.0,
     0.0,
-    0.0
+    0.1505
    ],
    [
     0.0,
     0.0,
-    0.0
+    0.3302
    ],
    [
-    0.0,
+    0.0063,
     0.0,
     0.0
    ]
@@ -91,7 +91,8 @@
      "densities held at the sheet's last point past the curves' printed range",
      "the dyes' amounts, fitted to the mid-scale neutral (rms 0.0617 D)",
      "each dye's unit: a Status M density of 1 in its own channel, by ISO 5-3's Status M products",
-     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band"
+     "the dyes' amounts along log H: the curves unmixed, each node's amounts reading the sheet's Status M densities over D-min through every dye's absorption in each band",
+     "the layers' inhibition (couplers), fitted by scripts/derive-couplers.py on the sheet alone: the final positive's Oklab (a, b) against measured spectra under the film's light (ColorChecker BabelColor Average 24, CIE D skies at 7500 to 25000 K), at the model's own lightness; a development takes its film's"
     ]
    },
    "data": {

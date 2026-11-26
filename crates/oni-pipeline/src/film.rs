@@ -1,5 +1,5 @@
-//! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, a colour negative's
-//! dyes read by ONI's scanner, the neutral film's code, and the reference that reading stands on, derived as Prepare
+//! Virtual films: a data-sheet profile baked once into the virtual negative's kernel and table, a colour negative read
+//! as its sheet's Status M densities, the neutral film's code, and the reference each stands on, derived as Prepare
 //! measures a roll's.
 
 pub mod bake;
@@ -8,7 +8,7 @@ pub mod dyes;
 pub mod neutral;
 pub mod profile;
 pub mod projection;
-pub mod scanner;
+pub mod status;
 
 use bake::M3;
 use oni_render::{VirtualNegative, cpu};
@@ -18,7 +18,6 @@ use oni_settings::stocks::VirtualEntry;
 use oni_settings::virtual_film::{Balance, StockReference};
 use oni_settings::{ConversionMode, DyeSet, PipelineSettings, VirtualStock};
 use profile::{Profile, Silver, Spectra};
-use projection::Scan;
 
 /// The scene light spektrafilm sets on a film's speed, log exposure 0: an 18.4 % grey.
 pub const GREY: f32 = 0.184;
@@ -26,17 +25,11 @@ pub const GREY: f32 = 0.184;
 /// The ceiling a virtual negative is read on, a mosaic negative's: its scan holds no veil of its own.
 pub const CEILING: f32 = density_axis::MOSAIC_REST;
 
-/// A stock's baked kernel at rest exposure, its table, a colour negative's scan, and its own reference as derived from
-/// them; `revision`, its file's content, which a table uploaded from it is kept under.
+/// A stock's baked kernel at rest exposure, its table, and its own reference as derived from them; `revision`, its
+/// file's content, which a table uploaded from it is kept under.
 pub struct Stock {
     pub kernel: VirtualNegative,
     pub table: Vec<[f32; 4]>,
-    /// A colour negative's dyes as ONI's scanner reads them; none on a slide, projected instead, or on silver, whose
-    /// neutral density a white lamp reads alike on every channel.
-    pub scan: Option<Scan>,
-    /// How each channel of its reading sees each layer's dye about a mid grey, each row summing to one: what mixes the
-    /// layers' grains; each channel its own layer where no scan reads the film.
-    pub gaze: [[f32; 3]; 3],
     pub reference: StockReference,
     pub revision: u64,
 }
@@ -70,8 +63,11 @@ fn f32s(m: &M3) -> [[f32; 3]; 3] {
     m.map(|r| r.map(|v| v as f32))
 }
 
-/// The spectra table every stock's exposure reads, shipped unchanged.
-const SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
+/// The spectra a colour negative's exposure reads, Otsu 2018's wide spectra of real objects (owner's call): a photo's
+/// vivid colours stay as vivid as the objects that make them.
+const NEGATIVE_SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_otsu2018.npy");
+/// The spectra a slide's and a black and white film's exposure read, spektrafilm's, shipped unchanged.
+const SHEET_SPECTRA: &[u8] = include_bytes!("../resources/film/irradiance_xy_tc.npy");
 
 /// The light a data sheet's stock is balanced for, as a spectrum: its scene's white and its layers' reference.
 pub fn reference_light(stock: VirtualStock) -> &'static [f64; cie::WAVELENGTHS] {
@@ -88,23 +84,32 @@ fn light_of(balance: Balance) -> Option<&'static [f64; cie::WAVELENGTHS]> {
 }
 
 /// What a profile lays on the bake: each layer's sensitivity, the curves before and after the couplers on their log H
-/// axis, the couplers, and a colour negative's scan.
+/// axis and the couplers.
 struct Layers {
     sensitivity: Vec<[f64; 3]>,
     log_exposure: Vec<f64>,
     before: Vec<[f64; 3]>,
     after: Vec<[f64; 3]>,
     couplers: M3,
-    scan: Option<Scan>,
+    /// The spectra table its exposure reads.
+    spectra: &'static [u8],
+    /// The pedestal its negative is written less: a colour negative read as its sheet, exactly; none on a slide or silver.
+    veil: f32,
 }
 
-/// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative, a
-/// negative's scanned; a neutral exposes the three at the same log exposure, no layer offset (owner's call).
+/// A colour film's three layers developed through `couplers`: a reversal film's dyes from its first developer's
+/// negative, a negative's own sheet's Status M densities over its bare film's, each channel its own layer (owner's call).
 fn colour(profile: Profile, couplers: M3, reversal: bool) -> Layers {
-    let develop = if reversal { bake::curves_falling } else { bake::curves_through };
-    let (before, after) = develop(&profile.log_exposure, &profile.density_curves, &couplers);
-    let scan = (!reversal).then(|| scanner::scan(&profile));
-    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers, scan }
+    let sensitivity = bake::sensitivity(&profile);
+    if reversal {
+        let (before, after) = bake::curves_falling(&profile.log_exposure, &profile.density_curves, &couplers);
+        return Layers { sensitivity, log_exposure: profile.log_exposure, before, after, couplers, spectra: SHEET_SPECTRA, veil: 0.0 };
+    }
+    let (before, inhibited) = bake::curves_through(&profile.log_exposure, &profile.sheet_density_curves, &couplers);
+    let base = status::read(&profile.base_density);
+    let after = inhibited.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect();
+    let veil = density_axis::pedestal(CEILING);
+    Layers { sensitivity, log_exposure: profile.log_exposure, before, after, couplers, spectra: NEGATIVE_SPECTRA, veil }
 }
 
 /// A black and white negative: its one layer on the three channels, no coupler.
@@ -116,7 +121,8 @@ fn silver(profile: Silver) -> Layers {
         before: curve.clone(),
         after: curve,
         couplers: [[0.0; 3]; 3],
-        scan: None,
+        spectra: SHEET_SPECTRA,
+        veil: 0.0,
     }
 }
 
@@ -142,24 +148,16 @@ pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String>
 /// The stock `layers` bake at `entry`'s balance, its reference derived on its scan.
 fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
     let (kernel, table) = baked(&layers, entry.balance);
-    let gaze = gaze_of(&layers);
-    let mut stock = Stock { kernel, table, scan: layers.scan, gaze, reference: unread(), revision: entry.revision };
+    let mut stock = Stock { kernel, table, reference: unread(), revision: entry.revision };
     if !entry.reversal {
         stock.reference = derived(&stock);
     }
     stock
 }
 
-/// How a colour negative's scan sees its layers' dyes at a mid grey's amounts, each layer exposed at log 0.
-fn gaze_of(layers: &Layers) -> [[f32; 3]; 3] {
-    let Some(scan) = &layers.scan else { return OWN_LAYERS };
-    let mid = std::array::from_fn(|c| bake::interpolate(0.0, &layers.log_exposure, &layers.after, c));
-    gaze(&scan.projection, &scan.table, mid)
-}
-
-/// The kernel and table of a film's `layers` lit at `balance`.
+/// The kernel and table of a film's `layers` lit at `balance`, through the spectra its kind reads.
 fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) {
-    let spectra = Spectra::read(SPECTRA).expect("the shipped spectra read");
+    let spectra = Spectra::read(layers.spectra).expect("the shipped spectra read");
     let white = light_of(balance).expect("a data sheet's film names its light, checked as its file is taken");
     let light = bake::light_table(&spectra, &layers.sensitivity);
     let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
@@ -174,6 +172,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
         log_span: (le[m - 1] - le[0]) as f32,
         tc_nodes: n,
         curve_nodes: m,
+        veil: layers.veil,
     };
     let (w, h) = kernel.table_size();
     let mut table = vec![[0.0f32; 4]; w * h];
@@ -215,8 +214,7 @@ pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, 
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }
     let (kernel, table) = baked(&layers, balance);
-    let gaze = gaze_of(&layers);
-    let stock = Stock { kernel, table, scan: layers.scan, gaze, reference: unread(), revision: 0 };
+    let stock = Stock { kernel, table, reference: unread(), revision: 0 };
     let r = if reversal { unread() } else { derived(&stock) };
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
         return Err("its profile bakes a reference that is not finite".into());
@@ -230,18 +228,10 @@ impl Stock {
         VirtualNegative { exposure: stops.exp2(), ..self.kernel.clone() }
     }
 
-    /// A developed film's layers, each amount coded as `10^-amount`, as the pipeline reads them: a colour negative's
-    /// scan, a slide's or silver's as they are.
-    pub fn scanned(&self, developed: [f32; 4]) -> [f32; 4] {
-        match &self.scan {
-            Some(s) => cpu::projection(developed, &s.projection, &s.table),
-            None => developed,
-        }
-    }
-
-    /// A lit scene pixel shot on the film `stops` over its rest, developed and read as the pipeline reads it.
+    /// A lit scene pixel shot on the film `stops` over its rest, developed: each channel's light through its own
+    /// layer, `10^-density`, as the pipeline reads it.
     pub fn shot(&self, lit: [f32; 4], stops: f32) -> [f32; 4] {
-        self.scanned(cpu::virtual_negative(lit, &self.kernel_at(stops), &self.table))
+        cpu::virtual_negative(lit, &self.kernel_at(stops), &self.table)
     }
 }
 

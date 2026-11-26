@@ -315,7 +315,6 @@ def convert(stock_id, push, reference_offset, basis):
         moves = ", ".join(f"{n} {s:+.1f} nm x{w:.2f}" for n, (s, w) in zip("CMY", params))
         inferred.append(f"the three dyes: the Vision3 sheets' mean dyes moved and widened ({moves}) to fit the "
                         f"mid-scale neutral less D-min (rms {residual:.4f} D)")
-        inferred.append(BORROWED)
     band = ~np.isnan(base) & ~np.isnan(dyes).any(axis=1)
     dyes[~band] = np.nan
     base = np.where(band, base, np.nan)
@@ -445,47 +444,35 @@ def convert_paper(stock_id):
     return name, inferred
 
 
-# What a negative's borrowed dyes cost its render: Portra 800 read by the scanner with Vision3's cyan as printed, held
-# to peak at 700 nm, and as fitted here.
-BORROWED = ("the render through ONI's scanner moves by 3 degrees of hue at most with this borrowing of the dyes "
-            "(Portra 800 read with three cyans)")
+# Where a colour negative's couplers come from, as its provenance says.
+COUPLED = ("the layers' inhibition (couplers), fitted by scripts/derive-couplers.py on the sheet alone: the final positive's Oklab "
+           "(a, b) against measured spectra under the film's light (ColorChecker BabelColor Average 24, CIE D skies at 7500 to "
+           "25000 K), at the model's own lightness; a development takes its film's")
 
 
-def scanned():
-    """Each colour negative whose file holds its sheet's profile is read by ONI's scanner, its dyes uncoupled: its
-    reference is then derived again, no layer offset."""
-    uncoupled = [[0.0, 0.0, 0.0] for _ in range(3)]
-    for path in stock_files():
+def coupled():
+    """Each colour negative's inhibition between its layers, derived from its own sheet by scripts/derive-couplers.py
+    (colour-science and scipy on PYTHONPATH), its developments taking their film's; its reference is then derived again."""
+    films = [p for p in stock_files() if json.loads(p.read_text()).get("oni") == "film"
+             and json.loads(p.read_text()).get("type") in ("colour-negative", "cine-negative")]
+    if not any(p in MOVED for p in films):
+        return
+    out = ROOT / "target" / "derived-couplers.json"
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "derive-couplers.py"), str(STOCKS_DIR), str(out), "--write"], check=True)
+    for path in films:
         stock_file = json.loads(path.read_text())
-        if stock_file.get("oni") != "film" or stock_file.get("type") not in ("colour-negative", "cine-negative"):
+        film = stock_file.get("film", {})
+        if "couplers" not in film or film.get("neutral"):
             continue
-        moved = False
+        for d in stock_file.get("developments", []):
+            if "film" in d:
+                d["film"]["couplers"] = film["couplers"]
         for block in blocks(stock_file):
-            if block.get("neutral") or "channel_density" not in block["profile"].get("data", {}):
-                continue
-            provenance = block["profile"]["provenance"]
-            inferred = provenance.get("inferred", [])
-            dyes = next((i for i, line in enumerate(inferred) if line.startswith("the three dyes: the Vision3")), None)
-            noted = dyes is None or BORROWED in inferred
-            if "read_by" not in block and "read_by" not in provenance and block.get("couplers") == uncoupled and "filtration" not in block and noted:
-                continue
-            laid = {}
-            for k, v in block.items():
-                if k in ("reference", "filtration", "read_by", "couplers"):
-                    continue
-                laid[k] = v
-                if k == "dyes":
-                    laid["couplers"] = uncoupled
-            laid["profile"]["provenance"].pop("read_by", None)
-            if not noted:
-                inferred.insert(dyes + 1, BORROWED)
-            block.clear()
-            block.update(laid)
-            moved = True
-        if moved:
-            path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
-            MOVED.append(path)
-            print(f"{path.name}: read by the scanner")
+            inferred = block["profile"]["provenance"].setdefault("inferred", [])
+            if COUPLED not in inferred:
+                inferred.append(COUPLED)
+        path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
+        MOVED.append(path)
 
 
 # The colour reversal films taken: the dataset's id, the stock file whose virtual film it becomes, that film's key, and
@@ -977,7 +964,7 @@ def main():
     for s in STOCK.values():
         if s["type"] == "bw_negative" and s["id"] not in taken:
             print(f"left out: {s['id']}: {BW_LEFT_OUT[s['id']]}")
-    scanned()
+    coupled()
     refresh_references()
     lay_effects()
     neutral_curve()

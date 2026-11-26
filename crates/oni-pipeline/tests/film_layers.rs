@@ -79,9 +79,9 @@ fn a_films_blur_lies_on_its_layers_exposures_before_their_curve() {
         cpu::gaussian(&cpu::gaussian(&Grid::new(0, 0, side as usize, side as usize, of.to_vec()), &gaussian(false)), &gaussian(true)).pixels
     };
     let exposed = mapped(&pixels, |p| cpu::virtual_exposure(p, &k, &stock.table));
-    let reference = mapped(&blurred(&exposed), |e| stock.scanned(cpu::virtual_development(e, &k, &stock.table)));
+    let reference = mapped(&blurred(&exposed), |e| cpu::virtual_development(e, &k, &stock.table));
     // Twin: the blur laid on the developed negative, past its curve.
-    let on_negative = mapped(&blurred(&mapped(&exposed, |e| cpu::virtual_development(e, &k, &stock.table))), |n| stock.scanned(n));
+    let on_negative = mapped(&blurred(&mapped(&exposed, |e| cpu::virtual_development(e, &k, &stock.table))), |n| n);
     judge("a film's blur", &out, &reference, &on_negative);
 
     // At rest, or finer than a pixel holds, the film stays one pass; the halation alone makes it three.

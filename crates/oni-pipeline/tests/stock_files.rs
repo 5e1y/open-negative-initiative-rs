@@ -40,7 +40,7 @@ fn printed(stock: VirtualStock) -> Vec<[f32; 4]> {
     let s = PipelineSettings::rest(ConversionMode::Digital, true).per_pixel_only().on_stock(stock);
     let baked = film::stock(stock);
     let k = conversion::stage47(&s);
-    (-8..=8).map(|h| GREY * 2f32.powf(h as f32 / 2.0)).map(|v| cpu::stage47(baked.scanned(cpu::virtual_negative([v, v, v, 1.0], &baked.kernel, &baked.table)), &k)).collect()
+    (-8..=8).map(|h| GREY * 2f32.powf(h as f32 / 2.0)).map(|v| cpu::stage47(cpu::virtual_negative([v, v, v, 1.0], &baked.kernel, &baked.table), &k)).collect()
 }
 
 #[test]

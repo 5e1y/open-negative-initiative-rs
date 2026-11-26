@@ -25,21 +25,16 @@ impl Pipeline {
         let key = (f.stock, stock.revision);
         if let Entry::Vacant(e) = self.films.entry(key) {
             let (w, h) = stock.kernel.table_size();
-            let scan = stock.scan.as_ref().map(|scan| graph.upload(scan.projection.bands as u32, 2, &scan.table)).transpose()?;
-            e.insert((graph.upload(w as u32, h as u32, &stock.table)?, scan));
+            e.insert(graph.upload(w as u32, h as u32, &stock.table)?);
         }
-        let (table, scan) = self.films[&key].clone();
+        let table = self.films[&key].clone();
         let (k, table) = (stock.kernel_at(f.exposure), [Image::new(&table)]);
         let glow = self.glow(graph, s, effects, plate.0.clone().then_reading(stages::virtual_exposure(&k), &table), plate.1)?;
         let on_layers = |exposed: Image| effects.and_then(|scan| layers::laid(exposed, s, scan, glow.as_ref()));
         // No effect on its layers: the exposure and the development are one pass.
-        let developed = match on_layers(image.clone().then_reading(stages::virtual_exposure(&k), &table)) {
+        Ok(match on_layers(image.clone().then_reading(stages::virtual_exposure(&k), &table)) {
             Some(laid) => laid.then_reading(stages::virtual_development(&k), &table),
             None => image.then_reading(stages::virtual_negative(&k), &table),
-        };
-        Ok(match (&stock.scan, scan) {
-            (Some(k), Some(table)) => developed.then_reading(stages::projection(&k.projection), &[Image::new(&table)]),
-            _ => developed,
         })
     }
 

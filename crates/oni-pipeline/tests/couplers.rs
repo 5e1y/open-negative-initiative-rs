@@ -9,17 +9,18 @@ use oni_settings::VirtualStock;
 fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     let v = VirtualStock::of("kodak-vision3-250d");
     let own = film::couplers(&v.entry());
-    assert_ne!(own, COUPLERS, "Vision3 250D's file holds its own matrix, uncoupled");
-    // Twins: a file holding none reads the common matrix; a colour negative the scanner reads is uncoupled.
+    assert_ne!(own, COUPLERS, "Vision3 250D's file holds its own matrix");
+    // Twins: a file holding none reads the common matrix; each colour negative holds its own, derived from its sheet.
     assert_eq!(film::couplers(&VirtualStock::of("ilford-hp5-plus").entry()), COUPLERS);
-    assert_eq!(film::couplers(&VirtualStock::of("kodak-portra-800").entry()), [[0.0; 3]; 3]);
+    let portra = film::couplers(&VirtualStock::of("kodak-portra-800").entry());
+    assert!(portra != own && portra != COUPLERS && portra.iter().flatten().any(|v| *v > 0.0), "{portra:?}");
     let f32s = own.map(|r| r.map(|x| x as f32));
     assert_eq!(film::stock(v).kernel.couplers, f32s);
 
     // A grey exposes the three layers alike: the couplers then leave it on the sheet's curve.
-    let unfiltered = v.entry();
-    let (mine, common) = (film::bake_through(&unfiltered, own).unwrap(), film::bake_through(&unfiltered, COUPLERS).unwrap());
-    let read = |s: &film::Stock, p: [f32; 4]| s.scanned(cpu::virtual_negative(p, &s.kernel_at(0.0), &s.table));
+    let entry = v.entry();
+    let (mine, common) = (film::bake_through(&entry, own).unwrap(), film::bake_through(&entry, COUPLERS).unwrap());
+    let read = |s: &film::Stock, p: [f32; 4]| cpu::virtual_negative(p, &s.kernel_at(0.0), &s.table);
     let (grey, red) = ([GREY, GREY, GREY, 1.0], [0.4, 0.08, 0.05, 1.0]);
     let apart = |p| (0..3).map(|c| (read(&mine, p)[c] / read(&common, p)[c] - 1.0).abs()).fold(0.0f32, f32::max);
     println!("grey {:.2e}, red {:.2e}", apart(grey), apart(red));

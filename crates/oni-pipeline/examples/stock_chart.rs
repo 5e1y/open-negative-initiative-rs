@@ -53,7 +53,7 @@ fn main() {
         let k = s.kernel_at(exposure);
         let scene: Vec<[f32; 4]> = input.iter().map(|p| cpu::color_matrix(*p, &m)).collect();
         let dyes: Vec<[f32; 4]> = scene.iter().map(|p| { let d = cpu::virtual_dyes(*p, &k, &s.table); [d[0], d[1], d[2], 1.0] }).collect();
-        let scan: Vec<[f32; 4]> = scene.iter().map(|p| s.scanned(cpu::virtual_negative(*p, &k, &s.table))).collect();
+        let scan: Vec<[f32; 4]> = scene.iter().map(|p| cpu::virtual_negative(*p, &k, &s.table)).collect();
         let (kp, ko) = (conversion::stage47(&paper), conversion::stage47(&oni));
         let name = stock.key();
         write(out, &format!("{name}-scene"), w, h, &scene);

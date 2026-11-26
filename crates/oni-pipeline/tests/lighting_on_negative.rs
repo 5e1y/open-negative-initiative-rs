@@ -59,7 +59,7 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
 /// A scan noise and a virtual negative's scan.
 fn pixels() -> Vec<V4> {
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
+    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
 }
@@ -127,7 +127,7 @@ fn shot_on(stock: VirtualStock) -> PipelineSettings {
 fn scanned(stock: VirtualStock, stops: f32) -> Vec<V4> {
     let baked = film::stock(stock);
     let k = baked.kernel_at(stops);
-    scene().iter().map(|p| baked.scanned(cpu::virtual_negative(*p, &k, &baked.table))).collect()
+    scene().iter().map(|p| cpu::virtual_negative(*p, &k, &baked.table)).collect()
 }
 
 fn lit(s: &PipelineSettings, f: impl Fn(&mut Print)) -> PipelineSettings {

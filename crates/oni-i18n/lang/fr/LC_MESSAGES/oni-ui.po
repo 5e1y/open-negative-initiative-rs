@@ -4534,10 +4534,6 @@ msgid "A {scene} K scene on a film balanced for {film} K"
 msgstr "Une scène à {scene} K sur une pellicule équilibrée pour {film} K"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "{sensor} sensor, {lamp} lamp"
-msgstr "Capteur {sensor}, lampe {lamp}"
-
-#: crates/oni-app/src/app/roll_tab.rs
 msgid "{film} under a {kelvin} K projector lamp"
 msgstr "{film} sous une lampe de projecteur à {kelvin} K"
 

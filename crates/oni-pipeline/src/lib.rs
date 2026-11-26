@@ -83,7 +83,7 @@ pub struct Pipeline {
     cubes: HashMap<&'static str, (Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     /// Each virtual film's table and a colour negative's scan, uploaded once per graph and file content.
-    films: HashMap<(oni_settings::VirtualStock, u64), (Source, Option<Source>)>,
+    films: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// Each look's nodes, uploaded once per graph and file content.
     looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
     /// Each reversal film's projection table, uploaded once per graph and file content.

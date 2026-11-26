@@ -13805,6 +13805,27 @@
     "detail": "examples/digital_stages writes every stage of a digital photo's render on its film at rest, from the sensor's counts (oni_decode::mosaic, a LibRaw unpack read through oni_mosaic in pinned.c, no knob touched) through the demosaic, the camera matrix, the editor's reduction, the scene seen at the film's white, its XYZ for the film, each layer's exposure, bloom, the halation's glow and dose, the development, the scanner's own channels and their decode, the grain, the frozen scan, then stage 4-7 laid out on the CPU (Lighting, gains, density on its two points, shares, inversion) and the finishing on the GPU, with the bare film's and a saturated neutral's readings and the open lamp (film::scanner::open_lamp) for the owner's transmission scale. It checks itself: the exposure against its CPU reference (1.3e-5), the frozen scan against the stages (4.9e-4, half floats), the inversion laid by hand against the fused stage (0)."
   },
   {
+    "id": 3880,
+    "type": "feature",
+    "title": "A colour negative's virtual film is its data sheet (model S): Otsu 2018 spectra, the sheet's Status M curves, its own couplers, no scanner",
+    "status": "done",
+    "detail": "Owner's call, spec by the colorimetry session (spec-modele-s.md): a colour negative's exposure reads Otsu 2018's wide spectra of real objects (irradiance_xy_otsu2018.npy, scripts/otsu-spectra.py; slides and black and white films keep spektrafilm's table, as the spec advises), develops on its sheet's Status M curves (sheet_density_curves) with its layers inhibiting one another through its file's couplers, each film's own matrix derived from its sheet alone (scripts/derive-couplers.py, called by datasheet-profiles.py; a development takes its film's, checked by the colorimetry on Portra 800 Push 1 and 2), over its bare film's Status M D-min (film::status). Its negative is those densities, each channel its own layer, written less its reading's veil as the neutral film's, so the share is the sheet's D over its white exactly. Removed whole: film::scanner, the D850's data and licence, the Film block's Scanner line and its texts, the scan stage of filmed_on, Stock's scan and gaze; a colour negative's grain is each channel's own layer. References derived again on 48 film blocks. Proven by model_s (every step against reference.json on Portra 800, Gold 200, Vision3 250D and Ektar 100: log H 7e-7, density 6.5e-4, share 6.4e-4; twin: no inhibition), digital_negative_model (GPU against CPU, D-min against the sheets, a neutral on the sheet's curves; twins), virtual_film's reference on the sheet curves. Only digital photos' renders move: legacy_print's two digital cases and the corpus' 37-digital readings."
+  },
+  {
+    "id": 3881,
+    "type": "feature",
+    "title": "Sidecar format 81: a digital photo on a colour negative moves onto its film's model S reference",
+    "status": "done",
+    "detail": "migrate::model_s holds the 48 colour negative blocks' references as format 80 laid them and moves a format-80 photo onto its stock's reference of today by onto, every hand's move kept; older formats land there through their own steps, once. Adversarial review (one pass): no defect; its coverage gap closed by a_stored_photo_of_each_former_format_lands_once_on_its_stocks_reference (formats 78, 79, 80 through the whole chain; twin: each stored as the next format lands elsewhere). The newer-format corpus file moves to 82."
+  },
+  {
+    "id": 3882,
+    "type": "feature",
+    "title": "A colour negative read layer by layer carries 0.739 of its film's grain Amount on each layer",
+    "status": "done",
+    "detail": "Why the factor exists: a film's grain Amount is the grain a scan shows, and a scanner's broad channels average three independent layers' grains; the D850's reading did so until model S. Read layer by layer, with no reader averaging them, each channel carried a third more grain (Portra 800 at rest 0.0189 of green's window in 32-pixel tiles against the real scan's 0.014, the anchor of #3855). grain::READ_ALONE, 0.739, is that share, defined once in the code: the files and the Grain slider keep their numbers (Portra 800 at 25 %), the neutral film, black and white films and slides are untouched. Proven by grain's a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did, back at 0.0140; twin: each layer carrying the whole Amount lays 0.0189."
+  },
+  {
     "id": 4008,
     "type": "ui",
     "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",

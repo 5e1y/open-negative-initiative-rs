@@ -5,7 +5,7 @@
 use oni_app::render::{self, Device, Engine, Reading};
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::{Inputs, Request, conversion, film, grain, halation, layers, stages};
-use oni_render::{Projection, cpu};
+use oni_render::cpu;
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 use serde_json::{Value, json};
 use std::io::Write;
@@ -134,21 +134,13 @@ fn main() {
     };
     b.stage("halated", size(&halated), &read(g, &halated), json!({"space": "log-exposure", "layers": true}));
 
-    // The development on the sheet's curves: each layer's light through its own dye.
+    // The development on the sheet's Status M curves, the layers inhibiting one another, over the bare film's D-min: each
+    // channel's light through its own layer, the negative.
     let developed = halated.then_reading(stages::virtual_development(&k), &tables);
-    b.stage("developed", size(&developed), &read(g, &developed), json!({"space": "density", "layers": true}));
-
-    // The scan: the dyes and the orange base under the D50 lamp, seen by the D850, then its matrix to the working space.
-    let sc = st.scan.as_ref().expect("a colour negative is scanned");
-    let scan_table = g.upload(sc.projection.bands as u32, 2, &sc.table).unwrap();
-    let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
-    let sensor = developed.clone().then_reading(stages::projection(&Projection { to_working: identity, ..sc.projection }), &[Image::new(&scan_table)]);
-    b.stage("scanner-camera", size(&sensor), &read(g, &sensor), json!({"space": "linear", "lamp": film::scanner::LAMP_NAME, "sensor": film::scanner::SENSOR_NAME}));
-    let scanned = developed.then_reading(stages::projection(&sc.projection), &[Image::new(&scan_table)]);
-    b.stage("scanned", size(&scanned), &read(g, &scanned), json!({"space": "linear", "to_working": sc.projection.to_working}));
+    b.stage("developed", size(&developed), &read(g, &developed), json!({"space": "density", "layers": true, "couplers": k.couplers}));
     let grained = match grain::grain(&s, scan, scale).map(|k| k.seeded(negative.seed)) {
-        Some(k) => grain::grained_over(scanned, &healed, &k),
-        None => scanned,
+        Some(k) => grain::grained_over(developed, &healed, &k),
+        None => developed,
     };
     let grained_px = read(g, &grained);
     b.stage("grained", size(&grained), &grained_px, json!({"space": "linear", "amount": s.grain.amount, "size": s.grain.size}));
@@ -207,14 +199,12 @@ fn main() {
     let ends = g.upload(2, 1, &[[0.0, 0.0, 0.0, 1.0], [sat, sat, sat, 1.0]]).unwrap();
     let ends_exposed = Image::new(&ends).then_reading(stages::virtual_exposure(&k), &tables);
     let ends_developed = ends_exposed.then_reading(stages::virtual_development(&k), &tables);
-    let ends_camera = ends_developed.clone().then_reading(stages::projection(&Projection { to_working: identity, ..sc.projection }), &[Image::new(&scan_table)]);
-    let ends_scanned = ends_developed.clone().then_reading(stages::projection(&sc.projection), &[Image::new(&scan_table)]);
     let rgb = |v: Vec<[f32; 4]>| v.iter().map(|p| [p[0], p[1], p[2]]).collect::<Vec<_>>();
-    let (open_camera, open_working) = film::scanner::open_lamp();
+    let ends = rgb(read(g, &ends_developed));
+    // The negative is its layers' light itself: no lamp or sensor stands between, the source without film reads one.
     let negative_ends = json!({
-        "developed": {"open": [1.0, 1.0, 1.0], "ends": rgb(read(g, &ends_developed))},
-        "scanner-camera": {"open": open_camera, "ends": rgb(read(g, &ends_camera))},
-        "working": {"open": open_working, "ends": rgb(read(g, &ends_scanned))},
+        "developed": {"open": [1.0, 1.0, 1.0], "ends": ends},
+        "working": {"open": [1.0, 1.0, 1.0], "ends": ends},
         "gains": s.gains.stops,
     });
     println!("bare film and saturation: {negative_ends}");

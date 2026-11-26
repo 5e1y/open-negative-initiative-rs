@@ -22,7 +22,7 @@ pub fn slide() -> PipelineSettings {
 /// A scan noise and a virtual negative's scan.
 pub fn pixels() -> Vec<V4> {
     let stock = film::stock(VirtualStock::of("kodak-portra-800"));
-    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| stock.scanned(cpu::virtual_negative(*p, &stock.kernel, &stock.table))).collect();
+    let mut pixels: Vec<V4> = noise(17, 13, 7, 0.0, 1.5).iter().map(|p| cpu::virtual_negative(*p, &stock.kernel, &stock.table)).collect();
     pixels.extend(noise(17, 13, 8, 0.0, 1.0));
     pixels
 }
@@ -54,13 +54,13 @@ pub fn scanned(s: &PipelineSettings, scene: &[V4]) -> Vec<V4> {
     if let Some(f) = s.film() {
         let baked = film::stock(f.stock);
         let white = conversion::scene_white(s);
-        return scene.iter().map(|p| baked.scanned(cpu::virtual_negative(white.map_or(*p, |m| cpu::color_matrix(*p, &m)), &baked.kernel_at(f.exposure), &baked.table))).collect();
+        return scene.iter().map(|p| cpu::virtual_negative(white.map_or(*p, |m| cpu::color_matrix(*p, &m)), &baked.kernel_at(f.exposure), &baked.table)).collect();
     }
     if s.mode.reads_positive() {
         return scene.iter().map(|p| [p[0].min(1.0), p[1].min(1.0), p[2].min(1.0), 1.0]).collect();
     }
     let baked = film::stock(VirtualStock::of("kodak-portra-400"));
-    scene.iter().map(|p| baked.scanned(cpu::virtual_negative(*p, &baked.kernel, &baked.table))).collect()
+    scene.iter().map(|p| cpu::virtual_negative(*p, &baked.kernel, &baked.table)).collect()
 }
 
 /// The scan pixel holding densities `d` through the frame's own gains, a slide's as its own reading takes them.
