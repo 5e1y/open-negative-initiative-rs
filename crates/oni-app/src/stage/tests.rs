@@ -54,3 +54,14 @@ fn each_gift_comes_undone_in_its_own_way_and_ends_as_it_rests_opened() {
     assert_eq!(unwrap::opened(3).open, 1.0);
     assert!((0..3).all(|gift| unwrap::opened(gift).open == 0.0 && unwrap::untied(gift, unwrap::length(gift)).open == 0.0));
 }
+
+#[test]
+fn the_wordmark_tile_reads_as_ink_on_black() {
+    let (width, height, pixels) = super::tile(super::WORDMARK).expect("the wordmark decodes");
+    assert_eq!(pixels.len(), (width * height) as usize);
+    assert!(width > 8 * height, "one phrase on one row: {width}x{height}");
+    let inked = pixels.iter().filter(|&&p| p > 128).count() as f32 / pixels.len() as f32;
+    assert!((0.15..0.5).contains(&inked), "letters on black: {inked}");
+    // Twin: a tile cut short reads as nothing.
+    assert!(super::tile(&super::WORDMARK[..super::WORDMARK.len() / 2]).is_none());
+}

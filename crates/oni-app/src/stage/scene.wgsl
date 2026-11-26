@@ -37,6 +37,7 @@ struct Frame {
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var target_picture: texture_storage_2d<rgba16float, write>;
 @group(0) @binding(2) var drawn: texture_2d<f32>;
+@group(0) @binding(3) var wordmark: texture_2d<f32>;
 
 // The box's proportions, in half-widths: the lid's half-height, its overhang, the wall, the round.
 const LID: f32 = 0.2;

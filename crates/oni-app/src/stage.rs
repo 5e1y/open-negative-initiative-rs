@@ -74,6 +74,41 @@ pub struct Stage {
     passes: [wgpu::Buffer; 4],
     sampler: wgpu::Sampler,
     between: Option<Between>,
+    /// The wordmark each foil is embossed with, sent to the GPU at the first picture.
+    wordmark: Option<wgpu::TextureView>,
+}
+
+/// The wordmark's tile, made by `scripts/welcome-wordmark.py`: one phrase, white on black, repeating sideways.
+const WORDMARK: &[u8] = include_bytes!("stage/wordmark.jpg");
+
+/// A wordmark tile's size and coverage, one byte a pixel; none unless it is a grey JPEG.
+fn tile(jpeg: &[u8]) -> Option<(u32, u32, Vec<u8>)> {
+    let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    let pixels = decoder.decode().ok()?;
+    let info = decoder.info()?;
+    (info.pixel_format == jpeg_decoder::PixelFormat::L8).then(|| (u32::from(info.width), u32::from(info.height), pixels))
+}
+
+/// The wordmark as one channel of coverage; a tile that cannot be read embosses nothing.
+fn wordmark(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::TextureView {
+    use wgpu::util::DeviceExt;
+    let (width, height, pixels) = tile(WORDMARK).unwrap_or((1, 1, vec![0]));
+    let texture = device.create_texture_with_data(
+        queue,
+        &wgpu::TextureDescriptor {
+            label: Some("stage wordmark"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::R8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::LayerMajor,
+        &pixels,
+    );
+    texture.create_view(&Default::default())
 }
 
 fn piped(device: &wgpu::Device, label: &str, source: &str, entries: &[wgpu::BindGroupLayoutEntry]) -> (wgpu::ComputePipeline, wgpu::BindGroupLayout) {
@@ -119,7 +154,7 @@ impl Stage {
         let written = |format| wgpu::BindingType::StorageTexture { access: wgpu::StorageTextureAccess::WriteOnly, format, view_dimension: wgpu::TextureViewDimension::D2 };
         let sampled = wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering);
         let (float, bytes) = (wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba8Unorm);
-        let stage = [entry(0, block), entry(1, written(float)), entry(2, picture)];
+        let stage = [entry(0, block), entry(1, written(float)), entry(2, picture), entry(3, picture)];
         let (pipeline, layout) = piped(device, "stage", source, &stage);
         let finishing = [entry(0, block), entry(1, picture), entry(2, picture), entry(3, sampled), entry(4, written(float)), entry(5, written(bytes))];
         let (finishing, finish_layout) = piped(device, "stage finish", finish, &finishing);
@@ -135,6 +170,7 @@ impl Stage {
             passes: std::array::from_fn(|_| buffer(std::mem::size_of::<Finish>())),
             sampler,
             between: None,
+            wordmark: None,
         }
     }
 
@@ -168,6 +204,7 @@ impl Stage {
             let (whole, small) = (|| light(device, width, height), || light(device, quarter.0, quarter.1));
             self.between = Some(Between { size: (width, height), light: whole(), sharp: whole(), gathered: small(), spread: small() });
         }
+        let wordmark = self.wordmark.get_or_insert_with(|| wordmark(device, queue)).clone();
         let Some(between) = &self.between else { return };
         let mut frame = *frame;
         (frame.view[0], frame.view[1]) = (width as f32, height as f32);
@@ -195,6 +232,7 @@ impl Stage {
                     wgpu::BindGroupEntry { binding: 0, resource: self.blocks[pass].as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 1, resource: seen(into) },
                     wgpu::BindGroupEntry { binding: 2, resource: seen(from) },
+                    wgpu::BindGroupEntry { binding: 3, resource: seen(&wordmark) },
                 ],
             })
         };

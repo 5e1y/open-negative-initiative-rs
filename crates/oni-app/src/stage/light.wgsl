@@ -141,6 +141,47 @@ fn hologram(q: vec3<f32>, local: vec3<f32>, r: vec3<f32>, silver: vec3<f32>, wid
     return silver * (0.25 + 0.3 * crease) + max(soft, vec3<f32>(0.0)) * (0.07 + 1.5 * tight + 0.3 * wide) * (0.7 + 0.3 * crease) + spectrum(hash(spark + 2.0)) * glint * (1.0 - smoothstep(0.25, 0.5, length(fract(at * 11.0) - 0.5)));
 }
 
+// The wordmark's rows, in half-widths, and its coverage once a row spans too few pixels to read.
+const ROW: f32 = 0.11;
+const MARK_MEAN: f32 = 0.3;
+
+// The wordmark's coverage at `at`, in rows: each row slides half a phrase from the last, read between texels.
+fn words(at: vec2<f32>) -> f32 {
+    let size = vec2<i32>(textureDimensions(wordmark));
+    let along = at.x * f32(size.y) / f32(size.x) + floor(at.y) * 0.5;
+    let pixel = vec2<f32>(fract(along) * f32(size.x), (1.0 - fract(at.y)) * f32(size.y)) - 0.5;
+    let i = vec2<i32>(floor(pixel));
+    let f = pixel - floor(pixel);
+    let x0 = (i.x % size.x + size.x) % size.x;
+    let x1 = (x0 + 1) % size.x;
+    let y0 = clamp(i.y, 0, size.y - 1);
+    let y1 = clamp(i.y + 1, 0, size.y - 1);
+    let top = mix(textureLoad(wordmark, vec2<i32>(x0, y0), 0).r, textureLoad(wordmark, vec2<i32>(x1, y0), 0).r, f.x);
+    let low = mix(textureLoad(wordmark, vec2<i32>(x0, y1), 0).r, textureLoad(wordmark, vec2<i32>(x1, y1), 0).r, f.x);
+    return mix(top, low, f.y);
+}
+
+// The wordmark on the face a point lies on, upright and read left to right from outside; on the lid, in the
+// lid's own space so it rides with it. Fades to its mean where a pixel covers a good share of a row.
+fn mark_at(p: vec3<f32>, q: vec3<f32>, local: vec3<f32>, g: Gift, lid: bool) -> f32 {
+    var at = q;
+    var facing = local;
+    if lid {
+        at = in_lid(q, g);
+        let yz = turned(local.yz, -g.lid.w);
+        facing = vec3<f32>(local.x, yz.x, yz.y);
+    }
+    let a = abs(facing);
+    var on = vec2<f32>(at.x * sign(facing.z), at.y);
+    if a.x > a.z && a.x > a.y {
+        on = vec2<f32>(-at.z * sign(facing.x), at.y);
+    } else if a.y > a.x && a.y > a.z {
+        on = vec2<f32>(at.x, -at.z);
+    }
+    let footprint = length(p - frame.eye.xyz) / (frame.eye.w * frame.view.y * g.place.w * ROW);
+    return mix(words(on / ROW), MARK_MEAN, smoothstep(0.08, 0.3, footprint));
+}
+
 // A gift's surface: its foil, its ribbon or its lit inside, seen from `v` at `p`.
 fn gift_colour(p: vec3<f32>, n: vec3<f32>, v: vec3<f32>, what: f32, index: i32) -> vec3<f32> {
     let kind = what - 10.0 * f32(index);
@@ -188,11 +229,26 @@ fn gift_colour(p: vec3<f32>, n: vec3<f32>, v: vec3<f32>, what: f32, index: i32) 
     let finest = noise(vec2<f32>(q.y * 3200.0, (q.x + q.z) * 9.0)) - 0.5;
     let mirrored = brushed(r, n, lines * 0.04 + fine * 0.035 + finest * 0.03, rough);
     let direct = max(dot(n, key), 0.0) * seen * frame.light.x;
-    var t = 0.15 * frame.light.y + mirrored * 2.0 + direct * 0.07 + rim * 0.4 * frame.light.z;
+    let lit = 0.15 * frame.light.y + direct * 0.07 + rim * 0.4 * frame.light.z;
+    var t = lit + mirrored * 2.0;
+    // The wordmark is embossed: its letters a polished mirror leaning up a hair, so they light as a reflection
+    // crosses them and darken past it; a hint on the small foils, plain on gold, a second hologram on the mystery.
+    var shows = array<f32, 4>(0.35, 0.35, 0.65, 1.0);
+    let mark = mark_at(p, q, local, g, kind == LIDFOIL) * shows[metal] * step(kind, LIDFOIL) * (1.0 - step(abs(kind - INSIDE), 0.5));
+    if mark > 0.004 && metal < 3 {
+        let polished = studio(normalize(r + vec3<f32>(0.0, 0.09, 0.0)), 0.04);
+        t = mix(t, lit + polished * 2.4, mark);
+    }
     t *= 0.35 + 0.65 * air;
     var colour = foil(min(metal, 2), t);
     if metal == 3 {
         colour = hologram(q, local, r, foil(0, t), studio(r, 0.55), mirrored);
+        if mark > 0.004 {
+            // The letters' own grating, finer and askew to the facets', so their inks run against the foil's.
+            let ink = spectrum(dot(r, normalize(vec3<f32>(-0.4, 0.85, 0.3))) * 3.4 + q.y * 0.35 + frame.view.z * 0.03);
+            let letters = ink * (0.45 + 2.4 * studio(r, 0.3) + 0.6 * mirrored) * (0.35 + 0.65 * air);
+            colour = mix(colour, letters, mark * 0.8);
+        }
         if kind == INSIDE {
             // A fallen wall's inner face: the same foil, washed by the light that stands in its middle.
             colour = colour * 1.3 + beam_colour(metal, q.x * 0.2 + q.z * 0.13) * g.tie.w * 0.5 * exp(-length(q.xz) * 0.45);

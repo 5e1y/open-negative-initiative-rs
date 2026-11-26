@@ -13978,5 +13978,12 @@
     "title": "The welcome after the owner's first try: no ribbon and a calmer opening, words that say what the person gets, words centred above the keys, and the message as the last thing before the app",
     "status": "done",
     "detail": "No ribbon or bow any more: a closed box, light leaking under its lid, then the lid's own way off (the silver case, the copper and gold lids lifting level, the mystery unfolding); each opening 2.2 to 3.6 s. No sentence reassures about what ONI does not do, none tells the history of its making: the Collection is 'Import your photo kit into ONI, with The Lens DB', the mystery gift 'Your Wrapped is here', one sentence each. A screen's words are centred in the room above the keys and never run under them. The message leaves the scroll: it comes once the last gift is passed, or as the Wrapped opened from its gift closes (the Wrapped now opens over the welcome), and says why ONI is free, the call to tell friends, and #madewithoni as large as the call; the signature closes it. Checks: stage unit tests (no ribbon at any time), window checks welcome_reel (the Wrapped's close leads to the message), welcome_card, sheet_stack, help, sheets, migration, wrapped, design_system; catalogue; clippy on oni-app."
+  },
+  {
+    "id": 3962,
+    "type": "feature",
+    "title": "The welcome's gifts carry the wordmark: Open Negative Initiative embossed in every foil, a hint on the small ones, plain on gold, a second hologram on the mystery",
+    "status": "done",
+    "detail": "One row of the phrase in Zalando Sans Expanded Black (`scripts/welcome-wordmark.py`, a 17 KB grey JPEG built into the binary) repeats over each face, each row sliding half a phrase, upright and read from outside, riding with the lid. Its letters are a polished mirror leaning up a hair in the brushing, so they light as a reflection crosses them: 0.35 of that on silver and copper, 0.65 on gold; on the holographic gift they carry their own grating, finer and askew to the facets'. Where a pixel covers a good share of a row the mark fades to its mean, so a small gift shows no moire. Stills regenerated. Checks: stage unit tests (the tile decodes as ink on black, twin: a tile cut short reads as nothing), clippy on oni-app."
   }
 ]

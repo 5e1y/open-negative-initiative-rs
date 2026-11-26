@@ -7,6 +7,7 @@ raw="${1:?the demo RAW}"
 out="crates/oni-ui/ui/welcome"
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
+python3 scripts/welcome-wordmark.py
 cargo build -p oni-app --example welcome_stills --example welcome_stage
 # The stocks in the order of `STOCKS` in crates/oni-app/src/app/help/welcome.rs.
 target/debug/examples/welcome_stills "$raw" "$scratch" 0.68 0.22 kodak-ektar-100 fujifilm-velvia-50 kodak-tri-x-400
