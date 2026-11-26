@@ -153,9 +153,9 @@ Text { text: @tr("Shared by the {} photos of this roll.", n); }"#;
 
     #[test]
     fn every_scene_compiles_in_every_language() {
-        let mut scenes: Vec<_> = [crate::film::scenes(), crate::welcome::scenes()]
-            .iter()
-            .flat_map(|d| std::fs::read_dir(d).unwrap().map(|e| e.unwrap().path()))
+        let mut scenes: Vec<_> = std::fs::read_dir(crate::film::scenes())
+            .unwrap()
+            .map(|e| e.unwrap().path())
             .filter(|p| p.extension().is_some_and(|e| e == "slint"))
             .collect();
         scenes.sort();

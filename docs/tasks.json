@@ -14118,5 +14118,12 @@
     "title": "The welcome's controller in one file a part: its lifecycle, its screens and its picture, each under the workspace's ceiling",
     "status": "done",
     "detail": "`app/help/welcome.rs` had grown to 402 lines, past the 400 the architecture check allows: its screens (which gift each shows, the scroll's places, the gifts kept, the state the clock moves) go to `welcome/screens.rs`, its picture (the stage drawn, one picture in flight, the screen's film) to `welcome/picture.rs`, its lifecycle (opened, replayed, closed, held by a check) stays; 183, 138 and 115 lines, nothing else changed. The welcome's checks' lines past 200 characters are broken (welcome_card, welcome_films). Checks: oni-core architecture's file ceiling for these files; help, stage and reels unit tests; window checks welcome_card (both), welcome_reel (both), help; clippy."
+  },
+  {
+    "id": 3970,
+    "type": "chore",
+    "title": "The 1.x welcome's staged films leave oni-demos: nothing of the 2.0 welcome reads them",
+    "status": "done",
+    "detail": "The welcome 2.0 plays films composed in `crates/oni-app/welcome-motion`; the staged films of the 1.x horizontal card (the De-dust and interface scenes, `src/welcome/`, the `welcome` binary, the `welcome_dedust` and `dedust_assets` examples, their tests, `scripts/welcome`, and `wipe.rs`, which only they used) had no reader left and their scene no longer compiled since its stage's tokens went with the card. No other demo, release script, README, document or embedded resource read what they made; the help cards' demos keep every shared module. 15 files, 2264 lines, 112 KB. Checks: oni-demos tests (every remaining scene compiles in every language), oni-core architecture, clippy on oni-demos."
   }
 ]

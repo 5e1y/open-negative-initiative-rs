@@ -10,8 +10,6 @@ pub mod plot;
 pub mod sheet;
 pub mod stage;
 pub mod track;
-pub mod wipe;
-pub mod welcome;
 pub mod words;
 
 use std::path::{Path, PathBuf};
