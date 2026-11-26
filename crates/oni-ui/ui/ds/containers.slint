@@ -1,6 +1,6 @@
 // The containers: a block's section, the help mark, the sheet and its footer, the question a sheet
 // asks; the notice that passes and the banner that stays are `notices.slint`'s.
-import { Colour, Space, Motion, Radius, ButtonStyle, SectionStyle, SheetStyle } from "theme.slint";
+import { Colour, Space, Motion, ButtonStyle, SectionStyle, SheetStyle } from "theme.slint";
 import { Label, Engraved, Divider, TextRole, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, TextField } from "controls.slint";
@@ -183,9 +183,8 @@ export component Sheet inherits Rectangle {
     // Zero fits the card to its content, which scrolls past the window's room (`WelcomeSheet`'s
     // fit); else the card is that tall at most, its content laid in the height it shows.
     in property <length> card-height;
-    // Edge to edge: the content carries its own padding, as the welcome's photo touches the card.
+    // Edge to edge, the content carrying its own padding; `full`, the whole window, as the release's welcome.
     in property <bool> bleed;
-    // The whole window, edge to edge: a release told once, which deserves the room.
     in property <bool> full;
     // The step between the content's groups; a notice's are a wider step apart.
     in property <Gap> gap: Gap.m;
@@ -245,7 +244,6 @@ export component Sheet inherits Rectangle {
         }
         card := Raised {
             lift: Lift.sheet;
-            radius: root.full ? 0px : Radius.card;
             y: (root.height - self.height) * SheetStyle.rest + (1 - root.come) * SheetStyle.rise;
             opacity: root.come;
             width: root.full ? root.width : min(root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width, root.width - 2 * SheetStyle.margin);
