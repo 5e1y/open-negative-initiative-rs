@@ -41,7 +41,7 @@ fn every_shipped_file_reads_and_round_trips() {
         assert_eq!(format!("{}.json", file.key()), name, "a file is named by its key");
         count += 1;
     }
-    assert_eq!(count, 114, "103 film stocks and 11 papers, two of them reading films alone");
+    assert_eq!(count, 112, "103 film stocks and 9 papers");
     // Twin: a field dropped on the way is seen.
     let file = file::read(shipped_json().next().unwrap().1).unwrap();
     let mut lost = value(file.to_json().as_bytes());
@@ -75,7 +75,7 @@ fn a_broken_file_is_refused_with_why() {
 #[test]
 fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (files, canisters) = shipped();
-    assert_eq!((files.len(), canisters.len()), (114, 41), "every shipped file reads");
+    assert_eq!((files.len(), canisters.len()), (112, 41), "every shipped file reads");
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();
@@ -163,18 +163,18 @@ fn a_file_says_what_it_describes() {
     assert!(file::read(both.as_bytes()).is_err());
 }
 
-/// A digital photo on a colour film its menu offers no more reads on the menu's first; an offered film, a black and white
-/// one and a key no file defines stay as stored.
+/// Every shipped film is offered, each colour negative stating its couplers as the scanner reads it uncoupled: a digital
+/// photo on any, a black and white one or a key no file defines stays as stored.
 #[test]
-fn a_photo_on_a_film_offered_no_more_reads_on_the_first_offered() {
+fn every_shipped_film_is_offered_and_a_photo_on_one_stays() {
     use crate::{ConversionMode, PipelineSettings, VirtualStock};
     let on = |key: &'static str| PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of(key));
-    let first = super::current().films().iter().filter_map(|k| k.film).find(|v| v.entry().offered()).expect("one offered");
-    let moved = on("kodak-vision3-50d").on_offered_film();
-    assert!(!VirtualStock::of("kodak-vision3-50d").entry().offered());
-    assert_eq!(moved, on(first.key()), "on {first:?} whole, its gains, windows and dyes");
-    // Twins: an offered film, a black and white one and a key no file defines keep their settings.
-    for key in ["kodak-portra-400", "ilford-hp5-plus"] {
+    assert!(VirtualStock::all().into_iter().all(|v| v.entry().offered()), "every shipped film offered");
+    // Twin: a colour film whose file states no couplers is offered no more.
+    let mut unstated = VirtualStock::of("kodak-vision3-50d").entry();
+    unstated.couplers = None;
+    assert!(!unstated.offered());
+    for key in ["kodak-vision3-50d", "kodak-portra-400", "ilford-hp5-plus"] {
         assert_eq!(on(key).on_offered_film(), on(key), "{key}");
     }
     let gone = PipelineSettings { virtual_film: Some(crate::VirtualFilm { stock: VirtualStock::of("lut-gone"), exposure: 0.0 }), ..on("kodak-portra-400") };

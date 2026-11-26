@@ -98,14 +98,16 @@ fn on_face(bytes: &[u8], face: &str) -> PipelineSettings {
 
 #[test]
 fn every_photo_prints_its_machine_s_look_as_format_45_did_on_the_cpu() {
-    let (mut scanned, mut pro) = (0, 0);
+    let (mut scanned, mut pro, mut moved) = (0, 0, Vec::new());
     for (name, bytes, prints) in documents() {
         let s = read(&bytes);
         let print = |t: &PipelineSettings| fingerprint(&cpu_print(&scene(), t));
         let stored: Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(stored["settings"]["face"] == "scanner", prints.is_some(), "{name}: a fingerprint for a Scanner photo alone");
         if let Some([_, want]) = prints {
-            assert_eq!(print(&s), want, "{name} moved");
+            if print(&s) != want {
+                moved.push(format!("{name}: {} for {want}", print(&s)));
+            }
             // Twins: a photo the Scanner face rendered, read as Pro's or migrated without its legacy print, moves.
             scanned += 1;
             assert_ne!(print(&on_face(&bytes, "pro")), want, "{name} read as Pro's");
@@ -119,6 +121,7 @@ fn every_photo_prints_its_machine_s_look_as_format_45_did_on_the_cpu() {
             assert_ne!(print(&on_face(&bytes, "scanner")), print(&s), "{name} read as the Scanner's");
         }
     }
+    assert!(moved.is_empty(), "moved on the CPU: {moved:#?}");
     println!("{scanned} photos the Scanner face rendered and {pro} Pro rendered print to the bit");
     assert!(scanned >= 20 && pro >= 20, "{scanned} {pro}");
 }
@@ -136,12 +139,16 @@ fn every_photo_renders_whole_as_format_45_did_on_the_gpu() {
         let image = Pipeline::new().image(&mut g, &source, s, &Request::default(), &Inputs::default()).unwrap();
         fingerprint(&g.render(&image, image.extent(), None).unwrap())
     };
+    let mut moved = Vec::new();
     for (name, bytes, [want, _]) in documents().into_iter().filter_map(|(n, b, p)| Some((n, b, p?))) {
         let s = read(&bytes);
-        assert_eq!(render(&s), want, "{name} moved");
+        if render(&s) != want {
+            moved.push(format!("{name}: {} for {want}", render(&s)));
+        }
         // Twin: off its legacy print, laid no more, a Scanner photo moves.
         if let Some(l) = s.legacy_print {
             assert_ne!(render(&PipelineSettings { legacy_print: Some(oni_settings::LegacyPrint { laid: false, ..l }), ..s.clone() }), want, "{name}");
         }
     }
+    assert!(moved.is_empty(), "moved on the GPU: {moved:#?}");
 }

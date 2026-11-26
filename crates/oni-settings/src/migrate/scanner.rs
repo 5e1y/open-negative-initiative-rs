@@ -77,3 +77,29 @@ pub fn caught_up(version: i64, settings: PipelineSettings) -> PipelineSettings {
         _ => settings,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ConversionMode;
+
+    #[test]
+    fn a_digital_photo_lands_on_the_scanners_reading_its_hand_kept() {
+        let stock = VirtualStock::of("kodak-portra-800");
+        let mut photo = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
+        let (was, now) = (formerly_read(stock), stock.reference());
+        assert!((was.stops[0] - now.stops[0]).abs() > 0.05, "the scanner reads the orange base the paper's gaze laid on one");
+        photo.gains.stops = was.stops.map(|v| v + 0.25);
+        photo.levels = was.levels();
+        photo.levels.green.white += 0.03;
+        let landed = caught_up(UNIVERSAL_SCANNER_VERSION - 1, photo.clone());
+        assert!((0..3).all(|c| (landed.gains.stops[c] - (now.stops[c] + 0.25)).abs() < 1e-5), "{:?}", landed.gains.stops);
+        assert!((landed.levels.green.white - (now.levels().green.white + 0.03)).abs() < 1e-5, "{:?}", landed.levels.green);
+        // Twins: a photo of this format stays where it stands, a black and white film and a scan move nothing.
+        assert_eq!(caught_up(UNIVERSAL_SCANNER_VERSION, photo.clone()), photo);
+        let silver = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("ilford-hp5-plus"));
+        assert_eq!(caught_up(UNIVERSAL_SCANNER_VERSION - 1, silver.clone()), silver);
+        let scan = PipelineSettings::rest(ConversionMode::Negative, true);
+        assert_eq!(caught_up(UNIVERSAL_SCANNER_VERSION - 1, scan.clone()), scan);
+    }
+}

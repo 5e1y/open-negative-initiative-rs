@@ -7,9 +7,9 @@ use oni_render::{Grain, GrainedNegative};
 use oni_settings::axis::density_axis;
 use oni_settings::{PipelineSettings, VirtualFilm, VirtualStock};
 
-/// A grain's deviation at Amount's top, in shares of its layer's window: four times the rest's, 0.0364, which lays a
-/// real Portra 800 scan's grain, 0.014 of green's window in 32-pixel tiles of a 47 Mpx frame, at 30 µm.
-pub const GRAIN_TOP: f32 = 0.1454;
+/// A grain's deviation at Amount's top, in shares of its layer's window: about four times Portra 800's rest, 0.0398, which
+/// lays a real Portra 800 scan's grain through the scanner, 0.014 of green's window in 32-pixel tiles of 47 Mpx, at 30 µm.
+pub const GRAIN_TOP: f32 = 0.1563;
 /// Each layer's grain against green's: red's emulsion is the finer.
 pub const LAYER_GRAIN: [f32; 3] = [0.85, 1.0, 1.0];
 /// Each channel's mix of `stock`'s layers' deviations, as its own reading sees the dyes, each row summing to one so a

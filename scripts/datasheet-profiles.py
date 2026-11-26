@@ -843,10 +843,10 @@ HALATION_WIDTH = 200.0
 LEVELS = json.loads((Path(__file__).resolve().parent / "halation-levels.json").read_text())
 # A film's grain by the intensity and size a survey of photographers' reports gives it (`scripts/grain-levels.json`, 1 to 5
 # each, sources kept): each grain's deviation in shares of its window, written as Grain's Amount over the pipeline's
-# `grain::GRAIN_TOP`, 0.1454; and a grain's width in micrometres. A film out of the survey keeps a new photo's grain.
-GRAIN_DEVIATION = {1: 0.016, 2: 0.025, 3: 0.037, 4: 0.055, 5: 0.083}
+# `grain::GRAIN_TOP`, 0.1563; and a grain's width in micrometres. A film out of the survey keeps a new photo's grain.
+GRAIN_DEVIATION = {1: 0.0172, 2: 0.0269, 3: 0.0398, 4: 0.0591, 5: 0.0892}
 GRAIN_SIZE = {1: 19.0, 2: 24.0, 3: 30.0, 4: 38.0, 5: 48.0}
-GRAIN_TOP = 0.1454
+GRAIN_TOP = 0.1563
 GRAIN_LEVELS = {g["key"]: g for g in json.loads((Path(__file__).resolve().parent / "grain-levels.json").read_text())}
 # The owner's corrections of the survey's intensities for Kodak's colour negatives, by their Print Grain Index.
 GRAIN_PGI = {"kodak-ektar100": 1, "kodak-portra160": 1, "kodak-portra160nc": 1, "kodak-portra160vc": 1,

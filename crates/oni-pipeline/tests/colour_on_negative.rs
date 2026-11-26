@@ -129,7 +129,7 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         // A grey is read within a thousandth of a log of neutral, which the spread doubles.
         assert!(off(&n) < 4e-3 && off(&redder) > 2e-2, "{label}: the grey's negative moved by {}, {}", off(&n), off(&redder));
         // On a paper whose print is its dyes' own light, its pick and white on their anchors, every colour at the track's ends lies
-        // within what its dyes print; the former print-side Saturation, the twin, laid colours past them.
+        // within what its dyes print; the former print-side Saturation pushed twice as far, the twin, laid colours past them.
         let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && p.white_anchor == p.white && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
         // The Frontier prints its fitted table, not its dyes' own light.
         let fitted = s.paper().and_then(|p| oni_settings::stocks::current().paper(p).map(|e| matches!(e.print, oni_settings::stocks::Print::Frontier(_))));
@@ -140,8 +140,8 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
                 let past = at(t).iter().map(|v| past_the_dyes(&p, *v)).fold(0.0, f64::max);
                 assert!(past < 1e-3, "{label}, Saturation {t}: {past} of density past the paper's dyes");
             }
-            let former = rest.iter().map(|v| past_the_dyes(&p, on_the_print(*v, 1.0))).fold(0.0, f64::max);
-            println!("    at +100 % the former Saturation laid colours {former:.3} of density past the paper's dyes");
+            let former = rest.iter().map(|v| past_the_dyes(&p, on_the_print(*v, 2.0))).fold(0.0, f64::max);
+            println!("    at twice the track's end the former Saturation laid colours {former:.3} of density past the paper's dyes");
             assert!(former > 1e-2, "{label}: {former}");
         }
     }

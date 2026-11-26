@@ -262,7 +262,7 @@ mod tests {
         assert!(!listed.contains(&"agfaphoto-apx") && virtual_stock("agfaphoto-apx").is_none());
         assert!(by_brand(None).into_iter().flat_map(|(_, l)| l).count() > listed.len());
         // Every colour negative the scanner reads states its couplers and is offered, a black and white one too.
-        assert!(!listed.contains(&"kodak-vision3-50d") && listed.contains(&"fujifilm-160nc") && listed.contains(&"kodak-portra400") && listed.contains(&"ilford-hp5"));
+        assert!(listed.contains(&"kodak-vision3-50d") && listed.contains(&"fujifilm-160nc") && listed.contains(&"kodak-portra400") && listed.contains(&"ilford-hp5"));
     }
 
     #[test]

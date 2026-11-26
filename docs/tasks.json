@@ -13523,5 +13523,12 @@
     "title": "CLAUDE.md: a digital photo's virtual film is read by ONI's one scanner, a paper only a print over it; each layer's grain mixed by the film's own reading",
     "status": "done",
     "detail": "The virtual film paragraph names the D850 under a D50 lamp decoded as a scanned RAW, the filtration derived through it and no paper as reader, in place of the 1931 observer and the reference-fitted couplers; the grain paragraph drops GRAIN_WINDOW for each layer's grains mixed by the scanner's or the projector's gaze, and a film's file gives its grain's amount and size."
+  },
+  {
+    "id": 3855,
+    "type": "test",
+    "title": "The full check green after the scanner but for roll #8's Swift state; the grain re-anchored on the real scan through the scanner",
+    "status": "done",
+    "detail": "Grain: the real Portra 800 scan's 0.014 of green's window is now met on Portra 800 at its own rest through the scanner's gaze (0.0130 before), GRAIN_TOP 0.1563 and the survey's deviations a factor 1.075 over, each film's Amount unchanged. Tests brought to the scanner: the stocks' counts (112 files, 9 papers), every shipped film offered, paper_gaze landing on format 78's references and migrate::scanner's own test, the corpus's newer file at format 80 and its two digital goldens, the legacy prints' two digital cases re-pinned, the couplers' grey checked at no filtration, the Saturation twin pushed twice as far. cameraChannels listed among the excluded fields (missed by #3810). Left failing, as before: oni-library roll8, oni-measure roll_prepare, oni-pipeline adversarial and oni_app's roll_8 library test, which wait for roll #8's Swift state. A worktree on the T7 must lose its ._ files before a check: macOS writes them on exFAT and the source walks read them."
   }
 ]

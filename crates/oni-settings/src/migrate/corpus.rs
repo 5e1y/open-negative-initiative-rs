@@ -145,7 +145,7 @@ fn every_broken_or_newer_corpus_file_is_refused_with_its_reason() {
         let (_, outcome, _) = migrated(&dir, &path, &source, &facts(&path));
         match outcome {
             Err(Refusal::Unreadable(_)) => seen.push("unreadable"),
-            Err(Refusal::Newer(79)) => seen.push("newer"),
+            Err(Refusal::Newer(80)) => seen.push("newer"),
             Ok(Outcome::Migrated { .. }) => seen.push("migrated"),
             other => panic!("{}: {other:?}", path.display()),
         }

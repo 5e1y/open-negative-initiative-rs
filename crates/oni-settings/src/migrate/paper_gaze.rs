@@ -82,7 +82,7 @@ mod tests {
     fn a_digital_photo_lands_on_its_papers_reading_its_hand_kept() {
         let stock = VirtualStock::of("kodak-portra-800");
         let mut photo = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
-        let (was, now) = (camera_scanned(stock), stock.reference());
+        let (was, now) = (camera_scanned(stock), super::super::scanner::formerly_read(stock));
         assert!(was.stops[0] < -0.5 && now.stops[0].abs() < 1e-3, "the camera saw the orange base, the paper's gaze reads the bare film on one");
         photo.gains.stops = was.stops.map(|v| v + 0.25);
         photo.levels = was.levels();
@@ -93,7 +93,10 @@ mod tests {
         assert!((landed.levels.red.black - now.levels().red.black).abs() < 1e-5, "{:?}", landed.levels.red);
         // Twins: a photo of this format stays where it stands, a film no paper reads and a scan move nothing.
         assert_eq!(caught_up(PAPER_GAZE_VERSION, photo.clone()), photo);
-        let cine = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-vision3-50d"));
+        let cine_stock = VirtualStock::of("kodak-vision3-50d");
+        let mut cine = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(cine_stock);
+        let format_78 = super::super::scanner::formerly_read(cine_stock);
+        (cine.gains.stops, cine.levels) = (format_78.stops, format_78.levels());
         assert_eq!(caught_up(PAPER_GAZE_VERSION - 1, cine.clone()), cine);
         let scan = PipelineSettings::rest(ConversionMode::Negative, true);
         assert_eq!(caught_up(PAPER_GAZE_VERSION - 1, scan.clone()), scan);

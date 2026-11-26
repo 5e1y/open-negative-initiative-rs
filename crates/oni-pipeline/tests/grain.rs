@@ -25,6 +25,12 @@ fn grainy(amount: f32) -> PipelineSettings {
     s
 }
 
+fn with_amount(s: &PipelineSettings, amount: f32) -> PipelineSettings {
+    let mut out = s.clone();
+    out.grain.amount = amount;
+    out
+}
+
 fn flat(g: &mut Graph, w: u32, h: u32, value: V4) -> Image {
     Image::new(&g.upload(w, h, &vec![value; (w * h) as usize]).unwrap())
 }
@@ -115,9 +121,10 @@ fn a_reduced_render_reads_the_full_grain_averaged() {
 }
 
 #[test]
-fn a_photo_at_rest_grains_as_a_real_portra_800_scan_did() {
-    // A 47 Mpx frame's grid, the scan's: green's share of its window in 32-pixel tiles.
-    let s = PipelineSettings::rest(ConversionMode::Digital, true);
+fn a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did() {
+    // A 47 Mpx frame's grid, the scan's: green's share of its window in 32-pixel tiles, on the film the scan was of, at its
+    // own grain, read by the scanner.
+    let s = PipelineSettings::rest(ConversionMode::Digital, true).picking(VirtualStock::of("kodak-portra-800"));
     let k = grain::grain(&s, Rect::new(0, 0, 8368, 5584), 1.0).expect("a photo opens grained");
     let n = k.negative.expect("on its negative");
     let side = 256usize;
@@ -127,10 +134,10 @@ fn a_photo_at_rest_grains_as_a_real_portra_800_scan_did() {
         (0..side * side).map(|i| cpu::grain(&grid, [(i % side) as f32 + 0.5, (i / side) as f32 + 0.5], k)[1]).map(|v| -((v + n.veil) / n.bare[1]).log10() / n.window[1]).collect()
     };
     let sd = tiled(&share(&k), side, 32);
-    println!("at rest, 30 µm on a 47 Mpx grid: {sd:.4} of green's window in 32-pixel tiles; each grain's deviation {:.4}", k.deviation[1]);
+    println!("Portra 800 at its rest, 30 µm on a 47 Mpx grid: {sd:.5} of green's window in 32-pixel tiles; each grain's deviation {:.4}", k.deviation[1]);
     assert!((sd / 0.014 - 1.0).abs() < 0.08, "{sd} against the scan's 0.014");
-    // Twin: Amount's top lays four times the scan's grain.
-    let top = grain::grain(&grainy(1.0), Rect::new(0, 0, 8368, 5584), 1.0).unwrap();
+    // Twin: Amount's top on the same film lays four times the scan's grain.
+    let top = grain::grain(&with_amount(&s, 1.0), Rect::new(0, 0, 8368, 5584), 1.0).unwrap();
     assert!((tiled(&share(&top), side, 32) / sd - 4.0).abs() < 0.2);
 }
 
