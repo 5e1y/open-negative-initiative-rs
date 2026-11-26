@@ -49,13 +49,12 @@ impl Engine {
     fn composed(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Image, Option<Rect>, Option<Placed>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        // A digital photo is read off its scan, made once while its film's settings hold, as a scanned negative is.
         let digital = settings.mode.is_digital();
-        let (preview, scan_full) = match digital {
-            true => self.scanned(negative, settings, view.and_then(|v| v.full.as_ref()))?,
-            false => (negative.preview.clone(), view.and_then(|v| v.full.clone())),
-        };
         let Some(view) = view else {
+            let preview = match digital {
+                true => self.scanned(negative, settings, None)?.0,
+                false => negative.preview.clone(),
+            };
             let image = match digital {
                 true => self.pipeline.on_scan(&mut self.graph, &preview, settings, &request),
                 false => {
@@ -74,6 +73,13 @@ impl Engine {
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
         let placement = vp.placement(full, view.size);
+        let lighter = lighter(view.coarse, view.size);
+        // A digital photo is read off its scan, made once while its film's settings hold, as a scanned negative is;
+        // its full scan only once the view asks past the preview's resolution, as at 100 %.
+        let (preview, scan_full) = match digital {
+            true => self.scanned(negative, settings, view.full.as_ref().filter(|_| scale * lighter > ratio))?,
+            false => (negative.preview.clone(), view.full.clone()),
+        };
         let (base, base_ratio) = match &scan_full {
             Some(f) => (f.clone(), 1.0),
             None => (preview.clone(), ratio),
@@ -82,7 +88,6 @@ impl Engine {
         let long = e.w.max(e.h) as usize;
         // While a hand moves the view the region is rendered at most GESTURE_PIXELS and shown stretched,
         // so a 5K canvas costs a gesture what a small window does; the sharp render follows the stop.
-        let lighter = lighter(view.coarse, view.size);
         let side = ((long as f64 * (scale * lighter / base_ratio).min(1.0)).round() as usize).max(1);
         // Reduced on the way in, so the chain pulls only the region's share of the level it reads; a
         // reduction the canvas nearly holds whole is kept, so a notch at fit reads it ready.
@@ -134,8 +139,8 @@ impl Engine {
     }
 
     /// A digital photo's scan from its preview, and from its full frame when one is given; each made once while the
-    /// film's settings hold, in half floats as a decode is. Under a hand holding a film's setting the preview's scan
-    /// stands in for the full one, marked provisional, so the gesture renders at the preview's cost.
+    /// film's settings hold, in half floats as a decode is. While the scan is held back the preview's stands in for a
+    /// full one not yet made, marked provisional, so a gesture or a film lit in its menu renders at the preview's cost.
     fn scanned(&mut self, negative: &Negative, settings: &PipelineSettings, full: Option<&Source>) -> Result<(Source, Option<Source>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
@@ -145,6 +150,8 @@ impl Engine {
             _ => {
                 let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
                 self.fitted.scan = Some((image.key(), made.clone()));
+                // A film's settings moved: the full scan kept is no longer this film's.
+                self.fitted.full_scan = None;
                 made
             }
         };
@@ -166,7 +173,7 @@ impl Engine {
         Ok((preview, Some(made)))
     }
 
-    /// Whether a hand holds the setting the next render follows: a digital photo's full scan then waits for its rest.
+    /// Whether the next render holds a digital photo's full scan back for a rest; a render's own when none runs it.
     pub fn hold_scan(&mut self, held: bool) {
         self.fitted.held = held;
     }

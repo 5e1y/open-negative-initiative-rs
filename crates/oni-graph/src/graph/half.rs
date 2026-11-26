@@ -3,17 +3,16 @@
 use super::*;
 
 const SHADER: &str = "
-struct Offset { x: i32, y: i32, pad: vec2<i32> }
-@group(0) @binding(0) var<uniform> offset: Offset;
+struct Band { read: vec2<i32>, write: vec2<i32>, size: vec2<i32>, pad: vec2<i32> }
+@group(0) @binding(0) var<uniform> band: Band;
 @group(0) @binding(1) var input: texture_2d<f32>;
 @group(0) @binding(2) var output: texture_storage_2d<rgba16float, write>;
 
 @compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let size = textureDimensions(output);
-    if (id.x >= size.x || id.y >= size.y) { return; }
     let p = vec2<i32>(id.xy);
-    textureStore(output, p, textureLoad(input, p + vec2<i32>(offset.x, offset.y), 0));
+    if (p.x >= band.size.x || p.y >= band.size.y) { return; }
+    textureStore(output, p + band.write, textureLoad(input, p + band.read, 0));
 }
 ";
 
@@ -54,46 +53,61 @@ impl Packer {
 }
 
 impl Graph {
-    /// `materialise` held in half floats: what a decode's reductions keep, at half the memory. A render
-    /// past one texture stays in full floats.
+    /// `materialise` held in half floats: what a decode's reductions keep, at half the memory. It is evaluated in bands
+    /// of at most `BAND_PIXELS`, so a full frame's chain holds a band's textures, not the frame's; past one texture it
+    /// stays in full floats.
     pub fn materialise_half(&mut self, image: &Image) -> Result<Source, Error> {
         let region = image.extent();
         let image = image.readable();
-        let plan = Plan::new(&image, region, None)?;
-        if !self.fits(&plan) {
-            drop(plan);
-            return self.materialise(&image);
+        let rows = ((BAND_PIXELS / u64::from(region.w.max(1))) as u32).clamp(1, region.h.max(1));
+        let bands: Vec<Rect> = (0..region.h.div_ceil(rows)).map(|i| Rect::new(region.x, region.y + (i * rows) as i32, region.w, rows.min(region.h - i * rows))).collect();
+        let mut plans = Vec::with_capacity(bands.len());
+        for band in &bands {
+            let plan = Plan::new(&image, *band, None)?;
+            if !self.fits(&plan) {
+                drop(plans);
+                drop(plan);
+                return self.materialise(&image);
+            }
+            plans.push(plan);
         }
-        let mut encoder = self.device.create_command_encoder(&Default::default());
-        let (texture, rect) = self.evaluate(&mut encoder, plan, None, false);
         let half = self.pool.create_owned(region.w, region.h, Precision::Half);
-        let offset = self.uniform(bytemuck::bytes_of(&[region.x - rect.x, region.y - rect.y, 0, 0]));
-        let packer = self.packer.get_or_insert_with(|| Packer::new(&self.device));
-        let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("pack"),
-            layout: &packer.layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &self.uniforms.buffer, offset: offset.0, size: wgpu::BufferSize::new(offset.1) }),
-                },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(texture.view()) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(half.view()) },
-            ],
-        });
-        {
-            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("pack"), timestamp_writes: None });
-            pass.set_pipeline(&packer.pipeline);
-            pass.set_bind_group(0, &group, &[]);
-            pass.dispatch_workgroups(region.w.div_ceil(8), region.h.div_ceil(8), 1);
+        for (band, plan) in bands.into_iter().zip(plans) {
+            let mut encoder = self.device.create_command_encoder(&Default::default());
+            let (texture, rect) = self.evaluate(&mut encoder, plan, None, false);
+            let at = [band.x - rect.x, band.y - rect.y, band.x - region.x, band.y - region.y, band.w as i32, band.h as i32, 0, 0];
+            let uniform = self.uniform(bytemuck::bytes_of(&at));
+            let packer = self.packer.get_or_insert_with(|| Packer::new(&self.device));
+            let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("pack"),
+                layout: &packer.layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &self.uniforms.buffer, offset: uniform.0, size: wgpu::BufferSize::new(uniform.1) }),
+                    },
+                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(texture.view()) },
+                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(half.view()) },
+                ],
+            });
+            {
+                let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("pack"), timestamp_writes: None });
+                pass.set_pipeline(&packer.pipeline);
+                pass.set_bind_group(0, &group, &[]);
+                pass.dispatch_workgroups(band.w.div_ceil(8), band.h.div_ceil(8), 1);
+            }
+            self.submit(encoder);
+            self.pool.release(texture);
+            self.ended();
         }
-        self.submit(encoder);
-        self.pool.release(texture);
-        self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
         Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, half)] })))
     }
 }
+
+/// The pixels a band of a half-float render holds at most: a 24 MP frame's chain in six bands, each texture about
+/// 64 MB in full floats rather than 380.
+const BAND_PIXELS: u64 = 4_000_000;
 
 impl Image {
     /// The image itself, or past a source in half floats a pass that reads it into full floats, which

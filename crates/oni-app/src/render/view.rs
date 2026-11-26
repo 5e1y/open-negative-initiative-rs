@@ -52,7 +52,7 @@ pub trait Renderer: Send {
     /// Returns once the GPU has run all this renderer handed it; one with no GPU of its own waits on none.
     fn ran(&mut self) {}
 
-    /// Whether a hand holds the setting the next render follows, which waits a digital photo's full scan for its rest.
+    /// Whether the next render holds a digital photo's full scan back for a rest, as every render but a rest's does.
     fn hold_scan(&mut self, _held: bool) {}
 
     /// Whether the last render stood a digital photo's preview scan in for the full one it waits for.

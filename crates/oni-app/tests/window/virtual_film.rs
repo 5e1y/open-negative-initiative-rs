@@ -1,5 +1,5 @@
 //! A digital photo opens shot on the neutral film, the Color tab's Film block showing its stock and the light it keeps
-//! the scene at: Film exposure moves the film alone and renders the photo again; the settings key shows the reference its
+//! the scene at: Shooting exposure moves the film alone and renders the photo again; the settings key shows the reference its
 //! negative is read on, which no hand writes. Twin: a negative shows no Film block.
 
 use i_slint_backend_testing::AccessibleRole as Role;
@@ -35,11 +35,11 @@ pub(crate) fn a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference(
     assert_eq!(panel.get_stock().name.as_str(), "Neutral");
     assert!(shown(Role::Text, "Film") && shown(Role::Button, "Select Film Stock") && !shown(Role::Tab, "None"), "its stock and its key, no film None");
     assert!(shown(Role::Text, &panel.get_film_white()) && panel.get_film_white().starts_with("The scene's own light"), "the film's light in sight: {}", panel.get_film_white());
-    assert!(shown(Role::Slider, "Film exposure") && !w.global::<Store>().get_film_modified(), "its exposure at rest");
+    assert!(shown(Role::Slider, "Shooting exposure") && !w.global::<Store>().get_film_modified(), "its exposure at rest");
     let on = frame();
     println!("shot {}", rig.shot("virtual-film-on").display());
 
-    rendered("the film's exposure rendered", &|| press_rail(rig, w, "Film exposure", 0.75));
+    rendered("the film's exposure rendered", &|| press_rail(rig, w, "Shooting exposure", 0.75));
     let exposed = settings();
     assert!((exposed.film().unwrap().exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {:?}", exposed.film());
     let reference = oni_settings::VirtualStock::NEUTRAL.reference();
@@ -58,5 +58,5 @@ pub(crate) fn a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference(
     panel.set_tab(PanelTab::Color);
     panel.invoke_tab_picked(PanelTab::Color);
     rig.settle();
-    assert!(!shown(Role::Slider, "Film exposure"), "a negative shoots on no virtual film");
+    assert!(!shown(Role::Slider, "Shooting exposure"), "a negative shoots on no virtual film");
 }

@@ -256,7 +256,7 @@ impl Field {
             Field::FringeBlue => s("Blue fringe", LensCorrection::RANGE, Readout::SignedWhole),
             Field::LensVignetting => s("Vignetting", LensCorrection::RANGE, Readout::SignedWhole),
             // The stops of light a virtual film takes over the scene's own.
-            Field::FilmExposure => s("Film exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
+            Field::FilmExposure => s("Shooting exposure", VirtualFilm::EXPOSURE_RANGE, Readout::Stops),
             // A paper's print brightened between its anchored pick and its white, in the stops of ONI's Exposure.
             Field::Brightness => s("Brightness", Print::BRIGHTNESS_RANGE, Readout::Stops),
             // Each band's filter on the negative, in stops either way: C on red's band, M on green's, Y on blue's.

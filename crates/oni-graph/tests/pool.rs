@@ -127,3 +127,21 @@ fn a_slightly_smaller_shape_takes_a_larger_free_texture() {
     g.render(&image, Rect::new(0, 0, 256, 256), None).expect("render");
     assert!(g.stats().textures_created > created, "a shape far smaller took a texture five times its size");
 }
+
+#[test]
+fn a_half_float_render_made_in_bands_reads_as_one_made_whole() {
+    let Some(mut g) = graph("a_half_float_render_made_in_bands_reads_as_one_made_whole") else { return };
+    // 2400 × 2000 holds past one band, so the blur reads across the seam between two.
+    let (w, h) = (2400, 2000);
+    let full = g.upload(w, h, &noise(w, h, 11)).expect("upload");
+    let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs() / p[c].abs().max(1e-3))).fold(0.0f32, f32::max);
+    let chain = Image::new(&full).then(Gain([2.0; 4])).then(BoxBlur3).then(BoxBlur3);
+    let whole = g.render(&chain, chain.extent(), None).unwrap();
+    let packed = g.materialise_half(&chain).expect("packed");
+    let read = g.render(&Image::new(&packed), packed.extent(), None).unwrap();
+    assert!(gap(&whole, &read) < 2e-3, "{}", gap(&whole, &read));
+    // Twin: a chain a gain apart is past the bound, so the bound sees a wrong band.
+    let other = Image::new(&full).then(Gain([2.01; 4])).then(BoxBlur3).then(BoxBlur3);
+    let c = g.render(&other, other.extent(), None).unwrap();
+    assert!(gap(&whole, &c) > 2e-3);
+}

@@ -87,11 +87,11 @@ impl Worker {
                 // A held job drawn on a digital photo's preview scan, rendered again sharp once the hand rests.
                 let mut sharpen: Option<Job> = None;
                 loop {
-                    let job = loop {
+                    let (job, sharpening) = loop {
                         match shared.take((resting.is_some() || sharpen.is_some()).then_some(REST)) {
-                            Taken::Value(job) => break job,
+                            Taken::Value(job) => break (job, false),
                             Taken::Closed => return,
-                            Taken::TimedOut if sharpen.is_some() => break Job { held: false, ..sharpen.take().expect("a job to sharpen") },
+                            Taken::TimedOut if sharpen.is_some() => break (Job { held: false, ..sharpen.take().expect("a job to sharpen") }, true),
                             Taken::TimedOut => {
                                 if let Some((path, negative, settings, wanted)) = resting.take()
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false, wanted)
@@ -102,8 +102,10 @@ impl Worker {
                         }
                     };
                     let started = Instant::now();
+                    // A digital photo's full scan is made only once the hand or the pointer rests: the job that
+                    // sharpens the last one drawn on the preview's scan alone makes it.
                     sharpen = None;
-                    renderer.hold_scan(job.held);
+                    renderer.hold_scan(!sharpening);
                     let done = renderer.resident(&job.negative, &job.settings, job.view.as_ref()).map(|(picture, placed)| Done {
                         revision: job.revision,
                         path: job.path.clone(),

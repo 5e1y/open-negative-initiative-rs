@@ -204,7 +204,7 @@ flowchart TD
   C["geometry, reciprocal<br/>notch: Crop, Angle, Lens"]
   D["White matrix, halation<br/>notch: Temperature/Tint on Digital, Halation"]
   E["grain, its own pass<br/>notch: Grain, Grain size"]
-  F["virtual_negative<br/>notch: Film exposure"]
+  F["virtual_negative<br/>notch: Shooting exposure"]
   G["stage47 pass<br/>notch: Filtration, Levels, Dye separation, Lighting on film, Pro Temperature/Tint, D/C/M/Y keys"]
   H["oni_finish: look and TEMP<br/>notch: TEMP"]
   I["curves tables<br/>notch: Curves, Picture Levels"]
@@ -284,7 +284,7 @@ flowchart LR
 | Contrast, Vignette, Chrome (Effects keys) | Scanner | `scannerFinish.*` | machine print contrast, vignette, sauce |
 | Curves, Colour Mixer, Saturation Curve | both, each face its own | `manualCurves`... or `scannerFinish.*` | finishing |
 | Chrome (Effects) | Pro | `secretSauce` | last pass |
-| Film, Film exposure, Black and White, Levels | both (Digital) | `virtualFilm`, `blackAndWhite`, `pictureLevels` | virtual_negative, luma_only, curves |
+| Film, Shooting exposure, Black and White, Levels | both (Digital) | `virtualFilm`, `blackAndWhite`, `pictureLevels` | virtual_negative, luma_only, curves |
 | Grain, Halation (Film Effects) | both (Digital) | `grain`, `halation` | before stage47 |
 
 Labels are from `oni-ui/ui/panel/color_tab.slint` and `roll_tab.slint`. The keypad sends the same `Scan` commands the phone does (`oni-app/src/app/lab.rs:1`, `oni-core/src/command.rs:60`).

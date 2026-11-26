@@ -13754,5 +13754,19 @@
     "title": "December's offer of the year never opens over the welcome, and the year opened from the welcome or the menu in its December is that offer made",
     "status": "done",
     "detail": "At the launch that shows the 2.0 welcome in December, the launch also offered the year: the summary opened at once over the welcome whose mystery gift it is. The offer is now not made at a launch whose welcome is due (Ctl::offer_wrapped reads welcome_due), and a year shown in its own December, by the offer, the menu or the welcome's gift, writes wrappedShownYear (Ctl::show_wrapped), so the next launch does not offer it again; a person who closes the welcome without opening the gift is offered the year at the next December launch. The rule is one function, offer_due, with its check and twin."
+  },
+  {
+    "id": 3873,
+    "type": "perf",
+    "title": "A digital photo's full scan made only when the view reads past the preview, in bands, and sharpened at rest",
+    "status": "done",
+    "detail": "The full scan is made only once the view asks past the preview's resolution, as at 100 % (Engine::composed): at fit a digital photo reads its preview's scan, so a film lit in its menu or a film's notch rebuilds the preview's scan alone; a film's settings moved let the kept full scan go. Graph::materialise_half evaluates its frame in bands of at most 4 MP, packing each into the half-float texture, so a full frame's chain holds one band's textures (the full scan's build peaked at 3.2 GB of textures). Under a hand the worker holds the full scan back and renders it once the hand rests (Renderer::hold_scan with the sharpening job alone). Check: a half-float render made in bands reads as one made whole, a gain apart its twin."
+  },
+  {
+    "id": 3874,
+    "type": "feature",
+    "title": "Film exposure named Shooting exposure",
+    "status": "done",
+    "detail": "The Film block's exposure slider is the exposure at capture, the camera's on the virtual film: Shooting exposure, Exposition à la prise de vue, Exposición en la toma, its help sentence with it; the window check reads the new name."
   }
 ]
