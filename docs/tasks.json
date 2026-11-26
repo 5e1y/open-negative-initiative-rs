@@ -13740,5 +13740,12 @@
     "title": "The year on film read without opening an original, on every core; its cards cut, encoded and written off the interface thread",
     "status": "done",
     "detail": "Reading a year probed each original's bytes to learn how it decodes (decodes_via_mosaic): 688 ms of the 865 ms a year of 417 frames took on the test copies, and a wait on a disk away. A frame's sidecar is now read on its name alone (is_raw), the sidecars and the thumbnails' colours on every core (gather::spread): 191 to 275 ms for the same year (sidecars 78 to 101 ms, colours 111 to 171 ms, both on an external exFAT disk), each step timed in the log (wrapped: N frames of M and K thumbnails read in ...). Save All Cards held the interface 0.37 s for fifteen cards: the window's pictures are taken on the interface thread and each card is cut, brought to sRGB, encoded and written on another (save_wrapped_into answers through a callback). The Loyalist's share is the top film's frames over the year's, the figure its film's own scene shows. ONI_BENCH=wrapped shows the year in the real window, holds each scene until it is told and saves every card into ONI_WRAPPED_SHOTS: 13 scenes at 120 frames a second, drawn in 2.6 ms p50 and 5.6 ms p99 on the M2 Max, window 1100 x 680."
+  },
+  {
+    "id": 3902,
+    "type": "interface",
+    "title": "Space pauses the year on film and starts it again; a roll's and a preset's name in its scenes are marked for the log",
+    "status": "done",
+    "detail": "The film advanced by itself with no way to stop it but a held press: Space now pauses it and starts it again (it was a second key for the next scene, which Return and the right arrow still are), the line under the strip saying which; where motion is reduced it starts paused. The scenes naming a roll (The longest, {name}, holds {count} frames) and a preset ({name}, laid {count} times) mark the name with oni_i18n::named, as the anonymity check asks of any template naming something bare; the template of the card this replaces leaves its list of texts never logged."
   }
 ]

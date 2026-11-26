@@ -107,7 +107,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert!(lines("YOUR SIGNATURE LOOK").contains(&("Balance".to_string(), "pressed 1 times".to_string())));
     assert_eq!(lines(&mine).first(), Some(&("Frames".to_string(), "3".to_string())));
     assert_eq!(wrapped.invoke_counted(1_284).as_str(), "1,284");
-    rig.key(" ");
+    rig.key(&key(Key::Return));
     assert_eq!(wrapped.get_index(), 1);
     rig.settle();
     println!("shot {}", rig.shot("wrapped-frames").display());
@@ -121,7 +121,10 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.advance(Duration::from_secs(8));
     assert_eq!(wrapped.get_index(), 2, "twin: held while it does not play");
     wrapped.set_playing(true);
-    rig.pump();
+    rig.key(" ");
+    rig.advance(Duration::from_secs(8));
+    assert_eq!(wrapped.get_index(), 2, "twin: Space pauses the film");
+    rig.key(" ");
     rig.advance(Duration::from_millis(3_000));
     assert_eq!(wrapped.get_index(), 2, "twin: not before the hold is over");
     rig.advance(Duration::from_millis(4_500));

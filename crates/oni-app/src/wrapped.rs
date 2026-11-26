@@ -1,7 +1,7 @@
 //! The year on film told scene by scene: what each frame of the strip says, read off a `Year`. A scene
 //! with nothing to tell is not laid, so a short year is a short story and an empty one an invitation.
 
-use oni_i18n::{Language, marked, tr, trn};
+use oni_i18n::{Language, marked, named, tr, trn};
 use oni_library::wrapped::{Trait, Year};
 
 pub mod gather;
@@ -264,7 +264,7 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
             note: day.unwrap_or_default(),
             bars: normalised(&f.by_month),
             lit: Some((month - 1) as usize),
-            marks: MONTHS.iter().map(|m| tr(*m).chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default()).collect(),
+            marks: MONTHS.iter().map(|m| tr(m).chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default()).collect(),
             ..Default::default()
         });
     }
@@ -281,7 +281,7 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
         });
     }
     if f.rolls > 0 {
-        let longest = f.longest_roll.as_ref().filter(|_| f.rolls > 1).map(|(name, n)| tr!("The longest, {name}, holds {count} frames", name = name, count = figure(*n)));
+        let longest = f.longest_roll.as_ref().filter(|_| f.rolls > 1).map(|(name, n)| tr!("The longest, {name}, holds {count} frames", name = named(name), count = figure(*n)));
         out.push(Scene {
             eyebrow: tr("Through the gate").into(),
             count: Some(f.rolls),
@@ -427,7 +427,7 @@ fn named_rows(rows: &[(usize, usize)]) -> Vec<(String, usize)> {
             None => out.push((name, *n)),
         }
     }
-    out.sort_by(|a, b| b.1.cmp(&a.1));
+    out.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
     out
 }
 
@@ -437,7 +437,7 @@ fn look_lines(year: &Year) -> Vec<Line> {
     let photos = |n: usize| counted(trn("{count} photo", "{count} photos", n as u64), n);
     let mut out = Vec::new();
     if let Some((name, count)) = &d.favourite_preset {
-        out.push(line(tr("Preset"), tr!("{name}, laid {count} times", name = name, count = figure(*count))));
+        out.push(line(tr("Preset"), tr!("{name}, laid {count} times", name = named(name), count = figure(*count))));
     }
     if let Some((key, count)) = f.papers.first() {
         out.push(line(tr("Paper"), paper_name(key)));

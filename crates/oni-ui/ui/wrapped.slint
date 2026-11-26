@@ -1,6 +1,6 @@
 // "Show My Year on Film": a half-frame strip run through the gate, one scene a frame. A click or → advances
-// the film, ← winds it back, the film advances by itself while nothing is held, and Esc leaves.
-import { Space, WrappedStyle, WrappedGround, WrappedProgress, WrappedFrame, WrappedFilm, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone } from "ds/ds.slint";
+// the film, ← winds it back, it advances by itself unless Space or a held press pauses it, and Esc leaves.
+import { Space, Motion, WrappedStyle, WrappedGround, WrappedProgress, WrappedFrame, WrappedFilm, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone } from "ds/ds.slint";
 
 export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene }
 
@@ -19,7 +19,7 @@ export global Wrapped {
     // What the strip's edge prints, and who signs a frame.
     in property <string> edge;
     in property <string> signature;
-    // A click, →, Space or Return: the next scene, the summary left past the last.
+    // A click, → or Return: the next scene, the summary left past the last.
     callback forward();
     callback back();
     callback close();
@@ -34,8 +34,10 @@ export component WrappedView inherits WrappedGround {
     property <int> showing: Wrapped.showing;
     property <int> index: Wrapped.index;
     property <int> count: Wrapped.scenes.length;
+    // Space pauses the film and starts it again; it starts paused where motion is reduced.
+    property <bool> paused: Motion.reduced;
     // The film runs by itself while it plays, nothing holds it and a scene follows.
-    property <bool> running: Wrapped.playing && !Wrapped.still && root.revealed && !touch.pressed && root.index < root.count - 1;
+    property <bool> running: Wrapped.playing && !root.paused && !Wrapped.still && root.revealed && !touch.pressed && root.index < root.count - 1;
     // How long the scene in the gate has been held: what was held before the last pause, and the run since `mark`.
     property <duration> banked;
     property <duration> mark;
@@ -99,7 +101,8 @@ export component WrappedView inherits WrappedGround {
         focus-on-tab-navigation: false;
         key-pressed(event) => {
             if (event.text == Key.Escape) { Wrapped.close(); return accept; }
-            if (event.text == Key.RightArrow || event.text == " " || event.text == Key.Return) { Wrapped.forward(); return accept; }
+            if (event.text == Key.RightArrow || event.text == Key.Return) { Wrapped.forward(); return accept; }
+            if (event.text == " ") { root.paused = !root.paused; return accept; }
             if (event.text == Key.LeftArrow) { Wrapped.back(); return accept; }
             if (event.text == "s") { Wrapped.save(false); return accept; }
             reject
@@ -162,7 +165,7 @@ export component WrappedView inherits WrappedGround {
             role: TextRole.caption;
             tone: Tone.secondary;
             centred: true;
-            text: @tr("Click or press → for the next · ← to go back · hold to pause · Esc to leave");
+            text: root.paused ? @tr("Paused · Space to play · → for the next · ← to go back · Esc to leave") : @tr("Click or press → for the next · ← to go back · Space to pause · Esc to leave");
         }
         HorizontalLayout {
             y: parent.height - WrappedStyle.chrome-under + Space.s + Space.l;

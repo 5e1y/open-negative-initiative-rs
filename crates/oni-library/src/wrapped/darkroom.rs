@@ -123,7 +123,7 @@ impl Darkroom {
         out.photos = opened.len();
         out.days = days.len();
         out.streak = longest_run(&days);
-        out.busiest_day = per_day.into_iter().map(|(ordinal, d)| (ordinal, d)).min_by(|a, b| b.1.2.cmp(&a.1.2).then(a.0.cmp(&b.0))).map(|(_, d)| d);
+        out.busiest_day = per_day.into_iter().min_by(|a, b| b.1.2.cmp(&a.1.2).then(a.0.cmp(&b.0))).map(|(_, d)| d);
         out.most_edited = most(&edits, &edit_order).and_then(|(subject, n)| name(subject).map(|p| (p, n)));
         let mut ranked: Vec<(usize, usize)> = rows.into_iter().collect();
         ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));

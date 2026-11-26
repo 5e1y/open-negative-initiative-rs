@@ -104,7 +104,9 @@ fn a_full_year_tells_every_scene_in_order() {
     assert_eq!((film.kind, film.stock.as_deref(), film.caption.as_str()), (Kind::Film, Some("kodak-portra400"), "206 frames, 50 % of your year"));
     assert_eq!(film.figure, film_name("kodak-portra400"));
     assert_eq!((film.lines.len(), film.lines[1].label.as_str(), film.note.as_str()), (2, "no-such-film", "3 films this year"), "a key no file defines is named by itself");
-    assert_eq!(scene(&story, "Through the gate").note, "The longest, Lisbon, holds 38 frames");
+    let longest = &scene(&story, "Through the gate").note;
+    assert_eq!(oni_i18n::spoken(longest), "The longest, Lisbon, holds 38 frames");
+    assert_ne!(longest, "The longest, Lisbon, holds 38 frames", "twin: the roll's name is marked, so no log would carry it");
     let kit = scene(&story, "Your faithful companion");
     assert_eq!((kit.figure.as_str(), kit.caption.as_str(), kit.lines[0].label.as_str(), kit.lines[1].share), ("Nikon FM2", "310 frames together", "50mm f/1.8", 0.24));
     let gold = scene(&story, "The only thing I see is gold");
@@ -125,7 +127,7 @@ fn a_full_year_tells_every_scene_in_order() {
     assert_eq!(look.figure, "Portra warm");
     let labels: Vec<&str> = look.lines.iter().map(|l| l.label.as_str()).collect();
     assert_eq!(labels, ["Preset", "Paper", "Printed on paper", "Grain", "Cropped", "Straightened", "Balance", "Settings pasted"], "no line for the halation no photo has");
-    assert_eq!(look.lines[0].value, "Portra warm, laid 212 times");
+    assert_eq!(oni_i18n::spoken(&look.lines[0].value), "Portra warm, laid 212 times");
     let colours = scene(&story, "The colours of your year");
     assert_eq!((colours.figure.as_str(), colours.swatches.len(), colours.caption.as_str()), ("A warm year", 2, "read off 400 of your photos"));
     let clock = scene(&story, "Time in the darkroom");
