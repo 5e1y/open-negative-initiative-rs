@@ -135,12 +135,17 @@ export component PreviewSlot inherits Rectangle {
     in property <image> source;
     in property <PreviewState> state;
     background: Colour.canvas;
+    // The picture landing fades in over the sweep it replaces.
     if root.state == PreviewState.shown: Picture {
+        property <float> come;
+        init => { self.come = 1; }
+        animate come { duration: Motion.quick; easing: ease-out; }
         width: parent.width;
         height: parent.height;
         source: root.source;
         ground: Ground.canvas;
         rounded: true;
+        picture-opacity: self.come;
     }
     if root.state == PreviewState.failed: VerticalLayout {
         alignment: center;

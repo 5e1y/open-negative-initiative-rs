@@ -13691,5 +13691,19 @@
     "title": "A canvas tool's ring fades out as it leaves and the rings inside close in; the help card rises into place",
     "status": "in progress",
     "detail": "Held (ds/containers.slint) keeps a ring laid while it fades on overlay-out, its inset sliding on Motion.quick; the rings take no press. HelpLayer comes in as a popover does, on Motion.pop."
+  },
+  {
+    "id": 4006,
+    "type": "ui",
+    "title": "An export preview fades in over the sweep it replaces",
+    "status": "done",
+    "detail": "PreviewSlot's picture comes in on Motion.quick as it lands; a lone photo's is already covered by the photo flown from the canvas, which waits for it."
+  },
+  {
+    "id": 4007,
+    "type": "ui",
+    "title": "Prepare the Roll: a step's body comes in from the side the walk goes",
+    "status": "done",
+    "detail": "RollPanel shifts the new step's body by Space.l, forward from the right and back from the left, then slides it home and fades it in on Motion.travel (Ease.firm), the next frame after it is laid; nothing waits on it."
   }
 ]
