@@ -189,15 +189,11 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert_eq!(scene("THIS YEAR").count, 2);
     wrapped.invoke_close();
 
-    // December offers the year once; any other month offers nothing.
-    let december = oni_library::wrapped::today().1 == 12;
-    shell.offer_wrapped();
-    rig.until("the offer read", Duration::from_secs(5), || !december || wrapped.get_shown());
-    assert_eq!(wrapped.get_shown(), december);
-    wrapped.invoke_close();
+    // December offers the year once, and a year already shown in its December is that offer made; any
+    // other month offers nothing.
     shell.offer_wrapped();
     rig.settle();
-    assert!(!wrapped.get_shown(), "never twice in a year");
+    assert!(!wrapped.get_shown(), "shown above already, or not December");
 
     // New Roll from Selection notes the photos it gathered.
     assert!(w.global::<oni_app::App>().get_gallery());

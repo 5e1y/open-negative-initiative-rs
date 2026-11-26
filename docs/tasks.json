@@ -13747,5 +13747,12 @@
     "title": "Space pauses the year on film and starts it again; a roll's and a preset's name in its scenes are marked for the log",
     "status": "done",
     "detail": "The film advanced by itself with no way to stop it but a held press: Space now pauses it and starts it again (it was a second key for the next scene, which Return and the right arrow still are), the line under the strip saying which; where motion is reduced it starts paused. The scenes naming a roll (The longest, {name}, holds {count} frames) and a preset ({name}, laid {count} times) mark the name with oni_i18n::named, as the anonymity check asks of any template naming something bare; the template of the card this replaces leaves its list of texts never logged."
+  },
+  {
+    "id": 3903,
+    "type": "fix",
+    "title": "December's offer of the year never opens over the welcome, and the year opened from the welcome or the menu in its December is that offer made",
+    "status": "done",
+    "detail": "At the launch that shows the 2.0 welcome in December, the launch also offered the year: the summary opened at once over the welcome whose mystery gift it is. The offer is now not made at a launch whose welcome is due (Ctl::offer_wrapped reads welcome_due), and a year shown in its own December, by the offer, the menu or the welcome's gift, writes wrappedShownYear (Ctl::show_wrapped), so the next launch does not offer it again; a person who closes the welcome without opening the gift is offered the year at the next December launch. The rule is one function, offer_due, with its check and twin."
   }
 ]

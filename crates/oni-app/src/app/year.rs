@@ -27,6 +27,11 @@ const PRINT_SIDE: usize = 1024;
 /// A scene showing more photos than this shows them small: their thumbnails are enough.
 const PRINTS_A_SCENE: usize = 4;
 
+/// Whether December's offer is still to make: in December, for a year not shown yet.
+pub fn offer_due((year, month): (i32, u32), shown: i64) -> bool {
+    month == 12 && shown < i64::from(year)
+}
+
 /// The year "Show My Year on Film" tells: the one under way, or in January the one just ended.
 pub fn told_year((year, month): (i32, u32)) -> i32 {
     if month == 1 { year - 1 } else { year }
@@ -156,20 +161,25 @@ impl Ctl {
         }
     }
 
-    /// In December, once a year, never under a bench.
+    fn shown_year(&self) -> i64 {
+        self.state.borrow().preferences.value(SHOWN_YEAR_KEY).and_then(serde_json::Value::as_i64).unwrap_or(0)
+    }
+
+    /// In December, once a year, never under a bench, and never at the launch that shows the welcome,
+    /// which gives the year itself.
     pub fn offer_wrapped(self: &Rc<Self>) {
-        let (year, month) = today();
-        let shown = self.state.borrow().preferences.value(SHOWN_YEAR_KEY).and_then(serde_json::Value::as_i64).unwrap_or(0);
-        if month != 12 || shown >= i64::from(year) {
-            return;
+        if offer_due(today(), self.shown_year()) && !self.welcome_due() {
+            self.show_wrapped(today().0);
         }
-        self.remember(SHOWN_YEAR_KEY, year.into());
-        self.show_wrapped(year);
     }
 
     /// `year` read off this thread: the journal, the library's rows and their sidecars, their thumbnails'
     /// colours. The ONI Trash's photos count for nothing.
     pub fn show_wrapped(self: &Rc<Self>, year: i32) {
+        // A year shown in its own December, by the offer, the menu or the welcome, is the offer made.
+        if year == today().0 && offer_due(today(), self.shown_year()) {
+            self.remember(SHOWN_YEAR_KEY, year.into());
+        }
         let (rows, support) = {
             let mut s = self.state.borrow_mut();
             if s.year.story.is_some() || s.year.reading {
@@ -415,5 +425,13 @@ mod tests {
         assert_eq!((told_year((2026, 12)), told_year((2027, 2))), (2026, 2027));
         // Twin: January's own year is not the one told.
         assert_ne!(told_year((2027, 1)), 2027);
+    }
+
+    #[test]
+    fn december_offers_a_year_once_and_no_other_month_does() {
+        assert!(offer_due((2026, 12), 0) && offer_due((2026, 12), 2025));
+        assert!(!offer_due((2026, 12), 2026), "shown already");
+        // Twin: the same year not yet shown is not offered in November.
+        assert!(!offer_due((2026, 11), 0));
     }
 }
