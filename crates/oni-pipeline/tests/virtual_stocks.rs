@@ -18,7 +18,7 @@ const WHITE: usize = 6;
 /// The white's luma off Portra 800's in stops.
 const WHITE_SPREAD: f32 = 0.1;
 /// The ramp's widest chroma and a light step's (L* 80 up): each channel's window spans the bare film to a scene white and
-/// each sheet's layers cross between, up to 23.8 in 160NC's mids, 5.4 in the lights; their numbers are printed, the
+/// each sheet's layers cross between, up to 20.1 in 160NC's mids, 5.4 in the lights; their numbers are printed, the
 /// owner judging them in each film's preset (owner's call), these ceilings a guard against a broken bake.
 const CHROMA: f32 = 25.0;
 const LIGHT_CHROMA: f32 = 9.0;
@@ -166,7 +166,7 @@ fn each_stock_bakes_at_its_first_use_and_holds_one_table() {
 
 /// The GPU chain on every stock: a neutral scene ramp lit at the stock's white, rendered as the editor renders a
 /// digital photo, prints within the CPU references' ceiling, a black and white film's
-/// without a hue. Twin: on a colour stock, the same scene lit at the other light is coloured.
+/// without a hue. Twin: on a colour stock, the same scene lit at the other light prints its white coloured.
 #[test]
 fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
     let Some(mut g) = graph("the_gpu_prints_every_stocks_neutral_ramp_neutral") else { return };
@@ -197,13 +197,15 @@ fn the_gpu_prints_every_stocks_neutral_ramp_neutral() {
             Balance::Scene => unreachable!("a data sheet's film names its light"),
         };
         let twin = render(&mut g, &mut pipeline, &scene(other)).iter().map(seen).fold(0.0, f32::max);
-        println!("{:<28} GPU widest C*ab {worst:.2}, lit at the other light {twin:.1}", stock.name());
+        let twin_white = seen(&render(&mut g, &mut pipeline, &scene(other))[WHITE]);
+        println!("{:<28} GPU widest C*ab {worst:.2}, lit at the other light {twin:.1}; at the white {:.2} and {twin_white:.1}", stock.name(), seen(&lit[WHITE]));
         if stock.is_silver() {
             // Silver prints any light without a hue; the colour stocks' twins show the check sees one.
             assert!(worst < 0.01 && twin < 0.01, "{stock:?}: {lit:?}");
             continue;
         }
         assert!(worst < CHROMA, "{stock:?}: {lit:?}");
-        assert!(twin > worst + 10.0, "{stock:?}: twin at C*ab {twin} only, its own light {worst}");
+        // The two points lay the white neutral on the film's own light; another light's colours it.
+        assert!(twin_white > seen(&lit[WHITE]) + 5.0, "{stock:?}: twin's white at C*ab {twin_white} only");
     }
 }

@@ -16,8 +16,8 @@ fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     let f32s = own.map(|r| r.map(|x| x as f32));
     assert_eq!(film::stock(v).kernel.couplers, f32s);
 
-    // A grey exposes the three layers alike with no filtration: the couplers then leave it on the sheet's curve.
-    let unfiltered = oni_settings::stocks::VirtualEntry { filtration: Some([0.0; 3]), ..v.entry() };
+    // A grey exposes the three layers alike: the couplers then leave it on the sheet's curve.
+    let unfiltered = v.entry();
     let (mine, common) = (film::bake_through(&unfiltered, own).unwrap(), film::bake_through(&unfiltered, COUPLERS).unwrap());
     let read = |s: &film::Stock, p: [f32; 4]| s.scanned(cpu::virtual_negative(p, &s.kernel_at(0.0), &s.table));
     let (grey, red) = ([GREY, GREY, GREY, 1.0], [0.4, 0.08, 0.05, 1.0]);

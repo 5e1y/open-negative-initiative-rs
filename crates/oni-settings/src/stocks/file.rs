@@ -73,10 +73,10 @@ pub struct FilmBlock {
     /// Derived from the profile when left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<StockReference>,
-    /// A colour negative's own filtration through ONI's scanner: each layer's exposure offset, in log exposure, which
-    /// lays a scene's mid grey on one share of the three windows. Derived from its sheet when left out.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub filtration: Option<[f64; 3]>,
+    /// A layer offset a file of the person's own may still hold from before ONI 2.0, read and left aside: a neutral
+    /// exposes every layer at the same log exposure (owner's call).
+    #[serde(default, skip_serializing)]
+    pub filtration: Option<serde::de::IgnoredAny>,
     /// A film of no colour of its own: no spectrum, no coupler, pure dyes; its profile's `data` holds `range`, the density
     /// from its bare film to the sensor's white, and its tone curve, `density` on `log_exposure` about a grey.
     #[serde(default, skip_serializing_if = "is_false")]
@@ -277,9 +277,6 @@ impl File {
 fn block(film: &FilmBlock) -> Result<(), String> {
     named(&film.key, &film.aliases, "film")?;
     key(&film.dyes)?;
-    if film.filtration.is_some_and(|f| !f.iter().all(|v| v.is_finite())) {
-        return Err("a filtration holding a number that is not finite".into());
-    }
     match film.reference {
         Some(r) if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) => Err("a reference holding a number that is not finite".into()),
         _ => Ok(()),

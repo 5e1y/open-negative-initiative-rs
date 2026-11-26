@@ -27,8 +27,8 @@ What each part of a profile is:
 - base_density: the sheet's D-min, printed.
 
 Every colour negative is read by ONI's scanner (crates/oni-pipeline/src/film/scanner.rs) and states couplers of zero;
-its filtration, each layer's exposure offset that lays a mid grey on one share of the three windows through that
-reading, is derived with its reference by the pipeline.
+a neutral exposes its three layers at the same log exposure, and its reference, two points a channel, is derived by
+the pipeline.
 
 Status M and Status A are ISO 5-3's spectral products (ANSI/ISO 5-3-1995, tables 3 and 4), on the dyes' known
 wavelengths. A colour paper's profile is its curves alone: its sheet's Status A characteristic curves as printed, each
@@ -453,7 +453,7 @@ BORROWED = ("the render through ONI's scanner moves by 3 degrees of hue at most 
 
 def scanned():
     """Each colour negative whose file holds its sheet's profile is read by ONI's scanner, its dyes uncoupled: its
-    reference and its filtration are then derived again."""
+    reference is then derived again, no layer offset."""
     uncoupled = [[0.0, 0.0, 0.0] for _ in range(3)]
     for path in stock_files():
         stock_file = json.loads(path.read_text())
@@ -467,7 +467,7 @@ def scanned():
             inferred = provenance.get("inferred", [])
             dyes = next((i for i, line in enumerate(inferred) if line.startswith("the three dyes: the Vision3")), None)
             noted = dyes is None or BORROWED in inferred
-            if "read_by" not in block and "read_by" not in provenance and block.get("couplers") == uncoupled and "filtration" in block and noted:
+            if "read_by" not in block and "read_by" not in provenance and block.get("couplers") == uncoupled and "filtration" not in block and noted:
                 continue
             laid = {}
             for k, v in block.items():
@@ -779,7 +779,6 @@ def place(profile):
                 block["profile"] = profile
                 if stock_file["oni"] == "film":
                     block.pop("reference", None)
-                    block.pop("filtration", None)
                     MOVED.append(path)
                 path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")
             return
@@ -806,8 +805,8 @@ def float32(v):
 
 
 def refresh_references():
-    """Each film whose profile or reading moved takes the reference, and a colour negative the filtration, that the
-    pipeline derives from its sheet, laid beside its dyes."""
+    """Each film whose profile or reading moved takes the reference the pipeline derives from its sheet, laid beside its
+    dyes."""
     moved = sorted(set(MOVED))
     if not moved:
         return
@@ -818,7 +817,6 @@ def refresh_references():
         stock_file = json.loads(path.read_text())
         for block in blocks(stock_file):
             reference = {k: [float32(v) for v in derived[path.name][block["key"]][k]] for k in ("stops", "black", "white")}
-            filtration = derived[path.name][block["key"]]["filtration"]
             laid = {}
             for k, v in block.items():
                 if k in ("reference", "filtration"):
@@ -826,8 +824,6 @@ def refresh_references():
                 laid[k] = v
                 if k == "dyes":
                     laid["reference"] = reference
-                    if filtration is not None:
-                        laid["filtration"] = [round(v, 5) for v in filtration]
             block.clear()
             block.update(laid)
         path.write_text(json.dumps(stock_file, indent=1, ensure_ascii=False) + "\n")

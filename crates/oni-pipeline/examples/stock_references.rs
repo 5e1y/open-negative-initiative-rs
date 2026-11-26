@@ -1,5 +1,5 @@
-//! Each film of the stock files named, its reference and, for a colour negative, its filtration through the scanner, as
-//! its sheet derives them, in JSON by file and film key, which scripts/datasheet-profiles.py lays back.
+//! Each film of the stock files named, its reference as its sheet derives it, in JSON by file and film key, which
+//! scripts/datasheet-profiles.py lays back.
 //! Run: cargo run -p oni-pipeline --example stock_references -- <files>.
 
 use oni_pipeline::film;
@@ -16,13 +16,12 @@ fn main() {
         let mut films = Map::new();
         for b in f.film.iter().chain(f.developments.iter().filter_map(|d| d.film.as_ref())) {
             let (reversal, couplers) = (f.kind == FilmType::ColourSlide, b.couplers.unwrap_or(film::bake::COUPLERS));
-            let d = match b.neutral {
-                true => film::derive_neutral(b.profile.get()).map(|reference| film::Derived { reference, filtration: None }),
-                false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers, b.filtration),
+            let r = match b.neutral {
+                true => film::derive_neutral(b.profile.get()),
+                false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
             }
             .unwrap_or_else(|e| panic!("{path}: {e}"));
-            let r = d.reference;
-            films.insert(b.key.clone(), json!({"stops": r.stops, "black": r.black, "white": r.white, "filtration": d.filtration}));
+            films.insert(b.key.clone(), json!({"stops": r.stops, "black": r.black, "white": r.white}));
         }
         let name = std::path::Path::new(&path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         out.insert(name, Value::Object(films));

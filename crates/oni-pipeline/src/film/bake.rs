@@ -1,5 +1,5 @@
 //! A profile baked into the virtual negative's tables: the light per chromaticity on the film's band-pass
-//! window, its input gamut compressed; the curves before and after the couplers; the scan's dyes and weights.
+//! window; the curves before and after the couplers; the scan's dyes and weights.
 
 use super::cie::{self, WAVELENGTHS};
 use super::profile::{Profile, Spectra};
@@ -97,48 +97,6 @@ pub fn square_of_xy(xy: [f64; 2]) -> [f64; 2] {
     [tx.clamp(0.0, 1.0), ty.clamp(0.0, 1.0)]
 }
 
-/// The spectral locus, 380 to 700 nm, closed.
-fn locus() -> Vec<[f64; 2]> {
-    let mut out: Vec<[f64; 2]> = (0..=64).map(|l| xy_of([cie::X[l], cie::Y[l], cie::Z[l]])).collect();
-    out.push(out[0]);
-    out
-}
-
-/// How far along `direction` from `origin` the closed polygon is first met.
-fn ray_reach(origin: [f64; 2], direction: [f64; 2], polygon: &[[f64; 2]]) -> f64 {
-    let mut nearest = f64::INFINITY;
-    for edge in polygon.windows(2) {
-        let (a, b) = (edge[0], edge[1]);
-        let e = [b[0] - a[0], b[1] - a[1]];
-        let denom = direction[0] * e[1] - direction[1] * e[0];
-        if denom.abs() <= 1e-12 {
-            continue;
-        }
-        let o = [origin[0] - a[0], origin[1] - a[1]];
-        let t = (-o[0] * e[1] + o[1] * e[0]) / denom;
-        let s = (-o[0] * direction[1] + o[1] * direction[0]) / denom;
-        if t > 1e-9 && (0.0..=1.0).contains(&s) && t < nearest {
-            nearest = t;
-        }
-    }
-    nearest
-}
-
-/// spektrafilm's input gamut compression: each chromaticity's distance from the white, as a share of the
-/// locus' along its hue, through a Reinhard knee of power 6 that meets the locus at infinity.
-pub fn compressed(xy: [f64; 2], white: [f64; 2], polygon: &[[f64; 2]]) -> [f64; 2] {
-    let delta = [xy[0] - white[0], xy[1] - white[1]];
-    let dist = delta[0].hypot(delta[1]);
-    if dist < 1e-9 {
-        return xy;
-    }
-    let direction = [delta[0] / dist, delta[1] / dist];
-    let reach = ray_reach(white, direction, polygon).max(1e-12);
-    let d = dist / reach;
-    let knee = d / (1.0 + d.powi(6)).powf(1.0 / 6.0);
-    [white[0] + direction[0] * knee * reach, white[1] + direction[1] * knee * reach]
-}
-
 fn bilinear(table: &[[f64; 3]], n: usize, at: [f64; 2]) -> [f64; 3] {
     let f = at.map(|v| (v * (n - 1) as f64).clamp(0.0, (n - 1) as f64));
     let lo = f.map(|v| (v.floor() as usize).min(n - 2));
@@ -151,22 +109,13 @@ fn bilinear(table: &[[f64; 3]], n: usize, at: [f64; 2]) -> [f64; 3] {
     })
 }
 
-/// The film's light per chromaticity node `(i, j)` at `i·n + j`, its gamut compression laid in, so a
-/// lookup at a chromaticity reads what the uncompressed table holds at its compressed one.
-pub fn light_table(spectra: &Spectra, sensitivity: &[[f64; 3]], reference: &[f64; WAVELENGTHS]) -> Vec<[f64; 3]> {
+/// The film's light per chromaticity node `(i, j)` at `i·n + j`, the scene's chromaticity read as it is (owner's call).
+pub fn light_table(spectra: &Spectra, sensitivity: &[[f64; 3]]) -> Vec<[f64; 3]> {
     let n = spectra.nodes;
-    let plain: Vec<[f64; 3]> = (0..n * n)
+    (0..n * n)
         .map(|k| {
             let s = spectra.at(k / n, k % n);
             std::array::from_fn(|c| (0..WAVELENGTHS).map(|l| s[l] * sensitivity[l][c]).sum())
-        })
-        .collect();
-    let white = xy_of(white_of(reference));
-    let polygon = locus();
-    (0..n * n)
-        .map(|k| {
-            let square = [(k / n) as f64 / (n - 1) as f64, (k % n) as f64 / (n - 1) as f64];
-            bilinear(&plain, n, square_of_xy(compressed(xy_of_square(square), white, &polygon)))
         })
         .collect()
 }

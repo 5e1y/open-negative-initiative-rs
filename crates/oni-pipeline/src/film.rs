@@ -88,28 +88,23 @@ fn light_of(balance: Balance) -> Option<&'static [f64; cie::WAVELENGTHS]> {
 }
 
 /// What a profile lays on the bake: each layer's sensitivity, the curves before and after the couplers on their log H
-/// axis, the couplers, each layer's filtration in log exposure, and a colour negative's scan.
+/// axis, the couplers, and a colour negative's scan.
 struct Layers {
     sensitivity: Vec<[f64; 3]>,
     log_exposure: Vec<f64>,
     before: Vec<[f64; 3]>,
     after: Vec<[f64; 3]>,
     couplers: M3,
-    filtration: [f64; 3],
     scan: Option<Scan>,
 }
 
-/// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative; a
-/// negative scanned under `filtration`, derived from its sheet where the file leaves it out.
-fn colour(profile: Profile, couplers: M3, reversal: bool, filtration: Option<[f64; 3]>) -> Result<Layers, String> {
+/// A colour film: three layers developed through `couplers`, a reversal film's from its first developer's negative, a
+/// negative's scanned; a neutral exposes the three at the same log exposure, no layer offset (owner's call).
+fn colour(profile: Profile, couplers: M3, reversal: bool) -> Layers {
     let develop = if reversal { bake::curves_falling } else { bake::curves_through };
     let (before, after) = develop(&profile.log_exposure, &profile.density_curves, &couplers);
-    let (filtration, scan) = match (reversal, filtration) {
-        (true, _) => ([0.0; 3], None),
-        (false, Some(held)) => (held, Some(scanner::scan(&profile))),
-        (false, None) => (scanner::filtration(&profile)?, Some(scanner::scan(&profile))),
-    };
-    Ok(Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers, filtration, scan })
+    let scan = (!reversal).then(|| scanner::scan(&profile));
+    Layers { sensitivity: bake::sensitivity(&profile), log_exposure: profile.log_exposure, before, after, couplers, scan }
 }
 
 /// A black and white negative: its one layer on the three channels, no coupler.
@@ -121,18 +116,16 @@ fn silver(profile: Silver) -> Layers {
         before: curve.clone(),
         after: curve,
         couplers: [[0.0; 3]; 3],
-        filtration: [0.0; 3],
         scan: None,
     }
 }
 
-/// A film's layers as its profile holds them, a colour one's developed through `couplers` and scanned under
-/// `filtration`, or why the profile does not read.
-fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3, filtration: Option<[f64; 3]>) -> Result<Layers, String> {
+/// A film's layers as its profile holds them, a colour one's developed through `couplers`, or why the profile does not read.
+fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3) -> Result<Layers, String> {
     if is_silver {
         return Ok(silver(Silver::read(profile.as_bytes())?));
     }
-    colour(Profile::read(profile.as_bytes())?, couplers, reversal, filtration)
+    Ok(colour(Profile::read(profile.as_bytes())?, couplers, reversal))
 }
 
 /// The coupler matrix a film develops through: its file's own, else the common one.
@@ -142,7 +135,7 @@ pub fn couplers(entry: &VirtualEntry) -> M3 {
 
 /// `entry` baked through `couplers` in place of its own, its reference derived again.
 pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers, entry.filtration)?;
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers)?;
     Ok(stock_of(layers, entry))
 }
 
@@ -157,10 +150,10 @@ fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
     stock
 }
 
-/// How a colour negative's scan sees its layers' dyes at a mid grey's amounts, under its filtration.
+/// How a colour negative's scan sees its layers' dyes at a mid grey's amounts, each layer exposed at log 0.
 fn gaze_of(layers: &Layers) -> [[f32; 3]; 3] {
     let Some(scan) = &layers.scan else { return OWN_LAYERS };
-    let mid = std::array::from_fn(|c| bake::interpolate(layers.filtration[c], &layers.log_exposure, &layers.after, c));
+    let mid = std::array::from_fn(|c| bake::interpolate(0.0, &layers.log_exposure, &layers.after, c));
     gaze(&scan.projection, &scan.table, mid)
 }
 
@@ -168,11 +161,8 @@ fn gaze_of(layers: &Layers) -> [[f32; 3]; 3] {
 fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) {
     let spectra = Spectra::read(SPECTRA).expect("the shipped spectra read");
     let white = light_of(balance).expect("a data sheet's film names its light, checked as its file is taken");
-    let light = bake::light_table(&spectra, &layers.sensitivity, white);
+    let light = bake::light_table(&spectra, &layers.sensitivity);
     let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
-    // The film's filtration, a gain on each layer's light: a grey exposes a layer at its offset.
-    let gains = layers.filtration.map(|d| 10f64.powf(d));
-    let light: Vec<[f64; 3]> = light.iter().map(|v| std::array::from_fn(|c| v[c] * gains[c])).collect();
     let n = spectra.nodes;
     let le = &layers.log_exposure;
     let m = le.len();
@@ -202,7 +192,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 }
 
 fn bake(entry: &VirtualEntry) -> Stock {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry), entry.filtration).expect("a stock's profile reads once its file is taken");
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry)).expect("a stock's profile reads once its file is taken");
     stock_of(layers, entry)
 }
 
@@ -214,21 +204,13 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
     STOCKS.get((entry.stock, entry.revision), || bake(&entry))
 }
 
-/// What a film's file leaving them out takes: its reference, and a colour negative's filtration through the scanner.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Derived {
-    pub reference: StockReference,
-    pub filtration: Option<[f64; 3]>,
-}
-
-/// What a film's `profile` derives at `balance`: a colour negative's filtration where `filtration` leaves it out, then
-/// its reference; or why the profile does not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3, filtration: Option<[f64; 3]>) -> Result<Derived, String> {
+/// The reference a film's `profile` derives at `balance`, what its file leaving it out takes; or why the profile does
+/// not read or bakes no finite reference.
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3) -> Result<StockReference, String> {
     if light_of(balance).is_none() {
         return Err("a data sheet's film is balanced for daylight or tungsten".into());
     }
-    let layers = layers(profile, is_silver, reversal, couplers, filtration)?;
-    let filtration = (!is_silver && !reversal).then_some(layers.filtration);
+    let layers = layers(profile, is_silver, reversal, couplers)?;
     if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }
@@ -236,10 +218,10 @@ pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, 
     let gaze = gaze_of(&layers);
     let stock = Stock { kernel, table, scan: layers.scan, gaze, reference: unread(), revision: 0 };
     let r = if reversal { unread() } else { derived(&stock) };
-    if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) || !filtration.is_none_or(|f| f.iter().all(|v| v.is_finite())) {
+    if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) {
         return Err("its profile bakes a reference that is not finite".into());
     }
-    Ok(Derived { reference: r, filtration })
+    Ok(r)
 }
 
 impl Stock {

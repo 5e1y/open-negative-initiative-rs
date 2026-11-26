@@ -1,6 +1,5 @@
 //! The person's own stocks and papers read beside the shipped ones and baked to be checked: one that fails is refused
-//! with why, its version taken before staying in use; a film leaving out its reference or its filtration takes its
-//! sheets'.
+//! with why, its version taken before staying in use; a film leaving out its reference takes its sheet's.
 
 use crate::film;
 use crate::paper::{self, frontier};
@@ -30,7 +29,7 @@ pub struct Loader {
     shipped: Vec<Loaded>,
     shipped_svgs: Vec<(String, Origin, Arc<[u8]>)>,
     /// Each content's verdict: what its films derive, or why it is refused.
-    checked: HashMap<u64, Result<Vec<film::Derived>, String>>,
+    checked: HashMap<u64, Result<Vec<oni_settings::virtual_film::StockReference>, String>>,
     /// The bytes each file was last taken with, which stand in while an edit of it is refused.
     in_use: HashMap<PathBuf, Vec<u8>>,
     told: HashSet<Refusal>,
@@ -134,8 +133,7 @@ impl Loader {
         if let File::Film(f) = &mut file {
             let blocks = f.film.iter_mut().chain(f.developments.iter_mut().filter_map(|d| d.film.as_mut()));
             for (b, derived) in blocks.zip(derived) {
-                b.reference.get_or_insert(derived.reference);
-                b.filtration = b.filtration.or(derived.filtration);
+                b.reference.get_or_insert(derived);
             }
         }
         Ok(Loaded { name: file_name(path), origin: Origin::Own(path.to_owned()), file, hash })
@@ -181,7 +179,7 @@ pub fn look_key(stem: &str) -> String {
     key.trim_end_matches('-').chars().take(80).collect()
 }
 
-fn checked(file: &File) -> Result<Vec<film::Derived>, String> {
+fn checked(file: &File) -> Result<Vec<oni_settings::virtual_film::StockReference>, String> {
     match file {
         File::Film(f) => {
             let silver = f.kind == FilmType::BlackAndWhite;
@@ -192,8 +190,8 @@ fn checked(file: &File) -> Result<Vec<film::Derived>, String> {
                     let couplers = b.couplers.unwrap_or(film::bake::COUPLERS);
                     let reversal = f.kind == FilmType::ColourSlide;
                     let derived = match b.neutral {
-                        true => film::derive_neutral(b.profile.get()).map(|reference| film::Derived { reference, filtration: None }),
-                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers, b.filtration),
+                        true => film::derive_neutral(b.profile.get()),
+                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
                     };
                     derived.map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })

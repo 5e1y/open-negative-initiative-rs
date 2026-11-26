@@ -237,7 +237,6 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             silver: f.kind == FilmType::BlackAndWhite,
                             reversal: f.kind == FilmType::ColourSlide,
                             neutral: b.neutral,
-                            filtration: b.filtration,
                             couplers: b.couplers,
                             effects: b.effects.unwrap_or_default().rests(),
                             look: b.look.clone(),

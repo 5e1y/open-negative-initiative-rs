@@ -29,8 +29,6 @@ pub struct VirtualEntry {
     pub reversal: bool,
     /// A film of no colour of its own, its profile its density range and its tone curve.
     pub neutral: bool,
-    /// A colour negative's filtration through the scanner, each layer's exposure offset in log exposure.
-    pub filtration: Option<[f64; 3]>,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
     /// The rests a digital photo's film effects take on it.

@@ -147,6 +147,9 @@ pub const FILM_GRAIN_VERSION: i64 = 78;
 /// The version every colour negative's virtual film came to be read by ONI's scanner, a sensor's measured sensitivities
 /// under a D50 lamp decoded as a RAW is: a digital photo's gains and windows move onto its stock's new reference.
 pub const UNIVERSAL_SCANNER_VERSION: i64 = 79;
+/// The version a colour negative's virtual film came to expose its three layers alike, no layer offset and no gamut
+/// compressed: a digital photo's gains and windows move onto its stock's two points.
+pub const TWO_POINTS_VERSION: i64 = 80;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

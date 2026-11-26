@@ -1,6 +1,6 @@
 //! ONI's scanner reading a colour negative: the GPU's film and scan against their scalar reference, the bare film's colour
-//! against two real Portra 800 rolls scanned on real cameras, a film's filtration derived again from its sheet, and the
-//! grain mixed by the scanner's own gaze. Each verdict has a twin.
+//! against two real Portra 800 rolls scanned on real cameras, a film's two points and where a grey leaves its black, and
+//! the grain mixed by the scanner's own gaze. Each verdict has a twin.
 
 mod common;
 
@@ -54,21 +54,56 @@ fn the_bare_film_reads_as_on_two_real_rolls() {
     assert!(off_the_rolls(ratios(alone)) > 2.0 * BARE_TOLERANCE, "{:.3}", off_the_rolls(ratios(alone)));
 }
 
+/// The two points' ranges, red and blue over green, and the stops under the mid grey where each channel's share of a grey
+/// ramp passes 0.005, as the colorimetry's measure off the app gives them (`spec-deux-points.md`).
+const TWO_POINTS: [(&str, [f32; 2], [f32; 3]); 3] = [
+    ("kodak-portra-800", [0.825, 1.212], [-5.22, -5.29, -5.23]),
+    ("kodak-gold-200", [0.843, 1.152], [-5.68, -5.69, -5.15]),
+    ("kodak-vision3-250d", [0.829, 1.065], [-6.54, -6.48, -6.13]),
+];
+
+/// Where each channel of a grey ramp leaves the black on `stock`'s two points, in stops under the mid grey; the scene
+/// grey lit by `tint` a channel.
+fn leaves_black(stock: VirtualStock, tint: [f32; 3]) -> [f32; 3] {
+    let k = oni_pipeline::conversion::stage47(&film::on_reference(stock, &stock.reference()));
+    let code = |l: f32| if l <= 0.003_130_8 { 12.92 * l } else { 1.055 * l.powf(1.0 / 2.4) - 0.055 };
+    let mut out = [f32::NAN; 3];
+    for i in (0..=900).rev() {
+        let stops = -(i as f32) / 100.0;
+        let v = film::GREY * stops.exp2();
+        let shown = cpu::stage47(film::shot(stock, [v * tint[0], v * tint[1], v * tint[2], 1.0], 0.0), &k);
+        for c in 0..3 {
+            if out[c].is_nan() && code(shown[c]) > 0.005 {
+                out[c] = stops;
+            }
+        }
+    }
+    out
+}
+
 #[test]
-fn a_films_filtration_is_its_sheets_through_the_scanner() {
-    let entry = PORTRA.entry();
-    let held = entry.filtration.expect("a colour negative's file holds its filtration");
-    let derived = film::derive(&entry.profile, entry.balance, false, false, film::couplers(&entry), None).unwrap();
-    let derived = derived.filtration.expect("a colour negative derives its filtration");
-    println!("Portra 800's filtration held {held:?}, derived {derived:?}");
-    assert!((0..3).all(|c| (held[c] - derived[c]).abs() < 1e-5), "{held:?} {derived:?}");
-    // The derivation lays a mid grey on one share of the three windows: the reference its filtration bakes reads it so.
-    let held_reference = film::derive(&entry.profile, entry.balance, false, false, film::couplers(&entry), Some(held)).unwrap().reference;
-    let reference = PORTRA.reference();
-    assert!((0..3).all(|c| (held_reference.white[c] - reference.white[c]).abs() < 1e-5), "{held_reference:?}");
-    // Twin: a filtration a tenth of a log exposure off bakes another reference.
-    let off = film::derive(&entry.profile, entry.balance, false, false, film::couplers(&entry), Some([held[0] + 0.1, 0.0, held[2]])).unwrap().reference;
-    assert!((off.white[0] - reference.white[0]).abs() > 1e-3, "{off:?}");
+fn a_grey_leaves_the_black_on_the_three_channels_together() {
+    for (key, ranges, exits) in TWO_POINTS {
+        let stock = VirtualStock::of(key);
+        let r = stock.reference();
+        let span: [f32; 3] = std::array::from_fn(|c| r.white[c] - r.black[c]);
+        let (red, blue) = (span[0] / span[1], span[2] / span[1]);
+        let left = leaves_black(stock, [1.0; 3]);
+        println!("{key}: ranges {red:.3} {blue:.3}, a grey leaves the black at {left:?} stops");
+        assert!((red - ranges[0]).abs() < 0.01 && (blue - ranges[1]).abs() < 0.01, "{key}: {red} {blue}");
+        assert!((0..3).all(|c| (left[c] - exits[c]).abs() < 0.1), "{key}: {left:?}");
+        // Twin: the reference format 79 laid, its layers offset, holds other ranges.
+        let was = oni_settings::migrate::two_points::offset(stock);
+        let was_span: [f32; 3] = std::array::from_fn(|c| was.white[c] - was.black[c]);
+        assert!((was_span[2] / was_span[1] - ranges[1]).abs() > 0.01, "twin {key}: {was:?}");
+    }
+    // Portra 800's three channels leave together; twin: a grey lit by the layers' former offsets leaves them apart.
+    let portra = leaves_black(PORTRA, [1.0; 3]);
+    let spread = |l: [f32; 3]| l.iter().cloned().fold(f32::MIN, f32::max) - l.iter().cloned().fold(f32::MAX, f32::min);
+    assert!(spread(portra) < 0.1, "{portra:?}");
+    let offset = leaves_black(PORTRA, [10f32.powf(0.22651), 1.0, 10f32.powf(0.34729)]);
+    println!("a grey lit by the former offsets leaves at {offset:?}");
+    assert!(spread(offset) > 0.3, "twin: {offset:?}");
 }
 
 #[test]
