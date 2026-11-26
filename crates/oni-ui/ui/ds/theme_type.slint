@@ -3,7 +3,11 @@
 import { DS } from "tokens.slint";
 
 export global Type {
-    out property <string> family: "Inter";
+    // The text face: ONI Sans, Zalando Sans at its normal width, tabular figures.
+    out property <string> family: "ONI Sans";
+    // The display face: Zalando Sans Expanded Black, for titles, large figures and the brand's screens.
+    out property <string> display: "Zalando Sans Expanded";
+    out property <int> display-weight: 900;
     out property <int> regular: 400;
     out property <int> medium: 500;
     out property <int> strong: 600;
@@ -19,6 +23,6 @@ export global Type {
     // A mode's or a sheet's title, set bold: a size and a weight over the block titles under it.
     out property <length> title: 17px;
     out property <length> heading: 24px;
-    // A note's lines, opened from Inter's natural 1.21 em to about 1.4 em, so a paragraph reads.
+    // A note's lines, opened from the face's natural spacing to about 1.4 em, so a paragraph reads.
     out property <float> leading: 1.15;
 }

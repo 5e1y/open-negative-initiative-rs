@@ -4,6 +4,9 @@ use super::*;
 
 /// Each check by the name the runner prints and filters on.
 pub(crate) const CHECKS: &[(&str, fn())] = &[
+    ("typeface::the_faces_on_the_main_screens_in_english", typeface::the_faces_on_the_main_screens_in_english),
+    ("typeface::the_faces_on_the_main_screens_in_french", typeface::the_faces_on_the_main_screens_in_french),
+    ("typeface::the_faces_on_the_main_screens_in_spanish", typeface::the_faces_on_the_main_screens_in_spanish),
     ("motion::the_photo_flies_between_its_tile_and_the_canvas_and_reduce_motion_lays_it_at_once", motion::the_photo_flies_between_its_tile_and_the_canvas_and_reduce_motion_lays_it_at_once),
     ("one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner", one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner),
     ("one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it", one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it),

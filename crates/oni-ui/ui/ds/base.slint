@@ -1,6 +1,11 @@
 // The primitives every screen composes: text, glyphs, pictures, surfaces, rules and stacks.
-// Inter's digits and its + − × are mapped to their tabular forms, so a value keeps its width as it changes.
-import "../../fonts/Inter.ttf";
+// ONI Sans's digits and its + − × are mapped to their tabular forms, so a value keeps its width as it changes;
+// its four weights and the display face are built by scripts/oni-fonts.py from Zalando Sans.
+import "../../fonts/ONISans-Regular.ttf";
+import "../../fonts/ONISans-Medium.ttf";
+import "../../fonts/ONISans-SemiBold.ttf";
+import "../../fonts/ONISans-Bold.ttf";
+import "../../fonts/ZalandoSans_Expanded-Black.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, CardStyle, ScannerStyle } from "theme.slint";
@@ -86,8 +91,13 @@ export global Roles {
         if (role == TextRole.heading) { return Type.heading; }
         Type.label
     }
+    // A mode's or a sheet's title and a heading speak in the display face; every other word in the text face.
+    public pure function family(role: TextRole) -> string {
+        if (role == TextRole.title || role == TextRole.heading) { return Type.display; }
+        Type.family
+    }
     public pure function weight(role: TextRole) -> int {
-        if (role == TextRole.title) { return Type.bold; }
+        if (role == TextRole.title || role == TextRole.heading) { return Type.display-weight; }
         if (role == TextRole.button || role == TextRole.section) { return Type.strong; }
         Type.regular
     }
@@ -99,7 +109,7 @@ export component Label inherits Text {
     in property <Tone> tone: root.role == TextRole.note ? Tone.secondary : Tone.primary;
     in property <color> ink: Tones.ink(root.tone);
     in property <bool> centred;
-    font-family: Type.family;
+    font-family: Roles.family(root.role);
     font-size: Roles.size(root.role);
     font-weight: Roles.weight(root.role);
     line-height-factor: root.role == TextRole.note ? Type.leading : 1;
