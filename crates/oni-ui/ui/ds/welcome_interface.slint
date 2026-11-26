@@ -1,0 +1,162 @@
+// The first small gift's scene: the window in miniature, built on the shell's own gauges. The hand opens a
+// photo of the gallery: it lifts off its tile and grows into the editor's picture while the panel unfolds
+// upward beside it; a slider moves; then it all folds back, and again.
+import { Colour, Space, Radius, ShellStyle, ButtonStyle } from "theme.slint";
+import { Label, TextRole, Tone } from "base.slint";
+import { Curves, Arrow } from "welcome.slint";
+
+export global InterfaceBeats {
+    out property <float> hand-in: 0.5;
+    out property <float> to-tile-for: 0.9;
+    out property <float> open: 1.7;
+    out property <float> press-for: 0.12;
+    out property <float> lift-for: 0.3;
+    out property <float> grow-from: 1.95;
+    out property <float> grow-for: 0.75;
+    out property <float> unfold-from: 2.1;
+    out property <float> unfold-for: 0.8;
+    out property <float> slide-from: 3.4;
+    out property <float> slide-for: 1.1;
+    out property <float> back-from: 5.6;
+    out property <float> back-for: 0.75;
+    out property <float> rest: 1.4;
+    out property <length> lift: 14px;
+    // The columns' shares of a stage narrower than the window they stand for.
+    out property <float> side-share: 0.2;
+    out property <float> panel-share: 0.28;
+}
+
+export component InterfaceScene inherits Rectangle {
+    clip: true;
+    background: Colour.canvas;
+    // A moment of the loop held still, in seconds, for a check's shot; negative, the scene plays.
+    in property <float> held: -1;
+    property <duration> began;
+    init => { root.began = animation-tick(); }
+    property <float> t: root.held >= 0 ? root.held : Math.mod((animation-tick() - root.began) / 1s, InterfaceBeats.back-from + InterfaceBeats.back-for + InterfaceBeats.rest);
+    function progress(from: float, length: float) -> float { max(0, min(1, (root.t - from) / length)) }
+    function glided(from: float, length: float) -> float { Curves.glide(root.progress(from, length)) }
+    function settled(from: float, length: float) -> float { Curves.settle(root.progress(from, length)) }
+    property <bool> pressing: root.t >= InterfaceBeats.open - InterfaceBeats.press-for && root.t < InterfaceBeats.open;
+    // Opened, from the tile to the editor's picture; folded back at the loop's end.
+    property <float> grown: root.glided(InterfaceBeats.grow-from, InterfaceBeats.grow-for) - root.glided(InterfaceBeats.back-from, InterfaceBeats.back-for);
+    property <float> lifted: root.settled(InterfaceBeats.open, InterfaceBeats.lift-for) - root.settled(InterfaceBeats.back-from + InterfaceBeats.back-for, 0.2);
+    property <float> unfolded: root.settled(InterfaceBeats.unfold-from, InterfaceBeats.unfold-for) - root.glided(InterfaceBeats.back-from, InterfaceBeats.back-for * 0.8);
+    property <float> slid: root.glided(InterfaceBeats.slide-from, InterfaceBeats.slide-for) - root.glided(InterfaceBeats.back-from, InterfaceBeats.back-for);
+    window := Rectangle {
+        x: Space.l;
+        y: Space.l;
+        width: root.width - 2 * Space.l;
+        height: root.height - 2 * Space.l;
+        background: Colour.ground;
+        border-radius: Radius.card;
+        clip: true;
+        property <length> bar: ShellStyle.bar-height;
+        property <length> side: min(ShellStyle.library-width, self.width * InterfaceBeats.side-share);
+        property <length> panel: min(ShellStyle.panel-width, self.width * InterfaceBeats.panel-share);
+        property <length> tile: (self.card-w - 2 * Space.l - 2 * Space.s) / 3;
+        property <length> card-x: self.side;
+        property <length> card-w: self.width - self.side - self.panel;
+        property <length> card-h: self.height - self.bar;
+        // The bar: three keys at its left, the mode's keycap at its right.
+        for key in 3: Rectangle {
+            x: Space.m + key * (ButtonStyle.bar-key + Space.s);
+            y: (window.bar - ButtonStyle.bar-glyph-key) / 2;
+            width: ButtonStyle.bar-key;
+            height: ButtonStyle.bar-glyph-key;
+            border-radius: ButtonStyle.radius;
+            background: Colour.hover;
+        }
+        Rectangle {
+            x: window.width - self.width - Space.m;
+            y: (window.bar - ButtonStyle.cap-height) / 2;
+            width: 96px;
+            height: ButtonStyle.cap-height;
+            border-radius: ButtonStyle.radius;
+            background: Colour.raised;
+            Label { text: root.grown > 0.5 ? @tr("EXPORT") : @tr("EDIT"); role: TextRole.button; centred: true; }
+        }
+        // The library's column, its folders.
+        for row[i] in [@tr("Favourites"), "Roll #12", "Roll #11", "Session vol", @tr("This Computer"), "2026", "2025"]: Label {
+            x: ShellStyle.column-inset;
+            y: window.bar + Space.m + i * (ButtonStyle.height + Space.xs);
+            height: ButtonStyle.height;
+            text: row;
+            tone: i == 0 || i == 4 ? Tone.tertiary : i == 3 ? Tone.primary : Tone.secondary;
+            role: i == 0 || i == 4 ? TextRole.caption : TextRole.label;
+        }
+        Rectangle {
+            x: window.card-x;
+            y: window.bar;
+            width: window.card-w;
+            height: window.card-h;
+            background: Colour.canvas;
+        }
+        // The panel, unfolding from its foot upward, its sections one after the other.
+        Rectangle {
+            x: window.width - window.panel;
+            y: window.bar + window.card-h * (1 - root.unfolded);
+            width: window.panel;
+            height: window.card-h * root.unfolded;
+            clip: true;
+            background: Colour.ground;
+            for section[s] in [@tr("Colour"), @tr("Lighting"), @tr("Film")]: Rectangle {
+                x: ShellStyle.column-inset;
+                y: Space.m + s * 180px;
+                width: window.panel - 2 * ShellStyle.column-inset;
+                height: 160px;
+                Label { x: 0; y: 0; width: parent.width; height: ButtonStyle.height; text: section; role: TextRole.section; }
+                for rail in 3: Rectangle {
+                    y: ButtonStyle.height + Space.s + rail * 40px;
+                    height: 36px;
+                    Rectangle { y: 22px; height: 4px; border-radius: 2px; background: Colour.track; }
+                    Rectangle {
+                        property <float> at: s == 0 && rail == 0 ? 0.62 - 0.3 * root.slid : 0.5 + 0.08 * (rail - 1);
+                        x: parent.width * self.at - self.width / 2;
+                        y: 17px;
+                        width: 14px;
+                        height: 14px;
+                        border-radius: 7px;
+                        background: Colour.knob;
+                    }
+                }
+            }
+        }
+        // The gallery's tiles; the opened one lifts off and grows into the editor's picture.
+        property <[image]> photos: [@image-url("../splash/1.0.0.jpg"), @image-url("../splash/1.3.0.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../welcome/film-print.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.0.0.jpg")];
+        property <length> grid-x: window.card-x + Space.l;
+        property <length> grid-y: window.bar + Space.l;
+        for photo[i] in window.photos: Rectangle {
+            property <bool> chosen: i == 1;
+            property <length> home-x: window.grid-x + Math.mod(i, 3) * (window.tile + Space.s);
+            property <length> home-y: window.grid-y + floor(i / 3) * (window.tile * 0.67 + Space.s);
+            property <length> to-w: window.card-w - 2 * Space.l;
+            property <float> g: self.chosen ? root.grown : 0;
+            x: self.home-x + (window.card-x + Space.l - self.home-x) * self.g;
+            property <length> to-y: window.bar + (window.card-h - self.to-w * 0.67) / 2;
+            y: self.home-y + (self.to-y - self.home-y) * self.g - (self.chosen ? InterfaceBeats.lift * root.lifted * (1 - self.g) : 0);
+            width: window.tile + (self.to-w - window.tile) * self.g;
+            height: self.width * 0.67;
+            z: self.chosen ? 1 : 0;
+            opacity: self.chosen ? 1 : 1 - root.grown;
+            drop-shadow-color: #000000aa;
+            drop-shadow-blur: self.chosen ? 24px * root.lifted : 0px;
+            drop-shadow-offset-y: self.chosen ? 10px * root.lifted : 0px;
+            Image { width: parent.width; height: parent.height; source: photo; image-fit: cover; }
+        }
+        property <length> aim-x: window.grid-x + window.tile * 1.5 + Space.s;
+        property <length> aim-y: window.grid-y + window.tile * 0.4;
+        property <float> go: root.glided(InterfaceBeats.hand-in, InterfaceBeats.to-tile-for);
+        property <float> away: root.glided(InterfaceBeats.slide-from + InterfaceBeats.slide-for, 0.6);
+        property <float> to-rail: root.glided(InterfaceBeats.slide-from - 0.6, 0.6);
+        property <length> rail-x: window.width - window.panel + ShellStyle.column-inset + (window.panel - 2 * ShellStyle.column-inset) * (0.62 - 0.3 * root.slid);
+        property <length> rail-y: window.bar + Space.m + ButtonStyle.height + Space.s + 24px;
+        Arrow {
+            x: window.width * 0.2 + (window.aim-x - window.width * 0.2) * window.go + (window.rail-x - window.aim-x) * window.to-rail;
+            y: window.height * 0.95 + (window.aim-y - window.height * 0.95) * window.go + (window.rail-y - window.aim-y) * window.to-rail + window.height * 0.4 * window.away;
+            z: 2;
+            transform-scale: root.pressing ? 0.9 : 1;
+            opacity: root.progress(InterfaceBeats.hand-in - 0.2, 0.3) * (1 - window.away);
+        }
+    }
+}

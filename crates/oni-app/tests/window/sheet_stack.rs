@@ -9,7 +9,7 @@ use slint::{ComponentHandle, PhysicalSize, SharedString};
 
 use crate::common;
 
-const PAGES: usize = 7;
+const PAGES: usize = 6;
 
 fn right(rig: &common::Rig) {
     rig.key(&SharedString::from(Key::RightArrow));
@@ -38,7 +38,7 @@ pub(crate) fn a_sheet_closing_over_another_hands_it_the_keyboard() {
     oni_app::language::speak(Some(oni_i18n::Language::English));
     oni_app::keycaps::serve(&window);
     let (help, upgraded) = (window.global::<Help>(), window.global::<Upgraded>());
-    help.set_release("1.6".into());
+    help.set_release("2.0".into());
     help.set_welcome_shown(true);
     window.show().unwrap();
     rig.window.set_size(PhysicalSize::new(1280, 800));
@@ -54,13 +54,13 @@ pub(crate) fn a_sheet_closing_over_another_hands_it_the_keyboard() {
     rig.key("\t");
     assert_eq!(rings(), 1, "Tab rings the key it gives the keyboard to");
 
-    // The dots: each named by its place among the seven, the shown one alone selected, following a turn.
+    // The dots: each named by its place among the six, the shown one alone selected, following a turn.
     let shown = |page: usize| (0..PAGES).map(|i| Some(i == page)).collect::<Vec<_>>();
     assert_eq!(dots(&window, PAGES), shown(1), "every dot named, page 2 selected");
     right(&rig);
     assert_eq!(dots(&window, PAGES), shown(2), "the selection follows the page");
     // Twin: a name the dots do not carry is not found, so a dot without its name would fail above.
-    assert!(dots(&window, PAGES - 1).iter().all(Option::is_none), "no dot names a count of six");
+    assert!(dots(&window, PAGES - 1).iter().all(Option::is_none), "no dot names a count of five");
 
     // A sheet over it takes the keyboard: the arrows no longer reach the welcome.
     upgraded.set_shown(true);

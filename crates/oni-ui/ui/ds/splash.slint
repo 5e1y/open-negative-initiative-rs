@@ -1,5 +1,5 @@
 // `Splash`: a picture per version, the logo, the version line and the photo's credit along its
-// foot; the app's window opens on it, and the welcome sheet shows it.
+// foot; the app's window opens on it.
 import { DS } from "tokens.slint";
 import { Colour, Space, Type } from "theme.slint";
 import { Picture, Ground, Fit } from "base.slint";
@@ -17,8 +17,6 @@ export global SplashStyle {
     out property <length> inset-bottom: DS.space-lg + DS.space-xs;
     out property <length> lines: DS.space-sm + DS.space-xs;
     out property <length> line-indent: DS.space-xs;
-    // `welcomeCaptionScale`: the welcome's photo carries a smaller caption.
-    out property <float> welcome-scale: DS.control-welcome-caption-scale / 1px;
 }
 
 // `SplashCaption`: the logo over the version line at the foot's leading corner, "Photo" over the
@@ -64,14 +62,13 @@ export component SplashCaption inherits Rectangle {
     }
 }
 
-// A version's photo cropped to fill, the splash's caption over its foot; on the welcome's stage at
-// the welcome's scale.
-export component WelcomePhoto inherits Picture {
+// A version's photo cropped to fill, the splash's caption over its foot.
+export component VersionPhoto inherits Picture {
     // The version's picture, oldest first.
     in property <int> picture;
     in property <string> line;
     in property <string> credit;
-    in property <float> scale: SplashStyle.welcome-scale;
+    in property <float> scale: 1;
     clip: true;
     ground: Ground.canvas;
     fit: Fit.cover;
@@ -85,13 +82,14 @@ export component WelcomePhoto inherits Picture {
     }
 }
 
+
 // The app's window while it starts: the version's picture over a band in the app's grey that says
 // the step under way, the launch's time, its bar and the steps done; the app beneath takes no press.
 // The band keeps its height; the picture takes what a menu bar drawn in the window leaves.
 export component StarterView inherits Rectangle {
     background: Colour.ground;
     TouchArea { }
-    WelcomePhoto {
+    VersionPhoto {
         x: 0;
         y: 0;
         width: parent.width;
@@ -99,7 +97,6 @@ export component StarterView inherits Rectangle {
         picture: Starter.picture;
         line: Starter.line;
         credit: Starter.credit;
-        scale: 1;
     }
     VerticalLayout {
         x: 0;

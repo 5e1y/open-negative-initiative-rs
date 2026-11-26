@@ -1,0 +1,183 @@
+// The huge gift's scene: one digital photo through the virtual negative, a step at a time, each a real
+// render of the app: the photo, its negative on the film, the grain up close, the negative on the scanner's
+// light, and the inverted print, which a drag compares with the photo it came from.
+import { Colour, Motion, Space, Type, Stroke } from "theme.slint";
+import { Label, TextRole, Tone } from "base.slint";
+import { Curves } from "welcome.slint";
+
+export global FilmStyle {
+    out property <int> steps: 5;
+    // Long enough to read a step's lines once while its picture settles.
+    out property <duration> hold: 5200ms;
+    out property <duration> fade: 700ms;
+    // How far a picture drifts in while its step shows, as a slow push of the camera.
+    out property <float> drift: 0.05;
+    out property <length> handle: 28px;
+    out property <length> sprocket: 10px;
+    out property <color> lamp: #f4f1ea;
+    out property <color> film-base: #1a120c;
+    out property <color> bracket: #ffffffcc;
+}
+
+// A caption laid on the picture, on a veil that keeps it read over any part of it.
+component Chip inherits Rectangle {
+    in property <string> text;
+    width: words.preferred-width + 2 * Space.s;
+    height: words.preferred-height + Space.s;
+    border-radius: self.height / 2;
+    background: Colour.overlay;
+    words := Label { x: Space.s; text: root.text; role: TextRole.caption; }
+}
+
+// A picture of one step: shown while its step is, drifting in from the moment it came.
+component Layer inherits Rectangle {
+    in property <bool> shown;
+    in property <float> drift;
+    in property <image> source;
+    opacity: root.shown ? 1 : 0;
+    visible: self.opacity > 0;
+    animate opacity { duration: FilmStyle.fade; easing: ease-in-out; }
+    clip: true;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: cover;
+        transform-scale: 1 + FilmStyle.drift * root.drift;
+        transform-origin: { x: self.width / 2, y: self.height / 2 };
+    }
+    @children
+}
+
+export component FilmScene inherits Rectangle {
+    // The step shown, 0 the photo to 4 the print; a click on a step holds it, and the scene stops turning.
+    in-out property <int> step;
+    in-out property <bool> held;
+    // The share of the print the photo covers on the last step, from the left.
+    in-out property <float> split: 0.5;
+    in property <string> stock: "Kodak Portra 800";
+    clip: true;
+    background: Colour.canvas;
+    property <duration> since;
+    changed step => { root.since = animation-tick(); }
+    property <float> drift: Curves.settle(min(1, (animation-tick() - root.since) / FilmStyle.hold));
+    Timer {
+        interval: FilmStyle.hold;
+        running: !root.held;
+        triggered => { root.step = Math.mod(root.step + 1, FilmStyle.steps); }
+    }
+    Layer { width: parent.width; height: parent.height; shown: root.step == 0; drift: root.drift; source: @image-url("../welcome/film-photo.jpg"); }
+    Layer {
+        width: parent.width;
+        height: parent.height;
+        shown: root.step == 1;
+        drift: root.drift;
+        source: @image-url("../welcome/film-negative.jpg");
+    }
+    // Up close, the film's grains and the glow its highlights bleed into its emulsion.
+    Layer {
+        width: parent.width;
+        height: parent.height;
+        shown: root.step == 2;
+        drift: root.drift;
+        source: @image-url("../welcome/film-grain.jpg");
+    }
+    // The negative laid on the scanner's lamp, its sprockets along both edges, under the camera's brackets.
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        opacity: root.step == 3 ? 1 : 0;
+        visible: self.opacity > 0;
+        animate opacity { duration: FilmStyle.fade; easing: ease-in-out; }
+        background: FilmStyle.lamp;
+        property <length> strip-h: self.height * 0.74;
+        property <length> strip-w: self.width * 0.9;
+        strip := Rectangle {
+            x: (parent.width - parent.strip-w) / 2;
+            y: (parent.height - parent.strip-h) / 2;
+            width: parent.strip-w;
+            height: parent.strip-h;
+            background: FilmStyle.film-base;
+            transform-scale: 1 + FilmStyle.drift * root.drift * 0.6;
+            property <length> edge: FilmStyle.sprocket * 2.4;
+            property <int> holes: floor(self.width / (FilmStyle.sprocket * 2.2));
+            for i in strip.holes: Rectangle {
+                x: (i + 0.25) * strip.width / strip.holes;
+                y: (strip.edge - FilmStyle.sprocket) / 2;
+                width: FilmStyle.sprocket;
+                height: FilmStyle.sprocket * 1.3;
+                border-radius: 2px;
+                background: FilmStyle.lamp;
+            }
+            for i in strip.holes: Rectangle {
+                x: (i + 0.25) * strip.width / strip.holes;
+                y: strip.height - (strip.edge + FilmStyle.sprocket * 1.3) / 2;
+                width: FilmStyle.sprocket;
+                height: FilmStyle.sprocket * 1.3;
+                border-radius: 2px;
+                background: FilmStyle.lamp;
+            }
+            Image {
+                x: Space.m;
+                y: strip.edge;
+                width: parent.width - 2 * Space.m;
+                height: parent.height - 2 * strip.edge;
+                source: @image-url("../welcome/film-negative.jpg");
+                image-fit: cover;
+            }
+        }
+        for corner in 4: Rectangle {
+            property <bool> right: Math.mod(corner, 2) == 1;
+            property <bool> low: corner >= 2;
+            x: self.right ? parent.width * 0.88 - self.width : parent.width * 0.12;
+            y: self.low ? parent.height * 0.84 - self.height : parent.height * 0.16;
+            width: Space.l;
+            height: Space.l;
+            Rectangle { x: parent.right ? parent.width - Stroke.emphasis : 0; width: Stroke.emphasis; background: FilmStyle.bracket; }
+            Rectangle { y: parent.low ? parent.height - Stroke.emphasis : 0; height: Stroke.emphasis; background: FilmStyle.bracket; }
+        }
+    }
+    // The print, the photo laid over its left part as far as the hand drags the line between them.
+    Layer {
+        width: parent.width;
+        height: parent.height;
+        shown: root.step == 4;
+        source: @image-url("../welcome/film-print.jpg");
+        Rectangle {
+            width: parent.width * root.split;
+            height: parent.height;
+            clip: true;
+            Image { width: root.width; height: root.height; source: @image-url("../welcome/film-photo.jpg"); image-fit: cover; }
+        }
+        Rectangle {
+            x: parent.width * root.split - Stroke.emphasis / 2;
+            width: Stroke.emphasis;
+            background: Colour.white;
+        }
+        Rectangle {
+            x: parent.width * root.split - self.width / 2;
+            y: (parent.height - self.height) / 2;
+            width: FilmStyle.handle;
+            height: FilmStyle.handle;
+            border-radius: self.width / 2;
+            background: Colour.white;
+            drop-shadow-blur: 6px;
+            drop-shadow-color: #00000088;
+            Text { text: "‹ ›"; color: Colour.black; font-size: Type.label; font-weight: Type.bold; horizontal-alignment: center; vertical-alignment: center; }
+        }
+        Chip { x: Space.m; y: Space.m; text: @tr("Your photo"); }
+        Chip { x: parent.width - self.width - Space.m; y: Space.m; text: @tr("On {}", root.stock); }
+        TouchArea {
+            mouse-cursor: ew-resize;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down) { root.held = true; }
+            }
+            moved => {
+                if (self.pressed) { root.split = max(0, min(1, self.mouse-x / self.width)); }
+            }
+        }
+    }
+    if root.step == 1: Chip { x: Space.m; y: parent.height - self.height - Space.m; text: @tr("The negative, on {}", root.stock); }
+    if root.step == 2: Chip { x: Space.m; y: parent.height - self.height - Space.m; text: @tr("Grain and halation, up close"); }
+    if root.step == 3: Chip { x: Space.m; y: parent.height - self.height - Space.m; text: @tr("Nikon D850, D50 lamp"); }
+}

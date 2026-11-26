@@ -1,5 +1,5 @@
-//! The Help menu in the window: What's New's notes on the headings they changed, the welcome sheet
-//! shown once per release, Report a Bug sending its sealed log off this thread, the console.
+//! The Help menu in the window: What's New's notes on the headings they changed, the welcome shown once
+//! per release with its links, the pause's line, Report a Bug sending its sealed log off this thread, the console.
 
 use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
@@ -25,11 +25,19 @@ pub type Reporter = Arc<dyn Fn(&str, Option<String>) -> Result<(), String> + Sen
 
 /// `WhatsNew.preferenceKey`: the notes a hover has read.
 pub const SEEN_KEY: &str = "whatsNewSeen";
-/// `WelcomeSheet.preferenceKey` and `edition`: the release the sheet speaks of, 1.X; a new one shows it
+/// `WelcomeSheet.preferenceKey` and `edition`: the release the sheet speaks of, X.Y; a new one shows it
 /// to everyone again, a patch of a release seen never does.
 pub const WELCOME_KEY: &str = "welcomeSeen";
-pub const EDITION: &str = "1.6";
+pub const EDITION: &str = "2.0";
 const SITE: &str = "https://open-negative-initiative.com";
+/// Where the welcome's message sends a person who wants to help: the donation page, ONI's Instagram once
+/// it has one, the splash contest's form (its id alone, the inbox behind it never named here) and hashtag.
+pub const DONATE: &str = "https://ko-fi.com/remicourtillon";
+pub const INSTAGRAM: Option<&str> = None;
+pub const CONTEST_FORM: Option<&str> = None;
+pub const CONTEST_TAG: &str = "#ONIsplash";
+/// Development pauses between these days, both included, local time; the gallery says so, then nothing.
+pub const PAUSE: ((i32, u32, u32), (i32, u32, u32)) = ((2026, 12, 15), (2027, 1, 15));
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
 /// `Diagnostics.ceiling`: the lines the console shows, or a long session lays out megabytes each read.
@@ -101,6 +109,18 @@ pub fn welcome_due(seen: Option<&str>) -> bool {
     seen.map(release) != Some(EDITION)
 }
 
+/// Whether `day`, as (year, month, day), falls in the pause.
+pub fn paused(day: (i32, u32, u32)) -> bool {
+    (PAUSE.0..=PAUSE.1).contains(&day)
+}
+
+/// Today in this machine's calendar, as `paused` reads it.
+fn today() -> (i32, u32, u32) {
+    use chrono::Datelike;
+    let now = chrono::Local::now();
+    (now.year(), now.month(), now.day())
+}
+
 /// The default reporter: a JSON post to the site's `/report`, as `BugReport.send` makes it.
 pub fn post(message: &str, log: Option<String>) -> Result<(), String> {
     let body = report::body(message, env!("CARGO_PKG_VERSION"), log.as_deref());
@@ -111,13 +131,26 @@ pub fn post(message: &str, log: Option<String>) -> Result<(), String> {
 impl Ctl {
     pub(super) fn wire_help(me: &Rc<Ctl>, window: &crate::MainWindow) {
         me.publish_news();
-        window.global::<Help>().set_release(release(EDITION).into());
+        let h = window.global::<Help>();
+        h.set_release(release(EDITION).into());
+        h.set_contest_tag(CONTEST_TAG.into());
+        h.set_contest_open(CONTEST_FORM.is_some());
+        h.set_instagram_known(INSTAGRAM.is_some());
+        h.set_pause_line(if paused(today()) { tr("Development and new features are paused from Dec 15 to Jan 15.").into() } else { Default::default() });
         let news = window.global::<News>();
         let p = me.clone();
         news.on_read(move |id| p.news_read(&id));
         let help = window.global::<Help>();
         let p = me.clone();
         help.on_welcome_closed(move || p.welcome_closed());
+        let p = me.clone();
+        help.on_wrapped(move || {
+            p.welcome_closed();
+            p.act(crate::Act::Wrapped);
+        });
+        help.on_donate(|| system::open_url(DONATE));
+        help.on_instagram(|| INSTAGRAM.into_iter().for_each(system::open_url));
+        help.on_contest(|| CONTEST_FORM.into_iter().for_each(system::open_url));
         help.on_website(|| system::open_url(SITE));
         let p = me.clone();
         help.on_feedback(move || {
@@ -193,14 +226,12 @@ impl Ctl {
         welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }
 
-    /// The welcome on its first page; whether a window shows it.
+    /// The welcome on its hall, every gift wrapped again; whether a window shows it.
     pub(super) fn open_welcome(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        let version = env!("CARGO_PKG_VERSION");
         let h = w.global::<Help>();
-        h.set_welcome_picture(crate::starter::picture(version) as i32);
-        h.set_welcome_line(format!("V{version}").into());
-        h.set_welcome_credit(crate::starter::credit(version).into());
+        h.set_year(oni_library::wrapped::today().0.to_string().into());
+        h.set_welcome_unwrapped(0);
         h.set_welcome_page(0);
         h.set_welcome_shown(true);
         true

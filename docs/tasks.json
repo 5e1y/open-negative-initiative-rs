@@ -13628,5 +13628,19 @@
     "title": "The full check and the lint at the end of the film effects' plates (#3868-#3870)",
     "status": "done",
     "detail": "167 of 169 binaries green at load 70: the window checks stopped at their 30-minute limit, their 302 checks green run alone after; stock_files fails in parallel and passes alone and on one thread, its two tests each installing a global catalogue (a race already there, to be fixed apart). The lint refused a mem::replace on an Option in Pipeline::grain_plate_asked: Option::replace."
+  },
+  {
+    "id": 3950,
+    "type": "feature",
+    "title": "The ONI 2.0 welcome: the whole window, four wrapped gifts to untie (the livelier interface, the Collection with The Lens DB, digital photos on real film, the Wrapped), then the message",
+    "status": "in progress",
+    "detail": "Replaces 1.6's paged card (its six scenes and their assets go). Edition 2.0, shown once to everyone, first installs included, again from Help > What's New. A gift's page plays a scene built from the design system: the window in miniature opening a photo, the Kit filling, the virtual negative step by step with a before/after drag on the app's own renders (examples/welcome_stills), the year's deck. The message: paid converters, 'You already paid for your film', spread the word (Ko-fi, Instagram once known), the monthly splash contest (its form and hashtag). Sheet gains `full`. Version 2.0.0."
+  },
+  {
+    "id": 3951,
+    "type": "feature",
+    "title": "While development pauses (2026-12-15 to 2027-01-15), the gallery's status bar says so in its quiet hint, and nothing on other days",
+    "status": "in progress",
+    "detail": "help::PAUSE and paused(), today in the machine's calendar; Help.pause-line feeds CardStatus's hint in the gallery."
   }
 ]

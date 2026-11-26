@@ -62,14 +62,14 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     first.launch_sheets();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
-    for page in 1..7 {
+    for page in 1..6 {
         rig.key("\n");
         assert!(help.get_welcome_shown(), "twin: Return on a page before the last turns it");
         assert_eq!(help.get_welcome_page(), page);
     }
     rig.key("\n");
     assert!(!help.get_welcome_shown());
-    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.6"));
+    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("2.0"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.
     first.ctl.act(oni_app::Act::Report);

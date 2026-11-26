@@ -1,34 +1,70 @@
-// The welcome's card: a stage on the left for the page's photo or film, the words on the right, and
-// the dots that say which page shows and take a click to another.
+// The welcome's pieces: the dots that say which page shows and take a click to another, the stage a
+// page's scene plays on, the hand that plays it and the weighted curves every move of it follows.
 import { DS } from "tokens.slint";
-import { Colour, Motion, Space } from "theme.slint";
+import { Colour, Motion, Space, Type } from "theme.slint";
 
 export global WelcomeStyle {
-    // The stage beside a column of words as tall as it, so the card fits the smallest window whole; 502
-    // tall, a film's crop holds the bar and ends in the free band under Tint's knob.
-    out property <length> stage-width: DS.control-dialog-wide-width;
-    out property <length> stage-height: 502px;
-    out property <length> words-width: 400px;
-    out property <length> card-width: root.stage-width + root.words-width;
-    out property <length> card-height: root.stage-height;
-    // Narrower than this, the stage would show too little of its picture: the words take the card.
-    out property <length> stage-least: 160px;
+    // The words beside a page's stage, a column a paragraph reads in; narrower than `stage-least` left
+    // beside them, the stage gives way and the words take the window.
+    out property <length> words-width: 420px;
+    out property <length> stage-least: 360px;
+    // The message's column, a letter's measure.
+    out property <length> letter-width: 620px;
     out property <length> dot: 6px;
     out property <length> dot-shown: 16px;
     out property <color> dot-idle: Colour.ink.with-alpha(0.3);
     out property <color> dot-hover: Colour.ink.with-alpha(0.7);
     // A dot's touch, the hand's least target around a dot drawn small.
     out property <length> dot-reach: DS.control-grab-size;
+    // The release's headline, in the Wrapped's serif: the one moment the app speaks louder than its tools.
+    out property <string> headline-family: DS.typo-wrapped-title-family;
+    out property <length> headline: 44px;
+    out property <length> quote: 28px;
+    out property <int> headline-weight: DS.typo-wrapped-title-weight;
+    out property <color> headline-ink: Colour.selected;
 }
 
-// The stage: the picture on the canvas's ground, cropped to the room the card gives it.
+// The stage: a scene on the canvas's ground, cropped to the room the page gives it.
 export component SceneFrame inherits Rectangle {
     background: Colour.canvas;
     clip: true;
 }
 
+// A line in the release's serif: the hall's headline, a page's title, the message's quote.
+export component Headline inherits Text {
+    in property <bool> quiet;
+    font-family: WelcomeStyle.headline-family;
+    font-size: root.quiet ? WelcomeStyle.quote : WelcomeStyle.headline;
+    font-weight: WelcomeStyle.headline-weight;
+    color: root.quiet ? Colour.ink : WelcomeStyle.headline-ink;
+    wrap: word-wrap;
+    accessible-role: text;
+    accessible-label: root.text;
+}
+
+// The two easings every scene moves by: `settle` lands a move as a weighted hand stops, `glide` carries it
+// from rest to rest; both from 0 to 1 over the move's own progress.
+export global Curves {
+    public pure function settle(p: float) -> float { 1 - (1 - p) * (1 - p) * (1 - p) * (1 - p) }
+    public pure function glide(p: float) -> float {
+        p < 0.5 ? 8 * p * p * p * p : 1 - 8 * (1 - p) * (1 - p) * (1 - p) * (1 - p)
+    }
+}
+
+// The system's arrow, which a scene moves over the real controls it shows.
+export component Arrow inherits Path {
+    width: 14px;
+    height: 22px;
+    viewbox-width: 12;
+    viewbox-height: 19;
+    fill: Colour.black;
+    stroke: Colour.white;
+    stroke-width: 1px;
+    commands: "M 0 0 L 0 16 L 4 12.5 L 6.8 18.6 L 9 17.6 L 6.3 11.7 L 11.5 11.7 Z";
+}
+
 // One dot a page, the shown one lit; a click on a dot shows its page. Each is named by its place among
-// the sheet's `count`, the shown one selected, so assistive technology reads where the reader stands.
+// the pages' `count`, the shown one selected, so assistive technology reads where the reader stands.
 export component PageDots inherits HorizontalLayout {
     in property <int> count;
     in property <int> at;
@@ -58,20 +94,43 @@ export component PageDots inherits HorizontalLayout {
     }
 }
 
-// The dots laid on the stage, centred at its foot on a veil that keeps them read over any picture.
-export component StageDots inherits Rectangle {
-    in property <int> count;
-    in property <int> at;
-    callback picked(int);
-    width: dots.preferred-width + 2 * Space.xs;
-    height: WelcomeStyle.dot-reach;
-    border-radius: self.height / 2;
-    background: Colour.overlay;
-    dots := PageDots {
-        x: Space.xs;
-        width: self.preferred-width;
-        count: root.count;
-        at: root.at;
-        picked(page) => { root.picked(page); }
+// A scene's step, numbered: lit while it plays, a click plays it.
+export component StepLine inherits Rectangle {
+    in property <int> number;
+    in property <string> title;
+    in property <string> text;
+    in property <bool> lit;
+    callback picked();
+    height: column.preferred-height + 2 * Space.s;
+    border-radius: Space.s;
+    background: root.lit ? Colour.hover : touch.has-hover ? Colour.hover.with-alpha(0.5) : transparent;
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-action-default => { root.picked(); }
+    animate background { duration: Motion.quick; }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.picked(); } }
+    HorizontalLayout {
+        padding: Space.s;
+        spacing: Space.s;
+        Text {
+            width: Space.l;
+            vertical-alignment: top;
+            text: root.number;
+            font-family: WelcomeStyle.headline-family;
+            font-size: Type.section;
+            color: root.lit ? WelcomeStyle.headline-ink : Colour.ink-tertiary;
+            animate color { duration: Motion.quick; }
+        }
+        column := VerticalLayout {
+            spacing: Space.xxs;
+            Text { text: root.title; font-family: Type.family; font-size: Type.section; font-weight: Type.strong; color: root.lit ? Colour.ink : Colour.ink-secondary; wrap: word-wrap; }
+            if root.lit: Text {
+                text: root.text;
+                font-family: Type.family;
+                font-size: Type.label;
+                color: Colour.ink-secondary;
+                wrap: word-wrap;
+            }
+        }
     }
 }

@@ -1,0 +1,72 @@
+// The second small gift's scene: the Kit as its column shows it, the two projects' marks at its head, then
+// bodies and lenses landing in it one after the other, each named as The Lens DB names it.
+import { Colour, Space, Radius, ButtonStyle } from "theme.slint";
+import { Label, TextRole, Tone, Divider } from "base.slint";
+import { Outward } from "depth.slint";
+import { GearCard, GearCardBody } from "gear_card.slint";
+import { TldbPair } from "tldb.slint";
+import { Curves } from "welcome.slint";
+
+export global KitBeats {
+    out property <float> first: 0.8;
+    out property <float> every: 0.45;
+    out property <float> land-for: 0.5;
+    out property <float> hold: 3.2;
+    out property <float> leave-for: 0.6;
+    out property <length> column: 380px;
+    out property <length> fall: 18px;
+}
+
+export component KitScene inherits Rectangle {
+    clip: true;
+    background: Colour.canvas;
+    // A moment of the loop held still, in seconds, for a check's shot; negative, the scene plays.
+    in property <float> held: -1;
+    property <[GearCard]> bodies: [
+        { name: "Nikon FM2", detail: @tr("Body") + " · 1982", preferred: true, photos: 214 },
+        { name: "Canon AE-1 Program", detail: @tr("Body") + " · 1981", preferred: false, photos: 96 },
+        { name: "Nikon Z f", detail: @tr("Body") + " · 2023", preferred: false, photos: 1240 },
+    ];
+    property <[GearCard]> lenses: [
+        { name: "Nikon Nikkor 50mm f/1.4 AI-S", detail: "50 mm · f/1.4", preferred: true, photos: 180 },
+        { name: "Canon FD 28mm f/2.8", detail: "28 mm · f/2.8", preferred: false, photos: 61 },
+    ];
+    property <int> count: root.bodies.length + root.lenses.length;
+    property <float> leave-from: KitBeats.first + root.count * KitBeats.every + KitBeats.hold;
+    property <duration> began;
+    init => { root.began = animation-tick(); }
+    property <float> t: root.held >= 0 ? root.held : Math.mod((animation-tick() - root.began) / 1s, root.leave-from + KitBeats.leave-for + 0.6);
+    function landed(i: int) -> float { Curves.settle(max(0, min(1, (root.t - KitBeats.first - i * KitBeats.every) / KitBeats.land-for))) }
+    property <float> left: Curves.glide(max(0, min(1, (root.t - root.leave-from) / KitBeats.leave-for)));
+    Outward {
+        x: (root.width - self.width) / 2;
+        y: Space.l;
+        width: min(KitBeats.column, root.width - 2 * Space.l);
+        height: root.height - 2 * Space.l;
+        fill: Colour.ground;
+        radius: Radius.card;
+        clip: true;
+        VerticalLayout {
+            padding: Space.l;
+            spacing: Space.s;
+            alignment: start;
+            TldbPair { }
+            Rectangle { height: Space.s; }
+            Label { text: @tr("Bodies"); role: TextRole.section; }
+            for card[i] in root.bodies: Rectangle {
+                height: ButtonStyle.height * 1.6;
+                property <float> in: root.landed(i) * (1 - root.left);
+                opacity: self.in;
+                GearCardBody { y: -KitBeats.fall * (1 - parent.in); height: parent.height; card: card; served: true; }
+            }
+            Divider { }
+            Label { text: @tr("Lenses"); role: TextRole.section; }
+            for card[i] in root.lenses: Rectangle {
+                height: ButtonStyle.height * 1.6;
+                property <float> in: root.landed(root.bodies.length + i) * (1 - root.left);
+                opacity: self.in;
+                GearCardBody { y: -KitBeats.fall * (1 - parent.in); height: parent.height; card: card; served: true; }
+            }
+        }
+    }
+}

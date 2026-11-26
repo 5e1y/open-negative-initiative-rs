@@ -139,7 +139,6 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
             confirm.set_key("Create Roll".into());
             confirm.set_shown(on);
         }), (w / 2.0 - 180.0, w / 2.0 + 180.0)),
-        ("the welcome", Box::new(|on| help.set_welcome_shown(on)), (w / 2.0 + 330.0, w / 2.0 + 456.0)),
         ("the report", Box::new(|on| help.set_report_shown(on)), (w / 2.0 - 210.0, w / 2.0 + 210.0)),
         ("the settings", Box::new(|on| settings.set_shown(on)), (w / 2.0 + 200.0, w / 2.0 + 316.0)),
         ("the stock picker", Box::new(|on| stocks.set_shown(on)), (w / 2.0 + 100.0, w / 2.0 + 400.0)),

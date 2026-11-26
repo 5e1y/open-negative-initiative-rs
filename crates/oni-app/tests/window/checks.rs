@@ -242,7 +242,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded", phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::a_notices_key_sits_right", sheet_layout::a_notices_key_sits_right),
-    ("welcome_card::the_welcome_card_fits_the_window_and_only_its_words_scroll", welcome_card::the_welcome_card_fits_the_window_and_only_its_words_scroll),
+    ("welcome_card::the_welcome_fills_the_window_and_each_gift_opens_its_page", welcome_card::the_welcome_fills_the_window_and_each_gift_opens_its_page),
     ("mode_header::every_tool_title_is_whole_at_the_smallest_window", mode_header::every_tool_title_is_whole_at_the_smallest_window),
     ("mode_header::a_title_longer_than_the_panel_is_caught_cut", mode_header::a_title_longer_than_the_panel_is_caught_cut),
     ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),

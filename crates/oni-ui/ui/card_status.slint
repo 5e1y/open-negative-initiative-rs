@@ -6,6 +6,7 @@ import { Canvas } from "canvas_state.slint";
 import { Exporting } from "export_state.slint";
 import { KeyWords } from "key_words.slint";
 import { Upgraded } from "notice.slint";
+import { Help } from "help.slint";
 
 export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
@@ -39,9 +40,11 @@ export component CardStatus inherits HorizontalLayout {
         count: root.exporting ? Exporting.job-count : Library.loading-count;
         fraction: root.exporting ? Exporting.job-fraction : root.loading ? Library.loading-fraction : root.migrating ? Upgraded.fraction : -1;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;
-        // Once a roll prepared opens on its first frame alone, how to show every frame together.
+        // Once a roll prepared opens on its first frame alone, how to show every frame together; in the gallery,
+        // while development pauses, the line saying so.
         hint: root.loading && root.migrating ? Upgraded.line
-            : !root.gallery && !Preparing.shown && Preparing.landed-alone ? @tr("Select All ({}) to edit the whole roll", KeyWords.command + "A") : "";
+            : !root.gallery && !Preparing.shown && Preparing.landed-alone ? @tr("Select All ({}) to edit the whole roll", KeyWords.command + "A")
+            : root.gallery && !Preparing.shown ? Help.pause-line : "";
         key: root.exporting ? @tr("Stop") : "";
         key-enabled: !Exporting.job-stopping;
         key-clicked => { Exporting.job-stop(); }

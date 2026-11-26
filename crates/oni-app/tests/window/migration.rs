@@ -46,7 +46,7 @@ pub(crate) fn an_earlier_library_is_brought_while_the_person_works() {
     // One sheet at a time: the welcome first, the notice once its last key closes it, then holding the keys.
     let (help, upgraded) = (w.global::<Help>(), w.global::<Upgraded>());
     assert!(help.get_welcome_shown() && !upgraded.get_shown(), "the notice waits while the welcome shows");
-    for _ in 0..7 {
+    for _ in 0..6 {
         assert!(!upgraded.get_shown(), "never over the welcome, on any page");
         hand.rig.key("\n");
     }
@@ -91,7 +91,7 @@ pub(crate) fn with_no_welcome_due_the_notice_shows_at_once() {
     let seen = |root: &Path| {
         earlier(root);
         let mut preferences = oni_app::preferences::Preferences::load(&root.join("Support"));
-        preferences.set("welcomeSeen", "1.6".into()).unwrap();
+        preferences.set("welcomeSeen", "2.0".into()).unwrap();
     };
     let hand = Hand::made_with("migration-seen", &TONES, seen, Brought { tell: true, ..Brought::default() });
     let w = &hand.shell.window;

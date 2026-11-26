@@ -1,58 +1,48 @@
-//! The welcome's card at the smallest window and below: the stage on the left of the words, the
-//! footer inside the card and the window, the words still in every language, the page dots centred at
-//! the stage's foot, each a hand's least target; in a short window the words scroll alone and NEXT stays in reach. Twins: a page too
-//! long scrolls, a short window's card is shorter than the stage, a click past a dot's reach misses it.
+//! The release's welcome over the whole window: at the smallest window and in every language, each page's
+//! headline and its commit inside the window, a gift's words right of its stage; a click on a wrapped gift
+//! unties it and opens its page; the dots each a hand's least target. Twins: a click beside a gift opens
+//! nothing, a click past a dot's reach misses it, a page too long scrolls its words alone.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{Help, MainWindow};
 use oni_i18n::{Language, tr};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, PhysicalSize};
+use std::time::Duration;
 
 use crate::common::{self, Placed};
 
-/// `WelcomeStyle`: the stage, the words beside it, the card they make; `SheetStyle`'s margin and rest.
-const STAGE: f32 = 560.0;
-const CARD: (f32, f32) = (960.0, 502.0);
+/// `WelcomeStyle.words-width`, `SheetStyle.margin` and `DS.control-grab-size`.
+const WORDS: f32 = 420.0;
 const MARGIN: f32 = 24.0;
-const REST: f32 = 0.42;
-/// `DS.control-grab-size`, the hand's least target: a page dot's touch at the least, about its 6 pt dot.
 const REACH: f32 = 24.0;
-const PAGES: usize = 7;
-/// A word each page shows once, at the top of its words.
-const FIRSTS: [&str; PAGES] = [
-    "A quieter interface around your scans, dust found on its own, and about 70 fixes.",
-    "A clearer interface",
-    "Your favourites at hand",
-    "Less distraction, your scans first",
-    "Type the exact value",
-    "Automatic De-dust",
-    "About 70 fixes, and what changes",
+const PAGES: usize = 6;
+/// Each page's headline, in the release's serif.
+const HEADLINES: [&str; PAGES] = [
+    "ONI {} is out",
+    "A livelier interface",
+    "The Collection, with The Lens DB",
+    "Your digital photos, on real film",
+    "Your year on film",
+    "I have a message for you",
 ];
+/// `GiftStyle.untie`, and a frame's margin past it.
+const UNTIE: Duration = Duration::from_millis(1100);
 
-fn first(window: &MainWindow, page: usize) -> Placed {
-    common::the(window, Role::Text, tr(FIRSTS[page]))
+fn headline(window: &MainWindow, page: usize) -> Placed {
+    common::the(window, Role::Text, &tr(HEADLINES[page]).replace("{}", "2.0"))
 }
 
 fn commit(window: &MainWindow, page: usize) -> Placed {
-    common::the(window, Role::Button, if page == PAGES - 1 { tr("GET STARTED") } else { tr("Next") })
+    let word = match page {
+        0 => "Unwrap",
+        4 => "One More Thing",
+        5 => "GET STARTED",
+        _ => "Next Gift",
+    };
+    common::the(window, Role::Button, &tr(word))
 }
 
-/// How far the page's first words move under a wheel turned down over the words, then back to the top.
-fn scrolled(rig: &common::Rig, window: &MainWindow, page: usize) -> f32 {
-    let before = first(window, page);
-    let position = LogicalPosition::new(before.x + 40.0, before.y + 10.0);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
-    rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -2000.0 });
-    rig.pump();
-    // Scrolled out of the card, the first words are no longer shown at all.
-    let moved = common::placed(window, Role::Text, tr(FIRSTS[page])).first().map_or(f32::INFINITY, |after| before.y - after.y);
-    rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 4000.0 });
-    rig.pump();
-    moved
-}
-
-/// The dot that turns to `page`, named by its place among the pages.
 fn dot(window: &MainWindow, page: usize) -> Placed {
     let label = tr("Page {} of {}").replacen("{}", &(page + 1).to_string(), 1).replacen("{}", &PAGES.to_string(), 1);
     common::the(window, Role::Tab, &label)
@@ -71,26 +61,27 @@ fn sized(rig: &common::Rig, (w, h): (u32, u32)) {
     rig.settle();
 }
 
-pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
+pub(crate) fn the_welcome_fills_the_window_and_each_gift_opens_its_page() {
     let rig = common::rig();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
     let help = window.global::<Help>();
-    help.set_release("1.6".into());
-    help.set_welcome_line("V1.6.0".into());
-    help.set_welcome_credit("©ultra_detente".into());
+    help.set_release("2.0".into());
+    help.set_contest_tag("#ONIsplash".into());
     help.set_welcome_shown(true);
+    let closed = std::rc::Rc::new(std::cell::Cell::new(false));
+    let ear = closed.clone();
+    help.on_welcome_closed(move || ear.set(true));
     window.show().unwrap();
 
-    // The smallest window, in each language the interface speaks here: the card whole, nothing to scroll.
+    // The smallest window, in each language the interface speaks here: every page's headline and key in it.
     let (w, h) = (1100.0f32, 680.0f32);
-    let (left, top) = ((w - CARD.0) / 2.0, (h - CARD.1) * REST);
     for language in Language::ALL {
         oni_app::language::speak(Some(language));
         help.set_welcome_page(0);
         sized(&rig, (w as u32, h as u32));
-        if common::placed(&window, Role::Button, tr("Next")).is_empty() {
+        if common::placed(&window, Role::Button, &tr("Unwrap")).is_empty() {
             println!("{language:?}: the live interface reads English, judged on the app profile");
             continue;
         }
@@ -98,23 +89,38 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
             help.set_welcome_page(page as i32);
             rig.settle();
             println!("shot {}", rig.shot(&format!("welcome-{}-1100x680-{page}", language.key())).display());
-            let (words, key) = (first(&window, page), commit(&window, page));
-            assert!(words.x >= left + STAGE, "{language:?} page {page}: the words right of the stage, at {}", words.x);
-            assert!(key.x + key.width <= left + CARD.0 && key.y + key.height <= top + CARD.1 + 0.5, "{language:?} page {page}: the key inside the card, {key:?}");
-            let (first, last) = (dot(&window, 0), dot(&window, PAGES - 1));
-            let middle = (first.x + last.x + last.width) / 2.0;
-            assert!((middle - (left + STAGE / 2.0)).abs() < 1.0, "{language:?} page {page}: the dots centred on the stage, about {middle}");
-            // The card's foot lies a padding, the sheet's margin, under its key's.
-            assert!(last.y + last.height <= key.y + key.height + MARGIN && last.y > key.y - CARD.1 / 2.0, "{language:?} page {page}: the dots at the stage's foot, {last:?}");
-            let moved = scrolled(&rig, &window, page);
-            assert!(moved.abs() < 0.5, "{language:?} page {page}: the words fit, a wheel moved them {moved}");
+            let (title, key) = (headline(&window, page), commit(&window, page));
+            assert!(title.y >= 0.0 && title.y + title.height <= h, "{language:?} page {page}: the headline in the window, {title:?}");
+            assert!(key.x + key.width <= w - MARGIN + 0.5 && key.y + key.height <= h - MARGIN + 0.5, "{language:?} page {page}: the key in the window, {key:?}");
+            if (1..=4).contains(&page) {
+                assert!(title.x >= w - WORDS, "{language:?} page {page}: the words right of the stage, at {}", title.x);
+            }
         }
     }
     oni_app::language::speak(Some(Language::English));
 
-    // Each dot's touch is the hand's least target, and a click inside it turns to its page.
+    // A click on the huge gift unties it, then opens its page, the gift counted unwrapped.
+    help.set_welcome_page(0);
+    help.set_welcome_unwrapped(0);
+    rig.settle();
+    let gift = common::the(&window, Role::Button, &tr("Huge gift"));
+    // Twin: a click beside the gift, on the floor, opens nothing.
+    tap(&rig, (gift.x - 30.0, gift.y + gift.height / 2.0));
+    std::thread::sleep(UNTIE);
+    rig.pump();
+    assert_eq!(help.get_welcome_page(), 0, "twin: a click beside a gift opens nothing");
+    tap(&rig, gift.middle());
+    assert_eq!(help.get_welcome_page(), 0, "the gift unties before its page opens");
+    std::thread::sleep(UNTIE);
+    rig.settle();
+    assert_eq!(help.get_welcome_page(), 3, "the huge gift's page");
+    assert_eq!(help.get_welcome_unwrapped(), 4, "the third gift unwrapped, and it alone");
     help.set_welcome_page(0);
     rig.settle();
+    assert!(common::placed(&window, Role::Button, &tr("Huge gift")).is_empty(), "back in the hall, the gift shows what it held");
+    common::the(&window, Role::Button, &tr("Digital photos on real film"));
+
+    // Each dot's touch is the hand's least target, and a click inside it turns to its page.
     for page in 0..PAGES {
         let touch = dot(&window, page);
         assert!(touch.width >= REACH && touch.height >= REACH, "dot {page}: a touch of {REACH} at the least, {touch:?}");
@@ -125,41 +131,21 @@ pub(crate) fn the_welcome_card_fits_the_window_and_only_its_words_scroll() {
     tap(&rig, (x, y - REACH / 2.0 + 1.0));
     assert_eq!(help.get_welcome_page(), 2, "a click at the edge of the dot's reach turns to its page");
 
-    // Twin: a heading far longer than any page's does scroll, so the wheel above could see it.
-    help.set_welcome_page(0);
-    help.set_release("1.6 ".repeat(80).into());
-    rig.settle();
-    assert!(scrolled(&rig, &window, 0) > 20.0, "twin: a page too long for the card scrolls");
-    help.set_release("1.6".into());
-
-    // Short windows: the stage crops, the words scroll alone, the key stays in the window and answers.
-    for (w, h) in [(1728u32, 1017u32), (900, 560), (900, 440)] {
-        help.set_welcome_page(0);
-        sized(&rig, (w, h));
-        for page in 0..PAGES {
-            help.set_welcome_page(page as i32);
-            rig.settle();
-            println!("shot {}", rig.shot(&format!("welcome-en-{w}x{h}-{page}")).display());
-            let key = commit(&window, page);
-            assert!(key.y + key.height <= h as f32 - MARGIN + 0.5 && key.x + key.width <= w as f32 - MARGIN, "{w}×{h} page {page}: the key in the window, {key:?}");
-        }
-    }
+    // A short window: the message's words scroll alone and GET STARTED stays in reach and answers.
+    sized(&rig, (900, 440));
     help.set_welcome_page(PAGES as i32 - 1);
     rig.settle();
-    assert!(scrolled(&rig, &window, PAGES - 1) > 20.0, "900×440: the last page's words scroll");
-    help.set_welcome_page(0);
-    rig.settle();
-    let (x, y) = commit(&window, 0).middle();
-    let position = LogicalPosition::new(x, y);
-    rig.window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
-    rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
+    println!("shot {}", rig.shot("welcome-en-900x440-5").display());
+    let before = headline(&window, 5);
+    let position = LogicalPosition::new(before.x + 40.0, before.y + 10.0);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
+    rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -2000.0 });
     rig.pump();
-    assert_eq!(help.get_welcome_page(), 1, "900×440: NEXT answers a click inside the window");
-
-    // Twin: in a window shorter than the stage, the card gives up height between its margins.
-    sized(&rig, (1100, 300));
-    let (words, key) = (first(&window, 1), commit(&window, 1));
-    assert!(words.y >= MARGIN && key.y + key.height <= 300.0 - MARGIN + 0.5, "the card between the margins: {words:?} {key:?}");
-    assert!(key.y + key.height - words.y < CARD.1 - 2.0 * MARGIN, "twin: the card is shorter than the stage");
+    let moved = common::placed(&window, Role::Text, &tr(HEADLINES[5])).first().map_or(f32::INFINITY, |after| before.y - after.y);
+    assert!(moved > 20.0, "900×440: the message's words scroll, {moved}");
+    let key = commit(&window, 5);
+    assert!(key.y + key.height <= 440.0 - MARGIN + 0.5, "900×440: the key in the window, {key:?}");
+    tap(&rig, key.middle());
+    assert!(closed.get(), "GET STARTED answers a click");
     window.hide().unwrap();
 }

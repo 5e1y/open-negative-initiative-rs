@@ -10,7 +10,7 @@ fn the_notes_are_swifts_and_each_names_its_heading_once() {
     let mut unique = ids.clone();
     unique.dedup();
     assert_eq!(unique.len(), ids.len());
-    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.6"));
+    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "2.0"));
 }
 
 #[test]
@@ -30,9 +30,29 @@ fn the_welcome_shows_once_a_release_whatever_patch_wrote_it_seen() {
     assert!(!welcome_due(Some(EDITION)));
     let patch = format!("{EDITION}.1");
     assert!(!welcome_due(Some(&patch)), "a patch of this release already showed it");
-    // Twins: an earlier release's sheet, or the former 1.4.2's, leaves this one due.
+    // Twins: an earlier release's sheet, or the one 1.6.0 wrote, leaves this one due.
     assert!(welcome_due(Some("1.4")));
-    assert!(welcome_due(Some("1.4.2")));
+    assert!(welcome_due(Some("1.6.0")));
+}
+
+#[test]
+fn the_pause_is_said_on_its_days_alone() {
+    for day in [(2026, 12, 15), (2026, 12, 31), (2027, 1, 1), (2027, 1, 15)] {
+        assert!(paused(day), "{day:?} lies in the pause");
+    }
+    // Twins: the days just outside it, and the same days a year later, say nothing.
+    for day in [(2026, 12, 14), (2027, 1, 16), (2027, 12, 20), (2026, 1, 10)] {
+        assert!(!paused(day), "{day:?} lies outside the pause");
+    }
+}
+
+#[test]
+fn the_message_names_no_inbox_and_its_links_are_the_sites() {
+    assert!(DONATE.starts_with("https://ko-fi.com/"));
+    for link in [INSTAGRAM, CONTEST_FORM].into_iter().flatten() {
+        assert!(link.starts_with("https://") && !link.contains('@'), "{link}: a page, never an address");
+    }
+    assert!(CONTEST_TAG.starts_with('#') && !CONTEST_TAG.contains(' '));
 }
 
 /// `WhatsNew.selfCheck`: every note hangs on a heading the interface draws, and every heading's
