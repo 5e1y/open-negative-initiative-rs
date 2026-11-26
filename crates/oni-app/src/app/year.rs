@@ -182,19 +182,32 @@ impl Ctl {
         let journal = Journal::in_support(&support);
         let sample = std::env::var_os(SAMPLE).is_some();
         std::thread::spawn(move || {
+            let asked = std::time::Instant::now();
+            let mut steps = Vec::new();
+            let mut step = |name: &str, since: &mut std::time::Instant| {
+                steps.push(format!("{name} {:.0}", since.elapsed().as_secs_f64() * 1000.0));
+                *since = std::time::Instant::now();
+            };
+            let mut since = asked;
             let hidden: HashSet<String> = oni_library::index::trashed(&rows).into_iter().map(|e| e.path).collect();
             let shown = oni_library::index::shown(&rows);
             let paths: Vec<String> = shown.iter().map(|e| e.path.clone()).collect();
             let markers = oni_library::folders::rolls(&paths);
+            step("rolls", &mut since);
             let told = if sample {
                 crate::wrapped::sample::year(year, gather::frames(&shown, &markers, None), &support)
             } else {
                 let frames = Frames::build(&gather::frames(&shown, &markers, Some(year)), year, Moment::local);
+                step("sidecars", &mut since);
                 let palette = Palette::of(&gather::tones(&support, &frames.paths), SWATCHES);
+                step("colours", &mut since);
                 let (records, names) = journal.read();
                 let darkroom = Darkroom::build(&records, &names, year, &hidden, |time| Moment::local(Moment::journal_unix(time)));
+                step("journal", &mut since);
                 oni_library::wrapped::Year::new(year, darkroom, frames, palette)
             };
+            let read = format!("{:.0} ms ({})", asked.elapsed().as_secs_f64() * 1000.0, steps.join(", "));
+            crate::timing::line(&format!("wrapped: {} frames of {} and {} thumbnails read in {read}", told.frames.count, shown.len(), told.palette.sampled));
             with_shell(move |c| c.present_wrapped(told));
         });
     }
@@ -292,34 +305,43 @@ impl Ctl {
             return;
         }
         let Some(folder) = crate::system::pick_folder(tr("Choose where to save your cards")) else { return };
-        match self.save_wrapped_into(&folder, all) {
-            Ok(saved) => {
-                self.say(&trn("{n} card saved", "{n} cards saved", saved.len() as u64));
-                crate::system::reveal_all(&saved);
-            }
-            Err(e) => self.say(&tr!("The cards cannot be saved: {e}", e = e)),
-        }
+        self.save_wrapped_into(&folder, all, |written| {
+            with_shell(move |c| match written {
+                Ok(saved) => {
+                    c.say(&trn("{n} card saved", "{n} cards saved", saved.len() as u64));
+                    crate::system::reveal_all(&saved);
+                }
+                Err(e) => c.say(&tr!("The cards cannot be saved: {e}", e = e)),
+            });
+        });
     }
 
     /// The scene in the gate, or every scene, drawn alone and told whole at the window's corner as large
-    /// as a 9 by 16 frame fits it, cut out of the window's own picture and written as a JPEG.
-    pub fn save_wrapped_into(&self, folder: &Path, all: bool) -> Result<Vec<PathBuf>, String> {
-        let Some((year, count, index)) = self.state.borrow().year.story.as_ref().map(|s| (s.0, s.1.len(), s.2)) else { return Ok(Vec::new()) };
-        let Some(w) = self.window() else { return Ok(Vec::new()) };
+    /// as a 9 by 16 frame fits it and taken off the window's own picture; each is then cut, encoded and
+    /// written off this thread, and `done` told there what was written.
+    pub fn save_wrapped_into(&self, folder: &Path, all: bool, done: impl FnOnce(Result<Vec<PathBuf>, String>) + Send + 'static) {
+        let Some((year, count, index)) = self.state.borrow().year.story.as_ref().map(|s| (s.0, s.1.len(), s.2)) else { return done(Ok(Vec::new())) };
+        let Some(w) = self.window() else { return done(Ok(Vec::new())) };
         let (size, scale) = (w.window().size(), w.window().scale_factor());
         let unit = (size.width / 9).min(size.height / 16) as usize;
         let cut = share::Cut { x: 0, y: 0, width: 9 * unit, height: 16 * unit };
         if unit == 0 {
-            return Err(tr("the window is too small").into());
+            return done(Err(tr("the window is too small").into()));
         }
         let g = w.global::<Wrapped>();
         g.set_still_width(cut.width as f32 / scale);
         g.set_still(true);
         let screen = self.state.borrow().screen;
-        let written = (if all { 0..count } else { index..index + 1 }).map(|scene| card_written(&w, folder, year, scene, cut, screen)).collect();
+        let shots: Result<Vec<_>, String> = (if all { 0..count } else { index..index + 1 })
+            .map(|scene| {
+                g.set_index(scene as i32);
+                w.window().take_snapshot().map(|shot| (scene, shot)).map_err(|e| e.to_string())
+            })
+            .collect();
         g.set_index(index as i32);
         g.set_still(false);
-        written
+        let folder = folder.to_path_buf();
+        std::thread::spawn(move || done(shots.and_then(|shots| shots.into_iter().map(|(scene, shot)| card_written(&shot, &folder, year, scene, cut, screen)).collect())));
     }
 
     pub(super) fn close_wrapped(&self) {
@@ -339,11 +361,8 @@ impl Ctl {
     }
 }
 
-/// One scene alone in the window, its frame cut out of the window's picture, brought from `screen` to
-/// sRGB and written into `folder`.
-fn card_written(w: &crate::MainWindow, folder: &Path, year: i32, scene: usize, cut: share::Cut, screen: crate::display::Screen) -> Result<PathBuf, String> {
-    w.global::<Wrapped>().set_index(scene as i32);
-    let shot = w.window().take_snapshot().map_err(|e| e.to_string())?;
+/// A scene's frame cut out of the window's picture `shot`, brought from `screen` to sRGB and written into `folder`.
+fn card_written(shot: &slint::SharedPixelBuffer<slint::Rgba8Pixel>, folder: &Path, year: i32, scene: usize, cut: share::Cut, screen: crate::display::Screen) -> Result<PathBuf, String> {
     let pixels = share::cut(shot.as_bytes(), shot.width() as usize, cut).ok_or_else(|| tr("the window gave no picture").to_string())?;
     let pixels = crate::thumbnails::from_screen(pixels, screen);
     let data = share::jpeg(&pixels, cut.width, cut.height).ok_or_else(|| tr("the card cannot be encoded").to_string())?;

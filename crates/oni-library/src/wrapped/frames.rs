@@ -134,10 +134,9 @@ impl Frames {
         (count > 0).then_some((month as u32 + 1, count))
     }
 
-    /// The share of the year's frames standing on the most used film, among those naming one.
+    /// The share of the year's frames standing on the most used film.
     pub fn top_stock_share(&self) -> f64 {
-        let named: usize = self.stocks.iter().map(|(_, n)| n).sum();
-        self.stocks.first().map_or(0.0, |(_, n)| *n as f64 / named.max(1) as f64)
+        self.stocks.first().map_or(0.0, |(_, n)| *n as f64 / self.count.max(1) as f64)
     }
 }
 
@@ -174,7 +173,7 @@ mod tests {
         assert_eq!(frames.busiest_day, Some((3, 2, 2)));
         assert_eq!((frames.rolls, frames.longest_roll.clone()), (2, Some(("Lisbon".into(), 2))));
         assert_eq!(frames.stocks, [("kodak-portra400".to_string(), 3), ("ilford-hp5".to_string(), 1)]);
-        assert!((frames.top_stock_share() - 0.75).abs() < 1e-9);
+        assert!((frames.top_stock_share() - 0.6).abs() < 1e-9, "three of the year's five frames, one naming no film");
         assert_eq!(frames.bodies, [("Nikon FM2".to_string(), 1)], "a blank name names no camera");
         assert_eq!(frames.gold, ["/c", "/b"], "the latest gold first");
         assert_eq!((frames.silver, frames.bronze), (1, 0));

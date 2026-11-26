@@ -59,7 +59,6 @@ impl Persona {
         let share = |part: usize| if frames.count >= ENOUGH { part as f64 / frames.count as f64 } else { 0.0 };
         let gestures: usize = darkroom.by_hour.iter().sum();
         let a_photo = if darkroom.photos >= ENOUGH { darkroom.gestures as f64 / darkroom.photos as f64 } else { f64::NAN };
-        let named: usize = frames.stocks.iter().map(|(_, n)| n).sum();
         let medals = frames.gold.len() + frames.silver + frames.bronze;
         // Each trait: what it measures, and how far past its bar that stands (1 is the bar).
         let measured = [
@@ -67,7 +66,7 @@ impl Persona {
             (Trait::SilverSoul, share(frames.monochromes), share(frames.monochromes) / KIND_SHARE),
             (Trait::Projectionist, share(frames.slides), share(frames.slides) / KIND_SHARE),
             (Trait::TimeTraveller, share(frames.digitals), share(frames.digitals) / KIND_SHARE),
-            (Trait::Loyalist, frames.top_stock_share(), if named >= ENOUGH && frames.stocks.len() > 1 { frames.top_stock_share() / LOYAL_SHARE } else { 0.0 }),
+            (Trait::Loyalist, frames.top_stock_share(), if frames.count >= ENOUGH && frames.stocks.len() > 1 { frames.top_stock_share() / LOYAL_SHARE } else { 0.0 }),
             (Trait::Explorer, frames.stocks.len() as f64, frames.stocks.len() as f64 / FILMS_TRIED),
             (Trait::DustHunter, frames.dust as f64, if frames.count >= ENOUGH { frames.dust as f64 / frames.count as f64 / DUST_A_FRAME } else { 0.0 }),
             (Trait::Curator, medals as f64, if medals >= 3 { share(medals) / MEDAL_SHARE } else { 0.0 }),

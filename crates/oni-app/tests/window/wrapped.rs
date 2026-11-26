@@ -131,7 +131,12 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     // Every scene saved as a card: a 9 by 16 JPEG of its frame alone, the story left where it stood.
     let cards = app.root.join("Cards");
     std::fs::create_dir_all(&cards).unwrap();
-    let saved = ctl.save_wrapped_into(&cards, true).unwrap();
+    let written = |all: bool| {
+        let (tx, rx) = std::sync::mpsc::channel();
+        ctl.save_wrapped_into(&cards, all, move |written| tx.send(written).unwrap());
+        rx.recv_timeout(Duration::from_secs(60)).unwrap().unwrap()
+    };
+    let saved = written(true);
     assert_eq!(saved.len(), story.len());
     assert_eq!(saved[0].file_name().unwrap().to_string_lossy(), format!("ONI Wrapped {year} - 01.jpg"));
     assert_eq!((wrapped.get_index(), wrapped.get_still()), (3, false));
@@ -149,7 +154,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     for (i, path) in saved.iter().enumerate() {
         std::fs::copy(path, rig.shots.join(format!("wrapped-card-{:02}.jpg", i + 1))).unwrap();
     }
-    let one = ctl.save_wrapped_into(&cards, false).unwrap();
+    let one = written(false);
     assert_eq!(one.len(), 1);
     assert_eq!(one[0].file_name().unwrap().to_string_lossy(), format!("ONI Wrapped {year} - 04 (2).jpg"), "twin: the card saved before is not replaced");
 

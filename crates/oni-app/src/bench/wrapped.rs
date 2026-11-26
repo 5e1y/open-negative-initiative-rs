@@ -15,6 +15,9 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let shots = std::env::var_os("ONI_WRAPPED_SHOTS").map(std::path::PathBuf::from);
     let started = Instant::now();
     let step = Cell::new(None::<(usize, Instant)>);
+    // What the cards' writer answered, once it has.
+    let saved: std::sync::Arc<std::sync::Mutex<Option<String>>> = Default::default();
+    let saving = Cell::new(false);
     let drawn = frame_clock(ctl);
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
@@ -29,6 +32,13 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 done(report);
             }
         };
+        if saving.get() {
+            let Some(saved) = saved.lock().ok().and_then(|mut s| s.take()) else { return };
+            let count = g.get_scenes().row_count();
+            let frames = frames_since(&drawn.borrow(), started);
+            g.invoke_close();
+            return finish(format!("wrapped: {count} scenes told in {:.1} s, {saved}; {frames}", started.elapsed().as_secs_f64()));
+        }
         let Some((scene, since)) = step.get() else {
             if g.get_shown() {
                 g.set_playing(false);
@@ -53,15 +63,21 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             g.invoke_forward();
             return step.set(Some((scene + 1, Instant::now())));
         }
-        let frames = frames_since(&drawn.borrow(), started);
-        let saved = match &shots {
-            Some(folder) => match ctl.save_wrapped_into(folder, true) {
-                Ok(cards) => format!("{} cards saved", cards.len()),
-                Err(e) => format!("no card saved: {e}"),
-            },
-            None => "no card asked".to_string(),
+        saving.set(true);
+        let answer = saved.clone();
+        let tell = move |said: String| {
+            if let Ok(mut answer) = answer.lock() {
+                *answer = Some(said);
+            }
         };
-        g.invoke_close();
-        finish(format!("wrapped: {count} scenes told in {:.1} s, {saved}; {frames}", started.elapsed().as_secs_f64()))
+        match &shots {
+            Some(folder) => ctl.save_wrapped_into(folder, true, move |written| {
+                tell(match written {
+                    Ok(cards) => format!("{} cards saved", cards.len()),
+                    Err(e) => format!("no card saved: {e}"),
+                })
+            }),
+            None => tell("no card asked".to_string()),
+        }
     });
 }
