@@ -244,6 +244,10 @@ impl Ctl {
         h.set_stage(Image::default());
         h.set_stage_live(false);
         h.set_welcome_shown(true);
+        // The mystery gift lays the person's own year on its screen: read now, off this thread.
+        if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
+            me.ready_wrapped(crate::app::year::told_year(oni_library::wrapped::today()));
+        }
         true
     }
 
@@ -261,6 +265,10 @@ impl Ctl {
         };
         if let Err(e) = written {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
+        }
+        // The year read for the mystery gift goes with it, unless the Wrapped shows it.
+        if !w.global::<crate::Wrapped>().get_shown() {
+            self.forget_wrapped();
         }
         w.invoke_refocus();
         self.launch_sheet_after(Some(crate::app::shell::LaunchSheet::Welcome));

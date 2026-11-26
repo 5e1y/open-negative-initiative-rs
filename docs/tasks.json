@@ -13908,5 +13908,12 @@
     "title": "The year on film's perforations lie the right way, punched through the photo, and its scenes are back at their size",
     "status": "done",
     "detail": "#3908 drew each perforation a quarter turn off, its long side along the film, and scaled the film to the card's width: bands 57 units wide that pushed every scene's words inward and set its figures 18 % smaller. A Kodak Standard perforation's long side lies across the film: 2.794 mm across by 1.981 mm along, corners of 0.5 mm, one every 4.75 mm, 2 mm in from the edge. The scale is the film's edge itself, the 30 units a frame's band always was standing for its 5.5 mm (WrappedStyle.mm), so a scene's margin (34), its figures' box (292) and every size are those of #3907 again, as the owner validated them. The band holds no ink of its own any more (owner's call): the photo fills the frame from edge to edge and the perforations are punched through it, black as the ground, a faint light rim letting them be read on a dark photo as on a light one. They still run on from frame to frame down the strip. No edge print was left to keep. Measured on saved cards of 1080 px, a millimetre being 16.36 px."
+  },
+  {
+    "id": 3957,
+    "type": "feature",
+    "title": "The welcome's mystery gift lays the person's own first Wrapped cards on its screen; no way out of the welcome before its end, Escape included",
+    "status": "done",
+    "detail": "Owner's calls: no exit before the end (Escape included), the Collection's screen stays, the mystery gift shows the person's real cards. The welcome reads the year as it opens (Ctl::ready_wrapped: the Wrapped's own reading and cards, not shown); its mystery screen lays the first three frames as the Wrapped draws them (WrappedFrame), a promise while the year is read. Open My Wrapped shows that story from its start (show_wrapped reuses a story read for the welcome); closing the Wrapped over the welcome only steps aside, so the cards stay; the welcome's close forgets a year it read and nobody showed. A scene's photos and light now land on a story read and not yet shown (the told counter alone guards a stale one). The welcome's sheet is never dismissed by Escape. Checks: window checks welcome_reel (the year read, its cards on the welcome and not the Wrapped), wrapped, welcome_card, sheets, help, design_system; oni-app lib tests; catalogue; clippy on oni-app."
   }
 ]

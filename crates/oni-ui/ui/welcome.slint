@@ -1,10 +1,11 @@
 // `WelcomeSheet`: the release told once, over the whole window, one screen a gift: the gift alone in the middle,
 // opened by a click or Return, then its demo on the left and its words on the right; the message comes last.
 import { Space, Motion, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
-import { WelcomeStyle, Headline, InterfaceScene, KitScene, MysteryScene } from "ds/ds.slint";
+import { WelcomeStyle, Headline, InterfaceScene, KitScene, MysteryScene, WrappedFrame, WrappedStyle } from "ds/ds.slint";
 import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, StageRail, FilmDemo } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
+import { Wrapped } from "wrapped.slint";
 
 // A gift's words, right of it: which gift it is, its name in the display face, what it holds, a key if it has one.
 component Words inherits VerticalLayout {
@@ -26,7 +27,8 @@ export component WelcomeSheet inherits Sheet {
     full: true;
     bleed: true;
     paging: true;
-    exit-enabled: Help.welcome-escapes;
+    // No way out before the end, Escape included: every gift is opened (owner's call).
+    exit-enabled: false;
     property <int> page: Help.welcome-page;
     property <bool> last: root.page == 5;
     property <bool> opened: Help.opened-time >= 0;
@@ -105,7 +107,25 @@ export component WelcomeSheet inherits Sheet {
                 if page == 1: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.75); }
                 if page == 2: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.45); }
                 if page == 3: FilmDemo { width: parent.width; height: parent.height; cells: Help.film-cells; t: Motion.reduced ? 6 : root.demo-clock; }
-                if page == 4: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 6.0); }
+                // The person's own year: its first cards, as the Wrapped makes them; a promise while it is read.
+                if page == 4 && Wrapped.scenes.length == 0: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 6.0); }
+                if page == 4: Rectangle {
+                    for scene[i] in Wrapped.scenes: WrappedFrame {
+                        property <int> cards: min(3, Wrapped.scenes.length);
+                        property <float> come: Motion.reduced ? 1 : Beat.at(root.demo-clock, 0.25 * i, 0.7);
+                        visible: i < self.cards;
+                        u: parent.height * StageStyle.card-share / WrappedStyle.frame-height;
+                        x: (parent.width - self.width) / 2 + (i - (self.cards - 1) / 2) * (self.width + Space.s);
+                        y: (parent.height - self.height) / 2 + (1 - self.come) * StageStyle.rise;
+                        opacity: self.come;
+                        scene: scene;
+                        number: i + 1;
+                        hashtag: Wrapped.hashtag;
+                        account: Wrapped.account;
+                        name: Wrapped.name;
+                        counted(n) => { Wrapped.counted(n) }
+                    }
+                }
             }
             // The words, right of the gift.
             VerticalLayout {

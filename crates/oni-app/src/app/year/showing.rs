@@ -13,13 +13,35 @@ use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
 impl Ctl {
-    /// `year` read off this thread: the journal, the library's rows and their sidecars, their thumbnails'
-    /// colours. The ONI Trash's photos count for nothing.
+    /// `year` shown: told from its start if the welcome read it already, else read first.
     pub fn show_wrapped(self: &Rc<Self>, year: i32) {
         // A year shown in its own December, by the offer, the menu or the welcome, is the offer made.
         if year == today().0 && offer_due(today(), self.shown_year()) {
             self.remember(SHOWN_YEAR_KEY, year.into());
         }
+        let ready = self.state.borrow_mut().year.story.as_mut().filter(|s| s.year == year).map(|story| (story.index, story.sharing) = (0, false)).is_some();
+        match self.window().filter(|_| ready) {
+            Some(w) => {
+                let g = w.global::<Wrapped>();
+                g.set_index(0);
+                g.set_sharing(false);
+                g.set_notice(SharedString::default());
+                g.set_playing(true);
+                g.set_shown(true);
+                self.publish_bar();
+            }
+            None => self.read_wrapped(year, true),
+        }
+    }
+
+    /// `year` read and its cards made, not shown: the welcome lays a few of them on its mystery gift.
+    pub fn ready_wrapped(self: &Rc<Self>, year: i32) {
+        self.read_wrapped(year, false);
+    }
+
+    /// `year` read off this thread: the journal, the library's rows and their sidecars, their thumbnails'
+    /// colours. The ONI Trash's photos count for nothing.
+    fn read_wrapped(self: &Rc<Self>, year: i32, show: bool) {
         let (rows, support) = {
             let mut s = self.state.borrow_mut();
             if s.year.story.is_some() || s.year.reading {
@@ -59,11 +81,11 @@ impl Ctl {
             };
             let read = format!("{:.0} ms ({})", asked.elapsed().as_secs_f64() * 1000.0, steps.join(", "));
             crate::timing::line(&format!("wrapped: {} frames of {} and {} thumbnails read in {read}", told.frames.count, shown.len(), told.palette.sampled));
-            with_shell(move |c| c.present_wrapped(told));
+            with_shell(move |c| c.present_wrapped(told, show));
         });
     }
 
-    fn present_wrapped(self: &Rc<Self>, told: oni_library::wrapped::Year) {
+    fn present_wrapped(self: &Rc<Self>, told: oni_library::wrapped::Year, show: bool) {
         self.state.borrow_mut().year.reading = false;
         let Some(w) = self.window() else { return };
         let story = scenes(&told);
@@ -79,7 +101,7 @@ impl Ctl {
         g.set_playing(true);
         g.set_scenes(ModelRc::new(VecModel::from(story.iter().map(face).collect::<Vec<_>>())));
         g.set_showing(g.get_showing() + 1);
-        g.set_shown(true);
+        g.set_shown(show);
         // Every photo a scene shows: its place, its path, the print that names its thumbnail (the year's
         // frames carry theirs, the opened folder's the rest), and whether its scene shows it large.
         let prints: HashMap<&str, &str> = told.frames.paths.iter().map(|(p, f)| (p.as_str(), f.as_str())).collect();
@@ -145,7 +167,7 @@ impl Ctl {
     fn wrapped_photo(&self, showing: usize, scene: usize, slot: usize, picture: Image) {
         let Some(w) = self.window() else { return };
         let g = w.global::<Wrapped>();
-        if !g.get_shown() || self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
+        if self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
             return;
         }
         use slint::Model;
@@ -158,7 +180,7 @@ impl Ctl {
     fn wrapped_light(&self, showing: usize, scene: usize, glow: Option<(Vec<u8>, usize, usize)>, ink: Option<[u8; 3]>) {
         let Some(w) = self.window() else { return };
         let g = w.global::<Wrapped>();
-        if !g.get_shown() || self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
+        if self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
             return;
         }
         use slint::Model;
@@ -202,6 +224,19 @@ impl Ctl {
     }
 
     pub(super) fn close_wrapped(&self) {
+        // Over the welcome, it only steps aside: the mystery gift keeps its cards.
+        if let Some(w) = self.window().filter(|w| w.global::<crate::Help>().get_welcome_shown()) {
+            let g = w.global::<Wrapped>();
+            g.set_shown(false);
+            g.set_sharing(false);
+            w.invoke_refocus();
+            return self.publish_bar();
+        }
+        self.forget_wrapped();
+    }
+
+    /// The year told forgotten, its cards and the photos still coming for them.
+    pub(in crate::app) fn forget_wrapped(&self) {
         {
             let mut s = self.state.borrow_mut();
             s.year.story = None;

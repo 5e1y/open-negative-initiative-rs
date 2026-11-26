@@ -1235,6 +1235,10 @@ msgstr "Archivo"
 msgid "Projects"
 msgstr "Proyectos"
 
+#: crates/oni-ui/ui/library_tree.slint crates/oni-ui/ui/welcome.slint
+msgid "Your year on film"
+msgstr "Tu año en película"
+
 #: crates/oni-ui/ui/library_tree.slint
 msgid "Select photos in the Archive, then choose New Project."
 msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
@@ -2746,10 +2750,6 @@ msgstr "ONI vuelve a fotografiar una foto digital en una película reconstruida 
 #: crates/oni-ui/ui/welcome.slint
 msgid "{} films wait in the editor's Film panel. A new photo opens untouched, just as your camera saw it."
 msgstr "{} películas te esperan en el panel Película del editor. Una foto nueva se abre intacta, tal como la vio tu cámara."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your year on film"
-msgstr "Tu año en película"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."

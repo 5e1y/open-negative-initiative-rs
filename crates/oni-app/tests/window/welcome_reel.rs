@@ -203,6 +203,12 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         reel.keep();
         reel.play(((words + 1.2 - unwrap::pop(gift)) / 0.2).round() * 0.2, 0.2);
         assert!(help.get_may_go_on(), "gift {gift}: its words come, the way on opens");
+        if gift == 3 {
+            // The person's own year read for it, its cards laid on the screen, the Wrapped itself not shown.
+            let wrapped = shell.window.global::<oni_app::Wrapped>();
+            rig.until("the year read", std::time::Duration::from_secs(30), || slint::Model::row_count(&wrapped.get_scenes()) > 0);
+            assert!(!wrapped.get_shown(), "twin: the cards are on the welcome, not the Wrapped over it");
+        }
         reel.play(2.4, 0.2);
         reel.keep();
         assert!(light(&reel, reel.gift()) > 3.0, "gift {gift} drawn where it stands");
