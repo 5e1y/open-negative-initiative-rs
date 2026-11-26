@@ -158,7 +158,7 @@ fn a_banded_render_made_again_from_its_caches_reads_as_one_made_afresh() {
     let first = g.materialise_half_cached(&chain(1.0), Some(&mut caches)).expect("first");
     // The last gain moved: each band keeps the blur its changed stage reads, and the render matches one made afresh.
     let again = g.materialise_half_cached(&chain(0.5), Some(&mut caches)).expect("again");
-    assert!(caches.len() > 1 && caches.iter().all(|c| c.len() > 0), "every band keeps a stage");
+    assert!(caches.len() > 1 && caches.iter().all(|c| !c.is_empty()), "every band keeps a stage");
     let afresh = g.materialise_half(&chain(0.5)).expect("afresh");
     let (again, afresh, first) = (read(&mut g, &again), read(&mut g, &afresh), read(&mut g, &first));
     assert!(gap(&again, &afresh) == 0.0, "{}", gap(&again, &afresh));

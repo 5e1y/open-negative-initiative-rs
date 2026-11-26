@@ -18,6 +18,14 @@ fn write(made: ColorProfile) -> Option<(Vec<u8>, ColorProfile)> {
     Some((data, read))
 }
 
+/// The working space, linear Rec. 2020 on D65, as a file embeds it: a scan written in it reads back as the light it holds.
+pub fn linear_working_icc() -> Option<Vec<u8>> {
+    let mut p = ColorProfile::new_bt2020();
+    let linear = moxcms::ToneReprCurve::Lut(vec![]);
+    (p.red_trc, p.green_trc, p.blue_trc) = (Some(linear.clone()), Some(linear.clone()), Some(linear));
+    p.encode().ok()
+}
+
 static SRGB: LazyLock<Option<(Vec<u8>, ColorProfile)>> = LazyLock::new(|| write(ColorProfile::new_srgb()));
 static DISPLAY_P3: LazyLock<Option<(Vec<u8>, ColorProfile)>> = LazyLock::new(|| write(ColorProfile::new_display_p3()));
 static ADOBE_RGB: LazyLock<Option<(Vec<u8>, ColorProfile)>> = LazyLock::new(|| write(ColorProfile::new_adobe_rgb()));

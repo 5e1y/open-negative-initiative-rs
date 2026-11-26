@@ -13784,6 +13784,20 @@
     "detail": "Each film notch made the preview scan again whole, the grain's field and the lit scene included, which no film slider moves: Graph::materialise_half_cached keeps a frontier cache a band (the view's, Cache::frontier), and the engine holds the preview scan's; the full scan, made at rest, keeps none. Measured on Portra 800, 47 Mpx, app profile, load 7 to 10: grain notch p50 43 to 13-16 ms, halation 38-80 to 22-36 ms, shooting exposure 50-53 to 26-57 ms (too noisy to call); textures' peak 1923 MB as before. The GPU bench of the scan alone (8 Mpx): halation 77 to 26 ms, exposure 84 to 40, grain 79 to 16. Proven by pool's a_banded_render_made_again_from_its_caches_reads_as_one_made_afresh: bit for bit, every band keeping a stage, twin: the first recipe's render differs."
   },
   {
+    "id": 3877,
+    "type": "feature",
+    "title": "A digital photo's virtual negative written as a linear TIFF, for the person to convert it as a scanned negative",
+    "status": "done",
+    "detail": "examples/virtual_negative writes a digital photo's frozen scan on a stock, as the chain makes it after the scanner and before any window or inversion: 16-bit linear in the working space under a linear Rec. 2020 profile (oni_colour::space::linear_working_icc), so a plain file reads its codes back as that light, framed by a 4 % margin of bare film for Prepare's black; grain and halation off, or at the stock's rests. The owner's test photos written on Portra 800, Gold 200 and Vision3 250D, on the chain before and after #3878, under the test copy's Négatifs virtuels."
+  },
+  {
+    "id": 3878,
+    "type": "feature",
+    "title": "A colour negative's virtual film exposes its three layers alike and reads the scene's gamut as it is: two points a channel (format 80)",
+    "status": "done",
+    "detail": "Owner's call, spec by the colorimetry session (spec-deux-points.md): the film's filtration (each layer's exposure offset laying a mid grey on one share of the three windows, film::scanner::filtration and its field in 48 films' files) and the input gamut compression (bake::compressed) removed; CAT16 and bake::balanced kept. Each film's reference is its two points, black on the bare film and white where a neutral at the sensor's saturation reads, derived again (examples/stock_references); a person's own file still holding a filtration reads, the field left aside. Format 80 moves a digital photo of format 79 onto its stock's new reference, every hand's move kept (migrate::two_points). Measured against the spec: ranges R/G, B/G Portra 0.827 / 1.203, Gold 0.845 / 1.145, 250D 0.831 / 1.061, within 0.01; a grey leaves the black on Portra's three channels within 0.1 stop. Proven by scanner's a_grey_leaves_the_black_on_the_three_channels_together (twins: format 79's ranges, a grey lit by the former offsets leaving apart) and two_points' migration check."
+  },
+  {
     "id": 4008,
     "type": "ui",
     "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",
