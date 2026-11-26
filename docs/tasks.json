@@ -13971,5 +13971,12 @@
     "title": "The welcome's gifts at the size their words tell under one camera, each fading once opened so its demo takes the stage",
     "status": "done",
     "detail": "Owner's remarks: every gift looked the same size, and an opened gift should leave the stage to its feature. One camera and one floor for every screen; the gifts' own sizes tell the story: the two small ones under a third of the picture's height, the huge gold one above seven tenths, the mystery between (a direction test checks the shares). Before it is opened, the gift's name and what to do stand where its words will come, clear of the gift. Once its words come the gift fades in 0.6 s (direction::kept, the stills too) and the demo takes the stage left of the words, as large as the room allows; the words keep their place. Stills made again (welcome_stage --stills). Checks: stage unit tests (sizes, the fade, with twins), window checks welcome_reel, welcome_card, sheets, help, design_system; catalogue; clippy on oni-app."
+  },
+  {
+    "id": 3961,
+    "type": "feature",
+    "title": "The welcome after the owner's first try: no ribbon and a calmer opening, words that say what the person gets, words centred above the keys, and the message as the last thing before the app",
+    "status": "done",
+    "detail": "No ribbon or bow any more: a closed box, light leaking under its lid, then the lid's own way off (the silver case, the copper and gold lids lifting level, the mystery unfolding); each opening 2.2 to 3.6 s. No sentence reassures about what ONI does not do, none tells the history of its making: the Collection is 'Import your photo kit into ONI, with The Lens DB', the mystery gift 'Your Wrapped is here', one sentence each. A screen's words are centred in the room above the keys and never run under them. The message leaves the scroll: it comes once the last gift is passed, or as the Wrapped opened from its gift closes (the Wrapped now opens over the welcome), and says why ONI is free, the call to tell friends, and #madewithoni as large as the call; the signature closes it. Checks: stage unit tests (no ribbon at any time), window checks welcome_reel (the Wrapped's close leads to the message), welcome_card, sheet_stack, help, sheets, migration, wrapped, design_system; catalogue; clippy on oni-app."
   }
 ]

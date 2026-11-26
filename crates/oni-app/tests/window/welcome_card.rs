@@ -12,7 +12,7 @@ use crate::common::{self, Placed};
 /// `SheetStyle.margin`.
 const MARGIN: f32 = 24.0;
 /// Each screen's title, a gift's once it is opened.
-const TITLES: [&str; 5] = ["A livelier interface", "The Collection, with The Lens DB", "Your digital photos, on film", "Your year on film", "You already paid for your film."];
+const TITLES: [&str; 5] = ["A livelier interface", "Import your photo kit into ONI, with The Lens DB", "Your digital photos, on film", "Your Wrapped is here", "Tell your friends about ONI."];
 
 fn title(window: &MainWindow, page: usize) -> Placed {
     common::the(window, Role::Text, tr(TITLES[page - 1]))
@@ -20,7 +20,7 @@ fn title(window: &MainWindow, page: usize) -> Placed {
 
 fn commit(window: &MainWindow, page: usize) -> Placed {
     let word = match page {
-        4 => "Read the Message",
+        4 => "Continue",
         5 => "Enter ONI",
         _ => "Next Gift",
     };
@@ -43,7 +43,8 @@ fn sized(rig: &common::Rig, (w, h): (u32, u32)) {
 /// Screen `page` with its gift opened long ago, its words in place, the scroll standing on it.
 fn shown(rig: &common::Rig, help: &Help, page: usize) {
     help.set_welcome_page(page as i32);
-    help.set_scroll((page - 1) as f32);
+    help.set_scroll((page.min(4) - 1) as f32);
+    help.set_message_shown(if page == 5 { 1.0 } else { 0.0 });
     help.set_opened_time(30.0);
     help.set_words_at(0.0);
     help.set_may_go_on(true);
@@ -110,13 +111,13 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
     tap(&rig, key.middle());
     assert!(closed.get(), "the last screen's key leaves the welcome");
 
-    // Without the Collection's gift the rail counts four screens; twin: with it, five.
+    // Without the Collection's gift the rail counts three gifts; twin: with it, four.
     sized(&rig, (w as u32, h as u32));
     shown(&rig, &help, 1);
-    common::the(&window, Role::Text, &tr("Screen {} of {}").replacen("{}", "1", 1).replacen("{}", "5", 1));
+    common::the(&window, Role::Text, &tr("Screen {} of {}").replacen("{}", "1", 1).replacen("{}", "4", 1));
     help.set_kit_gift(false);
     rig.settle();
-    common::the(&window, Role::Text, &tr("Screen {} of {}").replacen("{}", "1", 1).replacen("{}", "4", 1));
+    common::the(&window, Role::Text, &tr("Screen {} of {}").replacen("{}", "1", 1).replacen("{}", "3", 1));
     help.set_kit_gift(true);
     window.hide().unwrap();
 }

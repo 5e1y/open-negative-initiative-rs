@@ -9,7 +9,8 @@ use slint::{ComponentHandle, PhysicalSize, SharedString};
 
 use crate::common;
 
-const SCREENS: usize = 5;
+/// The gifts' screens the rail counts.
+const SCREENS: usize = 4;
 
 fn down(rig: &common::Rig) {
     rig.key(&SharedString::from(Key::DownArrow));
@@ -55,7 +56,7 @@ pub(crate) fn a_sheet_closing_over_another_hands_it_the_keyboard() {
 
     // The rail names the screen shown, following a turn; twin: it names no other count.
     rig.settle();
-    assert!(rail(&window, 2, SCREENS), "the rail names screen 2 of 5");
+    assert!(rail(&window, 2, SCREENS), "the rail names screen 2 of 4");
     down(&rig);
     rig.settle();
     assert!(rail(&window, 3, SCREENS) && !rail(&window, 3, SCREENS - 1), "the rail follows the screen");

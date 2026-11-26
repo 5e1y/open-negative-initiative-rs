@@ -230,7 +230,8 @@ impl Ctl {
             g.set_shown(false);
             g.set_sharing(false);
             w.invoke_refocus();
-            return self.publish_bar();
+            self.publish_bar();
+            return self.welcome_after_wrapped();
         }
         self.forget_wrapped();
     }

@@ -51,8 +51,10 @@ fn step(page: i32, by: i32) -> i32 {
     if next == 2 && !KIT_GIFT { (next + by).clamp(1, MESSAGE) } else { next }
 }
 
-/// A screen's place in the scroll, the Collection's taking none without its gift.
+/// A screen's place in the scroll, the Collection's taking none without its gift; the message comes over the last
+/// gift's, out of the scroll.
 fn slot(page: i32) -> f32 {
+    let page = page.min(MESSAGE - 1);
     (if !KIT_GIFT && page > 2 { page - 2 } else { page - 1 }) as f32
 }
 
@@ -177,6 +179,19 @@ impl Ctl {
         if let Some(Err(e)) = kept {
             crate::timing::line(&format!("welcome: the opened gifts cannot be kept: {e}"));
         }
+        self.welcome_frame();
+    }
+
+    /// The Wrapped opened from the mystery gift closed: the welcome goes on to its message, the last thing before the
+    /// app.
+    pub(in crate::app) fn welcome_after_wrapped(&self) {
+        let still = self.window().is_some_and(|w| w.global::<crate::Motion>().get_reduced());
+        self.welcome_set(|play| {
+            let now = play.now();
+            if play.page == MESSAGE - 1 {
+                play.go(1, now, still);
+            }
+        });
         self.welcome_frame();
     }
 
@@ -354,6 +369,8 @@ impl Ctl {
         help.set_welcome_unwrapped(i32::from(play.bits()));
         help.set_scroll(slot(play.from) + (slot(play.page) - slot(play.from)) * play.travelled(now, still));
         help.set_stage_shown(cue.shown * cue.gift.map_or(0.0, |i| direction::kept(i, cue.since)));
+        let travelled = play.travelled(now, still);
+        help.set_message_shown(if play.page == MESSAGE { travelled } else if play.from == MESSAGE { 1.0 - travelled } else { 0.0 });
         help.set_gift_shown(cue.gift.map_or(-1, |i| i as i32));
         let since = gift_of(play.page).and_then(|i| play.opened[i]).map_or(-1.0, |o| (now - o).max(0.0));
         help.set_opened_time(since);

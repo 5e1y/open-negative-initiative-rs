@@ -19,6 +19,8 @@ export global Help {
     in property <int> welcome-unwrapped;
     // Where the screens stand, in screens from the first, travelling between two as one gives way.
     in property <float> scroll;
+    // How much of the message shows, once the gifts are left for it.
+    in property <float> message-shown;
     // The stage the GPU draws, its revision bumped at each picture drawn into the same texture; while it is not
     // drawn (not yet, or not on this GPU), each gift's still in its place.
     in property <image> stage;

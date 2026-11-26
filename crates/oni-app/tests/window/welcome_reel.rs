@@ -212,7 +212,16 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         }
         reel.play(2.4, 0.2);
         reel.keep();
-        rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
+        if gift == 3 {
+            // The Wrapped opened from its gift, then closed: the welcome goes on to its message.
+            let wrapped = shell.window.global::<oni_app::Wrapped>();
+            help.invoke_wrapped();
+            rig.until("the Wrapped shown", std::time::Duration::from_secs(30), || wrapped.get_shown());
+            wrapped.invoke_close();
+            rig.pump();
+        } else {
+            rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
+        }
         reel.play(0.8, 0.2);
         assert_eq!(help.get_welcome_page(), page + 1, "on past gift {gift} once opened");
     }

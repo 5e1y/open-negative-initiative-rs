@@ -32,8 +32,8 @@ export component WelcomeSheet inherits Sheet {
     property <int> page: Help.welcome-page;
     property <bool> last: root.page == 5;
     property <bool> opened: Help.opened-time >= 0;
-    // The screens in the scroll, the Collection's taking no place without its gift.
-    property <int> count: Help.kit-gift ? 5 : 4;
+    // The gifts' screens in the scroll, the Collection's taking no place without its gift; the message is none.
+    property <int> count: Help.kit-gift ? 4 : 3;
     function slot(page: int) -> int { !Help.kit-gift && page > 2 ? page - 2 : page - 1 }
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
@@ -92,7 +92,7 @@ export component WelcomeSheet inherits Sheet {
         // Where its words will come: which gift it is, and what to do.
         // Clear of the gift, which the huge one is not of the words' column.
         if !root.opened && !root.last: VerticalLayout {
-            x: max(root.right, Help.gift-spot.x + Help.gift-spot.width + StageStyle.gap);
+            x: max(root.right, Help.gift-spot.x + Help.gift-spot.width + StageStyle.gap + Space.l);
             width: root.width - self.x - 2 * Space.l;
             y: (root.room - self.preferred-height) / 2;
             height: self.preferred-height;
@@ -144,20 +144,21 @@ export component WelcomeSheet inherits Sheet {
             VerticalLayout {
                 x: root.right;
                 width: root.side;
-                y: (parent.height - self.preferred-height) / 2 + (1 - root.words) * StageStyle.rise;
-                height: self.preferred-height;
+                // Centred in the room above the keys, never under them.
+                y: max(Space.l, (parent.height - self.preferred-height) / 2) + (1 - root.words) * StageStyle.rise;
+                height: min(self.preferred-height, parent.height - 2 * Space.l);
                 if page == 1: Words {
                     eyebrow: root.tags[0];
                     title: @tr("A livelier interface");
                     lead: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped.");
-                    text: @tr("Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were.");
+                    text: "";
                     shown: here ? root.words : 0;
                 }
                 if page == 2: Words {
                     eyebrow: root.tags[1];
-                    title: @tr("The Collection, with The Lens DB");
-                    lead: @tr("ONI partners with The Lens DB, a catalogue of camera bodies and lenses.");
-                    text: @tr("Two independent projects, no ads. The Lens DB sees your list of gear, never your photos.");
+                    title: @tr("Import your photo kit into ONI, with The Lens DB");
+                    lead: @tr("Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports.");
+                    text: "";
                     shown: here ? root.words : 0;
                     if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
                     if Kit.link == KitLink.waiting: StageText { text: @tr("Finish in Your Browser"); }
@@ -167,78 +168,64 @@ export component WelcomeSheet inherits Sheet {
                     eyebrow: root.tags[2];
                     title: @tr("Your digital photos, on film");
                     lead: @tr("ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would.");
-                    text: @tr("{} films wait in the editor's Film panel. A new photo opens untouched, just as your camera saw it.", Help.film-count);
+                    text: @tr("{} films wait in the editor's Film panel.", Help.film-count);
                     shown: here ? root.words : 0;
                 }
                 if page == 4: Words {
                     eyebrow: root.tags[3];
-                    title: @tr("Your year on film");
-                    lead: @tr("ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go.");
+                    title: @tr("Your Wrapped is here");
+                    lead: @tr("Your year on film: your rolls, your films, your favourite frames and the time you spent with them.");
                     text: "";
                     shown: here ? root.words : 0;
                     HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
                 }
             }
         }
-        // The message: its two lines, then what a person can do, then the way into the app.
+        // The message, the welcome's last word before the app: why ONI is free, the call to share it, its tag.
         if root.last: Scroller {
-            y: (root.slot(5) - Help.scroll) * root.height;
             height: root.room;
+            opacity: Help.message-shown;
             content-height: letter.preferred-height;
             letter := HorizontalLayout {
                 width: parent.width;
                 alignment: center;
-                VerticalLayout {
-                    width: min(WelcomeStyle.letter-width * 1.9, root.width - 4 * Space.l);
-                    padding-top: root.height * 0.1;
+                column := VerticalLayout {
+                    width: min(WelcomeStyle.letter-width * 1.6, root.width - 4 * Space.l);
+                    padding-top: max(Space.l, (root.room - inner.preferred-height) / 2);
                     padding-bottom: Space.l;
-                    spacing: Space.m;
-                    StageNote { text: @tr("I have a message for you"); role: TextRole.title; tone: Tone.secondary; }
-                    StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: @tr("You already paid for your film."); }
-                    StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: @tr("You shouldn't have to pay just to look at it."); }
-                    HorizontalLayout {
-                        alignment: center;
-                        StageText {
-                            width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
-                            centred: true;
-                            lead: true;
-                            text: @tr("Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI. ONI is free and open source, with no ads and no marketing budget: it only grows when someone tells a friend.");
-                        }
+                    inner := VerticalLayout {
+                        spacing: Space.l;
+                        StageNote { text: @tr("I have a message for you"); role: TextRole.title; tone: Tone.secondary; }
+                        VerticalLayout {
+                            spacing: Space.s;
+                            StageText { centred: true; lead: true; text: @tr("Most negative tools are paid: they keep to themselves a know-how that was lost when digital arrived."); }
+                            StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: @tr("Tell your friends about ONI."); }
+                            StageText { centred: true; lead: true; text: @tr("Before they spend hundreds on presets or film editing software."); }
                     }
                     VerticalLayout {
+                        spacing: Space.xs;
+                        StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: Help.made-with; }
+                        StageText { centred: true; text: @tr("Post what you make with ONI under this tag."); }
+                    }
+                    HorizontalLayout {
+                        alignment: center;
                         spacing: Space.s;
-                        Label { text: @tr("ONI needs you: spread the word"); role: TextRole.heading; centred: true; wrap: word-wrap; }
-                        Label { text: @tr("Share what you make with ONI under {}.", Help.made-with); role: TextRole.note; centred: true; wrap: word-wrap; }
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: Space.s;
-                            if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
-                            Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
-                            Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
-                        }
-                        HorizontalLayout {
-                            alignment: center;
-                            Label {
-                                width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
-                                role: TextRole.note;
-                                centred: true;
-                                text: @tr("Every month, the community's top five; the winning photo opens the next version of ONI for everyone, with its author's name. Anyone can enter, with a photo where no one is recognisable. One step, the form; {} to share.", Help.contest-tag);
-                            }
-                        }
-                        HorizontalLayout {
-                            alignment: center;
-                            Label {
-                                width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
-                                role: TextRole.note;
-                                centred: true;
-                                text: @tr("This welcome stays in the Help menu, under What's New.");
-                            }
-                        }
+                        if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
+                        Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                        Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
+                    }
+                    Label {
+                        role: TextRole.note;
+                        centred: true;
+                        wrap: word-wrap;
+                        text: @tr("Every month, the community's top five: the winning photo opens the next version of ONI, with its author's name. One step, the form; {} to share.", Help.contest-tag);
+                    }
+                    StageText { centred: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
                     }
                 }
             }
         }
-        StageRail {
+        if !root.last: StageRail {
             x: parent.width - Space.l - self.preferred-width;
             y: (root.room - self.preferred-height) / 2;
             count: root.count;
@@ -254,7 +241,7 @@ export component WelcomeSheet inherits Sheet {
                 width: parent.width - 2 * Space.l;
                 height: self.preferred-height;
                 back: root.slot(root.page) > 0 ? @tr("Back") : "";
-                commit: root.last ? @tr("Enter ONI") : !root.opened ? @tr("Unwrap") : root.page == 4 ? @tr("Read the Message") : @tr("Next Gift");
+                commit: root.last ? @tr("Enter ONI") : !root.opened ? @tr("Unwrap") : root.page == 4 ? @tr("Continue") : @tr("Next Gift");
                 commit-enabled: root.last || !root.opened || Help.may-go-on;
                 backed => { Help.welcome-go(-1); }
                 committed => { root.onward(); }

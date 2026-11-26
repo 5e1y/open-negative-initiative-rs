@@ -1235,7 +1235,7 @@ msgstr "Archives"
 msgid "Projects"
 msgstr "Projets"
 
-#: crates/oni-ui/ui/library_tree.slint crates/oni-ui/ui/welcome.slint
+#: crates/oni-ui/ui/library_tree.slint
 msgid "Your year on film"
 msgstr "Votre année sur pellicule"
 
@@ -2720,20 +2720,12 @@ msgid "ONI now moves the way you look at your photos: every change of place is s
 msgstr "ONI bouge désormais comme votre regard : chaque changement de place se voit, rien ne saute."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."
-msgstr "Chaque mouvement est court et pesé : l'app paraît plus rapide, pas plus lente. Vos outils restent à leur place."
+msgid "Import your photo kit into ONI, with The Lens DB"
+msgstr "Importez votre kit photo dans ONI, avec The Lens DB"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "The Collection, with The Lens DB"
-msgstr "La Collection, avec The Lens DB"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "ONI partners with The Lens DB, a catalogue of camera bodies and lenses."
-msgstr "ONI s'associe à The Lens DB, un catalogue de boîtiers et d'objectifs."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."
-msgstr "Deux projets indépendants, sans publicité. The Lens DB voit la liste de votre matériel, jamais vos photos."
+msgid "Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports."
+msgstr "Cherchez vos boîtiers et vos objectifs dans le catalogue de The Lens DB : ils renseignent l'appareil et l'objectif de vos exports."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Connected as {}"
@@ -2748,12 +2740,16 @@ msgid "ONI shoots a digital photo again on a film rebuilt from its maker's data 
 msgstr "ONI photographie à nouveau une photo numérique sur une pellicule reconstruite d'après la fiche technique de son fabricant, la développe, la scanne et l'inverse, comme un laboratoire."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "{} films wait in the editor's Film panel. A new photo opens untouched, just as your camera saw it."
-msgstr "{} pellicules vous attendent dans le panneau Pellicule de l'éditeur. Une nouvelle photo s'ouvre intacte, telle que votre appareil l'a vue."
+msgid "{} films wait in the editor's Film panel."
+msgstr "{} pellicules vous attendent dans le panneau Pellicule de l'éditeur."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."
-msgstr "ONI Wrapped, refait de zéro : vos pellicules, vos émulsions, vos vues préférées et le temps passé avec elles, racontés d'un trait."
+msgid "Your Wrapped is here"
+msgstr "Votre Wrapped est arrivé"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your year on film: your rolls, your films, your favourite frames and the time you spent with them."
+msgstr "Votre année en argentique : vos rouleaux, vos pellicules, vos images préférées et le temps passé avec elles."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Open My Wrapped"
@@ -2764,24 +2760,20 @@ msgid "I have a message for you"
 msgstr "J'ai un message pour vous"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "You already paid for your film."
-msgstr "Vous avez déjà payé votre pellicule."
+msgid "Most negative tools are paid: they keep to themselves a know-how that was lost when digital arrived."
+msgstr "La plupart des outils pour négatifs sont payants : ils gardent pour eux un savoir-faire qui s'est perdu avec l'arrivée du numérique."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "You shouldn't have to pay just to look at it."
-msgstr "Vous ne devriez pas payer rien que pour la regarder."
+msgid "Tell your friends about ONI."
+msgstr "Parlez d'ONI à vos amis."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI. ONI is free and open source, with no ads and no marketing budget: it only grows when someone tells a friend."
-msgstr "Trop d'outils vous font payer chaque mois pour convertir vos négatifs, et la plupart le font moins bien qu'ONI. ONI est gratuit et open source, sans publicité ni budget marketing : il ne grandit que quand quelqu'un en parle à un ami."
+msgid "Before they spend hundreds on presets or film editing software."
+msgstr "Avant qu'ils ne dépensent des centaines d'euros en presets ou en logiciels d'édition argentique."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "ONI needs you: spread the word"
-msgstr "ONI a besoin de vous : faites passer le mot"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Share what you make with ONI under {}."
-msgstr "Partagez ce que vous faites avec ONI sous {}."
+msgid "Post what you make with ONI under this tag."
+msgstr "Publiez sous ce tag ce que vous faites avec ONI."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Follow ONI on Instagram"
@@ -2796,12 +2788,12 @@ msgid "Enter the Contest"
 msgstr "Participer au concours"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Every month, the community's top five; the winning photo opens the next version of ONI for everyone, with its author's name. Anyone can enter, with a photo where no one is recognisable. One step, the form; {} to share."
-msgstr "Chaque mois, le top 5 de la communauté ; la photo gagnante ouvre la version suivante d'ONI pour tout le monde, avec le nom de son auteur. Tout le monde peut participer, avec une photo où personne n'est reconnaissable. Une seule étape, le formulaire ; {} pour partager."
+msgid "Every month, the community's top five: the winning photo opens the next version of ONI, with its author's name. One step, the form; {} to share."
+msgstr "Chaque mois, le top 5 de la communauté : la photo gagnante ouvre la version suivante d'ONI, avec le nom de son auteur. Une seule étape, le formulaire ; {} pour partager."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "This welcome stays in the Help menu, under What's New."
-msgstr "Cet accueil reste dans le menu Aide, sous Nouveautés."
+msgid "You already paid for your film. You shouldn't have to pay just to look at it."
+msgstr "Vous avez déjà payé votre pellicule. Vous ne devriez pas payer encore rien que pour la regarder."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Enter ONI"
@@ -2812,8 +2804,8 @@ msgid "Unwrap"
 msgstr "Déballer"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Read the Message"
-msgstr "Lire le message"
+msgid "Continue"
+msgstr "Continuer"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Next Gift"

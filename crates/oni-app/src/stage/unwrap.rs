@@ -1,5 +1,5 @@
-//! How each gift comes undone: its bow drawn through its knot, its bands fallen open, light leaking under its lid,
-//! then the lid's own way off: a case's for the silver one, a toss for the copper, a flower's for the mystery.
+//! How each gift opens: light leaking under its lid, then the lid's own way off: a case's for the silver one, a
+//! lift for the copper and the gold, a flower's for the mystery.
 
 use super::direction::{LID, STAND};
 use super::ease::{give, glide, land, mix, span};
@@ -22,13 +22,14 @@ pub struct Parts {
 
 impl Parts {
     pub fn tied() -> Parts {
-        Parts { lid: [0.0; 4], tie: [1.0, 1.0, 1.0, 0.0], open: 0.0, seam: 0.0, rise: 0.0, spin: 0.0, lift: 0.0 }
+        // No ribbon: a closed box, its lid seated, no light out of it.
+        Parts { lid: [0.0; 4], tie: [0.0; 4], open: 0.0, seam: 0.0, rise: 0.0, spin: 0.0, lift: 0.0 }
     }
 }
 
 /// How long each gift's untying lasts, and the moment its lid goes.
-const LENGTH: [f32; 4] = [3.6, 4.2, 6.2, 7.0];
-const POP: [f32; 4] = [1.6, 1.9, 2.6, 4.0];
+const LENGTH: [f32; 4] = [2.2, 2.4, 3.2, 3.6];
+const POP: [f32; 4] = [0.8, 0.8, 1.0, 1.4];
 /// How high each opened gift's light stands, a share of the tallest: the silver one's is a breath over its mouth.
 const COLUMN: [f32; 4] = [0.45, 0.8, 1.0, 0.9];
 
@@ -42,7 +43,7 @@ pub fn pop(gift: usize) -> f32 {
 
 /// The second a gift's title arrives: once its lid is down, or its walls open.
 pub fn title(gift: usize) -> f32 {
-    POP[gift] + [0.9, 0.9, 1.3, 1.3][gift]
+    POP[gift] + [0.7, 0.8, 1.1, 1.3][gift]
 }
 
 /// Where the camera starts round each gift and how far it turns while the gift comes undone, in radians.
@@ -80,24 +81,12 @@ fn hinged(angle: f32) -> [f32; 4] {
     [0.0, y - (cos * y - sin * z), z - (sin * y + cos * z), -angle]
 }
 
-/// A gift untied `t` seconds into its act.
+/// A gift opened `t` seconds into its act: a hairline of light under its lid grows as the box fills, the lid
+/// trembles, then lifts away its own way, and the light stands up in the box.
 pub fn untied(gift: usize, t: f32) -> Parts {
     let pop = POP[gift];
     let mut parts = Parts::tied();
-    // When the bow is drawn through its knot, and when the body's bands let go.
-    let (pulled, fall) = match gift {
-        2 => (0.5, (1.2, 1.9)),
-        3 => (2.9, (3.1, 3.8)),
-        _ => (0.3, (0.8, 1.4)),
-    };
-    // Its loops swell a little as the tails take the strain, then run through the knot; what is left narrows away.
-    let drawn = glide(span(t, pulled, pulled + 0.9));
-    parts.tie[0] = mix(1.0 + 0.14 * glide(span(t, (pulled - 0.5f32).max(0.0), pulled)), 0.3, drawn) - 0.3 * glide(span(t, pulled + 0.9, pulled + 1.4));
-    parts.tie[1] = 1.0 - glide(span(t, pulled + 0.7, pulled + 1.4));
-    // The bands fall open and stay where they lie.
-    parts.tie[2] = mix(1.0, 0.5, give(span(t, fall.0, fall.1)));
-    // A hairline of light under the lid grows as the box fills; the lid trembles, then goes, and the light stands up.
-    parts.seam = glide(span(t, pop - 1.0, pop - 0.1)) * (1.0 - span(t, pop, pop + 0.15));
+    parts.seam = glide(span(t, 0.1, pop - 0.05)) * (1.0 - span(t, pop, pop + 0.15));
     let pressed = span(t, pop - 0.35, pop) * (1.0 - span(t, pop, pop + 0.01));
     parts.lid[3] = 0.02 * pressed * (t * 46.0).sin();
     parts.lid[1] = 0.012 * pressed * (t * 38.0).sin().abs();
@@ -108,25 +97,26 @@ pub fn untied(gift: usize, t: f32) -> Parts {
     match gift {
         // The silver one opens like a case: its lid swings back on its rear edge and stays.
         0 => parts.lid = if t >= pop { hinged(1.95 * land(span(t, pop, pop + 0.45)) + 0.08 * (-(t - pop - 0.45).max(0.0) * 6.0).exp() * ((t - pop - 0.45).max(0.0) * 15.0).sin()) } else { parts.lid },
-        2 => parts.lid = if t >= pop { flight(gift, t - pop, 2.6, 1.0, 1.4) } else { parts.lid },
+        // The huge one's lid lifts slowly, level, and settles behind it.
+        2 => parts.lid = if t >= pop { flight(gift, t - pop, 1.4, 0.0, 1.5) } else { parts.lid },
         3 => {
             // It turns once on itself, its inks sweeping, then its lid rises away and its walls fall open.
-            parts.spin = TAU * glide(span(t, 0.9, 3.0));
-            parts.lift = 0.12 * glide(span(t, 0.7, 1.7)) * (1.0 - glide(span(t, 3.0, 3.6)));
+            parts.spin = TAU * glide(span(t, 0.0, pop - 0.2));
+            parts.lift = 0.12 * glide(span(t, 0.0, 0.5)) * (1.0 - glide(span(t, pop - 0.4, pop)));
             if t >= pop {
                 parts.lid = [0.0, 12.0 * give(span(t, pop, pop + 1.3)), 0.0, -0.9 * glide(span(t, pop, pop + 1.3))];
             }
-            parts.open = glide(span(t, pop + 0.15, pop + 1.6));
+            parts.open = glide(span(t, pop + 0.15, pop + 1.4));
         }
-        // The copper one tosses its lid: a hop, two tumbles, down behind it.
-        _ => parts.lid = if t >= pop { flight(gift, t - pop, 1.5, 2.0, 0.95) } else { parts.lid },
+        // The copper one's lid hops off, level, and lands behind it.
+        _ => parts.lid = if t >= pop { flight(gift, t - pop, 1.1, 0.0, 1.0) } else { parts.lid },
     }
     parts
 }
 
 /// An opened gift at rest: its lid where it went, its light low; the mystery flat on the floor.
 pub fn opened(gift: usize) -> Parts {
-    let mut parts = Parts { tie: [0.0, 0.0, 0.5, 0.4], rise: COLUMN[gift], ..Parts::tied() };
+    let mut parts = Parts { tie: [0.0, 0.0, 0.0, 0.4], rise: COLUMN[gift], ..Parts::tied() };
     match gift {
         0 => parts.lid = hinged(1.95),
         3 => (parts.lid, parts.open) = ([0.0, 60.0, 0.0, 0.0], 1.0),

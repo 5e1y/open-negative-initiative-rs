@@ -151,10 +151,8 @@ impl Ctl {
         help.on_welcome_closed(move || p.welcome_closed());
         Ctl::wire_welcome(me, &help);
         let p = me.clone();
-        help.on_wrapped(move || {
-            p.welcome_closed();
-            p.act(crate::Act::Wrapped);
-        });
+        // The Wrapped comes over the welcome; closed, it leaves the welcome on its message.
+        help.on_wrapped(move || p.act(crate::Act::Wrapped));
         help.on_donate(|| system::open_url(DONATE));
         help.on_instagram(|| INSTAGRAM.into_iter().for_each(system::open_url));
         help.on_contest(|| system::open_url(CONTEST));
