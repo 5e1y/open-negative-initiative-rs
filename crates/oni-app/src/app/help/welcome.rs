@@ -209,7 +209,9 @@ impl Ctl {
         let page = (1..MESSAGE).find(|p| gift_of(*p).is_some_and(|i| opened[i].is_none())).unwrap_or(MESSAGE);
         let (sender, building) = channel();
         let (films, decoding) = channel();
-        let _ = std::thread::Builder::new().name("welcome films".into()).spawn(move || films.send(reels::decoded()));
+        let _ = std::thread::Builder::new().name("welcome films".into()).spawn(move || {
+            let _ = films.send(reels::decoded());
+        });
         {
             let mut s = self.state.borrow_mut();
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());

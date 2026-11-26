@@ -13957,5 +13957,12 @@
     "title": "A block of the interface thread past 5 s writes where it waits: the system's sample, its main thread's heaviest path, innermost first",
     "status": "done",
     "detail": "The owner's app froze after a sleep and left no trace: its log lay on the T7, which unmounted, and two relaunches rotated it out. Not reproduced here: the display slept and woke (pmset displaysleepnow, caffeinate -u) without a block; a volume holding the support, the caches and a roll, force-detached mid-journey and mid-edit (hdiutil), blocked nothing, SQLite answering at once and its writes failing at once. The watchdog now runs /usr/bin/sample on its own process once a block passes LONG_BLOCK and writes the main thread's frames, function and module, never a path or an address, so the next freeze names its wait."
+  },
+  {
+    "id": 3959,
+    "type": "feature",
+    "title": "The welcome's films framed close on what moves, the hand drawn reaching and pressing; the stage's threads return no value to drop",
+    "status": "done",
+    "detail": "welcome_films now looks where things happen: the gallery's tile under the hand and its flight into the editor, the Export key pressed and the photo onto the export's preview, Cancel and Back, then the Search Gear key, the search field, Add and Done, and the Kit with the body added; each gesture filmed as the hand reaches (weighted, 0.54 s) and presses (a ring at its tip). Crops follow the keys found by their names, so the script plays again over a moved layout. The Kit is read once before the film, so it opens on the person's own Kit. Frames 800 by 500 at quality 74: the two films weigh 3.8 MB. The films' decoding thread drops its send's result inside, as the stage's does (clippy's result_large_err). Checks: welcome_films, welcome_reel, welcome_card, design_system; help unit tests; architecture; clippy on oni-app."
   }
 ]
