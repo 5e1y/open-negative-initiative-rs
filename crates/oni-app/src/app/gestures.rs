@@ -150,6 +150,10 @@ impl Ctl {
         // Leaving the editor takes the deck away with no exit event: the preview goes with it.
         self.clear_hover();
         self.leave_modes();
+        let open = self.state.borrow().open_path().map(str::to_string);
+        if let Some(open) = open {
+            self.fly_into_gallery(&open);
+        }
         w.global::<App>().set_gallery(true);
         self.leave_together();
         {

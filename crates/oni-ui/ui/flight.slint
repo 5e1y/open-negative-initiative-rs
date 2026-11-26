@@ -1,0 +1,88 @@
+// A photo's flight between the screens: its picture lifts off where it stood, the gallery's tile, the editor's
+// canvas or the export's preview, and grows or shrinks into its place on the next, which shows around it.
+import { Motion, Ease } from "ds/ds.slint";
+
+// Where a flight goes: the tile into the canvas, the canvas into its tile, the canvas into the export's
+// preview, the preview back onto the canvas.
+export enum FlightRoute { into-editor, into-gallery, into-export, out-of-export }
+
+export struct Place {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+}
+
+export global Flight {
+    // The flight Rust starts: each one a serial, its picture, its way and the place it leaves from in the
+    // window; the place it lands on follows the next screen as it lays out.
+    in-out property <bool> flying;
+    in property <int> serial;
+    in property <image> picture;
+    in property <FlightRoute> route;
+    in property <Place> from;
+    // The gallery's tile the photo lands in and its place, which Rust lays as the grid shows; a place of no
+    // width is not laid yet, the photo then holding where it is bound.
+    in property <int> tile: -1;
+    in property <Place> tile-place;
+    // The canvas's corner in the window, and the lone export preview's place and whether it has landed, as
+    // their screens lay them.
+    in-out property <length> canvas-x;
+    in-out property <length> canvas-y;
+    in-out property <Place> slot;
+    in-out property <bool> slot-ready;
+    // Landed, the picture fades over the place it reached, which shows again under it.
+    in-out property <bool> landing;
+    out property <bool> covering: Flight.flying && !Flight.landing;
+    // The canvas's photo and a tile's picture stand back while the flying one covers them.
+    out property <bool> canvas-covered: Flight.covering && (Flight.route == FlightRoute.into-editor || Flight.route == FlightRoute.out-of-export);
+    out property <bool> tile-covered: Flight.covering && Flight.route == FlightRoute.into-gallery;
+    out property <image> blank;
+}
+
+// Laid in the window's space over the screens, taking no press: every gesture reaches what lies under it.
+export component FlightView {
+    // Where the canvas lays the photo, and the canvas's room for a photo it has not placed yet.
+    in property <Place> frame;
+    in property <Place> room;
+    property <float> aspect: Flight.picture.height > 0 ? Flight.picture.width / Flight.picture.height : 1;
+    property <length> fit-width: min(root.room.width, root.room.height * root.aspect);
+    property <Place> canvas: root.frame.width > 0 && root.frame.height > 0 ? root.frame : {
+        x: root.room.x + (root.room.width - root.fit-width) / 2,
+        y: root.room.y + (root.room.height - root.fit-width / root.aspect) / 2,
+        width: root.fit-width,
+        height: root.fit-width / root.aspect,
+    };
+    // The photo as its tile lays it, whole in the cell.
+    property <Place> cell: Flight.tile-place;
+    property <length> cell-width: min(root.cell.width, root.cell.height * root.aspect);
+    property <Place> tile: { x: root.cell.x + (root.cell.width - root.cell-width) / 2, y: root.cell.y + (root.cell.height - root.cell-width / root.aspect) / 2, width: root.cell-width, height: root.cell-width / root.aspect };
+    property <Place> to: Flight.route == FlightRoute.into-gallery ? (root.cell.width > 0 ? root.tile : root.canvas)
+        : Flight.route == FlightRoute.into-export ? (Flight.slot.width > 0 ? Flight.slot : root.canvas)
+        : root.canvas;
+    // Laid where it leaves, then off: from then each place it aims at springs it there, turned back midway
+    // when a gesture reverses the flight.
+    property <bool> off;
+    init => { root.off = true; }
+    property <Place> at: root.off ? root.to : Flight.from;
+    property <int> serial: Flight.serial;
+    changed serial => { Flight.landing = false; root.arrived = false; travel.restart(); }
+    // On the export's preview it holds until the preview has landed under it.
+    property <bool> arrived;
+    changed arrived => { if (root.arrived && (Flight.route != FlightRoute.into-export || Flight.slot-ready)) { Flight.landing = true; } }
+    property <bool> slot-ready: Flight.slot-ready;
+    changed slot-ready => { if (root.arrived && root.slot-ready) { Flight.landing = true; } }
+    Image {
+        x: root.at.x;
+        y: root.at.y;
+        width: root.at.width;
+        height: root.at.height;
+        animate x, y, width, height { duration: Motion.travel; easing: Ease.weighted; }
+        source: Flight.picture;
+        image-fit: contain;
+        opacity: Flight.landing ? 0 : 1;
+        animate opacity { duration: Motion.quick; easing: ease-out; }
+    }
+    travel := Timer { interval: Motion.travel; running: Flight.flying && !root.arrived; triggered => { root.arrived = true; } }
+    Timer { interval: Motion.quick; running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
+}

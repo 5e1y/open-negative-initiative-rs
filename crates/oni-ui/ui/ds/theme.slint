@@ -123,6 +123,18 @@ export global Motion {
     // Every overlay, a sheet or a notice, comes in at this pace and leaves faster; Reduce Motion shows it at once.
     out property <duration> overlay-in: Motion.reduced ? 0ms : DS.motion-overlay-in;
     out property <duration> overlay-out: Motion.reduced ? 0ms : DS.motion-overlay-out;
+    // A part of the window travelling to its new place, as the column's photos rising, on `Ease.weighted`.
+    out property <duration> travel: Motion.reduced ? 0ms : 420ms;
+    // A menu or a popover opening out of its anchor, quick enough that a line is read as it lands.
+    out property <duration> pop: Motion.reduced ? 0ms : 160ms;
+}
+
+// The curves of `Motion`'s paces, apart as the window's public globals carry no easing: a weighted spring
+// that settles with a hair of give and keeps its speed when a gesture turns it back midway.
+export global Ease {
+    out property <easing> weighted: spring(0.1);
+    // A size travelling, as a block folding: the same spring with no give, which never passes zero.
+    out property <easing> firm: spring(0);
 }
 
 // The overlay scroller AppKit draws for every Swift scroll view: a knob over the edge, no gutter.
@@ -271,6 +283,8 @@ export global MenuStyle {
     // The band under the hand or the arrows, the flat keys' veil at its firmest, and a line's glyph.
     out property <color> lit: ButtonStyle.veil-pressed;
     out property <length> glyph: 14px;
+    // What a menu or a popover grows by as it opens out of its anchor, twice that in height.
+    out property <float> grow: 0.04;
     // A line over its note: a label's line and a caption's in a small key's padding.
     out property <length> noted-height: 40px;
     // How long the pointer rests on a line before its submenu opens or the open one closes, as AppKit's.

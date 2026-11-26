@@ -16,26 +16,55 @@ import { Unsaved, UnsavedSheet } from "missing.slint";
 import { Converting, DngSheet } from "dng.slint";
 import { Kit } from "gear_state.slint";
 import { KitSearchSheet } from "kit.slint";
+import { Motion } from "ds/ds.slint";
+
+// A sheet kept laid while it sinks away, so it leaves as it came rather than vanishing.
+component Held {
+    in property <bool> open;
+    property <bool> leaving;
+    out property <bool> laid: root.open || root.leaving;
+    changed open => { root.leaving = !root.open; }
+    Timer { interval: Motion.overlay-out; running: root.leaving; triggered => { root.leaving = false; } }
+}
 
 export component Sheets inherits Rectangle {
-    if Presets.saving: PresetSaveSheet { shown: Presets.saving; x: 0; y: 0; width: root.width; height: root.height; }
-    if Presets.editing: PresetEditorSheet { shown: Presets.editing; x: 0; y: 0; width: root.width; height: root.height; }
-    if Pairing.shown: PairingSheet { shown: Pairing.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if AppSettings.shown: SettingsSheet { shown: AppSettings.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.confirm-shown: ExportConfirmSheet { shown: Exporting.confirm-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.notice-shown: ExportNoticeSheet { shown: Exporting.notice-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.naming-shown: PresetNameSheet { shown: Exporting.naming-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Stocks.shown: StockPickerSheet { shown: Stocks.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.papers-shown: PaperSheet { shown: Exporting.papers-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Help.welcome-shown: WelcomeSheet { shown: Help.welcome-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Upgraded.shown: UpgradedSheet { shown: Upgraded.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Help.report-shown: ReportSheet { shown: Help.report-shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Choice.shown: ChoiceSheet { shown: Choice.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if MaskDialog.shown: MaskDialogSheet { shown: MaskDialog.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Advice.shown: AdviceSheet { shown: Advice.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    preset-save-sheet := Held { open: Presets.saving; }
+    if preset-save-sheet.laid: PresetSaveSheet { shown: Presets.saving; x: 0; y: 0; width: root.width; height: root.height; }
+    preset-editor-sheet := Held { open: Presets.editing; }
+    if preset-editor-sheet.laid: PresetEditorSheet { shown: Presets.editing; x: 0; y: 0; width: root.width; height: root.height; }
+    pairing-sheet := Held { open: Pairing.shown; }
+    if pairing-sheet.laid: PairingSheet { shown: Pairing.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    settings-sheet := Held { open: AppSettings.shown; }
+    if settings-sheet.laid: SettingsSheet { shown: AppSettings.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    export-confirm-sheet := Held { open: Exporting.confirm-shown; }
+    if export-confirm-sheet.laid: ExportConfirmSheet { shown: Exporting.confirm-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    export-notice-sheet := Held { open: Exporting.notice-shown; }
+    if export-notice-sheet.laid: ExportNoticeSheet { shown: Exporting.notice-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    preset-name-sheet := Held { open: Exporting.naming-shown; }
+    if preset-name-sheet.laid: PresetNameSheet { shown: Exporting.naming-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    stock-picker-sheet := Held { open: Stocks.shown; }
+    if stock-picker-sheet.laid: StockPickerSheet { shown: Stocks.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    paper-sheet := Held { open: Exporting.papers-shown; }
+    if paper-sheet.laid: PaperSheet { shown: Exporting.papers-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    welcome-sheet := Held { open: Help.welcome-shown; }
+    if welcome-sheet.laid: WelcomeSheet { shown: Help.welcome-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    upgraded-sheet := Held { open: Upgraded.shown; }
+    if upgraded-sheet.laid: UpgradedSheet { shown: Upgraded.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    report-sheet := Held { open: Help.report-shown; }
+    if report-sheet.laid: ReportSheet { shown: Help.report-shown; x: 0; y: 0; width: root.width; height: root.height; }
+    choice-sheet := Held { open: Choice.shown; }
+    if choice-sheet.laid: ChoiceSheet { shown: Choice.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    mask-dialog-sheet := Held { open: MaskDialog.shown; }
+    if mask-dialog-sheet.laid: MaskDialogSheet { shown: MaskDialog.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    advice-sheet := Held { open: Advice.shown; }
+    if advice-sheet.laid: AdviceSheet { shown: Advice.shown; x: 0; y: 0; width: root.width; height: root.height; }
     if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
-    if Unsaved.shown: UnsavedSheet { shown: Unsaved.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Converting.shown: DngSheet { shown: Converting.shown; x: 0; y: 0; width: root.width; height: root.height; }
-    if Kit.picking: KitSearchSheet { shown: Kit.picking; x: 0; y: 0; width: root.width; height: root.height; }
-    if Confirm.shown: ConfirmSheet { shown: Confirm.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    unsaved-sheet := Held { open: Unsaved.shown; }
+    if unsaved-sheet.laid: UnsavedSheet { shown: Unsaved.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    dng-sheet := Held { open: Converting.shown; }
+    if dng-sheet.laid: DngSheet { shown: Converting.shown; x: 0; y: 0; width: root.width; height: root.height; }
+    kit-search-sheet := Held { open: Kit.picking; }
+    if kit-search-sheet.laid: KitSearchSheet { shown: Kit.picking; x: 0; y: 0; width: root.width; height: root.height; }
+    confirm-sheet := Held { open: Confirm.shown; }
+    if confirm-sheet.laid: ConfirmSheet { shown: Confirm.shown; x: 0; y: 0; width: root.width; height: root.height; }
 }

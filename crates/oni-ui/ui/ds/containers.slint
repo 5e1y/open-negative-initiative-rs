@@ -1,6 +1,6 @@
 // The containers: a block's section, the help mark, the sheet and its footer, the question a sheet
 // asks; the notice that passes and the banner that stays are `notices.slint`'s.
-import { Colour, Space, Motion, ButtonStyle, SectionStyle, SheetStyle } from "theme.slint";
+import { Colour, Space, Motion, Ease, ButtonStyle, SectionStyle, SheetStyle } from "theme.slint";
 import { Label, Engraved, Divider, TextRole, Tip, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, TextField } from "controls.slint";
@@ -64,7 +64,9 @@ component FoldMark inherits Rectangle {
         size: ButtonSize.mini;
         kind: ButtonKind.ghost;
         has-icon: true;
-        icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
+        // One chevron turning down as the block opens, with the rows it lets out.
+        icon: Icons.chevron-right;
+        turned: !root.folded;
         glyph-size: SectionStyle.fold;
         // In the primary ink, as the tree's: its line is a single pixel, which a quieter ink leaves under 3:1.
         glyph-ink: Colour.ink;
@@ -100,9 +102,14 @@ export component Section inherits VerticalLayout {
     // The hand's fold, which `sectionFold.<title>` remembers.
     callback fold-toggled(bool);
     function fold() {
+        root.folding = true;
+        settling.restart();
         root.folded = !root.folded;
         root.fold-toggled(root.folded);
     }
+    // The hand's fold slides the block shut or open; its content changing height else lays it at once.
+    property <bool> folding;
+    settling := Timer { interval: Motion.travel; running: root.folding; triggered => { root.folding = false; } }
     // The hand anywhere on the block, its title, its controls and the room between: its rails of hues
     // show whole, read by the sliders laid in it.
     out property <bool> hovered: body.has-hover;
@@ -150,9 +157,12 @@ export component Section inherits VerticalLayout {
         // only then: a well's lit lip and a raised face's shadow lie past the last child's bounds.
         Rectangle {
             height: root.folded && root.title != "" ? 0px : content.preferred-height;
-            clip: root.folded && root.title != "";
+            animate height { duration: root.folding ? Motion.travel : 0ms; easing: Ease.firm; }
+            clip: root.folding || (root.folded && root.title != "");
+            // Laid at its own height whatever shows of it, so a fold sliding never lays it again.
             content := VerticalLayout {
                 width: parent.width;
+                height: self.preferred-height;
                 spacing: SectionStyle.gap;
                 padding-top: root.title != "" ? SectionStyle.gap : 0px;
                 @children
@@ -206,11 +216,18 @@ export component Sheet inherits Rectangle {
     in property <bool> shown: true;
     property <int> serial;
     init => { root.come = 1; Keyboard.opened += 1; root.serial = Keyboard.opened; }
+    // Closed, it sinks back as it came while its owner keeps it laid; shown again on its way out, it rises
+    // and takes the keyboard as a sheet just opened.
+    changed shown => {
+        root.come = root.shown ? 1 : 0;
+        if (root.shown) { Keyboard.opened += 1; root.serial = Keyboard.opened; scope.focus(); }
+    }
     property <int> closed: Keyboard.closed;
     changed closed => { if (root.shown && root.serial > Keyboard.top) { Keyboard.top = root.serial; scope.focus(); } }
-    animate come { duration: Motion.overlay-in; easing: ease-out; }
-    Rectangle { width: 100%; height: 100%; background: Colour.scrim; opacity: root.come; }
-    TouchArea { }
+    animate come { duration: root.shown ? Motion.overlay-in : Motion.overlay-out; easing: root.shown ? Ease.weighted : ease-in; }
+    Rectangle { width: 100%; height: 100%; background: Colour.scrim; opacity: min(1, root.come); }
+    // On its way out the window behind takes every press at once, but on the card, which takes none.
+    TouchArea { enabled: root.shown; }
     // Tab leaving the sheet meets the window's walls, which hand the keyboard back to the sheet: to this
     // scope going forward, so Tab goes on to its first control, to `back` going back, before its last.
     property <int> entered: Keyboard.entered;
@@ -228,6 +245,7 @@ export component Sheet inherits Rectangle {
             if (!TextInputInterface.text-input-focused) { self.focus(); }
         }
         key-pressed(event) => {
+            if (!root.shown) { return reject; }
             if (event.text == Key.Escape) {
                 if (root.exit-enabled) { root.dismissed(); }
                 return accept;
@@ -245,7 +263,7 @@ export component Sheet inherits Rectangle {
         card := Raised {
             lift: Lift.sheet;
             y: (root.height - self.height) * SheetStyle.rest + (1 - root.come) * SheetStyle.rise;
-            opacity: root.come;
+            opacity: min(1, root.come);
             width: root.full ? root.width : min(root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width, root.width - 2 * SheetStyle.margin);
             height: root.full ? root.height : min(root.fixed ? root.card-height : column.preferred-height, root.height - 2 * SheetStyle.margin);
             Scroller {
@@ -273,6 +291,7 @@ export component Sheet inherits Rectangle {
             }
         }
         back := FocusScope { focus-on-click: false; focus-on-tab-navigation: false; }
+        if !root.shown: TouchArea { x: card.x; y: card.y; width: card.width; height: card.height; }
     }
 }
 

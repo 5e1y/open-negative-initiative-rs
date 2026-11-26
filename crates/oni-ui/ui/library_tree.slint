@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
-import { NavigatorSection } from "navigator.slint";
-import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize } from "ds/ds.slint";
+import { NavigatorSection, Navigator } from "navigator.slint";
+import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize, Motion, Ease, RowsDivider } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 import { RatingFilter, GalleryFilter } from "rating_filter.slint";
@@ -30,10 +30,15 @@ export component Tree inherits Surface {
         { text: @tr("Show the Selected Photo"), enabled: true, rule: true, opens: false },
         { text: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder"), enabled: true, rule: false, opens: false },
     ];
+    // Beside a photo its folder's photos stand under the rows: they rise from the column's foot as the editor
+    // opens and sink back as the gallery returns, laid once at their resting height so no row is laid again.
+    property <float> unfold: root.beside-photo ? 1 : 0;
+    animate unfold { duration: Motion.travel; easing: Ease.weighted; }
+    property <bool> drawer: Library.surface == 0 && root.unfold > 0;
     // Each part pads itself by the column's one inset: the tab bar, the headers, the rows.
     VerticalLayout {
         // The tab bar's top on the canvas card's.
-        HorizontalLayout {
+        tabs := HorizontalLayout {
             padding-top: root.floating ? ShellStyle.column-inset : 0;
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
@@ -44,75 +49,123 @@ export component Tree inherits Surface {
                 picked(i) => { Library.surface = i; Library.surface-picked(i); }
             }
         }
-        // In the gallery the filter alone heads the archive's column, as it heads the projects'.
-        if Library.surface == 0 && !root.beside-photo: HorizontalLayout {
-            padding-left: ShellStyle.column-inset;
-            padding-right: ShellStyle.column-inset;
-            padding-bottom: Space.s;
-            GalleryFilter { horizontal-stretch: 1; }
-        }
-        if Library.surface == 0: NavigatorSection {
-            vertical-stretch: root.beside-photo ? 0 : 1;
-            beside-photo: root.beside-photo;
-            trash-rows: Library.trash-rows;
-            trash-clicked(i) => { Library.trash-row-clicked(i); }
-            trash-folded(i) => { Library.trash-row-folded(i); }
-            trash-restore(i) => { Library.trash-row-restore(i); }
-            trash-menu(i, x, y) => {
-                root.menu-x = x - root.absolute-position.x;
-                root.menu-y = y - root.absolute-position.y;
-                if (Library.trash-row-menu(i)) { menu.show(); }
+        // In the gallery the filter alone heads the archive's column, as it heads the projects'; it tucks
+        // under the tab bar as the photos rise, to stand beside their view's words.
+        if Library.surface == 0 && root.unfold < 1: Rectangle {
+            height: max(0, 1 - root.unfold) * filter-row.preferred-height;
+            clip: true;
+            filter-row := HorizontalLayout {
+                y: parent.height - self.height;
+                height: self.preferred-height;
+                opacity: 1 - root.unfold;
+                padding-left: ShellStyle.column-inset;
+                padding-right: ShellStyle.column-inset;
+                padding-bottom: Space.s;
+                GalleryFilter { horizontal-stretch: 1; }
             }
         }
-        // The photos' header, the tree's view in words beside the rating filter; under the tab bar its
-        // padding stands above.
-        if Library.surface == 1 || root.beside-photo: HorizontalLayout {
+        // The rows and the photos under them, laid by hand: their split follows the column's own height.
+        if Library.surface == 0: body := Rectangle {
+            vertical-stretch: 1;
+            // What the photos take at rest: the column's room less the rows' own height.
+            property <length> rest: max(0px, self.height - Navigator.height);
+            NavigatorSection {
+                y: 0;
+                width: parent.width;
+                height: body.height - root.unfold * body.rest;
+                beside-photo: root.beside-photo;
+                moving: root.unfold > 0 && root.unfold < 1;
+                trash-rows: Library.trash-rows;
+                trash-clicked(i) => { Library.trash-row-clicked(i); }
+                trash-folded(i) => { Library.trash-row-folded(i); }
+                trash-restore(i) => { Library.trash-row-restore(i); }
+                trash-menu(i, x, y) => {
+                    root.menu-x = x - root.absolute-position.x;
+                    root.menu-y = y - root.absolute-position.y;
+                    if (Library.trash-row-menu(i)) { menu.show(); }
+                }
+            }
+            if root.drawer: Rectangle {
+                y: parent.height - self.height;
+                width: parent.width;
+                height: root.unfold * body.rest;
+                clip: true;
+                VerticalLayout {
+                    y: 0;
+                    width: parent.width;
+                    height: body.rest;
+                    RowsDivider {
+                        rows <=> Navigator.height;
+                        released(h) => { Navigator.height-stored(h); }
+                    }
+                    // The photos' header, the tree's view in words beside the rating filter.
+                    HorizontalLayout {
+                        padding-left: ShellStyle.column-inset;
+                        padding-right: ShellStyle.column-inset;
+                        padding-top: Space.s;
+                        padding-bottom: Space.s;
+                        spacing: Space.s;
+                        Picker {
+                            face: PickerFace.pill;
+                            horizontal-stretch: 1;
+                            value: root.layouts[Library.tree-layout];
+                            lines: root.archive-view;
+                            chosen(i) => {
+                                if (i < root.layouts.length) {
+                                    Library.tree-layout-picked(i);
+                                } else {
+                                    Library.tree-centre();
+                                }
+                            }
+                        }
+                        GalleryFilter { compact: true; horizontal-stretch: 0; }
+                    }
+                    RowTree {
+                        vertical-stretch: 1;
+                        rows: Library.near-rows;
+                        pin: Library.tree-pin;
+                        content-height: Library.tree-content-height;
+                        viewport-y: Library.tree-viewport-y;
+                        asks: Library.tree-scroll-asks;
+                        shown(w, h) => { Library.tree-shown(w, h); }
+                        resized(w, h) => { Library.tree-resized(w, h); }
+                        scrolled(y) => { Library.tree-scrolled(y); }
+                        empty-clicked => { Library.tree-empty-clicked(); }
+                        row-clicked(i, command, shift) => { Library.row-clicked(i, command, shift); }
+                        row-double-clicked(i) => { Library.row-double-clicked(i); }
+                        row-folded(i) => { Library.row-folded(i); }
+                        row-menu(i) => { Library.row-menu(i) }
+                        open-menu(x, y) => { root.open-menu(x, y); }
+                        rename-committed(i, t) => { Library.row-rename-committed(i, t); }
+                        rename-cancelled => { Library.row-rename-cancelled(); }
+                        rename-edited(t) => { Library.row-rename-edited(t); }
+                        pin-clicked(command, shift) => { Library.tree-pin-clicked(command, shift); }
+                    }
+                }
+            }
+        }
+        // The projects' header, their view in words beside the rating filter.
+        if Library.surface == 1: HorizontalLayout {
             padding-left: ShellStyle.column-inset;
             padding-right: ShellStyle.column-inset;
-            padding-top: Library.surface == 1 ? 0 : Space.s;
             padding-bottom: Space.s;
             spacing: Space.s;
             Picker {
                 face: PickerFace.pill;
                 horizontal-stretch: 1;
                 value: root.layouts[Library.tree-layout];
-                lines: Library.surface == 1 ? root.project-view : root.archive-view;
+                lines: root.project-view;
                 chosen(i) => {
                     if (i < root.layouts.length) {
                         Library.tree-layout-picked(i);
                     } else if (i > root.layouts.length) {
                         Library.project-fold-all();
-                    } else if (Library.surface == 0) {
-                        Library.tree-centre();
                     } else {
                         Library.project-centre();
                     }
                 }
             }
-            if Library.surface == 1: RatingFilter { compact: true; horizontal-stretch: 0; }
-            if Library.surface == 0: GalleryFilter { compact: true; horizontal-stretch: 0; }
-        }
-
-        if Library.surface == 0 && root.beside-photo: RowTree {
-            vertical-stretch: 1;
-            rows: Library.near-rows;
-            pin: Library.tree-pin;
-            content-height: Library.tree-content-height;
-            viewport-y: Library.tree-viewport-y;
-            asks: Library.tree-scroll-asks;
-            shown(w, h) => { Library.tree-shown(w, h); }
-            resized(w, h) => { Library.tree-resized(w, h); }
-            scrolled(y) => { Library.tree-scrolled(y); }
-            empty-clicked => { Library.tree-empty-clicked(); }
-            row-clicked(i, command, shift) => { Library.row-clicked(i, command, shift); }
-            row-double-clicked(i) => { Library.row-double-clicked(i); }
-            row-folded(i) => { Library.row-folded(i); }
-            row-menu(i) => { Library.row-menu(i) }
-            open-menu(x, y) => { root.open-menu(x, y); }
-            rename-committed(i, t) => { Library.row-rename-committed(i, t); }
-            rename-cancelled => { Library.row-rename-cancelled(); }
-            rename-edited(t) => { Library.row-rename-edited(t); }
-            pin-clicked(command, shift) => { Library.tree-pin-clicked(command, shift); }
+            RatingFilter { compact: true; horizontal-stretch: 0; }
         }
         // No project yet: said where the first would stand, on the rows' inset.
         if Library.surface == 1 && Library.projects-empty != "": HorizontalLayout {

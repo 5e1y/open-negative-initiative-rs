@@ -1,6 +1,6 @@
 // The small raised and lit pieces: `DSLamp` on a key, and the popover's panel with its tail.
 import { DS } from "tokens.slint";
-import { Colour, Radius, Stroke, ButtonStyle, ScannerStyle, SurfaceStyle } from "theme.slint";
+import { Colour, Radius, Stroke, ButtonStyle, ScannerStyle, SurfaceStyle, Motion, Ease, MenuStyle } from "theme.slint";
 import { Raised, Gap } from "base.slint";
 import { Depth } from "depth.slint";
 
@@ -37,6 +37,14 @@ export component Popover inherits Rectangle {
     in property <Gap> gap;
     property <length> drop: root.tail ? DS.control-popover-tail : 0px;
     height: panel.height + root.drop;
+    // It opens out of its anchor, grown from its tail's tip or its top edge; at once under Reduce Motion.
+    property <float> come;
+    init => { root.come = 1; }
+    animate come { duration: Motion.pop; easing: Ease.weighted; }
+    opacity: min(1, 2 * root.come);
+    transform-scale-x: 1 - (1 - root.come) * MenuStyle.grow;
+    transform-scale-y: 1 - (1 - root.come) * MenuStyle.grow * 2;
+    transform-origin: { x: root.tail && root.tail-x >= 0 ? root.tail-x : root.width / 2, y: 0 };
     panel := Raised {
         y: root.drop;
         width: parent.width;

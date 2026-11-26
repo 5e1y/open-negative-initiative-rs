@@ -1,7 +1,8 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
+import { Flight, Place } from "flight.slint";
 import { News } from "help.slint";
-import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField } from "ds/ds.slint";
+import { Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField, PreviewState } from "ds/ds.slint";
 import { FrameFields, FrameName } from "export_fields.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
 import { PresetPicker, PresetNameSheet } from "export_presets.slint";
@@ -95,6 +96,16 @@ export component ExportColumn inherits Scroller {
                         height: picture.tall;
                         source: line.preview;
                         state: line.state;
+                        // A lone photo's preview in the window, where the photo flying from the canvas lands.
+                        property <bool> lead: root.lone && i == 0;
+                        property <Place> place: { x: self.absolute-position.x + (self.width - picture.shown) / 2, y: self.absolute-position.y, width: picture.shown, height: self.height };
+                        property <bool> ready: line.state != PreviewState.rendering;
+                        init => { self.tell(); }
+                        changed place => { self.tell(); }
+                        changed ready => { self.tell(); }
+                        function tell() {
+                            if (self.lead) { Flight.slot = self.place; Flight.slot-ready = self.ready; }
+                        }
                     }
                     // Under the picture itself: a frame narrower than the room stands in its middle.
                     HorizontalLayout {

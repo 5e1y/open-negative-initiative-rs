@@ -6,6 +6,7 @@ export { TreeRow, TreePin, TreeDrag } from "library_rows.slint";
 import { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
 export { Tile, Heading, StockCount, InfoKind } from "library_types.slint";
 import { Canister } from "stocks.slint";
+import { Flight } from "flight.slint";
 import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach, KeyScope } from "ds/ds.slint";
 
 
@@ -269,7 +270,8 @@ export component Grid inherits Surface {
                 y: t.y;
                 width: t.width;
                 picture-height: t.height;
-                picture: t.picture;
+                // The photo shrinking back into its tile from the editor fills it as it lands.
+                picture: Flight.tile-covered && t.index == Flight.tile ? Flight.blank : t.picture;
                 selected: t.selected;
                 medal: t.medal;
                 missing: t.missing;

@@ -55,6 +55,11 @@ impl Ctl {
     /// `enterExport`: entering from the surface keeps the earlier return, or Cancel would land on it.
     pub fn enter_export(self: &Rc<Self>, targets: Vec<Target>) {
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
+        // The open photo alone, from the editor: it moves from the canvas onto its preview.
+        let lone = self.lone_open(&targets);
+        if !gallery && !self.export.borrow().shown && let Some(path) = &lone {
+            self.fly_into_export(path);
+        }
         {
             let mut c = self.export.borrow_mut();
             if !c.shown {
@@ -95,6 +100,10 @@ impl Ctl {
             c.weighing.supersede();
             c.return_gallery
         };
+        let lone = self.lone_open(&self.export.borrow().targets);
+        if !back && let Some(path) = &lone {
+            self.fly_out_of_export(path);
+        }
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(back);
         }
@@ -102,6 +111,12 @@ impl Ctl {
         self.publish_bar();
         self.publish_tiles();
         self.request_render();
+    }
+
+    /// The open photo when it is the export's one target.
+    fn lone_open(&self, targets: &[Target]) -> Option<String> {
+        let open = self.state.borrow().open_path().map(str::to_string)?;
+        matches!(targets, [t] if t.path.to_string_lossy() == open).then_some(open)
     }
 
     /// Cancel leaves the surface; an export under way goes on, stopped from its modal alone.

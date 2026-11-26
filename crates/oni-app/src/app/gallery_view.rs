@@ -139,6 +139,7 @@ impl Ctl {
         self.publish_pinned();
         lib.set_content_height(height);
         lib.set_scroll(scroll);
+        self.aim_flight();
     }
 
     /// The heading held at the grid's top, which follows every scroll, the offset's alone too.
@@ -179,6 +180,7 @@ impl Ctl {
         let reopened = self.state.borrow().open_path() == Some(path);
         if self.window().is_some_and(|w| w.global::<App>().get_gallery()) {
             self.state.borrow_mut().chosen_in_gallery();
+            self.fly_into_editor(path);
         }
         let together = self.state.borrow().selected();
         let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };

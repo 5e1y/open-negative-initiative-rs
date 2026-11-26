@@ -1,6 +1,6 @@
 // The key every screen presses: flat, or a `Keycap` of the Swift app where `keycap` asks for one; its
 // kinds and sizes, a glyph, a word or both, a swatch.
-import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle, Motion } from "theme.slint";
 import { Label, Icon, Tone, Tones, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
@@ -51,6 +51,7 @@ component Face inherits Rectangle {
                 width: root.glyph;
                 height: root.glyph;
                 transform-rotation: root.turned ? 90deg : 0deg;
+                animate transform-rotation { duration: Motion.quick; easing: ease-out; }
                 ink: root.ink;
             }
         }

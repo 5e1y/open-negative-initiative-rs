@@ -13649,5 +13649,40 @@
     "title": "The welcome's Collection gift says only what The Lens DB can confirm, and one constant takes it out",
     "status": "done",
     "detail": "'Two independent projects' where 'non-profit' was unproven (the Kit's offer too); The Lens DB sees the list of gear, never the photos, so nothing contradicts the contest's upload; the gift's scene shows cards as the Kit column draws them. help::KIT_GIFT hides the gift and skips its page both ways, the dots counting five (window check welcome_card, with its twin). Validation file for The Lens DB's owner outside the repository."
+  },
+  {
+    "id": 4000,
+    "type": "ui",
+    "title": "Gallery to editor: the column's photos rise from its foot under the rows, the gallery's filter tucks under the tab bar; back, they sink",
+    "status": "in progress",
+    "detail": "One list of rows in both modes (NavigatorSection), the photos laid once at their resting height inside a part that grows from the column's foot (Tree.unfold on Motion.travel, Ease.weighted), so no row is laid again while it moves; the rows keep their folder centred as they shorten."
+  },
+  {
+    "id": 4001,
+    "type": "ui",
+    "title": "The photo flies between the screens: the tile lifts into the canvas, the canvas shrinks into its tile, the canvas moves onto the export's lone preview and back",
+    "status": "in progress",
+    "detail": "Flight (flight.slint, app/flight.rs): Rust names the thumbnail, the route and where it leaves; the window lays the landing place live (the canvas's frame, the tile the grid lays, the export's preview) and springs the picture there, turned back midway as a gesture reverses it; the place under it stands back until it lands and fades. Nothing waits on it; Reduce Motion flies nothing."
+  },
+  {
+    "id": 4002,
+    "type": "ui",
+    "title": "Pop-ups move: menus, pickers and popovers grow out of their anchor; sheets rise on a spring and sink away as they close",
+    "status": "in progress",
+    "detail": "Popover (every menu and popover) grows from its tail or top edge on Motion.pop; Sheet comes in on Ease.weighted and, kept laid by Sheets' Held while it leaves, sinks back on overlay-out; the window behind takes every press at once, the leaving card none, its keys answer nothing."
+  },
+  {
+    "id": 4003,
+    "type": "ui",
+    "title": "Edit to export morphs: the bar slides up out of its room, the export card opens out of the editor's card, the export panel slides in; back, the bar, the column and the panel slide in",
+    "status": "in progress",
+    "detail": "One spring (MainWindow.exporting, Ease.firm) drives the bar, the card's frame (its content laid once at its own place, clipped while it opens) and the columns, each moved in its own slot so no layout changes while it travels."
+  },
+  {
+    "id": 4004,
+    "type": "ui",
+    "title": "A section folds and unfolds sliding, its chevron turning; the tooltip fades in",
+    "status": "in progress",
+    "detail": "Section's content laid at its own height, the block's height sliding on the hand's fold alone (Ease.firm, Motion.travel), a content changing height laid at once; FoldMark one chevron turned by Button.turned, which turns on Motion.quick; TipView fades in on Motion.quick."
   }
 ]

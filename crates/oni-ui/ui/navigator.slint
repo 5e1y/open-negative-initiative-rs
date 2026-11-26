@@ -76,6 +76,8 @@ component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
     // A place in Tab's order, beside the grid, where the arrows walk the rows.
     in property <bool> keyed;
+    // Its height travelling: the folder asked stays centred until it rests.
+    in property <bool> moving;
     callback trash-clicked(int);
     callback trash-folded(int);
     callback trash-restore(int);
@@ -92,10 +94,11 @@ component Rows inherits Scroller {
     changed aim => { root.reveal(); }
     changed height => { root.reveal(); }
     changed content-height => { root.reveal(); }
+    changed moving => { root.reveal(); }
     init => { root.reveal(); }
     function reveal() {
         if (root.owed && root.aim >= 0 && root.height > 0 && root.content-height >= (root.aim + 1) * RowStyle.height) {
-            root.owed = false;
+            root.owed = root.moving;
             self.content-y = min(0px, max(self.height - self.content-height, self.height / 2 - (root.aim + 0.5) * RowStyle.height));
         }
     }
@@ -201,6 +204,8 @@ component Rows inherits Scroller {
 // their own height, sized by the line under them.
 export component NavigatorSection inherits Rectangle {
     in property <bool> beside-photo;
+    // The photos' part unfolding or folding under the rows, which keep their folder in view meanwhile.
+    in property <bool> moving;
     in property <[TrashLine]> trash-rows;
     callback trash-clicked(int);
     callback trash-folded(int);
@@ -209,34 +214,16 @@ export component NavigatorSection inherits Rectangle {
     property <length> menu-x;
     property <length> menu-y;
     changed beside-photo => { Navigator.mode-changed(); }
-    VerticalLayout {
-        if !root.beside-photo: Rectangle {
-            vertical-stretch: 1;
-            Rows {
-                keyed: true;
-                trash-rows: root.trash-rows;
-                trash-clicked(i) => { root.trash-clicked(i); }
-                trash-folded(i) => { root.trash-folded(i); }
-                trash-restore(i) => { root.trash-restore(i); }
-                trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
-                folder-menu(i, x, y) => { root.show-menu(i, x, y); }
-            }
-        }
-        if root.beside-photo: Rectangle {
-            height: Navigator.height;
-            Rows {
-                trash-rows: root.trash-rows;
-                trash-clicked(i) => { root.trash-clicked(i); }
-                trash-folded(i) => { root.trash-folded(i); }
-                trash-restore(i) => { root.trash-restore(i); }
-                trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
-                folder-menu(i, x, y) => { root.show-menu(i, x, y); }
-            }
-        }
-        if root.beside-photo: RowsDivider {
-            rows <=> Navigator.height;
-            released(h) => { Navigator.height-stored(h); }
-        }
+    // One list in both modes, so the part unfolding under it slides it shorter rather than swapping it.
+    Rows {
+        keyed: !root.beside-photo;
+        moving: root.moving;
+        trash-rows: root.trash-rows;
+        trash-clicked(i) => { root.trash-clicked(i); }
+        trash-folded(i) => { root.trash-folded(i); }
+        trash-restore(i) => { root.trash-restore(i); }
+        trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
+        folder-menu(i, x, y) => { root.show-menu(i, x, y); }
     }
     function show-menu(i: int, x: length, y: length) {
         root.menu-x = x - root.absolute-position.x;

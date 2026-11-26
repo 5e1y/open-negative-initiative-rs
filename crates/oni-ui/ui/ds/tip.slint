@@ -36,6 +36,9 @@ export component TipLayer inherits TipCard {
     property <bool> ready;
     changed shown => { root.ready = false; }
     visible: Tip.text != "" && Tip.shown && root.ready;
+    // Faded in once the delay is over, gone at once as the hand leaves.
+    opacity: root.ready ? 1 : 0;
+    animate opacity { duration: root.ready ? Motion.quick : 0ms; easing: ease-out; }
     Timer {
         interval: Motion.tip-delay;
         running: Tip.shown && !root.ready;

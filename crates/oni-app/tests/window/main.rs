@@ -58,6 +58,7 @@ mod export_columns;
 mod export_speed;
 mod filmstrip;
 mod first_frame;
+mod motion;
 mod freshness;
 mod disk_turns;
 mod full_release;

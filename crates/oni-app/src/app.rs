@@ -41,6 +41,7 @@ mod rendering;
 mod archive_view;
 mod filter_menu;
 mod gallery_view;
+mod flight;
 mod phone_link;
 mod settings_sheet;
 mod actions;
