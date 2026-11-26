@@ -9,7 +9,7 @@ use oni_pipeline::{Pipeline, Request, geometry, grain};
 use oni_render::cpu::{self, Grid};
 use oni_render::{Grain, GrainedNegative};
 use oni_settings::frame::Geometry;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 use std::time::Instant;
 
 const IDENTITY: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -63,7 +63,7 @@ fn the_grain_matches_its_reference_on_every_branch() {
     let narrowed = |m: [[f64; 3]; 2]| m.map(|r| r.map(|v| v as f32));
     let turned = narrowed(geometry::scan_from(&Geometry { quarter_turns: 1, mirrored: true, ..Geometry::default() }, scan, 1.0));
     let angled = narrowed(geometry::scan_from(&Geometry { quarter_turns: 3, angle: 7.0, ..Geometry::default() }, scan, 0.5));
-    let gaze = grain::gaze();
+    let gaze = grain::gaze(VirtualStock::of("kodak-portra-800"));
     let cases = [
         ("a grain over many pixels, on a negative", Grain::on(IDENTITY, 4.0, 1.0, [0.03, 0.04, 0.05], gaze).on_negative(NEGATIVE)),
         ("two pixels of the scan to one, on a positive", Grain::on(scaled(0.5), 2.0, 2.0, [0.03; 3], gaze)),
@@ -174,7 +174,7 @@ fn the_grain_over_a_whole_screen_is_timed() {
     };
     let bare = time(&mut g, &film.clone().then(oni_pipeline::stages::exposure(0.0)));
     for (name, radius, footprint) in [("a 24 Mpx scan at 100 %", 2.52, 1.0), ("a 47 Mpx scan fitted", 3.49, 2.42)] {
-        let k = Grain::on(scaled(1.0 / footprint), radius, footprint, [0.025, 0.03, 0.03], grain::gaze()).on_negative(NEGATIVE);
+        let k = Grain::on(scaled(1.0 / footprint), radius, footprint, [0.025, 0.03, 0.03], grain::gaze(VirtualStock::of("kodak-portra-800"))).on_negative(NEGATIVE);
         let ms = time(&mut g, &grain::grained(film.clone(), &k)) - bare;
         println!("the grain over a whole screen, {name}: {ms:.1} ms");
         assert!(ms < 250.0, "{name}: {ms:.1} ms");

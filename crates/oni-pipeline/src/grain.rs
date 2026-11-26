@@ -8,17 +8,20 @@ use oni_settings::axis::density_axis;
 use oni_settings::{PipelineSettings, VirtualFilm, VirtualStock};
 
 /// A grain's deviation at Amount's top, in shares of its layer's window: four times the rest's, 0.0364, which lays a
-/// real Portra 800 scan's grain through the gaze, 0.014 of green's window in 32-pixel tiles of a 47 Mpx frame, at 30 µm.
+/// real Portra 800 scan's grain, 0.014 of green's window in 32-pixel tiles of a 47 Mpx frame, at 30 µm.
 pub const GRAIN_TOP: f32 = 0.1454;
 /// Each layer's grain against green's: red's emulsion is the finer.
 pub const LAYER_GRAIN: [f32; 3] = [0.85, 1.0, 1.0];
-/// A paper's gaze on a colour negative's three dyes, each channel's row before it is laid to sum to one: how much of
-/// each layer's deviation a channel sees.
-const GAZE: [[f32; 3]; 3] = [[1.15, 0.09, 0.01], [0.13, 1.02, 0.13], [0.06, 0.17, 0.85]];
-
-/// Each channel's mix of the layers' deviations, its row summing to one so a grey's grain stays grey.
-pub fn gaze() -> [[f32; 3]; 3] {
-    GAZE.map(|r| r.map(|v| v / r.iter().sum::<f32>()))
+/// Each channel's mix of `stock`'s layers' deviations, as its own reading sees the dyes, each row summing to one so a
+/// grey's grain stays grey: a colour negative's scanner, a slide's projector; each channel its own layer on silver, on
+/// the neutral film's pure dyes and on a look, which hands a positive of no layers.
+pub fn gaze(stock: VirtualStock) -> [[f32; 3]; 3] {
+    let entry = stock.entry();
+    match () {
+        _ if entry.silver || entry.neutral || stock.look().is_some() => film::OWN_LAYERS,
+        _ if entry.reversal => film::projection::projected(stock).gaze,
+        _ => film::stock(stock).gaze,
+    }
 }
 
 /// Each layer's window on `stock`'s film, in density, its bare film to the sensor's white.
@@ -50,7 +53,7 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     let deviation = GRAIN_TOP * s.grain.amount;
     let silver = f.stock.is_silver();
     let layers = if silver { [deviation; 3] } else { LAYER_GRAIN.map(|l| l * deviation) };
-    let k = Grain::on(m, radius as f32, (1.0 / scale) as f32, layers, gaze());
+    let k = Grain::on(m, radius as f32, (1.0 / scale) as f32, layers, gaze(f.stock));
     let k = if silver { k.on_silver() } else { k };
     Some(match negative(&f) {
         Some(n) => k.on_negative(n),

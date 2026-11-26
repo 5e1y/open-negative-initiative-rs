@@ -1,4 +1,4 @@
-//! A cine negative no paper reads, scanned as a real one is: the GPU's film and scan against their scalar reference, the
+//! A cine negative scanned by ONI's scanner: the GPU's film and scan against their scalar reference, the
 //! bare film reading its orange base, a grey ramp lit at the film's white printing its ends neutral on ONI Standard.
 //! Each verdict has a twin.
 
@@ -11,7 +11,7 @@ use oni_pipeline::{Pipeline, film};
 use oni_render::cpu;
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 
-/// A cine negative, which no paper reads: the camera scans it.
+/// A cine negative, read by the scanner as every colour negative is.
 const CINE: VirtualStock = VirtualStock::of("kodak-vision3-250d");
 
 /// Vision3 250D's read-out alone, each layer's amount on its own channel, on the reference that read-out derives.

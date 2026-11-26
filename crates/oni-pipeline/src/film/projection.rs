@@ -31,6 +31,9 @@ pub struct Projected {
     pub table: Vec<[f32; 4]>,
     /// The film's densest, each layer's most along its curve, as the screen shows it: a slide's unexposed black.
     pub black: V3,
+    /// How the eye on the screen sees each layer's dye about a mid grey, each row summing to one: what mixes the
+    /// layers' grains on a slide.
+    pub gaze: [V3; 3],
     /// Its film's file: a projection made of another is never served for it.
     pub revision: u64,
 }
@@ -130,7 +133,9 @@ fn project(entry: &VirtualEntry) -> Projected {
     let projection = Projection { to_working: to_working.map(|r| r.map(|v| v as f32)), flare: FLARE, bands: cie::WAVELENGTHS };
     let densest: V3 = std::array::from_fn(|c| profile.density_curves.iter().map(|d| d[c]).fold(f64::NEG_INFINITY, f64::max) as f32);
     let shown = cpu::projection([10f32.powf(-densest[0]), 10f32.powf(-densest[1]), 10f32.powf(-densest[2]), 1.0], &projection, &table);
-    Projected { projection, table, black: [shown[0], shown[1], shown[2]], revision: entry.revision }
+    let mid = std::array::from_fn(|c| bake::interpolate(0.0, &profile.log_exposure, &profile.density_curves, c));
+    let gaze = super::gaze(&projection, &table, mid);
+    Projected { projection, table, black: [shown[0], shown[1], shown[2]], gaze, revision: entry.revision }
 }
 
 fn scan(entry: &VirtualEntry) -> Scanned {

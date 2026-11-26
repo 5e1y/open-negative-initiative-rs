@@ -13502,5 +13502,19 @@
     "title": "Sidecar format 79: a digital photo on a colour negative moves onto its stock's reference as the scanner reads it",
     "status": "done",
     "detail": "migrate::scanner holds each of the 48 colour negatives' references as format 78 laid them (the paper's gaze, a cine negative's camera scan) and moves gains and windows onto the new one, every hand's move kept; paper_gaze and sensor_white land on format 78's table, no longer on the current reference."
+  },
+  {
+    "id": 3852,
+    "type": "feature",
+    "title": "A film's grain is mixed by its own reading: the scanner's gaze on a colour negative, the projector's on a slide",
+    "status": "done",
+    "detail": "grain::gaze(stock) replaces the fixed paper's gaze: film::gaze takes each channel's density rise for a small rise of each dye about a mid grey through the stock's own reading (Stock.gaze for a negative's scan, Projected.gaze for a slide), each row laid to sum to one; silver, the neutral film and a look keep each channel its own layer. Portra 800's red channel now sees 0.31 of the magenta dye's grain beside 0.68 of the cyan's, as a camera's broad channels do on a real scan."
+  },
+  {
+    "id": 3853,
+    "type": "test",
+    "title": "The scanner's checks: GPU against its scalar reference, the bare film against two real rolls, the filtration derived again, the grain's gaze",
+    "status": "done",
+    "detail": "tests/scanner.rs replaces tests/paper_gaze.rs: Portra 800 filmed on the GPU against film::Stock::shot (twin: the read-out alone); bare Portra 800 within 0.1 D of the owner's two real rolls, S1R and Z f, measured in the working space (0.039 D off; twin: the read-out alone, 0.2 D and more); its filtration held equal to the one its sheet derives through the scanner (twin: 0.1 log off bakes another reference); its grain's gaze rows summing to one, the red channel seeing the magenta dye (twins: silver's own layers, a slide's projector)."
   }
 ]

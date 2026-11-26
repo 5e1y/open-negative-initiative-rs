@@ -34,8 +34,36 @@ pub struct Stock {
     /// A colour negative's dyes as ONI's scanner reads them; none on a slide, projected instead, or on silver, whose
     /// neutral density a white lamp reads alike on every channel.
     pub scan: Option<Scan>,
+    /// How each channel of its reading sees each layer's dye about a mid grey, each row summing to one: what mixes the
+    /// layers' grains; each channel its own layer where no scan reads the film.
+    pub gaze: [[f32; 3]; 3],
     pub reference: StockReference,
     pub revision: u64,
+}
+
+/// Each channel its own layer.
+pub const OWN_LAYERS: [[f32; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
+/// How each channel of the reading `projection` and `table` make sees each dye about `amounts`: the rise of its density
+/// for a small rise of each dye, each row laid to sum to one so a grey's grain stays grey.
+pub fn gaze(projection: &oni_render::Projection, table: &[[f32; 4]], amounts: [f64; 3]) -> [[f32; 3]; 3] {
+    const STEP: f64 = 0.05;
+    let density = |a: [f64; 3]| {
+        let out = cpu::projection([0, 1, 2].map(|k| 10f32.powf(-(a[k] as f32))).into_iter().chain([1.0]).collect::<Vec<_>>().try_into().expect("four values"), projection, table);
+        [0, 1, 2].map(|c| -f64::from(out[c]).log10())
+    };
+    let at = density(amounts);
+    let seen: [[f64; 3]; 3] = [0, 1, 2].map(|k| {
+        let mut a = amounts;
+        a[k] += STEP;
+        let d = density(a);
+        [0, 1, 2].map(|c| (d[c] - at[c]) / STEP)
+    });
+    std::array::from_fn(|c| {
+        let row: [f64; 3] = std::array::from_fn(|k| seen[k][c]);
+        let sum: f64 = row.iter().sum();
+        row.map(|v| (v / sum) as f32)
+    })
 }
 
 fn f32s(m: &M3) -> [[f32; 3]; 3] {
@@ -121,11 +149,19 @@ pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String>
 /// The stock `layers` bake at `entry`'s balance, its reference derived on its scan.
 fn stock_of(layers: Layers, entry: &VirtualEntry) -> Stock {
     let (kernel, table) = baked(&layers, entry.balance);
-    let mut stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: entry.revision };
+    let gaze = gaze_of(&layers);
+    let mut stock = Stock { kernel, table, scan: layers.scan, gaze, reference: unread(), revision: entry.revision };
     if !entry.reversal {
         stock.reference = derived(&stock);
     }
     stock
+}
+
+/// How a colour negative's scan sees its layers' dyes at a mid grey's amounts, under its filtration.
+fn gaze_of(layers: &Layers) -> [[f32; 3]; 3] {
+    let Some(scan) = &layers.scan else { return OWN_LAYERS };
+    let mid = std::array::from_fn(|c| bake::interpolate(layers.filtration[c], &layers.log_exposure, &layers.after, c));
+    gaze(&scan.projection, &scan.table, mid)
 }
 
 /// The kernel and table of a film's `layers` lit at `balance`.
@@ -197,7 +233,8 @@ pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, 
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }
     let (kernel, table) = baked(&layers, balance);
-    let stock = Stock { kernel, table, scan: layers.scan, reference: unread(), revision: 0 };
+    let gaze = gaze_of(&layers);
+    let stock = Stock { kernel, table, scan: layers.scan, gaze, reference: unread(), revision: 0 };
     let r = if reversal { unread() } else { derived(&stock) };
     if !r.stops.iter().chain(&r.black).chain(&r.white).all(|v| v.is_finite()) || !filtration.is_none_or(|f| f.iter().all(|v| v.is_finite())) {
         return Err("its profile bakes a reference that is not finite".into());
