@@ -14090,5 +14090,12 @@
     "title": "The welcome's whole block of words stands on the window's middle, not its title: the layout centres the block, a wrapped paragraph's height known only once laid out",
     "status": "done",
     "detail": "The words' column was placed by its preferred height, which Slint reckons with a wrapped paragraph on one line: the block was set for a shorter one and hung below the middle, its title on the line and its last words down by the keys. Each block (a gift's words, a wrapped gift's tag, the message's announcement and what it says) is now a layout the height of the window less the keys' band above and below, which centres its content itself. The film carries its screen's title for the checks. Check welcome_card::the_welcome_stands_on_the_windows_middle_line_at_every_size measures the rectangle of every text and key of a block, eyebrow to last key, and the film's, against the middle of the sheet as the window shows it (below the window's own menu where it draws one), within 1 pt, for the four gifts wrapped and opened and both message screens, at 1000x620, 1100x680 and 1728x1117; twin: the same block hung by its title is caught. The film count is the catalogue's in the check (the check's window had none, the app always does). The stage test holds each gift's middle on the picture's within 0.0005 of its height. All 90 cases centred in English, French and Spanish."
+  },
+  {
+    "id": 3968,
+    "type": "fix",
+    "title": "The welcome's message always shows its three keys: Instagram's address is a constant, no longer a condition",
+    "status": "done",
+    "detail": "'Follow ONI on Instagram' stood on `Help.instagram-known`, set by the app from an address that might be unknown; the address is known, the app always showed the key, but a window that did not set the property dropped it and the check's sheet showed two keys. The address is now a plain constant and the key is always drawn. Check welcome_card::the_welcome_stands_on_the_windows_middle_line_at_every_size: on the message, its three keys each drawn whole inside the window, clear of the keys' band and of one another, in English, French and Spanish at 1000x620, 1100x680 and 1728x1117 (one row in each); twin: without the key, the check finds none."
   }
 ]

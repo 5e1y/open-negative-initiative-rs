@@ -34,7 +34,7 @@ pub const EDITION: &str = "2.0";
 /// Where the welcome's message sends a person who wants to help: the donation page, ONI's Instagram once it has
 /// one, the contest's page on the site (which holds its form and rules) and the hashtag that shares an entry.
 pub const DONATE: &str = "https://ko-fi.com/remicourtillon";
-pub const INSTAGRAM: Option<&str> = Some("https://www.instagram.com/open.negative.initiative/");
+pub const INSTAGRAM: &str = "https://www.instagram.com/open.negative.initiative/";
 pub const CONTEST: &str = "https://open-negative-initiative.com/contest";
 pub const CONTEST_TAG: &str = "#ONIsplash";
 /// The hashtag of any picture made with ONI, which the export's notice invites people to post with.
@@ -140,7 +140,6 @@ impl Ctl {
         h.set_release(release(EDITION).into());
         h.set_contest_tag(CONTEST_TAG.into());
         h.set_made_with(MADE_WITH.into());
-        h.set_instagram_known(INSTAGRAM.is_some());
         h.set_kit_gift(KIT_GIFT);
         h.set_pause_line(if paused(today()) { tr("Development and new features are paused from Dec 15 to Jan 15.").into() } else { Default::default() });
         let news = window.global::<News>();
@@ -154,7 +153,7 @@ impl Ctl {
         // The Wrapped comes over the welcome; closed, it leaves the welcome on its message.
         help.on_wrapped(move || p.act(crate::Act::Wrapped));
         help.on_donate(|| system::open_url(DONATE));
-        help.on_instagram(|| INSTAGRAM.into_iter().for_each(system::open_url));
+        help.on_instagram(|| system::open_url(INSTAGRAM));
         help.on_contest(|| system::open_url(CONTEST));
         let p = me.clone();
         help.on_report_edited(move |text| {

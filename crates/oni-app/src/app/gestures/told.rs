@@ -21,7 +21,7 @@ impl Ctl {
                 w.global::<Told>().set_copied(true);
             }
         });
-        told.on_instagram(|| crate::app::help::INSTAGRAM.into_iter().for_each(system::open_url));
+        told.on_instagram(|| system::open_url(crate::app::help::INSTAGRAM));
         let p = me.clone();
         told.on_hide_invite(move || {
             p.remember(crate::preferences::EXPORT_INVITE_HIDDEN, true.into());

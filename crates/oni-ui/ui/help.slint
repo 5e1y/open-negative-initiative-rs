@@ -47,10 +47,9 @@ export global Help {
     callback welcome-sized(length, length, length, float);
     callback welcome-open();
     callback welcome-go(int);
-    // The contest's hashtag, the hashtag of any picture made with ONI, and whether ONI's Instagram is known.
+    // The contest's hashtag and the hashtag of any picture made with ONI.
     in property <string> contest-tag;
     in property <string> made-with;
-    in property <bool> instagram-known;
     // Whether the welcome holds the Collection's gift, a screen with it.
     in property <bool> kit-gift: true;
     callback welcome-closed();

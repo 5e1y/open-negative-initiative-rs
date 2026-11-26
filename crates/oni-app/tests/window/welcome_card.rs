@@ -248,6 +248,17 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
             };
             let off = off_middle(&told, top, size.get().1);
             println!("{language} {w}×{h} message {name}: block {told:?} off the middle by {off:.1}");
+            if turn == 1.0 {
+                // Its three keys, each drawn whole inside the window, side by side or on two lines, none over another.
+                let keys: Vec<Placed> = ["Follow ONI on Instagram", "Support ONI on Ko-fi", "Enter the Contest"].iter().map(|k| common::the(&window, Role::Button, tr(k))).collect();
+                for (i, k) in keys.iter().enumerate() {
+                    assert!(k.width > 40.0 && k.x >= 0.0 && k.x + k.width <= w as f32 && k.y >= top && k.y + k.height < key.y - MARGIN / 2.0, "{language} {w}×{h}: key {i} whole in the window, {k:?}");
+                    for other in &keys[i + 1..] {
+                        let apart = k.x + k.width <= other.x || other.x + other.width <= k.x || k.y + k.height <= other.y || other.y + other.height <= k.y;
+                        assert!(apart, "{language} {w}×{h}: keys apart, {k:?} {other:?}");
+                    }
+                }
+            }
             assert!(off.abs() <= 1.0 && told.y + told.height < key.y - MARGIN / 2.0, "{language} {w}×{h} message {name}: on the middle, clear of the keys, off by {off:.1}: {told:?}");
         }
         let made = common::the(&window, Role::Text, "#madewithoni");

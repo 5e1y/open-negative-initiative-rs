@@ -49,7 +49,7 @@ fn the_pause_is_said_on_its_days_alone() {
 #[test]
 fn the_message_names_no_inbox_and_its_links_are_the_sites() {
     assert!(DONATE.starts_with("https://ko-fi.com/"));
-    for link in INSTAGRAM.into_iter().chain([CONTEST]) {
+    for link in [INSTAGRAM, CONTEST] {
         assert!(link.starts_with("https://") && !link.contains('@'), "{link}: a page, never an address");
     }
     assert!([CONTEST_TAG, MADE_WITH].iter().all(|tag| tag.starts_with('#') && !tag.contains(' ')));

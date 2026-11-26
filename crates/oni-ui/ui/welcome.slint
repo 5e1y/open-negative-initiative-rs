@@ -195,7 +195,7 @@ export component WelcomeSheet inherits Sheet {
                 HorizontalLayout {
                     alignment: center;
                     spacing: Space.s;
-                    if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
+                    Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
                     Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
                     Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
                 }
