@@ -4227,13 +4227,14 @@ dependencies = [
 
 [[package]]
 name = "oni-app"
-version = "1.6.0"
+version = "2.0.0"
 dependencies = [
  "arboard",
  "base64 0.22.1",
  "block2 0.6.2",
  "bytemuck",
  "chacha20poly1305",
+ "chrono",
  "clipboard-win",
  "femtovg",
  "flate2",

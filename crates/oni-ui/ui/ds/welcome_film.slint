@@ -55,7 +55,8 @@ export component FilmScene inherits Rectangle {
     in-out property <bool> held;
     // The share of the print the photo covers on the last step, from the left.
     in-out property <float> split: 0.5;
-    in property <string> stock: "Kodak Portra 800";
+    // The stock the renders were shot on, as its file names it.
+    in property <string> stock;
     clip: true;
     background: Colour.canvas;
     property <duration> since;

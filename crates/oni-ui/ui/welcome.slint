@@ -1,7 +1,7 @@
 // `WelcomeSheet`: the release told once, over the whole window. The hall holds four wrapped gifts; a click
 // unties one and opens its page, a scene on the stage beside its words; the message comes last. Return and
 // the arrows turn the pages in order, the dots jump, Escape or Skip leaves at any time.
-import { Space, Colour, Label, TextRole, Tone, Button, ButtonKind, Sheet, SheetFooter, Scroller, Divider } from "ds/ds.slint";
+import { Space, Colour, Motion, Label, TextRole, Tone, Button, ButtonKind, Sheet, SheetFooter, Scroller, Divider } from "ds/ds.slint";
 import { WelcomeStyle, SceneFrame, PageDots, Headline, StepLine, Gift, GiftStyle, InterfaceScene, KitScene, FilmScene, MysteryScene } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
@@ -37,8 +37,12 @@ component Words inherits Scroller {
 component Hall inherits VerticalLayout {
     in property <int> untying: -1;
     in property <float> untie;
+    // The huge gift's side, the small ones a share of it, so a short window keeps the floor in sight.
+    in property <length> huge: GiftStyle.huge;
+    property <length> small: root.huge * GiftStyle.small / GiftStyle.huge;
     callback chosen(int);
-    padding: Space.l * 2;
+    padding: Space.l;
+    padding-top: Space.l * 2;
     spacing: Space.m;
     function unwrapped(i: int) -> bool { Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, i)), 2) == 1 }
     Eyebrow { text: @tr("ONI {}", Help.release); centred: true; }
@@ -51,6 +55,7 @@ component Hall inherits VerticalLayout {
         VerticalLayout {
             alignment: end;
             Gift {
+                side: root.small;
                 tag: @tr("Small gift");
                 name: @tr("A livelier interface");
                 opened: root.unwrapped(0);
@@ -61,6 +66,7 @@ component Hall inherits VerticalLayout {
         VerticalLayout {
             alignment: end;
             Gift {
+                side: root.small;
                 paper: GiftStyle.blue;
                 ribbon: GiftStyle.kraft;
                 tag: @tr("Small gift");
@@ -73,7 +79,7 @@ component Hall inherits VerticalLayout {
         VerticalLayout {
             alignment: end;
             Gift {
-                side: GiftStyle.huge;
+                side: root.huge;
                 paper: GiftStyle.orange;
                 ribbon: GiftStyle.black-ribbon;
                 tag: @tr("Huge gift");
@@ -86,6 +92,7 @@ component Hall inherits VerticalLayout {
         VerticalLayout {
             alignment: end;
             Gift {
+                side: root.small;
                 paper: GiftStyle.night;
                 ribbon: GiftStyle.gold;
                 mystery: true;
@@ -116,7 +123,7 @@ export component WelcomeSheet inherits Sheet {
     property <duration> untie-start;
     // The huge gift's step, which its words and its scene both show and both turn.
     property <int> film-step;
-    property <bool> film-held;
+    property <bool> film-held: Motion.reduced;
     property <float> untie: root.untying < 0 ? 0 : max(0, min(1, (animation-tick() - root.untie-start) / GiftStyle.untie));
     function turn(by: int) { root.show(max(0, min(root.count - 1, root.page + by))); }
     // A gift's page shown is that gift unwrapped, however the person came to it.
@@ -139,145 +146,152 @@ export component WelcomeSheet inherits Sheet {
             root.untying = -1;
         }
     }
-    VerticalLayout {
-        width: root.width;
-        height: root.height;
-        if root.page == 0: Hall {
-            vertical-stretch: 1;
-            untying: root.untying;
-            untie: root.untie;
-            chosen(i) => {
-                if (root.untying < 0) {
-                    root.untie-start = animation-tick();
-                    root.untying = i;
-                }
-            }
-        }
-        if root.page >= 1 && root.page <= 4: HorizontalLayout {
-            vertical-stretch: 1;
-            if root.staged: SceneFrame {
-                horizontal-stretch: 1;
-                if root.page == 1: InterfaceScene { width: parent.width; height: parent.height; }
-                if root.page == 2: KitScene { width: parent.width; height: parent.height; }
-                if root.page == 3: FilmScene { width: parent.width; height: parent.height; step <=> root.film-step; held <=> root.film-held; }
-                if root.page == 4: MysteryScene { width: parent.width; height: parent.height; year: Help.year; }
-            }
-            VerticalLayout {
-                width: root.staged ? WelcomeStyle.words-width : root.width;
-                padding: Space.l;
-                if root.page == 1: Words {
-                    vertical-stretch: 1;
-                    eyebrow: @tr("Small gift");
-                    title: @tr("A livelier interface");
-                    Label { text: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped."); role: TextRole.note; wrap: word-wrap; }
-                    Point { title: @tr("The photo comes to you"); text: @tr("It lifts off the gallery and grows into the editor, while the panel unfolds beside it."); }
-                    Point { title: @tr("From edit to export, in one move"); text: @tr("The editor turns into the export, and every sheet arrives with a motion of its own."); }
-                    Point { title: @tr("Quick, never in the way"); text: @tr("Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."); }
-                }
-                if root.page == 2: Words {
-                    vertical-stretch: 1;
-                    eyebrow: @tr("Small gift");
-                    title: @tr("The Collection, with The Lens DB");
-                    Label { text: @tr("ONI partners with The Lens DB, the largest database of camera bodies and lenses in the world."); role: TextRole.note; wrap: word-wrap; }
-                    Point { title: @tr("Your gear in one place"); text: @tr("Search the catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
-                    Point { title: @tr("EXIF filled with ease"); text: @tr("Your camera and lens fill your exports' metadata, maker and lens specification included."); }
-                    Point { title: @tr("Free, and private"); text: @tr("Two non-profit projects, no ads. Your photos never leave your computer."); }
-                    if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
-                    if Kit.link == KitLink.waiting: Label { text: @tr("Finish in Your Browser"); role: TextRole.note; wrap: word-wrap; }
-                    if Kit.link == KitLink.in: Label { text: @tr("Connected as {}", Kit.account); role: TextRole.note; wrap: word-wrap; }
-                }
-                if root.page == 3: Words {
-                    vertical-stretch: 1;
-                    eyebrow: @tr("Huge gift");
-                    title: @tr("Your digital photos, on real film");
-                    Label { text: @tr("ONI lays no filter over a digital photo: it shoots it again on film, then scans and inverts the negative, as a lab would."); role: TextRole.note; wrap: word-wrap; }
-                    for step[i] in [
-                        { title: @tr("Your photo"), text: @tr("The light your camera recorded, nothing added.") },
-                        { title: @tr("Exposed on a real film"), text: @tr("The scene exposes a film stock rebuilt from its maker's data sheet: each layer's sensitivity, its curves and its dyes.") },
-                        { title: @tr("Developed"), text: @tr("Grain and halation are born on the film itself, at the size and strength the stock gives them.") },
-                        { title: @tr("Scanned"), text: @tr("A virtual Nikon D850 under a D50 lamp reads the negative through its orange mask, as you would scan a real roll.") },
-                        { title: @tr("Inverted"), text: @tr("ONI inverts it as it inverts your own negatives, with the same tools. Drag across the photo to compare.") },
-                    ]: StepLine {
-                        number: i + 1;
-                        title: step.title;
-                        text: step.text;
-                        lit: root.film-step == i;
-                        picked => {
-                            root.film-step = i;
-                            root.film-held = true;
-                        }
+    // The window's flat ground under every page, where a card's sheen would band across the whole window.
+    Rectangle {
+        background: Colour.ground;
+        VerticalLayout {
+            if root.page == 0: Hall {
+                vertical-stretch: 1;
+                huge: max(GiftStyle.small, min(GiftStyle.huge, root.height * GiftStyle.huge-share));
+                untying: root.untying;
+                untie: root.untie;
+                chosen(i) => {
+                    // An opened gift, or any under Reduce Motion, opens its page at once.
+                    if (Motion.reduced || Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, i)), 2) == 1) {
+                        root.show(i + 1);
+                    } else if (root.untying < 0) {
+                        root.untie-start = animation-tick();
+                        root.untying = i;
                     }
-                    Label { text: @tr("Pick the film in the Film block. A new photo opens on the neutral film, just as your camera saw it."); role: TextRole.note; tone: Tone.tertiary; wrap: word-wrap; }
-                }
-                if root.page == 4: Words {
-                    vertical-stretch: 1;
-                    eyebrow: @tr("Mystery gift");
-                    title: @tr("Your year on film");
-                    Label { text: @tr("ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."); role: TextRole.note; wrap: word-wrap; }
-                    HorizontalLayout { alignment: start; Button { kind: ButtonKind.accent; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
                 }
             }
-        }
-        if root.last: Scroller {
-            vertical-stretch: 1;
-            content-height: letter.preferred-height;
-            letter := HorizontalLayout {
-                width: parent.width;
-                alignment: center;
+            if root.page >= 1 && root.page <= 4: HorizontalLayout {
+                vertical-stretch: 1;
+                if root.staged: SceneFrame {
+                    horizontal-stretch: 1;
+                    // Reduce Motion holds each scene on the moment that tells it.
+                    if root.page == 1: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : -1; }
+                    if root.page == 2: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : -1; }
+                    if root.page == 3: FilmScene { width: parent.width; height: parent.height; stock: Help.film-stock; step <=> root.film-step; held <=> root.film-held; }
+                    if root.page == 4: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : -1; }
+                }
                 VerticalLayout {
-                    width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
-                    padding-top: Space.l * 2;
-                    padding-bottom: Space.l;
-                    spacing: Space.m;
-                    Eyebrow { text: @tr("From the person who makes ONI"); }
-                    Headline { text: @tr("I have a message for you"); }
-                    Label { text: @tr("Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI."); role: TextRole.note; wrap: word-wrap; }
-                    Headline { quiet: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
-                    Label { text: @tr("ONI is free and open source. It has no ads and no marketing budget: it only grows when someone tells a friend."); role: TextRole.note; wrap: word-wrap; }
-                    Label { text: @tr("ONI needs you: spread the word"); role: TextRole.title; wrap: word-wrap; }
-                    HorizontalLayout {
-                        alignment: start;
-                        spacing: Space.s;
-                        if Help.instagram-known: Button { text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
-                        Button { text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                    width: root.staged ? WelcomeStyle.words-width : root.width;
+                    padding: Space.l;
+                    if root.page == 1: Words {
+                        vertical-stretch: 1;
+                        eyebrow: @tr("Small gift");
+                        title: @tr("A livelier interface");
+                        Label { text: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped."); role: TextRole.note; wrap: word-wrap; }
+                        Point { title: @tr("The photo comes to you"); text: @tr("It lifts off the gallery and grows into the editor, while the roll's photos rise into the column beside it."); }
+                        Point { title: @tr("From edit to export, in one move"); text: @tr("The editor turns into the export, and every sheet arrives with a motion of its own."); }
+                        Point { title: @tr("Quick, never in the way"); text: @tr("Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."); }
                     }
-                    Divider { }
-                    Label { text: @tr("Your photo on ONI's opening screen"); role: TextRole.section; wrap: word-wrap; }
-                    Label {
-                        text: Help.contest-open
-                            ? @tr("From December 1, every month, one photo opens ONI for everyone. Send yours through the form, or post it on Instagram with {}.", Help.contest-tag)
-                            : @tr("From December 1, every month, one photo opens ONI for everyone. Post yours on Instagram with {}.", Help.contest-tag);
-                        role: TextRole.note;
-                        wrap: word-wrap;
+                    if root.page == 2: Words {
+                        vertical-stretch: 1;
+                        eyebrow: @tr("Small gift");
+                        title: @tr("The Collection, with The Lens DB");
+                        Label { text: @tr("ONI partners with The Lens DB, the largest database of camera bodies and lenses in the world."); role: TextRole.note; wrap: word-wrap; }
+                        Point { title: @tr("Your gear in one place"); text: @tr("Search the catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
+                        Point { title: @tr("EXIF filled with ease"); text: @tr("Your camera and lens fill your exports' metadata, maker and lens specification included."); }
+                        Point { title: @tr("Free, and private"); text: @tr("Two non-profit projects, no ads. Your photos never leave your computer."); }
+                        if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
+                        if Kit.link == KitLink.waiting: Label { text: @tr("Finish in Your Browser"); role: TextRole.note; wrap: word-wrap; }
+                        if Kit.link == KitLink.in: Label { text: @tr("Connected as {}", Kit.account); role: TextRole.note; wrap: word-wrap; }
                     }
-                    if Help.contest-open: HorizontalLayout { alignment: start; Button { text: @tr("Send My Photo"); clicked => { Help.contest(); } } }
+                    if root.page == 3: Words {
+                        vertical-stretch: 1;
+                        eyebrow: @tr("Huge gift");
+                        title: @tr("Your digital photos, on real film");
+                        Label { text: @tr("ONI lays no filter over a digital photo: it shoots it again on film, then scans and inverts the negative, as a lab would."); role: TextRole.note; wrap: word-wrap; }
+                        for step[i] in [
+                            { title: @tr("Your photo"), text: @tr("The light your camera recorded, nothing added.") },
+                            { title: @tr("Exposed on a real film"), text: @tr("The scene exposes a film stock rebuilt from its maker's data sheet: each layer's sensitivity, its curves and its dyes.") },
+                            { title: @tr("Developed"), text: @tr("Grain and halation are born on the film itself, at the size and strength the stock gives them.") },
+                            { title: @tr("Scanned"), text: @tr("A virtual Nikon D850 under a D50 lamp reads the negative through its orange mask, as you would scan a real roll.") },
+                            { title: @tr("Inverted"), text: @tr("ONI inverts it as it inverts your own negatives, with the same tools. Drag across the photo to compare.") },
+                        ]: StepLine {
+                            number: i + 1;
+                            title: step.title;
+                            text: step.text;
+                            lit: root.film-step == i;
+                            picked => {
+                                root.film-step = i;
+                                root.film-held = true;
+                            }
+                        }
+                        Label { text: @tr("Pick the film in the Film block. A new photo opens on the neutral film, just as your camera saw it."); role: TextRole.note; tone: Tone.tertiary; wrap: word-wrap; }
+                    }
+                    if root.page == 4: Words {
+                        vertical-stretch: 1;
+                        eyebrow: @tr("Mystery gift");
+                        title: @tr("Your year on film");
+                        Label { text: @tr("ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."); role: TextRole.note; wrap: word-wrap; }
+                        HorizontalLayout { alignment: start; Button { kind: ButtonKind.accent; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
+                    }
                 }
             }
-        }
-        // The footer's keys, the dots centred on the window under them whatever the keys' widths.
-        Rectangle {
-            height: footer.preferred-height + Space.m + Space.l;
-            footer := SheetFooter {
-                x: Space.l;
-                y: Space.m;
-                width: parent.width - 2 * Space.l;
-                height: self.preferred-height;
-                cancel: root.last ? "" : @tr("Skip");
-                back: root.page >= 1 && root.page <= 4 ? @tr("All Gifts") : root.last ? @tr("Back") : "";
-                commit: root.last ? @tr("GET STARTED") : root.page == 0 ? @tr("Unwrap") : root.page == 4 ? @tr("One More Thing") : @tr("Next Gift");
-                cancelled => { Help.welcome-closed(); }
-                backed => { root.show(root.last ? 4 : 0); }
-                committed => {
-                    if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
+            if root.last: Scroller {
+                vertical-stretch: 1;
+                content-height: letter.preferred-height;
+                letter := HorizontalLayout {
+                    width: parent.width;
+                    alignment: center;
+                    VerticalLayout {
+                        width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
+                        padding-top: Space.l * 2;
+                        padding-bottom: Space.l;
+                        spacing: Space.m;
+                        Eyebrow { text: @tr("From the person who makes ONI"); }
+                        Headline { text: @tr("I have a message for you"); }
+                        Label { text: @tr("Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI."); role: TextRole.note; wrap: word-wrap; }
+                        Headline { quiet: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
+                        Label { text: @tr("ONI is free and open source. It has no ads and no marketing budget: it only grows when someone tells a friend."); role: TextRole.note; wrap: word-wrap; }
+                        Label { text: @tr("ONI needs you: spread the word"); role: TextRole.title; wrap: word-wrap; }
+                        HorizontalLayout {
+                            alignment: start;
+                            spacing: Space.s;
+                            if Help.instagram-known: Button { text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
+                            Button { text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                        }
+                        Divider { }
+                        Label { text: @tr("Your photo on ONI's opening screen"); role: TextRole.section; wrap: word-wrap; }
+                        Label {
+                            text: Help.contest-open
+                                ? @tr("From December 1, every month, one photo opens ONI for everyone. Send yours through the form, or post it on Instagram with {}.", Help.contest-tag)
+                                : @tr("From December 1, every month, one photo opens ONI for everyone. Post yours on Instagram with {}.", Help.contest-tag);
+                            role: TextRole.note;
+                            wrap: word-wrap;
+                        }
+                        if Help.contest-open: HorizontalLayout { alignment: start; Button { text: @tr("Send My Photo"); clicked => { Help.contest(); } } }
+                    }
                 }
             }
-            PageDots {
-                x: (parent.width - self.preferred-width) / 2;
-                y: footer.y + (footer.height - self.preferred-height) / 2;
-                width: self.preferred-width;
-                count: root.count;
-                at: root.page;
-                picked(page) => { root.show(page); }
+            // The footer's keys, the dots centred on the window under them whatever the keys' widths.
+            Rectangle {
+                height: footer.preferred-height + Space.m + Space.l;
+                footer := SheetFooter {
+                    x: Space.l;
+                    y: Space.m;
+                    width: parent.width - 2 * Space.l;
+                    height: self.preferred-height;
+                    cancel: root.last ? "" : @tr("Skip");
+                    back: root.page >= 1 && root.page <= 4 ? @tr("All Gifts") : root.last ? @tr("Back") : "";
+                    commit: root.last ? @tr("GET STARTED") : root.page == 0 ? @tr("Unwrap") : root.page == 4 ? @tr("One More Thing") : @tr("Next Gift");
+                    cancelled => { Help.welcome-closed(); }
+                    backed => { root.show(root.last ? 4 : 0); }
+                    committed => {
+                        if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
+                    }
+                }
+                PageDots {
+                    x: (parent.width - self.preferred-width) / 2;
+                    y: footer.y + (footer.height - self.preferred-height) / 2;
+                    width: self.preferred-width;
+                    count: root.count;
+                    at: root.page;
+                    picked(page) => { root.show(page); }
+                }
             }
         }
     }

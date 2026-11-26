@@ -22,7 +22,8 @@ export global Help {
     in property <string> contest-tag;
     in property <bool> contest-open;
     in property <bool> instagram-known;
-    // The year the mystery gift tells.
+    // The stock the huge gift's renders were shot on; the year the mystery gift tells.
+    in property <string> film-stock;
     in property <string> year;
     callback welcome-closed();
     callback wrapped();
@@ -31,8 +32,6 @@ export global Help {
     callback contest();
     // While development pauses, the line saying so under the gallery; empty otherwise.
     in property <string> pause-line;
-    callback website();
-    callback feedback();
     // `ReportSheet`
     in property <bool> report-shown;
     in-out property <string> report-message;

@@ -29,13 +29,14 @@ pub const SEEN_KEY: &str = "whatsNewSeen";
 /// to everyone again, a patch of a release seen never does.
 pub const WELCOME_KEY: &str = "welcomeSeen";
 pub const EDITION: &str = "2.0";
-const SITE: &str = "https://open-negative-initiative.com";
 /// Where the welcome's message sends a person who wants to help: the donation page, ONI's Instagram once
 /// it has one, the splash contest's form (its id alone, the inbox behind it never named here) and hashtag.
 pub const DONATE: &str = "https://ko-fi.com/remicourtillon";
-pub const INSTAGRAM: Option<&str> = None;
+pub const INSTAGRAM: Option<&str> = Some("https://www.instagram.com/open.negative.initiative/");
 pub const CONTEST_FORM: Option<&str> = None;
 pub const CONTEST_TAG: &str = "#ONIsplash";
+/// The stock the huge gift's renders were shot on (`examples/welcome_stills`).
+const FILM_STOCK: &str = "kodak-portra-800";
 /// Development pauses between these days, both included, local time; the gallery says so, then nothing.
 pub const PAUSE: ((i32, u32, u32), (i32, u32, u32)) = ((2026, 12, 15), (2027, 1, 15));
 /// `DS.Motion.consoleRefresh`.
@@ -151,12 +152,6 @@ impl Ctl {
         help.on_donate(|| system::open_url(DONATE));
         help.on_instagram(|| INSTAGRAM.into_iter().for_each(system::open_url));
         help.on_contest(|| CONTEST_FORM.into_iter().for_each(system::open_url));
-        help.on_website(|| system::open_url(SITE));
-        let p = me.clone();
-        help.on_feedback(move || {
-            p.welcome_closed();
-            p.open_report();
-        });
         let p = me.clone();
         help.on_report_edited(move |text| {
             // `BugReport.messageLimit`: typing stops at the site's bound.
@@ -231,6 +226,7 @@ impl Ctl {
         let Some(w) = self.window() else { return false };
         let h = w.global::<Help>();
         h.set_year(oni_library::wrapped::today().0.to_string().into());
+        h.set_film_stock(oni_settings::VirtualStock::of(FILM_STOCK).name().into());
         h.set_welcome_unwrapped(0);
         h.set_welcome_page(0);
         h.set_welcome_shown(true);

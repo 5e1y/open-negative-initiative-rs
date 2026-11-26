@@ -23,13 +23,13 @@ export component KitScene inherits Rectangle {
     // A moment of the loop held still, in seconds, for a check's shot; negative, the scene plays.
     in property <float> held: -1;
     property <[GearCard]> bodies: [
-        { name: "Nikon FM2", detail: @tr("Body") + " · 1982", preferred: true, photos: 214 },
-        { name: "Canon AE-1 Program", detail: @tr("Body") + " · 1981", preferred: false, photos: 96 },
-        { name: "Nikon Z f", detail: @tr("Body") + " · 2023", preferred: false, photos: 1240 },
+        { name: @tr("Nikon FM2"), detail: @tr("Body") + " · 1982", preferred: true, photos: 214 },
+        { name: @tr("Canon AE-1 Program"), detail: @tr("Body") + " · 1981", preferred: false, photos: 96 },
+        { name: @tr("Nikon Z f"), detail: @tr("Body") + " · 2023", preferred: false, photos: 1240 },
     ];
     property <[GearCard]> lenses: [
-        { name: "Nikon Nikkor 50mm f/1.4 AI-S", detail: "50 mm · f/1.4", preferred: true, photos: 180 },
-        { name: "Canon FD 28mm f/2.8", detail: "28 mm · f/2.8", preferred: false, photos: 61 },
+        { name: @tr("Nikon Nikkor 50mm f/1.4 AI-S"), detail: @tr("{} mm · f/{}", 50, "1.4"), preferred: true, photos: 180 },
+        { name: @tr("Canon FD 28mm f/2.8"), detail: @tr("{} mm · f/{}", 28, "2.8"), preferred: false, photos: 61 },
     ];
     property <int> count: root.bodies.length + root.lenses.length;
     property <float> leave-from: KitBeats.first + root.count * KitBeats.every + KitBeats.hold;
