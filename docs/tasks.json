@@ -13985,5 +13985,19 @@
     "title": "The welcome's gifts carry the wordmark: Open Negative Initiative embossed in every foil, a hint on the small ones, plain on gold, a second hologram on the mystery",
     "status": "done",
     "detail": "One row of the phrase in Zalando Sans Expanded Black (`scripts/welcome-wordmark.py`, a 17 KB grey JPEG built into the binary) repeats over each face, each row sliding half a phrase, upright and read from outside, riding with the lid. Its letters are a polished mirror leaning up a hair in the brushing, so they light as a reflection crosses them: 0.35 of that on silver and copper, 0.65 on gold; on the holographic gift they carry their own grating, finer and askew to the facets'. Where a pixel covers a good share of a row the mark fades to its mean, so a small gift shows no moire. Stills regenerated. Checks: stage unit tests (the tile decodes as ink on black, twin: a tile cut short reads as nothing), clippy on oni-app."
+  },
+  {
+    "id": 4017,
+    "type": "ui",
+    "title": "Opening a photo shows one picture at a time: the screen's own photo only once the tile has landed, and no flight over Prepare the Roll",
+    "status": "done",
+    "detail": "The owner saw the tile's picture and the editor's together. Two causes: landed, the flight faded over the canvas's picture already shown, two pictures seen together wherever their places differed by a hair; and a photo of a roll never prepared opens Prepare as its roll is read, mid-flight, the flight going on to land on a canvas no longer shown, beside Prepare's frame. A flight landing on the same picture now hands over at once (the export's preview, another render, still fades), and a flight into the editor ends as another screen takes its place (Travels). motion_open shoots both openings on a held clock."
+  },
+  {
+    "id": 4018,
+    "type": "ui",
+    "title": "Prepare's demo fills the column's width at its own proportion",
+    "status": "done",
+    "detail": "It stood at a fixed 224 pt square in the middle of the column; it now takes the whole width inside the panel's padding, its height following the demo's proportion, the body scrolling under it. RollStyle.demo, named nowhere else, goes."
   }
 ]

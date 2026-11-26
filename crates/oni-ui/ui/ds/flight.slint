@@ -82,10 +82,13 @@ export component FlightView {
         source: Flight.picture;
         image-fit: contain;
         opacity: Flight.landing ? 0 : 1;
-        animate opacity { duration: Motion.quick; easing: ease-out; }
+        animate opacity { duration: root.handing; easing: ease-out; }
     }
+    // Landed on the same picture, the canvas's or the tile's, it hands over at once, never two pictures
+    // seen together; on the export's preview, another render, it fades over it.
+    property <duration> handing: Flight.route == FlightRoute.into-export ? Motion.quick : 0ms;
     travel := Timer { interval: Motion.travel; running: Flight.flying && !root.arrived; triggered => { root.arrived = true; } }
-    Timer { interval: Motion.quick; running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
+    Timer { interval: max(Motion.next-frame, root.handing); running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
 }
 
 // The editor walking to the next or the previous photo: the one left, its picture where the canvas showed
@@ -120,7 +123,10 @@ export component WalkView {
 
 // Every photo travelling over the screens, laid in the window's space: the flight, and the walk beside a photo.
 export component Travels {
+    // The editor beside a photo: a flight into it ends where another screen takes its place, as Prepare the
+    // Roll does when the photo opened belongs to a roll never prepared, never landing on a canvas unseen.
     in property <bool> walk;
+    changed walk => { if (!root.walk && Flight.route == FlightRoute.into-editor) { Flight.flying = false; Flight.landing = false; } }
     in property <Place> frame;
     in property <Place> room;
     if Flight.flying: FlightView { x: 0; y: 0; width: root.width; height: root.height; frame: root.frame; room: root.room; }

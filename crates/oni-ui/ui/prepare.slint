@@ -204,11 +204,11 @@ export component RollPanel inherits Surface {
                     alignment: start;
                     Button { text: Preparing.tutorial.width > 0 ? @tr("Hide") : @tr("Show How"); clicked => { Preparing.tutorial-toggled(); } }
                 }
+                // As wide as the column holds it, at the demo's own proportion.
                 if Preparing.tutorial.width > 0: HorizontalLayout {
-                    alignment: center;
                     Picture {
-                        width: RollStyle.demo;
-                        height: RollStyle.demo;
+                        horizontal-stretch: 1;
+                        height: self.width * Preparing.tutorial.height / max(1, Preparing.tutorial.width);
                         source: Preparing.tutorial;
                         revision: Preparing.tutorial-revision;
                         rounded: true;

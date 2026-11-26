@@ -61,6 +61,7 @@ mod export_speed;
 mod filmstrip;
 mod first_frame;
 mod motion;
+mod motion_open;
 mod typeface;
 mod freshness;
 mod disk_turns;
