@@ -129,14 +129,9 @@ fn a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did() {
     let n = k.negative.expect("on its negative");
     let side = 256usize;
     let grey = oni_pipeline::film::shot(s.film().unwrap().stock, [0.184, 0.184, 0.184, 1.0], 0.0);
-    // Read as a render reads it, off the photo's plate at 100 %.
-    let Some(mut g) = graph("a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did") else { return };
-    let base = g.upload(64, 64, &vec![[0.18, 0.18, 0.18, 1.0]; 64 * 64]).unwrap();
-    let flat = g.upload(side as u32, side as u32, &vec![grey; side * side]).unwrap();
-    let mut pipeline = Pipeline::new();
-    let mut share = |k: &Grain| -> Vec<f32> {
-        let plate = pipeline.grain_plate(&mut g, k, (8368.0, 5584.0), &Image::new(&base)).unwrap();
-        whole(&mut g, &grain::grained_on(Image::new(&flat), k, &plate)).iter().map(|p| -((p[1] + n.veil) / n.bare[1]).log10() / n.window[1]).collect()
+    let grid = Grid::new(0, 0, side, side, vec![grey; side * side]);
+    let share = |k: &Grain| -> Vec<f32> {
+        (0..side * side).map(|i| cpu::grain(&grid, [(i % side) as f32 + 0.5, (i / side) as f32 + 0.5], k)[1]).map(|v| -((v + n.veil) / n.bare[1]).log10() / n.window[1]).collect()
     };
     let sd = tiled(&share(&k), side, 32);
     println!("Portra 800 at its rest, 30 µm on a 47 Mpx grid: {sd:.5} of green's window in 32-pixel tiles; each grain's deviation {:.4}", k.deviation[1]);
@@ -201,10 +196,9 @@ fn a_notch_on_the_grain_s_amount_or_the_film_keeps_its_field_and_one_on_its_size
     let mut pipeline = Pipeline::new();
     let request = Request { full_width: Some(f64::from(w)), ..Request::default() };
     let mut cache = oni_graph::Cache::frontier();
-    // The grain's plate is drawn as the recipe is laid: the pixels are counted from there.
     let mut notch = |g: &mut Graph, s: &PipelineSettings| {
-        let before = g.stats().pixels;
         let image = pipeline.image(g, &source, s, &request, &Default::default()).unwrap();
+        let before = g.stats().pixels;
         let made = g.materialise_cached(&image, image.extent(), Some(&mut cache)).unwrap();
         let ran = g.stats().pixels - before;
         let fresh = g.render(&image, image.extent(), None).unwrap();
@@ -225,49 +219,4 @@ fn a_notch_on_the_grain_s_amount_or_the_film_keeps_its_field_and_one_on_its_size
     let size = notch(&mut g, &sized);
     println!("pixels run: an Amount notch {amount}, a film notch {film}, a size notch {size}, a frame {frame}");
     assert!(size >= amount + frame && size >= film + frame, "a size notch draws the field again: {size} against {amount} and {film}");
-}
-
-#[test]
-fn the_grain_s_contrast_holds_as_a_pan_moves_it_by_a_part_of_a_pixel() {
-    let Some(mut g) = graph("the_grain_s_contrast_holds_as_a_pan_moves_it_by_a_part_of_a_pixel") else { return };
-    let (w, h) = (8368u32, 5584u32);
-    let base = g.upload(64, 64, &vec![[0.18, 0.18, 0.18, 1.0]; 64 * 64]).unwrap();
-    let mut pipeline = Pipeline::new();
-    let s = PipelineSettings { grain: oni_settings::blocks::Grain { amount: 0.25, size: 30.0 }, ..grainy(0.25) };
-    let film = oni_pipeline::film::shot(s.film().unwrap().stock, [0.18, 0.18, 0.18, 1.0], 0.0);
-    let side = 256u32;
-    let flat = g.upload(side, side, &vec![film; (side * side) as usize]).unwrap();
-    // The zooms a ladder and a fit take; a footprint exactly a level's pitch lines every pixel up on its texels and
-    // moves the contrast with a pan by up to a tenth, a point a pinch passes.
-    for footprint in [1.0f32, 1.25, 1.5, 2.0, 2.74, 4.18, 6.0, 12.0] {
-        let k = grain::grain(&s, Rect::new(0, 0, w, h), 1.0).unwrap();
-        let plate = pipeline.grain_plate(&mut g, &k, (f64::from(w), f64::from(h)), &Image::new(&base)).unwrap();
-        let spreads: Vec<f32> = [0.0f32, 0.25, 0.5, 0.75]
-            .iter()
-            .map(|shift| {
-                let scan = [[footprint, 0.0, 1000.0 + shift * footprint], [0.0, footprint, 1000.0 + shift * footprint]];
-                let kf = Grain { scan, render: [[1.0 / footprint, 0.0, 0.0], [0.0, 1.0 / footprint, 0.0]], ..Grain::on(scan, k.radius, footprint, k.deviation.map(|d| d / k.spread), k.gaze) };
-                let kf = Grain { negative: k.negative, seed: k.seed, ..kf };
-                let out = whole(&mut g, &grain::grained_on(Image::new(&flat), &kf, &plate));
-                tiled(&out.iter().map(|p| p[1]).collect::<Vec<_>>(), side as usize, 32)
-            })
-            .collect();
-        let (lo, hi) = spreads.iter().fold((f32::MAX, 0.0f32), |(a, b), v| (a.min(*v), b.max(*v)));
-        // The field each render drew for itself, as before the plate, at the same footprint.
-        let scan = [[footprint, 0.0, 1000.0], [0.0, footprint, 1000.0]];
-        let drawn = Grain { negative: k.negative, seed: k.seed, ..Grain::on(scan, k.radius, footprint, k.deviation.map(|d| d / k.spread), k.gaze) };
-        let own = tiled(&whole(&mut g, &grain::grained(Image::new(&flat), &drawn)).iter().map(|p| p[1]).collect::<Vec<_>>(), side as usize, 32);
-        let (apart, off) = (100.0 * (hi / lo - 1.0), 100.0 * (spreads[0] / own - 1.0));
-        println!("footprint {footprint}: spread {:.5} over a pixel's phases, {apart:.1} % apart; drawn for itself {own:.5} ({off:+.1} %)", spreads[0]);
-        assert!(hi / lo - 1.0 < 0.02, "at footprint {footprint} the grain's contrast moves {:.1} % with a pan", 100.0 * (hi / lo - 1.0));
-        assert!((spreads[0] / own - 1.0).abs() < 0.05, "at footprint {footprint} the plate lays {} where a render drew {own}", spreads[0]);
-    }
-    // Twin: the plate read with no gain lays a reduced render's grain a fifth weaker than a render drew it.
-    let k = grain::grain(&s, Rect::new(0, 0, w, h), 1.0).unwrap();
-    let plate = pipeline.grain_plate(&mut g, &k, (f64::from(w), f64::from(h)), &Image::new(&base)).unwrap();
-    let flat_gain = grain::Plate { gains: vec![(1.0, 1.0)], ..plate.clone() };
-    let scan = [[4.18, 0.0, 1000.0], [0.0, 4.18, 1000.0]];
-    let kf = Grain { negative: k.negative, seed: k.seed, ..Grain::on(scan, k.radius, 4.18, k.deviation.map(|d| d / k.spread), k.gaze) };
-    let spread = |g: &mut Graph, p: &grain::Plate| tiled(&whole(g, &grain::grained_on(Image::new(&flat), &kf, p)).iter().map(|v| v[1]).collect::<Vec<_>>(), side as usize, 32);
-    assert!(spread(&mut g, &flat_gain) / spread(&mut g, &plate) < 0.9);
 }

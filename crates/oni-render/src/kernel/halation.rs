@@ -3,8 +3,9 @@
 
 use super::*;
 
-/// The share of the dose each colour layer takes: the red one lies on the base, the blue one behind the yellow filter.
-pub const HALATION_COLOUR: [f32; 3] = [1.0, 0.3, 0.0];
+/// The share of the dose each colour layer takes: the red one alone, the deepest, on the base; the light the base sends
+/// back is red, blue stopped by the yellow filter and green absorbed by its own layer.
+pub const HALATION_COLOUR: [f32; 3] = [1.0, 0.0, 0.0];
 
 /// The halation's dose on each layer and each layer's exposure at the sensor's saturation.
 #[derive(Clone, Copy, Debug, PartialEq)]

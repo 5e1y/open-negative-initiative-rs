@@ -3,6 +3,7 @@
 use super::*;
 use crate::latest::{Latest, Taken};
 
+#[derive(Clone)]
 pub struct Job {
     pub revision: u64,
     pub path: PathBuf,
@@ -83,11 +84,14 @@ impl Worker {
                 let mut last_counted = last_inputs;
                 // The hand's last job, read on the full copy once the hand rests.
                 let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings, [bool; 2])> = None;
+                // A held job drawn on a digital photo's preview scan, rendered again sharp once the hand rests.
+                let mut sharpen: Option<Job> = None;
                 loop {
                     let job = loop {
-                        match shared.take(resting.is_some().then_some(REST)) {
+                        match shared.take((resting.is_some() || sharpen.is_some()).then_some(REST)) {
                             Taken::Value(job) => break job,
                             Taken::Closed => return,
+                            Taken::TimedOut if sharpen.is_some() => break Job { held: false, ..sharpen.take().expect("a job to sharpen") },
                             Taken::TimedOut => {
                                 if let Some((path, negative, settings, wanted)) = resting.take()
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false, wanted)
@@ -98,6 +102,8 @@ impl Worker {
                         }
                     };
                     let started = Instant::now();
+                    sharpen = None;
+                    renderer.hold_scan(job.held);
                     let done = renderer.resident(&job.negative, &job.settings, job.view.as_ref()).map(|(picture, placed)| Done {
                         revision: job.revision,
                         path: job.path.clone(),
@@ -136,6 +142,9 @@ impl Worker {
                     }
                     if drawn {
                         resting = (job.held && wanted).then(|| (job.path.clone(), job.negative.clone(), job.settings.clone(), job.inputs));
+                        if renderer.provisional() {
+                            sharpen = Some(job);
+                        }
                     }
                     // The next job waits for the GPU to run this one: taken sooner, it queues behind it there,
                     // and the window's frames behind both, 50 to 100 ms late under a pinch.

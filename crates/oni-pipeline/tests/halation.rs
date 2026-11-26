@@ -109,7 +109,7 @@ fn the_halation_matches_its_reference_and_adds_the_glow_of_the_brightest_light()
         judge("halation, the other film's layers", &out, &reference, &glowing(&pixels, w, h, sigma, &other));
     }
 
-    // A lamp well inside its frame: red and green glow by their dose of its light, blue never moves.
+    // A lamp well inside its frame: red glows by its dose of its light, green and blue never move.
     let source = lamp(&mut g, 1200, 100.0);
     let s = haloed(MEDIUM, 125.0);
     let scan = Rect::new(0, 0, 1200, 1200);
@@ -118,14 +118,12 @@ fn the_halation_matches_its_reference_and_adds_the_glow_of_the_brightest_light()
     let k = halation::kernel(&s);
     let sum = |p: &[V4], c: usize| p.iter().map(|v| f64::from(v[c])).sum::<f64>();
     let fed = |c: usize| before.iter().map(|v| f64::from(cpu::halation_source(*v, &k)[c])).sum::<f64>();
-    for c in 0..2 {
-        let (was, is) = (sum(&before, c), sum(&after, c));
-        assert!(((is - was) / (f64::from(k.dose[c]) * fed(c)) - 1.0).abs() < 1e-3, "channel {c}: {was} became {is}");
-    }
-    assert!(before.iter().zip(&after).all(|(a, b)| a[2] == b[2]), "the blue layer never glows");
+    let (was, is) = (sum(&before, 0), sum(&after, 0));
+    assert!(((is - was) / (f64::from(k.dose[0]) * fed(0)) - 1.0).abs() < 1e-3, "red: {was} became {is}");
+    assert!(before.iter().zip(&after).all(|(a, b)| a[1] == b[1] && a[2] == b[2]), "the green and blue layers never glow");
     let halo = ring(1200, 102.0, 120.0);
-    let (red, green) = (halo.iter().map(|i| after[*i][0] - before[*i][0]).sum::<f32>(), halo.iter().map(|i| after[*i][1] - before[*i][1]).sum::<f32>());
-    assert!(red > 0.0 && green > 0.0 && green < 0.5 * red, "a red glow, a little green: {red} {green}");
+    let red = halo.iter().map(|i| after[*i][0] - before[*i][0]).sum::<f32>();
+    assert!(red > 0.0, "a red glow: {red}");
     // Twin: a glow taken from the light it spreads, as a halation keeping the frame's light would lay it, adds none.
     assert!((sum(&after, 0) / sum(&before, 0) - 1.0) > 1e-2, "the glow adds no light");
 }

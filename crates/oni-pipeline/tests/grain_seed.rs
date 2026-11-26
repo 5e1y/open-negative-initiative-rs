@@ -116,9 +116,8 @@ fn a_print_notch_reruns_no_grain() {
     let exposure = |t: &mut PipelineSettings, d: f32| t.print.exposure += d;
     let plain = notches(&mut g, &rest, &exposure);
     assert_eq!(notches(&mut g, &grained, &exposure), plain, "an exposure notch reruns the grain");
-    // A render drawing its grain's field for itself: an amount notch reruns the grain's laying alone, its field and the
-    // film under it kept; a size notch its field and its laying. Twin: a Bloom notch, on the layers before their
-    // development, develops the film again too.
+    // An amount notch reruns the grain's laying alone, its field and the film under it kept; a size notch its field and
+    // its laying. Twin: a Bloom notch, on the layers before their development, develops the film again too.
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount -= d;
     assert_eq!(notches(&mut g, &grained, &amount).0, plain.0 + 1, "an amount notch reruns more than the grain's laying");
     let size = |t: &mut PipelineSettings, d: f32| t.grain.size -= 10.0 * d;

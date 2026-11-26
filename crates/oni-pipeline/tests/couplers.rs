@@ -1,8 +1,7 @@
-//! A film file's own DIR coupler matrix: the bake and Lighting's development read it, a file without one reads the
+//! A film file's own DIR coupler matrix: the bake reads it, a file without one reads the
 //! common matrix, and the couplers move a colour while the grey stays on the data sheet's curve. Each verdict has a twin.
 
 use oni_pipeline::film::{self, GREY, bake::COUPLERS};
-use oni_pipeline::negative::{self, Film};
 use oni_render::cpu;
 use oni_settings::VirtualStock;
 
@@ -15,7 +14,7 @@ fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     assert_eq!(film::couplers(&VirtualStock::of("ilford-hp5-plus").entry()), COUPLERS);
     assert_eq!(film::couplers(&VirtualStock::of("kodak-portra-800").entry()), [[0.0; 3]; 3]);
     let f32s = own.map(|r| r.map(|x| x as f32));
-    assert_eq!((film::stock(v).kernel.couplers, negative::development(Film::Stock(v)).couplers), (f32s, f32s));
+    assert_eq!(film::stock(v).kernel.couplers, f32s);
 
     // A grey exposes the three layers alike with no filtration: the couplers then leave it on the sheet's curve.
     let unfiltered = oni_settings::stocks::VirtualEntry { filtration: Some([0.0; 3]), ..v.entry() };

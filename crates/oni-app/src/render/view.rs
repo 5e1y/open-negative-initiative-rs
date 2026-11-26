@@ -51,11 +51,29 @@ pub trait Renderer: Send {
 
     /// Returns once the GPU has run all this renderer handed it; one with no GPU of its own waits on none.
     fn ran(&mut self) {}
+
+    /// Whether a hand holds the setting the next render follows, which waits a digital photo's full scan for its rest.
+    fn hold_scan(&mut self, _held: bool) {}
+
+    /// Whether the last render stood a digital photo's preview scan in for the full one it waits for.
+    fn provisional(&mut self) -> bool {
+        false
+    }
 }
 
 impl Renderer for Shared {
     fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         self.lock().and_then(|mut e| e.resident(negative, settings, view))
+    }
+
+    fn hold_scan(&mut self, held: bool) {
+        if let Ok(mut e) = self.lock() {
+            e.hold_scan(held);
+        }
+    }
+
+    fn provisional(&mut self) -> bool {
+        self.lock().is_ok_and(|e| e.provisional())
     }
 
     fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool, wanted: [bool; 2]) -> Option<InputHistograms> {

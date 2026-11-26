@@ -8,6 +8,7 @@ impl Engine {
     /// only its visible region, from the full frame once built, else the preview, each reduced once to
     /// the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
+        self.fitted.provisional = false;
         let (image, region, placed) = self.composed(negative, settings, view)?;
         // A pan keeps the recipe: the last render's pixels the new region still covers are copied, the rest rendered.
         let key = image.key();
@@ -46,11 +47,23 @@ impl Engine {
 
     /// The recipe `resident` materialises, the region it keeps and where it lands.
     fn composed(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Image, Option<Rect>, Option<Placed>), String> {
-        let request = Request { full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
+        let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
+        // A digital photo is read off its scan, made once while its film's settings hold, as a scanned negative is.
+        let digital = settings.mode.is_digital();
+        let (preview, scan_full) = match digital {
+            true => self.scanned(negative, settings, view.and_then(|v| v.full.as_ref()))?,
+            false => (negative.preview.clone(), view.and_then(|v| v.full.clone())),
+        };
         let Some(view) = view else {
-            let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
-            let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
+            let image = match digital {
+                true => self.pipeline.on_scan(&mut self.graph, &preview, settings, &request),
+                false => {
+                    let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
+                    self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs)
+                }
+            };
+            let image = image.map_err(|e| e.to_string())?;
             return Ok((self.proof.laid(&mut self.graph, image, settings)?, None, None));
         };
         let ratio = negative.size().0 as f64 / negative.full_width;
@@ -61,9 +74,9 @@ impl Engine {
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
         let placement = vp.placement(full, view.size);
-        let (base, base_ratio) = match &view.full {
+        let (base, base_ratio) = match &scan_full {
             Some(f) => (f.clone(), 1.0),
-            None => (negative.preview.clone(), ratio),
+            None => (preview.clone(), ratio),
         };
         let e = base.extent();
         let long = e.w.max(e.h) as usize;
@@ -83,8 +96,14 @@ impl Engine {
             false => (base, 1.0),
         };
         let request = Request { scale: reduce, ..request };
-        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
-        let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        let image = match digital {
+            true => self.pipeline.on_scan(&mut self.graph, &source, settings, &request),
+            false => {
+                let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
+                self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs)
+            }
+        };
+        let image = image.map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let extent = image.extent();
         let stretch = scale * full.0 / extent.w as f64;
@@ -109,9 +128,52 @@ impl Engine {
             height: f64::from(region.h) * stretch,
             full,
             whole: region == extent,
-            at_full_resolution: view.full.is_some(),
+            at_full_resolution: scan_full.is_some(),
         };
         Ok((image, Some(region), Some(placed)))
+    }
+
+    /// A digital photo's scan from its preview, and from its full frame when one is given; each made once while the
+    /// film's settings hold, in half floats as a decode is. Under a hand holding a film's setting the preview's scan
+    /// stands in for the full one, marked provisional, so the gesture renders at the preview's cost.
+    fn scanned(&mut self, negative: &Negative, settings: &PipelineSettings, full: Option<&Source>) -> Result<(Source, Option<Source>), String> {
+        let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
+        let image = self.pipeline.scan(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        let preview = match &self.fitted.scan {
+            Some((key, kept)) if *key == image.key() => kept.clone(),
+            _ => {
+                let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
+                self.fitted.scan = Some((image.key(), made.clone()));
+                made
+            }
+        };
+        let Some(full) = full else { return Ok((preview, None)) };
+        let image = self.pipeline.scan(&mut self.graph, full, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        if let Some((key, kept)) = &self.fitted.full_scan
+            && *key == image.key()
+        {
+            return Ok((preview, Some(kept.clone())));
+        }
+        if self.fitted.held {
+            self.fitted.provisional = true;
+            return Ok((preview, None));
+        }
+        // The last full scan goes before the next is made: two would hold twice a full frame.
+        self.fitted.full_scan = None;
+        let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
+        self.fitted.full_scan = Some((image.key(), made.clone()));
+        Ok((preview, Some(made)))
+    }
+
+    /// Whether a hand holds the setting the next render follows: a digital photo's full scan then waits for its rest.
+    pub fn hold_scan(&mut self, held: bool) {
+        self.fitted.held = held;
+    }
+
+    /// Whether the last render read the preview's scan in place of a full one it waits for.
+    pub fn provisional(&self) -> bool {
+        self.fitted.provisional
     }
 
     pub(super) fn one_texture(&mut self, image: &Image, region: Option<Rect>) -> Result<Source, String> {
@@ -158,11 +220,20 @@ impl Engine {
     pub fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Source, String> {
         let (w, h) = negative.size();
         let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
-        let request = Request { scale, full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
+        let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        // Its grain drawn for itself: the grain's plate is the canvas's, drawn for the footprints it shows.
-        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
-        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        // A digital photo's read off the scan the canvas keeps.
+        let image = match settings.mode.is_digital() {
+            true => {
+                let (preview, _) = self.scanned(negative, settings, None)?;
+                self.pipeline.on_scan(&mut self.graph, &preview, settings, &request)
+            }
+            false => {
+                let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
+                self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs)
+            }
+        };
+        let image = image.map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let key = image.key();
         if let Some((k, source)) = &self.fitted.counted
@@ -227,6 +298,12 @@ pub(crate) struct Fitting {
     before: Option<((u64, Option<Rect>), Source)>,
     /// The canvas's last renders, each with its recipe.
     shown: Vec<(u64, Source)>,
+    /// A digital photo's scans, from the preview and from the full frame, each with its recipe; whether a hand holds
+    /// the setting rendered and whether the last render stood the preview's scan in for a full one.
+    scan: Option<(u64, Source)>,
+    full_scan: Option<(u64, Source)>,
+    held: bool,
+    provisional: bool,
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ use crate::finishing;
 use crate::film::bake;
 use crate::baked::Baked;
 use crate::film::dyes;
-use crate::film::profile::{Profile, Silver};
+use crate::film::profile::Profile;
 use crate::paper::{self, bisected, film_ends, spanned};
 use oni_render::{Development, LIGHTNESS_HIGH, LIGHTNESS_LOW, LIGHTNESS_NODES, LUMA, NEGATIVE_CURVE_NODES};
 use oni_render::{Negative, Stage47, cpu};
@@ -33,9 +33,6 @@ const LIGHT_SPAN: f64 = 8.0;
 /// The film a frame's Lighting develops again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Film {
-    /// A digital photo's virtual stock, its own curves, pushed ones included; a black and white one's single layer
-    /// and the neutral film's three, uncoupled.
-    Stock(VirtualStock),
     /// A scanned colour negative's stock, by its name, read on its mean layer; the generic set on the C-41 profiles'.
     Dyes(DyeSet),
     /// A scanned black and white negative: the C-41 profiles' mean curve on its one layer, no couplers.
@@ -48,12 +45,13 @@ pub enum Film {
 }
 
 impl Film {
-    /// What `s`'s Lighting develops again on stage 4-7; a projected slide's is its stock's (`slide`).
+    /// What `s`'s Lighting develops again on stage 4-7; a projected slide's is its stock's (`slide`). A digital
+    /// photo's scan is read as a scanned negative of its film is: on its dyes' mean layer, a silver film's one curve.
     pub fn of(s: &PipelineSettings) -> Film {
         if s.mode.reads_positive() {
             Film::Light
         } else if let Some(f) = s.film() {
-            Film::Stock(f.stock)
+            if f.stock.is_silver() { Film::Silver } else { Film::Dyes(f.stock.dye_set()) }
         } else if s.mode.is_monochrome() {
             Film::Silver
         } else {
@@ -64,7 +62,6 @@ impl Film {
     /// Its file's content, which its development is kept under: an edited file develops anew.
     fn revision(self) -> u64 {
         match self {
-            Film::Stock(v) => v.entry().revision,
             Film::Dyes(d) => d.entry().revision,
             Film::Silver => DyeSet::default().entry().revision,
             Film::Light => 0,
@@ -130,23 +127,8 @@ fn tabled(le: &[f64], normal: &[[f64; 3]], after: &[[f64; 3]], couplers: [V3; 3]
 
 fn developed(film: Film) -> Development {
     match film {
-        Film::Stock(stock) if stock.entry().neutral => {
-            let k = crate::film::neutral::kernel(stock).expect("a neutral film's kernel");
-            let (le, density) = crate::film::neutral::curve(&k, NEGATIVE_CURVE_NODES);
-            developing(&le, &density, None)
-        }
-        Film::Stock(stock) if stock.is_silver() => {
-            let p = Silver::read(stock.entry().profile.as_bytes()).expect("a profile reads once its file is taken");
-            let curve: Vec<[f64; 3]> = p.density_curve.iter().map(|d| [*d; 3]).collect();
-            developing(&p.log_exposure, &curve, None)
-        }
-        Film::Stock(stock) => {
-            let entry = stock.entry();
-            let p = dyes::profile(&entry.profile);
-            developing(&p.log_exposure, &p.density_curves, Some(&crate::film::couplers(&entry)))
-        }
         // A scan's three layers are read on one curve, its stock's mean layer, each scaled to the frame's own: its windows
-        // print the frame's neutral, which every common move then keeps; the model's own neutral is a virtual film's alone.
+        // print the frame's neutral, which every common move then keeps, a digital photo's scan's as a scanned negative's.
         Film::Dyes(set) => {
             let (le, density) = match set.entry().source {
                 DyeSource::Profile(json) => {
@@ -222,8 +204,7 @@ pub fn negative(s: &PipelineSettings, k: &Stage47) -> Option<Negative> {
     let grey = anchors[2].map(|v| sense * v);
     let speed = development.normal[development.at_speed()];
     let scale = match film {
-        Film::Stock(stock) if stock.is_silver() => [1.0; 3],
-        Film::Stock(_) | Film::Dyes(_) => std::array::from_fn(|c| grey[c] / speed[c]),
+        Film::Dyes(_) => std::array::from_fn(|c| grey[c] / speed[c]),
         Film::Silver | Film::Light | Film::Slide(_) => [1.0; 3],
     };
     let span = anchors[1].map(spanned);

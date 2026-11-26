@@ -13623,7 +13623,7 @@
     "detail": "architecture.rs still listed oni-settings/src/json.rs and tests/window/extended.rs, both gone, and editors/mod.rs, now 369 lines; decode's swift_checks (466 -> 460) and pipeline's (728 -> 722) come down to their size. The files other streams may grow before the freeze (editors/tests.rs, codec_checks.rs) keep theirs. Proof: the architecture check and its twins green."
   },
   {
-    "id": 4052,
+    "id": 3871,
     "type": "test",
     "title": "The full check and the lint at the end of the film effects' plates (#3868-#3870)",
     "status": "done",
@@ -13705,5 +13705,12 @@
     "title": "Prepare the Roll: a step's body comes in from the side the walk goes",
     "status": "done",
     "detail": "RollPanel shifts the new step's body by Space.l, forward from the right and back from the left, then slides it home and fades it in on Motion.travel (Ease.firm), the next frame after it is laid; nothing waits on it."
+  },
+  {
+    "id": 3872,
+    "type": "feature",
+    "title": "A digital photo's virtual negative made once into a scan, read on as a scanned negative's; the halation red alone",
+    "status": "done",
+    "detail": "Owner's go (2026-11-26). The chain splits in two: Pipeline::scan shoots a digital photo's scene on its virtual film on the scan's own grid, before any crop or turn (healed scene lit at its film's white, film with its bloom and halation, development, scanner or slide, grain over the healed scene), and Pipeline::on_scan reads a scan as a scanned negative's frame (geometry, then the inversion, the projector or a look's print, then the finishing); Pipeline::image composes the two, one path. The engine keeps the scan once made, in half floats as a decode: from the preview always, from the full frame when the view reads it (Engine::scanned), each under its recipe's key, the last full scan let go before the next is made; under a hand holding a film's setting the preview's scan stands in and the worker renders the frame again sharp once the hand rests (Renderer::hold_scan, provisional). The histogram reads the kept scan too. Lighting on a digital photo now reads its scan as a scanned negative of its film does (Film::of: its dyes' mean layer, a silver film's one curve): Film::Stock, the virtual film's own curves developed again, is gone; a roll card still names no stock for a digital photo. The grain is back to #3861's field over the healed scene, its plate, pyramid, gains and asks gone (#3869, #3870), the scan holding it once made; the halation's glow is still drawn on the preview's plate so a full scan blurs no full frame. HALATION_COLOUR is [1, 0, 0]: the red layer, the deepest, alone takes the light the base sends back. Renders of digital photos move (geometry now after the film, Lighting as a scan's, the red halo); the two digital legacy-print fingerprints are taken anew. Checks: oni-pipeline green but stock_files' race (passes alone), oni-app's unit tests, 29 window checks on digital photos."
   }
 ]

@@ -29,10 +29,10 @@ impl Frames {
 }
 
 /// The scanned stock Lighting reads a frame's negative back through, as the pipeline runs it: a colour negative's, none
-/// in black and white, on a slide or on a digital photo, whose virtual film is its own.
+/// in black and white, on a slide or on a digital photo, whose virtual film is its own and not the roll's.
 fn read_through(s: &PipelineSettings) -> Option<DyeSet> {
     match oni_pipeline::negative::Film::of(s) {
-        oni_pipeline::negative::Film::Dyes(set) => Some(set),
+        oni_pipeline::negative::Film::Dyes(set) if s.film().is_none() => Some(set),
         _ => None,
     }
 }
