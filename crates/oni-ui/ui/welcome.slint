@@ -286,12 +286,13 @@ export component WelcomeSheet inherits Sheet {
                         spacing: Space.s;
                         opacity: Beat.at(root.t, 5.8, 1.0);
                         Label { text: @tr("ONI needs you: spread the word"); role: TextRole.heading; centred: true; wrap: word-wrap; }
+                        Label { text: @tr("Share what you make with ONI under {}.", Help.made-with); role: TextRole.note; centred: true; wrap: word-wrap; }
                         HorizontalLayout {
                             alignment: center;
                             spacing: Space.s;
                             if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
                             Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
-                            if Help.contest-open: Button { keycap: true; text: @tr("Send My Photo"); clicked => { Help.contest(); } }
+                            Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
                         }
                         HorizontalLayout {
                             alignment: center;
@@ -308,9 +309,7 @@ export component WelcomeSheet inherits Sheet {
                                 width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
                                 role: TextRole.note;
                                 centred: true;
-                                text: Help.contest-open
-                                    ? @tr("Your photo on ONI's opening screen: from December 1, every month, one photo opens ONI for everyone. Send yours through the form, or post it on Instagram with {}.", Help.contest-tag)
-                                    : @tr("Your photo on ONI's opening screen: from December 1, every month, one photo opens ONI for everyone. Post yours on Instagram with {}.", Help.contest-tag);
+                                text: @tr("Every month, the community's top five; the winning photo opens the next version of ONI for everyone, with its author's name. Anyone can enter, with a photo where no one is recognisable. One step, the form; {} to share.", Help.contest-tag);
                             }
                         }
                     }

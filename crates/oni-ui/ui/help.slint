@@ -54,9 +54,9 @@ export global Help {
     callback welcome-hurry();
     callback welcome-step(int);
     callback welcome-compare(float);
-    // The contest's hashtag, and whether its form and ONI's Instagram are known to the build.
+    // The contest's hashtag, the hashtag of any picture made with ONI, and whether ONI's Instagram is known.
     in property <string> contest-tag;
-    in property <bool> contest-open;
+    in property <string> made-with;
     in property <bool> instagram-known;
     // Whether the hall holds the Collection's gift, a page with it.
     in property <bool> kit-gift: true;

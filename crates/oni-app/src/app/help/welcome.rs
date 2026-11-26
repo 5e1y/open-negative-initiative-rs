@@ -214,11 +214,12 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());
-            // Its shader compiles off this thread: the sheet and its Skip are there at once.
+            // Its shader compiles off this thread: the sheet and its keys are there at once.
             let _ = std::thread::Builder::new().name("stage".into()).spawn(move || {
                 let mut stage = Stage::new(&device, &queue);
                 let pace = stage.pace(&device, &queue);
-                sender.send((stage, pace))
+                // A welcome closed meanwhile has dropped its end: the stage goes with this thread.
+                let _ = sender.send((stage, pace));
             });
             let timer = Timer::default();
             timer.start(TimerMode::Repeated, PACE, || {

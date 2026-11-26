@@ -28,7 +28,7 @@ fn commit(window: &MainWindow, page: usize) -> Placed {
         5 => "Enter ONI",
         _ => "Next Gift",
     };
-    common::the(window, Role::Button, &tr(word))
+    common::the(window, Role::Button, tr(word))
 }
 
 fn dot(window: &MainWindow, page: usize) -> Placed {
@@ -69,7 +69,7 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
         oni_app::language::speak(Some(language));
         help.set_welcome_page(0);
         sized(&rig, (w as u32, h as u32));
-        if common::placed(&window, Role::Button, &tr("Skip the Opening")).is_empty() {
+        if common::placed(&window, Role::Button, tr("Skip the Opening")).is_empty() {
             println!("{language:?}: the live interface reads English, judged on the app profile");
             continue;
         }
@@ -108,7 +108,7 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
     rig.window.dispatch_event(WindowEvent::PointerMoved { position });
     rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -2000.0 });
     rig.pump();
-    let moved = common::placed(&window, Role::Text, &tr(HEADLINES[5])).first().map_or(f32::INFINITY, |after| before.y - after.y);
+    let moved = common::placed(&window, Role::Text, tr(HEADLINES[5])).first().map_or(f32::INFINITY, |after| before.y - after.y);
     assert!(moved > 20.0, "900×440: the message's words scroll, {moved}");
     let key = commit(&window, 5);
     assert!(key.y + key.height <= 440.0 - MARGIN + 0.5, "900×440: the key in the window, {key:?}");
