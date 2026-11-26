@@ -13858,7 +13858,7 @@
     "type": "perf",
     "title": "ONI_BENCH=motion never waits without end: it opens any tile the gallery lays and stops, naming the step, past 30 s",
     "status": "done",
-    "detail": "It double-clicked the tile at a fixed place, which a gallery landed on its open photo far down never laid: it waited forever, logging the editor-to-gallery journey anew at each tick. It now takes any tile laid but the open photo's, records a journey once its tile is found, and a step whose window never comes ends the bench with motion: stalled, and why."
+    "detail": "It double-clicked the tile at a fixed place, which a gallery landed on its open photo far down never laid: it waited forever, logging the editor-to-gallery journey anew at each tick. It now opens a tile of the open photo's own folder (a photo of a roll never prepared opens on Prepare the Roll) through the grid's own two clicks, as the window checks do, never at a point on screen, which the grid's row laid past its edge or a window over it would miss; it waits for the disk's gestures to land, and a step whose window never comes ends the bench past 120 s with motion: stalled, and why."
   },
   {
     "id": 4014,
