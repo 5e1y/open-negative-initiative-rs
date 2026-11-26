@@ -399,6 +399,7 @@ export component MainWindow inherits AppWindow {
         }
         // A photo between its tile and the canvas, over the screen it leaves for.
         if Flight.flying: FlightView {
+            x: 0; y: 0; width: parent.width; height: parent.height;
             frame: { x: card.absolute-position.x + CardStyle.padding + Canvas.frame-x, y: card.absolute-position.y + CardStyle.padding + Canvas.frame-y, width: Canvas.frame-width, height: Canvas.frame-height };
             room: { x: card.absolute-position.x + CardStyle.padding, y: card.absolute-position.y + CardStyle.padding, width: Canvas.width, height: Canvas.height };
         }

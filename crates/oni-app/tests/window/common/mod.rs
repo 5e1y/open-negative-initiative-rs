@@ -19,6 +19,9 @@ pub struct Headless {
     pub start: Instant,
     /// How far Slint's clock runs ahead of the real one, so a check moves the timers alone.
     pub ahead: Rc<Cell<Duration>>,
+    /// Slint's clock held still, then moved by `advance` alone: a motion's steps owe nothing to the real
+    /// time a shot takes.
+    pub frozen: Rc<Cell<Option<Duration>>>,
 }
 
 struct Proxy(Arc<Mutex<Vec<Queued>>>);
@@ -40,7 +43,7 @@ impl Platform for Headless {
     }
 
     fn duration_since_start(&self) -> Duration {
-        self.start.elapsed() + self.ahead.get()
+        self.frozen.get().unwrap_or_else(|| self.start.elapsed() + self.ahead.get())
     }
 
     fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
@@ -53,6 +56,8 @@ pub struct Rig {
     pub queue: Arc<Mutex<Vec<Queued>>>,
     pub shots: PathBuf,
     pub ahead: Rc<Cell<Duration>>,
+    pub frozen: Rc<Cell<Option<Duration>>>,
+    pub start: Instant,
 }
 
 impl Rig {
@@ -78,7 +83,26 @@ impl Rig {
 
     /// Slint's clock moved `by` while the real one stands, then the timers it reached run.
     pub fn advance(&self, by: Duration) {
-        self.ahead.set(self.ahead.get() + by);
+        match self.frozen.get() {
+            Some(at) => self.frozen.set(Some(at + by)),
+            None => self.ahead.set(self.ahead.get() + by),
+        }
+        slint::platform::update_timers_and_animations();
+    }
+
+    /// Slint's clock held where it stands, `advance` alone moving it, until `thaw`.
+    pub fn freeze(&self) {
+        if self.frozen.get().is_none() {
+            self.frozen.set(Some(self.start.elapsed() + self.ahead.get()));
+        }
+        slint::platform::update_timers_and_animations();
+    }
+
+    /// Slint's clock back on the real one, never behind where it was held.
+    pub fn thaw(&self) {
+        if let Some(at) = self.frozen.take() {
+            self.ahead.set(at.saturating_sub(self.start.elapsed()).max(self.ahead.get()));
+        }
         slint::platform::update_timers_and_animations();
     }
 
@@ -187,8 +211,10 @@ pub fn rig() -> Rig {
     let window = MinimalSoftwareWindow::new(slint::platform::software_renderer::RepaintBufferType::NewBuffer);
     let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
     let ahead: Rc<Cell<Duration>> = Rc::default();
-    slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now(), ahead: ahead.clone() })).unwrap();
-    Rig { window, queue, shots, ahead }
+    let frozen: Rc<Cell<Option<Duration>>> = Rc::default();
+    let start = Instant::now();
+    slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start, ahead: ahead.clone(), frozen: frozen.clone() })).unwrap();
+    Rig { window, queue, shots, ahead, frozen, start }
 }
 
 mod launch;

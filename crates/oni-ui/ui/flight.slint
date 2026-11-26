@@ -62,8 +62,9 @@ export component FlightView {
         : root.canvas;
     // Laid where it leaves, then off: from then each place it aims at springs it there, turned back midway
     // when a gesture reverses the flight.
+    // Off once the window has drawn it where it leaves: a value set as the view is laid would not move.
     property <bool> off;
-    init => { root.off = true; }
+    Timer { interval: 1ms; running: !root.off; triggered => { root.off = true; } }
     property <Place> at: root.off ? root.to : Flight.from;
     property <int> serial: Flight.serial;
     changed serial => { Flight.landing = false; root.arrived = false; travel.restart(); }

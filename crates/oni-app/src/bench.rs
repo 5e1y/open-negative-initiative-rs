@@ -24,6 +24,7 @@
 //! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
 //! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon;
 //! `ONI_BENCH=papers` the same with the Colour tab's papers.
+//! `ONI_BENCH=motion` times the interface's frames over its journeys, laid at once and moving, at the screen's size.
 
 use crate::Store;
 use crate::app::Ctl;
@@ -47,8 +48,9 @@ mod midzoom;
 mod sweep;
 mod compare;
 mod stocks;
+mod motion;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -144,6 +146,7 @@ pub enum Mode {
     Sweep,
     Stocks,
     Papers,
+    Motion,
 }
 
 impl Mode {
@@ -179,6 +182,7 @@ pub fn requested() -> Option<Mode> {
         "sweep" => Some(Mode::Sweep),
         "stocks" => Some(Mode::Stocks),
         "papers" => Some(Mode::Papers),
+        "motion" => Some(Mode::Motion),
         _ => None,
     }
 }
@@ -240,6 +244,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Grid {
         return grid(ctl, done);
+    }
+    if mode == Mode::Motion {
+        return motion(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();
