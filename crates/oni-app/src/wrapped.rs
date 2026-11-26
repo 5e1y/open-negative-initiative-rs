@@ -11,6 +11,10 @@ pub mod share;
 /// The colours a year's palette gathers its photos around.
 pub const SWATCHES: usize = 5;
 
+/// The gold medals a frame shows, two rows of three prints; and the lines its summary holds.
+pub const GOLD_SHOWN: usize = 6;
+pub const SUMMARY_LINES: usize = 5;
+
 /// How a scene is laid on its frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Kind {
@@ -314,7 +318,7 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
             count: Some(f.gold.len()),
             caption: trn("photo earned its gold", "photos earned their gold", f.gold.len() as u64),
             note: others,
-            photos: f.gold.iter().take(9).cloned().collect(),
+            photos: f.gold.iter().take(GOLD_SHOWN).cloned().collect(),
             ..Default::default()
         });
     }
@@ -479,6 +483,7 @@ fn summary(year: &Year, persona: String) -> Scene {
     if f.dust > 0 {
         lines.push(line(tr("Dust healed"), figure(f.dust)));
     }
+    lines.truncate(SUMMARY_LINES);
     Scene {
         kind: Kind::Summary,
         eyebrow: tr!("My {year} on film", year = year.year),

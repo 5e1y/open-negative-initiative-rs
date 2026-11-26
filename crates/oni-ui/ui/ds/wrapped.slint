@@ -1,7 +1,9 @@
-// The year on film's pieces: the black ground, a half-frame strip with its perforations and edge print,
-// and a scene laid on one frame of it, 9 by 16, every size a share of the frame so it draws alike at any.
+// The year on film's pieces: the black ground, a half-frame strip with its perforations and edge print, a
+// scene laid on one frame of it, 3 by 4, and the card a frame is saved as: the frame in its piece of the
+// strip, 9 by 16 as a phone's story takes it. Every size is a share of the frame's width, so each draws alike at any.
 import { DS } from "tokens.slint";
 import { Colour, Motion, Type } from "theme.slint";
+import { Icons } from "icons.slint";
 import { Badge, BadgeTone } from "badge.slint";
 
 export enum WrappedKind { title, figure, bars, film, lines, photos, palette, persona, summary, farewell }
@@ -48,18 +50,21 @@ export global WrappedStyle {
     out property <color> title-ink: Colour.selected;
     // A print's white border, a paper's rather than a screen's.
     out property <color> paper: #f1ede4;
-    // A frame is 360 by 640 units; the strip adds a rebate above and under it, and a frame line between two.
+    // A frame is 360 by 480 units, a half-frame's 3 by 4; the strip adds a rebate above and under it, which
+    // makes a frame's piece of it 9 by 16, and a frame line between two.
     out property <float> frame-width: 360;
-    out property <float> frame-height: 640;
-    out property <float> rebate: 58;
+    out property <float> frame-height: 480;
+    out property <float> rebate: 80;
     out property <float> frame-line: 16;
     out property <float> pitch: root.frame-width + root.frame-line;
     out property <float> strip-height: root.frame-height + 2 * root.rebate;
     // Half-frame: four perforations a frame.
     out property <int> perforations: 4;
-    out property <float> hole-width: 34;
-    out property <float> hole-height: 26;
-    out property <float> hole-inset: 7;
+    out property <float> hole-width: 38;
+    out property <float> hole-height: 30;
+    out property <float> hole-inset: 12;
+    // A story's players cover its top and bottom 14 %: the rebates lie there, and nothing of a scene.
+    out property <float> brand-height: 58;
     // The frames beside the one in the gate, dimmed.
     out property <float> beside: 0.45;
     // The film's advance to the next frame, landing with a short overrun as a lever's stroke does.
@@ -73,12 +78,18 @@ export global WrappedStyle {
     out property <duration> frame-time: 16ms;
     // The room kept above the strip for the progress, and under it for the keys.
     out property <length> chrome-above: 44px;
-    out property <length> chrome-under: 84px;
+    out property <length> chrome-under: 92px;
     out property <length> progress-height: 3px;
     out property <length> progress-gap: 4px;
     out property <length> progress-width: 520px;
     out property <color> progress-idle: Colour.track;
     out property <color> progress-done: Colour.ink;
+    // The share screen's cards: the room its words and keys take, and the gap between two cards.
+    out property <length> share-words: 150px;
+    out property <length> share-keys: 96px;
+    out property <float> share-gap: 28;
+    out property <color> share-ring: Colour.selected;
+    out property <length> share-heading: 34px;
 }
 
 export component WrappedGround inherits Rectangle {
@@ -120,13 +131,13 @@ component Print inherits Rectangle {
     transform-rotation: root.tilt;
     transform-origin: { x: self.width / 2, y: self.height / 2 };
     drop-shadow-color: Colour.scrim;
-    drop-shadow-blur: 14 * root.u;
-    drop-shadow-offset-y: 6 * root.u;
+    drop-shadow-blur: 12 * root.u;
+    drop-shadow-offset-y: 5 * root.u;
     Image {
-        x: 5 * root.u;
-        y: 5 * root.u;
-        width: parent.width - 10 * root.u;
-        height: parent.height - 10 * root.u;
+        x: 4 * root.u;
+        y: 4 * root.u;
+        width: parent.width - 8 * root.u;
+        height: parent.height - 8 * root.u;
         source: root.source;
         image-fit: cover;
     }
@@ -146,7 +157,7 @@ component Words inherits Text {
 
 component Figure inherits Text {
     in property <length> u;
-    in property <float> size: 72;
+    in property <float> size: 60;
     in property <float> shown: 1;
     font-family: DS.typo-wrapped-figure-family;
     font-weight: DS.typo-wrapped-figure-weight;
@@ -162,16 +173,16 @@ component LineRow inherits Rectangle {
     in property <WrappedLine> line;
     in property <length> u;
     in property <float> shown: 1;
-    height: (root.line.share > 0 ? 34 : 26) * root.u;
+    height: (root.line.share > 0 ? 30 : 22) * root.u;
     opacity: root.shown;
     HorizontalLayout {
         y: 0;
-        height: 20 * root.u;
+        height: 18 * root.u;
         spacing: 10 * root.u;
         Text {
             text: root.line.label;
             font-family: Type.family;
-            font-size: 13 * root.u;
+            font-size: 12.5 * root.u;
             color: Colour.ink-secondary;
             vertical-alignment: center;
         }
@@ -179,7 +190,7 @@ component LineRow inherits Rectangle {
             horizontal-stretch: 1;
             text: root.line.value;
             font-family: Type.family;
-            font-size: 13 * root.u;
+            font-size: 12.5 * root.u;
             font-weight: Type.strong;
             color: Colour.ink;
             horizontal-alignment: right;
@@ -189,7 +200,7 @@ component LineRow inherits Rectangle {
     }
     if root.line.share > 0: Rectangle {
         x: 0;
-        y: 24 * root.u;
+        y: 22 * root.u;
         width: parent.width;
         height: 3 * root.u;
         border-radius: self.height / 2;
@@ -204,25 +215,71 @@ component LineRow inherits Rectangle {
     }
 }
 
+// Who made the picture, at a frame's foot: ONI's mark, and what to tag when it is posted.
+component Brand inherits Rectangle {
+    in property <length> u;
+    in property <string> hashtag;
+    in property <string> account;
+    height: WrappedStyle.brand-height * root.u;
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: max(1px, 0.75 * root.u);
+        background: Colour.separator;
+    }
+    Image {
+        x: 0;
+        y: 17 * root.u;
+        height: 34 * root.u;
+        width: self.height * self.source.width / max(1, self.source.height);
+        source: Icons.oni-logo;
+        colorize: Colour.ink;
+        image-fit: contain;
+    }
+    Text {
+        x: 0;
+        y: 15 * root.u;
+        width: parent.width;
+        text: root.hashtag;
+        font-family: Type.family;
+        font-size: 16 * root.u;
+        font-weight: Type.bold;
+        color: WrappedStyle.gold;
+        horizontal-alignment: right;
+    }
+    Text {
+        x: 0;
+        y: 37 * root.u;
+        width: parent.width;
+        text: root.account;
+        font-family: Type.family;
+        font-size: 11.5 * root.u;
+        font-weight: Type.strong;
+        color: Colour.ink-secondary;
+        horizontal-alignment: right;
+    }
+}
+
 // One scene on its frame. `told` runs 0 to 1 as it tells itself; each part rises in over its own stretch of it.
 export component WrappedFrame inherits Rectangle {
     in property <WrappedScene> scene;
     // The frame's unit: its width over 360.
     in property <length> u;
     in property <float> told: 1;
-    // The year and the scene's number, as the frame's own edge signs a card saved alone.
-    in property <string> year;
-    in property <int> number;
-    // Who told it, in the edge's capitals.
-    in property <string> signature;
+    // What a posted card is tagged with, and whom.
+    in property <string> hashtag;
+    in property <string> account;
     pure callback counted(int) -> string;
     width: WrappedStyle.frame-width * root.u;
     height: WrappedStyle.frame-height * root.u;
     background: WrappedStyle.frame;
     border-radius: 6 * root.u;
     clip: true;
-    property <length> pad: 28 * root.u;
+    property <length> pad: 26 * root.u;
     property <length> inner: root.width - 2 * root.pad;
+    // Where a scene ends: the brand's band lies under it.
+    property <length> foot: root.height - (WrappedStyle.brand-height + 14) * root.u;
     pure function eased(x: float) -> float {
         1 - Math.pow(1 - clamp(x, 0, 1), 3)
     }
@@ -236,13 +293,13 @@ export component WrappedFrame inherits Rectangle {
     // The eyebrow, every scene's but the title's and the farewell's.
     if root.scene.kind != WrappedKind.title && root.scene.kind != WrappedKind.farewell: Text {
         x: root.pad;
-        y: 40 * root.u;
+        y: 22 * root.u;
         width: root.inner;
         text: root.scene.eyebrow;
         font-family: Type.family;
-        font-size: 12 * root.u;
+        font-size: 11 * root.u;
         font-weight: Type.strong;
-        letter-spacing: 1.4 * root.u;
+        letter-spacing: 1.3 * root.u;
         color: Colour.ink-secondary;
         horizontal-alignment: center;
         opacity: root.rise(0, 0.2);
@@ -252,28 +309,28 @@ export component WrappedFrame inherits Rectangle {
         for photo[i] in root.scene.photos: Print {
             u: root.u;
             source: photo;
-            width: 190 * root.u;
-            height: 140 * root.u;
-            x: (root.width - self.width) / 2 + (i - 1) * 46 * root.u * root.rise(0.1, 0.6);
-            y: 86 * root.u + mod(i, 2) * 22 * root.u;
+            width: 156 * root.u;
+            height: 114 * root.u;
+            x: (root.width - self.width) / 2 + (i - 1) * 40 * root.u * root.rise(0.1, 0.6);
+            y: 40 * root.u + mod(i, 2) * 18 * root.u;
             tilt: (i - 1) * 7deg * root.rise(0.1, 0.6);
             shown: root.rise(0.05 + i * 0.08, 0.4 + i * 0.08);
         }
         for line[i] in [@tr("Your Year"), @tr("On Film")]: Text {
             x: root.pad;
-            y: (root.has-photo ? 290 : 220) * root.u + i * 56 * root.u + (1 - root.rise(0.2 + i * 0.1, 0.7 + i * 0.1)) * 18 * root.u;
+            y: (root.has-photo ? 192 : 118) * root.u + i * 48 * root.u + (1 - root.rise(0.2 + i * 0.1, 0.7 + i * 0.1)) * 16 * root.u;
             width: root.inner;
             text: line;
             font-family: DS.typo-wrapped-title-family;
             font-weight: DS.typo-wrapped-title-weight;
-            font-size: 46 * root.u;
+            font-size: 40 * root.u;
             color: WrappedStyle.title-ink;
             horizontal-alignment: center;
             opacity: root.rise(0.2 + i * 0.1, 0.7 + i * 0.1);
         }
         // The seal keeps its own size in points: it is scaled with the frame about its centre.
         Rectangle {
-            y: (root.has-photo ? 438 : 368) * root.u;
+            y: (root.has-photo ? 312 : 238) * root.u;
             height: seal.preferred-height;
             opacity: root.rise(0.5, 0.9);
             transform-scale: root.u / 0.75px;
@@ -286,9 +343,9 @@ export component WrappedFrame inherits Rectangle {
         Words {
             u: root.u;
             x: root.pad;
-            y: 540 * root.u;
+            y: root.foot - 44 * root.u;
             width: root.inner;
-            size: 11;
+            size: 10.5;
             text: root.scene.note;
             color: Colour.ink-secondary;
             shown: root.rise(0.7, 1);
@@ -297,17 +354,19 @@ export component WrappedFrame inherits Rectangle {
 
     if root.plain || root.scene.kind == WrappedKind.photos: plain := Rectangle {
         property <bool> grid: root.scene.kind == WrappedKind.photos;
-        property <int> columns: root.scene.photos.length <= 4 ? 2 : 3;
+        property <int> columns: root.scene.photos.length <= 2 ? 2 : 3;
         property <length> cell: (root.inner - (self.columns - 1) * 8 * root.u) / self.columns;
-        property <length> photos-height: !root.has-photo ? 0px : self.grid ? ceil(root.scene.photos.length / self.columns) * (self.cell + 8 * root.u) : 236 * root.u;
-        property <length> top: !root.has-photo ? 190 * root.u : self.grid ? 78 * root.u : 92 * root.u;
+        property <length> photos-height: !root.has-photo ? 0px : self.grid ? ceil(root.scene.photos.length / self.columns) * (self.cell * 0.8 + 8 * root.u) : 184 * root.u;
+        property <length> top: !root.has-photo ? 120 * root.u : 52 * root.u;
+        // A row the photos do not fill is centred.
+        property <length> left: (root.inner - min(root.scene.photos.length, self.columns) * (self.cell + 8 * root.u) + 8 * root.u) / 2;
         if root.has-photo && !plain.grid: Print {
             u: root.u;
             source: root.scene.photos[0];
-            x: root.pad + 6 * root.u;
+            x: root.pad + 8 * root.u;
             y: plain.top;
-            width: root.inner - 12 * root.u;
-            height: 220 * root.u;
+            width: root.inner - 16 * root.u;
+            height: 172 * root.u;
             tilt: -1.6deg * root.rise(0, 0.5);
             shown: root.rise(0, 0.35);
         }
@@ -320,33 +379,33 @@ export component WrappedFrame inherits Rectangle {
                 u: root.u;
                 source: photo;
                 width: plain.cell;
-                height: plain.cell;
-                x: mod(i, plain.columns) * (plain.cell + 8 * root.u);
-                y: floor(i / plain.columns) * (plain.cell + 8 * root.u) + (1 - self.shown) * 14 * root.u;
+                height: plain.cell * 0.8;
+                x: plain.left + mod(i, plain.columns) * (plain.cell + 8 * root.u);
+                y: floor(i / plain.columns) * (self.height + 8 * root.u) + (1 - self.shown) * 12 * root.u;
                 shown: root.rise(0.1 + i * 0.06, 0.4 + i * 0.06);
             }
         }
         VerticalLayout {
             x: root.pad;
-            y: plain.top + plain.photos-height + 14 * root.u;
+            y: plain.top + plain.photos-height + 8 * root.u;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 8 * root.u;
+            spacing: 4 * root.u;
             Figure {
                 u: root.u;
-                size: plain.grid && root.scene.photos.length > 6 ? 48 : 72;
+                size: plain.grid ? 44 : 60;
                 text: root.figure-text;
                 shown: root.rise(0.1, 0.45);
             }
             Words {
                 u: root.u;
-                size: 16;
+                size: 15;
                 text: root.scene.caption;
                 shown: root.rise(0.3, 0.65);
             }
             if root.scene.note != "": Words {
                 u: root.u;
-                size: 12.5;
+                size: 12;
                 text: root.scene.note;
                 color: Colour.ink-secondary;
                 shown: root.rise(0.5, 0.9);
@@ -356,23 +415,24 @@ export component WrappedFrame inherits Rectangle {
 
     if root.scene.kind == WrappedKind.bars: chart := Rectangle {
         property <bool> spread: root.scene.marks.length != root.scene.bars.length;
-        property <length> chart-height: 170 * root.u;
+        property <length> chart-top: 170 * root.u;
+        property <length> chart-height: 138 * root.u;
         property <length> step: root.inner / max(1, root.scene.bars.length);
         VerticalLayout {
             x: root.pad;
-            y: 84 * root.u;
+            y: 50 * root.u;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 8 * root.u;
+            spacing: 4 * root.u;
             Figure {
                 u: root.u;
-                size: root.scene.count > 0 ? 72 : 46;
+                size: root.scene.count > 0 ? 58 : 40;
                 text: root.figure-text;
                 shown: root.rise(0.05, 0.4);
             }
             Words {
                 u: root.u;
-                size: 16;
+                size: 15;
                 text: root.scene.caption;
                 shown: root.rise(0.2, 0.55);
             }
@@ -382,18 +442,18 @@ export component WrappedFrame inherits Rectangle {
             x: root.pad + i * chart.step + chart.step * 0.14;
             width: chart.step * 0.72;
             height: max(2 * root.u, bar * chart.chart-height * self.grown);
-            y: 270 * root.u + chart.chart-height - self.height;
+            y: chart.chart-top + chart.chart-height - self.height;
             border-radius: min(3 * root.u, self.width / 2);
             background: i == root.scene.lit ? WrappedStyle.gold : Colour.track-fill;
         }
         for mark[i] in root.scene.marks: Text {
             property <length> at: chart.spread ? root.inner * i / max(1, root.scene.marks.length - 1) : (i + 0.5) * chart.step;
             x: root.pad + self.at - 20 * root.u;
-            y: 270 * root.u + chart.chart-height + 8 * root.u;
+            y: chart.chart-top + chart.chart-height + 7 * root.u;
             width: 40 * root.u;
             text: mark;
             font-family: Type.family;
-            font-size: 10 * root.u;
+            font-size: 9.5 * root.u;
             color: !chart.spread && i == root.scene.lit ? WrappedStyle.gold : Colour.ink-secondary;
             horizontal-alignment: center;
             opacity: root.rise(0.3, 0.7);
@@ -401,9 +461,9 @@ export component WrappedFrame inherits Rectangle {
         Words {
             u: root.u;
             x: root.pad;
-            y: 500 * root.u;
+            y: chart.chart-top + chart.chart-height + 32 * root.u;
             width: root.inner;
-            size: 12.5;
+            size: 12;
             text: root.scene.note;
             color: Colour.ink-secondary;
             shown: root.rise(0.6, 1);
@@ -412,13 +472,13 @@ export component WrappedFrame inherits Rectangle {
 
     if root.scene.kind == WrappedKind.film || root.scene.kind == WrappedKind.lines: listed := Rectangle {
         property <bool> film: root.scene.kind == WrappedKind.film;
-        property <length> top: self.film ? 252 * root.u : 104 * root.u;
+        property <length> top: self.film ? 152 * root.u : 58 * root.u;
         property <bool> counts: root.scene.count > 0;
         if listed.film && root.scene.has-artwork: Image {
             x: (root.width - self.width) / 2;
-            y: 82 * root.u + (1 - root.rise(0, 0.45)) * 24 * root.u;
-            width: 150 * root.u;
-            height: 150 * root.u;
+            y: 44 * root.u + (1 - root.rise(0, 0.45)) * 20 * root.u;
+            width: 104 * root.u;
+            height: 104 * root.u;
             source: root.scene.artwork;
             image-fit: contain;
             opacity: root.rise(0, 0.35);
@@ -428,20 +488,20 @@ export component WrappedFrame inherits Rectangle {
             y: listed.top;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 10 * root.u;
+            spacing: 6 * root.u;
             if root.figure-text != "": Figure {
                 u: root.u;
-                size: listed.counts ? 64 : 34;
+                size: listed.counts ? 54 : 30;
                 text: root.figure-text;
                 shown: root.rise(0.1, 0.45);
             }
             if root.scene.caption != "": Words {
                 u: root.u;
-                size: 15;
+                size: 14;
                 text: root.scene.caption;
                 shown: root.rise(0.25, 0.6);
             }
-            Rectangle { height: 14 * root.u; }
+            Rectangle { height: 8 * root.u; }
             for line[i] in root.scene.lines: LineRow {
                 u: root.u;
                 line: line;
@@ -451,9 +511,9 @@ export component WrappedFrame inherits Rectangle {
         Words {
             u: root.u;
             x: root.pad;
-            y: 560 * root.u;
+            y: root.foot - 22 * root.u;
             width: root.inner;
-            size: 12.5;
+            size: 12;
             text: root.scene.note;
             color: Colour.ink-secondary;
             shown: root.rise(0.6, 1);
@@ -461,10 +521,10 @@ export component WrappedFrame inherits Rectangle {
     }
 
     if root.scene.kind == WrappedKind.palette: colours := Rectangle {
-        property <length> band-height: 250 * root.u;
+        property <length> band-height: 190 * root.u;
         Rectangle {
             x: root.pad;
-            y: 92 * root.u;
+            y: 52 * root.u;
             width: root.inner;
             height: colours.band-height;
             border-radius: 4 * root.u;
@@ -483,19 +543,19 @@ export component WrappedFrame inherits Rectangle {
         }
         VerticalLayout {
             x: root.pad;
-            y: 374 * root.u;
+            y: 262 * root.u;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 14 * root.u;
+            spacing: 10 * root.u;
             Figure {
                 u: root.u;
-                size: 36;
+                size: 32;
                 text: root.scene.figure;
                 shown: root.rise(0.4, 0.8);
             }
             Words {
                 u: root.u;
-                size: 12.5;
+                size: 12;
                 text: root.scene.caption;
                 color: Colour.ink-secondary;
                 shown: root.rise(0.6, 1);
@@ -506,34 +566,34 @@ export component WrappedFrame inherits Rectangle {
     if root.scene.kind == WrappedKind.persona: Rectangle {
         VerticalLayout {
             x: root.pad;
-            y: 150 * root.u + (1 - root.rise(0.15, 0.7)) * 20 * root.u;
+            y: 66 * root.u + (1 - root.rise(0.15, 0.7)) * 18 * root.u;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 22 * root.u;
+            spacing: 10 * root.u;
             Figure {
                 u: root.u;
-                size: 46;
+                size: 42;
                 color: WrappedStyle.gold;
                 text: root.scene.figure;
                 shown: root.rise(0.15, 0.6);
             }
             Words {
                 u: root.u;
-                size: 17;
+                size: 16;
                 text: root.scene.caption;
                 shown: root.rise(0.4, 0.8);
             }
-            Rectangle { height: 10 * root.u; }
+            Rectangle { height: 6 * root.u; }
             Words {
                 u: root.u;
-                size: 12.5;
+                size: 12;
                 text: root.scene.note;
                 color: Colour.ink-secondary;
                 shown: root.rise(0.55, 0.95);
             }
             for line[i] in root.scene.lines: Words {
                 u: root.u;
-                size: 12.5;
+                size: 12;
                 text: @tr("with a touch of {}", line.label);
                 color: Colour.ink-secondary;
                 shown: root.rise(0.7, 1);
@@ -543,31 +603,32 @@ export component WrappedFrame inherits Rectangle {
 
     if root.scene.kind == WrappedKind.summary: recap := Rectangle {
         property <length> cell: (root.inner - 8 * root.u) / 2;
+        property <length> print-height: 78 * root.u;
         property <int> rows: ceil(min(4, root.scene.photos.length) / 2);
-        property <length> photos-height: self.rows * (self.cell * 0.72 + 8 * root.u);
+        property <length> photos-height: self.rows * (self.print-height + 8 * root.u);
         for photo[i] in root.scene.photos: Print {
             u: root.u;
             source: photo;
             width: recap.cell;
-            height: recap.cell * 0.72;
+            height: recap.print-height;
             x: root.pad + mod(i, 2) * (recap.cell + 8 * root.u);
-            y: 74 * root.u + floor(i / 2) * (self.height + 8 * root.u);
+            y: 48 * root.u + floor(i / 2) * (self.height + 8 * root.u);
             shown: root.rise(0.05 + i * 0.06, 0.4 + i * 0.06);
         }
         VerticalLayout {
             x: root.pad;
-            y: 84 * root.u + recap.photos-height;
+            y: 50 * root.u + recap.photos-height;
             width: root.inner;
             height: self.preferred-height;
-            spacing: 4 * root.u;
+            spacing: 2 * root.u;
             Figure {
                 u: root.u;
-                size: 30;
+                size: 26;
                 color: WrappedStyle.gold;
                 text: root.scene.figure;
                 shown: root.rise(0.3, 0.7);
             }
-            Rectangle { height: 8 * root.u; }
+            Rectangle { height: 4 * root.u; }
             for line[i] in root.scene.lines: LineRow {
                 u: root.u;
                 line: line;
@@ -576,9 +637,9 @@ export component WrappedFrame inherits Rectangle {
         }
         if root.scene.swatches.length > 0: Rectangle {
             x: root.pad;
-            y: 572 * root.u;
+            y: root.foot - 12 * root.u;
             width: root.inner * root.rise(0.6, 1);
-            height: 10 * root.u;
+            height: 8 * root.u;
             border-radius: self.height / 2;
             clip: true;
             HorizontalLayout {
@@ -592,45 +653,31 @@ export component WrappedFrame inherits Rectangle {
 
     if root.scene.kind == WrappedKind.farewell: VerticalLayout {
         padding: root.pad;
+        padding-bottom: root.height - root.foot;
         spacing: 12 * root.u;
         alignment: center;
         Figure {
             u: root.u;
-            size: 40;
+            size: 38;
             color: WrappedStyle.title-ink;
             text: root.scene.eyebrow;
             shown: root.rise(0.1, 0.6);
         }
         Words {
             u: root.u;
-            size: 18;
+            size: 17;
             text: root.scene.caption;
             shown: root.rise(0.45, 0.9);
         }
     }
 
-    // The frame's own edge: who told it, the year and its number, so a card saved alone is signed.
-    Text {
+    Brand {
         x: root.pad;
-        y: root.height - 30 * root.u;
-        text: root.signature;
-        font-family: Type.family;
-        font-size: 8 * root.u;
-        font-weight: Type.bold;
-        letter-spacing: 1.2 * root.u;
-        color: Colour.edge-print;
-    }
-    Text {
-        x: root.pad;
-        y: root.height - 30 * root.u;
+        y: root.foot;
         width: root.inner;
-        text: root.year + "  \u{25b8}  " + (root.number < 10 ? "0" : "") + root.number;
-        font-family: Type.family;
-        font-size: 8 * root.u;
-        font-weight: Type.bold;
-        letter-spacing: 1.2 * root.u;
-        color: Colour.edge-print;
-        horizontal-alignment: right;
+        u: root.u;
+        hashtag: root.hashtag;
+        account: root.account;
     }
 }
 
@@ -650,35 +697,110 @@ export component WrappedFilm inherits Rectangle {
         y: self.under ? root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height) * root.u : WrappedStyle.hole-inset * root.u;
         width: WrappedStyle.hole-width * root.u;
         height: WrappedStyle.hole-height * root.u;
-        border-radius: 5 * root.u;
+        border-radius: 6 * root.u;
         background: WrappedStyle.ground;
     }
     Text {
-        x: 10 * root.u;
-        y: (WrappedStyle.hole-inset + WrappedStyle.hole-height + 5) * root.u;
+        x: 12 * root.u;
+        y: (WrappedStyle.hole-inset + WrappedStyle.hole-height + 10) * root.u;
         text: root.edge;
         font-family: Type.family;
-        font-size: 10 * root.u;
+        font-size: 11 * root.u;
         font-weight: Type.bold;
-        letter-spacing: 1.5 * root.u;
+        letter-spacing: 1.6 * root.u;
         color: Colour.edge-print;
     }
     Text {
-        x: 10 * root.u;
-        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 20) * root.u;
+        x: 12 * root.u;
+        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 26) * root.u;
         text: root.number < 1 ? "" : "\u{25b8} " + root.number;
         font-family: Type.family;
-        font-size: 12 * root.u;
+        font-size: 13 * root.u;
         font-weight: Type.bold;
         color: Colour.edge-print;
     }
     Text {
         x: root.width / 2;
-        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 20) * root.u;
+        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 26) * root.u;
         text: root.number < 1 ? "" : "" + root.number + "A";
         font-family: Type.family;
-        font-size: 12 * root.u;
+        font-size: 13 * root.u;
         font-weight: Type.bold;
         color: Colour.edge-print;
+    }
+}
+
+// A scene as it is saved: its frame in its own piece of the strip, 9 by 16, told whole.
+export component WrappedCard inherits Rectangle {
+    in property <WrappedScene> scene;
+    in property <length> u;
+    in property <int> number;
+    in property <string> edge;
+    in property <string> hashtag;
+    in property <string> account;
+    pure callback counted(int) -> string;
+    width: WrappedStyle.frame-width * root.u;
+    height: WrappedStyle.strip-height * root.u;
+    clip: true;
+    WrappedFilm {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        u: root.u;
+        number: root.number;
+        edge: root.edge;
+    }
+    WrappedFrame {
+        x: 0;
+        y: WrappedStyle.rebate * root.u;
+        u: root.u;
+        scene: root.scene;
+        hashtag: root.hashtag;
+        account: root.account;
+        told: 1;
+        counted(n) => { root.counted(n) }
+    }
+}
+
+// The share screen's heading, in the title's face.
+export component WrappedHeading inherits Text {
+    font-family: DS.typo-wrapped-title-family;
+    font-weight: DS.typo-wrapped-title-weight;
+    font-size: WrappedStyle.share-heading;
+    color: WrappedStyle.title-ink;
+    horizontal-alignment: center;
+}
+
+// A card of the share screen: the saved card small, ringed under the pointer, saved alone by a click.
+export component WrappedPick inherits Rectangle {
+    in property <WrappedScene> scene;
+    in property <length> u;
+    in property <int> number;
+    in property <string> edge;
+    in property <string> hashtag;
+    in property <string> account;
+    pure callback counted(int) -> string;
+    callback picked();
+    width: card.width;
+    height: card.height;
+    card := WrappedCard {
+        u: root.u;
+        scene: root.scene;
+        number: root.number;
+        edge: root.edge;
+        hashtag: root.hashtag;
+        account: root.account;
+        counted(n) => { root.counted(n) }
+    }
+    Rectangle {
+        border-width: touch.has-hover ? max(2px, 6 * root.u) : 0px;
+        border-color: WrappedStyle.share-ring;
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        accessible-role: button;
+        accessible-label: @tr("Save card {}", root.number);
+        accessible-action-default => { root.picked(); }
+        clicked => { root.picked(); }
     }
 }

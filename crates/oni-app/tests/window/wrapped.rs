@@ -131,44 +131,74 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert_eq!(wrapped.get_index(), 3);
     wrapped.set_playing(false);
 
-    // Every scene saved as a card: a 9 by 16 JPEG of its frame alone, the story left where it stood.
+    // Every scene saved as a card: a 1080 by 1920 JPEG of its frame in its piece of the strip, taken a
+    // window's worth at a time, the story left where it stood.
     let cards = app.root.join("Cards");
-    std::fs::create_dir_all(&cards).unwrap();
-    let written = |all: bool| {
+    // One card a turn of the loop: the window stays live while they are taken, encoded and written.
+    let written = |scene: Option<usize>| {
         let (tx, rx) = std::sync::mpsc::channel();
-        ctl.save_wrapped_into(&cards, all, move |written| tx.send(written).unwrap());
-        rx.recv_timeout(Duration::from_secs(60)).unwrap().unwrap()
+        ctl.save_wrapped_into(&cards, scene, move |written| tx.send(written).unwrap());
+        let got = std::cell::RefCell::new(None);
+        rig.until("the cards written", Duration::from_secs(120), || {
+            let mut got = got.borrow_mut();
+            *got = got.take().or_else(|| rx.try_recv().ok());
+            got.is_some()
+        });
+        got.into_inner().unwrap().unwrap()
     };
-    let saved = written(true);
+    let saved = written(None);
     assert_eq!(saved.len(), story.len());
     assert_eq!(saved[0].file_name().unwrap().to_string_lossy(), format!("ONI Wrapped {year} - 01.jpg"));
     assert_eq!((wrapped.get_index(), wrapped.get_still()), (3, false));
     let size = w.window().size();
-    for path in &saved {
+    assert!(size.height < 1920, "the card is taller than the window: it is laid from several pictures of it");
+    assert!(wrapped.get_view_y() > 0.0, "the window holds its menu bar above the view, which no card shows");
+    for (i, path) in saved.iter().enumerate() {
         let mut decoder = jpeg_decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(path).unwrap()));
         let pixels = decoder.decode().unwrap();
         let info = decoder.info().unwrap();
-        assert_eq!(u32::from(info.width) * 16, u32::from(info.height) * 9, "9 by 16");
-        assert!(u32::from(info.height) == size.height / 16 * 16 || u32::from(info.width) == size.width / 9 * 9, "as large as the window holds");
-        // The frame's ground fills the card to its corners; the black around the strip is not in it.
-        let corner = &pixels[..3];
-        assert!(corner.iter().any(|c| *c > 12), "{corner:?}");
-    }
-    for (i, path) in saved.iter().enumerate() {
+        assert_eq!((info.width, info.height), (1080, 1920), "a story's picture");
+        let at = |x: usize, y: usize| &pixels[(y * 1080 + x) * 3..(y * 1080 + x) * 3 + 3];
+        // The strip's rebate above and under, the frame between, to the card's last row: no window's
+        // worth left black. The frame is lighter than the film, and both than the black of a hole.
+        let lit = |p: &[u8]| p.iter().map(|c| u32::from(*c)).sum::<u32>();
+        let (film, frame, foot) = (lit(at(6, 8)), lit(at(6, 900)), lit(at(6, 1912)));
+        assert!(film > 30 && foot > 30 && frame > film, "card {}: film {film}, frame {frame}, foot {foot}", i + 1);
+        // The brand's band lies inside a story's safe area, above its last 14 %: the mark's ink is there.
+        let band = (1500..1640).flat_map(|y| (80..400).map(move |x| (x, y))).filter(|(x, y)| lit(at(*x, *y)) > 450).count();
+        assert!(band > 200, "card {}: ONI's mark, {band} pixels of its ink", i + 1);
         std::fs::copy(path, rig.shots.join(format!("wrapped-card-{:02}.jpg", i + 1))).unwrap();
     }
-    let one = written(false);
+    let one = written(Some(3));
     assert_eq!(one.len(), 1);
-    assert_eq!(one[0].file_name().unwrap().to_string_lossy(), format!("ONI Wrapped {year} - 04 (2).jpg"), "twin: the card saved before is not replaced");
+    assert_eq!(one[0].file_name().unwrap().to_string_lossy(), format!("ONI Wrapped {year} - 04.jpg"), "saved again, it takes its own place");
+    assert_eq!(std::fs::read_dir(&cards).unwrap().count(), story.len(), "twin: no second file beside the first");
 
-    // Past the last scene it closes, as Esc does.
-    for _ in 0..story.len() {
+    // A card copied is on the pasteboard as a picture any app pastes.
+    assert_eq!(ctl.board_picture(), None);
+    ctl.copy_wrapped(3);
+    rig.until("the card on the pasteboard", Duration::from_secs(60), || ctl.board_picture().is_some());
+    assert_eq!(&ctl.board_picture().unwrap()[..4], b"II*\0", "a TIFF");
+    assert_eq!(wrapped.get_notice().as_str(), "Card copied: paste it where you post.");
+
+    // Past the last scene every card is laid out to share; back returns to the story, forward leaves.
+    for _ in wrapped.get_index() as usize..story.len() {
         wrapped.invoke_forward();
     }
+    assert!(wrapped.get_shown() && wrapped.get_sharing());
+    assert_eq!(wrapped.get_index() as usize, story.len() - 1);
+    rig.settle();
+    println!("shot {}", rig.shot("wrapped-share").display());
+    rig.key(&key(Key::LeftArrow));
+    assert!(!wrapped.get_sharing(), "twin: back from the share screen is the last scene again");
+    rig.key(&key(Key::RightArrow));
+    assert!(wrapped.get_sharing());
+    rig.key(&key(Key::RightArrow));
     assert!(!wrapped.get_shown());
     ctl.act(oni_app::Act::Wrapped);
     rig.until("the summary again", Duration::from_secs(20), || wrapped.get_shown());
     wrapped.set_playing(false);
+    assert!(!wrapped.get_sharing(), "it opens on its story");
     // Drawn once, as a person sees it before pressing: the view takes the keyboard as it is laid.
     rig.shot("wrapped-again");
     assert!(!shell.window.get_keys_focused(), "the summary holds the keyboard");

@@ -258,7 +258,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
   leaves `Depth.lip-reach` under it.
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it) and
   `TipCard` (a tooltip) are `Outward`s; the year on film is a half-frame strip, `WrappedFilm` under flat
-  `WrappedFrame`s whose every size is a share of the frame's width (`u`), so a frame draws alike at any size; `HelpCard` is a floating `Raised`; the canvas card stays flat, as Swift's.
+  `WrappedFrame`s (3 by 4, ONI's mark and the tags at their foot) whose every size is a share of the frame's
+  width (`u`), so a frame draws alike at any size; `WrappedCard` is a frame in its piece of the strip, 9 by 16,
+  the picture a story takes, its rebates over the 14 % a story's players cover; `HelpCard` is a floating `Raised`; the canvas card stays flat, as Swift's.
   The deck opens on `PresetTab`, a flat outline the canvas's edge cuts open, lit while the deck is open.
 - **Divider** is one flat line a point thick in the one separator tint (`Colour.separator`), everywhere: a
   block's rule, a bar's, a menu's, a pinned row's, no relief. Every title, a `Section`'s, a column's, a sheet's, is `Engraved`

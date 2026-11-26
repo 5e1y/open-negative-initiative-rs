@@ -1,6 +1,7 @@
 // "Show My Year on Film": a half-frame strip run through the gate, one scene a frame. A click or → advances
 // the film, ← winds it back, it advances by itself unless Space or a held press pauses it, and Esc leaves.
-import { Space, Motion, WrappedStyle, WrappedGround, WrappedProgress, WrappedFrame, WrappedFilm, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone } from "ds/ds.slint";
+// Past the last scene, every card is laid out to be saved and posted.
+import { Space, Motion, WrappedStyle, WrappedGround, WrappedProgress, WrappedFrame, WrappedFilm, WrappedCard, WrappedPick, WrappedHeading, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone } from "ds/ds.slint";
 
 export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene }
 
@@ -13,18 +14,34 @@ export global Wrapped {
     in property <int> index;
     // The film advances by itself after each scene's hold.
     in property <bool> playing;
-    // One frame alone at the window's corner, `still-width` wide, told whole: what a card's picture is cut from.
+    // Past the last scene: every card laid out, to save and post.
+    in property <bool> sharing;
+    // One card alone, `still-width` wide with its corner at `still-x`, `still-y`, told whole: what a
+    // card's picture is taken from, a window's worth at a time.
     in property <bool> still;
     in property <length> still-width;
-    // What the strip's edge prints, and who signs a frame.
+    in property <length> still-x;
+    in property <length> still-y;
+    // Where the view lies in the window and how large, which it says itself: a card's picture is taken
+    // from there, under a menu bar where the window holds one.
+    in-out property <length> view-x;
+    in-out property <length> view-y;
+    in-out property <length> view-width;
+    in-out property <length> view-height;
+    // What the strip's edge prints, and what a posted card is tagged with, and whom.
     in property <string> edge;
-    in property <string> signature;
-    // A click, → or Return: the next scene, the summary left past the last.
+    in property <string> hashtag;
+    in property <string> account;
+    // What the last save or copy did, said under the keys.
+    in property <string> notice;
+    // A click, → or Return: the next scene, then the share screen, then the summary left.
     callback forward();
     callback back();
     callback close();
-    // The scene in the gate saved as a picture, or every scene.
-    callback save(bool);
+    // Every card saved into the year's folder, which is then shown; one card saved there, or copied.
+    callback save-all();
+    callback save-card(int);
+    callback copy-card(int);
     // A count with its thousands grouped as the language writes them.
     pure callback counted(int) -> string;
 }
@@ -37,7 +54,7 @@ export component WrappedView inherits WrappedGround {
     // Space pauses the film and starts it again; it starts paused where motion is reduced.
     property <bool> paused: Motion.reduced;
     // The film runs by itself while it plays, nothing holds it and a scene follows.
-    property <bool> running: Wrapped.playing && !root.paused && !Wrapped.still && root.revealed && !touch.pressed && root.index < root.count - 1;
+    property <bool> running: Wrapped.playing && !root.paused && !Wrapped.still && !Wrapped.sharing && root.revealed && !touch.pressed && root.index < root.count - 1;
     // How long the scene in the gate has been held: what was held before the last pause, and the run since `mark`.
     property <duration> banked;
     property <duration> mark;
@@ -47,7 +64,20 @@ export component WrappedView inherits WrappedGround {
     property <length> pitch: WrappedStyle.pitch * root.u;
     // Film before the first frame and after the last, so the strip runs past the window's edges.
     property <int> leader: 4;
-    init => { keys.focus(); }
+    property <Point> origin: self.absolute-position;
+    init => {
+        root.placed();
+        keys.focus();
+    }
+    changed origin => { root.placed(); }
+    changed width => { root.placed(); }
+    changed height => { root.placed(); }
+    function placed() {
+        Wrapped.view-x = root.absolute-position.x;
+        Wrapped.view-y = root.absolute-position.y;
+        Wrapped.view-width = root.width;
+        Wrapped.view-height = root.height;
+    }
     changed showing => {
         root.revealed = false;
         root.rewind();
@@ -86,6 +116,7 @@ export component WrappedView inherits WrappedGround {
     }
     // A click left of the gate winds back, anywhere else advances; a press held keeps the scene.
     touch := TouchArea {
+        enabled: !Wrapped.sharing;
         clicked => {
             if (self.mouse-x < (root.width - WrappedStyle.frame-width * root.u) / 2) {
                 Wrapped.back();
@@ -102,13 +133,14 @@ export component WrappedView inherits WrappedGround {
         key-pressed(event) => {
             if (event.text == Key.Escape) { Wrapped.close(); return accept; }
             if (event.text == Key.RightArrow || event.text == Key.Return) { Wrapped.forward(); return accept; }
-            if (event.text == " ") { root.paused = !root.paused; return accept; }
             if (event.text == Key.LeftArrow) { Wrapped.back(); return accept; }
-            if (event.text == "s") { Wrapped.save(false); return accept; }
+            if (event.text == " ") { root.paused = !root.paused; return accept; }
+            if (event.text == "s") { Wrapped.save-card(root.index); return accept; }
+            if (event.text == "c") { Wrapped.copy-card(root.index); return accept; }
             reject
         }
     }
-    if !Wrapped.still: Rectangle {
+    if !Wrapped.still && !Wrapped.sharing: Rectangle {
         opacity: root.revealed ? 1 : 0;
         animate opacity { duration: WrappedStyle.enter; easing: ease-out; }
         WrappedProgress {
@@ -141,9 +173,8 @@ export component WrappedView inherits WrappedGround {
                 y: WrappedStyle.rebate * root.u;
                 u: root.u;
                 scene: scene;
-                year: Wrapped.year;
-                number: i + 1;
-                signature: Wrapped.signature;
+                hashtag: Wrapped.hashtag;
+                account: Wrapped.account;
                 told: self.run;
                 visible: abs(i - root.index) <= 2;
                 opacity: i == root.index ? 1 : WrappedStyle.beside;
@@ -160,33 +191,84 @@ export component WrappedView inherits WrappedGround {
             }
         }
         Label {
-            y: parent.height - WrappedStyle.chrome-under + Space.s;
+            y: parent.height - WrappedStyle.chrome-under + Space.xs;
             width: parent.width;
             role: TextRole.caption;
             tone: Tone.secondary;
             centred: true;
-            text: root.paused ? @tr("Paused · Space to play · → for the next · ← to go back · Esc to leave") : @tr("Click or press → for the next · ← to go back · Space to pause · Esc to leave");
+            text: Wrapped.notice != "" ? Wrapped.notice : root.paused ? @tr("Paused · Space to play · → for the next · ← to go back · Esc to leave") : @tr("Click or press → for the next · ← to go back · Space to pause · Esc to leave");
         }
         HorizontalLayout {
-            y: parent.height - WrappedStyle.chrome-under + Space.s + Space.l;
+            y: parent.height - WrappedStyle.chrome-under + Space.xs + Space.l;
             height: self.preferred-height;
             alignment: center;
             spacing: Space.s;
-            Button { text: @tr("Save This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.save(false); keys.focus(); } }
-            Button { text: @tr("Save All Cards"); kind: ButtonKind.ghost; clicked => { Wrapped.save(true); keys.focus(); } }
+            Button { text: @tr("Save All Cards"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
+            Button { text: @tr("Save This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.save-card(root.index); keys.focus(); } }
+            Button { text: @tr("Copy This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.copy-card(root.index); keys.focus(); } }
             Button { text: @tr("Close"); kind: ButtonKind.ghost; clicked => { Wrapped.close(); } }
         }
     }
-    if Wrapped.still: WrappedFrame {
-        x: 0;
-        y: 0;
+    // Every card at once, as large as the window holds them in at most three rows.
+    if !Wrapped.still && Wrapped.sharing: share := Rectangle {
+        property <int> rows: root.count > 12 ? 3 : root.count > 5 ? 2 : 1;
+        property <int> columns: ceil(root.count / self.rows);
+        property <length> across: (parent.width - 2 * Space.l) / (self.columns * (WrappedStyle.frame-width + WrappedStyle.share-gap));
+        property <length> down: (parent.height - WrappedStyle.share-words - WrappedStyle.share-keys) / (self.rows * (WrappedStyle.strip-height + WrappedStyle.share-gap));
+        property <length> u: min(self.across, self.down);
+        property <length> step-x: (WrappedStyle.frame-width + WrappedStyle.share-gap) * self.u;
+        property <length> step-y: (WrappedStyle.strip-height + WrappedStyle.share-gap) * self.u;
+        VerticalLayout {
+            y: Space.l;
+            height: WrappedStyle.share-words - Space.l;
+            spacing: Space.s;
+            alignment: center;
+            WrappedHeading { text: @tr("Your year, ready to share"); }
+            Label {
+                role: TextRole.note;
+                centred: true;
+                text: @tr("Post the cards in your story and tag {} with {}. A click on a card saves it alone.", Wrapped.account, Wrapped.hashtag);
+            }
+        }
+        for scene[i] in Wrapped.scenes: WrappedPick {
+            x: (parent.width - share.columns * share.step-x + WrappedStyle.share-gap * share.u) / 2 + mod(i, share.columns) * share.step-x;
+            y: WrappedStyle.share-words + floor(i / share.columns) * share.step-y;
+            u: share.u;
+            scene: scene;
+            number: i + 1;
+            edge: Wrapped.edge;
+            hashtag: Wrapped.hashtag;
+            account: Wrapped.account;
+            counted(n) => { Wrapped.counted(n) }
+            picked => { Wrapped.save-card(i); keys.focus(); }
+        }
+        Label {
+            y: parent.height - WrappedStyle.share-keys + Space.xs;
+            width: parent.width;
+            role: TextRole.caption;
+            tone: Tone.secondary;
+            centred: true;
+            text: Wrapped.notice;
+        }
+        HorizontalLayout {
+            y: parent.height - WrappedStyle.share-keys + Space.xs + Space.l;
+            height: self.preferred-height;
+            alignment: center;
+            spacing: Space.s;
+            Button { text: @tr("Save All Cards"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
+            Button { text: @tr("Back"); kind: ButtonKind.ghost; clicked => { Wrapped.back(); keys.focus(); } }
+            Button { text: @tr("Close"); kind: ButtonKind.ghost; clicked => { Wrapped.close(); } }
+        }
+    }
+    if Wrapped.still: WrappedCard {
+        x: Wrapped.still-x;
+        y: Wrapped.still-y;
         u: Wrapped.still-width / WrappedStyle.frame-width;
         scene: Wrapped.scenes[root.index];
-        year: Wrapped.year;
         number: root.index + 1;
-        signature: Wrapped.signature;
-        told: 1;
-        border-radius: 0px;
+        edge: Wrapped.edge;
+        hashtag: Wrapped.hashtag;
+        account: Wrapped.account;
         counted(n) => { Wrapped.counted(n) }
     }
 }

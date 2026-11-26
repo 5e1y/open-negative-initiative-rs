@@ -1,6 +1,6 @@
 //! `ONI_BENCH=wrapped`: the year on film shown in the real window, each scene held until it is told,
-//! then every card saved; `ONI_WRAPPED_SHOTS` names a folder that takes the window's picture at each
-//! scene and the cards.
+//! then the share screen, every card saved and one copied; `ONI_WRAPPED_SHOTS` names a folder that takes
+//! the window's picture at each scene and the cards.
 
 use super::*;
 use crate::Wrapped;
@@ -59,10 +59,12 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             let _ = std::fs::create_dir_all(folder);
             let _ = std::fs::write(folder.join(format!("scene-{:02}.jpg", scene + 1)), data);
         }
-        if scene + 1 < count {
+        if scene < count {
+            // Past the last scene the same step lands on the share screen, shot as one more.
             g.invoke_forward();
             return step.set(Some((scene + 1, Instant::now())));
         }
+        ctl.copy_wrapped(0);
         saving.set(true);
         let answer = saved.clone();
         let tell = move |said: String| {
@@ -71,7 +73,7 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
         };
         match &shots {
-            Some(folder) => ctl.save_wrapped_into(folder, true, move |written| {
+            Some(folder) => ctl.save_wrapped_into(folder, None, move |written| {
                 tell(match written {
                     Ok(cards) => format!("{} cards saved", cards.len()),
                     Err(e) => format!("no card saved: {e}"),

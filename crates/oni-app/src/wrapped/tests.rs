@@ -110,7 +110,7 @@ fn a_full_year_tells_every_scene_in_order() {
     let kit = scene(&story, "Your faithful companion");
     assert_eq!((kit.figure.as_str(), kit.caption.as_str(), kit.lines[0].label.as_str(), kit.lines[1].share), ("Nikon FM2", "310 frames together", "50mm f/1.8", 0.24));
     let gold = scene(&story, "The only thing I see is gold");
-    assert_eq!((gold.kind, gold.count, gold.photos.len(), gold.note.as_str()), (Kind::Photos, Some(11), 9, "and 20 silver"));
+    assert_eq!((gold.kind, gold.count, gold.photos.len(), gold.note.as_str()), (Kind::Photos, Some(11), GOLD_SHOWN, "and 20 silver"));
     let edited = scene(&story, "Your most edited photo");
     assert_eq!((edited.count, edited.photos.as_slice()), (Some(412), ["/roll/M.NEF".to_string()].as_slice()));
     let hands = scene(&story, "Your hands knew the way");
@@ -140,7 +140,8 @@ fn a_full_year_tells_every_scene_in_order() {
     assert_eq!((summary.kind, summary.figure.as_str(), summary.photos.len()), (Kind::Summary, "The Night Developer", 4));
     let told: Vec<(&str, &str)> = summary.lines.iter().map(|l| (l.label.as_str(), l.value.as_str())).collect();
     assert_eq!(told[0], ("Frames", "412"));
-    assert!(told.contains(&("In the darkroom", "162 h")) && told.contains(&("Dust healed", "1,640")) && told.contains(&("Camera", "Nikon FM2")));
+    assert!(told.contains(&("In the darkroom", "162 h")) && told.contains(&("Camera", "Nikon FM2")));
+    assert_eq!(told.len(), SUMMARY_LINES, "the dust healed, a sixth line, is left to its own scene");
     assert_eq!(story.last().map(|s| (s.kind, s.caption.as_str())), Some((Kind::Farewell, "on film.")));
 }
 

@@ -21,7 +21,9 @@ pub const SHOWN_YEAR_KEY: &str = "wrappedShownYear";
 pub const SAMPLE: &str = "ONI_WRAPPED_SAMPLE";
 /// What the strip's edge prints after the year, and who signs a frame: marks, the same in every language.
 const EDGE: &str = "SAFETY FILM";
-const SIGNATURE: &str = "OPEN NEGATIVE INITIATIVE";
+/// What a posted card is tagged with, and the account it names: on every card, in every language.
+pub const HASHTAG: &str = "#madewithoni";
+pub const ACCOUNT: &str = "@open.negative.initiative";
 /// A print's long side, enough for a frame as large as a tall window draws it.
 const PRINT_SIDE: usize = 1024;
 /// A scene showing more photos than this shows them small: their thumbnails are enough.
@@ -42,13 +44,22 @@ pub struct Year {
     /// `JournalEdits.last`: each photo's settings at its last settled edit.
     last: HashMap<String, PipelineSettings>,
     /// The summary while it shows: the year it tells, its scenes and the one in the gate.
-    story: Option<(i32, Vec<Scene>, usize)>,
+    story: Option<Story>,
     /// A showing asked, its year still being read off the disk.
     reading: bool,
     /// Counts the showings and their ends: a photo landing for a summary since closed is dropped.
     told: Arc<AtomicUsize>,
     /// The launch's offer, waiting for the opened folder's rows as Swift's waits for `fillOpened`.
     offer_due: bool,
+}
+
+/// The summary while it shows: the year it tells, its scenes, the one in the gate, and whether the
+/// story is over and its cards laid out to share.
+struct Story {
+    year: i32,
+    scenes: Vec<Scene>,
+    index: usize,
+    sharing: bool,
 }
 
 fn medal_rank(medal: Medal) -> u16 {
@@ -136,7 +147,11 @@ impl Ctl {
         let p = me.clone();
         w.on_close(move || p.close_wrapped());
         let p = me.clone();
-        w.on_save(move |all| p.save_wrapped(all));
+        w.on_save_all(move || p.save_wrapped(None));
+        let p = me.clone();
+        w.on_save_card(move |scene| p.save_wrapped(Some(scene.max(0) as usize)));
+        let p = me.clone();
+        w.on_copy_card(move |scene| p.copy_wrapped(scene.max(0) as usize));
         w.on_counted(|n| crate::wrapped::figure(n.max(0) as usize).into());
     }
 
@@ -229,7 +244,10 @@ impl Ctl {
         let g = w.global::<Wrapped>();
         g.set_year(told.year.to_string().into());
         g.set_edge(format!("ONI {}   {EDGE}", told.year).into());
-        g.set_signature(SIGNATURE.into());
+        g.set_hashtag(HASHTAG.into());
+        g.set_account(ACCOUNT.into());
+        g.set_sharing(false);
+        g.set_notice(SharedString::default());
         g.set_index(0);
         g.set_still(false);
         g.set_playing(true);
@@ -247,7 +265,7 @@ impl Ctl {
             story.iter().enumerate().filter(|(_, scene)| scene.photos.len() <= PRINTS_A_SCENE).flat_map(|(i, scene)| scene.photos.iter().enumerate().map(move |(j, p)| (i, j, p.clone()))).collect();
         let (support, screen, previews, showing) = {
             let mut s = self.state.borrow_mut();
-            s.year.story = Some((told.year, story, 0));
+            s.year.story = Some(Story { year: told.year, scenes: story, index: 0, sharing: false });
             (s.support.clone(), s.screen, s.previews.clone(), s.year.told.clone())
         };
         self.publish_bar();
@@ -291,67 +309,157 @@ impl Ctl {
         }
     }
 
-    /// The film advanced or wound back a frame; past the last scene the summary closes.
+    /// The film advanced or wound back a frame; past the last scene every card is laid out to share,
+    /// and past that the summary closes.
     fn wrapped_turn(&self, by: i32) {
-        let Some((count, index)) = self.state.borrow().year.story.as_ref().map(|s| (s.1.len() as i32, s.2 as i32)) else { return };
+        let Some((count, index, sharing)) = self.state.borrow().year.story.as_ref().map(|s| (s.scenes.len() as i32, s.index as i32, s.sharing)) else { return };
         let next = index + by;
+        if sharing && by > 0 {
+            return self.close_wrapped();
+        }
         if next < 0 {
             return;
         }
-        if next >= count {
-            return self.close_wrapped();
-        }
+        let share = !sharing && next >= count;
         if let Some(story) = self.state.borrow_mut().year.story.as_mut() {
-            story.2 = next as usize;
+            story.sharing = share;
+            if !sharing && !share {
+                story.index = next as usize;
+            }
         }
         if let Some(w) = self.window() {
-            w.global::<Wrapped>().set_index(next);
+            let g = w.global::<Wrapped>();
+            g.set_notice(SharedString::default());
+            g.set_sharing(share);
+            if !sharing && !share {
+                g.set_index(next);
+            }
         }
     }
 
-    /// "Save This Card" and "Save All Cards": the folder asked, the cards written into it and shown there.
-    fn save_wrapped(&self, all: bool) {
-        if self.state.borrow().year.story.is_none() {
-            return;
-        }
-        let Some(folder) = crate::system::pick_folder(tr("Choose where to save your cards")) else { return };
-        self.save_wrapped_into(&folder, all, |written| {
-            with_shell(move |c| match written {
-                Ok(saved) => {
-                    c.say(&trn("{n} card saved", "{n} cards saved", saved.len() as u64));
-                    crate::system::reveal_all(&saved);
-                }
-                Err(e) => c.say(&tr!("The cards cannot be saved: {e}", e = e)),
+    /// "Save All Cards", or one card: written into the year's folder in Downloads with no question asked,
+    /// then shown there, and said under the keys.
+    fn save_wrapped(self: &Rc<Self>, scene: Option<usize>) {
+        let Some(year) = self.state.borrow().year.story.as_ref().map(|s| s.year) else { return };
+        self.wrapped_notice(tr("Saving your cards…"));
+        let folder = share::folder(&crate::system::downloads(), year);
+        let shown = folder.clone();
+        self.save_wrapped_into(&folder, scene, move |written| {
+            with_shell(move |c| {
+                let notice = match &written {
+                    Ok(saved) => {
+                        match saved.as_slice() {
+                            [one] => crate::system::reveal(one),
+                            _ => crate::system::show_folder(&shown),
+                        }
+                        let cards = trn("{n} card saved", "{n} cards saved", saved.len() as u64);
+                        tr!("{cards} in Downloads, in {folder}", cards = cards, folder = oni_i18n::named(&share::folder_name(year)))
+                    }
+                    Err(e) => tr!("The cards cannot be saved: {e}", e = e),
+                };
+                c.wrapped_notice(&notice);
             });
         });
     }
 
-    /// The scene in the gate, or every scene, drawn alone and told whole at the window's corner as large
-    /// as a 9 by 16 frame fits it and taken off the window's own picture; each is then cut, encoded and
-    /// written off this thread, and `done` told there what was written.
-    pub fn save_wrapped_into(&self, folder: &Path, all: bool, done: impl FnOnce(Result<Vec<PathBuf>, String>) + Send + 'static) {
-        let Some((year, count, index)) = self.state.borrow().year.story.as_ref().map(|s| (s.0, s.1.len(), s.2)) else { return done(Ok(Vec::new())) };
-        let Some(w) = self.window() else { return done(Ok(Vec::new())) };
-        let (size, scale) = (w.window().size(), w.window().scale_factor());
-        let unit = (size.width / 9).min(size.height / 16) as usize;
-        let cut = share::Cut { x: 0, y: 0, width: 9 * unit, height: 16 * unit };
-        if unit == 0 {
-            return done(Err(tr("the window is too small").into()));
+    fn wrapped_notice(&self, text: &str) {
+        if let Some(w) = self.window() {
+            w.global::<Wrapped>().set_notice(oni_i18n::spoken(text).into());
         }
+    }
+
+    /// A scene's card, 1080 by 1920, as the window draws it: the card laid alone and told whole at its
+    /// full size, the window's own picture taken a view's worth at a time and laid together. The story
+    /// is back where it stood before a frame is drawn.
+    fn card_picture(&self, scene: usize) -> Result<Vec<u8>, String> {
+        let Some(index) = self.state.borrow().year.story.as_ref().map(|s| s.index) else { return Err(tr("the summary is closed").into()) };
+        let Some(w) = self.window() else { return Err(tr("the summary is closed").into()) };
+        let scale = w.window().scale_factor();
         let g = w.global::<Wrapped>();
-        g.set_still_width(cut.width as f32 / scale);
+        // The view's place in the window's picture, on whole pixels.
+        let px = |points: f32| (points * scale).round().max(0.0) as usize;
+        let view = ((px(g.get_view_x()), px(g.get_view_y())), (px(g.get_view_width()), px(g.get_view_height())));
+        let tiles = share::tiles(share::CARD, view.1);
+        if tiles.is_empty() {
+            return Err(tr("the window is too small").into());
+        }
+        g.set_still_width(share::CARD.0 as f32 / scale);
         g.set_still(true);
-        let screen = self.state.borrow().screen;
-        let shots: Result<Vec<_>, String> = (if all { 0..count } else { index..index + 1 })
-            .map(|scene| {
-                g.set_index(scene as i32);
-                w.window().take_snapshot().map(|shot| (scene, shot)).map_err(|e| e.to_string())
-            })
-            .collect();
+        g.set_index(scene as i32);
+        let mut card = vec![0u8; share::CARD.0 * share::CARD.1 * 4];
+        let taken = tiles.iter().try_for_each(|(x, y)| {
+            g.set_still_x(-(*x as f32) / scale);
+            g.set_still_y(-(*y as f32) / scale);
+            let shot = w.window().take_snapshot().map_err(|e| e.to_string())?;
+            share::lay(&mut card, share::CARD, (*x, *y), shot.as_bytes(), shot.width() as usize, view);
+            Ok(())
+        });
         g.set_index(index as i32);
         g.set_still(false);
-        let folder = folder.to_path_buf();
-        std::thread::spawn(move || done(shots.and_then(|shots| shots.into_iter().map(|(scene, shot)| card_written(&shot, &folder, year, scene, cut, screen)).collect())));
+        taken.map(|()| card)
+    }
+
+    /// One scene's card, or every scene's, taken off the window one card a turn of the interface's loop,
+    /// so the window stays live; each is brought to sRGB, encoded and written into `folder` off this
+    /// thread as it is taken, and `done` told there what was written.
+    pub fn save_wrapped_into(self: &Rc<Self>, folder: &Path, scene: Option<usize>, done: impl FnOnce(Result<Vec<PathBuf>, String>) + Send + 'static) {
+        let Some((year, count)) = self.state.borrow().year.story.as_ref().map(|s| (s.year, s.scenes.len())) else { return done(Ok(Vec::new())) };
+        let mut scenes = scene.map_or(0..count, |one| one.min(count.saturating_sub(1))..(one + 1).min(count));
+        let (folder, screen) = (folder.to_path_buf(), self.state.borrow().screen);
+        let (cards, taken) = std::sync::mpsc::channel::<Result<(usize, Vec<u8>), String>>();
+        std::thread::spawn(move || {
+            let made = std::fs::create_dir_all(&folder).map_err(|e| e.to_string());
+            done(made.and_then(|()| taken.iter().map(|card| card.and_then(|(scene, card)| card_written(card, &folder, year, scene, screen))).collect()))
+        });
+        let timer = Rc::new(slint::Timer::default());
+        let (me, held) = (Rc::downgrade(self), timer.clone());
+        // The sender leaves with the timer's closure: the writer then knows every card was handed over.
+        let mut cards = Some(cards);
+        timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(1), move || {
+            let next = me.upgrade().zip(scenes.next()).map(|(ctl, scene)| ctl.card_picture(scene).map(|card| (scene, card)));
+            // A card that could not be taken is handed over too, as the failure the writer reports.
+            let sent = match (next, &cards) {
+                (Some(card), Some(to)) => {
+                    let taken = card.is_ok();
+                    to.send(card).is_ok() && taken
+                }
+                _ => false,
+            };
+            if !sent {
+                cards = None;
+                held.stop();
+            }
+        });
+    }
+
+    /// A scene's card on the pasteboard, to paste anywhere: brought to sRGB off this thread, then laid.
+    pub fn copy_wrapped(&self, scene: usize) {
+        let screen = self.state.borrow().screen;
+        match self.card_picture(scene) {
+            Ok(card) => {
+                std::thread::spawn(move || {
+                    let card = crate::thumbnails::from_screen(card, screen);
+                    let forms = share::tiff(&card, share::CARD.0, share::CARD.1).zip(share::dib(&card, share::CARD.0, share::CARD.1));
+                    with_shell(move |c| c.card_copied(forms));
+                });
+            }
+            Err(e) => self.wrapped_notice(&tr!("The card cannot be copied: {e}", e = e)),
+        }
+    }
+
+    fn card_copied(&self, forms: Option<(Vec<u8>, Vec<u8>)>) {
+        let Some((tiff, dib)) = forms else { return self.wrapped_notice(&tr!("The card cannot be copied: {e}", e = tr("the card cannot be encoded"))) };
+        {
+            let mut s = self.state.borrow_mut();
+            crate::pasteboard::write_picture(&mut *s.pasteboard, &tiff, &dib);
+            s.board_seen = Some(s.pasteboard.change_count());
+        }
+        self.wrapped_notice(tr("Card copied: paste it where you post."));
+    }
+
+    /// The picture the pasteboard holds, which a check reads back.
+    pub fn board_picture(&self) -> Option<Vec<u8>> {
+        self.state.borrow().pasteboard.data(crate::pasteboard::PICTURE)
     }
 
     pub(super) fn close_wrapped(&self) {
@@ -363,6 +471,7 @@ impl Ctl {
         if let Some(w) = self.window() {
             let g = w.global::<Wrapped>();
             g.set_shown(false);
+            g.set_sharing(false);
             g.set_scenes(ModelRc::default());
             g.set_year(SharedString::default());
             w.invoke_refocus();
@@ -371,12 +480,11 @@ impl Ctl {
     }
 }
 
-/// A scene's frame cut out of the window's picture `shot`, brought from `screen` to sRGB and written into `folder`.
-fn card_written(shot: &slint::SharedPixelBuffer<slint::Rgba8Pixel>, folder: &Path, year: i32, scene: usize, cut: share::Cut, screen: crate::display::Screen) -> Result<PathBuf, String> {
-    let pixels = share::cut(shot.as_bytes(), shot.width() as usize, cut).ok_or_else(|| tr("the window gave no picture").to_string())?;
-    let pixels = crate::thumbnails::from_screen(pixels, screen);
-    let data = share::jpeg(&pixels, cut.width, cut.height).ok_or_else(|| tr("the card cannot be encoded").to_string())?;
-    let path = share::free(folder, &share::file_name(&year.to_string(), scene));
+/// A scene's card, taken off a window drawn for `screen`, brought to sRGB and written into `folder`.
+fn card_written(card: Vec<u8>, folder: &Path, year: i32, scene: usize, screen: crate::display::Screen) -> Result<PathBuf, String> {
+    let card = crate::thumbnails::from_screen(card, screen);
+    let data = share::jpeg(&card, share::CARD.0, share::CARD.1).ok_or_else(|| tr("the card cannot be encoded").to_string())?;
+    let path = folder.join(share::file_name(year, scene));
     oni_settings::atomic::write_atomically(&path, &data).map_err(|e| e.to_string())?;
     Ok(path)
 }

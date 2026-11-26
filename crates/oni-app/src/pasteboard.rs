@@ -13,6 +13,8 @@ pub const FRAMING: &str = "app.opennegative.framing";
 /// `Propagation.measureWindowType`.
 pub const MEASURE_WINDOW: &str = "app.opennegative.measure-window";
 pub const KINDS: [&str; 3] = [SETTINGS, FRAMING, MEASURE_WINDOW];
+/// A picture as the Mac's pasteboard names it, which every app that pastes an image reads.
+pub const PICTURE: &str = "public.tiff";
 
 /// A pasteboard's four primitives, as `NSPasteboard` offers them.
 pub trait Board {
@@ -21,6 +23,12 @@ pub trait Board {
     fn data(&self, kind: &str) -> Option<Vec<u8>>;
     fn clear(&mut self);
     fn set(&mut self, kind: &str, data: &[u8]);
+    /// A picture any app can paste: its TIFF under `PICTURE`, or where the system has its own form
+    /// for one, `dib`, Windows' device-independent bitmap.
+    fn set_picture(&mut self, tiff: &[u8], dib: &[u8]) {
+        let _ = dib;
+        self.set(PICTURE, tiff);
+    }
 }
 
 /// Clearing is the only way to write the board, so the other copies are laid back after it; settings
@@ -30,6 +38,16 @@ pub fn write(board: &mut dyn Board, kind: &str, data: &[u8]) {
     let kept: Vec<(&str, Vec<u8>)> = KINDS.iter().chain([&FORMER_SETTINGS]).filter(|k| !replaced(k)).filter_map(|k| Some((*k, board.data(k)?))).collect();
     board.clear();
     board.set(kind, data);
+    for (other, payload) in kept {
+        board.set(other, &payload);
+    }
+}
+
+/// A picture written to the board, the app's own copies laid back beside it as `write` lays them.
+pub fn write_picture(board: &mut dyn Board, tiff: &[u8], dib: &[u8]) {
+    let kept: Vec<(&str, Vec<u8>)> = KINDS.iter().chain([&FORMER_SETTINGS]).filter_map(|k| Some((*k, board.data(k)?))).collect();
+    board.clear();
+    board.set_picture(tiff, dib);
     for (other, payload) in kept {
         board.set(other, &payload);
     }
@@ -147,6 +165,14 @@ mod win {
                 let _ = raw::set_without_clear(f, data);
             }
         }
+
+        fn set_picture(&mut self, _tiff: &[u8], dib: &[u8]) {
+            /// `CF_DIB`, the clipboard's standard format for a bitmap, which every Windows app pastes.
+            const DIB: u32 = 8;
+            if let Some(_open) = opened() {
+                let _ = raw::set_without_clear(DIB, dib);
+            }
+        }
     }
 }
 
@@ -212,6 +238,21 @@ mod tests {
         // Twin: under the earlier type, the same copy would reach that build.
         board.set("app.opennegative.settings", b"22");
         assert!(board.data(FORMER_SETTINGS).is_some());
+    }
+
+    #[test]
+    fn a_picture_copied_keeps_the_apps_own_copies_beside_it() {
+        let mut board = Memory::default();
+        write(&mut board, SETTINGS, b"settings");
+        let before = board.change_count();
+        write_picture(&mut board, b"II*\0tiff", b"dib");
+        assert_eq!(board.data(PICTURE).as_deref(), Some(&b"II*\0tiff"[..]));
+        assert_eq!(board.data(SETTINGS).as_deref(), Some(&b"settings"[..]), "the settings' copy survives");
+        assert!(board.change_count() > before);
+        // Twin: a bare clear and set, as a text copy does, drops the settings.
+        board.clear();
+        board.set_picture(b"t", b"d");
+        assert_eq!(board.data(SETTINGS), None);
     }
 
     #[test]

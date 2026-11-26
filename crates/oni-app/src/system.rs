@@ -72,6 +72,12 @@ pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Op
     }
 }
 
+/// The person's Downloads folder, where what the app hands them lands: an update's archive, the year's cards.
+pub fn downloads() -> PathBuf {
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from).unwrap_or_default();
+    home.join("Downloads")
+}
+
 /// Opens the Finder or the Explorer with `path` selected, as Show in Finder does.
 pub fn reveal(path: &Path) {
     platform::reveal(path);

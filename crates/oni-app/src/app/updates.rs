@@ -35,7 +35,7 @@ impl Updater {
     pub fn system() -> Updater {
         Updater {
             fetch: Arc::new(crate::web::bytes),
-            downloads: downloads(),
+            downloads: crate::system::downloads(),
             reveal: Arc::new(|p: &Path| crate::system::reveal(p)),
             build: feed::build().to_string(),
             system: feed::system(),
@@ -43,11 +43,6 @@ impl Updater {
             automatic: feed::stamped(),
         }
     }
-}
-
-fn downloads() -> PathBuf {
-    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from).unwrap_or_default();
-    home.join("Downloads")
 }
 
 /// A name in `folder` no file holds yet: the archive never writes over one already there.

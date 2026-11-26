@@ -1,42 +1,35 @@
-//! Sharing: a scene's frame cut out of the window's own picture and written as a JPEG, 9 by 16 as a
-//! phone's story takes it, at the pixels the screen drew.
+//! Sharing: a scene's card taken off the window's own picture, 1080 by 1920 as a phone's story takes it,
+//! a window's worth at a time; written as a JPEG into the year's folder, or handed to the pasteboard.
 
 use std::path::{Path, PathBuf};
 
+/// A story's picture, in pixels.
+pub const CARD: (usize, usize) = (1080, 1920);
 /// High enough that flat inks and small type keep their edges.
 pub const QUALITY: u8 = 95;
 
-/// A rectangle of a picture, in pixels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cut {
-    pub x: usize,
-    pub y: usize,
-    pub width: usize,
-    pub height: usize,
+/// The corners of the windows' worths a picture `card` large is taken in, a window being `window` large,
+/// row by row.
+pub fn tiles(card: (usize, usize), window: (usize, usize)) -> Vec<(usize, usize)> {
+    if window.0 == 0 || window.1 == 0 {
+        return Vec::new();
+    }
+    (0..card.1).step_by(window.1).flat_map(|y| (0..card.0).step_by(window.0).map(move |x| (x, y))).collect()
 }
 
-impl Cut {
-    /// A rectangle in points at `scale` pixels a point, its edges on whole pixels inside a picture of `within`.
-    pub fn of(x: f32, y: f32, width: f32, height: f32, scale: f32, within: (usize, usize)) -> Option<Cut> {
-        let (left, top) = ((x * scale).ceil().max(0.0) as usize, (y * scale).ceil().max(0.0) as usize);
-        let right = (((x + width) * scale).floor().max(0.0) as usize).min(within.0);
-        let bottom = (((y + height) * scale).floor().max(0.0) as usize).min(within.1);
-        (right > left && bottom > top).then(|| Cut { x: left, y: top, width: right - left, height: bottom - top })
+/// The view's part of a window's picture `shot`, `shot_width` wide, laid into the card `size` large with
+/// its corner at `origin`: what of it falls inside the card and the picture, the rest left out. `view`
+/// is the view's corner in the picture, then its size.
+pub fn lay(card: &mut [u8], size: (usize, usize), origin: (usize, usize), shot: &[u8], shot_width: usize, view: ((usize, usize), (usize, usize))) {
+    let shot_height = shot.len().checked_div(shot_width * 4).unwrap_or(0);
+    let ((left, top), (across, down)) = view;
+    let width = across.min(shot_width.saturating_sub(left)).min(size.0.saturating_sub(origin.0));
+    let height = down.min(shot_height.saturating_sub(top)).min(size.1.saturating_sub(origin.1));
+    for row in 0..height {
+        let from = ((top + row) * shot_width + left) * 4;
+        let to = ((origin.1 + row) * size.0 + origin.0) * 4;
+        card[to..to + width * 4].copy_from_slice(&shot[from..from + width * 4]);
     }
-}
-
-/// The RGBA pixels of `cut` in a picture `width` wide; none when the picture does not hold it.
-pub fn cut(rgba: &[u8], width: usize, cut: Cut) -> Option<Vec<u8>> {
-    let height = rgba.len().checked_div(width * 4)?;
-    if cut.x + cut.width > width || cut.y + cut.height > height {
-        return None;
-    }
-    let mut out = Vec::with_capacity(cut.width * cut.height * 4);
-    for row in cut.y..cut.y + cut.height {
-        let start = (row * width + cut.x) * 4;
-        out.extend_from_slice(&rgba[start..start + cut.width * 4]);
-    }
-    Some(out)
 }
 
 pub fn jpeg(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
@@ -49,22 +42,52 @@ pub fn jpeg(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
     Some(out)
 }
 
-/// A card's file name: the year and the scene's place in the story, from 1.
-pub fn file_name(year: &str, scene: usize) -> String {
-    format!("ONI Wrapped {year} - {:02}.jpg", scene + 1)
+/// The picture as a TIFF, the form the Mac's pasteboard hands every app that pastes an image.
+pub fn tiff(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
+    if width == 0 || height == 0 || rgba.len() != width * height * 4 {
+        return None;
+    }
+    let rgb: Vec<u8> = rgba.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]]).collect();
+    let mut out = std::io::Cursor::new(Vec::new());
+    tiff::encoder::TiffEncoder::new(&mut out).and_then(|mut e| e.write_image::<tiff::encoder::colortype::RGB8>(width as u32, height as u32, &rgb)).ok()?;
+    Some(out.into_inner())
 }
 
-/// `name` in `folder`, or with the first number that makes it a file not there yet: a card saved
-/// twice never replaces the first.
-pub fn free(folder: &Path, name: &str) -> PathBuf {
-    let (stem, extension) = name.rsplit_once('.').unwrap_or((name, ""));
-    let mut path = folder.join(name);
-    let mut turn = 2;
-    while path.exists() {
-        path = folder.join(format!("{stem} ({turn}).{extension}"));
-        turn += 1;
+/// The picture as Windows' device-independent bitmap, the clipboard's own form: a 40-byte header, then
+/// the rows from the last to the first, each pixel blue, green, red and a byte left at zero.
+pub fn dib(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
+    let (w, h) = (i32::try_from(width).ok()?, i32::try_from(height).ok()?);
+    if width == 0 || height == 0 || rgba.len() != width * height * 4 {
+        return None;
     }
-    path
+    let mut out = Vec::with_capacity(40 + rgba.len());
+    out.extend_from_slice(&40u32.to_le_bytes());
+    out.extend_from_slice(&w.to_le_bytes());
+    out.extend_from_slice(&h.to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&32u16.to_le_bytes());
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(&(rgba.len() as u32).to_le_bytes());
+    out.extend_from_slice(&[0; 16]);
+    for row in rgba.chunks_exact(width * 4).rev() {
+        out.extend(row.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], 0]));
+    }
+    Some(out)
+}
+
+/// The folder a year's cards are saved in, inside the person's Downloads.
+pub fn folder(downloads: &Path, year: i32) -> PathBuf {
+    downloads.join(folder_name(year))
+}
+
+pub fn folder_name(year: i32) -> String {
+    format!("ONI Wrapped {year}")
+}
+
+/// A card's file name: the year and the scene's place in the story, from 1. A card saved again takes
+/// the place of the one saved before, in the folder that is the cards' own.
+pub fn file_name(year: i32, scene: usize) -> String {
+    format!("ONI Wrapped {year} - {:02}.jpg", scene + 1)
 }
 
 #[cfg(test)]
@@ -73,25 +96,41 @@ mod tests {
 
     /// A picture whose every pixel holds its own column and row.
     fn picture(width: usize, height: usize) -> Vec<u8> {
-        (0..height).flat_map(|y| (0..width).flat_map(move |x| [x as u8, y as u8, 0, 255])).collect()
+        (0..height).flat_map(|y| (0..width).flat_map(move |x| [x as u8, y as u8, 7, 255])).collect()
     }
 
     #[test]
-    fn a_frame_is_cut_on_whole_pixels_inside_the_window() {
-        // 10.2 pt to 30.6 pt at 2 px a point: pixels 21 to 61, the half pixels at both edges left out.
-        assert_eq!(Cut::of(10.2, 5.0, 20.4, 10.0, 2.0, (200, 100)), Some(Cut { x: 21, y: 10, width: 40, height: 20 }));
-        assert_eq!(Cut::of(90.0, 0.0, 20.0, 60.0, 2.0, (200, 100)), Some(Cut { x: 180, y: 0, width: 20, height: 100 }), "held inside the picture");
-        assert_eq!(Cut::of(120.0, 0.0, 20.0, 10.0, 2.0, (200, 100)), None, "wholly outside");
-        let rgba = picture(8, 6);
-        let piece = cut(&rgba, 8, Cut { x: 2, y: 1, width: 3, height: 2 }).unwrap();
-        assert_eq!(piece, [2, 1, 0, 255, 3, 1, 0, 255, 4, 1, 0, 255, 2, 2, 0, 255, 3, 2, 0, 255, 4, 2, 0, 255]);
-        // Twin: a cut past the picture's edge gives nothing rather than another row's pixels.
-        assert_eq!(cut(&rgba, 8, Cut { x: 6, y: 1, width: 3, height: 2 }), None);
-        assert_eq!(cut(&rgba, 8, Cut { x: 0, y: 5, width: 3, height: 2 }), None);
+    fn a_card_larger_than_the_window_is_taken_a_windows_worth_at_a_time() {
+        // A Retina window of 2200 by 1360 pixels holds a card's width at once and its height in two.
+        assert_eq!(tiles(CARD, (2200, 1360)), [(0, 0), (0, 1360)]);
+        assert_eq!(tiles(CARD, (1280, 800)), [(0, 0), (0, 800), (0, 1600)]);
+        assert_eq!(tiles((10, 10), (4, 6)), [(0, 0), (4, 0), (8, 0), (0, 6), (4, 6), (8, 6)]);
+        assert_eq!(tiles(CARD, (4000, 4000)), [(0, 0)]);
+        assert!(tiles(CARD, (0, 800)).is_empty());
+        // Each picture's view is laid where it was taken: together they are the card, to the pixel. The
+        // window holds a menu bar two rows deep and a margin a column wide, which no card shows.
+        let (card, view, bar) = ((10, 7), (4, 3), (1, 2));
+        let window = (view.0 + bar.0, view.1 + bar.1);
+        let whole = picture(card.0, card.1);
+        let mut laid = vec![0u8; card.0 * card.1 * 4];
+        // What the window shows with the card's corner drawn at the view's, less (x, y): the card from
+        // (x, y) on inside the view, 99 around it.
+        let shown = |x: usize, y: usize| -> Vec<u8> {
+            (0..window.1).flat_map(|r| (0..window.0).flat_map(move |c| if c < bar.0 || r < bar.1 { [99, 99, 99, 255] } else { [(x + c - bar.0) as u8, (y + r - bar.1) as u8, 7, 255] })).collect()
+        };
+        for (x, y) in tiles(card, view) {
+            lay(&mut laid, card, (x, y), &shown(x, y), window.0, (bar, view));
+        }
+        assert_eq!(laid, whole);
+        // Twin: taken from the window's own corner, the bar is in the card.
+        let mut wrong = vec![0u8; card.0 * card.1 * 4];
+        lay(&mut wrong, card, (0, 0), &shown(0, 0), window.0, ((0, 0), view));
+        assert_eq!(&wrong[..4], &[99, 99, 99, 255]);
+        assert_ne!(wrong[..view.0 * 4], whole[..view.0 * 4]);
     }
 
     #[test]
-    fn a_card_is_a_jpeg_of_its_own_size_and_never_replaces_another() {
+    fn a_card_is_a_jpeg_of_its_own_size_in_the_years_folder() {
         let rgba = picture(18, 32);
         let data = jpeg(&rgba, 18, 32).unwrap();
         let mut decoder = jpeg_decoder::Decoder::new(data.as_slice());
@@ -99,16 +138,25 @@ mod tests {
         let info = decoder.info().unwrap();
         assert_eq!((info.width, info.height), (18, 32));
         assert_eq!(jpeg(&rgba, 18, 31), None, "twin: a size its pixels do not make");
-        assert_eq!(file_name("2026", 0), "ONI Wrapped 2026 - 01.jpg");
-        let folder = std::env::temp_dir().join(format!("oni-wrapped-share-{}", std::process::id()));
-        std::fs::create_dir_all(&folder).unwrap();
-        let first = free(&folder, "card.jpg");
-        assert_eq!(first, folder.join("card.jpg"));
-        std::fs::write(&first, b"1").unwrap();
-        let second = free(&folder, "card.jpg");
-        assert_eq!(second, folder.join("card (2).jpg"));
-        std::fs::write(&second, b"2").unwrap();
-        assert_eq!(free(&folder, "card.jpg"), folder.join("card (3).jpg"));
-        let _ = std::fs::remove_dir_all(&folder);
+        assert_eq!(CARD.0 * 16, CARD.1 * 9, "a story's 9 by 16");
+        assert_eq!(file_name(2026, 0), "ONI Wrapped 2026 - 01.jpg");
+        assert_eq!(folder(Path::new("/home/Downloads"), 2026), Path::new("/home/Downloads/ONI Wrapped 2026"));
+    }
+
+    #[test]
+    fn a_card_is_handed_to_the_pasteboard_as_a_tiff_and_as_a_bitmap() {
+        let rgba = picture(3, 2);
+        let data = tiff(&rgba, 3, 2).unwrap();
+        let mut decoder = tiff::decoder::Decoder::new(std::io::Cursor::new(&data)).unwrap();
+        assert_eq!(decoder.dimensions().unwrap(), (3, 2));
+        let tiff::decoder::DecodingResult::U8(pixels) = decoder.read_image().unwrap() else { panic!("eight bits a channel") };
+        assert_eq!(pixels, [0, 0, 7, 1, 0, 7, 2, 0, 7, 0, 1, 7, 1, 1, 7, 2, 1, 7]);
+        let bitmap = dib(&rgba, 3, 2).unwrap();
+        assert_eq!(bitmap.len(), 40 + 24);
+        assert_eq!((&bitmap[..4], &bitmap[4..8], &bitmap[8..12], &bitmap[14..16]), (&[40, 0, 0, 0][..], &[3, 0, 0, 0][..], &[2, 0, 0, 0][..], &[32, 0][..]));
+        // The last row first, blue before red: the picture's lower left pixel is (0, 1, 7).
+        assert_eq!(&bitmap[40..44], &[7, 1, 0, 0]);
+        assert_ne!(&bitmap[40..44], &[0, 0, 7, 0], "twin: the first row's pixel, red first, is not what a bitmap starts with");
+        assert_eq!((tiff(&rgba, 3, 3), dib(&rgba, 0, 2)), (None, None));
     }
 }

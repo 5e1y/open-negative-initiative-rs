@@ -571,6 +571,10 @@ msgstr "En argentique"
 msgid "with a touch of {}"
 msgstr "avec un soupçon de : {}"
 
+#: crates/oni-ui/ui/ds/wrapped.slint
+msgid "Save card {}"
+msgstr "Enregistrer la carte {}"
+
 #: crates/oni-ui/ui/editors.slint
 msgid "Luma"
 msgstr "Luma"
@@ -2275,7 +2279,7 @@ msgstr "Masquer"
 msgid "Show How"
 msgstr "Montrer comment"
 
-#: crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/welcome.slint
+#: crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/welcome.slint crates/oni-ui/ui/wrapped.slint
 msgid "Back"
 msgstr "Retour"
 
@@ -2948,16 +2952,28 @@ msgid "Click or press → for the next · ← to go back · Space to pause · Es
 msgstr "Cliquez ou pressez → pour la suite · ← pour revenir · Espace pour mettre en pause · Échap pour quitter"
 
 #: crates/oni-ui/ui/wrapped.slint
-msgid "Save This Card"
-msgstr "Enregistrer cette carte"
-
-#: crates/oni-ui/ui/wrapped.slint
 msgid "Save All Cards"
 msgstr "Enregistrer toutes les cartes"
 
 #: crates/oni-ui/ui/wrapped.slint
+msgid "Save This Card"
+msgstr "Enregistrer cette carte"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Copy This Card"
+msgstr "Copier cette carte"
+
+#: crates/oni-ui/ui/wrapped.slint
 msgid "Close"
 msgstr "Fermer"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Your year, ready to share"
+msgstr "Votre année, prête à partager"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Post the cards in your story and tag {} with {}. A click on a card saves it alone."
+msgstr "Publiez les cartes en story et identifiez {} avec {}. Un clic sur une carte l’enregistre seule."
 
 #: crates/oni-app/src/adobe_dng.rs
 msgid "Adobe DNG Converter wrote no DNG."
@@ -4884,24 +4900,36 @@ msgid "the thumbnail cannot be read back"
 msgstr "la vignette ne peut pas être relue"
 
 #: crates/oni-app/src/app/year.rs
-msgid "Choose where to save your cards"
-msgstr "Choisissez où enregistrer vos cartes"
+msgid "Saving your cards…"
+msgstr "Enregistrement de vos cartes…"
+
+#: crates/oni-app/src/app/year.rs
+msgid "the summary is closed"
+msgstr "le récapitulatif est fermé"
 
 #: crates/oni-app/src/app/year.rs
 msgid "the window is too small"
 msgstr "la fenêtre est trop petite"
 
 #: crates/oni-app/src/app/year.rs
-msgid "the window gave no picture"
-msgstr "la fenêtre n’a donné aucune image"
-
-#: crates/oni-app/src/app/year.rs
 msgid "the card cannot be encoded"
 msgstr "la carte ne peut pas être encodée"
 
 #: crates/oni-app/src/app/year.rs
+msgid "Card copied: paste it where you post."
+msgstr "Carte copiée : collez-la là où vous publiez."
+
+#: crates/oni-app/src/app/year.rs
+msgid "{cards} in Downloads, in {folder}"
+msgstr "{cards} dans Téléchargements, dans {folder}"
+
+#: crates/oni-app/src/app/year.rs
 msgid "The cards cannot be saved: {e}"
 msgstr "Les cartes ne peuvent pas être enregistrées : {e}"
+
+#: crates/oni-app/src/app/year.rs
+msgid "The card cannot be copied: {e}"
+msgstr "La carte ne peut pas être copiée : {e}"
 
 #: crates/oni-app/src/app/year.rs
 msgid "{n} card saved"
