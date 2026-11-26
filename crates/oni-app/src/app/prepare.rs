@@ -122,6 +122,8 @@ pub(crate) struct Roll {
     asked: HashSet<String>,
     /// `work.openedAmong`: the selection a load narrowed, when it held the frame opened.
     pub opened_among: HashSet<String>,
+    /// The roll asked by a photo opened from the gallery: its frames fly in from their tiles as it shows.
+    pub from_gallery: bool,
     /// The measure landed on one frame alone, until the editor leaves it.
     landed_alone: bool,
     pub require: bool,
@@ -191,6 +193,7 @@ impl Default for Roll {
             last_press: None,
             asked: HashSet::new(),
             opened_among: HashSet::new(),
+            from_gallery: false,
             landed_alone: false,
             require: false,
             tutorial: None,

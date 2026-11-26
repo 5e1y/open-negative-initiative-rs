@@ -6,6 +6,7 @@ use super::*;
 pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("motion_open::the_photo_opened_in_the_editor_shows_once_the_tile_has_landed", motion_open::the_photo_opened_in_the_editor_shows_once_the_tile_has_landed),
     ("motion_open::the_photo_opened_on_prepare_shows_once_the_tile_has_landed", motion_open::the_photo_opened_on_prepare_shows_once_the_tile_has_landed),
+    ("motion_open::a_roll_opened_from_the_gallery_lands_on_its_sheet_as_a_wave", motion_open::a_roll_opened_from_the_gallery_lands_on_its_sheet_as_a_wave),
     ("typeface::the_faces_on_the_main_screens_in_english", typeface::the_faces_on_the_main_screens_in_english),
     ("typeface::the_faces_on_the_main_screens_in_french", typeface::the_faces_on_the_main_screens_in_french),
     ("typeface::the_faces_on_the_main_screens_in_spanish", typeface::the_faces_on_the_main_screens_in_spanish),

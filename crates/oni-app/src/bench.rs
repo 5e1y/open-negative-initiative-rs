@@ -24,6 +24,7 @@
 //! `ONI_BENCH=sweep` zooms between 40 % and 120 % by `ONI_SWEEP` (pinch, wheel, keys), each move timed to its photon.
 //! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon;
 //! `ONI_BENCH=papers` the same with the Colour tab's papers.
+//! `ONI_BENCH=wave` opens a roll never prepared from the gallery, laid at once then as a wave, at the screen's size.
 //! `ONI_BENCH=screens` takes the main screens at the smallest window into `ONI_SHOTS`, in the language spoken.
 //! `ONI_BENCH=motion` times the interface's frames over its journeys, laid at once and moving, at the screen's size.
 //! `ONI_BENCH=wrapped` shows the year on film, holds each scene until it is told and saves every card.
@@ -52,6 +53,7 @@ mod compare;
 mod stocks;
 mod motion;
 mod screens;
+mod wave;
 mod wrapped;
 pub mod chain;
 use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
@@ -152,6 +154,7 @@ pub enum Mode {
     Papers,
     Motion,
     Screens,
+    Wave,
     Wrapped,
 }
 
@@ -190,6 +193,7 @@ pub fn requested() -> Option<Mode> {
         "papers" => Some(Mode::Papers),
         "motion" => Some(Mode::Motion),
         "screens" => Some(Mode::Screens),
+        "wave" => Some(Mode::Wave),
         "wrapped" => Some(Mode::Wrapped),
         _ => None,
     }
@@ -258,6 +262,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Screens {
         return screens::screens(ctl, done);
+    }
+    if mode == Mode::Wave {
+        return wave::wave(ctl, done);
     }
     if mode == Mode::Wrapped {
         return wrapped(ctl, done);

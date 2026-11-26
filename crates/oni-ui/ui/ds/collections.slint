@@ -70,6 +70,8 @@ export component TileView inherits Rectangle {
     in property <bool> focused;
     // Its medal keys show under the hand: a photo the archive or a project holds, its original in reach.
     in property <bool> rating;
+    // A roll's cell that answers no press, as a sheet only shown: it takes none, the hand passing over it.
+    in property <bool> responds: true;
     callback clicked();
     callback medal-picked(int);
     accessible-role: list-item;
@@ -181,7 +183,7 @@ export component TileView inherits Rectangle {
         }
     }
     if root.focused: FocusRing { y: 0; height: root.picture-height; radius: Radius.card; }
-    if root.frame: TouchArea { clicked => { root.clicked(); } }
+    if root.frame && root.responds: TouchArea { clicked => { root.clicked(); } }
 }
 
 // A group's heading over its tiles, its roll's folder before its name, typed over while renamed;

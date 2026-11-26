@@ -130,6 +130,10 @@ export global Motion {
     out property <duration> pane: Motion.reduced ? 0ms : TabsStyle.slide;
     // How far a photo left steps aside as the editor walks to its neighbour, the next one coming from as far.
     out property <length> walk-step: Space.l;
+    // The step between two cells of a roll landing on its sheet, one after the other as a wave.
+    out property <duration> wave-step: Motion.reduced ? 0ms : 14ms;
+    // How many cells the wave staggers: the roll's later ones land with the last of them.
+    out property <int> wave-cells: 40;
     // The window's next frame: what moves from where it was just laid waits for it to be drawn there.
     out property <duration> next-frame: 1ms;
     // A menu or a popover opening out of its anchor, quick enough that a line is read as it lands.

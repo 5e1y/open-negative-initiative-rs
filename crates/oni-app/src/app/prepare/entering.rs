@@ -93,6 +93,8 @@ impl Ctl {
         };
         let paths: Vec<String> = ordered.into_iter().map(|(p, _)| p).collect();
         self.flight_left();
+        let gallery = w.global::<App>().get_gallery() || std::mem::take(&mut self.state.borrow_mut().prepare.from_gallery);
+        self.wave_from_gallery(&paths, gallery);
         self.dng_roll_entered(&paths);
         let reading = paths.clone();
         std::thread::spawn(move || {
@@ -268,6 +270,7 @@ impl Ctl {
                 return;
             }
             let among = std::mem::take(&mut s.prepare.opened_among);
+            s.prepare.from_gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
             if among.contains(path) { s.order.iter().filter(|p| among.contains(*p)).cloned().collect() } else { vec![path.to_string()] }
         };
         let path = path.to_string();
