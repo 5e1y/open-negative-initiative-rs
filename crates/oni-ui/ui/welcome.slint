@@ -16,6 +16,7 @@ component Words inherits VerticalLayout {
     in property <float> shown;
     spacing: Space.m;
     opacity: root.shown;
+    visible: root.shown > 0;
     Label { text: root.eyebrow; role: TextRole.label; tone: Tone.secondary; }
     Headline { text: root.title; size: root.title-size; }
     StageText { text: root.lead; lead: true; }
@@ -37,6 +38,7 @@ export component WelcomeSheet inherits Sheet {
     function slot(page: int) -> int { !Help.kit-gift && page > 2 ? page - 2 : page - 1 }
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
+    property <[string]> titles: [@tr("A livelier interface"), @tr("Import your photo kit into ONI, with The Lens DB"), @tr("Your digital photos, on film"), @tr("Your Wrapped is here")];
     property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
     // Two blocks on the window's middle line: the gift, then its film, on the left, the words in one column on the
     // right, the same for every screen; the film takes the room the column leaves, kept clear of the keys' band.
@@ -47,7 +49,7 @@ export component WelcomeSheet inherits Sheet {
     property <length> demo-width: min(root.width - 2 * root.edge - StageStyle.gap - root.column, (root.height - 2 * footer-room.height) / StageStyle.window-shape);
     property <length> left: (root.width - root.demo-width - StageStyle.gap - root.column) / 2;
     property <length> right: root.left + root.demo-width + StageStyle.gap;
-    // The words' column is never taller than the window less the keys' band above and below it.
+    // The words' block is centred in the window less the keys' band above and below it, never in that band.
     property <length> words-room: root.height - 2 * footer-room.height;
     // On: the gift opened if it is still wrapped, else the next screen; the last screen's key enters the app.
     function onward() {
@@ -92,8 +94,9 @@ export component WelcomeSheet inherits Sheet {
         if !root.opened && !root.last: VerticalLayout {
             x: root.right;
             width: root.column;
-            y: (root.height - self.preferred-height) / 2;
-            height: self.preferred-height;
+            y: (root.height - self.height) / 2;
+            height: root.words-room;
+            alignment: center;
             spacing: Space.s;
             opacity: Help.stage-shown;
             Headline { text: root.tags[root.page - 1]; size: root.title-size; }
@@ -113,19 +116,23 @@ export component WelcomeSheet inherits Sheet {
                 height: self.width * StageStyle.window-shape;
                 y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
                 shown: here ? root.words : 0;
+                accessible-role: image;
+                accessible-label: root.titles[page - 1];
                 // The gift's film, made from the real app.
                 if Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
             }
-            // The words, right of the film, on the window's middle line.
+            // The words, right of the film, the whole block's middle on the window's: the layout centres it, as a
+            // wrapped paragraph's height is known only once it is laid out.
             VerticalLayout {
                 x: root.right;
                 width: root.column;
                 y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
-                height: min(self.preferred-height, root.words-room);
+                height: root.words-room;
+                alignment: center;
                 if page == 1: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[0];
-                    title: @tr("A livelier interface");
+                    title: root.titles[0];
                     lead: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped.");
                     text: "";
                     shown: here ? root.words : 0;
@@ -133,7 +140,7 @@ export component WelcomeSheet inherits Sheet {
                 if page == 2: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[1];
-                    title: @tr("Import your photo kit into ONI, with The Lens DB");
+                    title: root.titles[1];
                     lead: @tr("Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports.");
                     text: "";
                     shown: here ? root.words : 0;
@@ -144,7 +151,7 @@ export component WelcomeSheet inherits Sheet {
                 if page == 3: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[2];
-                    title: @tr("Your digital photos, on film");
+                    title: root.titles[2];
                     lead: @tr("ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would.");
                     text: @tr("{} films wait in the editor's Film panel.", Help.film-count);
                     shown: here ? root.words : 0;
@@ -152,7 +159,7 @@ export component WelcomeSheet inherits Sheet {
                 if page == 4: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[3];
-                    title: @tr("Your Wrapped is here");
+                    title: root.titles[3];
                     lead: @tr("Your year on film: your rolls, your films, your favourite frames and the time you spent with them.");
                     text: "";
                     shown: here ? root.words : 0;
@@ -177,7 +184,8 @@ export component WelcomeSheet inherits Sheet {
                 x: (root.width - self.width) / 2;
                 width: min(WelcomeStyle.letter-width, root.width - 2 * root.edge);
                 y: (root.height - self.height) / 2 + (1 - Help.message-turn) * StageStyle.rise;
-                height: min(self.preferred-height, root.words-room);
+                height: root.words-room;
+                alignment: center;
                 opacity: Help.message-turn;
                 visible: Help.message-turn > 0;
                 spacing: Space.l;

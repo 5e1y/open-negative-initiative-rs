@@ -20,7 +20,7 @@ fn each_gift_stands_in_the_middle_at_the_size_its_words_tell() {
     let height = |gift| {
         let [x, y, w, h] = gift_spot(&frame(&Cue::at(Some(gift), None)), 1.6).expect("a gift on its screen");
         assert!((x + w / 2.0 - 0.5).abs() < 0.08 && y >= 0.0 && y + h <= 0.95, "gift {gift} about the middle, whole: {x} {y} {w} {h}");
-        assert!((y + h / 2.0 - 0.5).abs() < 0.01, "gift {gift} on the picture's middle line: {y} {h}");
+        assert!((y + h / 2.0 - 0.5).abs() < 0.0005, "gift {gift} on the picture's middle line, within half a point in a thousand: {y} {h}");
         h
     };
     let sizes = [height(0), height(1), height(2), height(3)];

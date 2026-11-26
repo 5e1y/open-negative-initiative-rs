@@ -142,6 +142,24 @@ fn film_frame(gift: usize) -> slint::Image {
     slint::Image::from_rgb8(slint::SharedPixelBuffer::clone_from_slice(&rgb, info.width.into(), info.height.into()))
 }
 
+/// The rectangle every text and key shown in a column starting at `left` takes, above `below`: a screen's block of
+/// words, from its eyebrow to its last key.
+fn block(window: &MainWindow, left: f32, below: f32) -> Placed {
+    let parts: Vec<Placed> = [Role::Text, Role::Button]
+        .into_iter()
+        .flat_map(|role| common::placed_all(window, role))
+        .filter(|p| (p.x - left).abs() < 1.5 && p.y + p.height <= below && p.height > 0.0)
+        .collect();
+    let (top, bottom) = parts.iter().fold((f32::MAX, f32::MIN), |(t, b), p| (t.min(p.y), b.max(p.y + p.height)));
+    let right = parts.iter().fold(left, |r, p| r.max(p.x + p.width));
+    Placed { x: left, y: top, width: right - left, height: bottom - top }
+}
+
+/// How far `part`'s middle lies off the middle of the sheet, which stands `top` down the window and is `tall`.
+fn off_middle(part: &Placed, top: f32, tall: f32) -> f32 {
+    part.y + part.height / 2.0 - (top + tall / 2.0)
+}
+
 /// Every gift wrapped and opened, and the message's two screens, at the smallest window, a middle one and a whole
 /// screen: one column of words for every screen, on the window's middle line beside the film, never under the keys.
 /// `ONI_WELCOME_SHEET` names where each screen is kept as a picture.
@@ -155,6 +173,11 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
     help.set_made_with("#madewithoni".into());
     help.set_welcome_shown(true);
     help.set_stage_live(false);
+    help.set_film_count(oni_settings::VirtualStock::sheets().len() as i32);
+    // The sheet's own size, below the window's menu where the window draws one: its middle is the one that counts.
+    let size = std::rc::Rc::new(std::cell::Cell::new((0.0f32, 0.0f32)));
+    let ear = size.clone();
+    help.on_welcome_sized(move |w, h, _, _| ear.set((w, h)));
     window.show().unwrap();
     let sheet = std::env::var_os("ONI_WELCOME_SHEET").map(std::path::PathBuf::from);
     let keep = |name: &str| {
@@ -185,6 +208,20 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
                 let key = if opened { commit(&window, page) } else { common::the(&window, Role::Button, tr("Unwrap")) };
                 let words = if opened { title(&window, page) } else { common::placed(&window, Role::Text, tr(["A small gift", "Another small gift", "The huge gift", "The mystery gift"][page - 1]))[0] };
                 columns.push(words.x);
+                // The whole block of words, eyebrow to last key, its middle on the sheet's; the film's too.
+                let top = h as f32 - size.get().1;
+                let held = block(&window, words.x, key.y - MARGIN / 2.0);
+                let off = off_middle(&held, top, size.get().1);
+                println!("{language} {w}×{h} screen {page} {}: block {held:?} off the middle by {off:.1}, sheet {:?}, film {:?}", if opened { "opened" } else { "wrapped" }, size.get(), common::placed(&window, Role::Image, tr(TITLES[page - 1])));
+                assert!(off.abs() <= 1.0, "{language} {w}×{h} screen {page}: the words' block on the middle, off by {off:.1}: {held:?}");
+                if opened {
+                    let film = common::the(&window, Role::Image, tr(TITLES[page - 1]));
+                    let off = off_middle(&film, top, size.get().1);
+                    assert!(off.abs() <= 1.0, "{language} {w}×{h} screen {page}: the film on the middle, off by {off:.1}: {film:?}");
+                    // Twin: the same block hung by its title, the title's middle on the sheet's, is told off the middle.
+                    let hung = Placed { y: held.y - off_middle(&words, top, size.get().1), ..held };
+                    assert!(off_middle(&hung, top, size.get().1).abs() > 1.0, "{w}×{h} screen {page}: a block hung by its title is caught");
+                }
                 assert!(words.y >= key.height, "{w}×{h} screen {page}: the words stand clear of the window's top, {words:?}");
                 assert!(words.x > w as f32 / 2.0 - 60.0, "{w}×{h} screen {page}: the words right of the film, {words:?}");
                 if opened && page == 4 {
@@ -200,6 +237,18 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
             help.set_message_turn(turn);
             rig.settle();
             keep(&format!("{language}-{w}x{h}-5-{name}"));
+            let top = h as f32 - size.get().1;
+            let key = common::the(&window, Role::Button, tr(if turn == 0.0 { "Continue" } else { "Enter ONI" }));
+            let told = if turn == 0.0 {
+                common::the(&window, Role::Text, tr("I have a message for you"))
+            } else {
+                let hook = common::the(&window, Role::Text, tr(TITLES[4]));
+                let keys = common::the(&window, Role::Button, tr("Enter the Contest"));
+                Placed { x: hook.x, y: hook.y, width: hook.width, height: keys.y + keys.height - hook.y }
+            };
+            let off = off_middle(&told, top, size.get().1);
+            println!("{language} {w}×{h} message {name}: block {told:?} off the middle by {off:.1}");
+            assert!(off.abs() <= 1.0 && told.y + told.height < key.y - MARGIN / 2.0, "{language} {w}×{h} message {name}: on the middle, clear of the keys, off by {off:.1}: {told:?}");
         }
         let made = common::the(&window, Role::Text, "#madewithoni");
         assert!((made.x + made.width / 2.0 - w as f32 / 2.0).abs() < 2.0 && made.x > columns[0] - w as f32, "{w}×{h}: the tag in the middle, {made:?}");
