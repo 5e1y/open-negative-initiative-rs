@@ -26,6 +26,7 @@ pub use batch::{Batch, Laid};
 mod instanced;
 mod laying;
 mod sheet;
+mod over;
 
 /// Metal's and Direct3D 12's largest texture side: a pixel-shift frame of 16 736 px goes in tiles.
 pub const TEXTURE_SIDE: u32 = 16_384;
