@@ -49,6 +49,15 @@ pub struct Grain {
     pub negative: Option<GrainedNegative>,
     /// The photo's own arrangement, added to every lattice index.
     pub seed: [u32; 2],
+    /// The scan's grid onto the level of the layers' field a render reads (twice), then the box it reads there: its half
+    /// width in texels, zero for a bilinear read, and the level's spread, the deviation its clouds keep against the
+    /// clouds it wanted.
+    pub plate: [[[f32; 3]; 2]; 2],
+    pub blend: [f32; 3],
+    /// This render's own spread: `deviation` is the wanted deviation times it.
+    pub spread: f32,
+    /// A render coarser than the field's finest level, which reads the mean of the texels under its pixel's box.
+    pub reduced: bool,
 }
 
 impl Grain {
@@ -58,17 +67,42 @@ impl Grain {
         let wanted = (GRAIN_CLOUD * radius).hypot(0.5 * footprint);
         let bound = ((GRAIN_CELLS - 1) as f32 * 0.5 * GRAIN_STEP - SCATTER_BOUND) * radius / GRAIN_PROFILE;
         let cloud = wanted.min(bound);
+        let spread = cloud / wanted;
+        let render = inverse(scan);
         Grain {
             scan,
-            render: inverse(scan),
+            render,
             radius,
             cloud,
-            deviation: deviation.map(|d| d * cloud / wanted),
+            deviation: deviation.map(|d| d * spread),
             gaze,
             silver: false,
             negative: None,
             seed: [0, 0],
+            plate: [render, render],
+            blend: [0.0, spread, spread],
+            spread,
+            reduced: false,
         }
+    }
+
+    /// A level of the layers' field on the scan's grid, one texel `pitch` full-resolution pixels a side, its clouds
+    /// widened by that pitch: drawn once a photo and grain size, read at every scale.
+    pub fn level(radius: f32, pitch: f32) -> Self {
+        Grain::on([[pitch, 0.0, 0.0], [0.0, pitch, 0.0]], radius, pitch, [1.0; 3], [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    }
+
+    /// This grain reading its layers' field off two levels of pitches `pitch` and spreads `spread`, the second's share
+    /// `share`.
+    pub fn plated(self, pitch: f32, gain: f32, half: f32) -> Self {
+        let onto = [[1.0 / pitch, 0.0, 0.0], [0.0, 1.0 / pitch, 0.0]];
+        Grain { plate: [onto, onto], blend: [half, gain, gain], reduced: half > 0.0, ..self }
+    }
+
+    /// How many full-resolution pixels one of this render's spans.
+    pub fn footprint(&self) -> f32 {
+        let [x, y] = self.scan;
+        (x[0] * y[1] - x[1] * y[0]).abs().sqrt()
     }
 
     /// This grain on `negative`.
@@ -101,6 +135,9 @@ impl Grain {
         let mut rows = Grain { deviation: [0.0; 3], gaze: [[0.0; 3]; 3], negative: None, ..*self }.rows();
         rows[5] = [0.0; 4];
         rows[6] = [0.0; 4];
+        for row in &mut rows[10..] {
+            *row = [0.0; 4];
+        }
         rows
     }
 
@@ -111,8 +148,11 @@ impl Grain {
             Some(n) => (v3(n.bare, n.veil), v3(n.window, 1.0)),
             None => ([1.0, 1.0, 1.0, 0.0], [1.0, 1.0, 1.0, 0.0]),
         };
-        let mut rows = vec![v3(x, self.radius), v3(y, self.cloud), v3(rx, self.reach()), v3(ry, 0.0), v3(self.deviation, 0.0), bare, window];
+        let wanted = self.deviation.map(|d| d / self.spread);
+        let mut rows = vec![v3(x, self.radius), v3(y, self.cloud), v3(rx, self.reach()), v3(ry, 0.0), v3(wanted, 0.0), bare, window];
         rows.extend(self.gaze.map(|g| v3(g, 0.0)));
+        rows.extend(self.plate.iter().flatten().map(|r| v3(*r, 0.0)));
+        rows.push(v3(self.blend, f32::from(u8::from(self.reduced))));
         rows
     }
 }
@@ -264,6 +304,59 @@ pub fn grain_on(input: &Grid, at: V2, k: &Grain, field: V3) -> V4 {
 /// One pixel of `input`, at `at` in the graph's pixels, under the grain `k`; alpha kept.
 pub fn grain(input: &Grid, at: V2, k: &Grain) -> V4 {
     grain_on(input, at, k, grain_field(at, k))
+}
+
+/// A level of the layers' field where `map` takes `q`, a point of the scan's grid: the mean of its texels over a box
+/// `half` texels each side of it, each weighted by how much of it the box covers, or bilinearly where `half` is zero.
+pub fn plate_read(level: &Grid, map: [[f32; 3]; 2], q: V2, half: f32) -> V3 {
+    let t = [map[0][0] * q[0] + map[0][1] * q[1] + map[0][2] - 0.5, map[1][0] * q[0] + map[1][1] * q[1] + map[1][2] - 0.5];
+    if half == 0.0 {
+        let f = t.map(f32::floor);
+        let w = [t[0] - f[0], t[1] - f[1]];
+        let (i, j) = (f[0] as i32, f[1] as i32);
+        let mix = |a: V4, b: V4, s: f32| std::array::from_fn::<f32, 3, _>(|c| a[c] + (b[c] - a[c]) * s);
+        let top = mix(level.load([i, j]), level.load([i + 1, j]), w[0]);
+        let bottom = mix(level.load([i, j + 1]), level.load([i + 1, j + 1]), w[0]);
+        return std::array::from_fn(|c| top[c] + (bottom[c] - top[c]) * w[1]);
+    }
+    let span = |c: f32| {
+        let (lo, hi) = (c - half, c + half);
+        let first = (lo + 0.5).floor() as i32;
+        std::array::from_fn::<(i32, f32), 5, _>(|n| {
+            let i = first + n as i32;
+            (i, ((hi.min(i as f32 + 0.5) - lo.max(i as f32 - 0.5)).max(0.0)) / (2.0 * half))
+        })
+    };
+    let (xs, ys) = (span(t[0]), span(t[1]));
+    let mut out = [0.0f32; 3];
+    for (j, wy) in ys {
+        for (i, wx) in xs {
+            let v = level.load([i, j]);
+            for c in 0..3 {
+                out[c] += wx * wy * v[c];
+            }
+        }
+    }
+    out
+}
+
+/// The mean of each 2 × 2 texels of `level`: the next level of a plate.
+pub fn grain_halved(level: &Grid) -> Grid {
+    let (w, h) = (level.width.div_ceil(2), level.height.div_ceil(2));
+    Grid::generated(0, 0, w, h, |p| {
+        let q = [2 * p[0] + level.x, 2 * p[1] + level.y];
+        let s = [level.load(q), level.load([q[0] + 1, q[1]]), level.load([q[0], q[1] + 1]), level.load([q[0] + 1, q[1] + 1])];
+        std::array::from_fn(|c| 0.25 * (s[0][c] + s[1][c] + s[2][c] + s[3][c]))
+    })
+}
+
+/// One pixel of `input` at `at` under the grain `k`, its layers' field read off `level` through `k.plate` and `k.blend`;
+/// alpha kept.
+pub fn grain_plated(input: &Grid, at: V2, k: &Grain, level: &Grid) -> V4 {
+    let (q, _, _) = cells(at, k);
+    let read = plate_read(level, k.plate[0], q, k.blend[0]);
+    let field = read.map(|v| v * k.blend[1]);
+    grain_on(input, at, &Grain { deviation: k.deviation.map(|d| d / k.spread), ..*k }, field)
 }
 
 #[cfg(test)]

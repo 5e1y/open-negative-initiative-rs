@@ -46,13 +46,15 @@ pub struct Request {
     pub scale: f64,
     /// The width of the full-resolution frame the source was read from; `None` when it is the source.
     pub full_width: Option<f64>,
+    /// Its height, which the grain's plate is laid over; `None` takes the source's at the full width.
+    pub full_height: Option<f64>,
     /// A measurement: the output clip and a sheet's ground are left off.
     pub measuring: bool,
 }
 
 impl Default for Request {
     fn default() -> Self {
-        Request { region: None, scale: 1.0, full_width: None, measuring: false }
+        Request { region: None, scale: 1.0, full_width: None, full_height: None, measuring: false }
     }
 }
 
@@ -94,7 +96,12 @@ pub struct Pipeline {
     healing: healing::Healing,
     /// The halation's glow on the film's plate, with its recipe.
     glow: Option<(u64, Source)>,
+    /// The grain's layers' field on the scan's grid, with what it was drawn for.
+    grain_plate: Option<(GrainPlateKey, grain::Plate)>,
 }
+
+/// What a grain's plate is drawn for: the photo's seed, the grain's radius, a silver film's one layer, the scan's size.
+type GrainPlateKey = ([u32; 2], u32, bool, (u64, u64));
 
 /// A render's pixel centre onto itself.
 const IDENTITY: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
@@ -119,6 +126,7 @@ impl Pipeline {
     pub fn trim(&mut self) {
         self.healing = Default::default();
         self.glow = None;
+        self.grain_plate = None;
     }
 
     /// The recipe evaluated on the request's region and read back, with that region.

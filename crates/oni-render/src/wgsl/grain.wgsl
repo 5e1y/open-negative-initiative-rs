@@ -18,6 +18,10 @@ struct Params {
     window: vec4<f32>,
     // Each channel's mix of the layers' deviations.
     gaze: array<vec4<f32>, 3>,
+    // The scan's grid onto the level of the layers' field read, its x row then its y row, twice.
+    plate: array<vec4<f32>, 4>,
+    // x: the box's half width in texels, zero for a bilinear read; y: the level's spread.
+    blend: vec4<f32>,
 }
 
 // PCG-4D: four words, exact on every device.

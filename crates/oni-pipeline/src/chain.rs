@@ -27,8 +27,6 @@ impl Pipeline {
         // A digital photo's scene, lit at its film's white, takes its film's own light. A film's look reads the scene as
         // it was shot, its own white.
         let has_look = s.film().is_some_and(|f| f.stock.look().is_some());
-        // The grain's field lies on the framed scan, which no film or grain slider moves.
-        let field_base = framed.clone();
         let lit = match conversion::scene_white(s).filter(|_| !has_look) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
@@ -36,11 +34,19 @@ impl Pipeline {
         // A measure reads no effect, and a film mode renders none (owner's call).
         let effects = (!measuring && s.mode.is_digital()).then_some(scan);
         // The grain lies on the developed film, a pass of its own: a print notch starts from the grained film the
-        // canvas's cache keeps.
+        // canvas's cache keeps. Its layers' field is drawn once on the scan's grid, read at every scale and place.
         let grain = effects.and_then(|scan| grain::grain(s, scan, scale)).map(|k| k.seeded(inputs.seed));
-        let grained = |film: Image| match &grain {
-            Some(k) => grain::grained_over(film, &field_base, k),
-            None => film,
+        let full = (full_width, request.full_height.unwrap_or(f64::from(source.extent().h) * full_width / f64::from(source.extent().w)));
+        // The plate serves the renders of one photo, those carrying its own (the canvas's); a thumbnail or an export draws
+        // its field for itself, as small or as whole as it is.
+        let grain_plate = match (&grain, inputs.plate) {
+            (Some(k), Some(_)) => Some(self.grain_plate(graph, k, full, &Image::new(source))?),
+            _ => None,
+        };
+        let grained = |film: Image| match (&grain, &grain_plate) {
+            (Some(k), Some(plate)) => grain::grained_on(film, k, plate),
+            (Some(k), None) => grain::grained(film, k),
+            _ => film,
         };
         // The virtual film takes that scene as a pass of its own too, the halation on its layers before their curve: its
         // negative is read as any negative is. A look holds no layer, so its effects lie on the scene it reads; it

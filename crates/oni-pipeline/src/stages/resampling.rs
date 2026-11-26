@@ -10,6 +10,11 @@ shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN
 shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
 shader!(GRAIN, [wgsl::GRAIN, wgsl::GRAIN_LAID], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(p); }");
 shader!(GRAIN_FIELD, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_field_px(p); }");
+const GRAIN_HALF_PIXEL: &str = "fn pixel(p: vec2<i32>) -> vec4<f32> {
+    let q = 2 * p;
+    return 0.25 * (load(q) + load(q + vec2<i32>(1, 0)) + load(q + vec2<i32>(0, 1)) + load(q + vec2<i32>(1, 1)));
+}";
+shader!(GRAIN_HALF, ["struct Params { unused: vec4<f32> }"], GRAIN_HALF_PIXEL);
 shader!(HALATION_LAID, [wgsl::HALATION_LAID], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_laid_px(p); }");
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
@@ -234,7 +239,7 @@ impl Stage for Warped {
 
 /// The grain, read at each pixel's absolute coordinate, so a region renders what the whole holds there; it reads the
 /// film where the grains over each pixel are centred.
-pub struct Grained(pub Grain);
+pub struct Grained(pub Grain, pub [Rect; 2]);
 
 impl Stage for Grained {
     fn name(&self) -> &'static str {
@@ -255,11 +260,43 @@ impl Stage for Grained {
         let margin = (self.0.reach() * scale).ceil() as i32 + 1;
         output.outset(margin, margin)
     }
+
+    fn aux_region(&self, index: usize, output: Rect) -> Rect {
+        let [px, py] = self.0.plate[index];
+        let [sx, sy] = self.0.scan;
+        let compose = |p: [f32; 3]| [p[0] * sx[0] + p[1] * sy[0], p[0] * sx[1] + p[1] * sy[1], p[0] * sx[2] + p[1] * sy[2] + p[2]];
+        mapped(&[compose(px), compose(py)], output, 2).nearest_in(&self.1[index])
+    }
 }
 
-/// The grain `k`, reading its layers' field as its one auxiliary input.
-pub fn grain(k: &Grain) -> Grained {
-    Grained(*k)
+/// The grain `k`, reading its layers' field off its two levels, of extents `levels`, as its two auxiliary inputs.
+pub fn grain(k: &Grain, levels: [Rect; 2]) -> Grained {
+    Grained(*k, levels)
+}
+
+/// A level of the layers' field of the grain `k`, of extent `extent`, drawn over an input it never reads.
+pub struct GrainLevel(pub Grain, pub Rect);
+
+impl Stage for GrainLevel {
+    fn name(&self) -> &'static str {
+        "grain-level"
+    }
+
+    fn shader(&self) -> &'static str {
+        GRAIN_FIELD.as_str()
+    }
+
+    fn params(&self) -> Vec<u8> {
+        uniform(self.0.head(), &self.0.field_rows())
+    }
+
+    fn extent(&self, _input: Rect) -> Rect {
+        self.1
+    }
+
+    fn input_region(&self, _output: Rect) -> Rect {
+        Rect::new(0, 0, 1, 1)
+    }
 }
 
 /// The layers' field of the grain `k`, over an input of the film's extent it never reads.
@@ -315,4 +352,25 @@ impl Stage for HalationLaid {
 /// The halation of `k`, its glow read off a plate of extent `plate` through `map`.
 pub fn halation_laid(k: &oni_render::Halation, map: [[f32; 3]; 2], plate: Rect) -> HalationLaid {
     HalationLaid { k: *k, map, plate }
+}
+
+/// The mean of each 2 × 2 texels of a level of the grain's field, from the origin: the next level of its plate.
+pub struct GrainHalf;
+
+impl Stage for GrainHalf {
+    fn name(&self) -> &'static str {
+        "grain-half"
+    }
+
+    fn shader(&self) -> &'static str {
+        GRAIN_HALF.as_str()
+    }
+
+    fn extent(&self, input: Rect) -> Rect {
+        Rect::new(0, 0, input.w.div_ceil(2), input.h.div_ceil(2))
+    }
+
+    fn input_region(&self, output: Rect) -> Rect {
+        Rect::new(2 * output.x, 2 * output.y, 2 * output.w, 2 * output.h)
+    }
 }

@@ -104,7 +104,7 @@ pub fn read_laid(engine: &mut Engine, sheet: oni_graph::Source) -> Result<Image,
 /// of the full frame, the scale the file is written at, never past what that decode holds.
 pub fn sample(engine: &Shared, negative: &Negative, settings: &PipelineSettings, scale: f64) -> Option<Image> {
     let (w, _) = negative.size();
-    let request = Request { scale: (scale * negative.full_width / f64::from(w.max(1))).min(1.0), full_width: Some(negative.full_width), ..Request::default() };
+    let request = Request { scale: (scale * negative.full_width / f64::from(w.max(1))).min(1.0), full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
     let mut engine = engine.lock().ok()?;
     let image = engine.unproofed(&negative.preview, negative.seed, settings, &request).ok()?;
     read_back(engine.parts().0, &image).ok()

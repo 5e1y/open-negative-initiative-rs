@@ -184,7 +184,8 @@ fn main() {
     let r = panned.extent();
     let request = Request { full_width: Some(negative.full_width), ..Request::default() };
     let (graph, pipeline) = e.parts();
-    let image = pipeline.image(graph, &full, &s, &request, &inputs_seeded(negative.seed)).unwrap();
+    let plate_inputs = Inputs { plate: Some(&negative.preview), ..inputs_seeded(negative.seed) };
+    let image = pipeline.image(graph, &full, &s, &Request { full_height: Some(negative.full_height), ..request }, &plate_inputs).unwrap();
     let read = |g: &mut Graph, source: &oni_graph::Source| g.render(&Image::new(source), source.extent(), None).unwrap();
     let kept = read(graph, &panned);
     let fresh = graph.materialise_cached(&image, r, None).unwrap();

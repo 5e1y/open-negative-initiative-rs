@@ -324,14 +324,14 @@ impl Engine {
         self.graph.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
     }
 
-    /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given.
+    /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given: a thumbnail's often, its
+    /// grain drawn for itself, the canvas's plate kept for its own photo.
     pub fn render(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Result<Linear, String> {
         let (w, h) = negative.size();
-        let long = w.max(h) as f64;
-        let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
-        let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
+        let scale = side.map_or(1.0, |s| (s as f64 / w.max(h) as f64).min(1.0));
+        let request = Request { scale, full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let region = image.extent();

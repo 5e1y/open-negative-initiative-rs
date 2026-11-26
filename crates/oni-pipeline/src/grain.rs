@@ -2,7 +2,7 @@
 //! developed film in its windows' shares, so a pan, a zoom, a crop or a turn leaves them on the photo.
 
 use crate::{film, geometry, stages};
-use oni_graph::{Image, Rect};
+use oni_graph::{Image, Rect, Source};
 use oni_render::{Grain, GrainedNegative};
 use oni_settings::axis::density_axis;
 use oni_settings::{PipelineSettings, VirtualFilm, VirtualStock};
@@ -61,16 +61,71 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     })
 }
 
-/// `image`, a developed film, grained by `k`, its layers' field drawn over `base`, an image of its extent that its
-/// film's and its grain's sliders leave as it is, so their notches draw no grain again.
-pub fn grained_over(image: Image, base: &Image, k: &Grain) -> Image {
-    assert_eq!(image.extent(), base.extent(), "a grain's field lies on its film's extent");
-    let field = base.clone().then(stages::grain_field(k));
-    image.then_reading(stages::grain(k), &[field])
+/// `image`, a developed film, grained by `k`, its layers' field drawn on itself.
+pub fn grained(image: Image, k: &Grain) -> Image {
+    let field = image.clone().then(stages::grain_field(k));
+    let e = image.extent();
+    image.then_reading(stages::grain(k, [e, e]), &[field.clone(), field])
 }
 
-/// `image`, a developed film, grained by `k`.
-pub fn grained(image: Image, k: &Grain) -> Image {
-    let base = image.clone();
-    grained_over(image, &base, k)
+/// The pitch of the field's finest level, in full-resolution pixels: four texels across a grain.
+pub fn finest(radius: f32) -> f32 {
+    0.5 * radius
+}
+
+/// The layers' field on the scan's grid, drawn once a photo and grain size: each level's source and pitch, the finest
+/// drawn, each next the mean of its 2 × 2 texels, down to a texel across the frame.
+#[derive(Clone)]
+pub struct Plate {
+    pub levels: Vec<(Source, f32)>,
+    /// The gain at footprints half an octave apart from a full-resolution pixel's: the deviation a render drawing its
+    /// field at that footprint lays, its spread included, over the plate's as such a render reads it.
+    pub gains: Vec<(f32, f32)>,
+}
+
+impl Plate {
+    /// The gain at `footprint`, between the two measured about it by its place in their half octave.
+    pub fn gain(&self, footprint: f32) -> f32 {
+        let at = self.gains.iter().rposition(|(f, _)| *f <= footprint).unwrap_or(0);
+        let (f0, g0) = self.gains[at];
+        let Some(&(f1, g1)) = self.gains.get(at + 1) else { return g0 };
+        let share = ((footprint.max(f0)).log2() - f0.log2()) / (f1.log2() - f0.log2());
+        g0 * (g1 / g0).powf(share.clamp(0.0, 1.0))
+    }
+}
+
+/// The pitches of a plate for grains of `radius` on a scan of `full` full-resolution pixels.
+pub fn pitches(radius: f32, full: (f64, f64)) -> Vec<f32> {
+    let long = full.0.max(full.1) as f32;
+    std::iter::successors(Some(finest(radius)), |p| Some(2.0 * p)).take_while(|p| long / p >= 1.0).collect()
+}
+
+/// The level of pitch `pitch` for grains of `radius` on a scan of `full` pixels, the photo's `seed`, over `base`.
+pub fn level(base: &Image, radius: f32, pitch: f32, full: (f64, f64), seed: [u32; 2], silver: bool) -> Image {
+    let k = Grain::level(radius, pitch).seeded(seed);
+    let k = if silver { k.on_silver() } else { k };
+    let extent = Rect::new(0, 0, (full.0 / f64::from(pitch)).ceil() as u32, (full.1 / f64::from(pitch)).ceil() as u32);
+    base.clone().then(stages::GrainLevel(k, extent))
+}
+
+/// How a render of `footprint` full-resolution pixels reads `plate`: the level, and the box's half width in its texels,
+/// zero for a smooth read. Under twice the finest pitch the finest level is read smooth, its texels holding the grain's
+/// contrast at every phase; past it a box two to four texels wide on the level whose pitch is under half the footprint.
+pub fn reading(plate_pitches: &[f32], footprint: f32) -> (usize, f32) {
+    if footprint < 2.0 * plate_pitches[0] {
+        return (0, 0.0);
+    }
+    let level = plate_pitches.iter().rposition(|p| *p <= 0.5 * footprint).unwrap_or(0);
+    (level, 0.5 * footprint / plate_pitches[level])
+}
+
+/// `image`, a developed film, grained by `k`, its layers' field read off `plate` as a render of its footprint reads it.
+pub fn grained_on(image: Image, k: &Grain, plate: &Plate) -> Image {
+    let footprint = k.footprint();
+    let pitches: Vec<f32> = plate.levels.iter().map(|l| l.1).collect();
+    let (level, half) = reading(&pitches, footprint);
+    let (source, pitch) = &plate.levels[level];
+    let k = k.plated(*pitch, plate.gain(footprint), half);
+    let e = source.extent();
+    image.then_reading(stages::grain(&k, [e, e]), &[Image::new(source), Image::new(source)])
 }

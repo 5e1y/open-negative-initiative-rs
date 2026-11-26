@@ -46,7 +46,7 @@ impl Engine {
 
     /// The recipe `resident` materialises, the region it keeps and where it lands.
     fn composed(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Image, Option<Rect>, Option<Placed>), String> {
-        let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        let request = Request { full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
         self.read_custom(settings);
         let Some(view) = view else {
             let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
@@ -158,7 +158,7 @@ impl Engine {
     pub fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Source, String> {
         let (w, h) = negative.size();
         let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
-        let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
+        let request = Request { scale, full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
         self.read_custom(settings);
         let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
