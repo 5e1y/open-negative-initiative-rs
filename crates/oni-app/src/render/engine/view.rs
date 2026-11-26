@@ -148,7 +148,7 @@ impl Engine {
         let preview = match &self.fitted.scan {
             Some((key, kept)) if *key == image.key() => kept.clone(),
             _ => {
-                let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
+                let made = self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?;
                 self.fitted.scan = Some((image.key(), made.clone()));
                 // A film's settings moved: the full scan kept is no longer this film's.
                 self.fitted.full_scan = None;
@@ -309,6 +309,8 @@ pub(crate) struct Fitting {
     /// the setting rendered and whether the last render stood the preview's scan in for a full one.
     scan: Option<(u64, Source)>,
     full_scan: Option<(u64, Source)>,
+    /// The preview scan's stages a film notch leaves as they are, a band each, so the notch reruns only what follows.
+    scan_stages: Vec<oni_graph::Cache>,
     held: bool,
     provisional: bool,
 }

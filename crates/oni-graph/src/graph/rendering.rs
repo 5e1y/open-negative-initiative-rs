@@ -92,7 +92,7 @@ impl Graph {
     }
 
     /// Hands the pool what the cache let go of after a render.
-    fn settle(&mut self, cache: Option<&mut Cache>) {
+    pub(super) fn settle(&mut self, cache: Option<&mut Cache>) {
         for texture in cache.map(Cache::settle).unwrap_or_default() {
             self.pool.release(texture);
         }

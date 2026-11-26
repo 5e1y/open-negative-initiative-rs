@@ -57,13 +57,22 @@ impl Graph {
     /// of at most `BAND_PIXELS`, so a full frame's chain holds a band's textures, not the frame's; past one texture it
     /// stays in full floats.
     pub fn materialise_half(&mut self, image: &Image) -> Result<Source, Error> {
+        self.materialise_half_cached(image, None)
+    }
+
+    /// `materialise_half` starting from what `caches` hold, one a band, and leaving in each what it keeps: a chain made
+    /// again with a late stage moved reruns only what follows it.
+    pub fn materialise_half_cached(&mut self, image: &Image, mut caches: Option<&mut Vec<Cache>>) -> Result<Source, Error> {
         let region = image.extent();
         let image = image.readable();
         let rows = ((BAND_PIXELS / u64::from(region.w.max(1))) as u32).clamp(1, region.h.max(1));
         let bands: Vec<Rect> = (0..region.h.div_ceil(rows)).map(|i| Rect::new(region.x, region.y + (i * rows) as i32, region.w, rows.min(region.h - i * rows))).collect();
+        if let Some(c) = caches.as_deref_mut() {
+            c.resize_with(bands.len(), Cache::frontier);
+        }
         let mut plans = Vec::with_capacity(bands.len());
-        for band in &bands {
-            let plan = Plan::new(&image, *band, None)?;
+        for (i, band) in bands.iter().enumerate() {
+            let plan = Plan::new(&image, *band, caches.as_deref().map(|c| &c[i]))?;
             if !self.fits(&plan) {
                 drop(plans);
                 drop(plan);
@@ -72,9 +81,13 @@ impl Graph {
             plans.push(plan);
         }
         let half = self.pool.create_owned(region.w, region.h, Precision::Half);
-        for (band, plan) in bands.into_iter().zip(plans) {
+        for (i, (band, plan)) in bands.into_iter().zip(plans).enumerate() {
+            let mut kept = caches.as_deref_mut().map(|c| &mut c[i]);
+            if let Some(c) = kept.as_deref_mut() {
+                c.begin(&plan.nodes);
+            }
             let mut encoder = self.device.create_command_encoder(&Default::default());
-            let (texture, rect) = self.evaluate(&mut encoder, plan, None, false);
+            let (texture, rect) = self.evaluate(&mut encoder, plan, kept.as_deref_mut(), false);
             let at = [band.x - rect.x, band.y - rect.y, band.x - region.x, band.y - region.y, band.w as i32, band.h as i32, 0, 0];
             let uniform = self.uniform(bytemuck::bytes_of(&at));
             let packer = self.packer.get_or_insert_with(|| Packer::new(&self.device));
@@ -98,6 +111,7 @@ impl Graph {
             }
             self.submit(encoder);
             self.pool.release(texture);
+            self.settle(kept);
             self.ended();
         }
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);

@@ -13777,6 +13777,13 @@
     "detail": "Measured first: the scene already reaches every film in its decode's light (5000 K on a RAW), the film's balance its layers' alone, so a daylight grey prints blue on Vision3 500T and 200T (R 0.29, G 0.38, B 0.57 at mid grey, pure inversion) and near neutral on 250D; nothing in the render changes. What said otherwise is rewritten: scene_white's, the stock white's and the chain's comments and the Film block's help no longer say the scene is lit at the film's white. The Film block's light line names both lights, 'A 5000 K scene on a film balanced for 2810 K' (fr, es), so the cast comes from a state in sight. Proven by virtual_film's a_tungsten_film_prints_a_daylight_grey_blue_and_the_filtration_takes_it_away: blue on 500T, near neutral on 250D, the twin grey lit at the film's own white neutral, and the Source tab's Filtration (R -0.92, B +1.20 stops) brings the ramp within 0.005 of neutral; stock_hero reads the film's light in the line."
   },
   {
+    "id": 3876,
+    "type": "perf",
+    "title": "A digital photo's preview scan made again from its own stages' cache: a film notch reruns only what follows it",
+    "status": "done",
+    "detail": "Each film notch made the preview scan again whole, the grain's field and the lit scene included, which no film slider moves: Graph::materialise_half_cached keeps a frontier cache a band (the view's, Cache::frontier), and the engine holds the preview scan's; the full scan, made at rest, keeps none. Measured on Portra 800, 47 Mpx, app profile, load 7 to 10: grain notch p50 43 to 13-16 ms, halation 38-80 to 22-36 ms, shooting exposure 50-53 to 26-57 ms (too noisy to call); textures' peak 1923 MB as before. The GPU bench of the scan alone (8 Mpx): halation 77 to 26 ms, exposure 84 to 40, grain 79 to 16. Proven by pool's a_banded_render_made_again_from_its_caches_reads_as_one_made_afresh: bit for bit, every band keeping a stage, twin: the first recipe's render differs."
+  },
+  {
     "id": 4008,
     "type": "ui",
     "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",

@@ -145,3 +145,23 @@ fn a_half_float_render_made_in_bands_reads_as_one_made_whole() {
     let c = g.render(&other, other.extent(), None).unwrap();
     assert!(gap(&whole, &c) > 2e-3);
 }
+
+#[test]
+fn a_banded_render_made_again_from_its_caches_reads_as_one_made_afresh() {
+    let Some(mut g) = graph("a_banded_render_made_again_from_its_caches_reads_as_one_made_afresh") else { return };
+    let (w, h) = (2400, 2000);
+    let full = g.upload(w, h, &noise(w, h, 13)).expect("upload");
+    let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs())).fold(0.0f32, f32::max);
+    let chain = |last: f32| Image::new(&full).then(Gain([2.0; 4])).then(BoxBlur3).then(Gain([last; 4]));
+    let read = |g: &mut Graph, s: &Source| g.render(&Image::new(s), s.extent(), None).unwrap();
+    let mut caches = Vec::new();
+    let first = g.materialise_half_cached(&chain(1.0), Some(&mut caches)).expect("first");
+    // The last gain moved: each band keeps the blur its changed stage reads, and the render matches one made afresh.
+    let again = g.materialise_half_cached(&chain(0.5), Some(&mut caches)).expect("again");
+    assert!(caches.len() > 1 && caches.iter().all(|c| c.len() > 0), "every band keeps a stage");
+    let afresh = g.materialise_half(&chain(0.5)).expect("afresh");
+    let (again, afresh, first) = (read(&mut g, &again), read(&mut g, &afresh), read(&mut g, &first));
+    assert!(gap(&again, &afresh) == 0.0, "{}", gap(&again, &afresh));
+    // Twin: the first recipe's render is another picture, which a stale band would show.
+    assert!(gap(&again, &first) > 0.1);
+}
