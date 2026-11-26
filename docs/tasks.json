@@ -13642,5 +13642,12 @@
     "title": "While development pauses (2026-12-15 to 2027-01-15), the gallery's status bar says so in its quiet hint, and nothing on other days",
     "status": "in progress",
     "detail": "help::PAUSE and paused(), today in the machine's calendar; Help.pause-line feeds CardStatus's hint in the gallery."
+  },
+  {
+    "id": 3952,
+    "type": "feature",
+    "title": "The welcome's Collection gift says only what The Lens DB can confirm, and one constant takes it out",
+    "status": "done",
+    "detail": "'Two independent projects' where 'non-profit' was unproven (the Kit's offer too); The Lens DB sees the list of gear, never the photos, so nothing contradicts the contest's upload; the gift's scene shows cards as the Kit column draws them. help::KIT_GIFT hides the gift and skips its page both ways, the dots counting five (window check welcome_card, with its twin). Validation file for The Lens DB's owner outside the repository."
   }
 ]

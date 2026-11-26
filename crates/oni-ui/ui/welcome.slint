@@ -63,7 +63,7 @@ component Hall inherits VerticalLayout {
                 chosen => { root.chosen(0); }
             }
         }
-        VerticalLayout {
+        if Help.kit-gift: VerticalLayout {
             alignment: end;
             Gift {
                 side: root.small;
@@ -113,9 +113,10 @@ export component WelcomeSheet inherits Sheet {
     bleed: true;
     card-height: 1px;
     paging: true;
-    property <int> count: 6;
+    // The pages in order; without the Collection's gift, its page is skipped and the dots count one less.
+    property <int> count: Help.kit-gift ? 6 : 5;
     property <int> page: Help.welcome-page;
-    property <bool> last: root.page == root.count - 1;
+    property <bool> last: root.page == 5;
     // A page's words take the whole window where too little is left beside them for a stage.
     property <bool> staged: root.width - WelcomeStyle.words-width >= WelcomeStyle.stage-least;
     // The gift being untied, and since when: its page opens as the lid lands.
@@ -125,7 +126,9 @@ export component WelcomeSheet inherits Sheet {
     property <int> film-step;
     property <bool> film-held: Motion.reduced;
     property <float> untie: root.untying < 0 ? 0 : max(0, min(1, (animation-tick() - root.untie-start) / GiftStyle.untie));
-    function turn(by: int) { root.show(max(0, min(root.count - 1, root.page + by))); }
+    function place(page: int) -> int { !Help.kit-gift && page > 2 ? page - 1 : page }
+    function page-at(place: int) -> int { !Help.kit-gift && place >= 2 ? place + 1 : place }
+    function turn(by: int) { root.show(root.page-at(max(0, min(root.count - 1, root.place(root.page) + by)))); }
     // A gift's page shown is that gift unwrapped, however the person came to it.
     function show(page: int) {
         if (page >= 1 && page <= 4 && Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, page - 1)), 2) == 0) {
@@ -191,10 +194,10 @@ export component WelcomeSheet inherits Sheet {
                         vertical-stretch: 1;
                         eyebrow: @tr("Small gift");
                         title: @tr("The Collection, with The Lens DB");
-                        Label { text: @tr("ONI partners with The Lens DB, the largest database of camera bodies and lenses in the world."); role: TextRole.note; wrap: word-wrap; }
-                        Point { title: @tr("Your gear in one place"); text: @tr("Search the catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
+                        Label { text: @tr("ONI partners with The Lens DB, a catalogue of camera bodies and lenses."); role: TextRole.note; wrap: word-wrap; }
+                        Point { title: @tr("Your gear in one place"); text: @tr("Connect your account on The Lens DB, then search its catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
                         Point { title: @tr("EXIF filled with ease"); text: @tr("Your camera and lens fill your exports' metadata, maker and lens specification included."); }
-                        Point { title: @tr("Free, and private"); text: @tr("Two non-profit projects, no ads. Your photos never leave your computer."); }
+                        Point { title: @tr("Free, and private"); text: @tr("Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."); }
                         if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
                         if Kit.link == KitLink.waiting: Label { text: @tr("Finish in Your Browser"); role: TextRole.note; wrap: word-wrap; }
                         if Kit.link == KitLink.in: Label { text: @tr("Connected as {}", Kit.account); role: TextRole.note; wrap: word-wrap; }
@@ -289,8 +292,8 @@ export component WelcomeSheet inherits Sheet {
                     y: footer.y + (footer.height - self.preferred-height) / 2;
                     width: self.preferred-width;
                     count: root.count;
-                    at: root.page;
-                    picked(page) => { root.show(page); }
+                    at: root.place(root.page);
+                    picked(place) => { root.show(root.page-at(place)); }
                 }
             }
         }

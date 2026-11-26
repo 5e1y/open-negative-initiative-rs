@@ -147,5 +147,24 @@ pub(crate) fn the_welcome_fills_the_window_and_each_gift_opens_its_page() {
     assert!(key.y + key.height <= 440.0 - MARGIN + 0.5, "900×440: the key in the window, {key:?}");
     tap(&rig, key.middle());
     assert!(closed.get(), "GET STARTED answers a click");
+
+    // Without the Collection's gift its page is skipped both ways and the dots count five; twin: with it, six.
+    sized(&rig, (w as u32, h as u32));
+    help.set_welcome_page(0);
+    help.set_welcome_unwrapped(0);
+    rig.settle();
+    assert_eq!(common::placed(&window, Role::Button, &tr("Small gift")).len(), 2, "twin: two small gifts with the Collection's");
+    help.set_kit_gift(false);
+    rig.settle();
+    assert_eq!(common::placed(&window, Role::Button, &tr("Small gift")).len(), 1, "the Collection's gift gone from the hall");
+    help.set_welcome_page(1);
+    rig.settle();
+    rig.key("\n");
+    assert_eq!(help.get_welcome_page(), 3, "Return skips the Collection's page");
+    rig.key(&slint::SharedString::from(slint::platform::Key::LeftArrow));
+    assert_eq!(help.get_welcome_page(), 1, "and the left arrow skips it back");
+    let five = tr("Page {} of {}").replacen("{}", "5", 1).replacen("{}", "5", 1);
+    common::the(&window, Role::Tab, &five);
+    help.set_kit_gift(true);
     window.hide().unwrap();
 }

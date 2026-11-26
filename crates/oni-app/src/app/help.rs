@@ -35,6 +35,8 @@ pub const DONATE: &str = "https://ko-fi.com/remicourtillon";
 pub const INSTAGRAM: Option<&str> = Some("https://www.instagram.com/open.negative.initiative/");
 pub const CONTEST_FORM: Option<&str> = None;
 pub const CONTEST_TAG: &str = "#ONIsplash";
+/// Whether the welcome offers the Collection's gift: one switch, while The Lens DB validates what it shows.
+pub const KIT_GIFT: bool = true;
 /// The stock the huge gift's renders were shot on (`examples/welcome_stills`).
 const FILM_STOCK: &str = "kodak-portra-800";
 /// Development pauses between these days, both included, local time; the gallery says so, then nothing.
@@ -137,6 +139,7 @@ impl Ctl {
         h.set_contest_tag(CONTEST_TAG.into());
         h.set_contest_open(CONTEST_FORM.is_some());
         h.set_instagram_known(INSTAGRAM.is_some());
+        h.set_kit_gift(KIT_GIFT);
         h.set_pause_line(if paused(today()) { tr("Development and new features are paused from Dec 15 to Jan 15.").into() } else { Default::default() });
         let news = window.global::<News>();
         let p = me.clone();

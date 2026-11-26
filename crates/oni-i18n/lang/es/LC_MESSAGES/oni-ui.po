@@ -527,9 +527,9 @@ msgstr "Película"
 msgid "Nikon FM2"
 msgstr "Nikon FM2"
 
-#: crates/oni-app/src/app/organising/kit/words.rs crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Body"
-msgstr "Cuerpo"
+#: crates/oni-ui/ui/ds/welcome_kit.slint
+msgid "{} · {}"
+msgstr "{} · {}"
 
 #: crates/oni-ui/ui/ds/welcome_kit.slint
 msgid "Canon AE-1 Program"
@@ -544,8 +544,8 @@ msgid "Nikon Nikkor 50mm f/1.4 AI-S"
 msgstr "Nikon Nikkor 50mm f/1.4 AI-S"
 
 #: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "{} mm · f/{}"
-msgstr "{} mm · f/{}"
+msgid "{} mm · f/{} · {} · {}"
+msgstr "{} mm · f/{} · {} · {}"
 
 #: crates/oni-ui/ui/ds/welcome_kit.slint
 msgid "Canon FD 28mm f/2.8"
@@ -1128,8 +1128,8 @@ msgid "Fill your photos' EXIF with ease"
 msgstr "Rellena fácilmente los EXIF de tus fotos"
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Free: two non-profit projects, no ads"
-msgstr "Gratis: dos proyectos sin ánimo de lucro, sin anuncios"
+msgid "Free: two independent projects, no ads"
+msgstr "Gratis: dos proyectos independientes, sin anuncios"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Your photos never leave your computer"
@@ -2744,16 +2744,16 @@ msgid "The Collection, with The Lens DB"
 msgstr "La Colección, con The Lens DB"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "ONI partners with The Lens DB, the largest database of camera bodies and lenses in the world."
-msgstr "ONI se asocia con The Lens DB, la mayor base de datos de cuerpos de cámara y objetivos del mundo."
+msgid "ONI partners with The Lens DB, a catalogue of camera bodies and lenses."
+msgstr "ONI se asocia con The Lens DB, un catálogo de cuerpos de cámara y objetivos."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Your gear in one place"
 msgstr "Tu equipo en un solo lugar"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Search the catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."
-msgstr "Busca en el catálogo y añade tus cuerpos y objetivos: tu kit aparece en el archivo cuando no hay nada seleccionado."
+msgid "Connect your account on The Lens DB, then search its catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."
+msgstr "Conecta tu cuenta de The Lens DB, busca en su catálogo y añade tus cuerpos y objetivos: tu kit aparece en el archivo cuando no hay nada seleccionado."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "EXIF filled with ease"
@@ -2768,8 +2768,8 @@ msgid "Free, and private"
 msgstr "Gratis y privado"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Two non-profit projects, no ads. Your photos never leave your computer."
-msgstr "Dos proyectos sin ánimo de lucro, sin anuncios. Tus fotos nunca salen de tu ordenador."
+msgid "Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."
+msgstr "Dos proyectos independientes, sin anuncios. The Lens DB ve la lista de tu equipo, nunca tus fotos."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Connected as {}"
@@ -4038,6 +4038,10 @@ msgstr "ONI no fue autorizado en The Lens DB."
 #: crates/oni-app/src/app/organising/kit/sign_in.rs
 msgid "The sign-in waited 15 minutes and stopped: connect again when you are ready."
 msgstr "El inicio de sesión esperó 15 minutos y se detuvo: conéctate de nuevo cuando estés listo."
+
+#: crates/oni-app/src/app/organising/kit/words.rs
+msgid "Body"
+msgstr "Cuerpo"
 
 #: crates/oni-app/src/app/organising/kit.rs
 msgid "The Lens DB signed ONI out: the Kit last read is still offered in the EXIF."
