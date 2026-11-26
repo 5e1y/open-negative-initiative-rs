@@ -30,8 +30,10 @@ pub const CURVES: &str = include_str!("wgsl/curves.wgsl");
 pub const SATURATION_CURVE: &str = include_str!("wgsl/saturation_curve.wgsl");
 /// `vignette_px(s, at)`.
 pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
-/// `grain_px(p)`, reading its input through `load` around `p`.
+/// The grain's lattice, its helpers and `grain_field_px(p)`, the layers' field.
 pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
+/// `grain_px(p)`, the film grained, reading its layers' field through `load1`; after `GRAIN`.
+pub const GRAIN_LAID: &str = include_str!("wgsl/grain_laid.wgsl");
 /// `halation_source_px(e)`.
 pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
 /// `halation_px(e, glow)`.

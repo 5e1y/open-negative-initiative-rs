@@ -27,6 +27,8 @@ impl Pipeline {
         // A digital photo's scene, lit at its film's white, takes its film's own light. A film's look reads the scene as
         // it was shot, its own white.
         let has_look = s.film().is_some_and(|f| f.stock.look().is_some());
+        // The grain's field lies on the framed scan, which no film or grain slider moves.
+        let field_base = framed.clone();
         let lit = match conversion::scene_white(s).filter(|_| !has_look) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
@@ -37,7 +39,7 @@ impl Pipeline {
         // canvas's cache keeps.
         let grain = effects.and_then(|scan| grain::grain(s, scan, scale)).map(|k| k.seeded(inputs.seed));
         let grained = |film: Image| match &grain {
-            Some(k) => grain::grained(film, k),
+            Some(k) => grain::grained_over(film, &field_base, k),
             None => film,
         };
         // The virtual film takes that scene as a pass of its own too, the halation on its layers before their curve: its

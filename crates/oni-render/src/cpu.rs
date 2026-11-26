@@ -11,7 +11,7 @@ pub use crate::kernel::exposure_adjust::exposure_adjust;
 pub use crate::kernel::reciprocal::reciprocal;
 pub use crate::kernel::flat_field::flat_field;
 pub use crate::kernel::gaussian::gaussian;
-pub use crate::kernel::grain::grain;
+pub use crate::kernel::grain::{grain, grain_field, grain_on};
 pub use crate::kernel::halation::{halation, halation_source};
 pub use crate::kernel::held_black::held_black;
 pub use crate::kernel::grid::Grid;

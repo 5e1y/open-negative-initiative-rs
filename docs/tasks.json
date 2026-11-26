@@ -13537,5 +13537,12 @@
     "title": "A pan renders only what its region newly shows: the canvas's last render is copied where both cover",
     "status": "done",
     "detail": "Every pixel's value depends only on where it lies, so a pan of the same recipe copies the last render's overlap and evaluates only the strips the new region adds (Graph::materialise_over, Engine::resident keeping the shown render). Measured on a 47 Mpx RW2 at 100 % on a 3456 x 2034 canvas, Portra 800 with halation 0.5 and grain 0.25 (stage_cost example): a pan of a tenth of the canvas 155 ms -> 5.7 ms p50; a scanned NEF 15 -> 4 ms. The panned render equals a fresh render of its region to the bit (worst 0), its twin a pixel over differs by 0.23; the graph's check compares four pans with a fresh render, and the same strips over another recipe's render must differ. No full check (owner's rule during a work stream)."
+  },
+  {
+    "id": 3861,
+    "type": "perf",
+    "title": "The grain's layers' field drawn apart, over the framed scan, so a notch on Amount, the halation or the film keeps it",
+    "status": "done",
+    "detail": "Each layer's grain draws, their weights' mean in standard normals, depend on the lattice, the size, the scale and the seed alone: a pass of their own (GrainField over the framed scan, field_rows naming nothing else) that the canvas's cache keeps, read by the grain's laying, which samples the film and lays the field through each layer's deviation and the gaze. 47 Mpx RW2 at fit on a 3456 x 2034 canvas: a Grain notch 21.3 -> 6.6 ms, a Halation notch 25-28 -> 11-13 ms; a whole render the same at fit, +4 ms at 100 % for the field's texture. Against the build before, on the neutral film and on Portra 800 with halation 0.5, at fit and at 100 %: 99.98 % of values within 1e-5, mean difference 2e-7 to 2e-6, a handful of isolated pixels up to 1.5e-3 where the deviation, now multiplied after the mean, meets an ill-conditioned spot of the film's coding. The reference splits the same way (cpu::grain_field, cpu::grain_on); a check counts a notch's pixels on Amount and the film against a size notch, which draws the field again. No full check (owner's rule during a work stream)."
   }
 ]

@@ -61,7 +61,16 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     })
 }
 
+/// `image`, a developed film, grained by `k`, its layers' field drawn over `base`, an image of its extent that its
+/// film's and its grain's sliders leave as it is, so their notches draw no grain again.
+pub fn grained_over(image: Image, base: &Image, k: &Grain) -> Image {
+    assert_eq!(image.extent(), base.extent(), "a grain's field lies on its film's extent");
+    let field = base.clone().then(stages::grain_field(k));
+    image.then_reading(stages::grain(k), &[field])
+}
+
 /// `image`, a developed film, grained by `k`.
 pub fn grained(image: Image, k: &Grain) -> Image {
-    image.then(stages::grain(k))
+    let base = image.clone();
+    grained_over(image, &base, k)
 }

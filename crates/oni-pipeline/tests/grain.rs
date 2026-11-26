@@ -187,3 +187,36 @@ fn the_grain_over_a_whole_screen_is_timed() {
         assert!(ms < 250.0, "{name}: {ms:.1} ms");
     }
 }
+
+#[test]
+fn a_notch_on_the_grain_s_amount_or_the_film_keeps_its_field_and_one_on_its_size_draws_it_again() {
+    let Some(mut g) = graph("a_notch_on_the_grain_s_amount_or_the_film_keeps_its_field_and_one_on_its_size_draws_it_again") else { return };
+    let (w, h) = (400u32, 300u32);
+    let source = g.upload(w, h, &noise(w, h, 5, 0.02, 1.2)).unwrap();
+    let mut pipeline = Pipeline::new();
+    let request = Request { full_width: Some(f64::from(w)), ..Request::default() };
+    let mut cache = oni_graph::Cache::frontier();
+    let mut notch = |g: &mut Graph, s: &PipelineSettings| {
+        let image = pipeline.image(g, &source, s, &request, &Default::default()).unwrap();
+        let before = g.stats().pixels;
+        let made = g.materialise_cached(&image, image.extent(), Some(&mut cache)).unwrap();
+        let ran = g.stats().pixels - before;
+        let fresh = g.render(&image, image.extent(), None).unwrap();
+        assert_eq!(g.render(&Image::new(&made), image.extent(), None).unwrap(), fresh, "a cached notch differs from a fresh render");
+        ran
+    };
+    let s = grainy(0.4);
+    let mut lit = s.clone();
+    lit.virtual_film = Some(oni_settings::VirtualFilm { exposure: 0.3, ..s.film().unwrap() });
+    let frame = u64::from(w * h);
+    notch(&mut g, &s);
+    notch(&mut g, &with_amount(&s, 0.45));
+    let amount = notch(&mut g, &with_amount(&s, 0.5));
+    let film = notch(&mut g, &with_amount(&lit, 0.5));
+    // Twin: a notch on the grain's size moves its lattice, its field drawn again.
+    let mut sized = with_amount(&lit, 0.5);
+    sized.grain.size += 5.0;
+    let size = notch(&mut g, &sized);
+    println!("pixels run: an Amount notch {amount}, a film notch {film}, a size notch {size}, a frame {frame}");
+    assert!(size >= amount + frame && size >= film + frame, "a size notch draws the field again: {size} against {amount} and {film}");
+}

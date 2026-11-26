@@ -8,7 +8,8 @@ shader!(GAUSSIAN, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre
 shader!(GAUSSIAN_LUMA, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ let y = dot(v.rgb, LUMA); return vec4<f32>(y, y, y, v.a); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_moments_of(v); }}\n{BLUR_PIXEL}"));
 shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
-shader!(GRAIN, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(p); }");
+shader!(GRAIN, [wgsl::GRAIN, wgsl::GRAIN_LAID], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(p); }");
+shader!(GRAIN_FIELD, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_field_px(p); }");
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
 shader!(WARP, [wgsl::WARP], "fn pixel(p: vec2<i32>) -> vec4<f32> { return warp_px(p); }");
@@ -255,8 +256,30 @@ impl Stage for Grained {
     }
 }
 
-/// The grain `k`.
+/// The grain `k`, reading its layers' field as its one auxiliary input.
 pub fn grain(k: &Grain) -> Grained {
     Grained(*k)
+}
+
+/// The layers' field of the grain `k`, over an input of the film's extent it never reads.
+pub struct GrainField(pub Grain);
+
+impl Stage for GrainField {
+    fn name(&self) -> &'static str {
+        "grain-field"
+    }
+
+    fn shader(&self) -> &'static str {
+        GRAIN_FIELD.as_str()
+    }
+
+    fn params(&self) -> Vec<u8> {
+        uniform(self.0.head(), &self.0.field_rows())
+    }
+}
+
+/// The layers' field of the grain `k`.
+pub fn grain_field(k: &Grain) -> GrainField {
+    GrainField(*k)
 }
 

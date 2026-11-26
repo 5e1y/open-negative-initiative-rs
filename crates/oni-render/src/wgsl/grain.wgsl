@@ -74,47 +74,54 @@ fn grain_coded(s: vec3<f32>) -> vec3<f32> {
     return select(pow(max((s + 0.055) / 1.055, vec3<f32>(0.0)), vec3<f32>(2.4)), s / 12.92, s <= vec3<f32>(0.04045));
 }
 
-fn grain_px(p: vec2<i32>) -> vec4<f32> {
-    let at = vec2<f32>(p) + 0.5;
-    let own = load(p);
-    let q = vec2<f32>(dot(P.scan_x.xyz, vec3<f32>(at, 1.0)), dot(P.scan_y.xyz, vec3<f32>(at, 1.0)));
+// Where `at` lies on the scan's grid and the lattice cells whose grains may cover it: the first and how many.
+struct GrainCells { q: vec2<f32>, lo: vec2<i32>, count: vec2<i32> }
+
+fn grain_cells(at: vec2<f32>) -> GrainCells {
+    var c: GrainCells;
+    c.q = vec2<f32>(dot(P.scan_x.xyz, vec3<f32>(at, 1.0)), dot(P.scan_y.xyz, vec3<f32>(at, 1.0)));
+    let step = 0.7 * P.scan_x.w;
+    let reach = P.render_x.w;
+    c.lo = vec2<i32>(floor((c.q - reach) / step));
+    c.count = min(vec2<i32>(floor((c.q + reach) / step)) - c.lo + 1, vec2<i32>(8));
+    return c;
+}
+
+// Field `field`'s grain of cell `cell` over `q`: its first hash word, its centre in `xy`, its weight in `z`, zero
+// where none of its clouds reaches.
+fn grain_over(cell: vec2<i32>, field: u32, q: vec2<f32>, a: ptr<function, vec4<u32>>) -> vec3<f32> {
     let r = P.scan_x.w;
     let rc = P.scan_y.w;
     let reach = P.render_x.w;
     let step = 0.7 * r;
-    let lo = vec2<i32>(floor((q - reach) / step));
-    let count = min(vec2<i32>(floor((q + reach) / step)) - lo + 1, vec2<i32>(8));
-    var sample = vec3<f32>(0.0);
-    var sampled = 0.0;
-    var noise = vec3<f32>(0.0);
-    var noised = vec3<f32>(0.0);
-    for (var field = 0u; field < P.head.z; field++) {
-        let lane = vec3<f32>(f32(field == 1u), f32(field == 2u), f32(field == 3u));
-        for (var j = 0; j < count.y; j++) {
-            for (var i = 0; i < count.x; i++) {
-                let cell = lo + vec2<i32>(i, j);
-                let a = grain_hash(vec4<u32>(bitcast<vec2<u32>>(cell) + P.head.xy, field, 0u));
-                let centre = (vec2<f32>(cell) + vec2<f32>(grain_half(a.x, 0u), grain_half(a.x, 1u))) * step;
-                let to = q - centre;
-                if (length(to) > reach) { continue; }
-                let b = grain_hash(a);
-                let w = grain_profile(length(to - grain_offset(a.z) * r), rc) + grain_profile(length(to - grain_offset(a.w) * r), rc)
-                    + grain_profile(length(to - grain_offset(b.x) * r), rc) + grain_profile(length(to - grain_offset(b.y) * r), rc);
-                if (w <= 0.0) { continue; }
-                if (field == 0u) {
-                    let rp = vec2<f32>(dot(P.render_x.xyz, vec3<f32>(centre, 1.0)), dot(P.render_y.xyz, vec3<f32>(centre, 1.0)));
-                    sample += w * grain_shared(load(vec2<i32>(floor(rp))).rgb);
-                    sampled += w;
-                } else {
-                    noise += lane * (w * grain_normal(a.y) * dot(lane, P.deviation.xyz));
-                    noised += lane * w;
-                }
+    *a = grain_hash(vec4<u32>(bitcast<vec2<u32>>(cell) + P.head.xy, field, 0u));
+    let centre = (vec2<f32>(cell) + vec2<f32>(grain_half((*a).x, 0u), grain_half((*a).x, 1u))) * step;
+    let to = q - centre;
+    if (length(to) > reach) { return vec3<f32>(centre, 0.0); }
+    let b = grain_hash(*a);
+    let w = grain_profile(length(to - grain_offset((*a).z) * r), rc) + grain_profile(length(to - grain_offset((*a).w) * r), rc)
+        + grain_profile(length(to - grain_offset(b.x) * r), rc) + grain_profile(length(to - grain_offset(b.y) * r), rc);
+    return vec3<f32>(centre, w);
+}
+
+// Each layer's grains at `p`: their draws' mean through the grains over it, in standard normals; the film, the
+// deviations and the gaze play no part, so the field holds while a slider moves them.
+fn grain_field_px(p: vec2<i32>) -> vec4<f32> {
+    let c = grain_cells(vec2<f32>(p) + 0.5);
+    var out = vec3<f32>(0.0);
+    for (var field = 1u; field < P.head.z; field++) {
+        var noise = 0.0;
+        var noised = 0.0;
+        for (var j = 0; j < c.count.y; j++) {
+            for (var i = 0; i < c.count.x; i++) {
+                var a: vec4<u32>;
+                let g = grain_over(c.lo + vec2<i32>(i, j), field, c.q, &a);
+                if (g.z <= 0.0) { continue; }
+                noise += g.z * grain_normal(a.y);
+                noised += g.z;
             }
         }
+        out[field - 1u] = select(0.0, noise / noised, noised > 0.05);
     }
-    let base = select(grain_shared(own.rgb), sample / sampled, sampled > 0.05);
-    var delta = select(vec3<f32>(0.0), noise / max(noised, vec3<f32>(1e-30)), noised > vec3<f32>(0.05));
-    var laid = vec3<f32>(dot(P.gaze[0].xyz, delta), dot(P.gaze[1].xyz, delta), dot(P.gaze[2].xyz, delta));
-    if (P.head.z == 2u) { laid = vec3<f32>(delta.x); }
-    return vec4<f32>(grain_coded(base + laid), own.a);
+    return vec4<f32>(out, 1.0);
 }

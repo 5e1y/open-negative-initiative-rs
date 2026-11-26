@@ -96,6 +96,14 @@ impl Grain {
         [self.seed[0], self.seed[1], if self.silver { 2 } else { 4 }, 0]
     }
 
+    /// `rows` with what the field reads alone: no deviation, negative or gaze, so a notch on them keeps it.
+    pub fn field_rows(&self) -> Vec<V4> {
+        let mut rows = Grain { deviation: [0.0; 3], gaze: [[0.0; 3]; 3], negative: None, ..*self }.rows();
+        rows[5] = [0.0; 4];
+        rows[6] = [0.0; 4];
+        rows
+    }
+
     pub fn rows(&self) -> Vec<V4> {
         let [x, y] = self.scan;
         let [rx, ry] = self.render;
@@ -180,58 +188,82 @@ fn screen_light(code: f32) -> f32 {
     if code <= 0.040_45 { code / 12.92 } else { ((code + 0.055) / 1.055).powf(2.4) }
 }
 
-/// One pixel of `input`, at `at` in the graph's pixels, under the grain `k`; alpha kept.
-pub fn grain(input: &Grid, at: V2, k: &Grain) -> V4 {
-    let p = [at[0].floor() as i32, at[1].floor() as i32];
-    let own = input.load(p);
+/// The lattice cells whose grains may cover `at`, in the graph's pixels: where `at` lies on the scan's grid, the first
+/// cell and how many along each axis.
+fn cells(at: V2, k: &Grain) -> (V2, [i32; 2], [i32; 2]) {
     let [x, y] = k.scan;
     let q = [x[0] * at[0] + x[1] * at[1] + x[2], y[0] * at[0] + y[1] * at[1] + y[2]];
     let step = GRAIN_STEP * k.radius;
     let reach = k.reach();
     let lo = q.map(|v| ((v - reach) / step).floor() as i32);
     let count = std::array::from_fn::<i32, 2, _>(|i| (((q[i] + reach) / step).floor() as i32 - lo[i] + 1).min(GRAIN_CELLS));
-    let fields = k.head()[2];
-    let mut sample = ([0.0f32; 3], 0.0f32);
-    let mut noise = [(0.0f32, 0.0f32); 3];
-    for field in 0..fields {
-        for j in 0..count[1] {
-            for i in 0..count[0] {
-                let cell = [lo[0] + i, lo[1] + j];
-                let a = hash([(cell[0] as u32).wrapping_add(k.seed[0]), (cell[1] as u32).wrapping_add(k.seed[1]), field, 0]);
-                let centre = [(cell[0] as f32 + half(a[0], 0)) * step, (cell[1] as f32 + half(a[0], 1)) * step];
-                let to = [q[0] - centre[0], q[1] - centre[1]];
-                if to[0].hypot(to[1]) > reach {
-                    continue;
-                }
-                let b = hash(a);
-                let w: f32 = [a[2], a[3], b[0], b[1]]
-                    .iter()
-                    .map(|&c| {
-                        let o = offset(c);
-                        profile((to[0] - o[0] * k.radius).hypot(to[1] - o[1] * k.radius), k.cloud)
-                    })
-                    .sum();
-                if w <= 0.0 {
-                    continue;
-                }
-                if field == 0 {
-                    let [rx, ry] = k.render;
-                    let r = [rx[0] * centre[0] + rx[1] * centre[1] + rx[2], ry[0] * centre[0] + ry[1] * centre[1] + ry[2]];
-                    let v = shared(input.load([r[0].floor() as i32, r[1].floor() as i32]), k);
-                    sample = (std::array::from_fn(|c| sample.0[c] + w * v[c]), sample.1 + w);
-                } else {
-                    let layer = (field - 1) as usize;
-                    let v = normal(a[1]) * k.deviation[layer];
-                    noise[layer] = (noise[layer].0 + w * v, noise[layer].1 + w);
-                }
+    (q, lo, count)
+}
+
+/// Field `field`'s grains over `q` on the scan's grid: each covering grain's centre and its weight there.
+fn covering(q: V2, lo: [i32; 2], count: [i32; 2], field: u32, k: &Grain, mut each: impl FnMut([u32; 4], V2, f32)) {
+    let step = GRAIN_STEP * k.radius;
+    let reach = k.reach();
+    for j in 0..count[1] {
+        for i in 0..count[0] {
+            let cell = [lo[0] + i, lo[1] + j];
+            let a = hash([(cell[0] as u32).wrapping_add(k.seed[0]), (cell[1] as u32).wrapping_add(k.seed[1]), field, 0]);
+            let centre = [(cell[0] as f32 + half(a[0], 0)) * step, (cell[1] as f32 + half(a[0], 1)) * step];
+            let to = [q[0] - centre[0], q[1] - centre[1]];
+            if to[0].hypot(to[1]) > reach {
+                continue;
+            }
+            let b = hash(a);
+            let w: f32 = [a[2], a[3], b[0], b[1]]
+                .iter()
+                .map(|&c| {
+                    let o = offset(c);
+                    profile((to[0] - o[0] * k.radius).hypot(to[1] - o[1] * k.radius), k.cloud)
+                })
+                .sum();
+            if w > 0.0 {
+                each(a, centre, w);
             }
         }
     }
+}
+
+/// Each layer's grains at `at`, in the graph's pixels: their draws' mean through the grains over it, in standard
+/// normals, zero where no grain covers it enough; the film beneath, the deviations and the gaze play no part, so the
+/// field holds while a slider moves the film or the grain's Amount.
+pub fn grain_field(at: V2, k: &Grain) -> V3 {
+    let (q, lo, count) = cells(at, k);
+    let layers = if k.silver { 1 } else { 3 };
+    let mut out = [0.0; 3];
+    for (layer, value) in out.iter_mut().enumerate().take(layers) {
+        let mut noise = (0.0f32, 0.0f32);
+        covering(q, lo, count, layer as u32 + 1, k, |a, _, w| noise = (noise.0 + w * normal(a[1]), noise.1 + w));
+        *value = if noise.1 > GRAIN_COVERED { noise.0 / noise.1 } else { 0.0 };
+    }
+    out
+}
+
+/// One pixel of `input`, at `at` in the graph's pixels, under the grain `k` whose layers' field there is `field`;
+/// alpha kept.
+pub fn grain_on(input: &Grid, at: V2, k: &Grain, field: V3) -> V4 {
+    let p = [at[0].floor() as i32, at[1].floor() as i32];
+    let own = input.load(p);
+    let (q, lo, count) = cells(at, k);
+    let mut sample = ([0.0f32; 3], 0.0f32);
+    covering(q, lo, count, 0, k, |_, centre, w| {
+        let [rx, ry] = k.render;
+        let r = [rx[0] * centre[0] + rx[1] * centre[1] + rx[2], ry[0] * centre[0] + ry[1] * centre[1] + ry[2]];
+        let v = shared(input.load([r[0].floor() as i32, r[1].floor() as i32]), k);
+        sample = (std::array::from_fn(|c| sample.0[c] + w * v[c]), sample.1 + w);
+    });
     let base = if sample.1 > GRAIN_COVERED { sample.0.map(|v| v / sample.1) } else { shared(own, k) };
-    let mean = |(v, w): (f32, f32)| if w > GRAIN_COVERED { v / w } else { 0.0 };
-    let delta = if k.silver { [mean(noise[0]); 3] } else { noise.map(mean) };
-    let laid = if k.silver { delta } else { k.gaze.map(|g| dot(g, delta)) };
+    let laid = if k.silver { [k.deviation[0] * field[0]; 3] } else { k.gaze.map(|g| dot(g, map(field, |c, v| v * k.deviation[c]))) };
     with_alpha(coded(map(base, |c, v| v + laid[c]), k), own[3])
+}
+
+/// One pixel of `input`, at `at` in the graph's pixels, under the grain `k`; alpha kept.
+pub fn grain(input: &Grid, at: V2, k: &Grain) -> V4 {
+    grain_on(input, at, k, grain_field(at, k))
 }
 
 #[cfg(test)]
