@@ -2744,28 +2744,40 @@ msgid "Next Gift"
 msgstr "Cadeau suivant"
 
 #: crates/oni-ui/ui/wrapped.slint
-msgid "Save All Cards"
-msgstr "Enregistrer toutes les cartes"
-
-#: crates/oni-ui/ui/wrapped.slint
-msgid "Save This Card"
-msgstr "Enregistrer cette carte"
-
-#: crates/oni-ui/ui/wrapped.slint
-msgid "Copy This Card"
-msgstr "Copier cette carte"
+msgid "Developing your year"
+msgstr "Votre année se développe"
 
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Close"
 msgstr "Fermer"
 
 #: crates/oni-ui/ui/wrapped.slint
-msgid "Paused · Space to play · → for the next · ← to go back · Esc to leave"
-msgstr "En pause · Espace pour reprendre · → pour la suite · ← pour revenir · Échap pour quitter"
+msgid "Save All"
+msgstr "Tout enregistrer"
 
 #: crates/oni-ui/ui/wrapped.slint
-msgid "Click or press → for the next · ← to go back · Space to pause · Esc to leave"
-msgstr "Cliquez ou pressez → pour la suite · ← pour revenir · Espace pour mettre en pause · Échap pour quitter"
+msgid "Save Card"
+msgstr "Cette carte"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Copy Card"
+msgstr "Copier"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Previous"
+msgstr "Précédente"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Play"
+msgstr "Lecture"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Pause"
+msgstr "Pause"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Next"
+msgstr "Suivante"
 
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Your year, ready to share"
