@@ -124,7 +124,7 @@ mod slides;
 mod project_steps;
 mod project_filing;
 mod project_placeholder;
-mod project_rolls;
+mod project_order;
 mod project_walk;
 mod projects_tab;
 mod preset_deck;

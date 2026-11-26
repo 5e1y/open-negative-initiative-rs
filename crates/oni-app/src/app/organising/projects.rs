@@ -151,11 +151,10 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `TreeEngine` on the projects: the rows laid as the archive's, each roll heading its photos,
-    /// a photo as a name or a thumbnail.
+    /// `TreeEngine` on the projects: the rows laid as the archive's, a project opening onto its
+    /// photos, each as a name or a thumbnail.
     pub(in crate::app) fn publish_projects(&self) {
         let Some(w) = self.window() else { return };
-        let side = crate::stocks::row_side(&w);
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
             let mut roots = {
@@ -170,7 +169,6 @@ impl Ctl {
             }
             let nodes = project_tree::flatten(&roots, &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
-            let markers = s.roll_markers();
             let mut paths = Vec::with_capacity(nodes.len());
             for (node, _) in &nodes {
                 let Node::Photo { entry, .. } = node else {
@@ -200,12 +198,6 @@ impl Ctl {
                             renaming: s.org.project_renaming == Some(g.id),
                             ..TreeRow::default()
                         },
-                        Node::Roll { folder, entries, .. } => {
-                            let (title, caption) = (roll_title(&markers, folder).into(), entries.len().to_string().into());
-                            let stock = crate::stocks::row_icon(library::roll_stock(markers.get(folder), entries.first()), side);
-                            let has_stock = stock.is_some();
-                            TreeRow { depth, title, caption, kind: 3, selected: ringed, has_stock, stock: stock.unwrap_or_default(), ..TreeRow::default() }
-                        }
                         Node::Photo { entry, .. } => TreeRow {
                             depth,
                             title: oni_library::paths::name(&entry.path).into(),
@@ -244,45 +236,29 @@ impl Ctl {
     }
 }
 
-/// A roll's name as the archive heads it: its marker's, else its folder's.
-fn roll_title(markers: &HashMap<String, Film>, folder: &str) -> String {
-    let named = markers.get(folder).map(|f| f.name.trim()).filter(|n| !n.is_empty());
-    named.map_or_else(|| oni_library::paths::name(folder), str::to_owned)
-}
-
 impl State {
-    /// The Projects tab's bands: each project's photos by roll, a band each, headed by the project
-    /// and the roll; the rating filter keeps one medal as in the archive, the rolls in the tree's order.
+    /// The Projects tab's bands: a project's photos, one band headed by its name, in its order; the
+    /// rating filter keeps one medal as in the archive.
     pub(super) fn project_bands(&self) -> Vec<Band> {
-        let markers = self.roll_markers();
         let mut bands = Vec::new();
         for g in self.project_groups() {
-            for (folder, entries) in project_tree::by_roll(&g.entries) {
-                let entries: Vec<Entry> = entries.into_iter().filter(|e| self.filter.medal.is_none_or(|m| e.label == m)).collect();
-                if entries.is_empty() {
-                    continue;
-                }
-                let (title, caption) = (roll_title(&markers, &folder), g.project.name.clone());
-                bands.push(Band { key: g.id.to_string(), title, caption, entries, naming: None, explicit: String::new() });
+            let entries: Vec<Entry> = g.entries.into_iter().filter(|e| self.filter.medal.is_none_or(|m| e.label == m)).collect();
+            if entries.is_empty() {
+                continue;
             }
+            bands.push(Band { key: g.id.to_string(), title: g.project.name.clone(), caption: String::new(), entries, naming: None, explicit: String::new() });
         }
         bands
     }
 
     /// The photos the projects' tree rows stand for, in the order given, each once: a photo itself,
-    /// a roll its project's photos in that folder the filter shows, a project none.
+    /// a project none.
     pub(in crate::app) fn row_photos<'a>(&self, rows: impl IntoIterator<Item = &'a NodeId>) -> Vec<String> {
-        let groups = self.project_groups();
         let mut seen = HashSet::new();
         let mut out = Vec::new();
         for row in rows {
             let paths: Vec<String> = match row {
                 NodeId::Photo { path, .. } => vec![path.clone()],
-                NodeId::Roll { folder, project } => {
-                    let entries = groups.iter().filter(|g| g.id == *project).flat_map(|g| &g.entries);
-                    let shown = entries.filter(|e| self.filter.medal.is_none_or(|m| e.label == m));
-                    shown.filter(|e| oni_library::paths::parent(&e.path) == *folder).map(|e| e.path.clone()).collect()
-                }
                 NodeId::Project(_) => Vec::new(),
             };
             out.extend(paths.into_iter().filter(|p| seen.insert(p.clone())));

@@ -12,7 +12,7 @@ mod resolve;
 
 pub use file::{FORMAT, ProjectsFile, file_path, load, save};
 pub use gestures::{
-    Joined, Rosters, add_to, carried, delete, lands_beside, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from,
+    Joined, Rosters, add_to, carried, delete, leaving, member_projects, moved, moved_member, new_empty, new_from, regroup, remove_from,
     rename, reorder_drop, reorder_root, rosters, set_description, shown_in,
 };
 pub use member::{Member, distinct, exclusive, holder, learnt, printed};

@@ -13,12 +13,17 @@ impl Ctl {
         self.roll_of(targets, |c, paths, left| c.enter_roll(&paths, left));
     }
 
-    /// `roll(of:)`: the frame's gallery group read off this thread, kept to its own roll.
+    /// `roll(of:)`: the frame's gallery group read off this thread, kept to its own roll; a project's
+    /// band, which lays every roll in one run, gives the photos of the frame's folder alone.
     pub(in crate::app) fn roll_of(self: &Rc<Self>, targets: Vec<String>, then: impl FnOnce(&Rc<Ctl>, Vec<String>, usize) + Send + 'static) {
         let folder: Option<Vec<String>> = {
             let s = self.state.borrow();
             match targets.as_slice() {
-                [picked] => s.org.bands.iter().find(|b| b.entries.iter().any(|e| &e.path == picked)).map(|b| b.entries.iter().map(|e| e.path.clone()).collect()),
+                [picked] => s.org.bands.iter().find(|b| b.entries.iter().any(|e| &e.path == picked)).map(|b| {
+                    let roll = oni_library::paths::parent(picked);
+                    let kept = |e: &&oni_library::Entry| !s.org.projects_surface || oni_library::paths::parent(&e.path) == roll;
+                    b.entries.iter().filter(kept).map(|e| e.path.clone()).collect()
+                }),
                 _ => None,
             }
         };

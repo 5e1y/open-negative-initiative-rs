@@ -106,7 +106,7 @@ impl State {
     pub(super) fn project_group(&self) -> Option<project::ProjectGroup> {
         let ring = match &self.org.project_ring {
             Some(NodeId::Project(id)) => Some(*id),
-            Some(NodeId::Roll { project, .. } | NodeId::Photo { project, .. }) => Some(*project),
+            Some(NodeId::Photo { project, .. }) => Some(*project),
             None => None,
         };
         let rows = self.reach();

@@ -5,8 +5,7 @@ use super::member::{Member, distinct, printed};
 use super::resolve::{Reach, holders, place, resolve, showing};
 use super::{Project, root_order, untitled};
 use crate::index::Entry;
-use crate::paths::{self, holds};
-use crate::project_tree::rolls;
+use crate::paths::holds;
 use oni_settings::{Date, Id};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -174,28 +173,21 @@ pub fn shown_in<'a>(projects: &'a [Project], reach: &Reach, paths: &HashSet<Stri
     counted(projects, showing(projects, reach).into_iter().filter(|(path, _)| paths.contains(path)).map(|(_, members)| members))
 }
 
-/// Whether photos dropped beside `target` stand there: a project shows each roll apart, so only
-/// photos of the target's roll land beside it.
-pub fn lands_beside<'a>(dragged: impl IntoIterator<Item = &'a String>, target: &str) -> bool {
-    let roll = paths::parent(target);
-    dragged.into_iter().all(|path| paths::parent(path) == roll)
-}
-
 /// `reorderProjectDrop`: the dragged photos land before `target`, or past it, in its project's
-/// order as shown, roll by roll, which is written back; those already members first, in that order.
+/// order, which is written back; those already members first, in that order.
 pub fn reorder_drop(projects: &mut [Project], reach: &Reach, dragged: &HashSet<String>, target: &str, past: bool) -> bool {
     let (holders, shown) = (holders(projects, reach), showing(projects, reach));
     // A tile two projects show, as one whose file is not read yet, names no one project to land in.
     let Some(&[(at, aim)]) = shown.get(target).map(Vec::as_slice) else { return false };
     let rows = picked(reach, dragged);
-    if rows.is_empty() || !lands_beside(rows.iter().map(|row| &row.path), target) {
+    if rows.is_empty() {
         return false;
     }
     let mine: HashMap<&str, usize> = shown.iter().filter_map(|(path, members)| Some((path.as_str(), members.iter().find(|(p, _)| *p == at)?.1))).collect();
     let (inside, outside): (Vec<&Entry>, Vec<&Entry>) = rows.into_iter().partition(|row| mine.contains_key(row.path.as_str()));
     let moving: HashSet<usize> = inside.iter().filter_map(|row| mine.get(row.path.as_str()).copied()).collect();
     let shown: Vec<(usize, &Entry)> = resolve(projects, reach).swap_remove(at).into_iter().enumerate().filter_map(|(m, row)| Some((m, row?))).collect();
-    let order: Vec<usize> = rolls(shown, |(_, row)| paths::parent(&row.path)).into_iter().flat_map(|(_, photos)| photos).map(|(m, _)| m).collect();
+    let order: Vec<usize> = shown.into_iter().map(|(m, _)| m).collect();
     let Some(aimed) = order.iter().position(|m| *m == aim) else { return false };
     let (joining, leaving) = taking(projects, reach, &outside, &holders);
     let members = &projects[at].members;

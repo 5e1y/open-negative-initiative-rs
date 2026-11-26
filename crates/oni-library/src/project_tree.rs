@@ -1,7 +1,7 @@
-//! The projects' sidebar tree: a project opens into its rolls, each heading its own photos.
+//! The projects' sidebar tree: a project opens onto its photos, one run in its own order, whatever
+//! roll each lies in.
 
 use crate::index::Entry;
-use crate::paths;
 use crate::project::{self, Project, ProjectGroup, Reach};
 use oni_settings::Id;
 use std::collections::HashSet;
@@ -10,15 +10,12 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NodeId {
     Project(Id),
-    /// A roll's heading inside a project, by its folder.
-    Roll { folder: String, project: Id },
     Photo { path: String, project: Id },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     Project(ProjectGroup),
-    Roll { folder: String, project: Id, entries: Vec<Entry> },
     Photo { entry: Entry, project: Id },
 }
 
@@ -26,29 +23,9 @@ impl Node {
     pub fn id(&self) -> NodeId {
         match self {
             Node::Project(group) => NodeId::Project(group.id),
-            Node::Roll { folder, project, .. } => NodeId::Roll { folder: folder.clone(), project: *project },
             Node::Photo { entry, project } => NodeId::Photo { path: entry.path.clone(), project: *project },
         }
     }
-}
-
-/// A project's photos by roll, the folder each lies in: the rolls in the order their first photo
-/// takes in the project, each keeping the project's order; two copies of one file stay apart.
-pub fn by_roll(entries: &[Entry]) -> Vec<(String, Vec<Entry>)> {
-    rolls(entries.iter().cloned(), |e| paths::parent(&e.path))
-}
-
-/// `by_roll` on any items, `folder` naming the roll each lies in.
-pub fn rolls<T>(items: impl IntoIterator<Item = T>, folder: impl Fn(&T) -> String) -> Vec<(String, Vec<T>)> {
-    let mut rolls: Vec<(String, Vec<T>)> = Vec::new();
-    for item in items {
-        let at = folder(&item);
-        match rolls.iter_mut().find(|(f, _)| *f == at) {
-            Some((_, photos)) => photos.push(item),
-            None => rolls.push((at, vec![item])),
-        }
-    }
-    rolls
 }
 
 /// Every project, newest first; a photo in no project is absent.
@@ -56,7 +33,7 @@ pub fn roots(projects: &[Project], reach: &Reach) -> Vec<Node> {
     project::grouped(projects, reach).into_iter().map(Node::Project).collect()
 }
 
-/// An open project lays each roll's heading a level down, its photos a level further.
+/// An open project lays its photos a level down, in its order.
 pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<(Node, usize)> {
     let mut rows = Vec::new();
     for node in nodes {
@@ -64,11 +41,7 @@ pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<
         if let Node::Project(group) = node
             && expanded.contains(&node.id())
         {
-            for (folder, entries) in by_roll(&group.entries) {
-                let photos: Vec<(Node, usize)> = entries.iter().map(|e| (Node::Photo { entry: e.clone(), project: group.id }, depth + 2)).collect();
-                rows.push((Node::Roll { folder, project: group.id, entries }, depth + 1));
-                rows.extend(photos);
-            }
+            rows.extend(group.entries.iter().map(|e| (Node::Photo { entry: e.clone(), project: group.id }, depth + 1)));
         }
     }
     rows
@@ -85,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    fn a_project_opens_into_its_rolls_each_heading_its_photos_tagged_with_its_project() {
+    fn a_project_opens_onto_its_photos_tagged_with_its_project() {
         let base = Date::since_reference_date(8e8);
         let library = [Entry::new("/negs/a.RW2", base, "fp-a"), Entry::new("/negs/b.RW2", base, "fp-b")];
         let older = Project::new("Older", base, at(&["/negs/a.RW2"]));
@@ -95,9 +68,8 @@ mod tests {
         assert_eq!(tops[0].id(), NodeId::Project(newer.id));
         assert_eq!(flatten(&tops, &HashSet::new(), 0).len(), 2);
         let open = flatten(&tops, &HashSet::from([NodeId::Project(newer.id)]), 0);
-        assert_eq!(open.len(), 4);
-        assert_eq!((open[1].0.id(), open[1].1), (NodeId::Roll { folder: "/negs".into(), project: newer.id }, 1));
-        assert_eq!((open[2].0.id(), open[2].1), (NodeId::Photo { path: "/negs/b.RW2".into(), project: newer.id }, 2));
+        assert_eq!(open.len(), 3);
+        assert_eq!((open[1].0.id(), open[1].1), (NodeId::Photo { path: "/negs/b.RW2".into(), project: newer.id }, 1));
 
         let a = Project::new("Shared A", base, at(&["/negs/a.RW2"]));
         let b = Project::new("Shared B", crate::later(base, 60.0), at(&["/negs/a.RW2"]));
@@ -114,24 +86,24 @@ mod tests {
         let gap = Project::new("Gap", base, at(&["/negs/a.RW2", "/negs/missing.RW2"]));
         assert_eq!(
             flatten(&roots(std::slice::from_ref(&gap), &Reach::rows(&library)), &HashSet::from([NodeId::Project(gap.id)]), 0).len(),
-            3
+            2
         );
     }
 
     #[test]
-    fn two_rolls_copies_of_one_file_stand_under_their_own_roll_in_the_project_s_order() {
+    fn a_project_s_photos_read_in_its_own_order_across_rolls() {
         let base = Date::since_reference_date(8e8);
-        let entry = |p: &str| Entry::new(p, base, &format!("fp-{p}"));
-        let order = [entry("/s/Roll 10/A.NEF"), entry("/s/Roll 8/A.NEF"), entry("/s/Roll 10/C.NEF"), entry("/s/Roll 8/B.NEF")];
-        let rolls = by_roll(&order);
-        let named: Vec<(&str, Vec<&str>)> =
-            rolls.iter().map(|(f, e)| (f.as_str(), e.iter().map(|e| e.path.as_str()).collect())).collect();
-        assert_eq!(
-            named,
-            [("/s/Roll 10", vec!["/s/Roll 10/A.NEF", "/s/Roll 10/C.NEF"]), ("/s/Roll 8", vec!["/s/Roll 8/A.NEF", "/s/Roll 8/B.NEF"])],
-            "Roll 10 first, its first photo leading the project"
-        );
-        // Twin: grouped by file name, the two A.NEF would share one roll.
-        assert_ne!(rolls[0].1.iter().filter(|e| e.path.ends_with("/A.NEF")).count(), 2);
+        let paths = ["/s/Roll 10/A.NEF", "/s/Roll 8/A.NEF", "/s/Roll 10/C.NEF", "/s/Roll 8/B.NEF"];
+        let library: Vec<Entry> = paths.iter().map(|p| Entry::new(p, base, &format!("fp-{p}"))).collect();
+        let client = Project::new("Client", base, at(&paths));
+        let tops = roots(std::slice::from_ref(&client), &Reach::rows(&library));
+        let open = flatten(&tops, &HashSet::from([NodeId::Project(client.id)]), 0);
+        let shown: Vec<NodeId> = open[1..].iter().map(|(n, _)| n.id()).collect();
+        let photo = |p: &str| NodeId::Photo { path: p.into(), project: client.id };
+        assert_eq!(shown, paths.map(photo), "the project's order, the rolls interleaved");
+        // Twin: grouped by roll, Roll 8's A would follow Roll 10's C.
+        assert_ne!(shown[1], photo(paths[2]));
+        // Twin: two copies of one file name stay two rows.
+        assert_eq!(shown.iter().filter(|n| matches!(n, NodeId::Photo { path, .. } if path.ends_with("/A.NEF"))).count(), 2);
     }
 }

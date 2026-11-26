@@ -182,8 +182,7 @@ impl Ctl {
                         s.org.project_ring = Some(ProjectNode::Photo { path: path.clone(), project: *project });
                     })
                 }
-                // A roll's heading selects its photos in the project, as the photo's row selects it.
-                ProjectNode::Roll { .. } | ProjectNode::Photo { .. } => {
+                ProjectNode::Photo { .. } => {
                     let photos = s.row_photos([&id]);
                     let first = photos.first().cloned();
                     s.picks.selection = photos.into_iter().collect();

@@ -271,12 +271,12 @@ impl State {
     }
 
     /// the walk group: the open frame's group, which the arrows walk: its project on the Projects tab,
-    /// read off its rolls' bands laid, else its roll or day.
+    /// read off its band laid, else its roll or day.
     pub(super) fn walk_frames(&self) -> std::borrow::Cow<'_, [oni_library::Entry]> {
         let Some(open) = self.open_path() else { return Default::default() };
         let project = self.org.editing_project.filter(|_| self.org.projects_surface).map(|id| id.to_string());
-        let bands = self.org.bands.iter().filter(|b| project.as_ref() == Some(&b.key));
-        let frames: Vec<oni_library::Entry> = bands.flat_map(|b| b.entries.iter().cloned()).collect();
+        let band = self.org.bands.iter().find(|b| project.as_ref() == Some(&b.key));
+        let frames: Vec<oni_library::Entry> = band.map(|b| b.entries.clone()).unwrap_or_default();
         if !frames.is_empty() {
             return frames.into();
         }

@@ -85,7 +85,7 @@ pub(crate) fn the_new_project_key_is_one_step_and_its_redo_keeps_the_name_typed(
 
     let titles = hand.project_titles();
     let at = |title: &str| titles.iter().position(|t| t == title).unwrap();
-    assert!(crate::project_rolls::tree_line(&hand, at("Project 1"), at("Client")), "the line shows above Client");
+    assert!(crate::project_order::tree_line(&hand, at("Project 1"), at("Client")), "the line shows above Client");
     assert!(hand.project_titles().iter().position(|t| t == "Project 1") < hand.project_titles().iter().position(|t| t == "Client"));
     ctl.act(oni_app::Act::Undo);
     hand.rig.pump();

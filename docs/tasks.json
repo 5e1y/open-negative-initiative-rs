@@ -14027,5 +14027,12 @@
     "title": "The welcome's message opens on its signature: 'You already paid for your film' as the hook, then the call to share and #madewithoni large, the links and the contest after",
     "status": "done",
     "detail": "Owner's calls: the French keeps 'vous', and the signature leaves the foot of the screen for its head, under the eyebrow, in the interface's face at a middle size (`StageText` `hook`, 28 px semibold in full ink, `StageStyle.hook`); why ONI is free, then 'Tell your friends about ONI.' and #madewithoni in the display face, the keys and the contest's rule last. The French signature takes the owner's words: 'Vous ne devriez pas payer rien que pour la regarder.' Checks: window checks welcome_reel, welcome_card, design_system; catalogue."
+  },
+  {
+    "id": 4021,
+    "type": "ux",
+    "status": "done",
+    "title": "A project shows its photos in one run, in its own order, no roll heading them in the sidebar or the grid",
+    "detail": "Owner: splitting a project by roll made the sidebar confusing. The tree lays a project's photos straight under its name, the grid one band per project, the project's stored order whatever roll each lies in; a drop lands on any line of its project. Prepare asked from a project still takes the frame's roll alone. The Archive keeps its rolls."
   }
 ]

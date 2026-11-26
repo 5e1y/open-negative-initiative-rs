@@ -154,7 +154,7 @@ pub(crate) fn a_project_opens_at_its_top_and_a_long_name_reads_whole() {
     assert_eq!(tip_over(&hand, row.middle()).as_deref(), Some(long), "the column's row, cut, shows the name whole");
     let heading = lib.get_headings().row_data(0).expect("the project's heading");
     let on_heading = (lib.get_grid_x() + 100.0, lib.get_grid_y() + heading.y - lib.get_scroll() + 12.0);
-    assert_eq!(tip_over(&hand, on_heading), Some(format!("{long} / Roll")), "the heading, cut, shows it whole");
+    assert_eq!(tip_over(&hand, on_heading), Some(long.to_string()), "the heading, cut, shows it whole");
 
     // Twin: a short name is one line, whole in the column and the grid, and shows no tip.
     assert!(lib.invoke_project_row_menu(0));

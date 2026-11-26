@@ -93,8 +93,8 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
     lib.invoke_project_row_folded(0);
     hand.rig.drawn();
     hand.rig.pump();
-    let titles = |hand: &Hand| hand.project_titles()[2..].join(" ");
-    assert_eq!(titles(&hand), "A.tif C.tif E.tif Roll 8 P.tif Q.tif");
+    let titles = |hand: &Hand| hand.project_titles()[1..].join(" ");
+    assert_eq!(titles(&hand), "A.tif C.tif P.tif Q.tif E.tif");
     let o = origin(&hand);
     let sorted = |hand: &Hand| {
         let mut m = hand.members().concat();
@@ -107,14 +107,14 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
     let line = on(&hand, o, "P.tif", false);
     assert_eq!(mark(&hand, o), Some(line), "the mark at the hand");
     undo(&hand, false);
-    assert_eq!(titles(&hand), "A.tif C.tif Roll 8 P.tif Q.tif", "one row shorter under the held hand");
+    assert_eq!(titles(&hand), "A.tif C.tif P.tif Q.tif", "one row shorter under the held hand");
     let over_c = on(&hand, o, "C.tif", true);
     to(&hand, over_c);
     // Twin: the move carried the mark off the line, where a move never heard would leave it.
     assert!(over_c != line && mark(&hand, o) == Some(over_c), "the mark follows the hand: {:?}", mark(&hand, o));
     // ⌘Z again brings B back, a row longer: the mark follows still.
     undo(&hand, false);
-    assert_eq!(titles(&hand), "A.tif B.tif C.tif Roll 8 P.tif Q.tif", "one row longer under the held hand");
+    assert_eq!(titles(&hand), "A.tif B.tif C.tif P.tif Q.tif", "one row longer under the held hand");
     let over_b = on(&hand, o, "B.tif", true);
     to(&hand, over_b);
     assert_eq!(mark(&hand, o), Some(over_b), "the mark follows the hand a row lower");
@@ -129,7 +129,7 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
     // Q held again; ⌘⇧Z takes B out, a row shorter; let go over the grid: the drag ends there too.
     held(&hand, o, "Q.tif", "P.tif", false);
     undo(&hand, true);
-    assert_eq!(titles(&hand), "A.tif C.tif Roll 8 P.tif Q.tif");
+    assert_eq!(titles(&hand), "A.tif C.tif P.tif Q.tif");
     let grid = (lib.get_grid_x() + 200.0, over_b.1);
     to(&hand, grid);
     assert_eq!(mark(&hand, o), Some(grid), "the mark follows the hand over the grid");
@@ -143,7 +143,7 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
     held(&hand, o, "E.tif", "Client", true);
     assert!(mark(&hand, o).is_some(), "twin: E's drag under way");
     undo(&hand, false);
-    assert_eq!(titles(&hand), "A.tif C.tif Roll 8 P.tif Q.tif");
+    assert_eq!(titles(&hand), "A.tif C.tif P.tif Q.tif");
     assert_eq!(mark(&hand, o), None, "the drag ends with its row");
     to(&hand, below);
     pressed(&hand, below, true);

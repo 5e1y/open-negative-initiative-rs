@@ -41,7 +41,7 @@ impl Ctl {
             let projects: Vec<Id> = targets.iter().filter_map(|t| if let NodeId::Project(p) = t { Some(*p) } else { None }).collect();
             match projects.as_slice() {
                 [] => {
-                    // A photo shown under two projects is one photo; a roll's heading stands for its photos.
+                    // A photo shown under two projects is one photo.
                     let photos = s.row_photos(&targets);
                     let Some(first) = photos.first().cloned() else { return false };
                     let scope: HashSet<String> = photos.into_iter().collect();

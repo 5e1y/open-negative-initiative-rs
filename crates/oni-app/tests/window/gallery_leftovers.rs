@@ -143,12 +143,12 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     rig.pump();
     assert_eq!(lib.get_scroll(), 0.0, "the projects' grid lands afresh");
     let project = lib.get_headings().row_data(0).expect("the project's heading");
-    assert_eq!(project.caption, "Project 1", "the project's name over its roll's");
+    assert_eq!((project.title.as_str(), project.caption.as_str()), ("Project 1", ""), "the project's name alone, no roll's");
     let on_project = (lib.get_grid_x() + 200.0, lib.get_grid_y() + project.y - lib.get_scroll() + 12.0);
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     click(rig, on_project);
     click(rig, on_project);
-    assert!(lib.get_headings().iter().all(|h| !h.renaming), "twin of a roll's heading: a project's opens no field");
+    assert!(lib.get_headings().iter().all(|h| !h.renaming), "a project's heading opens no field");
     lib.invoke_surface_picked(0);
     rig.pump();
 
