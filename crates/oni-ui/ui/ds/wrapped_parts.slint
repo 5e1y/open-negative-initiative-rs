@@ -70,22 +70,24 @@ export global WrappedStyle {
     out property <float> veil-foot: 0.9;
     // Where a print begins, under what a story's player lays over a frame's top.
     out property <float> room-top: 62;
-    // The film is 135, as wide as a frame: 35 mm, its image 24 mm between two rows of Kodak Standard
-    // perforations. A millimetre of it, in the frame's units.
-    out property <float> mm: root.frame-width / 35;
-    // A perforation: 1.981 mm across the film by 2.794 mm along it, corners of 0.5 mm, one every 4.75 mm,
+    // The film's edge, each side, outside its image: 5.5 mm of a 135 film, (35 - 24) / 2, which sets the
+    // scale of its Kodak Standard perforations. A millimetre of it, in the frame's units.
+    out property <float> band: 30;
+    out property <float> mm: root.band / 5.5;
+    // A perforation: 2.794 mm across the film by 1.981 mm along it, corners of 0.5 mm, one every 4.75 mm,
     // 2 mm in from the film's edge.
-    out property <float> hole-across: 1.981 * root.mm;
-    out property <float> hole-along: 2.794 * root.mm;
+    out property <float> hole-across: 2.794 * root.mm;
+    out property <float> hole-along: 1.981 * root.mm;
     out property <float> hole-corner: 0.5 * root.mm;
     out property <float> hole-pitch: 4.75 * root.mm;
     out property <float> hole-margin: 2 * root.mm;
     // The perforations a frame shows, the one its foot cuts included.
     out property <int> holes: Math.ceil(root.frame-height / root.hole-pitch) + 1;
-    // The film outside its image, each side: (35 - 24) / 2 mm.
-    out property <float> band: 5.5 * root.mm;
-    // A scene's margin each side, inside the film's image, and the width it leaves.
-    out property <float> pad: 60;
+    // A perforation's rim, which lets it be read on a dark photo as on a light one.
+    out property <float> hole-rim: 0.6;
+    out property <color> hole-edge: Colour.white.with-alpha(0.28);
+    // A scene's margin each side, clear of the perforations, and the width it leaves.
+    out property <float> pad: 34;
     out property <float> inner: root.frame-width - 2 * root.pad;
     out property <float> brand-height: 34;
     out property <float> foot: root.safe-bottom - root.brand-height;
@@ -186,15 +188,14 @@ export component Print inherits Rectangle {
     }
 }
 
-// The film's edge down one side of a frame: its band over the light, and its perforations, which run on
-// from frame to frame: `along` is how far down the strip the frame begins.
+// The film's perforations down one side of a frame, punched through the photo that fills it: they run
+// on from frame to frame, `along` being how far down the strip the frame begins.
 export component Perforations inherits Rectangle {
     in property <length> u;
     in property <float> along;
     // The film's right edge: the perforations lie toward it.
     in property <bool> right;
     width: WrappedStyle.band * root.u;
-    background: WrappedStyle.ground.with-alpha(0.45);
     clip: true;
     property <length> pitch: WrappedStyle.hole-pitch * root.u;
     property <length> begun: Math.mod(root.along, WrappedStyle.hole-pitch) * root.u;
@@ -204,6 +205,8 @@ export component Perforations inherits Rectangle {
         width: WrappedStyle.hole-across * root.u;
         height: WrappedStyle.hole-along * root.u;
         border-radius: WrappedStyle.hole-corner * root.u;
+        border-width: WrappedStyle.hole-rim * root.u;
+        border-color: WrappedStyle.hole-edge;
         background: WrappedStyle.ground;
     }
 }

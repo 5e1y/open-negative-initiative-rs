@@ -7,7 +7,7 @@ use super::{Kind, Scene};
 use oni_library::wrapped::Year;
 
 /// The box a figure holds in, and the sizes it is set between, in the frame's units.
-pub const ACROSS: f32 = 240.0;
+pub const ACROSS: f32 = 292.0;
 pub const DOWN: f32 = 112.0;
 pub const MOST: f32 = 124.0;
 pub const LEAST: f32 = 30.0;
