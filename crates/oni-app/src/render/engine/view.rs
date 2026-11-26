@@ -160,7 +160,8 @@ impl Engine {
         let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
         let request = Request { scale, full_width: Some(negative.full_width), full_height: Some(negative.full_height), ..Request::default() };
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
+        // Its grain drawn for itself: the grain's plate is the canvas's, drawn for the footprints it shows.
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, None);
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let key = image.key();

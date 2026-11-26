@@ -96,8 +96,9 @@ pub struct Pipeline {
     healing: healing::Healing,
     /// The halation's glow on the film's plate, with its recipe.
     glow: Option<(u64, Source)>,
-    /// The grain's layers' field on the scan's grid, with what it was drawn for.
+    /// The grain's layers' field on the scan's grid, with what it was drawn for, and what the canvas last asked one for.
     grain_plate: Option<(GrainPlateKey, grain::Plate)>,
+    grain_asked: Option<(GrainPlateKey, oni_settings::VirtualStock, u32)>,
 }
 
 /// What a grain's plate is drawn for: the photo's seed, the grain's radius, a silver film's one layer, the scan's size.

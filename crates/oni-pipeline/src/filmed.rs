@@ -1,6 +1,7 @@
 //! `Pipeline.filmed`: a digital photo's scene on its virtual film, the halation's glow read off the film's plate.
 
 use super::*;
+use oni_settings::VirtualStock;
 
 impl Pipeline {
     /// A digital photo's scene on its virtual film: exposed, developed and, a colour negative, scanned through its dyes
@@ -71,6 +72,24 @@ impl Pipeline {
         {
             return Ok(plate.clone());
         }
+        self.draw_grain_plate(graph, k, full, base, key)
+    }
+
+    /// The plate of the grain `k` on `film` when the canvas asks for it again at another footprint, as a zoom or a pinch
+    /// does; none at its first, a film lit in its menu or a grain size dragged, whose render draws its own field, kept
+    /// across notches at one footprint.
+    pub fn grain_plate_asked(&mut self, graph: &mut Graph, k: &oni_render::Grain, film: VirtualStock, full: (f64, f64), base: &Image) -> Result<Option<grain::Plate>> {
+        let key = (k.seed, k.radius.to_bits(), k.silver, (full.0.to_bits(), full.1.to_bits()));
+        let kept = self.grain_plate.as_ref().is_some_and(|(kept, _)| *kept == key);
+        let asked = (key, film, k.footprint().to_bits());
+        let again = std::mem::replace(&mut self.grain_asked, Some(asked)).is_some_and(|(last, on, at)| last == key && on == film && at != asked.2);
+        match kept || again {
+            true => self.grain_plate(graph, k, full, base).map(Some),
+            false => Ok(None),
+        }
+    }
+
+    fn draw_grain_plate(&mut self, graph: &mut Graph, k: &oni_render::Grain, full: (f64, f64), base: &Image, key: GrainPlateKey) -> Result<grain::Plate> {
         // The finest level drawn, each next the mean of its 2 × 2 texels: a pixel reads the mean of the grain under it,
         // as a reduced render reads the full grain averaged.
         let pitches = grain::pitches(k.radius, full);

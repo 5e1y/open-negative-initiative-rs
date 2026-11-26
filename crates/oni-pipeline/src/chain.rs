@@ -27,6 +27,8 @@ impl Pipeline {
         // A digital photo's scene, lit at its film's white, takes its film's own light. A film's look reads the scene as
         // it was shot, its own white.
         let has_look = s.film().is_some_and(|f| f.stock.look().is_some());
+        // A render drawing its grain's field for itself draws it over the framed scan, which no film or grain slider moves.
+        let field_base = framed.clone();
         let lit = match conversion::scene_white(s).filter(|_| !has_look) {
             Some(m) => framed.then(stages::color_matrix(&m)),
             None => framed,
@@ -37,15 +39,15 @@ impl Pipeline {
         // canvas's cache keeps. Its layers' field is drawn once on the scan's grid, read at every scale and place.
         let grain = effects.and_then(|scan| grain::grain(s, scan, scale)).map(|k| k.seeded(inputs.seed));
         let full = (full_width, request.full_height.unwrap_or(f64::from(source.extent().h) * full_width / f64::from(source.extent().w)));
-        // The plate serves the renders of one photo, those carrying its own (the canvas's); a thumbnail or an export draws
-        // its field for itself, as small or as whole as it is.
+        // The plate serves the renders of one photo, those carrying its own (the canvas's), from its second ask; a
+        // thumbnail, an export or a first ask draws its field for itself.
         let grain_plate = match (&grain, inputs.plate) {
-            (Some(k), Some(_)) => Some(self.grain_plate(graph, k, full, &Image::new(source))?),
+            (Some(k), Some(_)) => self.grain_plate_asked(graph, k, s.film().map_or_else(Default::default, |f| f.stock), full, &Image::new(source))?,
             _ => None,
         };
         let grained = |film: Image| match (&grain, &grain_plate) {
             (Some(k), Some(plate)) => grain::grained_on(film, k, plate),
-            (Some(k), None) => grain::grained(film, k),
+            (Some(k), None) => grain::grained_over(film, &field_base, k),
             _ => film,
         };
         // The virtual film takes that scene as a pass of its own too, the halation on its layers before their curve: its

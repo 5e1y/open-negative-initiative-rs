@@ -116,13 +116,13 @@ fn a_print_notch_reruns_no_grain() {
     let exposure = |t: &mut PipelineSettings, d: f32| t.print.exposure += d;
     let plain = notches(&mut g, &rest, &exposure);
     assert_eq!(notches(&mut g, &grained, &exposure), plain, "an exposure notch reruns the grain");
-    // An amount or a size notch reruns the grain's laying alone in the render, the film under it kept, a size notch's
-    // plate drawn as its recipe is laid. Twin: a Bloom notch, on the layers before their development, develops the film
-    // again too.
+    // A render drawing its grain's field for itself: an amount notch reruns the grain's laying alone, its field and the
+    // film under it kept; a size notch its field and its laying. Twin: a Bloom notch, on the layers before their
+    // development, develops the film again too.
     let amount = |t: &mut PipelineSettings, d: f32| t.grain.amount -= d;
     assert_eq!(notches(&mut g, &grained, &amount).0, plain.0 + 1, "an amount notch reruns more than the grain's laying");
     let size = |t: &mut PipelineSettings, d: f32| t.grain.size -= 10.0 * d;
-    assert_eq!(notches(&mut g, &grained, &size).0, plain.0 + 1, "a size notch reruns more than the grain's laying");
+    assert_eq!(notches(&mut g, &grained, &size).0, plain.0 + 2, "a size notch reruns more than the grain's field and laying");
     let bloom = |t: &mut PipelineSettings, d: f32| t.bloom.size = 8.0 + 100.0 * d;
     assert!(notches(&mut g, &grained, &bloom).0 > plain.0 + 1, "the twin reruns {:?}", notches(&mut g, &grained, &bloom));
 }
