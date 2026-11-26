@@ -13579,5 +13579,12 @@
     "title": "Benches for what a digital photo costs beyond a notch: its export, a render at fit from the full frame, a neighbour scale's lighter render",
     "status": "done",
     "detail": "export_cost times a photo's full-definition export stage by stage: on a 47 Mpx RW2, 2.9 s on Portra 800 at its rests (decode 1.39 s, render and readback 1.00 s, convert 0.23 s, encode 0.25 s), 2.4 s on the neutral film, 1.3 s for a 24 Mpx NEF (render 0.15 s). stage_cost adds the render at fit from the full frame, the canvas's once the whole decode is in: 75 ms on Portra 800 (grain 36, halation 18, film and scan 6, reduction 6, finishing 7). ONI_COST_NEIGHBOUR measures the open question of a gesture's lighter render taken from a neighbour scale's, stretched: at x1.19 its display code is off by 0.005 mean and 0.024 at p99, its grain's pixel-to-pixel spread 0.91 of the exact one's, against 0.009 and 0.054 for a scanned NEF stretched alike."
+  },
+  {
+    "id": 3867,
+    "type": "test",
+    "title": "The full check at the end of the digital performance night: green but a line of stage_cost's past the width, broken",
+    "status": "done",
+    "detail": "After #3865-#3866, 168 of 169 binaries green; the architecture check counted 79 lines past 200 characters against 78, stage_cost's list of cases (232): laid one case a line, the check green. 59 checks skipped without ONI_RAW_DIR and the other sample folders."
   }
 ]

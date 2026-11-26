@@ -194,7 +194,12 @@ fn main() {
     // at 100 % the full frame's centre, the canvas's size.
     // At fit from the full frame too, as the canvas renders once the whole decode is in, at the canvas's own size.
     let fitted = (canvas.0 / f64::from(full.extent().w)).min(canvas.1 / f64::from(full.extent().h));
-    for (case, base, zoomed, scale) in [("fit, from the preview", negative.preview.clone(), false, f64::from(region.w) / f64::from(w)), ("fit, from the full frame", full.clone(), false, fitted), ("100 %", full.clone(), true, 1.0)] {
+    let cases = [
+        ("fit, from the preview", negative.preview.clone(), false, f64::from(region.w) / f64::from(w)),
+        ("fit, from the full frame", full.clone(), false, fitted),
+        ("100 %", full.clone(), true, 1.0),
+    ];
+    for (case, base, zoomed, scale) in cases {
     let (w, h) = (base.extent().w, base.extent().h);
     let shown = zoomed.then(|| Rect::new(((w as f64 - canvas.0) / 2.0) as i32, ((h as f64 - canvas.1) / 2.0) as i32, canvas.0 as u32, canvas.1 as u32));
     println!("{case}:");
