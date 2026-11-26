@@ -3,7 +3,7 @@
 //! flight and lands it where the next screen lays the photo, Rust names its picture and where it leaves.
 
 use super::*;
-use crate::{Flight, FlightRoute, Place};
+use crate::{Flight, FlightRoute, Place, Walk};
 
 impl Ctl {
     /// The tile of `path` where the grid lays it now, in the window's points, with its index; none while
@@ -96,5 +96,32 @@ impl Ctl {
         let Some((index, place)) = open.and_then(|p| self.tile_in_window(&p)) else { return };
         f.set_tile(index as i32);
         f.set_tile_place(place);
+    }
+
+    /// The photo left as the editor walks to `to`, beside a photo alone: its thumbnail steps aside where the
+    /// canvas showed it, the way the walk goes in the gallery's order.
+    pub(super) fn walk_from(&self, to: &str) {
+        let Some(w) = self.window() else { return };
+        if w.global::<App>().get_gallery() || w.global::<crate::Exporting>().get_shown() || w.global::<crate::Motion>().get_reduced() {
+            return;
+        }
+        let Some(from) = self.canvas_in_window() else { return };
+        let (picture, way) = {
+            let s = self.state.borrow();
+            let Some(left) = s.open_path().filter(|p| *p != to) else { return };
+            let at = |p: &str| s.order.iter().position(|o| o == p);
+            let way = match (at(left), at(to)) {
+                (Some(a), Some(b)) if b < a => -1,
+                _ => 1,
+            };
+            (s.fingerprints.get(left).and_then(|f| s.thumbs.get(f)), way)
+        };
+        let Some(picture) = picture else { return };
+        let walk = w.global::<Walk>();
+        walk.set_picture(picture);
+        walk.set_from(from);
+        walk.set_way(way);
+        walk.set_serial(walk.get_serial() + 1);
+        walk.set_walking(true);
     }
 }

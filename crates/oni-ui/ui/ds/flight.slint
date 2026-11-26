@@ -87,3 +87,54 @@ export component FlightView {
     travel := Timer { interval: Motion.travel; running: Flight.flying && !root.arrived; triggered => { root.arrived = true; } }
     Timer { interval: Motion.quick; running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
 }
+
+// The editor walking to the next or the previous photo: the one left, its picture where the canvas showed
+// it, steps aside the way the walk goes and fades as the next one comes in from the other side.
+export global Walk {
+    in-out property <bool> walking;
+    in property <int> serial;
+    in property <image> picture;
+    in property <Place> from;
+    // 1 walking forward, -1 back.
+    in property <int> way: 1;
+}
+
+// Laid in the window's space over the canvas, taking no press.
+export component WalkView {
+    property <bool> off;
+    Timer { interval: Motion.next-frame; running: !root.off; triggered => { root.off = true; } }
+    property <int> serial: Walk.serial;
+    changed serial => { root.off = false; }
+    Image {
+        x: Walk.from.x - (root.off ? Walk.way * Motion.walk-step : 0px);
+        y: Walk.from.y;
+        width: Walk.from.width;
+        height: Walk.from.height;
+        source: Walk.picture;
+        image-fit: contain;
+        opacity: root.off ? 0 : 1;
+        animate x, opacity { duration: root.off ? Motion.travel : 0ms; easing: Ease.firm; }
+    }
+    Timer { interval: Motion.travel; running: root.off; triggered => { Walk.walking = false; } }
+}
+
+// Every photo travelling over the screens, laid in the window's space: the flight, and the walk beside a photo.
+export component Travels {
+    in property <bool> walk;
+    in property <Place> frame;
+    in property <Place> room;
+    if Flight.flying: FlightView { x: 0; y: 0; width: root.width; height: root.height; frame: root.frame; room: root.room; }
+    if Walk.walking && root.walk: WalkView { x: 0; y: 0; width: root.width; height: root.height; }
+}
+
+// The canvas's side of a walk: the photo walked to comes in from the side the walk goes, faded in.
+export component WalkIn {
+    property <int> walked: Walk.serial;
+    property <bool> walked-in: true;
+    changed walked => { root.walked-in = false; arrive.start(); }
+    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); root.walked-in = true; } }
+    out property <length> shift: root.walked-in ? 0px : Walk.way * Motion.walk-step;
+    animate shift { duration: root.walked-in ? Motion.travel : 0ms; easing: Ease.firm; }
+    out property <float> fade: root.walked-in ? 1 : 0;
+    animate fade { duration: root.walked-in ? Motion.travel : 0ms; easing: Ease.firm; }
+}

@@ -1,6 +1,6 @@
 //! `ONI_BENCH=motion`: the window the size of its screen, each of the interface's journeys walked twice,
 //! under Reduce Motion, each screen laid at once, then moving: the gallery, a tile opened by a double
-//! click, the export opened and closed, the interface's frames timed over each.
+//! click, the panel's panes taken, the export opened and closed, the interface's frames timed over each.
 
 use super::*;
 
@@ -13,9 +13,19 @@ enum Step {
     Sizing { since: Instant },
     Gallery,
     Picked,
+    Pane { at: usize },
     Opened,
     Exported,
     Closed,
+}
+
+/// The panel's panes taken from the tab bar, crossing it both ways.
+const PANES: [crate::PanelTab; 3] = [crate::PanelTab::Details, crate::PanelTab::Roll, crate::PanelTab::Color];
+
+fn pick(w: &crate::MainWindow, tab: crate::PanelTab) {
+    let panel = w.global::<crate::PanelState>();
+    panel.set_tab(tab);
+    panel.invoke_tab_picked(tab);
 }
 
 pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -84,8 +94,21 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 journey("gallery to editor");
-                ctl.act(crate::Act::Export);
-                step.set(Step::Opened);
+                pick(&w, PANES[0]);
+                step.set(Step::Pane { at: 0 });
+            }
+            Step::Pane { at } => {
+                if !watched() {
+                    return;
+                }
+                journey(&format!("pane {:?}", PANES[at]));
+                if at + 1 < PANES.len() {
+                    pick(&w, PANES[at + 1]);
+                    step.set(Step::Pane { at: at + 1 });
+                } else {
+                    ctl.act(crate::Act::Export);
+                    step.set(Step::Opened);
+                }
             }
             Step::Opened => {
                 if !watched() {

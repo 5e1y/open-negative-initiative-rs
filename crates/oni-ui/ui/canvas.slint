@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Flight, Card, CardCorners, Picture, Ground, SplitGuide, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, RingTone, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Menu, Tips, StatusStyle } from "ds/ds.slint";
+import { DS, Flight, WalkIn, Card, CardCorners, Picture, Ground, SplitGuide, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, DustVeil, DustStyle, RingTone, Badge, Button, ButtonGroup, ButtonStyle, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone, Menu, Tips, StatusStyle } from "ds/ds.slint";
 import { PanelState, PanelTab } from "panel.slint";
 import { Library } from "library.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -31,6 +31,8 @@ export component CanvasCard inherits Card {
     changed density => { Canvas.resized(); }
     property <length> menu-x;
     property <length> menu-y;
+    // The photo walked to comes in from the side the walk goes, as the one left steps aside.
+    walk := WalkIn { }
     // A right click on the picture opens the photo's own menu, as its tile and its filmstrip row do.
     function open-menu(x: length, y: length) {
         if (Canvas.menu()) {
@@ -61,7 +63,7 @@ export component CanvasCard inherits Card {
             source: Canvas.logo;
         }
         after := Picture {
-            x: Canvas.frame-x;
+            x: Canvas.frame-x + walk.shift;
             y: Canvas.frame-y;
             width: Canvas.frame-width;
             height: Canvas.frame-height;
@@ -72,7 +74,7 @@ export component CanvasCard inherits Card {
             clip-width: Canvas.frame-clip-width;
             clip-height: Canvas.frame-clip-height;
             // The photo flying in from its tile stands in for it until it lands.
-            picture-opacity: Flight.canvas-covered ? 0 : 1;
+            picture-opacity: Flight.canvas-covered ? 0 : walk.fade;
         }
         // Held at the left edge: an element with no place is centred in its parent.
         if Canvas.split >= 0: Rectangle {

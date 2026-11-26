@@ -96,9 +96,9 @@ export component RollPanel inherits Surface {
         root.settling = false;
         root.shift = root.step > root.was ? Space.l : -Space.l;
         root.was = root.step;
-        arrive.restart();
+        arrive.start();
     }
-    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.running = false; root.settling = true; root.shift = 0; } }
+    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); root.settling = true; root.shift = 0; } }
     VerticalLayout {
         padding: Space.l;
         spacing: Space.m;

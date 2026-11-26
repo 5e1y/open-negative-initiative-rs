@@ -13704,7 +13704,7 @@
     "type": "ui",
     "title": "Prepare the Roll: a step's body comes in from the side the walk goes",
     "status": "done",
-    "detail": "RollPanel shifts the new step's body by Space.l, forward from the right and back from the left, then slides it home and fades it in on Motion.travel (Ease.firm), the next frame after it is laid; nothing waits on it."
+    "detail": "RollPanel shifts the new step's body by Space.l, forward from the right and back from the left, then slides it home and fades it in on Motion.travel (Ease.firm), the next frame after it is laid; nothing waits on it. Its next-frame timer started with start(): a Timer laid stopped ignores restart(), which left the body shifted and unseen once a step changed; motion.rs now walks two steps and finds the first step's body shown."
   },
   {
     "id": 3872,
@@ -13789,5 +13789,19 @@
     "title": "The year on film in parts under the 400-line limit: its controller in three, its scenes' words apart, its design system pieces in four files",
     "status": "done",
     "detail": "architecture::no_source_file_grows_past_its_ceiling refused app/year.rs (545 lines), wrapped.rs (503) and ds/wrapped.slint (806). app/year.rs keeps the journal's notes, the state and December's offer (212), year/showing.rs the year read, laid, advanced and closed (215), year/cards.rs the cards taken, saved and copied (146). wrapped.rs keeps the scenes (361), wrapped/words.rs the counts, the names and each character's words (151). ds/wrapped_parts.slint holds the scene's types, the measures and the print, words, figure, line and brand (240), ds/wrapped_scenes.slint and ds/wrapped_portrait.slint one component a kind of scene (275, 204), ds/wrapped.slint the frame that picks one, the strip, the card and the share screen's pieces (212); a part's rise is one function of the style. Nothing is meant to move on screen: the sample year's fifteen cards, saved before and after, look the same. design_system::screens_use_only_the_design_system's breach (a border-radius: 0px in ui/wrapped.slint) left with the still frame #3904 replaced by the card."
+  },
+  {
+    "id": 4009,
+    "type": "ui",
+    "title": "A panel's pane taken from the tab bar slides in from the side the tabs were crossed, as the Swift app's DSPanel",
+    "status": "done",
+    "detail": "The Swift app (1.3.1, DSPanel.entry) inserted a clicked pane with .move(edge:), trailing when the tabs were crossed rightwards, leading else, the pane left removed at once, on DS.Motion.grab (response 0.22 s, damping 0.62). The panes now slide in a whole width on Motion.pane (the pill's 220 ms) and Ease.lively (spring 0.38, the same spring); a tool's pane, entered from the bar, shows in place. Shot step by step by motion.rs; ONI_BENCH=motion times each pane taken."
+  },
+  {
+    "id": 4010,
+    "type": "ui",
+    "title": "Walking to the next or the previous photo: the photo left steps aside and fades as the next comes in from the other side",
+    "status": "done",
+    "detail": "Ctl::walk_from, at the head of open_photo beside a photo alone: the left photo's thumbnail, where the canvas showed it, steps Motion.walk-step the way the walk goes (the gallery's order) and fades on Motion.travel (Ease.firm); the canvas's picture comes in from the other side faded in (WalkIn). Nothing waits on it; Reduce Motion lays the next photo at once. Shot by motion.rs both ways."
   }
 ]

@@ -1,6 +1,6 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
 import { Act } from "act.slint";
-import { DS, Ease, Flight, FlightView, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, MenuLine } from "ds/ds.slint";
+import { DS, Ease, Flight, Travels, StarterView, Starter, Clicks, Outside, KeyMonitor, Keyboard, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, ButtonSize, ButtonKind, Label, Progress, Raised, Lift, Motion, TextRole, Tone, Sheet, Space, Ground, CardStyle, SheetStyle, StatusStyle, ShellStyle, FormStyle, HelpLayer, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, PanelTab, RollState, DetailLoupe, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar, BarRoom } from "toolbar.slint";
@@ -40,7 +40,7 @@ export { MaskDialog, Confirm, Absent, Unsaved, Told, Stocks, StockBrand, StockRo
 export { Gear, GearCard, GearKind, Kit, KitLink, KitPiece, KitMark } from "gear_state.slint";
 export { KitPair, KitSearch } from "kit.slint";
 import { Sheets } from "sheets.slint";
-export { Flight, FlightRoute, Place } from "ds/ds.slint";
+export { Flight, FlightRoute, Place, Walk } from "ds/ds.slint";
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage, Menus, MenuTitles, MenuLive }
 export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe, KeyboardProbe } from "ds/probes.slint";
 export { StateProbe, HueProbe, HeaderProbe, RowsProbe } from "ds/probe_states.slint";
@@ -376,9 +376,9 @@ export component MainWindow inherits AppWindow {
             square-left: root.beside-photo && App.library-hidden;
             square-right: root.beside-photo && App.panel-hidden;
         }
-        // A photo between its tile and the canvas, over the screen it leaves for.
-        if Flight.flying: FlightView {
-            x: 0; y: 0; width: parent.width; height: parent.height;
+        // A photo travelling: between its tile and the canvas, or the one left as the editor walks.
+        Travels {
+            x: 0; y: 0; width: parent.width; height: parent.height; walk: root.beside-photo;
             frame: { x: card.absolute-position.x + CardStyle.padding + Canvas.frame-x, y: card.absolute-position.y + CardStyle.padding + Canvas.frame-y, width: Canvas.frame-width, height: Canvas.frame-height };
             room: { x: card.absolute-position.x + CardStyle.padding, y: card.absolute-position.y + CardStyle.padding, width: Canvas.width, height: Canvas.height };
         }

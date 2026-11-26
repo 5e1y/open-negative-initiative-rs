@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar's three panes and the canvas tools' two, each in its own file under `panel/`.
-import { Space, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LoupeBand, ModeHeader } from "ds/ds.slint";
+import { Space, Motion, Ease, Tabs, TabsStyle, Divider, Plot, PlotStyle, Surface, ShellStyle, LoupeBand, ModeHeader } from "ds/ds.slint";
 import { Act } from "act.slint";
 import { KeyWords } from "key_words.slint";
 import { Plots, PanelState, PanelTab, RollState, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
@@ -98,13 +98,35 @@ export component Panel inherits Surface {
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.
         rule := Divider { }
-        Rectangle {
+        // `DSPanel`: a pane taken from the tab bar slides in from the side the tabs were crossed, the one
+        // left gone at once; a tool's pane, entered from the bar, shows in place.
+        panes := Rectangle {
             vertical-stretch: 1;
-            RollPane { shown: PanelState.tab == PanelTab.roll; }
-            CropPane { shown: PanelState.tab == PanelTab.crop; }
-            ColorPane { shown: PanelState.tab == PanelTab.color; }
-            DetailsPane { shown: PanelState.tab == PanelTab.details; }
-            DedustPane { shown: PanelState.tab == PanelTab.dedust; }
+            clip: true;
+            property <int> page: PanelState.tab == PanelTab.roll ? 0 : PanelState.tab == PanelTab.color ? 1 : PanelState.tab == PanelTab.details ? 2 : -1;
+            property <int> was: self.page;
+            property <length> enter;
+            property <bool> entering;
+            changed page => {
+                if (self.was >= 0 && self.page >= 0) {
+                    self.entering = false;
+                    self.enter = self.page > self.was ? self.width : -self.width;
+                    arrive.start();
+                }
+                self.was = self.page;
+            }
+            arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); panes.entering = true; panes.enter = 0; } }
+            Rectangle {
+                x: panes.enter;
+                width: parent.width;
+                height: parent.height;
+                animate x { duration: panes.entering ? Motion.pane : 0ms; easing: Ease.lively; }
+                RollPane { shown: PanelState.tab == PanelTab.roll; }
+                CropPane { shown: PanelState.tab == PanelTab.crop; }
+                ColorPane { shown: PanelState.tab == PanelTab.color; }
+                DetailsPane { shown: PanelState.tab == PanelTab.details; }
+                DedustPane { shown: PanelState.tab == PanelTab.dedust; }
+            }
         }
     }
 }

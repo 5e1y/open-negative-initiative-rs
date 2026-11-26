@@ -2,8 +2,10 @@
 //! tile into the canvas and back, the column's photos rise under its rows, a sheet sinks away as it
 //! closes; each step's shot lands in the shots folder, and Reduce Motion lays every screen at once.
 
-use oni_app::{Act, AppSettings, Flight, FlightRoute, Library, Motion};
-use slint::{ComponentHandle, Model};
+use i_slint_backend_testing::AccessibleRole as Role;
+use oni_app::{Act, AppSettings, Bar, Preparing, Flight, FlightRoute, Library, Motion, PanelState, PanelTab, Walk};
+use slint::platform::Key;
+use slint::{ComponentHandle, Model, SharedString};
 use std::time::Duration;
 
 use crate::common;
@@ -56,6 +58,29 @@ pub(crate) fn the_photo_flies_between_its_tile_and_the_canvas_and_reduce_motion_
     rig.settle();
     rig.shot("motion-editor");
 
+    // A pane taken from the tab bar slides in from the side the tabs are crossed.
+    let panel = w.global::<PanelState>();
+    for (tab, name) in [(PanelTab::Details, "pane-forward"), (PanelTab::Roll, "pane-back"), (PanelTab::Color, "pane-colour")] {
+        rig.freeze();
+        panel.set_tab(tab);
+        panel.invoke_tab_picked(tab);
+        shoot(name);
+    }
+
+    // The arrows walk to the neighbour: the photo left steps aside, the next comes in from the other side.
+    let walk = w.global::<Walk>();
+    for (key, way, name) in [(Key::RightArrow, 1, "walk-forward"), (Key::LeftArrow, -1, "walk-back")] {
+        rig.settle();
+        w.invoke_refocus();
+        rig.freeze();
+        rig.key(&SharedString::from(key));
+        assert!(walk.get_walking() && walk.get_way() == way, "{name}: the photo left steps aside");
+        shoot(name);
+        assert!(!walk.get_walking(), "{name}: gone once its pace has run");
+    }
+    rig.until("B shown again", Duration::from_secs(120), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("B.tif")));
+    rig.settle();
+
     // The export opens out of the editor, the photo moving onto its preview, and closes back onto the canvas.
     rig.freeze();
     ctl.act(Act::Export);
@@ -86,6 +111,20 @@ pub(crate) fn the_photo_flies_between_its_tile_and_the_canvas_and_reduce_motion_
     settings.set_shown(false);
     rig.pump();
     shoot("sheet-out");
+
+    // Prepare the Roll: a step's body comes in from the side the walk goes, and rests in place.
+    rig.settle();
+    w.global::<Bar>().invoke_act(Act::PrepareRoll);
+    rig.settle();
+    let prepare = w.global::<Preparing>();
+    for (step, name) in [(1, "prepare-forward"), (0, "prepare-back")] {
+        rig.freeze();
+        prepare.invoke_step_picked(step);
+        shoot(name);
+    }
+    assert_eq!(common::placed(w, Role::Text, "Film type").len(), 1, "back on the first step, its body shows");
+    prepare.invoke_cancel();
+    rig.settle();
 
     // Twin: under Reduce Motion the editor opens with nothing in flight.
     rig.settle();

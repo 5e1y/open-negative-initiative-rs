@@ -3,6 +3,7 @@
 import { DS } from "tokens.slint";
 export { DS }
 export { SliderStyle, DialStyle, PlotStyle } from "theme_sliders.slint";
+import { TabsStyle } from "theme_tabs.slint";
 export { TabsStyle, ToggleStyle, MedalStyle } from "theme_tabs.slint";
 export { SurfaceStyle, SealStyle, Foil } from "theme_surfaces.slint";
 import { Type } from "theme_type.slint";
@@ -125,6 +126,10 @@ export global Motion {
     out property <duration> overlay-out: Motion.reduced ? 0ms : DS.motion-overlay-out;
     // A part of the window travelling to its new place, as the column's photos rising, on `Ease.weighted`.
     out property <duration> travel: Motion.reduced ? 0ms : 420ms;
+    // A panel's pane taken from the tab bar sliding in from the side the tabs were crossed, at the pill's pace.
+    out property <duration> pane: Motion.reduced ? 0ms : TabsStyle.slide;
+    // How far a photo left steps aside as the editor walks to its neighbour, the next one coming from as far.
+    out property <length> walk-step: Space.l;
     // The window's next frame: what moves from where it was just laid waits for it to be drawn there.
     out property <duration> next-frame: 1ms;
     // A menu or a popover opening out of its anchor, quick enough that a line is read as it lands.
@@ -137,6 +142,8 @@ export global Ease {
     out property <easing> weighted: spring(0.1);
     // A size travelling, as a block folding: the same spring with no give, which never passes zero.
     out property <easing> firm: spring(0);
+    // `DS.Motion.grab`, the tab pill's and the panes' lively spring: response 0.22 s, damping 0.62.
+    out property <easing> lively: spring(0.38);
 }
 
 // The overlay scroller AppKit draws for every Swift scroll view: a knob over the edge, no gutter.
