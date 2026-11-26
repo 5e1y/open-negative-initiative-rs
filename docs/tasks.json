@@ -13726,5 +13726,12 @@
     "title": "The welcome built from the design system alone: a full sheet is fixed to the window by itself, its flat ground a component of the welcome's pieces",
     "status": "done",
     "detail": "design_system::screens_use_only_the_design_system refused welcome.slint's literal 1px card height and its ground colour. Sheet's `full` now implies a fixed height; WelcomeGround (ds/welcome.slint) lays the flat ground. Window checks design_system (and its planted twin), welcome_card, help, sheets, sheet_stack, migration green."
+  },
+  {
+    "id": 3900,
+    "type": "feature",
+    "title": "Wrapped 2.0: the year on film told as a half-frame strip of scenes, read off the journal, the library, its sidecars and its thumbnails, each scene a card to save",
+    "status": "done",
+    "detail": "Show My Year on Film (Act::Wrapped, December's offer) read only the journal and dealt nine cards. It now reads, off this machine alone, the journal (oni_library::wrapped::Darkroom: photos opened, gestures, favourite rows and preset, hours, longest sitting, gestures by hour, days, longest run of days), the library's rows with each frame's sidecar (Frames: frames by month and kind, rolls and the longest, films, papers, cameras, lenses, medals, dust healed, crops, grain and halation) and the thumbnails (Palette: each photo's own colour, the heaviest hue weighted by chroma, gathered in Oklab around five), and names a character (Persona: twelve traits, each against its own bar, the one furthest past it, its measure shown). A frame is dated by its roll's shot date, else its file's, else its import. oni_app::wrapped::scenes lays up to seventeen scenes, one with nothing to tell left out, an empty year an invitation. The view is a half-frame strip (ds/wrapped.slint: WrappedFilm, four perforations a frame, edge print; WrappedFrame, 9 by 16, every size a share of its width) advanced through the gate by a click, the arrows or by itself after a 7 s hold, a press holding it; figures count up, bars grow, prints land askew. Save This Card and Save All Cards cut the frame, drawn alone as large as the window holds, out of the window's own picture into a JPEG (wrapped::share), never over an earlier one. In January the menu tells the year just ended. ONI_WRAPPED_SAMPLE tells a sample year on the library's own photos."
   }
 ]

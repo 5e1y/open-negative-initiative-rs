@@ -305,6 +305,6 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo", gallery_cell::a_selected_tiles_ring_reads_on_a_light_photo),
     ("unprepared::a_roll_still_to_prepare_is_marked_in_the_navigator", unprepared::a_roll_still_to_prepare_is_marked_in_the_navigator),
     ("visible::a_triplet_with_a_pass_gone_is_marked", visible::a_triplet_with_a_pass_gone_is_marked),
-    ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
+    ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_story", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_story),
     ("upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar", upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar),
 ];

@@ -131,7 +131,7 @@ impl Ctl {
             Act::WhatsNew => self.show_whats_new_again(),
             Act::Report => self.open_report(),
             Act::CheckUpdates | Act::Update => self.check_for_updates(true),
-            Act::Wrapped => self.show_wrapped(oni_library::wrapped::today().0),
+            Act::Wrapped => self.show_wrapped(super::year::told_year(oni_library::wrapped::today())),
             Act::PairPhone => self.pair_phone(),
             Act::Settings => self.open_settings(),
             Act::CloseSettings => self.close_settings(),

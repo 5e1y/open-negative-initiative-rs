@@ -143,6 +143,24 @@ pub fn to_screen(mut rgba: Vec<u8>, screen: Screen) -> Vec<u8> {
     rgba
 }
 
+/// The screen's bytes back on sRGB's primaries, a colour sRGB does not hold clipped: what a picture
+/// taken off the window is written as, so a file with no profile reads as it showed.
+pub fn from_screen(mut rgba: Vec<u8>, screen: Screen) -> Vec<u8> {
+    if screen == Screen::Srgb {
+        return rgba;
+    }
+    // Linear Display P3 to linear sRGB, both on D65: `to_screen`'s matrix inverted.
+    const M: [[f32; 3]; 3] = [[1.224_940, -0.224_940, 0.0], [-0.042_057, 1.042_057, 0.0], [-0.019_638, -0.078_636, 1.098_274]];
+    let table: Vec<f32> = (0..=255u8).map(linear).collect();
+    for p in rgba.chunks_exact_mut(4) {
+        let l = [table[usize::from(p[0])], table[usize::from(p[1])], table[usize::from(p[2])]];
+        for (c, row) in M.iter().enumerate() {
+            p[c] = encoded(row[0] * l[0] + row[1] * l[1] + row[2] * l[2]);
+        }
+    }
+    rgba
+}
+
 /// The tiles in memory by photo path, the least recently shown half dropped past `MEMORY_LIMIT`,
 /// never what just arrived, which a scroll would fetch again.
 pub struct Memory<T> {
@@ -291,6 +309,19 @@ mod tests {
         assert!(red[0] < 250 && red[1] > 40, "{red:?}");
         // Twin: on an sRGB screen the bytes are left as the file holds them.
         assert_eq!(to_screen(vec![255, 0, 0, 255], Screen::Srgb), vec![255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn a_picture_off_a_display_p3_window_comes_back_to_the_srgb_it_showed() {
+        for colour in [[255, 255, 255], [18, 18, 18], [203, 163, 114], [230, 194, 0], [40, 90, 200], [255, 0, 0]] {
+            let shown = to_screen(vec![colour[0], colour[1], colour[2], 255], Screen::DisplayP3);
+            let back = from_screen(shown.clone(), Screen::DisplayP3);
+            // Two codes: the window's 8 bits round a channel near black coarser than its own code.
+            assert!(colour.iter().zip(&back).all(|(a, b)| (i32::from(*a) - i32::from(*b)).abs() <= 2), "{colour:?} -> {shown:?} -> {back:?}");
+        }
+        // Twin: left on the window's primaries a red reads duller, and an sRGB window's bytes stand.
+        assert!(to_screen(vec![255, 0, 0, 255], Screen::DisplayP3)[0] < 250);
+        assert_eq!(from_screen(vec![234, 51, 35, 255], Screen::Srgb), vec![234, 51, 35, 255]);
     }
 
     #[test]

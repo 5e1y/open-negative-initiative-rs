@@ -1,119 +1,684 @@
-// `WrappedView`'s pieces: the black ground, the title over its gold seal, a card of the deck and
-// its photos, and the line saying how to turn the cards.
+// The year on film's pieces: the black ground, a half-frame strip with its perforations and edge print,
+// and a scene laid on one frame of it, 9 by 16, every size a share of the frame so it draws alike at any.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
-import { Label, Tone, TextRole, Picture, Ground, Fit } from "base.slint";
+import { Colour, Motion, Type } from "theme.slint";
 import { Badge, BadgeTone } from "badge.slint";
-import { Outward } from "depth.slint";
+
+export enum WrappedKind { title, figure, bars, film, lines, photos, palette, persona, summary, farewell }
+
+export struct WrappedLine {
+    label: string,
+    value: string,
+    // Its weight against the heaviest, 0 to 1; 0 draws no bar.
+    share: float,
+}
+
+export struct WrappedSwatch {
+    ink: color,
+    share: float,
+}
+
+export struct WrappedScene {
+    kind: WrappedKind,
+    eyebrow: string,
+    figure: string,
+    // Above zero, the figure is this number counted up as the scene shows, `unit` after it.
+    count: int,
+    unit: string,
+    caption: string,
+    note: string,
+    photos: [image],
+    lines: [WrappedLine],
+    bars: [float],
+    // The bar lit, -1 for none.
+    lit: int,
+    marks: [string],
+    swatches: [WrappedSwatch],
+    artwork: image,
+    has-artwork: bool,
+}
 
 export global WrappedStyle {
     // `Color.black`, the ground the year is told on, whatever the theme.
     out property <color> ground: Colour.black;
+    // A developed strip's base in the dark, warm and nearly black.
+    out property <color> film: #241a11;
+    out property <color> frame: Colour.ground;
+    out property <color> gold: Colour.medal[3];
     out property <color> title-ink: Colour.selected;
-    out property <length> card-width: 440px;
-    out property <length> card-height: 540px;
-    out property <length> photo-side: 92px;
-    out property <float> deck-shrink: 0.05;
-    out property <length> deck-step: 14px;
-    out property <int> deck-depth: 3;
-    out property <float> title-start: 0.6;
-    out property <duration> reveal: DS.motion-wrapped-reveal-response * 1s;
-    out property <duration> settle: DS.motion-settle-response * 1s;
-    out property <duration> stagger: 120ms;
-    out property <duration> hold: 2400ms;
+    // A print's white border, a paper's rather than a screen's.
+    out property <color> paper: #f1ede4;
+    // A frame is 360 by 640 units; the strip adds a rebate above and under it, and a frame line between two.
+    out property <float> frame-width: 360;
+    out property <float> frame-height: 640;
+    out property <float> rebate: 58;
+    out property <float> frame-line: 16;
+    out property <float> pitch: root.frame-width + root.frame-line;
+    out property <float> strip-height: root.frame-height + 2 * root.rebate;
+    // Half-frame: four perforations a frame.
+    out property <int> perforations: 4;
+    out property <float> hole-width: 34;
+    out property <float> hole-height: 26;
+    out property <float> hole-inset: 7;
+    // The frames beside the one in the gate, dimmed.
+    out property <float> beside: 0.45;
+    // The film's advance to the next frame, landing with a short overrun as a lever's stroke does.
+    out property <duration> advance: Motion.reduced ? 0ms : 720ms;
+    // A scene tells itself over this long once in the gate, then holds until the film advances.
+    out property <duration> tell: Motion.reduced ? 0ms : 2200ms;
+    out property <duration> hold: 7s;
+    out property <duration> tick: 50ms;
+    out property <duration> enter: Motion.reduced ? 0ms : 500ms;
     // One frame at 60 Hz: a value set as the view is laid would not animate.
-    out property <duration> frame: 16ms;
+    out property <duration> frame-time: 16ms;
+    // The room kept above the strip for the progress, and under it for the keys.
+    out property <length> chrome-above: 44px;
+    out property <length> chrome-under: 84px;
+    out property <length> progress-height: 3px;
+    out property <length> progress-gap: 4px;
+    out property <length> progress-width: 520px;
+    out property <color> progress-idle: Colour.track;
+    out property <color> progress-done: Colour.ink;
 }
 
 export component WrappedGround inherits Rectangle {
     background: WrappedStyle.ground;
 }
 
-// "Your Year / On Film" in Enriqueta, over the year on the medal's gold; it grows in as it shows.
-export component WrappedTitle inherits Rectangle {
-    in property <string> year;
-    in property <bool> shown;
-    width: column.preferred-width;
-    height: column.preferred-height;
-    opacity: root.shown ? 1 : 0;
-    animate opacity { duration: WrappedStyle.reveal; easing: ease-out; }
-    column := VerticalLayout {
-        spacing: Space.m;
-        alignment: center;
-        for line in [@tr("Your Year"), @tr("On Film")]: Text {
-            text: line;
-            font-family: DS.typo-wrapped-title-family;
-            font-size: DS.typo-wrapped-title-size * (root.shown ? 1 : WrappedStyle.title-start);
-            font-weight: DS.typo-wrapped-title-weight;
-            color: WrappedStyle.title-ink;
-            horizontal-alignment: center;
-            animate font-size { duration: WrappedStyle.reveal; easing: ease-out-back; }
-        }
-        HorizontalLayout {
-            alignment: center;
-            Badge { tone: BadgeTone.seal; text: root.year; glinting: root.shown; }
+// One segment a scene along the top, filled as the story reaches it; the one in the gate fills as it holds.
+export component WrappedProgress inherits Rectangle {
+    in property <int> count;
+    in property <int> at;
+    // The shown scene's hold so far, 0 to 1.
+    in property <float> held;
+    height: WrappedStyle.progress-height;
+    property <length> segment: (root.width - (root.count - 1) * WrappedStyle.progress-gap) / max(1, root.count);
+    for scene in root.count: Rectangle {
+        x: scene * (root.segment + WrappedStyle.progress-gap);
+        width: root.segment;
+        height: parent.height;
+        border-radius: self.height / 2;
+        background: WrappedStyle.progress-idle;
+        Rectangle {
+            x: 0;
+            width: parent.width * (scene < root.at ? 1 : scene == root.at ? clamp(root.held, 0, 1) : 0);
+            height: parent.height;
+            border-radius: self.height / 2;
+            background: WrappedStyle.progress-done;
         }
     }
 }
 
-// One card standing out of the black (`dsFloating`): the eyebrow, the figure in Enriqueta, the caption,
-// and its photos.
-export component WrappedCard inherits Outward {
-    in property <string> eyebrow;
-    in property <string> figure;
-    in property <string> caption;
-    in property <[image]> photos;
-    // The top card's photos rise in one after the other; those under it wait.
-    in property <bool> top;
-    width: WrappedStyle.card-width;
-    height: WrappedStyle.card-height;
-    fill: Colour.ground;
-    radius: Radius.card;
-    property <length> side: root.photos.length == 1 ? WrappedStyle.photo-side * 3 : WrappedStyle.photo-side;
-    property <int> columns: min(root.photos.length, 3);
-    VerticalLayout {
-        padding: Space.l;
-        spacing: Space.m;
-        alignment: center;
-        Label {
-            text: root.eyebrow;
-            role: TextRole.caption;
-            tone: Tone.secondary;
+// A small print with its paper's white border, laid a little askew as a hand lays one.
+component Print inherits Rectangle {
+    in property <image> source;
+    in property <length> u;
+    in property <angle> tilt;
+    in property <float> shown: 1;
+    background: WrappedStyle.paper;
+    opacity: root.shown;
+    transform-rotation: root.tilt;
+    transform-origin: { x: self.width / 2, y: self.height / 2 };
+    drop-shadow-color: Colour.scrim;
+    drop-shadow-blur: 14 * root.u;
+    drop-shadow-offset-y: 6 * root.u;
+    Image {
+        x: 5 * root.u;
+        y: 5 * root.u;
+        width: parent.width - 10 * root.u;
+        height: parent.height - 10 * root.u;
+        source: root.source;
+        image-fit: cover;
+    }
+}
+
+component Words inherits Text {
+    in property <length> u;
+    in property <float> size: 14;
+    in property <float> shown: 1;
+    font-family: Type.family;
+    font-size: root.size * root.u;
+    color: Colour.ink;
+    opacity: root.shown;
+    horizontal-alignment: center;
+    wrap: word-wrap;
+}
+
+component Figure inherits Text {
+    in property <length> u;
+    in property <float> size: 72;
+    in property <float> shown: 1;
+    font-family: DS.typo-wrapped-figure-family;
+    font-weight: DS.typo-wrapped-figure-weight;
+    font-size: root.size * root.u;
+    color: Colour.ink;
+    opacity: root.shown;
+    horizontal-alignment: center;
+    wrap: word-wrap;
+}
+
+// A named line with its value, over a thin bar of its share when it has one.
+component LineRow inherits Rectangle {
+    in property <WrappedLine> line;
+    in property <length> u;
+    in property <float> shown: 1;
+    height: (root.line.share > 0 ? 34 : 26) * root.u;
+    opacity: root.shown;
+    HorizontalLayout {
+        y: 0;
+        height: 20 * root.u;
+        spacing: 10 * root.u;
+        Text {
+            text: root.line.label;
+            font-family: Type.family;
+            font-size: 13 * root.u;
+            color: Colour.ink-secondary;
+            vertical-alignment: center;
+        }
+        Text {
+            horizontal-stretch: 1;
+            text: root.line.value;
+            font-family: Type.family;
+            font-size: 13 * root.u;
             font-weight: Type.strong;
-            centred: true;
-            vertical-alignment: TextVerticalAlignment.top;
-        }
-        if root.figure != "": Text {
-            text: root.figure;
-            font-family: DS.typo-wrapped-figure-family;
-            font-size: DS.typo-wrapped-figure-size;
-            font-weight: DS.typo-wrapped-figure-weight;
             color: Colour.ink;
-            horizontal-alignment: center;
-            wrap: word-wrap;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            overflow: elide;
         }
-        Label { role: TextRole.note; text: root.caption; centred: true; }
-        if root.photos.length > 0: Rectangle {
-            height: ceil(root.photos.length / 3) * (root.side + Space.s) - Space.s;
-            for photo[i] in root.photos: Picture {
-                width: root.side;
-                height: root.side;
-                x: (parent.width - root.columns * (root.side + Space.s) + Space.s) / 2 + mod(i, 3) * (root.side + Space.s);
-                y: floor(i / 3) * (root.side + Space.s);
-                rounded: true;
-                ground: Ground.canvas;
-                fit: Fit.cover;
+    }
+    if root.line.share > 0: Rectangle {
+        x: 0;
+        y: 24 * root.u;
+        width: parent.width;
+        height: 3 * root.u;
+        border-radius: self.height / 2;
+        background: Colour.track;
+        Rectangle {
+            x: 0;
+            width: parent.width * root.line.share * root.shown;
+            height: parent.height;
+            border-radius: self.height / 2;
+            background: WrappedStyle.gold;
+        }
+    }
+}
+
+// One scene on its frame. `told` runs 0 to 1 as it tells itself; each part rises in over its own stretch of it.
+export component WrappedFrame inherits Rectangle {
+    in property <WrappedScene> scene;
+    // The frame's unit: its width over 360.
+    in property <length> u;
+    in property <float> told: 1;
+    // The year and the scene's number, as the frame's own edge signs a card saved alone.
+    in property <string> year;
+    in property <int> number;
+    // Who told it, in the edge's capitals.
+    in property <string> signature;
+    pure callback counted(int) -> string;
+    width: WrappedStyle.frame-width * root.u;
+    height: WrappedStyle.frame-height * root.u;
+    background: WrappedStyle.frame;
+    border-radius: 6 * root.u;
+    clip: true;
+    property <length> pad: 28 * root.u;
+    property <length> inner: root.width - 2 * root.pad;
+    pure function eased(x: float) -> float {
+        1 - Math.pow(1 - clamp(x, 0, 1), 3)
+    }
+    pure function rise(from: float, to: float) -> float {
+        root.eased((root.told - from) / (to - from))
+    }
+    property <string> figure-text: root.scene.count > 0 ? root.counted(round(root.scene.count * root.rise(0.05, 0.6))) + root.scene.unit : root.scene.figure;
+    property <bool> plain: root.scene.kind == WrappedKind.figure;
+    property <bool> has-photo: root.scene.photos.length > 0;
+
+    // The eyebrow, every scene's but the title's and the farewell's.
+    if root.scene.kind != WrappedKind.title && root.scene.kind != WrappedKind.farewell: Text {
+        x: root.pad;
+        y: 40 * root.u;
+        width: root.inner;
+        text: root.scene.eyebrow;
+        font-family: Type.family;
+        font-size: 12 * root.u;
+        font-weight: Type.strong;
+        letter-spacing: 1.4 * root.u;
+        color: Colour.ink-secondary;
+        horizontal-alignment: center;
+        opacity: root.rise(0, 0.2);
+    }
+
+    if root.scene.kind == WrappedKind.title: Rectangle {
+        for photo[i] in root.scene.photos: Print {
+            u: root.u;
+            source: photo;
+            width: 190 * root.u;
+            height: 140 * root.u;
+            x: (root.width - self.width) / 2 + (i - 1) * 46 * root.u * root.rise(0.1, 0.6);
+            y: 86 * root.u + mod(i, 2) * 22 * root.u;
+            tilt: (i - 1) * 7deg * root.rise(0.1, 0.6);
+            shown: root.rise(0.05 + i * 0.08, 0.4 + i * 0.08);
+        }
+        for line[i] in [@tr("Your Year"), @tr("On Film")]: Text {
+            x: root.pad;
+            y: (root.has-photo ? 290 : 220) * root.u + i * 56 * root.u + (1 - root.rise(0.2 + i * 0.1, 0.7 + i * 0.1)) * 18 * root.u;
+            width: root.inner;
+            text: line;
+            font-family: DS.typo-wrapped-title-family;
+            font-weight: DS.typo-wrapped-title-weight;
+            font-size: 46 * root.u;
+            color: WrappedStyle.title-ink;
+            horizontal-alignment: center;
+            opacity: root.rise(0.2 + i * 0.1, 0.7 + i * 0.1);
+        }
+        // The seal keeps its own size in points: it is scaled with the frame about its centre.
+        Rectangle {
+            y: (root.has-photo ? 438 : 368) * root.u;
+            height: seal.preferred-height;
+            opacity: root.rise(0.5, 0.9);
+            transform-scale: root.u / 0.75px;
+            transform-origin: { x: self.width / 2, y: self.height / 2 };
+            seal := HorizontalLayout {
+                alignment: center;
+                Badge { tone: BadgeTone.seal; text: root.scene.figure; glinting: root.told >= 1; }
+            }
+        }
+        Words {
+            u: root.u;
+            x: root.pad;
+            y: 540 * root.u;
+            width: root.inner;
+            size: 11;
+            text: root.scene.note;
+            color: Colour.ink-secondary;
+            shown: root.rise(0.7, 1);
+        }
+    }
+
+    if root.plain || root.scene.kind == WrappedKind.photos: plain := Rectangle {
+        property <bool> grid: root.scene.kind == WrappedKind.photos;
+        property <int> columns: root.scene.photos.length <= 4 ? 2 : 3;
+        property <length> cell: (root.inner - (self.columns - 1) * 8 * root.u) / self.columns;
+        property <length> photos-height: !root.has-photo ? 0px : self.grid ? ceil(root.scene.photos.length / self.columns) * (self.cell + 8 * root.u) : 236 * root.u;
+        property <length> top: !root.has-photo ? 190 * root.u : self.grid ? 78 * root.u : 92 * root.u;
+        if root.has-photo && !plain.grid: Print {
+            u: root.u;
+            source: root.scene.photos[0];
+            x: root.pad + 6 * root.u;
+            y: plain.top;
+            width: root.inner - 12 * root.u;
+            height: 220 * root.u;
+            tilt: -1.6deg * root.rise(0, 0.5);
+            shown: root.rise(0, 0.35);
+        }
+        if plain.grid: Rectangle {
+            x: root.pad;
+            y: plain.top;
+            width: root.inner;
+            height: plain.photos-height;
+            for photo[i] in root.scene.photos: Print {
+                u: root.u;
                 source: photo;
-                opacity: root.top ? 1 : 0;
-                animate opacity { duration: WrappedStyle.settle; delay: i * WrappedStyle.stagger; }
+                width: plain.cell;
+                height: plain.cell;
+                x: mod(i, plain.columns) * (plain.cell + 8 * root.u);
+                y: floor(i / plain.columns) * (plain.cell + 8 * root.u) + (1 - self.shown) * 14 * root.u;
+                shown: root.rise(0.1 + i * 0.06, 0.4 + i * 0.06);
+            }
+        }
+        VerticalLayout {
+            x: root.pad;
+            y: plain.top + plain.photos-height + 14 * root.u;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 8 * root.u;
+            Figure {
+                u: root.u;
+                size: plain.grid && root.scene.photos.length > 6 ? 48 : 72;
+                text: root.figure-text;
+                shown: root.rise(0.1, 0.45);
+            }
+            Words {
+                u: root.u;
+                size: 16;
+                text: root.scene.caption;
+                shown: root.rise(0.3, 0.65);
+            }
+            if root.scene.note != "": Words {
+                u: root.u;
+                size: 12.5;
+                text: root.scene.note;
+                color: Colour.ink-secondary;
+                shown: root.rise(0.5, 0.9);
             }
         }
     }
+
+    if root.scene.kind == WrappedKind.bars: chart := Rectangle {
+        property <bool> spread: root.scene.marks.length != root.scene.bars.length;
+        property <length> chart-height: 170 * root.u;
+        property <length> step: root.inner / max(1, root.scene.bars.length);
+        VerticalLayout {
+            x: root.pad;
+            y: 84 * root.u;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 8 * root.u;
+            Figure {
+                u: root.u;
+                size: root.scene.count > 0 ? 72 : 46;
+                text: root.figure-text;
+                shown: root.rise(0.05, 0.4);
+            }
+            Words {
+                u: root.u;
+                size: 16;
+                text: root.scene.caption;
+                shown: root.rise(0.2, 0.55);
+            }
+        }
+        for bar[i] in root.scene.bars: Rectangle {
+            property <float> grown: root.rise(0.25 + i * 0.5 / max(1, root.scene.bars.length), 0.6 + i * 0.4 / max(1, root.scene.bars.length));
+            x: root.pad + i * chart.step + chart.step * 0.14;
+            width: chart.step * 0.72;
+            height: max(2 * root.u, bar * chart.chart-height * self.grown);
+            y: 270 * root.u + chart.chart-height - self.height;
+            border-radius: min(3 * root.u, self.width / 2);
+            background: i == root.scene.lit ? WrappedStyle.gold : Colour.track-fill;
+        }
+        for mark[i] in root.scene.marks: Text {
+            property <length> at: chart.spread ? root.inner * i / max(1, root.scene.marks.length - 1) : (i + 0.5) * chart.step;
+            x: root.pad + self.at - 20 * root.u;
+            y: 270 * root.u + chart.chart-height + 8 * root.u;
+            width: 40 * root.u;
+            text: mark;
+            font-family: Type.family;
+            font-size: 10 * root.u;
+            color: !chart.spread && i == root.scene.lit ? WrappedStyle.gold : Colour.ink-secondary;
+            horizontal-alignment: center;
+            opacity: root.rise(0.3, 0.7);
+        }
+        Words {
+            u: root.u;
+            x: root.pad;
+            y: 500 * root.u;
+            width: root.inner;
+            size: 12.5;
+            text: root.scene.note;
+            color: Colour.ink-secondary;
+            shown: root.rise(0.6, 1);
+        }
+    }
+
+    if root.scene.kind == WrappedKind.film || root.scene.kind == WrappedKind.lines: listed := Rectangle {
+        property <bool> film: root.scene.kind == WrappedKind.film;
+        property <length> top: self.film ? 252 * root.u : 104 * root.u;
+        property <bool> counts: root.scene.count > 0;
+        if listed.film && root.scene.has-artwork: Image {
+            x: (root.width - self.width) / 2;
+            y: 82 * root.u + (1 - root.rise(0, 0.45)) * 24 * root.u;
+            width: 150 * root.u;
+            height: 150 * root.u;
+            source: root.scene.artwork;
+            image-fit: contain;
+            opacity: root.rise(0, 0.35);
+        }
+        VerticalLayout {
+            x: root.pad;
+            y: listed.top;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 10 * root.u;
+            if root.figure-text != "": Figure {
+                u: root.u;
+                size: listed.counts ? 64 : 34;
+                text: root.figure-text;
+                shown: root.rise(0.1, 0.45);
+            }
+            if root.scene.caption != "": Words {
+                u: root.u;
+                size: 15;
+                text: root.scene.caption;
+                shown: root.rise(0.25, 0.6);
+            }
+            Rectangle { height: 14 * root.u; }
+            for line[i] in root.scene.lines: LineRow {
+                u: root.u;
+                line: line;
+                shown: root.rise(0.3 + i * 0.4 / max(1, root.scene.lines.length), 0.6 + i * 0.4 / max(1, root.scene.lines.length));
+            }
+        }
+        Words {
+            u: root.u;
+            x: root.pad;
+            y: 560 * root.u;
+            width: root.inner;
+            size: 12.5;
+            text: root.scene.note;
+            color: Colour.ink-secondary;
+            shown: root.rise(0.6, 1);
+        }
+    }
+
+    if root.scene.kind == WrappedKind.palette: colours := Rectangle {
+        property <length> band-height: 250 * root.u;
+        Rectangle {
+            x: root.pad;
+            y: 92 * root.u;
+            width: root.inner;
+            height: colours.band-height;
+            border-radius: 4 * root.u;
+            clip: true;
+            HorizontalLayout {
+                for swatch[i] in root.scene.swatches: Rectangle {
+                    horizontal-stretch: swatch.share;
+                    min-width: 6 * root.u;
+                    Rectangle {
+                        y: parent.height * (1 - root.rise(0.05 + i * 0.1, 0.5 + i * 0.1));
+                        height: parent.height;
+                        background: swatch.ink;
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            x: root.pad;
+            y: 374 * root.u;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 14 * root.u;
+            Figure {
+                u: root.u;
+                size: 36;
+                text: root.scene.figure;
+                shown: root.rise(0.4, 0.8);
+            }
+            Words {
+                u: root.u;
+                size: 12.5;
+                text: root.scene.caption;
+                color: Colour.ink-secondary;
+                shown: root.rise(0.6, 1);
+            }
+        }
+    }
+
+    if root.scene.kind == WrappedKind.persona: Rectangle {
+        VerticalLayout {
+            x: root.pad;
+            y: 150 * root.u + (1 - root.rise(0.15, 0.7)) * 20 * root.u;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 22 * root.u;
+            Figure {
+                u: root.u;
+                size: 46;
+                color: WrappedStyle.gold;
+                text: root.scene.figure;
+                shown: root.rise(0.15, 0.6);
+            }
+            Words {
+                u: root.u;
+                size: 17;
+                text: root.scene.caption;
+                shown: root.rise(0.4, 0.8);
+            }
+            Rectangle { height: 10 * root.u; }
+            Words {
+                u: root.u;
+                size: 12.5;
+                text: root.scene.note;
+                color: Colour.ink-secondary;
+                shown: root.rise(0.55, 0.95);
+            }
+            for line[i] in root.scene.lines: Words {
+                u: root.u;
+                size: 12.5;
+                text: @tr("with a touch of {}", line.label);
+                color: Colour.ink-secondary;
+                shown: root.rise(0.7, 1);
+            }
+        }
+    }
+
+    if root.scene.kind == WrappedKind.summary: recap := Rectangle {
+        property <length> cell: (root.inner - 8 * root.u) / 2;
+        property <int> rows: ceil(min(4, root.scene.photos.length) / 2);
+        property <length> photos-height: self.rows * (self.cell * 0.72 + 8 * root.u);
+        for photo[i] in root.scene.photos: Print {
+            u: root.u;
+            source: photo;
+            width: recap.cell;
+            height: recap.cell * 0.72;
+            x: root.pad + mod(i, 2) * (recap.cell + 8 * root.u);
+            y: 74 * root.u + floor(i / 2) * (self.height + 8 * root.u);
+            shown: root.rise(0.05 + i * 0.06, 0.4 + i * 0.06);
+        }
+        VerticalLayout {
+            x: root.pad;
+            y: 84 * root.u + recap.photos-height;
+            width: root.inner;
+            height: self.preferred-height;
+            spacing: 4 * root.u;
+            Figure {
+                u: root.u;
+                size: 30;
+                color: WrappedStyle.gold;
+                text: root.scene.figure;
+                shown: root.rise(0.3, 0.7);
+            }
+            Rectangle { height: 8 * root.u; }
+            for line[i] in root.scene.lines: LineRow {
+                u: root.u;
+                line: line;
+                shown: root.rise(0.3 + i * 0.4 / max(1, root.scene.lines.length), 0.6 + i * 0.4 / max(1, root.scene.lines.length));
+            }
+        }
+        if root.scene.swatches.length > 0: Rectangle {
+            x: root.pad;
+            y: 572 * root.u;
+            width: root.inner * root.rise(0.6, 1);
+            height: 10 * root.u;
+            border-radius: self.height / 2;
+            clip: true;
+            HorizontalLayout {
+                for swatch in root.scene.swatches: Rectangle {
+                    horizontal-stretch: swatch.share;
+                    background: swatch.ink;
+                }
+            }
+        }
+    }
+
+    if root.scene.kind == WrappedKind.farewell: VerticalLayout {
+        padding: root.pad;
+        spacing: 12 * root.u;
+        alignment: center;
+        Figure {
+            u: root.u;
+            size: 40;
+            color: WrappedStyle.title-ink;
+            text: root.scene.eyebrow;
+            shown: root.rise(0.1, 0.6);
+        }
+        Words {
+            u: root.u;
+            size: 18;
+            text: root.scene.caption;
+            shown: root.rise(0.45, 0.9);
+        }
+    }
+
+    // The frame's own edge: who told it, the year and its number, so a card saved alone is signed.
+    Text {
+        x: root.pad;
+        y: root.height - 30 * root.u;
+        text: root.signature;
+        font-family: Type.family;
+        font-size: 8 * root.u;
+        font-weight: Type.bold;
+        letter-spacing: 1.2 * root.u;
+        color: Colour.edge-print;
+    }
+    Text {
+        x: root.pad;
+        y: root.height - 30 * root.u;
+        width: root.inner;
+        text: root.year + "  \u{25b8}  " + (root.number < 10 ? "0" : "") + root.number;
+        font-family: Type.family;
+        font-size: 8 * root.u;
+        font-weight: Type.bold;
+        letter-spacing: 1.2 * root.u;
+        color: Colour.edge-print;
+        horizontal-alignment: right;
+    }
 }
 
-export component WrappedHint inherits Label {
-    role: TextRole.caption;
-    tone: Tone.secondary;
-    centred: true;
-    vertical-alignment: TextVerticalAlignment.top;
+// The strip a frame long: its base, the perforations above and under, and what the edge prints.
+export component WrappedFilm inherits Rectangle {
+    in property <length> u;
+    in property <int> number;
+    // What the edge prints along the strip.
+    in property <string> edge;
+    width: WrappedStyle.pitch * root.u;
+    height: WrappedStyle.strip-height * root.u;
+    background: WrappedStyle.film;
+    property <length> hole-step: self.width / WrappedStyle.perforations;
+    for hole in WrappedStyle.perforations * 2: Rectangle {
+        property <bool> under: hole >= WrappedStyle.perforations;
+        x: (mod(hole, WrappedStyle.perforations) + 0.5) * root.hole-step - self.width / 2;
+        y: self.under ? root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height) * root.u : WrappedStyle.hole-inset * root.u;
+        width: WrappedStyle.hole-width * root.u;
+        height: WrappedStyle.hole-height * root.u;
+        border-radius: 5 * root.u;
+        background: WrappedStyle.ground;
+    }
+    Text {
+        x: 10 * root.u;
+        y: (WrappedStyle.hole-inset + WrappedStyle.hole-height + 5) * root.u;
+        text: root.edge;
+        font-family: Type.family;
+        font-size: 10 * root.u;
+        font-weight: Type.bold;
+        letter-spacing: 1.5 * root.u;
+        color: Colour.edge-print;
+    }
+    Text {
+        x: 10 * root.u;
+        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 20) * root.u;
+        text: root.number < 1 ? "" : "\u{25b8} " + root.number;
+        font-family: Type.family;
+        font-size: 12 * root.u;
+        font-weight: Type.bold;
+        color: Colour.edge-print;
+    }
+    Text {
+        x: root.width / 2;
+        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 20) * root.u;
+        text: root.number < 1 ? "" : "" + root.number + "A";
+        font-family: Type.family;
+        font-size: 12 * root.u;
+        font-weight: Type.bold;
+        color: Colour.edge-print;
+    }
 }

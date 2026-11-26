@@ -125,21 +125,11 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
         .expect("thumbnail thread");
 }
 
-/// `Thumbnails.render`: the photo's own sidecar through the per-pixel pipeline at `SIDE`, as an sRGB
-/// JPEG, and the tile decoded back from it so a tile drawn and a tile read are the same pixels.
-pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, seed: u32) -> Result<(Vec<u8>, (Vec<u8>, usize, usize)), String> {
-    let asked = Instant::now();
+/// The photo through the per-pixel pipeline on `settings`, `side` on its long side, in linear light,
+/// and the pipeline's own time.
+fn developed(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, settings: &oni_settings::PipelineSettings, side: usize) -> Result<(render::Linear, Duration), String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    let settings = oni_settings::sidecar::read(Path::new(path), mosaic).map_err(|e| e.to_string())?.settings;
-    // `Thumbnails.produce`: the scan as the file holds it until the frame is converted.
-    if !crate::scans::is_converted(&settings)
-        && let Some(jpeg) = crate::scans::scan(Path::new(path))
-    {
-        let tile = thumbnails::decoded(&jpeg, screen).ok_or(tr("the scan cannot be read back"))?;
-        timing::render(Kind::Thumbnail, &crate::anonymity::token(path), Duration::ZERO, asked.elapsed());
-        return Ok((jpeg, tile));
-    }
-    let reading = render::Reading::of(&settings);
+    let reading = render::Reading::of(settings);
     let known = previews.lock().expect("previews").get(path, &reading);
     let negative = match known {
         Some(n) => n,
@@ -156,15 +146,44 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     };
     let mut guard = engine.lock().map_err(|_| tr("the render engine failed earlier"))?;
     let started = Instant::now();
-    let linear = guard.render(&negative, &settings.per_pixel_only(), Some(thumbnails::SIDE))?;
-    let pipeline = started.elapsed();
-    drop(guard);
+    let linear = guard.render(&negative, &settings.per_pixel_only(), Some(side))?;
+    Ok((linear, started.elapsed()))
+}
+
+/// `Thumbnails.render`: the photo's own sidecar through the per-pixel pipeline at `SIDE`, as an sRGB
+/// JPEG, and the tile decoded back from it so a tile drawn and a tile read are the same pixels.
+pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, seed: u32) -> Result<(Vec<u8>, (Vec<u8>, usize, usize)), String> {
+    let asked = Instant::now();
+    let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+    let settings = oni_settings::sidecar::read(Path::new(path), mosaic).map_err(|e| e.to_string())?.settings;
+    // `Thumbnails.produce`: the scan as the file holds it until the frame is converted.
+    if !crate::scans::is_converted(&settings)
+        && let Some(jpeg) = crate::scans::scan(Path::new(path))
+    {
+        let tile = thumbnails::decoded(&jpeg, screen).ok_or(tr("the scan cannot be read back"))?;
+        timing::render(Kind::Thumbnail, &crate::anonymity::token(path), Duration::ZERO, asked.elapsed());
+        return Ok((jpeg, tile));
+    }
+    let (linear, pipeline) = developed(engine, previews, path, &settings, thumbnails::SIDE)?;
     let (w, h) = (linear.width, linear.height);
     let srgb = render::encoded(&linear, &Params::new(Screen::Srgb, w as u32, h as u32, seed), 1);
     let jpeg = thumbnails::jpeg(&srgb, w, h).ok_or(tr("the thumbnail cannot be encoded"))?;
     let tile = thumbnails::decoded(&jpeg, screen).ok_or(tr("the thumbnail cannot be read back"))?;
     timing::render(Kind::Thumbnail, &crate::anonymity::token(path), pipeline, asked.elapsed());
     Ok((jpeg, tile))
+}
+
+/// A print for the year's summary: a converted photo as its sidecar develops it, `side` on its long
+/// side, encoded for `screen`; none for a frame never converted, which its thumbnail already shows.
+pub(super) fn print(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, side: usize) -> Option<(Vec<u8>, usize, usize)> {
+    let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+    let settings = oni_settings::sidecar::read(Path::new(path), mosaic).ok()?.settings;
+    if !crate::scans::is_converted(&settings) {
+        return None;
+    }
+    let (linear, _) = developed(engine, previews, path, &settings, side).ok()?;
+    let (w, h) = (linear.width, linear.height);
+    Some((render::encoded(&linear, &Params::new(screen, w as u32, h as u32, 0), 1), w, h))
 }
 
 /// `Thumbnails.drain`: the folder's files read off this thread, the latest asked first, so a

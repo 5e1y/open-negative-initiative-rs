@@ -25,6 +25,7 @@
 //! `ONI_BENCH=stocks` lights each stock of the open photo's menu, cold, warm and in a sweep, each light timed to its photon;
 //! `ONI_BENCH=papers` the same with the Colour tab's papers.
 //! `ONI_BENCH=motion` times the interface's frames over its journeys, laid at once and moving, at the screen's size.
+//! `ONI_BENCH=wrapped` shows the year on film, holds each scene until it is told and saves every card.
 
 use crate::Store;
 use crate::app::Ctl;
@@ -49,8 +50,9 @@ mod sweep;
 mod compare;
 mod stocks;
 mod motion;
+mod wrapped;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -147,6 +149,7 @@ pub enum Mode {
     Stocks,
     Papers,
     Motion,
+    Wrapped,
 }
 
 impl Mode {
@@ -183,6 +186,7 @@ pub fn requested() -> Option<Mode> {
         "stocks" => Some(Mode::Stocks),
         "papers" => Some(Mode::Papers),
         "motion" => Some(Mode::Motion),
+        "wrapped" => Some(Mode::Wrapped),
         _ => None,
     }
 }
@@ -247,6 +251,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Motion {
         return motion(ctl, done);
+    }
+    if mode == Mode::Wrapped {
+        return wrapped(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();

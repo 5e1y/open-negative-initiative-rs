@@ -1,48 +1,97 @@
-// "Show My Year on Film": the title, then the deck turned by a click or the arrows; Esc leaves.
-import { Space, WrappedStyle, WrappedGround, WrappedTitle, WrappedCard, WrappedHint, Keyboard } from "ds/ds.slint";
+// "Show My Year on Film": a half-frame strip run through the gate, one scene a frame. A click or → advances
+// the film, ← winds it back, the film advances by itself while nothing is held, and Esc leaves.
+import { Space, WrappedStyle, WrappedGround, WrappedProgress, WrappedFrame, WrappedFilm, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone } from "ds/ds.slint";
 
-export struct WrappedFace {
-    eyebrow: string,
-    figure: string,
-    caption: string,
-    photos: [image],
-}
+export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene }
 
 export global Wrapped {
     in property <bool> shown;
     // Bumped at each showing: a view kept across a quick close and reopen starts over.
     in property <int> showing;
     in property <string> year;
-    // The deck is dealt over the title once it has been held, or at the first click.
-    in property <bool> dealt;
-    in property <[WrappedFace]> cards;
+    in property <[WrappedScene]> scenes;
     in property <int> index;
-    // A click, → , Space or Return: the next card, or the deck dealt while the title still shows.
+    // The film advances by itself after each scene's hold.
+    in property <bool> playing;
+    // One frame alone at the window's corner, `still-width` wide, told whole: what a card's picture is cut from.
+    in property <bool> still;
+    in property <length> still-width;
+    // What the strip's edge prints, and who signs a frame.
+    in property <string> edge;
+    in property <string> signature;
+    // A click, →, Space or Return: the next scene, the summary left past the last.
     callback forward();
     callback back();
     callback close();
+    // The scene in the gate saved as a picture, or every scene.
+    callback save(bool);
+    // A count with its thousands grouped as the language writes them.
+    pure callback counted(int) -> string;
 }
 
 export component WrappedView inherits WrappedGround {
     property <bool> revealed;
     property <int> showing: Wrapped.showing;
+    property <int> index: Wrapped.index;
+    property <int> count: Wrapped.scenes.length;
+    // The film runs by itself while it plays, nothing holds it and a scene follows.
+    property <bool> running: Wrapped.playing && !Wrapped.still && root.revealed && !touch.pressed && root.index < root.count - 1;
+    // How long the scene in the gate has been held: what was held before the last pause, and the run since `mark`.
+    property <duration> banked;
+    property <duration> mark;
+    property <duration> held: root.banked + (root.running ? animation-tick() - root.mark : 0ms);
+    property <length> room: root.height - WrappedStyle.chrome-above - WrappedStyle.chrome-under;
+    property <length> u: min(root.room / WrappedStyle.strip-height, (root.width - 2 * Space.l) / WrappedStyle.frame-width);
+    property <length> pitch: WrappedStyle.pitch * root.u;
+    // Film before the first frame and after the last, so the strip runs past the window's edges.
+    property <int> leader: 4;
     init => { keys.focus(); }
     changed showing => {
         root.revealed = false;
+        root.rewind();
         keys.focus();
     }
-    // The title grows in from the frame after it is laid, then holds before the deck is dealt; the
-    // keyboard is taken once the view is in the window, where a focus asked at creation is lost.
+    changed index => { root.rewind(); }
+    changed running => {
+        if (root.running) {
+            root.mark = animation-tick();
+        } else {
+            root.banked += animation-tick() - root.mark;
+        }
+    }
+    function rewind() {
+        root.banked = 0ms;
+        root.mark = animation-tick();
+    }
+    // The strip comes in from the frame after it is laid; the keyboard is taken once the view is in the
+    // window, where a focus asked at creation is lost.
     Timer {
-        interval: WrappedStyle.frame;
+        interval: WrappedStyle.frame-time;
         running: !root.revealed;
         triggered => {
             root.revealed = true;
             keys.focus();
         }
     }
-    Timer { interval: WrappedStyle.hold; running: !Wrapped.dealt; triggered => { Wrapped.forward(); } }
-    TouchArea { clicked => { Wrapped.forward(); } }
+    Timer {
+        interval: WrappedStyle.tick;
+        running: root.running;
+        triggered => {
+            if (root.held >= WrappedStyle.hold) {
+                Wrapped.forward();
+            }
+        }
+    }
+    // A click left of the gate winds back, anywhere else advances; a press held keeps the scene.
+    touch := TouchArea {
+        clicked => {
+            if (self.mouse-x < (root.width - WrappedStyle.frame-width * root.u) / 2) {
+                Wrapped.back();
+            } else {
+                Wrapped.forward();
+            }
+        }
+    }
     // Covering the window as a sheet does, it takes back the keyboard Tab carried to the window's walls.
     property <int> entered: Keyboard.entered + Keyboard.entered-back;
     changed entered => { keys.focus(); }
@@ -52,35 +101,89 @@ export component WrappedView inherits WrappedGround {
             if (event.text == Key.Escape) { Wrapped.close(); return accept; }
             if (event.text == Key.RightArrow || event.text == " " || event.text == Key.Return) { Wrapped.forward(); return accept; }
             if (event.text == Key.LeftArrow) { Wrapped.back(); return accept; }
+            if (event.text == "s") { Wrapped.save(false); return accept; }
             reject
         }
     }
-    if !Wrapped.dealt: WrappedTitle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        year: Wrapped.year;
-        shown: root.revealed;
-    }
-    // The top card and the two under it, each a step smaller and lower; the deepest is drawn first.
-    if Wrapped.dealt: Rectangle {
-        for card[i] in Wrapped.cards: WrappedCard {
-            property <int> from-top: i - Wrapped.index;
-            visible: self.from-top >= 0 && self.from-top < WrappedStyle.deck-depth;
-            eyebrow: card.eyebrow;
-            figure: card.figure;
-            caption: card.caption;
-            photos: card.photos;
-            top: self.from-top == 0;
+    if !Wrapped.still: Rectangle {
+        opacity: root.revealed ? 1 : 0;
+        animate opacity { duration: WrappedStyle.enter; easing: ease-out; }
+        WrappedProgress {
             x: (parent.width - self.width) / 2;
-            y: (parent.height - self.height) / 2 + max(0, self.from-top) * WrappedStyle.deck-step;
-            transform-scale: 1 - max(0, self.from-top) * WrappedStyle.deck-shrink;
-            z: -self.from-top;
-            animate y, transform-scale { duration: WrappedStyle.settle; easing: ease-out; }
+            y: (WrappedStyle.chrome-above - self.height) / 2;
+            width: min(WrappedStyle.progress-width, parent.width - 2 * Space.l);
+            count: root.count;
+            at: root.index;
+            held: root.held / WrappedStyle.hold;
+        }
+        Rectangle {
+            x: parent.width / 2 - (root.index + 0.5) * root.pitch + (root.revealed ? 0px : root.pitch);
+            y: WrappedStyle.chrome-above + (root.room - self.height) / 2;
+            width: root.count * root.pitch;
+            height: WrappedStyle.strip-height * root.u;
+            animate x { duration: WrappedStyle.advance; easing: cubic-bezier(0.34, 1.16, 0.64, 1); }
+            for piece in root.count + 2 * root.leader: WrappedFilm {
+                property <int> frame: piece - root.leader;
+                x: self.frame * root.pitch;
+                u: root.u;
+                number: self.frame + 1;
+                edge: Wrapped.edge;
+                visible: abs(self.frame - root.index) <= root.leader;
+            }
+            for scene[i] in Wrapped.scenes: WrappedFrame {
+                // A frame the film has reached stays told while it is beside the gate; one ahead is unexposed.
+                property <bool> gated: i <= root.index && root.revealed;
+                property <float> run;
+                x: i * root.pitch + WrappedStyle.frame-line * root.u / 2;
+                y: WrappedStyle.rebate * root.u;
+                u: root.u;
+                scene: scene;
+                year: Wrapped.year;
+                number: i + 1;
+                signature: Wrapped.signature;
+                told: self.run;
+                visible: abs(i - root.index) <= 2;
+                opacity: i == root.index ? 1 : WrappedStyle.beside;
+                counted(n) => { Wrapped.counted(n) }
+                animate opacity { duration: WrappedStyle.advance; }
+                // Told once the film has landed; wound back past, emptied only after it has left the gate.
+                states [
+                    told when self.gated: {
+                        run: 1;
+                        in { animate run { duration: WrappedStyle.tell; delay: WrappedStyle.advance / 2; } }
+                        out { animate run { duration: 0ms; delay: WrappedStyle.advance; } }
+                    }
+                ]
+            }
+        }
+        Label {
+            y: parent.height - WrappedStyle.chrome-under + Space.s;
+            width: parent.width;
+            role: TextRole.caption;
+            tone: Tone.secondary;
+            centred: true;
+            text: @tr("Click or press → for the next · ← to go back · hold to pause · Esc to leave");
+        }
+        HorizontalLayout {
+            y: parent.height - WrappedStyle.chrome-under + Space.s + Space.l;
+            height: self.preferred-height;
+            alignment: center;
+            spacing: Space.s;
+            Button { text: @tr("Save This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.save(false); keys.focus(); } }
+            Button { text: @tr("Save All Cards"); kind: ButtonKind.ghost; clicked => { Wrapped.save(true); keys.focus(); } }
+            Button { text: @tr("Close"); kind: ButtonKind.ghost; clicked => { Wrapped.close(); } }
         }
     }
-    if Wrapped.dealt: WrappedHint {
-        y: parent.height - self.preferred-height - Space.l;
-        width: parent.width;
-        text: @tr("Click or press → to turn · ← to go back · Esc to leave");
+    if Wrapped.still: WrappedFrame {
+        x: 0;
+        y: 0;
+        u: Wrapped.still-width / WrappedStyle.frame-width;
+        scene: Wrapped.scenes[root.index];
+        year: Wrapped.year;
+        number: root.index + 1;
+        signature: Wrapped.signature;
+        told: 1;
+        border-radius: 0px;
+        counted(n) => { Wrapped.counted(n) }
     }
 }
