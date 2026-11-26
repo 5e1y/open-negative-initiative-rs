@@ -21,6 +21,9 @@ export global Help {
     in property <float> scroll;
     // How much of the message shows, once the gifts are left for it.
     in property <float> message-shown;
+    // How far the message has turned from its announcement to what it says, 0 to 1; asking for it turns it at once.
+    in property <float> message-turn;
+    callback message-on();
     // The stage the GPU draws, its revision bumped at each picture drawn into the same texture; while it is not
     // drawn (not yet, or not on this GPU), each gift's still in its place.
     in property <image> stage;
@@ -41,7 +44,7 @@ export global Help {
     // The film the screen's demo plays, shot in the real app, and the gift it belongs to (-1 none).
     in property <image> reel;
     in property <int> reel-gift: -1;
-    callback welcome-sized(length, length, length);
+    callback welcome-sized(length, length, length, float);
     callback welcome-open();
     callback welcome-go(int);
     // The contest's hashtag, the hashtag of any picture made with ONI, and whether ONI's Instagram is known.

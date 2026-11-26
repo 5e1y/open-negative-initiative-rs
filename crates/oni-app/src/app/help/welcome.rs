@@ -26,6 +26,9 @@ const SHARE: f32 = 0.7;
 const FINER: f32 = 1.4;
 /// How long one screen takes to give way to the next, in seconds.
 const TRAVEL: f32 = 0.7;
+/// The message's announcement holds alone this many seconds, then turns to what it says in `TURN`.
+const ANNOUNCED: f32 = 2.2;
+const TURN: f32 = 0.8;
 /// Where the gifts opened on this computer are kept, so a welcome closed midway resumes where it was.
 pub const PROGRESS_KEY: &str = "welcomeProgress";
 /// The message's screen, after the four gifts'.
@@ -81,6 +84,10 @@ pub(in crate::app) struct Playing {
     /// The sheet's size and its footer's band, in the window's points.
     size: (f32, f32),
     foot: f32,
+    /// Where the film stands across the sheet, as a share of its width: the wrapped gift stands there.
+    middle: f32,
+    /// When the message was asked past its announcement, on the welcome's clock.
+    told: Option<f32>,
     /// Whether the GPU is still drawing the last picture handed to it.
     flying: Arc<AtomicBool>,
     /// The gifts' films, each decoded as it plays off this thread.
@@ -118,8 +125,21 @@ impl Playing {
         }
         let next = step(self.page, by.signum());
         if next != self.page {
-            (self.from, self.page, self.moved) = (self.page, next, now);
+            (self.from, self.page, self.moved, self.told) = (self.page, next, now, None);
         }
+    }
+
+    /// How far the message has turned from its announcement to what it says: by itself once the announcement has
+    /// held, at once when asked; 0 on any other screen.
+    fn turned(&self, now: f32, still: bool) -> f32 {
+        if self.page != MESSAGE {
+            return 0.0;
+        }
+        if still {
+            return 1.0;
+        }
+        let by_itself = glide(((now - self.moved - TRAVEL - ANNOUNCED) / TURN).clamp(0.0, 1.0));
+        by_itself.max(self.told.map_or(0.0, |t| glide(((now - t) / TURN).clamp(0.0, 1.0))))
     }
 
     /// How far the screens have travelled from the last to this one, 0 to 1.
@@ -134,14 +154,19 @@ impl Playing {
         let gift = gift_of(page);
         let since = gift.and_then(|i| self.opened[i]).map(|o| now - o);
         let aspect = self.size.0 / self.size.1.max(1.0);
-        Cue { gift, since, clock: now, aspect, foot: self.foot / self.size.1.max(1.0), shown }
+        Cue { gift, since, clock: now, aspect, foot: self.foot / self.size.1.max(1.0), shown, middle: self.middle }
     }
 }
 
 impl Ctl {
     pub(super) fn wire_welcome(me: &std::rc::Rc<Ctl>, help: &Help) {
         let p = me.clone();
-        help.on_welcome_sized(move |width, height, foot| p.welcome_set(|play| (play.size, play.foot) = ((width, height), foot)));
+        help.on_welcome_sized(move |width, height, foot, middle| p.welcome_set(|play| (play.size, play.foot, play.middle) = ((width, height), foot, middle)));
+        let p = me.clone();
+        help.on_message_on(move || {
+            p.welcome_set(|play| play.told = play.told.or(Some(play.now())));
+            p.welcome_frame();
+        });
         let p = me.clone();
         help.on_welcome_open(move || p.welcome_open());
         let p = me.clone();
@@ -245,6 +270,8 @@ impl Ctl {
                 opened,
                 size: (0.0, 0.0),
                 foot: 0.0,
+                middle: 0.5,
+                told: None,
                 flying: Arc::new(AtomicBool::new(false)),
                 reels: reels::reels(),
                 _timer: timer,
@@ -348,6 +375,7 @@ impl Ctl {
         help.set_scroll(slot(play.from) + (slot(play.page) - slot(play.from)) * play.travelled(now, still));
         help.set_stage_shown(cue.shown * cue.gift.map_or(0.0, |i| direction::kept(i, cue.since)));
         let travelled = play.travelled(now, still);
+        help.set_message_turn(play.turned(now, still));
         help.set_message_shown(if play.page == MESSAGE { travelled } else if play.from == MESSAGE { 1.0 - travelled } else { 0.0 });
         help.set_gift_shown(cue.gift.map_or(-1, |i| i as i32));
         let since = gift_of(play.page).and_then(|i| play.opened[i]).map_or(-1.0, |o| (now - o).max(0.0));

@@ -222,10 +222,17 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         reel.play(0.8, 0.2);
         assert_eq!(help.get_welcome_page(), page + 1, "on past gift {gift} once opened");
     }
-    // The message, and only its key leaves; the gifts kept opened for a launch after this one.
+    // The message's announcement alone; its key turns it to what it says, never leaves.
+    reel.play(1.0, 0.2);
+    reel.keep();
+    assert_eq!(help.get_message_turn(), 0.0, "the announcement alone");
+    rig.key("\n");
+    assert!(help.get_welcome_shown(), "twin: the announcement's key does not leave");
     reel.play(1.0, 0.2);
     reel.keep();
     reel.cut("welcome");
+    assert_eq!(help.get_message_turn(), 1.0, "what the message says, once asked");
+    // Only its last key leaves; Escape does not.
     assert_eq!(help.get_welcome_unwrapped(), 0b1111, "every gift opened");
     rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
     assert!(help.get_welcome_shown(), "Escape does not leave it");

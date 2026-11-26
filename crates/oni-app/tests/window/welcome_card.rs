@@ -12,7 +12,7 @@ use crate::common::{self, Placed};
 /// `SheetStyle.margin`.
 const MARGIN: f32 = 24.0;
 /// Each screen's title, a gift's once it is opened.
-const TITLES: [&str; 5] = ["A livelier interface", "Import your photo kit into ONI, with The Lens DB", "Your digital photos, on film", "Your Wrapped is here", "Tell your friends about ONI."];
+const TITLES: [&str; 5] = ["A livelier interface", "Import your photo kit into ONI, with The Lens DB", "Your digital photos, on film", "Your Wrapped is here", "You already paid for your film. You shouldn't have to pay just to look at it."];
 
 fn title(window: &MainWindow, page: usize) -> Placed {
     common::the(window, Role::Text, tr(TITLES[page - 1]))
@@ -45,6 +45,7 @@ fn shown(rig: &common::Rig, help: &Help, page: usize) {
     help.set_welcome_page(page as i32);
     help.set_scroll((page.min(4) - 1) as f32);
     help.set_message_shown(if page == 5 { 1.0 } else { 0.0 });
+    help.set_message_turn(if page == 5 { 1.0 } else { 0.0 });
     help.set_opened_time(30.0);
     help.set_words_at(0.0);
     help.set_may_go_on(true);
@@ -95,17 +96,22 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
     common::the(&window, Role::Button, tr("Unwrap"));
     assert!(common::placed(&window, Role::Button, tr("Next Gift")).is_empty(), "no way on past a wrapped gift");
 
-    // A short window: the message's words scroll alone and its key stays in reach and answers.
+    // A short window: the message stands inside it and its key answers; first its announcement alone, which the key
+    // turns to what it says.
     sized(&rig, (900, 440));
     shown(&rig, &help, 5);
+    help.set_message_turn(0.0);
+    rig.settle();
+    let asked = std::rc::Rc::new(std::cell::Cell::new(false));
+    let ear = asked.clone();
+    help.on_message_on(move || ear.set(true));
+    tap(&rig, common::the(&window, Role::Button, tr("Continue")).middle());
+    assert!(asked.get() && !closed.get(), "the announcement's key turns the message, never leaves");
+    help.set_message_turn(1.0);
+    rig.settle();
     println!("shot {}", rig.shot("welcome-en-900x440-5").display());
-    let before = title(&window, 5);
-    let position = LogicalPosition::new(before.x + 40.0, before.y + 10.0);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position });
-    rig.window.dispatch_event(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -2000.0 });
-    rig.pump();
-    let moved = common::placed(&window, Role::Text, tr(TITLES[4])).first().map_or(f32::INFINITY, |after| before.y - after.y);
-    assert!(moved > 20.0, "900×440: the message's words scroll, {moved}");
+    let hook = title(&window, 5);
+    assert!(hook.y >= 0.0, "900×440: the message's hook in the window, {hook:?}");
     let key = commit(&window, 5);
     assert!(key.y + key.height <= 440.0 - MARGIN + 0.5, "900×440: the key in the window, {key:?}");
     tap(&rig, key.middle());
@@ -119,5 +125,85 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
     rig.settle();
     common::the(&window, Role::Text, &tr("Screen {} of {}").replacen("{}", "1", 1).replacen("{}", "3", 1));
     help.set_kit_gift(true);
+    window.hide().unwrap();
+}
+
+/// A frame from the middle of gift `gift`'s film, as the welcome shows it.
+fn film_frame(gift: usize) -> slint::Image {
+    let name = ["interface", "collection", "huge", "wrapped"][gift];
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui/welcome");
+    let list = std::fs::read_to_string(dir.join(format!("film-{name}.txt"))).unwrap();
+    let bytes = std::fs::read(dir.join(format!("film-{name}.jpgs"))).unwrap();
+    let lengths: Vec<usize> = list.lines().skip(1).map(|l| l.split(' ').nth(1).unwrap().parse().unwrap()).collect();
+    let at: usize = lengths[..lengths.len() / 2].iter().sum();
+    let mut decoder = jpeg_decoder::Decoder::new(&bytes[at..at + lengths[lengths.len() / 2]]);
+    let rgb = decoder.decode().unwrap();
+    let info = decoder.info().unwrap();
+    slint::Image::from_rgb8(slint::SharedPixelBuffer::clone_from_slice(&rgb, info.width.into(), info.height.into()))
+}
+
+/// Every gift wrapped and opened, and the message's two screens, at the smallest window, a middle one and a whole
+/// screen: one column of words for every screen, on the window's middle line beside the film, never under the keys.
+/// `ONI_WELCOME_SHEET` names where each screen is kept as a picture.
+pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
+    let rig = common::rig();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    let window = MainWindow::new().unwrap();
+    oni_app::keycaps::serve(&window);
+    let help = window.global::<Help>();
+    help.set_release("2.0".into());
+    help.set_made_with("#madewithoni".into());
+    help.set_welcome_shown(true);
+    help.set_stage_live(false);
+    window.show().unwrap();
+    let sheet = std::env::var_os("ONI_WELCOME_SHEET").map(std::path::PathBuf::from);
+    let keep = |name: &str| {
+        if let Some(dir) = &sheet {
+            let shot = rig.shot(name);
+            std::fs::create_dir_all(dir).unwrap();
+            std::fs::copy(&shot, dir.join(format!("{name}.png"))).unwrap();
+        }
+    };
+    let language = std::env::var("ONI_WELCOME_SHEET_LANGUAGE").unwrap_or_else(|_| "en".into());
+    oni_app::language::speak(Language::ALL.into_iter().find(|l| l.key() == language));
+    for (w, h) in [(1000u32, 620u32), (1100, 680), (1728, 1117)] {
+        sized(&rig, (w, h));
+        let mut columns = Vec::new();
+        for page in 1..=4usize {
+            for opened in [false, true] {
+                shown(&rig, &help, page);
+                help.set_gift_shown(page as i32 - 1);
+                if opened {
+                    help.set_reel_gift(page as i32 - 1);
+                    help.set_reel(film_frame(page - 1));
+                } else {
+                    help.set_opened_time(-1.0);
+                    help.set_reel_gift(-1);
+                }
+                rig.settle();
+                keep(&format!("{language}-{w}x{h}-{page}-{}", if opened { "opened" } else { "wrapped" }));
+                let key = if opened { commit(&window, page) } else { common::the(&window, Role::Button, tr("Unwrap")) };
+                let words = if opened { title(&window, page) } else { common::placed(&window, Role::Text, tr(["A small gift", "Another small gift", "The huge gift", "The mystery gift"][page - 1]))[0] };
+                columns.push(words.x);
+                assert!(words.y >= key.height, "{w}×{h} screen {page}: the words stand clear of the window's top, {words:?}");
+                assert!(words.x > w as f32 / 2.0 - 60.0, "{w}×{h} screen {page}: the words right of the film, {words:?}");
+                if opened && page == 4 {
+                    let open = common::the(&window, Role::Button, tr("Open My Wrapped"));
+                    assert!(open.y + open.height < key.y - MARGIN / 2.0, "{w}×{h}: the Wrapped's key above the keys' band, {open:?} {key:?}");
+                }
+            }
+        }
+        // One column for every screen, wrapped or opened; twin: the message's words are not in it.
+        assert!(columns.iter().all(|x| (x - columns[0]).abs() < 1.0), "{w}×{h}: one column of words, {columns:?}");
+        for (turn, name) in [(0.0, "announced"), (1.0, "told")] {
+            shown(&rig, &help, 5);
+            help.set_message_turn(turn);
+            rig.settle();
+            keep(&format!("{language}-{w}x{h}-5-{name}"));
+        }
+        let made = common::the(&window, Role::Text, "#madewithoni");
+        assert!((made.x + made.width / 2.0 - w as f32 / 2.0).abs() < 2.0 && made.x > columns[0] - w as f32, "{w}×{h}: the tag in the middle, {made:?}");
+    }
+    oni_app::language::speak(Some(Language::English));
     window.hide().unwrap();
 }

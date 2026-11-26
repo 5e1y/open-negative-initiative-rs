@@ -19,11 +19,13 @@ pub struct Cue {
     pub foot: f32,
     /// How much of its light the stage shows, 0 while one screen gives way to the next.
     pub shown: f32,
+    /// Where the gift stands across the picture, as a share of its width: where its film will come.
+    pub middle: f32,
 }
 
 impl Cue {
     pub fn at(gift: Option<usize>, since: Option<f32>) -> Cue {
-        Cue { gift, since, clock: since.unwrap_or(0.0), aspect: 1.6, foot: 0.0, shown: 1.0 }
+        Cue { gift, since, clock: since.unwrap_or(0.0), aspect: 1.6, foot: 0.0, shown: 1.0, middle: 0.5 }
     }
 }
 
@@ -88,15 +90,19 @@ pub fn frame(cue: &Cue) -> Frame {
     let s = STAND[i];
     let drift = 0.25 * (cue.clock * 0.11).sin();
     let gifts = std::array::from_fn(|k| if k == i { gift(i, cue) } else { Gift::default() });
-    Frame {
+    let frame = Frame {
         view: [0.0, 0.0, cue.clock, cue.shown * kept(i, cue.since)],
         eye: [EYE[0] + drift, EYE[1], EYE[2], 2.3],
         aim: [AIM[0], AIM[1], AIM[2], 3.0 * s.size.max(1.0)],
         light: [1.0, 1.0, 0.9, 1.0],
-        lens: [0.0, 0.0, 0.0, 0.0],
+        lens: [(cue.middle - 0.5) * cue.aspect, 0.0, 0.0, 0.0],
         show: [0.0, 0.0, 0.0, cue.foot],
         gifts,
-    }
+    };
+    // The wrapped gift's middle on the picture's middle line, whatever its size: the film's line once it is opened.
+    let rest = Frame { gifts: std::array::from_fn(|k| if k == i { gift(i, &Cue { since: None, ..*cue }) } else { Gift::default() }), ..frame };
+    let [_, top, _, tall] = gift_spot(&rest, cue.aspect).unwrap_or([0.0, 0.25, 0.0, 0.5]);
+    Frame { lens: [frame.lens[0], 0.0, 0.5 - (top + tall / 2.0), 0.0], ..frame }
 }
 
 /// Where a point of the stage falls in `frame`'s picture, as shares of its width and height.
@@ -116,13 +122,13 @@ fn seen(frame: &Frame, aspect: f32, p: [f32; 3]) -> (f32, f32) {
     (x / aspect + 0.5, y + 0.5)
 }
 
-/// Where the screen's gift stands in `frame`'s picture, its bow included: its left, top, width and height, as
+/// Where the screen's gift stands in `frame`'s picture, its lid included: its left, top, width and height, as
 /// shares of the picture; none on the message's screen.
 pub fn gift_spot(frame: &Frame, aspect: f32) -> Option<[f32; 4]> {
     let g = frame.gifts.iter().find(|g| g.place[3] > 0.0)?;
     let (sin, cos) = g.pose[0].sin_cos();
     let corner = |k: usize| {
-        let (x, y, z) = (if k & 1 == 0 { -1.06 } else { 1.06 }, if k & 2 == 0 { 0.0 } else { 2.0 * (g.shape[0] + LID) + 0.6 }, if k & 4 == 0 { -1.06 } else { 1.06 });
+        let (x, y, z) = (if k & 1 == 0 { -1.06 } else { 1.06 }, if k & 2 == 0 { 0.0 } else { 2.0 * (g.shape[0] + LID) }, if k & 4 == 0 { -1.06 } else { 1.06 });
         [g.place[0] + (cos * x - sin * z) * g.place[3], g.place[1] + g.pose[1] + y * g.place[3], g.place[2] + (sin * x + cos * z) * g.place[3]]
     };
     let (mut low, mut high) = ((f32::MAX, f32::MAX), (f32::MIN, f32::MIN));

@@ -1,6 +1,6 @@
 // `WelcomeSheet`: the release told once, over the whole window, one screen a gift: the gift alone in the middle,
 // opened by a click or Return, then its demo on the left and its words on the right; the message comes last.
-import { Space, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
+import { Space, Label, TextRole, Tone, Button, Sheet, SheetFooter } from "ds/ds.slint";
 import { WelcomeStyle, Headline } from "ds/ds.slint";
 import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, DemoReel, StageRail } from "ds/ds.slint";
 import { Help } from "help.slint";
@@ -8,6 +8,7 @@ import { Kit, KitLink } from "gear_state.slint";
 
 // A gift's words, right of it: which gift it is, its name in the display face, what it holds, a key if it has one.
 component Words inherits VerticalLayout {
+    in property <length> title-size;
     in property <string> eyebrow;
     in property <string> title;
     in property <string> lead;
@@ -16,7 +17,7 @@ component Words inherits VerticalLayout {
     spacing: Space.m;
     opacity: root.shown;
     Label { text: root.eyebrow; role: TextRole.label; tone: Tone.secondary; }
-    Headline { text: root.title; }
+    Headline { text: root.title; size: root.title-size; }
     StageText { text: root.lead; lead: true; }
     if root.text != "": StageText { text: root.text; }
     @children
@@ -37,22 +38,26 @@ export component WelcomeSheet inherits Sheet {
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
     property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
-    // The columns: the gift's in the middle, the demo's left of it, the words' right of it.
+    // Two blocks on the window's middle line: the gift, then its film, on the left, the words in one column on the
+    // right, the same for every screen; the film takes the room the column leaves, kept clear of the keys' band.
     property <length> room: root.height - footer-room.height;
-    property <length> middle: root.height * StageStyle.gift-share;
-    property <length> side: (root.width - root.middle) / 2 - StageStyle.gap - 2 * Space.l;
-    property <length> left: 2 * Space.l;
-    // Once its gift has gone, a screen's film takes the stage left of the words, as large as the room lets it.
-    property <length> demo-width: min(root.right - StageStyle.gap - root.left, (root.room - 4 * Space.l) / StageStyle.window-shape);
-    property <length> right: root.width / 2 + root.middle / 2 + StageStyle.gap;
+    property <length> edge: 2 * Space.l;
+    property <length> column: min(WelcomeStyle.words-width, root.width * WelcomeStyle.words-share);
+    property <length> title-size: min(WelcomeStyle.headline, root.column / WelcomeStyle.headline-measure);
+    property <length> demo-width: min(root.width - 2 * root.edge - StageStyle.gap - root.column, (root.height - 2 * footer-room.height) / StageStyle.window-shape);
+    property <length> left: (root.width - root.demo-width - StageStyle.gap - root.column) / 2;
+    property <length> right: root.left + root.demo-width + StageStyle.gap;
+    // The words' column is never taller than the window less the keys' band above and below it.
+    property <length> words-room: root.height - 2 * footer-room.height;
     // On: the gift opened if it is still wrapped, else the next screen; the last screen's key enters the app.
     function onward() {
-        if (root.last) { Help.welcome-closed(); } else if (!root.opened) { Help.welcome-open(); } else { Help.welcome-go(1); }
+        if (root.last && Help.message-turn < 1) { Help.message-on(); } else if (root.last) { Help.welcome-closed(); } else if (!root.opened) { Help.welcome-open(); } else { Help.welcome-go(1); }
     }
-    function sized() { Help.welcome-sized(root.width, root.height, footer-room.height); }
+    function sized() { Help.welcome-sized(root.width, root.height, footer-room.height, (root.left + root.demo-width / 2) / root.width); }
     init => { root.sized(); }
     changed width => { root.sized(); }
     changed height => { root.sized(); }
+    changed demo-width => { root.sized(); }
     dismissed => { Help.welcome-closed(); }
     returned => { root.onward(); }
     paged(by) => { Help.welcome-go(by); }
@@ -62,6 +67,7 @@ export component WelcomeSheet inherits Sheet {
         live: Help.stage-live;
         gift: Help.gift-shown;
         opened: root.opened;
+        middle: (root.left + root.demo-width / 2) / root.width;
         shown: Help.stage-shown;
         // The wheel and the trackpad go from screen to screen, on only past an opened gift.
         TouchArea {
@@ -83,15 +89,14 @@ export component WelcomeSheet inherits Sheet {
             TouchArea { mouse-cursor: pointer; clicked => { Help.welcome-open(); } }
         }
         // Where its words will come: which gift it is, and what to do.
-        // Clear of the gift, which the huge one is not of the words' column.
         if !root.opened && !root.last: VerticalLayout {
-            x: max(root.right, Help.gift-spot.x + Help.gift-spot.width + StageStyle.gap + Space.l);
-            width: root.width - self.x - 2 * Space.l;
-            y: (root.room - self.preferred-height) / 2;
+            x: root.right;
+            width: root.column;
+            y: (root.height - self.preferred-height) / 2;
             height: self.preferred-height;
             spacing: Space.s;
             opacity: Help.stage-shown;
-            Headline { text: root.tags[root.page - 1]; }
+            Headline { text: root.tags[root.page - 1]; size: root.title-size; }
             StageText { text: @tr("Click it or press Return to unwrap it."); }
         }
         // The screens, one above the other, the scroll bringing each in.
@@ -100,8 +105,8 @@ export component WelcomeSheet inherits Sheet {
             property <bool> here: page == root.page;
             visible: here && (page != 2 || Help.kit-gift);
             y: (root.slot(page) - Help.scroll) * root.height;
-            height: root.room;
-            // The demo, left of the gift.
+            height: root.height;
+            // The film, where the gift stood.
             DemoFrame {
                 x: root.left;
                 width: root.demo-width;
@@ -111,14 +116,14 @@ export component WelcomeSheet inherits Sheet {
                 // The gift's film, made from the real app.
                 if Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
             }
-            // The words, right of the gift.
+            // The words, right of the film, on the window's middle line.
             VerticalLayout {
                 x: root.right;
-                width: root.side;
-                // Centred in the room above the keys, never under them.
-                y: max(Space.l, (parent.height - self.preferred-height) / 2) + (1 - root.words) * StageStyle.rise;
-                height: min(self.preferred-height, parent.height - 2 * Space.l);
+                width: root.column;
+                y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
+                height: min(self.preferred-height, root.words-room);
                 if page == 1: Words {
+                    title-size: root.title-size;
                     eyebrow: root.tags[0];
                     title: @tr("A livelier interface");
                     lead: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped.");
@@ -126,6 +131,7 @@ export component WelcomeSheet inherits Sheet {
                     shown: here ? root.words : 0;
                 }
                 if page == 2: Words {
+                    title-size: root.title-size;
                     eyebrow: root.tags[1];
                     title: @tr("Import your photo kit into ONI, with The Lens DB");
                     lead: @tr("Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports.");
@@ -136,6 +142,7 @@ export component WelcomeSheet inherits Sheet {
                     if Kit.link == KitLink.in: StageText { text: @tr("Connected as {}", Kit.account); }
                 }
                 if page == 3: Words {
+                    title-size: root.title-size;
                     eyebrow: root.tags[2];
                     title: @tr("Your digital photos, on film");
                     lead: @tr("ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would.");
@@ -143,6 +150,7 @@ export component WelcomeSheet inherits Sheet {
                     shown: here ? root.words : 0;
                 }
                 if page == 4: Words {
+                    title-size: root.title-size;
                     eyebrow: root.tags[3];
                     title: @tr("Your Wrapped is here");
                     lead: @tr("Your year on film: your rolls, your films, your favourite frames and the time you spent with them.");
@@ -152,53 +160,42 @@ export component WelcomeSheet inherits Sheet {
                 }
             }
         }
-        // The message, the welcome's last word before the app: its hook, why ONI is free, the call to share it, its tag.
-        if root.last: Scroller {
-            height: root.room;
+        // The message, the welcome's last word before the app, in two screens: first its announcement alone on black,
+        // then its hook, why ONI is free and why to tell others, its tag, and three keys.
+        if root.last: Rectangle {
             opacity: Help.message-shown;
-            content-height: letter.preferred-height;
-            letter := HorizontalLayout {
-                width: parent.width;
-                alignment: center;
-                column := VerticalLayout {
-                    width: min(WelcomeStyle.letter-width * 1.6, root.width - 4 * Space.l);
-                    padding-top: max(Space.l, (root.room - inner.preferred-height) / 2);
-                    padding-bottom: Space.l;
-                    inner := VerticalLayout {
-                        spacing: Space.l;
-                        StageNote { text: @tr("I have a message for you"); role: TextRole.title; tone: Tone.secondary; }
-                        StageText { centred: true; hook: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
-                        VerticalLayout {
-                            spacing: Space.s;
-                            StageText { centred: true; lead: true; text: @tr("Most negative tools are paid: they keep to themselves a know-how that was lost when digital arrived."); }
-                            StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: @tr("Tell your friends about ONI."); }
-                            StageText { centred: true; lead: true; text: @tr("Before they spend hundreds on presets or film editing software."); }
-                    }
-                    VerticalLayout {
-                        spacing: Space.xs;
-                        StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: Help.made-with; }
-                        StageText { centred: true; text: @tr("Post what you make with ONI under this tag."); }
-                    }
-                    HorizontalLayout {
-                        alignment: center;
-                        spacing: Space.s;
-                        if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
-                        Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
-                        Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
-                    }
-                    Label {
-                        role: TextRole.note;
-                        centred: true;
-                        wrap: word-wrap;
-                        text: @tr("Every month, the community's top five: the winning photo opens the next version of ONI, with its author's name. One step, the form; {} to share.", Help.contest-tag);
-                    }
-                    }
+            StageText {
+                x: root.edge;
+                width: root.width - 2 * root.edge;
+                y: (root.height - self.preferred-height) / 2;
+                centred: true;
+                hook: true;
+                opacity: 1 - Help.message-turn;
+                text: @tr("I have a message for you");
+            }
+            told := VerticalLayout {
+                x: (root.width - self.width) / 2;
+                width: min(WelcomeStyle.letter-width, root.width - 2 * root.edge);
+                y: (root.height - self.height) / 2 + (1 - Help.message-turn) * StageStyle.rise;
+                height: min(self.preferred-height, root.words-room);
+                opacity: Help.message-turn;
+                visible: Help.message-turn > 0;
+                spacing: Space.l;
+                StageText { centred: true; hook: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
+                StageText { centred: true; lead: true; text: @tr("Most negative tools are paid and keep to themselves a know-how lost when digital came. Tell your friends about ONI before they spend hundreds on presets or editing software."); }
+                StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: Help.made-with; }
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: Space.s;
+                    if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
+                    Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                    Button { keycap: true; text: @tr("Enter the Contest"); clicked => { Help.contest(); } }
                 }
             }
         }
         if !root.last: StageRail {
             x: parent.width - Space.l - self.preferred-width;
-            y: (root.room - self.preferred-height) / 2;
+            y: (root.height - self.preferred-height) / 2;
             count: root.count;
             at: root.slot(root.page);
         }
@@ -212,7 +209,7 @@ export component WelcomeSheet inherits Sheet {
                 width: parent.width - 2 * Space.l;
                 height: self.preferred-height;
                 back: root.slot(root.page) > 0 ? @tr("Back") : "";
-                commit: root.last ? @tr("Enter ONI") : !root.opened ? @tr("Unwrap") : root.page == 4 ? @tr("Continue") : @tr("Next Gift");
+                commit: root.last && Help.message-turn < 1 ? @tr("Continue") : root.last ? @tr("Enter ONI") : !root.opened ? @tr("Unwrap") : root.page == 4 ? @tr("Continue") : @tr("Next Gift");
                 commit-enabled: root.last || !root.opened || Help.may-go-on;
                 backed => { Help.welcome-go(-1); }
                 committed => { root.onward(); }

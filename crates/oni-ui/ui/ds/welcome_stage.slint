@@ -63,6 +63,8 @@ export component StagePicture inherits Rectangle {
     in property <int> gift: -1;
     in property <bool> opened;
     in property <float> shown: 1;
+    // Where the gift stands across the picture, as a share of its width; the still moves there with it.
+    in property <float> middle: 0.5;
     background: StageStyle.ground;
     if root.live: Image {
         width: parent.width;
@@ -71,6 +73,7 @@ export component StagePicture inherits Rectangle {
         image-fit: root.revision < 0 ? ImageFit.contain : ImageFit.fill;
     }
     if !root.live && root.gift >= 0: Image {
+        x: (root.middle - 0.5) * parent.width;
         width: parent.width;
         height: parent.height;
         source: StageStyle.stills[root.gift * 2 + (root.opened ? 1 : 0)];

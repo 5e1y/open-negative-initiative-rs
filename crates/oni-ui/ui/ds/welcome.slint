@@ -4,10 +4,11 @@ import { DS } from "tokens.slint";
 import { Colour, Motion, Space, Type } from "theme.slint";
 
 export global WelcomeStyle {
-    // The words beside a page's stage, a column a paragraph reads in; narrower than `stage-least` left
-    // beside them, the stage gives way and the words take the window.
-    out property <length> words-width: 470px;
-    out property <length> stage-least: 360px;
+    // The words beside a gift's film, one column for every screen: as wide as a title wants for two or three
+    // lines, never more than this share of the window, its title a size down where the column narrows.
+    out property <length> words-width: 440px;
+    out property <float> words-share: 0.38;
+    out property <float> headline-measure: 13;
     // The message's column, a letter's measure.
     out property <length> letter-width: 620px;
     out property <length> dot: 6px;
@@ -33,8 +34,9 @@ export component SceneFrame inherits Rectangle {
 // A title in the display face: a screen's, the message's.
 export component Headline inherits Text {
     in property <bool> quiet;
+    in property <length> size: WelcomeStyle.headline;
     font-family: WelcomeStyle.headline-family;
-    font-size: root.quiet ? WelcomeStyle.quote : WelcomeStyle.headline;
+    font-size: root.quiet ? WelcomeStyle.quote : root.size;
     font-weight: WelcomeStyle.headline-weight;
     color: root.quiet ? Colour.ink : WelcomeStyle.headline-ink;
     wrap: word-wrap;

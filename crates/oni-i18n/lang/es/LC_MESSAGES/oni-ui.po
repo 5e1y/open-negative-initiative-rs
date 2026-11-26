@@ -1835,10 +1835,6 @@ msgstr "Ocultar la referencia de la película"
 msgid "Shooting exposure"
 msgstr "Exposición en la toma"
 
-#: crates/oni-ui/ui/panel/film_block.slint crates/oni-ui/ui/prepare.slint
-msgid "Scanner"
-msgstr "Escáner"
-
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Gains"
 msgstr "Ganancias"
@@ -2154,6 +2150,10 @@ msgstr "Tipo de película"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
 msgstr "Digitalizado con"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Scanner"
+msgstr "Escáner"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "DSLR Scan"
@@ -2708,20 +2708,12 @@ msgid "I have a message for you"
 msgstr "Tengo un mensaje para ti"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Most negative tools are paid: they keep to themselves a know-how that was lost when digital arrived."
-msgstr "La mayoría de las herramientas para negativos son de pago: se guardan un saber que se perdió con la llegada de lo digital."
+msgid "You already paid for your film. You shouldn't have to pay just to look at it."
+msgstr "Ya pagaste tu película. No deberías pagar solo por mirarla."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Tell your friends about ONI."
-msgstr "Habla de ONI a tus amigos."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Before they spend hundreds on presets or film editing software."
-msgstr "Antes de que gasten cientos de euros en presets o en programas de edición analógica."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Post what you make with ONI under this tag."
-msgstr "Publica con esta etiqueta lo que haces con ONI."
+msgid "Most negative tools are paid and keep to themselves a know-how lost when digital came. Tell your friends about ONI before they spend hundreds on presets or editing software."
+msgstr "La mayoría de las herramientas para negativos son de pago y se guardan un saber que se perdió con la llegada de lo digital. Habla de ONI a tus amigos antes de que gasten cientos de euros en presets o programas de edición."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Follow ONI on Instagram"
@@ -2736,12 +2728,8 @@ msgid "Enter the Contest"
 msgstr "Participar en el concurso"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Every month, the community's top five: the winning photo opens the next version of ONI, with its author's name. One step, the form; {} to share."
-msgstr "Cada mes, el top 5 de la comunidad: la foto ganadora abre la siguiente versión de ONI, con el nombre de su autor. Un solo paso, el formulario; {} para compartir."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "You already paid for your film. You shouldn't have to pay just to look at it."
-msgstr "Ya pagaste tu película. No deberías pagar solo por mirarla."
+msgid "Continue"
+msgstr "Continuar"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Enter ONI"
@@ -2750,10 +2738,6 @@ msgstr "Entrar en ONI"
 #: crates/oni-ui/ui/welcome.slint
 msgid "Unwrap"
 msgstr "Desenvolver"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Continue"
-msgstr "Continuar"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Next Gift"

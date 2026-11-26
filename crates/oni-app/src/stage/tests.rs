@@ -20,14 +20,18 @@ fn each_gift_stands_in_the_middle_at_the_size_its_words_tell() {
     let height = |gift| {
         let [x, y, w, h] = gift_spot(&frame(&Cue::at(Some(gift), None)), 1.6).expect("a gift on its screen");
         assert!((x + w / 2.0 - 0.5).abs() < 0.08 && y >= 0.0 && y + h <= 0.95, "gift {gift} about the middle, whole: {x} {y} {w} {h}");
+        assert!((y + h / 2.0 - 0.5).abs() < 0.01, "gift {gift} on the picture's middle line: {y} {h}");
         h
     };
     let sizes = [height(0), height(1), height(2), height(3)];
-    assert!(sizes[2] > 0.7, "the huge gift fills the picture's height: {sizes:?}");
+    assert!(sizes[2] > 0.6, "the huge gift fills most of the picture's height: {sizes:?}");
     assert!(sizes[0] < 0.35 && sizes[1] < 0.35, "the small ones small: {sizes:?}");
     // Twin: the mystery between them and the huge one.
     assert!(sizes[3] > sizes[0].max(sizes[1]) && sizes[3] < sizes[2] * 0.75, "the mystery between: {sizes:?}");
     assert!(gift_spot(&frame(&Cue::at(None, None)), 1.6).is_none(), "no place on the message's screen");
+    // Twin: a gift asked to stand left of the middle stands there.
+    let left = gift_spot(&frame(&Cue { middle: 0.3, ..Cue::at(Some(0), None) }), 1.6).unwrap();
+    assert!((left[0] + left[2] / 2.0 - 0.3).abs() < 0.08, "the small gift at 0.3 across: {left:?}");
 }
 
 #[test]

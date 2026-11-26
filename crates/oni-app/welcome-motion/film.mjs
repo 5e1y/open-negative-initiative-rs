@@ -25,7 +25,8 @@ const chrome = process.env.CHROME || (process.platform === 'darwin' ? '/Applicat
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, protocolTimeout: 120000, args: ['--force-color-profile=srgb', '--hide-scrollbars'] });
 const page = await browser.newPage();
 page.on('console', (m) => m.type() === 'error' && console.error(`${name}: ${m.text()}`));
-await page.setViewport({ width: 800, height: 500, deviceScaleFactor: 1 });
+// `SCALE` films each frame at that many pixels a point, for a screen of more pixels.
+await page.setViewport({ width: 800, height: 500, deviceScaleFactor: Number(process.env.SCALE || 1) });
 await page.goto(`http://127.0.0.1:${server.address().port}/${name}.html`, { waitUntil: 'load' });
 const fonts = await page.evaluate(async () => { await document.fonts.ready; return [...document.fonts].filter((f) => f.status !== 'loaded').length; });
 if (fonts) throw new Error(`${name}: ${fonts} fonts did not load`);

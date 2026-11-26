@@ -252,6 +252,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::a_notices_key_sits_right", sheet_layout::a_notices_key_sits_right),
     ("welcome_card::the_welcome_fills_the_window_in_every_language", welcome_card::the_welcome_fills_the_window_in_every_language),
+    ("welcome_card::the_welcome_stands_on_the_windows_middle_line_at_every_size", welcome_card::the_welcome_stands_on_the_windows_middle_line_at_every_size),
     ("welcome_reel::a_welcome_seen_plays_again_from_its_first_gift", welcome_reel::a_welcome_seen_plays_again_from_its_first_gift),
     ("welcome_reel::the_welcome_is_unwrapped_screen_by_screen", welcome_reel::the_welcome_is_unwrapped_screen_by_screen),
     ("welcome_films::the_welcome_films_are_shot_in_the_real_app", welcome_films::the_welcome_films_are_shot_in_the_real_app),
