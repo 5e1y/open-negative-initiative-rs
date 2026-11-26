@@ -305,7 +305,10 @@ impl Ctl {
         let p = me.clone();
         lib.on_surface_picked(move |i| p.surface_picked(i));
         let p = me.clone();
-        lib.on_gallery_shown(move || p.land_gallery());
+        lib.on_gallery_shown(move || {
+            p.land_gallery();
+            p.wrapped_season(oni_library::wrapped::today());
+        });
         Ctl::wire_band_rename(me, &lib);
         let p = me.clone();
         lib.on_row_double_clicked(move |i| p.row_double_clicked(index(i)));

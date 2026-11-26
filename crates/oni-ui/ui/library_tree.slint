@@ -1,6 +1,8 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize, Motion, Ease, RowsDivider } from "ds/ds.slint";
+import { Picker, PickerFace, MenuLine, Surface, Space, ShellStyle, Tabs, RowsEmpty, Menu, SelectionRing, Radius, DropLine, Badge, Button, ButtonSize } from "ds/ds.slint";
+import { Motion, Ease, RowsDivider, YearEntry } from "ds/ds.slint";
+import { Wrapped } from "wrapped.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 import { RatingFilter, GalleryFilter } from "rating_filter.slint";
@@ -47,6 +49,17 @@ export component Tree inherits Surface {
                 tabs: [@tr("Archive"), @tr("Projects")];
                 selected: Library.surface;
                 picked(i) => { Library.surface = i; Library.surface-picked(i); }
+            }
+        }
+        // Through December and January the gallery's column opens on the year on film, on either tree.
+        if !root.beside-photo && Wrapped.season != "": HorizontalLayout {
+            padding-left: ShellStyle.column-inset;
+            padding-right: ShellStyle.column-inset;
+            padding-bottom: Space.s;
+            YearEntry {
+                year: Wrapped.season;
+                text: @tr("Your year on film");
+                clicked => { Wrapped.open(); }
             }
         }
         // In the gallery the filter alone heads the archive's column, as it heads the projects'; it tucks

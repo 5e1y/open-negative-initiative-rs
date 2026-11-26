@@ -89,10 +89,9 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.settle();
     println!("shot {}", rig.shot("wrapped-title").display());
     let story = eyebrows(&wrapped);
-    assert_eq!(
-        story,
-        ["", "THIS YEAR", "YOUR BUSIEST MONTH", "THE ONLY THING I SEE IS GOLD", "YOUR MOST EDITED PHOTO", "YOUR HANDS KNEW THE WAY", "YOUR SIGNATURE LOOK", "YOUR FILM PERSONALITY", "MY YEAR ON FILM", ""]
-    );
+    let told = ["", "THIS YEAR", "YOUR BUSIEST MONTH", "THE ONLY THING I SEE IS GOLD", "YOUR MOST EDITED PHOTO", "YOUR HANDS KNEW THE WAY"];
+    assert_eq!(story[..6], told);
+    assert_eq!(story[6..], ["YOUR SIGNATURE LOOK", "YOUR FILM PERSONALITY", "MY YEAR ON FILM", ""]);
     let scene = |eyebrow: &str| {
         let scenes = wrapped.get_scenes();
         (0..scenes.row_count()).filter_map(|i| scenes.row_data(i)).find(|c| c.eyebrow == eyebrow).unwrap()
@@ -225,6 +224,31 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     shell.offer_wrapped();
     rig.settle();
     assert!(!wrapped.get_shown(), "shown above already, or not December");
+
+    // The gallery's column opens on the year through December and the January after it, which tells the
+    // year just ended; a click on it shows the year.
+    assert!(w.global::<oni_app::App>().get_gallery());
+    let entry = || {
+        use i_slint_backend_testing::{AccessibleRole, ElementHandle};
+        ElementHandle::find_by_accessible_label(w, "Your year on film").find(|e| e.accessible_role() == Some(AccessibleRole::Button))
+    };
+    for (today, told) in [((2026, 12), "2026"), ((2027, 1), "2026")] {
+        ctl.wrapped_season(today);
+        rig.settle();
+        assert_eq!(wrapped.get_season().as_str(), told, "{today:?}");
+        assert!(entry().is_some(), "{today:?}: the entry heads the gallery's column");
+    }
+    println!("shot {}", rig.shot("wrapped-entry").display());
+    entry().unwrap().invoke_accessible_default_action();
+    rig.until("the year shown from the gallery", Duration::from_secs(20), || wrapped.get_shown());
+    wrapped.invoke_close();
+    rig.settle();
+    // Twin: the months on either side have no entry.
+    for today in [(2026, 11), (2027, 2)] {
+        ctl.wrapped_season(today);
+        rig.settle();
+        assert!(wrapped.get_season().is_empty() && entry().is_none(), "{today:?}");
+    }
 
     // New Roll from Selection notes the photos it gathered.
     assert!(w.global::<oni_app::App>().get_gallery());

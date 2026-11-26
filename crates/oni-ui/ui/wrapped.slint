@@ -7,6 +7,10 @@ export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene }
 
 export global Wrapped {
     in property <bool> shown;
+    // The year the gallery's entry tells, through December and January; empty out of them.
+    in property <string> season;
+    // The gallery's entry, clicked.
+    callback open();
     // Bumped at each showing: a view kept across a quick close and reopen starts over.
     in property <int> showing;
     in property <string> year;

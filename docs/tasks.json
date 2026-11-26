@@ -13887,5 +13887,12 @@
     "title": "The year on film's perforations are a 135 film's: Kodak Standard, in their true proportions to the film's width",
     "status": "done",
     "detail": "The owner judged the new Wrapped right but for its sprocket holes: not a film's shape, and out of proportion with the film's band. A frame is now a 35 mm film as wide as the card (WrappedStyle.mm, 360 units over 35), and every measure of its edges is the standard's, in millimetres: a perforation 1.981 mm across the film by 2.794 mm along it with corners of 0.5 mm, one every 4.75 mm, 2 mm in from the film's edge, the band outside the 24 mm image 5.5 mm each side. The perforations run on from frame to frame down the strip, a frame's own beginning where the strip has come to (Perforations.along), so a card's foot may cut one as a strip's cut does; a card 1920 px tall holds 13.1 of them. A scene's words, its wall of photos and its colours lie inside the 24 mm image (pad 60, a figure fitted to 240 units). Measured on three saved cards of 1080 px: holes 1.977 by 2.787 mm, pitch 4.748 to 4.764 mm, 2.009 mm from the edge."
+  },
+  {
+    "id": 3909,
+    "type": "feature",
+    "title": "The year on film is opened from the gallery through December and January",
+    "status": "done",
+    "detail": "The owner asked for a way back to the Wrapped once the welcome is closed. From the first of December to the last of January the gallery's library column opens, under its tabs and on either tree, on one line (ds/year_entry.slint, YearEntry): the year struck on the holographic seal the app's gifts wear, \"Your year on film\" in the section face, a chevron; a flat key under the hand, the seal's glint swept on hover. A click is Act::Wrapped, so January tells the year just ended (year::season, told_year). It is the column's head rather than the bar or the status line: the first place read as the gallery opens, out of the bar whose keys are fitted to the narrowest window, and gone beside a photo, where the work is. It offers nothing by itself: the launch's December offer stays the only showing nobody asked, made once, and a year shown from the entry in its December is that offer made. Out of the two months the line is not laid; the menu's item stays the year round. The season is read at launch and each time the gallery shows. Checked on the window with the date given: December and January lay the entry and tell 2026, a click shows the year; November and February lay none."
   }
 ]

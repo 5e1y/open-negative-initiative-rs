@@ -40,6 +40,16 @@ pub fn told_year((year, month): (i32, u32)) -> i32 {
     if month == 1 { year - 1 } else { year }
 }
 
+/// The year the gallery's entry tells, through December and the January after it; no other month has one.
+pub fn season(today: (i32, u32)) -> Option<i32> {
+    matches!(today.1, 12 | 1).then(|| told_year(today))
+}
+
+/// The season's year as the entry's seal shows it, empty out of the season.
+fn season_word(today: (i32, u32)) -> String {
+    season(today).map(|year| year.to_string()).unwrap_or_default()
+}
+
 #[derive(Default)]
 pub struct Year {
     /// `JournalEdits.last`: each photo's settings at its last settled edit.
@@ -148,6 +158,9 @@ impl Ctl {
         let p = me.clone();
         w.on_close(move || p.close_wrapped());
         let p = me.clone();
+        w.on_open(move || p.act(crate::Act::Wrapped));
+        w.set_season(season_word(today()).into());
+        let p = me.clone();
         w.on_save_all(move || p.save_wrapped(None));
         let p = me.clone();
         w.on_save_card(move |scene| p.save_wrapped(Some(scene.max(0) as usize)));
@@ -175,6 +188,12 @@ impl Ctl {
         if due {
             self.offer_wrapped();
         }
+    }
+
+    /// The gallery's entry for `today`: the year it tells in its season, none out of it.
+    pub fn wrapped_season(&self, today: (i32, u32)) {
+        let Some(w) = self.window() else { return };
+        w.global::<Wrapped>().set_season(season_word(today).into());
     }
 
     pub(super) fn shown_year(&self) -> i64 {
@@ -208,5 +227,12 @@ mod tests {
         assert!(!offer_due((2026, 12), 2026), "shown already");
         // Twin: the same year not yet shown is not offered in November.
         assert!(!offer_due((2026, 11), 0));
+    }
+
+    #[test]
+    fn the_gallerys_entry_lasts_december_and_january_and_tells_one_year() {
+        assert_eq!((season((2026, 12)), season((2027, 1))), (Some(2026), Some(2026)));
+        // Twin: the months on either side have none.
+        assert_eq!((season((2026, 11)), season((2027, 2))), (None, None));
     }
 }
