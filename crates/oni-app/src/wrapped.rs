@@ -3,6 +3,7 @@
 
 use oni_i18n::{named, tr, trn};
 use oni_library::wrapped::Year;
+use oni_library::wrapped::persona::ENOUGH;
 
 pub mod gather;
 pub mod sample;
@@ -11,6 +12,14 @@ mod words;
 
 pub use words::{MONTHS, figure, film_name, persona_words, row_name};
 use words::{counted, day_name, kinds, named_rows, palette_words, paper_name, percent, trait_name};
+
+/// `ONI_WRAPPED_ONLY`: the year on film alone, shown at launch over an app that opens no folder, shows no
+/// launch sheet and runs no sweep, and quits as it closes: a year looked at with nothing written in the library.
+pub const ALONE: &str = "ONI_WRAPPED_ONLY";
+
+pub fn alone() -> bool {
+    std::env::var_os(ALONE).is_some()
+}
 
 /// The colours a year's palette gathers its photos around.
 pub const SWATCHES: usize = 5;
@@ -167,7 +176,7 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
             ..Default::default()
         });
     }
-    if let Some((body, count)) = f.bodies.first() {
+    if let Some((body, count)) = f.bodies.first().filter(|(_, n)| *n >= ENOUGH) {
         out.push(Scene {
             kind: Kind::Lines,
             eyebrow: tr("Your faithful companion").into(),
@@ -232,7 +241,7 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
         out.push(Scene {
             kind: Kind::Lines,
             eyebrow: tr("Your signature look").into(),
-            figure: d.favourite_preset.as_ref().map(|(name, _)| name.clone()).or_else(|| f.papers.first().map(|(key, _)| paper_name(key))).unwrap_or_default(),
+            figure: d.favourite_preset.as_ref().map(|(name, _)| name.clone()).or_else(|| f.papers.first().filter(|(_, n)| *n >= ENOUGH).map(|(key, _)| paper_name(key))).unwrap_or_default(),
             lines: look,
             ..Default::default()
         });
@@ -332,7 +341,7 @@ fn summary(year: &Year, persona: String) -> Scene {
     if let Some((key, _)) = f.stocks.first() {
         lines.push(line(tr("Film"), film_name(key)));
     }
-    if let Some((body, _)) = f.bodies.first() {
+    if let Some((body, _)) = f.bodies.first().filter(|(_, n)| *n >= ENOUGH) {
         lines.push(line(tr("Camera"), body.clone()));
     }
     if d.hours >= 1.0 {

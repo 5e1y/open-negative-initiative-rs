@@ -174,7 +174,7 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
 }
 
 /// A print for the year's summary: a converted photo as its sidecar develops it, `side` on its long
-/// side, encoded for `screen`; none for a frame never converted, which its thumbnail already shows.
+/// side, encoded for `screen`; none for a frame never converted, whose tile is its scan.
 pub(super) fn print(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, side: usize) -> Option<(Vec<u8>, usize, usize)> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let settings = oni_settings::sidecar::read(Path::new(path), mosaic).ok()?.settings;
@@ -184,6 +184,11 @@ pub(super) fn print(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     let (linear, _) = developed(engine, previews, path, &settings, side).ok()?;
     let (w, h) = (linear.width, linear.height);
     Some((render::encoded(&linear, &Params::new(screen, w as u32, h as u32, 0), 1), w, h))
+}
+
+/// The scan as its file holds it, a frame's tile until it is converted, for `screen`.
+pub(super) fn scanned(path: &str, screen: Screen) -> Option<(Vec<u8>, usize, usize)> {
+    thumbnails::decoded(&crate::scans::scan(Path::new(path))?, screen)
 }
 
 /// `Thumbnails.drain`: the folder's files read off this thread, the latest asked first, so a

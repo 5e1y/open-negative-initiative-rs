@@ -138,7 +138,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
                 // A sidecar of an earlier format asks its original for the camera matrix and the scan size.
                 oni_app::migration::facts::install(&support);
-                oni_app::migration::facts::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
+                if !oni_app::wrapped::alone() {
+                    oni_app::migration::facts::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
+                }
             }
         }),
         starter::step(marked("Building the app"), {
@@ -146,10 +148,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             move || {
                 let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
                 // The folded bench pairs a phone, so it offers the link whatever the switch says.
-                let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
+                // The year alone offers no phone, asks no site and looks for no update: it only reads.
+                let (alone, benched) = (oni_app::wrapped::alone(), bench::requested());
+                let phone = !alone && (oni_app::phone::offered() || benched == Some(bench::Mode::Folded));
+                // A bench copies to a board of its own: the person's clipboard is theirs.
+                let pasteboard: Box<dyn oni_app::pasteboard::Board> = if benched.is_some() { Box::new(oni_app::pasteboard::Memory::default()) } else { oni_app::pasteboard::general() };
                 // A bench never asks The Lens DB, so its timings never wait on the network.
-                let tldb = if bench::requested().is_some() { oni_app::app::TldbSite::None } else { oni_app::app::TldbSite::launch(&support) };
-                let options = Options { support, tldb, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, brought, ..Options::default() };
+                let tldb = if alone || benched.is_some() { oni_app::app::TldbSite::None } else { oni_app::app::TldbSite::launch(&support) };
+                let options = Options { support, tldb, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard, computer: oni_library::navigator::Computer::system(), updates: (!alone && benched.is_none()).then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, brought, ..Options::default() };
                 match Shell::standing(built, store, engine, options) {
                     Ok(standing) => {
                         let quitting = standing.ctl.clone();
@@ -171,6 +177,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let Some(shell) = standing.as_ref() else { return };
                 // A path named opens it or nothing; the reference roll opens only where a check or a bench names it.
                 match std::env::args_os().nth(1).map(PathBuf::from) {
+                    _ if oni_app::wrapped::alone() => {}
                     Some(path) => shell.add(&path),
                     None if shell.open_remembered() => {}
                     None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench::requested().is_some() => {
@@ -198,6 +205,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     let _ = slint::quit_event_loop();
                 });
+            } else if oni_app::wrapped::alone() {
+                shell.ctl.act(oni_app::Act::Wrapped);
             } else {
                 shell.launch_sheets();
                 shell.migrate(&oni_app::system::caches());

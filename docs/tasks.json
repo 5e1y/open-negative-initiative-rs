@@ -13803,5 +13803,12 @@
     "title": "Walking to the next or the previous photo: the photo left steps aside and fades as the next comes in from the other side",
     "status": "done",
     "detail": "Ctl::walk_from, at the head of open_photo beside a photo alone: the left photo's thumbnail, where the canvas showed it, steps Motion.walk-step the way the walk goes (the gallery's order) and fades on Motion.travel (Ease.firm); the canvas's picture comes in from the other side faded in (WalkIn). Nothing waits on it; Reduce Motion lays the next photo at once. Shot by motion.rs both ways."
+  },
+  {
+    "id": 3906,
+    "type": "feature",
+    "title": "ONI_WRAPPED_ONLY shows the year on film alone, reading a library without writing in it; a scene's photo with no thumbnail is made, and a camera or a paper on a handful of frames is no headline",
+    "status": "done",
+    "detail": "The owner asked to try the Wrapped on his real data. A launch with ONI_WRAPPED_ONLY set opens no folder, shows no launch sheet, runs neither the facts' sweep nor the migration's, offers no phone, asks neither The Lens DB nor for an update, shows the year at once and quits as it closes (wrapped::alone, main.rs): the year is read off the index, the sidecars and the thumbnails alone, sidecar::read migrating in memory. Run three times on a copy of the 1.6 support folder and of its index-14 (1,834 rows of /Volumes/T7/Scans and Photos Digitales, the reference roll's taken out of the copy): 1,732 frames of the year, 42 rolls, Kodak Gold on 549; of the 3,132 files of the real rolls (1,356 sidecars and markers hashed, the originals by size and date) and of the real support and caches, none added, removed or changed. Found on that year and rectified: a scene's grid showed blank paper for a photo with no thumbnail on disk (196 of 1,834 rows, the six latest gold among them): such a photo is now made as a thumbnail is, its scan for a frame never converted, and a print with no picture is not laid; a camera named on one frame was the year's faithful companion and a paper on three its signature's headline: both now need twelve frames (persona::ENOUGH); a long lens name ran over its value: a line's label gives way. A bench copies to a board of its own, the person's clipboard left alone. Known: the interface paused 0.4 s once in two of three runs while a large RAW was developed for a print."
   }
 ]

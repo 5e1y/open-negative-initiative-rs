@@ -79,15 +79,15 @@ impl Ctl {
         g.set_scenes(ModelRc::new(VecModel::from(story.iter().map(face).collect::<Vec<_>>())));
         g.set_showing(g.get_showing() + 1);
         g.set_shown(true);
-        // A photo's thumbnail is named by its print: the year's frames carry theirs, the opened folder's the rest.
+        // Every photo a scene shows: its place, its path, the print that names its thumbnail (the year's
+        // frames carry theirs, the opened folder's the rest), and whether its scene shows it large.
         let prints: HashMap<&str, &str> = told.frames.paths.iter().map(|(p, f)| (p.as_str(), f.as_str())).collect();
-        let wanted: Vec<(usize, usize, String)> = {
+        let photos: Vec<(usize, usize, String, Option<String>, bool)> = {
             let s = self.state.borrow();
             let print = |path: &String| prints.get(path.as_str()).map(|f| f.to_string()).or_else(|| s.fingerprints.get(path).cloned());
-            story.iter().enumerate().flat_map(|(i, scene)| scene.photos.iter().enumerate().map(move |(j, p)| (i, j, p))).filter_map(|(i, j, p)| print(p).map(|f| (i, j, f))).collect()
+            let shown = |(i, scene): (usize, &Scene)| scene.photos.iter().enumerate().map(|(j, p)| (i, j, p.clone(), print(p), scene.photos.len() <= PRINTS_A_SCENE)).collect::<Vec<_>>();
+            story.iter().enumerate().flat_map(shown).collect()
         };
-        let large: Vec<(usize, usize, String)> =
-            story.iter().enumerate().filter(|(_, scene)| scene.photos.len() <= PRINTS_A_SCENE).flat_map(|(i, scene)| scene.photos.iter().enumerate().map(move |(j, p)| (i, j, p.clone()))).collect();
         let (support, screen, previews, showing) = {
             let mut s = self.state.borrow_mut();
             s.year.story = Some(Story { year: told.year, scenes: story, index: 0, sharing: false });
@@ -96,26 +96,34 @@ impl Ctl {
         self.publish_bar();
         let engine = self.engine.clone();
         let mine = showing.fetch_add(1, Ordering::Relaxed) + 1;
-        // The thumbnails on disk first; then the scenes' larger photos developed again as prints, each
-        // thumbnail standing until its print lands.
+        // The thumbnails on disk first; then the larger photos developed again as prints, and those no
+        // thumbnail showed made as a thumbnail is, its scan for a frame never converted; each lands in
+        // its place as it is made, and a thumbnail stands where no print can be.
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
-            let current = || showing.load(Ordering::Relaxed) == mine;
-            for (scene, slot, fingerprint) in wanted {
-                let Some((rgba, width, height)) = crate::thumbnails::load(&support, &fingerprint, screen) else { continue };
-                with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
+            let mut owed = Vec::new();
+            for (scene, slot, path, fingerprint, large) in photos {
+                let thumbnail = fingerprint.and_then(|f| crate::thumbnails::load(&support, &f, screen));
+                if large || thumbnail.is_none() {
+                    owed.push((scene, slot, path, if large { PRINT_SIDE } else { crate::thumbnails::SIDE }, thumbnail.is_some()));
+                }
+                if let Some((rgba, width, height)) = thumbnail {
+                    with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
+                }
             }
-            let mut printed: HashMap<String, (Vec<u8>, usize, usize)> = HashMap::new();
-            for (scene, slot, path) in large {
-                if !current() {
+            let mut printed: HashMap<(String, usize), (Vec<u8>, usize, usize)> = HashMap::new();
+            for (scene, slot, path, side, shown) in owed {
+                if showing.load(Ordering::Relaxed) != mine {
                     return;
                 }
-                if !printed.contains_key(&path)
-                    && let Some(print) = crate::app::workers::print(&engine, &previews, &path, screen, PRINT_SIDE)
+                let key = (path, side);
+                let scan = || (!shown).then(|| crate::app::workers::scanned(&key.0, screen)).flatten();
+                if !printed.contains_key(&key)
+                    && let Some(print) = crate::app::workers::print(&engine, &previews, &key.0, screen, side).or_else(scan)
                 {
-                    printed.insert(path.clone(), print);
+                    printed.insert(key.clone(), print);
                 }
-                if let Some((rgba, width, height)) = printed.get(&path).cloned() {
+                if let Some((rgba, width, height)) = printed.get(&key).cloned() {
                     with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
                 }
             }
@@ -177,6 +185,9 @@ impl Ctl {
             w.invoke_refocus();
         }
         self.publish_bar();
+        if crate::wrapped::alone() {
+            let _ = slint::quit_event_loop();
+        }
     }
 }
 

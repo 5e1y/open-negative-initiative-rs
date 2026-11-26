@@ -105,7 +105,8 @@ export component Print inherits Rectangle {
     in property <angle> tilt;
     in property <float> shown: 1;
     background: WrappedStyle.paper;
-    opacity: root.shown;
+    // A print whose photo could not be read is not laid: no blank paper.
+    opacity: root.source.width > 0 ? root.shown : 0;
     transform-rotation: root.tilt;
     transform-origin: { x: self.width / 2, y: self.height / 2 };
     drop-shadow-color: Colour.scrim;
@@ -158,14 +159,15 @@ export component LineRow inherits Rectangle {
         height: 18 * root.u;
         spacing: 10 * root.u;
         Text {
+            horizontal-stretch: 1;
             text: root.line.label;
             font-family: Type.family;
             font-size: 12.5 * root.u;
             color: Colour.ink-secondary;
             vertical-alignment: center;
+            overflow: elide;
         }
         Text {
-            horizontal-stretch: 1;
             text: root.line.value;
             font-family: Type.family;
             font-size: 12.5 * root.u;
@@ -173,7 +175,6 @@ export component LineRow inherits Rectangle {
             color: Colour.ink;
             horizontal-alignment: right;
             vertical-alignment: center;
-            overflow: elide;
         }
     }
     if root.line.share > 0: Rectangle {

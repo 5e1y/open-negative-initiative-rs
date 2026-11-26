@@ -202,4 +202,15 @@ fn every_trait_has_its_name_its_line_and_its_reason() {
     let loyal = Year { persona: Persona { kind: Trait::Loyalist, measure: 0.62, also: vec![Trait::Marathoner] }, ..full() };
     assert_eq!(persona_words(&loyal).2, format!("62 % of your frames on {}", film_name("kodak-portra400")));
     assert_eq!(scene(&scenes(&loyal), "Your film personality").lines[0].label, "The Regular");
+    // A camera or a paper named on a handful of frames is no companion and no signature.
+    let mut few = full();
+    few.frames.bodies = vec![("Leica M6".into(), 1)];
+    few.frames.papers = vec![("oni-standard".into(), 3)];
+    few.darkroom.favourite_preset = None;
+    let story = scenes(&few);
+    assert!(!eyebrows(&story).contains(&"Your faithful companion"));
+    assert_eq!(scene(&story, "Your signature look").figure, "", "the paper keeps its line, not the scene's headline");
+    assert!(!scene(&story, "My 2026 on film").lines.iter().any(|l| l.label == "Camera"));
+    // Twin: the full year's camera, on 310 frames, is told.
+    assert!(eyebrows(&scenes(&full())).contains(&"Your faithful companion"));
 }
