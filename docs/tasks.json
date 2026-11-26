@@ -13621,5 +13621,12 @@
     "title": "The source files' ceilings: the entries of files gone or under the limit dropped, the others at their size today",
     "status": "done",
     "detail": "architecture.rs still listed oni-settings/src/json.rs and tests/window/extended.rs, both gone, and editors/mod.rs, now 369 lines; decode's swift_checks (466 -> 460) and pipeline's (728 -> 722) come down to their size. The files other streams may grow before the freeze (editors/tests.rs, codec_checks.rs) keep theirs. Proof: the architecture check and its twins green."
+  },
+  {
+    "id": 4052,
+    "type": "test",
+    "title": "The full check and the lint at the end of the film effects' plates (#3868-#3870)",
+    "status": "done",
+    "detail": "167 of 169 binaries green at load 70: the window checks stopped at their 30-minute limit, their 302 checks green run alone after; stock_files fails in parallel and passes alone and on one thread, its two tests each installing a global catalogue (a race already there, to be fixed apart). The lint refused a mem::replace on an Option in Pipeline::grain_plate_asked: Option::replace."
   }
 ]

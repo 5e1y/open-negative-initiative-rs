@@ -82,7 +82,7 @@ impl Pipeline {
         let key = (k.seed, k.radius.to_bits(), k.silver, (full.0.to_bits(), full.1.to_bits()));
         let kept = self.grain_plate.as_ref().is_some_and(|(kept, _)| *kept == key);
         let asked = (key, film, k.footprint().to_bits());
-        let again = std::mem::replace(&mut self.grain_asked, Some(asked)).is_some_and(|(last, on, at)| last == key && on == film && at != asked.2);
+        let again = self.grain_asked.replace(asked).is_some_and(|(last, on, at)| last == key && on == film && at != asked.2);
         match kept || again {
             true => self.grain_plate(graph, k, full, base).map(Some),
             false => Ok(None),
