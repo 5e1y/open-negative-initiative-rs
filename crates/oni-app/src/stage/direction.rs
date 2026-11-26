@@ -1,7 +1,7 @@
 //! The welcome's direction: one gift on its screen, still and wrapped, then coming undone where it stands,
 //! under a camera that barely moves. One function of the cue, so a check steps the film frame by frame.
 
-use super::ease::{glide, mix, span};
+use super::ease::{glide, span};
 use super::unwrap::{self, opened, untied};
 use super::{Frame, Gift};
 
@@ -39,18 +39,26 @@ pub(super) struct Stand {
     pub foil: f32,
 }
 
-/// The four gifts: a tall silver one, a low wide copper one, the huge gold one, the holographic mystery.
+/// The four gifts at the scale their words tell: two small ones, a tall silver and a low wide copper, the huge
+/// gold one that fills the picture's height, the holographic mystery between.
 pub(super) const STAND: [Stand; 4] = [
-    Stand { x: 0.0, z: 0.0, size: 0.78, tall: 0.98, turn: 0.38, foil: 0.0 },
-    Stand { x: 0.0, z: 0.0, size: 0.95, tall: 0.5, turn: -0.3, foil: 1.0 },
-    Stand { x: 0.0, z: 0.0, size: 2.1, tall: 0.72, turn: 0.34, foil: 2.0 },
-    Stand { x: 0.0, z: 0.0, size: 0.95, tall: 0.9, turn: -0.42, foil: 3.0 },
+    Stand { x: 0.0, z: 0.0, size: 0.62, tall: 0.98, turn: 0.38, foil: 0.0 },
+    Stand { x: 0.0, z: 0.0, size: 0.78, tall: 0.5, turn: -0.3, foil: 1.0 },
+    Stand { x: 0.0, z: 0.0, size: 2.05, tall: 0.72, turn: 0.34, foil: 2.0 },
+    Stand { x: 0.0, z: 0.0, size: 1.15, tall: 0.9, turn: -0.42, foil: 3.0 },
 ];
 /// The lid's half-height, in half-widths, as the shader's.
 pub(super) const LID: f32 = 0.2;
-/// How far the camera stands, in the gift's heights, and how much of the picture's height the gift takes: the
-/// huge one more than the others.
-const FAR: [f32; 4] = [8.4, 8.4, 6.4, 8.0];
+/// One camera for every gift, on one floor, so a difference of size reads as one: where it stands, where it looks.
+const EYE: [f32; 3] = [-5.2, 4.0, 15.2];
+const AIM: [f32; 3] = [0.0, 2.35, 0.0];
+/// Once its words come, a gift fades away in this many seconds and its demo takes the stage.
+const FADE: f32 = 0.6;
+
+/// How much of the stage's light a gift opened `since` seconds ago keeps: whole until its words come, then none.
+pub fn kept(gift: usize, since: Option<f32>) -> f32 {
+    since.map_or(1.0, |t| 1.0 - glide(span(t, unwrap::title(gift), unwrap::title(gift) + FADE)))
+}
 
 fn gift(i: usize, cue: &Cue) -> Gift {
     let s = STAND[i];
@@ -72,25 +80,18 @@ fn gift(i: usize, cue: &Cue) -> Gift {
     Gift { place: [s.x, 0.0, s.z, s.size], pose: [turn, lift, s.foil, 1.0], lid: parts.lid, tie, bow: [0.0; 4], shape: [s.tall, parts.open, parts.seam, 0.0] }
 }
 
-/// The picture at `cue`: the screen's gift alone in the middle, a little from above; the mystery, opened flat, from
-/// higher still.
+/// The picture at `cue`: the screen's gift alone in the middle, the same camera for each, fading once opened.
 pub fn frame(cue: &Cue) -> Frame {
     let Some(i) = cue.gift else {
         return Frame { view: [0.0, 0.0, cue.clock, 0.0], show: [0.0, 0.0, 0.0, cue.foot], ..Frame::default() };
     };
     let s = STAND[i];
-    let height = 2.0 * (s.tall + LID) * s.size + 0.5 * s.size;
-    let open = cue.since.map_or(0.0, |t| glide(span(t, unwrap::pop(i), unwrap::pop(i) + 1.4)));
-    let flat = if i == 3 { open } else { 0.0 };
-    let away = FAR[i] * height * mix(1.0, 1.35, flat);
-    let round = -0.35 + 0.05 * (cue.clock * 0.11).sin();
-    let rise = mix(0.45, 0.25, flat);
-    let eye = [s.x + away * round.sin(), mix(0.75, 1.5, flat) * height + 0.12 * away, s.z + away * round.cos()];
+    let drift = 0.25 * (cue.clock * 0.11).sin();
     let gifts = std::array::from_fn(|k| if k == i { gift(i, cue) } else { Gift::default() });
     Frame {
-        view: [0.0, 0.0, cue.clock, cue.shown],
-        eye: [eye[0], eye[1], eye[2], 2.3],
-        aim: [s.x, rise * height, s.z, 3.0 * s.size],
+        view: [0.0, 0.0, cue.clock, cue.shown * kept(i, cue.since)],
+        eye: [EYE[0] + drift, EYE[1], EYE[2], 2.3],
+        aim: [AIM[0], AIM[1], AIM[2], 3.0 * s.size.max(1.0)],
         light: [1.0, 1.0, 0.9, 1.0],
         lens: [0.0, 0.0, 0.0, 0.0],
         show: [0.0, 0.0, 0.0, cue.foot],

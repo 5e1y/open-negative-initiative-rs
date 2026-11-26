@@ -201,6 +201,7 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         let words = unwrap::title(gift);
         reel.play((unwrap::pop(gift) / 0.2).round() * 0.2, 0.2);
         reel.keep();
+        assert!(light(&reel, reel.gift()) > 3.0, "gift {gift} drawn where it stands");
         reel.play(((words + 1.2 - unwrap::pop(gift)) / 0.2).round() * 0.2, 0.2);
         assert!(help.get_may_go_on(), "gift {gift}: its words come, the way on opens");
         if gift == 3 {
@@ -211,7 +212,6 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         }
         reel.play(2.4, 0.2);
         reel.keep();
-        assert!(light(&reel, reel.gift()) > 3.0, "gift {gift} drawn where it stands");
         rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
         reel.play(0.8, 0.2);
         assert_eq!(help.get_welcome_page(), page + 1, "on past gift {gift} once opened");

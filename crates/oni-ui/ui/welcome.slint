@@ -44,6 +44,13 @@ export component WelcomeSheet inherits Sheet {
     property <length> middle: root.height * StageStyle.gift-share;
     property <length> side: (root.width - root.middle) / 2 - StageStyle.gap - 2 * Space.l;
     property <length> left: 2 * Space.l;
+    // Once its gift has gone, a screen's demo takes the stage left of the words, as large as the room lets it.
+    function demo-height(page: int, width: length) -> length {
+        page == 3 ? width * StageStyle.picture-shape + StageStyle.demo-cells : width * (page <= 2 ? StageStyle.window-shape : StageStyle.picture-shape)
+    }
+    function demo-width(page: int) -> length {
+        min(root.right - StageStyle.gap - root.left, page == 3 ? (root.room - 4 * Space.l - StageStyle.demo-cells) / StageStyle.picture-shape : (root.room - 4 * Space.l) / (page <= 2 ? StageStyle.window-shape : StageStyle.picture-shape))
+    }
     property <length> right: root.width / 2 + root.middle / 2 + StageStyle.gap;
     // On: the gift opened if it is still wrapped, else the next screen; the last screen's key enters the app.
     function onward() {
@@ -82,13 +89,17 @@ export component WelcomeSheet inherits Sheet {
             accessible-action-default => { Help.welcome-open(); }
             TouchArea { mouse-cursor: pointer; clicked => { Help.welcome-open(); } }
         }
+        // Where its words will come: which gift it is, and what to do.
+        // Clear of the gift, which the huge one is not of the words' column.
         if !root.opened && !root.last: VerticalLayout {
-            y: Help.gift-spot.y + Help.gift-spot.height + Space.l;
+            x: max(root.right, Help.gift-spot.x + Help.gift-spot.width + StageStyle.gap);
+            width: root.width - self.x - 2 * Space.l;
+            y: (root.room - self.preferred-height) / 2;
             height: self.preferred-height;
-            spacing: Space.xs;
+            spacing: Space.s;
             opacity: Help.stage-shown;
-            StageNote { text: root.tags[root.page - 1]; role: TextRole.title; }
-            StageNote { text: @tr("Click it or press Return to unwrap it."); tone: Tone.secondary; }
+            Headline { text: root.tags[root.page - 1]; }
+            StageText { text: @tr("Click it or press Return to unwrap it."); }
         }
         // The screens, one above the other, the scroll bringing each in.
         for screen in 4: Rectangle {
@@ -100,8 +111,8 @@ export component WelcomeSheet inherits Sheet {
             // The demo, left of the gift.
             DemoFrame {
                 x: root.left;
-                width: root.side;
-                height: page == 3 ? self.width * StageStyle.picture-shape + StageStyle.demo-cells : page <= 2 ? self.width * StageStyle.window-shape : self.width * StageStyle.picture-shape;
+                width: root.demo-width(page);
+                height: root.demo-height(page, self.width);
                 y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
                 shown: here ? root.words : 0;
                 // A small gift's film of the real app; its drawn scene where the film cannot be read.

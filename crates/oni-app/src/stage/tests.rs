@@ -16,15 +16,28 @@ fn a_screen_shows_its_gift_alone_and_tied_until_it_is_opened() {
 }
 
 #[test]
-fn the_gift_stands_in_the_middle_of_the_picture() {
-    for gift in 0..4 {
-        let shot = frame(&Cue::at(Some(gift), None));
-        let [x, y, w, h] = gift_spot(&shot, 1.6).expect("a gift on its screen");
-        let middle = (x + w / 2.0, y + h / 2.0);
-        assert!((middle.0 - 0.5).abs() < 0.08 && (middle.1 - 0.5).abs() < 0.2, "gift {gift} about the middle, {middle:?}");
-        assert!(h > 0.2 && h < 0.75, "gift {gift} neither lost nor cut, {h}");
-    }
-    assert!(gift_spot(&frame(&Cue::at(None, None)), 1.6).is_none(), "twin: no place on the message's screen");
+fn each_gift_stands_in_the_middle_at_the_size_its_words_tell() {
+    let height = |gift| {
+        let [x, y, w, h] = gift_spot(&frame(&Cue::at(Some(gift), None)), 1.6).expect("a gift on its screen");
+        assert!((x + w / 2.0 - 0.5).abs() < 0.08 && y >= 0.0 && y + h <= 0.95, "gift {gift} about the middle, whole: {x} {y} {w} {h}");
+        h
+    };
+    let sizes = [height(0), height(1), height(2), height(3)];
+    assert!(sizes[2] > 0.7, "the huge gift fills the picture's height: {sizes:?}");
+    assert!(sizes[0] < 0.35 && sizes[1] < 0.35, "the small ones small: {sizes:?}");
+    // Twin: the mystery between them and the huge one.
+    assert!(sizes[3] > sizes[0].max(sizes[1]) && sizes[3] < sizes[2] * 0.75, "the mystery between: {sizes:?}");
+    assert!(gift_spot(&frame(&Cue::at(None, None)), 1.6).is_none(), "no place on the message's screen");
+}
+
+#[test]
+fn an_opened_gift_fades_once_its_words_come() {
+    use super::direction::kept;
+    assert_eq!(kept(2, None), 1.0, "wrapped, whole");
+    assert_eq!(kept(2, Some(unwrap::title(2) - 0.1)), 1.0, "opening, whole");
+    // Twin: once its words have come, gone.
+    assert_eq!(kept(2, Some(unwrap::title(2) + 1.0)), 0.0);
+    assert_eq!(frame(&Cue::at(Some(2), Some(unwrap::length(2) + 1.0))).view[3], 0.0);
 }
 
 #[test]

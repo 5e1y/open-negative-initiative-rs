@@ -13964,5 +13964,12 @@
     "title": "The welcome's films framed close on what moves, the hand drawn reaching and pressing; the stage's threads return no value to drop",
     "status": "done",
     "detail": "welcome_films now looks where things happen: the gallery's tile under the hand and its flight into the editor, the Export key pressed and the photo onto the export's preview, Cancel and Back, then the Search Gear key, the search field, Add and Done, and the Kit with the body added; each gesture filmed as the hand reaches (weighted, 0.54 s) and presses (a ring at its tip). Crops follow the keys found by their names, so the script plays again over a moved layout. The Kit is read once before the film, so it opens on the person's own Kit. Frames 800 by 500 at quality 74: the two films weigh 3.8 MB. The films' decoding thread drops its send's result inside, as the stage's does (clippy's result_large_err). Checks: welcome_films, welcome_reel, welcome_card, design_system; help unit tests; architecture; clippy on oni-app."
+  },
+  {
+    "id": 3960,
+    "type": "feature",
+    "title": "The welcome's gifts at the size their words tell under one camera, each fading once opened so its demo takes the stage",
+    "status": "done",
+    "detail": "Owner's remarks: every gift looked the same size, and an opened gift should leave the stage to its feature. One camera and one floor for every screen; the gifts' own sizes tell the story: the two small ones under a third of the picture's height, the huge gold one above seven tenths, the mystery between (a direction test checks the shares). Before it is opened, the gift's name and what to do stand where its words will come, clear of the gift. Once its words come the gift fades in 0.6 s (direction::kept, the stills too) and the demo takes the stage left of the words, as large as the room allows; the words keep their place. Stills made again (welcome_stage --stills). Checks: stage unit tests (sizes, the fade, with twins), window checks welcome_reel, welcome_card, sheets, help, design_system; catalogue; clippy on oni-app."
   }
 ]

@@ -353,7 +353,7 @@ impl Ctl {
         help.set_welcome_page(play.page);
         help.set_welcome_unwrapped(i32::from(play.bits()));
         help.set_scroll(slot(play.from) + (slot(play.page) - slot(play.from)) * play.travelled(now, still));
-        help.set_stage_shown(cue.shown);
+        help.set_stage_shown(cue.shown * cue.gift.map_or(0.0, |i| direction::kept(i, cue.since)));
         help.set_gift_shown(cue.gift.map_or(-1, |i| i as i32));
         let since = gift_of(play.page).and_then(|i| play.opened[i]).map_or(-1.0, |o| (now - o).max(0.0));
         help.set_opened_time(since);
