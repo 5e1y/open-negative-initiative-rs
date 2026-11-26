@@ -108,6 +108,17 @@ fn main() {
     }).skip(2).collect();
     let pans: Vec<f64> = (1..=RUNS).map(|i| near(&mut e, &s, &at(-(i as f64) * canvas.0 / 10.0))).collect();
     println!("  100 %: first {first:.1} ms, Exposure notch {:.1} ms p50, pan {:.1} ms p50, {:.1} worst", median(notches), median(pans.clone()), pans.iter().cloned().fold(0.0, f64::max));
+    // A gesture's pan: lighter renders while the hand moves, then the sharp one it ends on.
+    let gesture = |dx: f64, coarse: bool| View { coarse, ..at(dx) };
+    let ended: Vec<f64> = (0..5).map(|i| {
+        let from = -(i as f64) * canvas.0 / 4.0;
+        near(&mut e, &s, &gesture(from, false));
+        for step in 1..=6 {
+            near(&mut e, &s, &gesture(from - f64::from(step) * canvas.0 / 24.0, true));
+        }
+        near(&mut e, &s, &gesture(from - canvas.0 / 4.0, false))
+    }).collect();
+    println!("  100 %: a gesture's sharp render after a quarter canvas pan {:.1} ms p50", median(ended));
     // The last pan's render against the same region rendered afresh, then against it a pixel over, which must differ.
     let last = at(-(RUNS as f64) * canvas.0 / 10.0);
     let (panned, _) = e.resident(&negative, &s, Some(&last)).unwrap();

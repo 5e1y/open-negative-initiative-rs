@@ -10,11 +10,17 @@ impl Engine {
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         let (image, region, placed) = self.composed(negative, settings, view)?;
         // A pan keeps the recipe: the last render's pixels the new region still covers are copied, the rest rendered.
-        let source = match (&self.fitted.shown, region) {
-            (Some((key, before)), Some(region)) if *key == image.key() => self.graph.materialise_over(&image, region, before).map_err(|e| e.to_string())?,
+        let key = image.key();
+        let before = self.fitted.shown.iter().find(|(k, _)| *k == key).map(|(_, s)| s.clone());
+        let source = match (before, region) {
+            (Some(before), Some(region)) => self.graph.materialise_over(&image, region, &before).map_err(|e| e.to_string())?,
             _ => self.one_texture(&image, region)?,
         };
-        self.fitted.shown = Some((image.key(), source.clone()));
+        self.fitted.shown.retain(|(k, _)| *k != key);
+        if self.fitted.shown.len() == SHOWN {
+            self.fitted.shown.remove(0);
+        }
+        self.fitted.shown.push((key, source.clone()));
         Ok((source, placed))
     }
 
@@ -207,6 +213,8 @@ const KEPT_WHOLE: f64 = 2.0;
 const MIN_HALF: usize = 64;
 /// The bases whose halvings are kept: the preview and the full frame, so neither evicts the other.
 const BASES: usize = 2;
+/// The canvas's renders kept for a pan: the lighter one a gesture shows and the sharp one it ends on.
+const SHOWN: usize = 2;
 
 /// The halvings of the bases the canvas reads, and the last whole reduction made from one.
 #[derive(Default)]
@@ -216,8 +224,8 @@ pub(crate) struct Fitting {
     /// The histogram's picture and Compare's before, each with the recipe it was made from.
     counted: Option<(u64, Source)>,
     before: Option<((u64, Option<Rect>), Source)>,
-    /// The canvas's last render and its recipe.
-    shown: Option<(u64, Source)>,
+    /// The canvas's last renders, each with its recipe.
+    shown: Vec<(u64, Source)>,
 }
 
 #[cfg(test)]
