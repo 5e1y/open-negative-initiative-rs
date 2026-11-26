@@ -13859,5 +13859,12 @@
     "title": "ONI_BENCH=motion never waits without end: it opens any tile the gallery lays and stops, naming the step, past 30 s",
     "status": "done",
     "detail": "It double-clicked the tile at a fixed place, which a gallery landed on its open photo far down never laid: it waited forever, logging the editor-to-gallery journey anew at each tick. It now takes any tile laid but the open photo's, records a journey once its tile is found, and a step whose window never comes ends the bench with motion: stalled, and why."
+  },
+  {
+    "id": 4014,
+    "type": "ui",
+    "title": "ONI_BENCH=screens takes the main screens at the smallest window, in the language spoken, from the app's own build",
+    "status": "done",
+    "detail": "The editor's three panes, the export, Settings, the gallery and Prepare the Roll at 1100 × 680, each taken off the window (take_snapshot) into ONI_SHOTS as <language>-<screen>.jpg: the app's build bundles its translations, which a debug build's interface lacks, so French and Spanish are judged there."
   }
 ]
