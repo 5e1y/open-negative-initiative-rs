@@ -26,6 +26,8 @@ export struct WrappedScene {
     unit: string,
     // The figure's size, in the frame's units.
     size: float,
+    // The figure stands at the frame's head, its words at the foot.
+    split: bool,
     headline: string,
     note: string,
     photos: [image],
@@ -68,6 +70,8 @@ export global WrappedStyle {
     out property <float> veiled: 22;
     out property <float> veil: 0.78;
     out property <float> veil-foot: 0.9;
+    // The same under the brand's band and a figure at the frame's head, which a photo may show through.
+    out property <float> veil-head: 0.55;
     // Where a print begins, under what a story's player lays over a frame's top.
     out property <float> room-top: 62;
     // The film's edges, each side: its band, and a perforation every 1/13 of a frame.
@@ -78,8 +82,9 @@ export global WrappedStyle {
     // A scene's margin each side, inside the bands, and the width it leaves.
     out property <float> pad: 34;
     out property <float> inner: root.frame-width - 2 * root.pad;
+    // The brand's band heads a frame, as a magazine's name its cover.
     out property <float> brand-height: 34;
-    out property <float> foot: root.safe-bottom - root.brand-height;
+    out property <float> head: root.safe-top + root.brand-height;
     // The mark's part of the logo's drawing, its left 66 of 246 units: the name beside it is set in the display face.
     out property <int> mark-clip: 66;
     // How bright the backdrop's light is behind a scene, and on the window around the strip.

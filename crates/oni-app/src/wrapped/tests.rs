@@ -134,13 +134,13 @@ fn a_full_year_tells_every_scene_in_order_each_on_a_photo_of_its_own() {
     assert_eq!((dust.count, dust.note.as_str(), dust.photos[0].as_str()), (Some(1_640), "on 120 frames; the dustiest took 164. Clean that scanner.", "/roll/D.NEF"));
     let look = scene(&story, "YOUR SIGNATURE LOOK");
     assert_eq!((look.figure.replace('\n', " ").as_str(), look.headline.as_str()), ("PORTRA WARM", "LAID ON 212 PHOTOS"));
-    assert_eq!(look.note, "grain on 12 photos  \u{b7}  300 photos cropped  \u{b7}  44 photos straightened", "no word of the halation no photo has, and three habits at most");
+    assert_eq!(look.note, "grain on 12 photos  \u{b7}  300 photos cropped", "no word of the halation no photo has, and two habits at most");
     let colours = scene(&story, "THE COLOURS OF YOUR YEAR");
     assert_eq!((colours.kind, colours.figure.replace('\n', " ").as_str(), colours.swatches.len()), (Kind::Palette, "A WARM YEAR", 2));
     assert_eq!(colours.photos, ["/roll/orange.NEF", "/roll/blue.NEF"], "each colour's slice is the photo nearest it");
     let clock = scene(&story, "TIME IN THE DARKROOM");
     assert_eq!((clock.count, clock.unit.as_str(), clock.figure.as_str()), (Some(162), " H", "162 H"));
-    assert_eq!(clock.note, "96 days at the desk  \u{b7}  9 in a row  \u{b7}  mostly around 22:00. We don't judge.");
+    assert_eq!(clock.note, "96 days at the desk  \u{b7}  9 in a row. We don't judge.");
     assert_eq!((scene(&story, "OUT INTO THE WORLD").count, scene(&story, "OUT INTO THE WORLD").note.as_str()), (Some(1_284), "Now post them."));
     let persona = scene(&story, "YOUR FILM PERSONALITY");
     assert_eq!((persona.figure.replace('\n', " ").as_str(), persona.headline.as_str()), ("THE NIGHT DEVELOPER", "You work when the house sleeps."));

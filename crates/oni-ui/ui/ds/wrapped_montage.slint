@@ -16,12 +16,14 @@ export component MosaicScene inherits Rectangle {
     property <length> between: 3 * root.u;
     property <length> left: WrappedStyle.band * root.u;
     property <length> cell: (root.width - 2 * self.left - (self.columns - 1) * self.between) / self.columns;
-    // The wall runs from the frame's top to the figure's foot.
-    property <length> cell-height: (column.figure-foot - (self.rows - 1) * self.between) / max(1, self.rows);
+    // The wall runs from the frame's top to where the veil under the foot's words is whole.
+    property <length> wall: column.words-top + WrappedStyle.veiled * root.u;
+    property <length> cell-height: (self.wall - (self.rows - 1) * self.between) / max(1, self.rows);
     Bleed {
         told: root.told;
-        veil-top: column.words-top - WrappedStyle.fade * root.u;
-        veil-foot: column.words-top + WrappedStyle.veiled * root.u;
+        u: root.u;
+        head-foot: column.head-foot;
+        words-top: column.words-top;
         for photo[i] in root.scene.photos: Rectangle {
             x: root.left + mod(i, root.columns) * (root.cell + root.between);
             y: floor(i / root.columns) * (root.cell-height + root.between);
@@ -42,8 +44,8 @@ export component MosaicScene inherits Rectangle {
     column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; accent: root.accent; }
 }
 
-// The year's colours: for each, a slice of the photo nearest it, as wide as the colour's share, from the
-// frame's top down to a block of the colour itself, over the words.
+// The year's colours: for each, a slice of the photo nearest it, as wide as the colour's share, standing
+// on a block of the colour itself, between the brand's band and the words.
 export component PaletteScene inherits Rectangle {
     in property <WrappedScene> scene;
     in property <length> u;
@@ -52,9 +54,9 @@ export component PaletteScene inherits Rectangle {
     column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.scene.figure; accent: root.accent; }
     HorizontalLayout {
         x: WrappedStyle.band * root.u;
-        y: 0;
+        y: column.room-top + WrappedStyle.gap * root.u;
         width: parent.width - 2 * self.x;
-        height: column.words-top - WrappedStyle.gap * root.u;
+        height: column.room-height - WrappedStyle.gap * root.u;
         spacing: 3 * root.u;
         for swatch[i] in root.scene.swatches: Rectangle {
             property <float> risen: WrappedStyle.rise(root.told, 0.05 + i * 0.08, 0.4 + i * 0.08);

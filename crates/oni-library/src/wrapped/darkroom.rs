@@ -145,12 +145,6 @@ impl Darkroom {
         let morning: usize = self.by_hour[5..9].iter().sum();
         if all == 0 { 0.0 } else { morning as f64 / all as f64 }
     }
-
-    /// The hour most gestures were made at, the earlier on a tie.
-    pub fn favourite_hour(&self) -> Option<u32> {
-        let (hour, count) = self.by_hour.iter().enumerate().fold((0, 0), |best, (h, n)| if *n > best.1 { (h, *n) } else { best });
-        (count > 0).then_some(hour as u32)
-    }
 }
 
 #[cfg(test)]
@@ -238,7 +232,6 @@ mod tests {
         assert_eq!(year.busiest_day, Some((6, 3, 2)));
         assert!((year.night_share() - 4.0 / 7.0).abs() < 1e-9);
         assert!((year.morning_share() - 2.0 / 7.0).abs() < 1e-9);
-        assert_eq!(year.favourite_hour(), Some(23));
         // Twin: a day skipped breaks the run.
         assert_eq!(longest_run(&BTreeSet::from([1, 2, 4, 5, 6])), 3);
         assert_ne!(longest_run(&BTreeSet::from([1, 3, 5])), 3);

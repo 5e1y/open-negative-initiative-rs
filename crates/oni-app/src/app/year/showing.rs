@@ -240,6 +240,7 @@ fn face(scene: &Scene) -> WrappedScene {
         count: scene.count.unwrap_or(0) as i32,
         unit: scene.unit.as_str().into(),
         size: scene.size,
+        split: scene.split(),
         headline: scene.headline.as_str().into(),
         note: oni_i18n::spoken(&scene.note).into(),
         photos: ModelRc::new(VecModel::from(vec![Image::default(); scene.photos.len()])),

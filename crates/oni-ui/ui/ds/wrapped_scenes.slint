@@ -1,6 +1,6 @@
-// The year on film's scenes on one photo: it fills the frame under the scene's giant figure, or is laid
-// whole as a print over it. Each scene's words stand on the brand's band; laid on a frame 360 units wide,
-// it comes in as `told` runs 0 to 1.
+// The year on film's scenes on one photo, laid as a magazine's cover: the photo fills the frame, the
+// brand's band heads it, the giant figure under the band and the words at the foot leave the photo clear
+// between them. Laid on a frame 360 units wide, a scene comes in as `told` runs 0 to 1.
 import { WrappedScene, WrappedStyle, Print, Display, Words, LineRow } from "wrapped_parts.slint";
 
 // The small line over a scene's figure, saying what it counts: a tag in the scene's ink, read on any photo.
@@ -20,8 +20,9 @@ component Eyebrow inherits HorizontalLayout {
             padding-bottom: 3 * root.u;
             Display {
                 u: root.u;
-                size: 11;
+                size: 11.5;
                 text: root.text;
+                wrap: no-wrap;
                 color: WrappedStyle.ground;
                 letter-spacing: 0.6 * root.u;
             }
@@ -29,57 +30,81 @@ component Eyebrow inherits HorizontalLayout {
     }
 }
 
-// A scene's column: standing on the brand's band, inside a story's safe area, the eyebrow, the giant
-// figure in the photo's own ink, the bold words and the line with a wink; over them, the room its
-// photos take, whatever the words' lines.
+// The scene's giant figure or word, in its photo's own ink, landing with a blow.
+component Figure inherits Display {
+    in property <float> told: 1;
+    wrap: no-wrap;
+    opacity: WrappedStyle.rise(root.told, 0.14, 0.24);
+    transform-scale: WrappedStyle.slam(root.told, 0.14, 0.4);
+    transform-origin: { x: 0px, y: self.height };
+}
+
+// A scene's words inside a story's safe area. `split`, the tag and the figure stand at the head, under
+// the brand's band, the bold words and the line with a wink at the foot; else all stand at the foot.
+// Between the two lies the room a print takes, whatever the words' lines.
 export component Column inherits Rectangle {
     in property <WrappedScene> scene;
     in property <length> u;
     in property <float> told: 1;
     in property <string> figure-text;
     in property <color> accent;
-    // The figure's size, where a scene sets it smaller than its own.
-    in property <float> size: root.scene.size;
+    property <bool> split: root.scene.split;
     property <length> pad: WrappedStyle.pad * root.u;
-    property <length> top: WrappedStyle.safe-top * root.u;
+    property <length> top: (WrappedStyle.head + WrappedStyle.gap) * root.u;
     out property <length> room-left: root.pad;
     out property <length> room-width: WrappedStyle.inner * root.u;
-    // The photos' room runs from under the film's edge print, behind what a story's player lays over
-    // its top, down to the words.
-    out property <length> room-top: WrappedStyle.room-top * root.u;
+    // Where the head's words end and the foot's begin.
+    out property <length> head-foot: root.top + under.y;
     out property <length> words-top: root.top + over.y;
-    out property <length> figure-foot: root.top + foot.y;
+    out property <length> room-top: root.head-foot + (root.split ? WrappedStyle.gap * root.u : 0);
     out property <length> room-height: root.words-top - WrappedStyle.gap * root.u - root.room-top;
     VerticalLayout {
         x: root.pad;
         y: root.top;
         width: root.room-width;
-        height: (WrappedStyle.foot - WrappedStyle.gap) * root.u - root.top;
-        alignment: end;
+        alignment: start;
         spacing: 7 * root.u;
-        // Where the words begin, once every line of theirs is laid.
-        over := Rectangle { height: 0; }
-        if root.scene.eyebrow != "": Eyebrow {
+        if root.split && root.scene.eyebrow != "": Eyebrow {
             u: root.u;
             told: root.told;
             text: root.scene.eyebrow;
             accent: root.accent;
         }
-        Display {
+        if root.split: Figure {
             u: root.u;
-            size: root.size;
+            told: root.told;
+            size: root.scene.size;
             text: root.figure-text;
             color: root.accent;
-            wrap: no-wrap;
-            opacity: WrappedStyle.rise(root.told, 0.14, 0.24);
-            transform-scale: WrappedStyle.slam(root.told, 0.14, 0.4);
-            transform-origin: { x: 0px, y: self.height };
         }
-        // Where the figure ends.
-        foot := Rectangle { height: 0; }
+        // Where the head's words end.
+        under := Rectangle { height: 0; }
+    }
+    VerticalLayout {
+        x: root.pad;
+        y: root.top;
+        width: root.room-width;
+        height: WrappedStyle.safe-bottom * root.u - root.top;
+        alignment: end;
+        spacing: 7 * root.u;
+        // Where the foot's words begin, once every line of theirs is laid.
+        over := Rectangle { height: 0; }
+        if !root.split && root.scene.eyebrow != "": Eyebrow {
+            u: root.u;
+            told: root.told;
+            text: root.scene.eyebrow;
+            accent: root.accent;
+        }
+        if !root.split: Figure {
+            u: root.u;
+            told: root.told;
+            size: root.scene.size;
+            text: root.figure-text;
+            color: root.accent;
+        }
         if root.scene.headline != "": Display {
             u: root.u;
-            size: 21;
+            size: 22;
             text: root.scene.headline;
             opacity: WrappedStyle.rise(root.told, 0.34, 0.54);
         }
@@ -92,24 +117,30 @@ export component Column inherits Rectangle {
     }
 }
 
-// What fills a frame under its words: the photos, exposed in a white flash, and the veil that lets the
-// words be read, from `veil-top` down to `veil-foot` and on to the frame's foot.
+// What fills a frame under its words: the photos, exposed in a white flash, and the veils that let the
+// words be read: one from the frame's head down to `head-foot`, one rising from `words-top` to the foot.
 export component Bleed inherits Rectangle {
     in property <float> told: 1;
-    in property <length> veil-top;
-    in property <length> veil-foot;
+    in property <length> u;
+    in property <length> head-foot;
+    in property <length> words-top;
     clip: true;
     Rectangle {
         opacity: WrappedStyle.rise(root.told, 0, 0.16);
         @children
     }
     Rectangle {
-        y: root.veil-top;
-        height: root.veil-foot - self.y;
+        y: 0;
+        height: root.head-foot + WrappedStyle.fade * root.u;
+        background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(WrappedStyle.veil-head) 0%, WrappedStyle.ground.with-alpha(0) 100%);
+    }
+    Rectangle {
+        y: root.words-top - WrappedStyle.fade * root.u;
+        height: (WrappedStyle.fade + WrappedStyle.veiled) * root.u;
         background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(0) 0%, WrappedStyle.ground.with-alpha(WrappedStyle.veil) 100%);
     }
     Rectangle {
-        y: root.veil-foot;
+        y: root.words-top + WrappedStyle.veiled * root.u;
         height: parent.height - self.y;
         background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(WrappedStyle.veil) 0%, WrappedStyle.ground.with-alpha(WrappedStyle.veil-foot) 100%);
     }
@@ -120,8 +151,8 @@ export component Bleed inherits Rectangle {
     }
 }
 
-// One photo and the scene's words, and a summary's lines under them. The photo fills the frame, the words
-// laid over it; `whole`, it is laid as a print in the room above them instead.
+// One photo and the scene's words, and a summary's lines under them. The photo fills the frame; `whole`,
+// it is laid as a print in the room between the words instead.
 export component HeroScene inherits Rectangle {
     in property <WrappedScene> scene;
     in property <length> u;
@@ -137,8 +168,9 @@ export component HeroScene inherits Rectangle {
     property <float> ratio: self.photo.width > 0 ? self.photo.height / self.photo.width : 0.667;
     if root.has-photo && !root.whole: Bleed {
         told: root.told;
-        veil-top: column.words-top - WrappedStyle.fade * root.u;
-        veil-foot: column.words-top + WrappedStyle.veiled * root.u;
+        u: root.u;
+        head-foot: column.head-foot;
+        words-top: column.words-top;
         Image {
             width: parent.width * (1 + 0.08 * root.drift);
             height: parent.height * (1 + 0.08 * root.drift);
@@ -169,7 +201,7 @@ export component HeroScene inherits Rectangle {
         width: min(column.room-width, column.room-height / root.ratio);
         height: self.width * root.ratio;
         x: column.room-left + (column.room-width - self.width) / 2;
-        y: column.room-top + column.room-height - self.height + (1 - WrappedStyle.rise(root.told, 0, 0.3)) * 26 * root.u;
+        y: column.room-top + (column.room-height - self.height) / 2 + (1 - WrappedStyle.rise(root.told, 0, 0.3)) * 26 * root.u;
         tilt: (root.turned ? 2deg : -2deg) * WrappedStyle.rise(root.told, 0, 0.35);
         shown: WrappedStyle.rise(root.told, 0, 0.16);
         Rectangle {

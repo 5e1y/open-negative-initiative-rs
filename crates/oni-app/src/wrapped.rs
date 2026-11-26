@@ -31,7 +31,7 @@ pub const SWATCHES: usize = 5;
 /// The gold medals a frame shows, three rows of two; the lines its summary holds; the habits a look's note tells.
 pub const GOLD_SHOWN: usize = 6;
 pub const SUMMARY_LINES: usize = 4;
-pub const HABITS: usize = 3;
+pub const HABITS: usize = 2;
 
 /// How a scene is laid on its frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -78,6 +78,14 @@ pub struct Scene {
     pub photos: Vec<String>,
     pub lines: Vec<Line>,
     pub swatches: Vec<([u8; 3], f32)>,
+}
+
+impl Scene {
+    /// A figure of one line stands at the head of its frame, its words at the foot, the photo clear
+    /// between them; one broken over several lines, or told over a print, stands with its words.
+    pub fn split(&self) -> bool {
+        self.kind != Kind::Print && !self.figure.contains('\n')
+    }
 }
 
 pub fn scenes(year: &Year) -> Vec<Scene> {
@@ -169,9 +177,6 @@ pub fn scenes(year: &Year) -> Vec<Scene> {
         let mut notes = vec![counted(trn("{count} day at the desk", "{count} days at the desk", d.days as u64), d.days)];
         if d.streak > 1 {
             notes.push(tr!("{count} in a row", count = figure(d.streak)));
-        }
-        if let Some(hour) = d.favourite_hour() {
-            notes.push(tr!("mostly around {hour}:00", hour = hour));
         }
         let wink = if d.night_share() >= NIGHT { format!(". {}", tr("We don't judge.")) } else { String::new() };
         let unit = upper(&tr("{count} h").replace("{count}", ""));
