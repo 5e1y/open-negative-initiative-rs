@@ -29,6 +29,15 @@ pub struct Frame {
     pub straightened: bool,
 }
 
+/// One photo standing for each thing the year names: its busiest month, its film, its longest roll, its camera.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Picks {
+    pub month: Option<String>,
+    pub stock: Option<String>,
+    pub roll: Option<String>,
+    pub body: Option<String>,
+}
+
 /// Names with their counts, the most counted first; a tie keeps the name's own order.
 pub type Ranked = Vec<(String, usize)>;
 
@@ -65,6 +74,7 @@ pub struct Frames {
     pub busiest_day: Option<(u32, u32, usize)>,
     /// The year's frames by date, each path with its fingerprint: what the palette and the backdrops read.
     pub paths: Vec<(String, String)>,
+    pub picks: Picks,
 }
 
 fn ranked(counts: HashMap<String, usize>) -> Ranked {
@@ -81,6 +91,7 @@ impl Frames {
         let mut out = Frames { count: mine.len(), ..Default::default() };
         let (mut stocks, mut papers, mut bodies, mut lenses) = (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new());
         let mut rolls = HashMap::<&str, (&str, usize)>::new();
+        let mut longest = None::<&str>;
         let mut days = HashMap::<u32, (u32, u32, usize)>::new();
         for (frame, at) in &mine {
             out.by_month[(at.month.clamp(1, 12) - 1) as usize] += 1;
@@ -119,12 +130,26 @@ impl Frames {
         }
         out.gold.reverse();
         out.rolls = rolls.len();
-        out.longest_roll = rolls.into_iter().min_by(|a, b| b.1.1.cmp(&a.1.1).then(a.0.cmp(b.0))).map(|(_, (name, n))| (name.to_string(), n));
+        if let Some((id, (name, n))) = rolls.into_iter().min_by(|a, b| b.1.1.cmp(&a.1.1).then(a.0.cmp(b.0))) {
+            (longest, out.longest_roll) = (Some(id), Some((name.to_string(), n)));
+        }
         out.busiest_day = days.into_iter().min_by(|a, b| b.1.2.cmp(&a.1.2).then(a.0.cmp(&b.0))).map(|(_, d)| d);
         (out.stocks, out.papers, out.bodies, out.lenses) = (ranked(stocks), ranked(papers), ranked(bodies), ranked(lenses));
         out.first = mine.first().map(|(f, _)| f.path.clone());
         out.last = mine.last().map(|(f, _)| f.path.clone());
         out.paths = mine.iter().map(|(f, _)| (f.path.clone(), f.fingerprint.clone())).collect();
+        // The photo that stands for a group: its latest gold, else the one in its middle.
+        let pick = |of: &dyn Fn(&Frame, &Moment) -> bool| {
+            let group: Vec<&Frame> = mine.iter().filter(|(f, m)| of(f, m)).map(|(f, _)| *f).collect();
+            group.iter().rev().find(|f| f.medal == Medal::Gold).or(group.get(group.len() / 2)).map(|f| f.path.clone())
+        };
+        let (month, stock, body) = (out.busiest_month().map(|(m, _)| m), out.stocks.first().map(|(s, _)| s.clone()), out.bodies.first().map(|(b, _)| b.clone()));
+        out.picks = Picks {
+            month: pick(&|_, m| Some(m.month) == month),
+            stock: pick(&|f, _| stock.is_some() && f.stock == stock),
+            roll: pick(&|f, _| longest.is_some() && f.roll.as_ref().map(|(id, _)| id.as_str()) == longest),
+            body: pick(&|f, _| body.is_some() && f.body.as_deref().map(str::trim) == body.as_deref()),
+        };
         out
     }
 
@@ -181,6 +206,14 @@ mod tests {
         assert_eq!((frames.cropped, frames.straightened, frames.grained, frames.haloed), (1, 1, 1, 1));
         assert_eq!((frames.first.as_deref(), frames.last.as_deref()), (Some("/a"), Some("/c")), "the same day reads by path");
         assert_eq!(frames.paths.len(), 5);
+        // Each thing named has its photo: the group's gold, else the one in its middle.
+        let picks = &frames.picks;
+        assert_eq!(picks.month.as_deref(), Some("/b"), "March's gold");
+        assert_eq!(picks.stock.as_deref(), Some("/b"), "Portra's gold, over /a and /d");
+        assert_eq!(picks.roll.as_deref(), Some("/b"), "Lisbon's");
+        assert_eq!(picks.body.as_deref(), Some("/a"), "the only frame naming the FM2");
+        let plain: Vec<Frame> = year().into_iter().map(|f| Frame { medal: Medal::None, ..f }).collect();
+        assert_eq!(Frames::build(&plain, 2026, Moment::utc).picks.month.as_deref(), Some("/b"), "twin: no gold, the middle of March's three");
         // Twin: another year holds the old frame alone, its gold with it.
         let before = Frames::build(&year(), 2025, Moment::utc);
         assert_eq!((before.count, before.gold.as_slice()), (1, ["/old".to_string()].as_slice()));

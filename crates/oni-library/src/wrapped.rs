@@ -8,7 +8,7 @@ pub mod palette;
 pub mod persona;
 
 pub use darkroom::{Darkroom, GOLD, SESSION_BREAK};
-pub use frames::{Frame, Frames};
+pub use frames::{Frame, Frames, Picks};
 pub use palette::Palette;
 pub use persona::{Persona, Trait};
 
@@ -62,13 +62,17 @@ pub struct Year {
     pub darkroom: Darkroom,
     pub frames: Frames,
     pub palette: Palette,
+    /// For each of the palette's swatches, the photo nearest it.
+    pub colours: Vec<String>,
     pub persona: Persona,
 }
 
 impl Year {
-    pub fn new(year: i32, darkroom: Darkroom, frames: Frames, palette: Palette) -> Year {
+    /// `read` names the photos the palette's tones were read off, in the tones' order.
+    pub fn new(year: i32, darkroom: Darkroom, frames: Frames, palette: Palette, read: &[String]) -> Year {
         let persona = Persona::of(&darkroom, &frames);
-        Year { year, darkroom, frames, palette, persona }
+        let colours = palette.picks.iter().filter_map(|i| read.get(*i).cloned()).collect();
+        Year { year, darkroom, frames, palette, colours, persona }
     }
 
     /// Nothing worth telling: no frame dated in the year and no gesture made in it.

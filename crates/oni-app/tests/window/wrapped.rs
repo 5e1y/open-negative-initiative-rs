@@ -89,23 +89,24 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.settle();
     println!("shot {}", rig.shot("wrapped-title").display());
     let story = eyebrows(&wrapped);
-    let mine = format!("MY {year} ON FILM");
     assert_eq!(
         story,
-        ["", "THIS YEAR", "YOUR BUSIEST MONTH", "THE ONLY THING I SEE IS GOLD", "YOUR MOST EDITED PHOTO", "YOUR HANDS KNEW THE WAY", "YOUR SIGNATURE LOOK", "YOUR FILM PERSONALITY", mine.as_str(), "See you next year"]
+        ["", "THIS YEAR", "YOUR BUSIEST MONTH", "THE ONLY THING I SEE IS GOLD", "YOUR MOST EDITED PHOTO", "YOUR HANDS KNEW THE WAY", "YOUR SIGNATURE LOOK", "YOUR FILM PERSONALITY", "MY YEAR ON FILM", ""]
     );
     let scene = |eyebrow: &str| {
         let scenes = wrapped.get_scenes();
         (0..scenes.row_count()).filter_map(|i| scenes.row_data(i)).find(|c| c.eyebrow == eyebrow).unwrap()
     };
     let lines = |eyebrow: &str| scene(eyebrow).lines.iter().map(|l| (l.label.to_string(), l.value.to_string())).collect::<Vec<_>>();
-    assert_eq!((scene("THIS YEAR").count, scene("THIS YEAR").caption.as_str(), scene("THIS YEAR").note.as_str()), (3, "frames brought to light", "3 colour negatives"));
-    assert_eq!(scene("YOUR BUSIEST MONTH").bars.row_count(), 12);
+    let flat = |eyebrow: &str| scene(eyebrow).figure.replace('\n', " ");
+    let this_year = scene("THIS YEAR");
+    assert_eq!((this_year.count, this_year.headline.as_str(), this_year.note.as_str()), (3, "FRAMES BROUGHT TO LIGHT", "3 colour negatives"));
+    assert!(scene("YOUR BUSIEST MONTH").headline.contains("FRAMES"), "the month's frames are its headline");
     assert_eq!((scene("YOUR MOST EDITED PHOTO").photos.row_count(), scene("THE ONLY THING I SEE IS GOLD").photos.row_count()), (1, 1));
-    assert!(lines("YOUR HANDS KNEW THE WAY").iter().any(|(label, _)| label == "Lighting"));
-    assert_eq!(scene("YOUR SIGNATURE LOOK").figure.as_str(), "Portra warm");
-    assert!(lines("YOUR SIGNATURE LOOK").contains(&("Balance".to_string(), "pressed 1 times".to_string())));
-    assert_eq!(lines(&mine).first(), Some(&("Frames".to_string(), "3".to_string())));
+    assert!(flat("YOUR HANDS KNEW THE WAY").contains("LIGHTING") && scene("YOUR HANDS KNEW THE WAY").headline.starts_with("MOVED "));
+    assert_eq!(flat("YOUR SIGNATURE LOOK"), "PORTRA WARM");
+    assert!(scene("YOUR SIGNATURE LOOK").note.contains("Balance pressed 1 times"));
+    assert_eq!(lines("MY YEAR ON FILM").first(), Some(&("FRAMES".to_string(), "3".to_string())));
     assert_eq!(wrapped.invoke_counted(1_284).as_str(), "1,284");
     rig.key(&key(Key::Return));
     assert_eq!(wrapped.get_index(), 1);
@@ -159,13 +160,13 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
         let info = decoder.info().unwrap();
         assert_eq!((info.width, info.height), (1080, 1920), "a story's picture");
         let at = |x: usize, y: usize| &pixels[(y * 1080 + x) * 3..(y * 1080 + x) * 3 + 3];
-        // The strip's rebate above and under, the frame between, to the card's last row: no window's
-        // worth left black. The frame is lighter than the film, and both than the black of a hole.
+        // The film's edge is lit at the card's head by the scene's photo and darker at its foot, under the
+        // veil: no window's worth of black above.
         let lit = |p: &[u8]| p.iter().map(|c| u32::from(*c)).sum::<u32>();
-        let (film, frame, foot) = (lit(at(6, 8)), lit(at(6, 900)), lit(at(6, 1912)));
-        assert!(film > 30 && foot > 30 && frame > film, "card {}: film {film}, frame {frame}, foot {foot}", i + 1);
-        // The brand's band lies inside a story's safe area, above its last 14 %: the mark's ink is there.
-        let band = (1500..1640).flat_map(|y| (80..400).map(move |x| (x, y))).filter(|(x, y)| lit(at(*x, *y)) > 450).count();
+        let (head, foot) = (lit(at(6, 8)), lit(at(6, 1912)));
+        assert!(head > 30 && head > foot, "card {}: head {head}, foot {foot}", i + 1);
+        // The brand's band lies inside a story's safe area, above its last 20 %: the mark's ink is there.
+        let band = (1440..1530).flat_map(|y| (80..400).map(move |x| (x, y))).filter(|(x, y)| lit(at(*x, *y)) > 450).count();
         assert!(band > 200, "card {}: ONI's mark, {band} pixels of its ink", i + 1);
         std::fs::copy(path, rig.shots.join(format!("wrapped-card-{:02}.jpg", i + 1))).unwrap();
     }

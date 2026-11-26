@@ -18,7 +18,8 @@ pub fn year(year: i32, mut frames: Vec<Frame>, support: &Path) -> Year {
         }
     }
     let frames = Frames::build(&frames, year, Moment::local);
-    let palette = Palette::of(&gather::tones(support, &frames.paths), super::SWATCHES);
+    let (read, tones) = gather::tones(support, &frames.paths);
+    let palette = Palette::of(&tones, super::SWATCHES);
     let mut by_hour = [0; 24];
     for (hour, count) in [(9, 40), (10, 60), (14, 80), (15, 70), (20, 160), (21, 320), (22, 410), (23, 380), (0, 150), (1, 40)] {
         by_hour[hour] = count;
@@ -41,5 +42,5 @@ pub fn year(year: i32, mut frames: Vec<Frame>, support: &Path) -> Year {
         streak: 9,
         busiest_day: Some((3, 14, 420)),
     };
-    Year::new(year, darkroom, frames, palette)
+    Year::new(year, darkroom, frames, palette, &read)
 }

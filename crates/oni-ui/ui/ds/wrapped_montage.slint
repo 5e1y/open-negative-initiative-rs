@@ -1,0 +1,77 @@
+// The year on film's scenes on several photos, each filling its frame under the words: a wall of the
+// year's gold, and the year's colours as slices of the photos nearest each.
+import { WrappedScene, WrappedStyle } from "wrapped_parts.slint";
+import { Column, Bleed } from "wrapped_scenes.slint";
+
+// A wall of photos, two across, from one edge of the film to the other.
+export component MosaicScene inherits Rectangle {
+    in property <WrappedScene> scene;
+    in property <length> u;
+    in property <float> told: 1;
+    in property <float> drift;
+    in property <string> figure-text;
+    in property <color> accent;
+    property <int> columns: 2;
+    property <int> rows: ceil(root.scene.photos.length / self.columns);
+    property <length> between: 3 * root.u;
+    property <length> left: WrappedStyle.band * root.u;
+    property <length> cell: (root.width - 2 * self.left - (self.columns - 1) * self.between) / self.columns;
+    // The wall runs from the frame's top to the figure's foot.
+    property <length> cell-height: (column.figure-foot - (self.rows - 1) * self.between) / max(1, self.rows);
+    Bleed {
+        told: root.told;
+        veil-top: column.words-top - WrappedStyle.fade * root.u;
+        veil-foot: column.words-top + WrappedStyle.veiled * root.u;
+        for photo[i] in root.scene.photos: Rectangle {
+            x: root.left + mod(i, root.columns) * (root.cell + root.between);
+            y: floor(i / root.columns) * (root.cell-height + root.between);
+            width: root.cell;
+            height: root.cell-height;
+            clip: true;
+            opacity: WrappedStyle.rise(root.told, i * 0.05, 0.2 + i * 0.05);
+            Image {
+                width: parent.width * (1 + 0.08 * root.drift);
+                height: parent.height * (1 + 0.08 * root.drift);
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                source: photo;
+                image-fit: cover;
+            }
+        }
+    }
+    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; accent: root.accent; }
+}
+
+// The year's colours: for each, a slice of the photo nearest it, as wide as the colour's share, from the
+// frame's top down to a block of the colour itself, over the words.
+export component PaletteScene inherits Rectangle {
+    in property <WrappedScene> scene;
+    in property <length> u;
+    in property <float> told: 1;
+    in property <color> accent;
+    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.scene.figure; accent: root.accent; }
+    HorizontalLayout {
+        x: WrappedStyle.band * root.u;
+        y: 0;
+        width: parent.width - 2 * self.x;
+        height: column.words-top - WrappedStyle.gap * root.u;
+        spacing: 3 * root.u;
+        for swatch[i] in root.scene.swatches: Rectangle {
+            property <float> risen: WrappedStyle.rise(root.told, 0.05 + i * 0.08, 0.4 + i * 0.08);
+            horizontal-stretch: swatch.share;
+            min-width: 22 * root.u;
+            clip: true;
+            Rectangle {
+                y: parent.height * (1 - parent.risen);
+                height: parent.height;
+                background: swatch.ink;
+                Image {
+                    width: parent.width;
+                    height: parent.height - 44 * root.u;
+                    source: root.scene.photos[i];
+                    image-fit: cover;
+                }
+            }
+        }
+    }
+}

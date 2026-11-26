@@ -4,7 +4,7 @@ import { Slider, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
 import { SurfaceStyle } from "../ui/ds/theme_surfaces.slint";
 import { Label, TextRole, Tone, Gap, Raised, Lift, Inset, Divider, TipCard, HelpCard, Badge, BadgeTone, Metal, LcdReadout,
-    Progress, StatusBar, Lamp, Popover, PopupPanel, PresetFace, PresetStyle, WrappedFrame, WrappedFilm, WrappedKind, Section, AskSheet, AskRole,
+    Progress, StatusBar, Lamp, Popover, PopupPanel, PresetFace, PresetStyle, WrappedFrame, WrappedKind, Section, AskSheet, AskRole,
     SheetStyle, Button } from "../ui/ds/ds.slint";
 import { Keycap, Outward, Inward, Depth } from "depth.slint";
 
@@ -375,27 +375,15 @@ export component MiscPage inherits Rectangle {
                 title: "WRAPPED FRAME";
                 source: "wrapped.slint";
                 Cell {
-                    caption: "a frame of the strip, on the year's black";
-                    Rectangle {
-                        background: #000000;
-                        width: film.width + 48px;
-                        height: film.height + 48px;
-                        film := WrappedFilm {
-                            x: 24px;
-                            y: 24px;
-                            u: 0.6px;
-                            number: 3;
-                            edge: "ONI 2026   SAFETY FILM";
-                            WrappedFrame {
-                                x: 8 * parent.u;
-                                y: 80 * parent.u;
-                                u: parent.u;
-                                hashtag: "#madewithoni";
-                                account: "@open.negative.initiative";
-                                scene: { kind: WrappedKind.bars, eyebrow: "YOUR BUSIEST MONTH", figure: "March", caption: "218 frames", bars: [0.2, 0.4, 1, 0.5, 0.3, 0.6, 0.7, 0.2, 0.1, 0.4, 0.3, 0.2], lit: 2, marks: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"] };
-                                counted(n) => { "\{n}" }
-                            }
-                        }
+                    caption: "a frame of the year, 9 by 16";
+                    WrappedFrame {
+                        u: 0.6px;
+                        number: 3;
+                        hashtag: "#madewithoni";
+                        account: "@open.negative.initiative";
+                        name: "ONI";
+                        scene: { kind: WrappedKind.hero, eyebrow: "YOUR BUSIEST MONTH", figure: "MARCH", size: 62, headline: "218 FRAMES", note: "March 14 alone holds 42." };
+                        counted(n) => { "\{n}" }
                     }
                 }
             }

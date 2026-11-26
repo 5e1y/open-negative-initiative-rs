@@ -13873,5 +13873,12 @@
     "title": "The faces named in the design system's tokens, which the catalogue knows name fonts, never words shown",
     "status": "done",
     "detail": "Type.family, Type.display and Type.display-weight bind to DS.typo-text-family, DS.typo-display-family and DS.typo-display-weight in tokens.slint: a family's name written in theme_type.slint read to the catalogue's check as a word left outside @tr."
+  },
+  {
+    "id": 3907,
+    "type": "feature",
+    "title": "The year on film in a new art direction: each scene's photo fills its card, the giant figure in the photo's own ink laid over it",
+    "status": "done",
+    "detail": "The owner found the first Wrapped a stock exchange dashboard: no graph is left. A card is black, 9 by 16; its scene's photo fills it (HeroScene, Bleed), exposed in a white flash, veiled only under the words that stand on the brand's band and rise from it (Column): a tag in the scene's ink, the giant figure or word in the display face (Type.display, set as large as 292 units hold by wrapped::fit, a number's groups never broken), the bold headline and one line with a wink. The ink is the photo's own hue made vivid (palette::vivid), white for a photo with no colour. A scene whose subject is its photo (the most edited) lays it whole as a tilted print over the photo's blurred light (wrapped::backdrop); the gold medals are a wall of six from one edge of the film to the other; the year's colours are slices of the photos nearest each (Palette::picks) on blocks of the colour; the summary is the year, the character and four poster lines. No photo comes back while the year has others (staging::Pool), a month, a film, a roll and a camera each showing a photo of theirs (Frames::picks). All that is read lies between 15.6 % and 80 % of the height, clear of a story's players; the film's perforations run down both edges; the brand's band holds ONI's mark and name, #madewithoni in the scene's ink and the account. Judged by blind evaluators over five rounds (scratch/v2/wrapped-reviews): boldness and typography 8, fun and urge to share 7, photos and legibility 6 on 200 px thumbnails, no score rising for two rounds; the owner has the last word. The bench also films one scene's coming in, frame by frame (motion-NN.jpg). French and Spanish texts for every new line."
   }
 ]

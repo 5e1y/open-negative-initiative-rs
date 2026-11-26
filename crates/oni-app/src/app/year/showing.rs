@@ -1,7 +1,7 @@
 //! The year shown: read off the disk on another thread, laid as the strip's scenes, its photos landing
 //! as they are read, the film advanced and wound back, and the summary closed.
 
-use super::{EDGE, ACCOUNT, HASHTAG, PRINTS_A_SCENE, PRINT_SIDE, SAMPLE, SHOWN_YEAR_KEY, Story, offer_due};
+use super::{ACCOUNT, HASHTAG, NAME, PRINTS_A_SCENE, PRINT_SIDE, SAMPLE, SHOWN_YEAR_KEY, Story, offer_due};
 use crate::app::{Ctl, image, with_shell};
 use crate::wrapped::{SWATCHES, Scene, gather, scenes};
 use crate::{Wrapped, WrappedKind, WrappedLine, WrappedScene, WrappedSwatch};
@@ -49,12 +49,13 @@ impl Ctl {
             } else {
                 let frames = Frames::build(&gather::frames(&shown, &markers, Some(year)), year, Moment::local);
                 step("sidecars", &mut since);
-                let palette = Palette::of(&gather::tones(&support, &frames.paths), SWATCHES);
+                let (read, tones) = gather::tones(&support, &frames.paths);
+                let palette = Palette::of(&tones, SWATCHES);
                 step("colours", &mut since);
                 let (records, names) = journal.read();
                 let darkroom = Darkroom::build(&records, &names, year, &hidden, |time| Moment::local(Moment::journal_unix(time)));
                 step("journal", &mut since);
-                oni_library::wrapped::Year::new(year, darkroom, frames, palette)
+                oni_library::wrapped::Year::new(year, darkroom, frames, palette, &read)
             };
             let read = format!("{:.0} ms ({})", asked.elapsed().as_secs_f64() * 1000.0, steps.join(", "));
             crate::timing::line(&format!("wrapped: {} frames of {} and {} thumbnails read in {read}", told.frames.count, shown.len(), told.palette.sampled));
@@ -68,9 +69,9 @@ impl Ctl {
         let story = scenes(&told);
         let g = w.global::<Wrapped>();
         g.set_year(told.year.to_string().into());
-        g.set_edge(format!("ONI {}   {EDGE}", told.year).into());
         g.set_hashtag(HASHTAG.into());
         g.set_account(ACCOUNT.into());
+        g.set_name(NAME.into());
         g.set_sharing(false);
         g.set_notice(SharedString::default());
         g.set_index(0);
@@ -102,12 +103,22 @@ impl Ctl {
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
             let mut owed = Vec::new();
+            // Each scene is lit by its first photo, as soon as one picture of it is read.
+            let mut lit = HashSet::new();
+            let mut light = |scene: usize, slot: usize, rgba: &[u8], width: usize, height: usize| {
+                if slot == 0 && lit.insert(scene) {
+                    let glow = crate::wrapped::backdrop::blurred(rgba, width, height);
+                    let ink = oni_library::wrapped::palette::dominant(rgba, width, height).and_then(oni_library::wrapped::palette::vivid);
+                    with_shell(move |c| c.wrapped_light(mine, scene, glow, ink));
+                }
+            };
             for (scene, slot, path, fingerprint, large) in photos {
                 let thumbnail = fingerprint.and_then(|f| crate::thumbnails::load(&support, &f, screen));
                 if large || thumbnail.is_none() {
                     owed.push((scene, slot, path, if large { PRINT_SIDE } else { crate::thumbnails::SIDE }, thumbnail.is_some()));
                 }
                 if let Some((rgba, width, height)) = thumbnail {
+                    light(scene, slot, &rgba, width, height);
                     with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
                 }
             }
@@ -124,6 +135,7 @@ impl Ctl {
                     printed.insert(key.clone(), print);
                 }
                 if let Some((rgba, width, height)) = printed.get(&key).cloned() {
+                    light(scene, slot, &rgba, width, height);
                     with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
                 }
             }
@@ -140,6 +152,25 @@ impl Ctl {
         if let Some(face) = g.get_scenes().row_data(scene) {
             face.photos.set_row_data(slot, picture);
         }
+    }
+
+    /// A scene's light: its first photo's backdrop, and an ink in that photo's hue when it has one.
+    fn wrapped_light(&self, showing: usize, scene: usize, glow: Option<(Vec<u8>, usize, usize)>, ink: Option<[u8; 3]>) {
+        let Some(w) = self.window() else { return };
+        let g = w.global::<Wrapped>();
+        if !g.get_shown() || self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
+            return;
+        }
+        use slint::Model;
+        let scenes = g.get_scenes();
+        let Some(mut face) = scenes.row_data(scene) else { return };
+        if let Some((rgba, width, height)) = glow {
+            face.backdrop = image(&rgba, width, height);
+        }
+        if let Some([red, green, blue]) = ink {
+            face.accent = slint::Color::from_rgb_u8(red, green, blue);
+        }
+        scenes.set_row_data(scene, face);
     }
 
     /// The film advanced or wound back a frame; past the last scene every card is laid out to share,
@@ -191,36 +222,30 @@ impl Ctl {
     }
 }
 
-/// A scene as the strip draws it: its words, its numbers, and a place for each photo its thumbnail fills.
+/// A scene as the strip draws it: its words, its numbers, and a place for each photo and for the light
+/// its first photo gives, filled as they are read.
 fn face(scene: &Scene) -> WrappedScene {
     use crate::wrapped::Kind as K;
-    let artwork = scene.stock.as_deref().and_then(crate::stocks::icon);
     WrappedScene {
         kind: match scene.kind {
             K::Title => WrappedKind::Title,
-            K::Figure => WrappedKind::Figure,
-            K::Bars => WrappedKind::Bars,
-            K::Film => WrappedKind::Film,
-            K::Lines => WrappedKind::Lines,
-            K::Photos => WrappedKind::Photos,
+            K::Hero => WrappedKind::Hero,
+            K::Print => WrappedKind::Print,
+            K::Mosaic => WrappedKind::Mosaic,
             K::Palette => WrappedKind::Palette,
-            K::Persona => WrappedKind::Persona,
             K::Summary => WrappedKind::Summary,
-            K::Farewell => WrappedKind::Farewell,
         },
-        eyebrow: if scene.kind == K::Farewell { scene.eyebrow.as_str().into() } else { scene.eyebrow.to_uppercase().into() },
+        eyebrow: scene.eyebrow.as_str().into(),
         figure: scene.figure.as_str().into(),
         count: scene.count.unwrap_or(0) as i32,
         unit: scene.unit.as_str().into(),
-        caption: scene.caption.as_str().into(),
-        note: scene.note.as_str().into(),
+        size: scene.size,
+        headline: scene.headline.as_str().into(),
+        note: oni_i18n::spoken(&scene.note).into(),
         photos: ModelRc::new(VecModel::from(vec![Image::default(); scene.photos.len()])),
-        lines: ModelRc::new(VecModel::from(scene.lines.iter().map(|l| WrappedLine { label: l.label.as_str().into(), value: l.value.as_str().into(), share: l.share }).collect::<Vec<_>>())),
-        bars: ModelRc::new(VecModel::from(scene.bars.clone())),
-        lit: scene.lit.map_or(-1, |l| l as i32),
-        marks: ModelRc::new(VecModel::from(scene.marks.iter().map(|m| SharedString::from(m.as_str())).collect::<Vec<_>>())),
+        backdrop: Image::default(),
+        accent: slint::Color::from_argb_u8(0, 0, 0, 0),
+        lines: ModelRc::new(VecModel::from(scene.lines.iter().map(|l| WrappedLine { label: l.label.as_str().into(), value: l.value.as_str().into() }).collect::<Vec<_>>())),
         swatches: ModelRc::new(VecModel::from(scene.swatches.iter().map(|(rgb, share)| WrappedSwatch { ink: slint::Color::from_rgb_u8(rgb[0], rgb[1], rgb[2]), share: *share }).collect::<Vec<_>>())),
-        has_artwork: artwork.is_some(),
-        artwork: artwork.unwrap_or_default(),
     }
 }

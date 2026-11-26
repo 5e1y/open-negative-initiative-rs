@@ -20,6 +20,8 @@ pub struct Palette {
     /// Their mean chroma, near zero for a year in black and white.
     pub chroma: f32,
     pub sampled: usize,
+    /// For each swatch, the place among the tones given of the photo nearest it.
+    pub picks: Vec<usize>,
 }
 
 /// Under this mean chroma a picture has no colour of its own: a black and white one, or a grey day.
@@ -108,6 +110,30 @@ fn nearest(centres: &[Lab], tone: Lab) -> usize {
     centres.iter().enumerate().fold((0, f32::MAX), |best, (i, c)| if distance(*c, tone) < best.1 { (i, distance(*c, tone)) } else { best }).0
 }
 
+/// A tone as an ink that stands out on black: its hue kept, lit and saturated as far as sRGB holds; none
+/// for a tone with no colour of its own.
+pub fn vivid(tone: Lab) -> Option<[u8; 3]> {
+    let c = chroma(tone);
+    if c < NEUTRAL * 2.0 {
+        return None;
+    }
+    let inside = |lab: Lab| {
+        let l = (lab[0] + 0.396_337_78 * lab[1] + 0.215_803_76 * lab[2]).powi(3);
+        let m = (lab[0] - 0.105_561_346 * lab[1] - 0.063_854_17 * lab[2]).powi(3);
+        let s = (lab[0] - 0.089_484_18 * lab[1] - 1.291_485_5 * lab[2]).powi(3);
+        let linear = [4.076_741_7 * l - 3.307_711_6 * m + 0.230_969_94 * s, -1.268_438 * l + 2.609_757_4 * m - 0.341_319_38 * s, -0.004_196_086_3 * l - 0.703_418_6 * m + 1.707_614_7 * s];
+        linear.iter().all(|v| (-0.001..=1.001).contains(v))
+    };
+    // The most chroma this hue takes at this lightness, by halving steps down from a chroma no screen holds.
+    let at = |k: f32| [VIVID_LIGHT, tone[1] / c * k, tone[2] / c * k];
+    let most = (0..40).map(|i| VIVID_CHROMA * (1.0 - i as f32 / 40.0)).find(|k| inside(at(*k)))?;
+    Some(rgb(at(most)))
+}
+
+/// An ink's lightness on black, and the chroma it is asked: a pastel reads as a tint, this as a colour.
+pub const VIVID_LIGHT: f32 = 0.82;
+pub const VIVID_CHROMA: f32 = 0.2;
+
 impl Palette {
     /// The `count` colours `tones` gather around, each photo counting once: those of the photos that have
     /// a colour, the greys among them left out of a year in colour. The first centre is the tone nearest
@@ -118,9 +144,12 @@ impl Palette {
         }
         let all = tones.len() as f32;
         let (warmth, mean_chroma) = (tones.iter().map(|t| t[2]).sum::<f32>() / all, tones.iter().map(|t| chroma(*t)).sum::<f32>() / all);
-        let coloured: Vec<Lab> = tones.iter().copied().filter(|t| chroma(*t) >= NEUTRAL).collect();
+        let coloured: Vec<usize> = (0..tones.len()).filter(|i| chroma(tones[*i]) >= NEUTRAL).collect();
         let sampled = tones.len();
-        let tones: &[Lab] = if coloured.len() as f32 >= all * COLOURED { &coloured } else { tones };
+        // The tones gathered, each with its place among those given.
+        let places: Vec<usize> = if coloured.len() as f32 >= all * COLOURED { coloured } else { (0..tones.len()).collect() };
+        let gathered: Vec<Lab> = places.iter().map(|i| tones[*i]).collect();
+        let tones: &[Lab] = &gathered;
         let n = tones.len() as f32;
         let mean = tones.iter().fold([0.0; 3], |sum, t| [sum[0] + t[0] / n, sum[1] + t[1] / n, sum[2] + t[2] / n]);
         let mut centres = vec![tones[nearest(tones, mean)]];
@@ -151,9 +180,15 @@ impl Palette {
                 }
             }
         }
-        let mut swatches: Vec<Swatch> = centres.iter().zip(&sizes).filter(|(_, s)| **s > 0).map(|(c, s)| Swatch { rgb: rgb(*c), share: *s as f32 / n }).collect();
-        swatches.sort_by(|a, b| b.share.total_cmp(&a.share).then(a.rgb.cmp(&b.rgb)));
-        Palette { swatches, warmth, chroma: mean_chroma, sampled }
+        let mut found: Vec<(Swatch, usize)> = centres
+            .iter()
+            .zip(&sizes)
+            .filter(|(_, s)| **s > 0)
+            .map(|(c, s)| (Swatch { rgb: rgb(*c), share: *s as f32 / n }, places[nearest(tones, *c)]))
+            .collect();
+        found.sort_by(|a, b| b.0.share.total_cmp(&a.0.share).then(a.0.rgb.cmp(&b.0.rgb)));
+        let (swatches, picks) = found.into_iter().unzip();
+        Palette { swatches, warmth, chroma: mean_chroma, sampled, picks }
     }
 
     /// A year of pictures with no colour of their own.
@@ -202,6 +237,21 @@ mod tests {
     }
 
     #[test]
+    fn a_photos_tone_becomes_an_ink_that_stands_out_on_black_in_its_own_hue() {
+        let hue = |lab: Lab| lab[2].atan2(lab[1]);
+        for dull in [[150, 110, 80], [60, 80, 120], [70, 110, 75], [140, 60, 70]] {
+            let ink = vivid(lab(dull)).unwrap();
+            let (from, to) = (lab(dull), lab(ink));
+            assert!((hue(from) - hue(to)).abs() < 0.12, "{dull:?} -> {ink:?}: the hue is kept");
+            // The ink is lit at VIVID_LIGHT with what chroma sRGB holds there: a red may hold less than the dull one.
+            assert!(to[0] > 0.75 && to[0] > from[0] && chroma(to) > 0.07, "{dull:?} -> {ink:?}: lit and saturated");
+        }
+        // Twin: a grey has no ink of its own, and the dull tone itself is no ink for black.
+        assert_eq!(vivid(lab([120, 120, 120])), None);
+        assert!(lab([60, 80, 120])[0] < 0.5);
+    }
+
+    #[test]
     fn the_years_colours_gather_by_what_the_eye_sees_the_most_shared_first() {
         let (orange, blue, green) = (lab([230, 150, 60]), lab([50, 110, 220]), lab([60, 170, 80]));
         let near = |c: Lab, d: f32| [c[0] + d, c[1], c[2] - d];
@@ -221,6 +271,9 @@ mod tests {
         assert_eq!(Palette::of(&[orange, orange, blue], 5).swatches.len(), 2);
         assert!(Palette::of(&[[0.5, 0.0, 0.0], [0.7, 0.0, 0.0]], 3).is_monochrome());
         assert_eq!(Palette::of(&[], 5), Palette::default());
+        // Each swatch names the photo nearest it, by its place among the tones given.
+        assert_eq!(palette.picks.len(), 3);
+        assert!(distance(tones[palette.picks[0]], orange) < 1e-3 && distance(tones[palette.picks[1]], blue) < 1e-3 && palette.picks[2] == 10);
         // A year in colour leaves its greys out of the palette, and still counts them read.
         let grey = [0.4, 0.0, 0.0];
         let mixed = Palette::of(&[orange, blue, grey, grey, grey], 3);

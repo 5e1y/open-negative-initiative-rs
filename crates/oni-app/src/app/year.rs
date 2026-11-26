@@ -20,11 +20,11 @@ mod showing;
 pub const SHOWN_YEAR_KEY: &str = "wrappedShownYear";
 /// A full sample year instead of the journal's, to look at the summary before living one.
 pub const SAMPLE: &str = "ONI_WRAPPED_SAMPLE";
-/// What the strip's edge prints after the year, and who signs a frame: marks, the same in every language.
-pub(super) const EDGE: &str = "SAFETY FILM";
 /// What a posted card is tagged with, and the account it names: on every card, in every language.
 pub const HASHTAG: &str = "#madewithoni";
 pub const ACCOUNT: &str = "@open.negative.initiative";
+/// The app's name beside its mark, the same in every language.
+pub(super) const NAME: &str = "ONI";
 /// A print's long side, enough for a frame as large as a tall window draws it.
 pub(super) const PRINT_SIDE: usize = 1024;
 /// A scene showing more photos than this shows them small: their thumbnails are enough.

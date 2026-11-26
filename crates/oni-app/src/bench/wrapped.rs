@@ -6,7 +6,10 @@ use super::*;
 use crate::Wrapped;
 
 /// The film's advance and a scene's telling, with a margin: after it a scene is whole.
-const TOLD: Duration = Duration::from_millis(3_400);
+const TOLD: Duration = Duration::from_millis(2_400);
+/// The scene whose coming in is shot frame by frame, and how many frames of it.
+const FILMED: usize = 2;
+const FRAMES: usize = 16;
 const SHOWN: Duration = Duration::from_secs(60);
 
 pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -15,6 +18,7 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let shots = std::env::var_os("ONI_WRAPPED_SHOTS").map(std::path::PathBuf::from);
     let started = Instant::now();
     let step = Cell::new(None::<(usize, Instant)>);
+    let filmed = Cell::new(0usize);
     // What the cards' writer answered, once it has.
     let saved: std::sync::Arc<std::sync::Mutex<Option<String>>> = Default::default();
     let saving = Cell::new(false);
@@ -48,6 +52,15 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             return;
         };
+        // One scene's coming in, a frame a tick: the film pulled, the flash, the figure landing.
+        if let Some(folder) = shots.as_ref().filter(|_| scene == FILMED && filmed.get() < FRAMES)
+            && let Ok(shot) = w.window().take_snapshot()
+            && let Some(data) = crate::wrapped::share::jpeg(shot.as_bytes(), shot.width() as usize, shot.height() as usize)
+        {
+            let _ = std::fs::create_dir_all(folder);
+            let _ = std::fs::write(folder.join(format!("motion-{:02}.jpg", filmed.get())), data);
+            filmed.set(filmed.get() + 1);
+        }
         if since.elapsed() < TOLD {
             return;
         }

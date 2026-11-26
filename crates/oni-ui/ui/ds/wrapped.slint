@@ -1,11 +1,10 @@
-// The year on film's pieces: the black ground, a half-frame strip with its perforations and edge print, a
-// scene laid on one frame of it, 3 by 4, and the card a frame is saved as: the frame in its piece of the
-// strip, 9 by 16 as a phone's story takes it. Every size is a share of the frame's width, so each draws alike at any.
-import { DS } from "tokens.slint";
-import { Colour, Type } from "theme.slint";
-import { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, WrappedStyle, Brand } from "wrapped_parts.slint";
-import { TitleScene, PlainScene, BarsScene, ListScene } from "wrapped_scenes.slint";
-import { PaletteScene, PersonaScene, SummaryScene, FarewellScene } from "wrapped_portrait.slint";
+// The year on film's frame: one scene, 9 by 16 as a phone's story takes it and as it is saved. The scene's
+// own photo, blurred, is the light it is told in; the film's perforations run down both sides; ONI's mark
+// and the tags stand at the foot of a story's safe area. Every size is a share of the frame's width.
+import { Colour } from "theme.slint";
+import { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, WrappedStyle, Display, Perforations, Brand } from "wrapped_parts.slint";
+import { HeroScene } from "wrapped_scenes.slint";
+import { MosaicScene, PaletteScene } from "wrapped_montage.slint";
 
 export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, WrappedStyle }
 
@@ -13,7 +12,15 @@ export component WrappedGround inherits Rectangle {
     background: WrappedStyle.ground;
 }
 
-// One segment a scene along the top, filled as the story reaches it; the one in the gate fills as it holds.
+// The window around the strip in a scene's light: its backdrop, faint, lit while its scene is in the gate.
+export component WrappedAmbient inherits Image {
+    in property <bool> lit;
+    image-fit: cover;
+    opacity: root.lit ? WrappedStyle.ambient : 0;
+    animate opacity { duration: WrappedStyle.enter; }
+}
+
+// One segment a scene, filled as the story reaches it; the one in the gate fills as it holds.
 export component WrappedProgress inherits Rectangle {
     in property <int> count;
     in property <int> at;
@@ -37,46 +44,63 @@ export component WrappedProgress inherits Rectangle {
     }
 }
 
-// One scene on its frame. `told` runs 0 to 1 as it tells itself; each part rises in over its own stretch of it.
+// One scene on its frame. `told` runs 0 to 1 as it tells itself; a frame not told yet is dark, as film
+// not exposed. `drift` runs 0 to 1 while it holds.
 export component WrappedFrame inherits Rectangle {
     in property <WrappedScene> scene;
     // The frame's unit: its width over 360.
     in property <length> u;
     in property <float> told: 1;
+    in property <float> drift;
+    in property <int> number;
     // What a posted card is tagged with, and whom.
     in property <string> hashtag;
     in property <string> account;
+    in property <string> name;
     pure callback counted(int) -> string;
     width: WrappedStyle.frame-width * root.u;
     height: WrappedStyle.frame-height * root.u;
-    background: WrappedStyle.frame;
-    border-radius: 6 * root.u;
+    background: WrappedStyle.ground;
     clip: true;
-    property <string> figure-text: root.scene.count > 0 ? root.counted(round(root.scene.count * WrappedStyle.rise(root.told, 0.05, 0.6))) + root.scene.unit : root.scene.figure;
     property <WrappedKind> kind: root.scene.kind;
+    // The scene's ink: its photo's own hue, or white for a photo with no colour.
+    property <color> accent: root.scene.accent.alpha > 0 ? root.scene.accent : WrappedStyle.ink;
+    property <string> figure-text: root.scene.count > 0 ? root.counted(round(root.scene.count * WrappedStyle.rise(root.told, 0.14, 0.5))) + root.scene.unit : root.scene.figure;
 
-    // The eyebrow, every scene's but the title's and the farewell's.
-    if root.kind != WrappedKind.title && root.kind != WrappedKind.farewell: Text {
-        x: WrappedStyle.pad * root.u;
-        y: 22 * root.u;
-        width: WrappedStyle.inner * root.u;
-        text: root.scene.eyebrow;
-        font-family: Type.family;
-        font-size: 11 * root.u;
-        font-weight: Type.strong;
-        letter-spacing: 1.3 * root.u;
-        color: Colour.ink-secondary;
-        horizontal-alignment: center;
-        opacity: WrappedStyle.rise(root.told, 0, 0.2);
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.scene.backdrop;
+        image-fit: cover;
+        opacity: WrappedStyle.glow * WrappedStyle.rise(root.told, 0, 0.3);
     }
-    if root.kind == WrappedKind.title: TitleScene { scene: root.scene; u: root.u; told: root.told; }
-    if root.kind == WrappedKind.figure || root.kind == WrappedKind.photos: PlainScene { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; }
-    if root.kind == WrappedKind.bars: BarsScene { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; }
-    if root.kind == WrappedKind.film || root.kind == WrappedKind.lines: ListScene { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; }
-    if root.kind == WrappedKind.palette: PaletteScene { scene: root.scene; u: root.u; told: root.told; }
-    if root.kind == WrappedKind.persona: PersonaScene { scene: root.scene; u: root.u; told: root.told; }
-    if root.kind == WrappedKind.summary: SummaryScene { scene: root.scene; u: root.u; told: root.told; }
-    if root.kind == WrappedKind.farewell: FarewellScene { scene: root.scene; u: root.u; told: root.told; }
+    // The light falls off toward the foot, where the brand is read.
+    Rectangle {
+        background: @linear-gradient(180deg, Colour.black.with-alpha(0.05) 0%, Colour.black.with-alpha(0.3) 55%, Colour.black.with-alpha(0.62) 100%);
+    }
+    if root.kind != WrappedKind.mosaic && root.kind != WrappedKind.palette: HeroScene {
+        scene: root.scene;
+        u: root.u;
+        told: root.told;
+        drift: root.drift;
+        accent: root.accent;
+        figure-text: root.figure-text;
+        whole: root.kind == WrappedKind.print;
+        turned: mod(root.number, 2) == 1;
+    }
+    if root.kind == WrappedKind.mosaic: MosaicScene { scene: root.scene; u: root.u; told: root.told; drift: root.drift; accent: root.accent; figure-text: root.figure-text; }
+    if root.kind == WrappedKind.palette: PaletteScene { scene: root.scene; u: root.u; told: root.told; accent: root.accent; }
+    // The film's edges lie over a photo that fills the frame.
+    Perforations {
+        x: 0;
+        height: parent.height;
+        u: root.u;
+    }
+    Perforations {
+        x: parent.width - self.width;
+        height: parent.height;
+        u: root.u;
+    }
     Brand {
         x: WrappedStyle.pad * root.u;
         y: WrappedStyle.foot * root.u;
@@ -84,118 +108,39 @@ export component WrappedFrame inherits Rectangle {
         u: root.u;
         hashtag: root.hashtag;
         account: root.account;
+        accent: root.accent;
+        name: root.name;
     }
 }
 
-// The strip a frame long: its base, the perforations above and under, and what the edge prints.
-export component WrappedFilm inherits Rectangle {
-    in property <length> u;
-    in property <int> number;
-    // What the edge prints along the strip.
-    in property <string> edge;
-    width: WrappedStyle.pitch * root.u;
-    height: WrappedStyle.strip-height * root.u;
-    background: WrappedStyle.film;
-    property <length> hole-step: self.width / WrappedStyle.perforations;
-    for hole in WrappedStyle.perforations * 2: Rectangle {
-        property <bool> under: hole >= WrappedStyle.perforations;
-        x: (mod(hole, WrappedStyle.perforations) + 0.5) * root.hole-step - self.width / 2;
-        y: self.under ? root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height) * root.u : WrappedStyle.hole-inset * root.u;
-        width: WrappedStyle.hole-width * root.u;
-        height: WrappedStyle.hole-height * root.u;
-        border-radius: 6 * root.u;
-        background: WrappedStyle.ground;
-    }
-    Text {
-        x: 12 * root.u;
-        y: (WrappedStyle.hole-inset + WrappedStyle.hole-height + 10) * root.u;
-        text: root.edge;
-        font-family: Type.family;
-        font-size: 11 * root.u;
-        font-weight: Type.bold;
-        letter-spacing: 1.6 * root.u;
-        color: Colour.edge-print;
-    }
-    Text {
-        x: 12 * root.u;
-        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 26) * root.u;
-        text: root.number < 1 ? "" : "\u{25b8} " + root.number;
-        font-family: Type.family;
-        font-size: 13 * root.u;
-        font-weight: Type.bold;
-        color: Colour.edge-print;
-    }
-    Text {
-        x: root.width / 2;
-        y: root.height - (WrappedStyle.hole-inset + WrappedStyle.hole-height + 26) * root.u;
-        text: root.number < 1 ? "" : "" + root.number + "A";
-        font-family: Type.family;
-        font-size: 13 * root.u;
-        font-weight: Type.bold;
-        color: Colour.edge-print;
-    }
-}
-
-// A scene as it is saved: its frame in its own piece of the strip, 9 by 16, told whole.
-export component WrappedCard inherits Rectangle {
-    in property <WrappedScene> scene;
-    in property <length> u;
-    in property <int> number;
-    in property <string> edge;
-    in property <string> hashtag;
-    in property <string> account;
-    pure callback counted(int) -> string;
-    width: WrappedStyle.frame-width * root.u;
-    height: WrappedStyle.strip-height * root.u;
-    clip: true;
-    WrappedFilm {
-        x: 0;
-        y: 0;
-        width: parent.width;
-        u: root.u;
-        number: root.number;
-        edge: root.edge;
-    }
-    WrappedFrame {
-        x: 0;
-        y: WrappedStyle.rebate * root.u;
-        u: root.u;
-        scene: root.scene;
-        hashtag: root.hashtag;
-        account: root.account;
-        told: 1;
-        counted(n) => { root.counted(n) }
-    }
-}
-
-// The share screen's heading, in the title's face.
+// The share screen's heading, in the display face.
 export component WrappedHeading inherits Text {
-    font-family: DS.typo-wrapped-title-family;
-    font-weight: DS.typo-wrapped-title-weight;
+    font-family: WrappedStyle.display-family;
+    font-weight: WrappedStyle.display-weight;
     font-size: WrappedStyle.share-heading;
-    color: WrappedStyle.title-ink;
+    color: WrappedStyle.ink;
     horizontal-alignment: center;
 }
 
-// A card of the share screen: the saved card small, ringed under the pointer, saved alone by a click.
+// A card of the share screen: the frame small, ringed under the pointer, saved alone by a click.
 export component WrappedPick inherits Rectangle {
     in property <WrappedScene> scene;
     in property <length> u;
     in property <int> number;
-    in property <string> edge;
     in property <string> hashtag;
     in property <string> account;
+    in property <string> name;
     pure callback counted(int) -> string;
     callback picked();
     width: card.width;
     height: card.height;
-    card := WrappedCard {
+    card := WrappedFrame {
         u: root.u;
         scene: root.scene;
         number: root.number;
-        edge: root.edge;
         hashtag: root.hashtag;
         account: root.account;
+        name: root.name;
         counted(n) => { root.counted(n) }
     }
     Rectangle {

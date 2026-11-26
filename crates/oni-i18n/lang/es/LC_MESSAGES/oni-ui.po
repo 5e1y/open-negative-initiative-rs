@@ -543,21 +543,17 @@ msgstr "Cuerpos"
 msgid "Lenses"
 msgstr "Objetivos"
 
-#: crates/oni-ui/ui/ds/welcome_mystery.slint crates/oni-ui/ui/ds/wrapped_scenes.slint
+#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_mystery.slint
 msgid "Your Year"
 msgstr "Tu año"
 
-#: crates/oni-ui/ui/ds/welcome_mystery.slint crates/oni-ui/ui/ds/wrapped_scenes.slint
+#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_mystery.slint
 msgid "On Film"
 msgstr "En película"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Save card {}"
 msgstr "Guardar la tarjeta {}"
-
-#: crates/oni-ui/ui/ds/wrapped_portrait.slint
-msgid "with a touch of {}"
-msgstr "con un toque de: {}"
 
 #: crates/oni-ui/ui/editors.slint
 msgid "Luma"
@@ -799,7 +795,7 @@ msgstr "Reemplazar"
 msgid "Rename"
 msgstr "Renombrar"
 
-#: crates/oni-app/src/app/filter_menu.rs crates/oni-app/src/wrapped.rs crates/oni-ui/ui/export_fields.slint
+#: crates/oni-app/src/app/filter_menu.rs crates/oni-ui/ui/export_fields.slint
 msgid "Camera"
 msgstr "Cámara"
 
@@ -1511,7 +1507,7 @@ msgstr "Medios azules"
 msgid "Blue contrast"
 msgstr "Contraste azul"
 
-#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Paper"
 msgstr "Papel"
 
@@ -1615,7 +1611,7 @@ msgstr "Grano"
 msgid "Grain size"
 msgstr "Tamaño del grano"
 
-#: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Halation"
 msgstr "Halación"
 
@@ -2976,14 +2972,6 @@ msgid "Next Gift"
 msgstr "Siguiente regalo"
 
 #: crates/oni-ui/ui/wrapped.slint
-msgid "Paused · Space to play · → for the next · ← to go back · Esc to leave"
-msgstr "En pausa · Espacio para seguir · → para avanzar · ← para volver · Esc para salir"
-
-#: crates/oni-ui/ui/wrapped.slint
-msgid "Click or press → for the next · ← to go back · Space to pause · Esc to leave"
-msgstr "Haz clic o pulsa → para avanzar · ← para volver · Espacio para pausar · Esc para salir"
-
-#: crates/oni-ui/ui/wrapped.slint
 msgid "Save All Cards"
 msgstr "Guardar todas las tarjetas"
 
@@ -2998,6 +2986,14 @@ msgstr "Copiar esta tarjeta"
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Close"
 msgstr "Cerrar"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Paused · Space to play · → for the next · ← to go back · Esc to leave"
+msgstr "En pausa · Espacio para seguir · → para avanzar · ← para volver · Esc para salir"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Click or press → for the next · ← to go back · Space to pause · Esc to leave"
+msgstr "Haz clic o pulsa → para avanzar · ← para volver · Espacio para pausar · Esc para salir"
 
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Your year, ready to share"
@@ -4781,7 +4777,7 @@ msgstr "Cada foto del rollo vuelve a como se escaneó: se eliminan la preparaci�
 msgid "Reset the Roll"
 msgstr "Restablecer el rollo"
 
-#: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
+#: crates/oni-app/src/app/rolls.rs
 msgid "Balance"
 msgstr "Balance"
 
@@ -5431,7 +5427,7 @@ msgstr "Ni una mota se te escapa."
 
 #: crates/oni-app/src/wrapped/words.rs
 msgid "The Curator"
-msgstr "El comisario"
+msgstr "El curador"
 
 #: crates/oni-app/src/wrapped/words.rs
 msgid "You look twice, and choose once."
@@ -5626,6 +5622,10 @@ msgid "This year"
 msgstr "Este año"
 
 #: crates/oni-app/src/wrapped.rs
+msgid "Did you sleep?"
+msgstr "¿Has dormido?"
+
+#: crates/oni-app/src/wrapped.rs
 msgid "Your busiest month"
 msgstr "Tu mes más intenso"
 
@@ -5638,8 +5638,16 @@ msgid "Through the gate"
 msgstr "Por la ventanilla"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Your faithful companion"
-msgstr "Tu fiel compañera"
+msgid "Your partner in crime"
+msgstr "Tu cómplice"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "You're generous. We like that."
+msgstr "Mano generosa. Nos gusta."
+
+#: crates/oni-app/src/wrapped.rs
+msgid "You're picky. Good."
+msgstr "Difícil de contentar. Mejor así."
 
 #: crates/oni-app/src/wrapped.rs
 msgid "The only thing I see is gold"
@@ -5650,32 +5658,36 @@ msgid "Your most edited photo"
 msgstr "Tu foto más editada"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Overcooked?"
-msgstr "¿Demasiado hecha?"
+msgid "Overcooked? Slow-cooked."
+msgstr "¿Pasada? A fuego lento."
 
 #: crates/oni-app/src/wrapped.rs
 msgid "Your hands knew the way"
-msgstr "Tus manos sabían el camino"
+msgstr "Tus manos lo sabían"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Clean that scanner."
+msgstr "Limpia ese escáner."
 
 #: crates/oni-app/src/wrapped.rs
 msgid "Frames rescued"
 msgstr "Fotogramas rescatados"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Your signature look"
-msgstr "Tu sello personal"
-
-#: crates/oni-app/src/wrapped.rs
 msgid "The colours of your year"
 msgstr "Los colores de tu año"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Time in the darkroom"
-msgstr "Tiempo en el cuarto oscuro"
+msgid "We don't judge."
+msgstr "No juzgamos."
 
 #: crates/oni-app/src/wrapped.rs
 msgid "{count} h"
 msgstr "{count} h"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Time in the darkroom"
+msgstr "Tiempo en el cuarto oscuro"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "spent with your negatives"
@@ -5686,28 +5698,24 @@ msgid "Out into the world"
 msgstr "Rumbo al mundo"
 
 #: crates/oni-app/src/wrapped.rs
+msgid "Now post them."
+msgstr "Ahora, publícalas."
+
+#: crates/oni-app/src/wrapped.rs
 msgid "Your film personality"
 msgstr "Tu personalidad fotográfica"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Preset"
-msgstr "Preajuste"
+msgid "See you next year"
+msgstr "Hasta el año que viene"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Printed on paper"
-msgstr "Copiadas en papel"
+msgid "on film, obviously."
+msgstr "en película, obviamente."
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Cropped"
-msgstr "Recortadas"
-
-#: crates/oni-app/src/wrapped.rs
-msgid "Straightened"
-msgstr "Enderezadas"
-
-#: crates/oni-app/src/wrapped.rs
-msgid "Settings pasted"
-msgstr "Ajustes pegados"
+msgid "Your signature look"
+msgstr "Tu sello personal"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "Frames"
@@ -5722,12 +5730,8 @@ msgid "Dust healed"
 msgstr "Polvo corregido"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "See you next year"
-msgstr "Hasta el año que viene"
-
-#: crates/oni-app/src/wrapped.rs
-msgid "on film."
-msgstr "en película."
+msgid "My year on film"
+msgstr "Mi año en película"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "{day} alone holds {count}"
@@ -5738,8 +5742,16 @@ msgid "{count} frames, {share} % of your year"
 msgstr "{count} fotogramas, {share} % de tu año"
 
 #: crates/oni-app/src/wrapped.rs
+msgid "Ahead of {others}."
+msgstr "Por delante de {others}."
+
+#: crates/oni-app/src/wrapped.rs
 msgid "The longest, {name}, holds {count} frames"
 msgstr "El más largo, {name}, tiene {count} fotogramas"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Mostly through the {lens}."
+msgstr "Sobre todo a través del {lens}."
 
 #: crates/oni-app/src/wrapped.rs
 msgid "and {silver} silver"
@@ -5754,6 +5766,14 @@ msgid "and {silver} silver, {bronze} bronze"
 msgstr "y {silver} de plata, {bronze} de bronce"
 
 #: crates/oni-app/src/wrapped.rs
+msgid "Then {second} and {third}."
+msgstr "Luego {second} y {third}."
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Then {second}."
+msgstr "Luego {second}."
+
+#: crates/oni-app/src/wrapped.rs
 msgid "on {frames}; the dustiest took {most}"
 msgstr "en {frames}; el más polvoriento necesitó {most}"
 
@@ -5766,16 +5786,40 @@ msgid "mostly around {hour}:00"
 msgstr "sobre todo hacia las {hour}:00"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "{name}, laid {count} times"
-msgstr "{name}, aplicado {count} veces"
+msgid "With a touch of {other}."
+msgstr "Segundo papel: {other}."
 
 #: crates/oni-app/src/wrapped.rs
-msgid "pressed {count} times"
-msgstr "pulsado {count} veces"
+msgid "laid on {photos}"
+msgstr "aplicado a {photos}"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "My {year} on film"
-msgstr "Mi {year} en película"
+msgid "on {photos}"
+msgstr "en {photos}"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "printed on {photos}"
+msgstr "copiado en {photos}"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "grain on {photos}"
+msgstr "grano en {photos}"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "halation on {photos}"
+msgstr "halación en {photos}"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "{photos} cropped"
+msgstr "{photos} recortadas"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "{photos} straightened"
+msgstr "{photos} enderezadas"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Balance pressed {count} times"
+msgstr "Balance pulsado {count} veces"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "frame brought to light"
@@ -5794,12 +5838,6 @@ msgid "{count} frame"
 msgid_plural "{count} frames"
 msgstr[0] "{count} fotograma"
 msgstr[1] "{count} fotogramas"
-
-#: crates/oni-app/src/wrapped.rs
-msgid "{count} film this year"
-msgid_plural "{count} films this year"
-msgstr[0] "{count} película este año"
-msgstr[1] "{count} películas distintas este año"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "roll"
@@ -5826,10 +5864,10 @@ msgstr[0] "gesto en una sola foto"
 msgstr[1] "gestos en una sola foto"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "gesture this year"
-msgid_plural "gestures this year"
-msgstr[0] "gesto este año"
-msgstr[1] "gestos este año"
+msgid "moved {count} time"
+msgid_plural "moved {count} times"
+msgstr[0] "movido {count} vez"
+msgstr[1] "movido {count} veces"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "speck of dust healed"

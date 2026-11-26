@@ -1,275 +1,180 @@
-// The year on film's scenes that count: the title, a figure with its photos, a row of bars, a list of lines.
-// Each is laid on a frame 360 units wide and rises in part by part as `told` runs 0 to 1.
-import { DS } from "tokens.slint";
-import { Colour, Type } from "theme.slint";
-import { Badge, BadgeTone } from "badge.slint";
-import { WrappedKind, WrappedScene, WrappedStyle, Print, Words, Figure, LineRow } from "wrapped_parts.slint";
+// The year on film's scenes on one photo: it fills the frame under the scene's giant figure, or is laid
+// whole as a print over it. Each scene's words stand on the brand's band; laid on a frame 360 units wide,
+// it comes in as `told` runs 0 to 1.
+import { WrappedScene, WrappedStyle, Print, Display, Words, LineRow } from "wrapped_parts.slint";
 
-// The title: the year's prints fanned, its two lines and its seal.
-export component TitleScene inherits Rectangle {
-    in property <WrappedScene> scene;
-    // The frame's unit: its width over 360.
+// The small line over a scene's figure, saying what it counts: a tag in the scene's ink, read on any photo.
+component Eyebrow inherits HorizontalLayout {
     in property <length> u;
+    in property <string> text;
+    in property <color> accent;
     in property <float> told: 1;
-    property <length> pad: WrappedStyle.pad * root.u;
-    property <length> inner: WrappedStyle.inner * root.u;
-    property <length> foot: WrappedStyle.foot * root.u;
-    property <bool> has-photo: root.scene.photos.length > 0;
-    pure function rise(from: float, to: float) -> float {
-        WrappedStyle.rise(root.told, from, to)
-    }
-    for photo[i] in root.scene.photos: Print {
-        u: root.u;
-        source: photo;
-        width: 156 * root.u;
-        height: 114 * root.u;
-        x: (root.width - self.width) / 2 + (i - 1) * 40 * root.u * root.rise(0.1, 0.6);
-        y: 40 * root.u + mod(i, 2) * 18 * root.u;
-        tilt: (i - 1) * 7deg * root.rise(0.1, 0.6);
-        shown: root.rise(0.05 + i * 0.08, 0.4 + i * 0.08);
-    }
-    for line[i] in [@tr("Your Year"), @tr("On Film")]: Text {
-        x: root.pad;
-        y: (root.has-photo ? 192 : 118) * root.u + i * 48 * root.u + (1 - root.rise(0.2 + i * 0.1, 0.7 + i * 0.1)) * 16 * root.u;
-        width: root.inner;
-        text: line;
-        font-family: DS.typo-wrapped-title-family;
-        font-weight: DS.typo-wrapped-title-weight;
-        font-size: 40 * root.u;
-        color: WrappedStyle.title-ink;
-        horizontal-alignment: center;
-        opacity: root.rise(0.2 + i * 0.1, 0.7 + i * 0.1);
-    }
-    // The seal keeps its own size in points: it is scaled with the frame about its centre.
+    alignment: start;
+    opacity: WrappedStyle.rise(root.told, 0, 0.2);
     Rectangle {
-        y: (root.has-photo ? 312 : 238) * root.u;
-        height: seal.preferred-height;
-        opacity: root.rise(0.5, 0.9);
-        transform-scale: root.u / 0.75px;
-        transform-origin: { x: self.width / 2, y: self.height / 2 };
-        seal := HorizontalLayout {
-            alignment: center;
-            Badge { tone: BadgeTone.seal; text: root.scene.figure; glinting: root.told >= 1; }
+        background: root.accent;
+        HorizontalLayout {
+            padding-left: 6 * root.u;
+            padding-right: 6 * root.u;
+            padding-top: 3.5 * root.u;
+            padding-bottom: 3 * root.u;
+            Display {
+                u: root.u;
+                size: 11;
+                text: root.text;
+                color: WrappedStyle.ground;
+                letter-spacing: 0.6 * root.u;
+            }
         }
-    }
-    Words {
-        u: root.u;
-        x: root.pad;
-        y: root.foot - 44 * root.u;
-        width: root.inner;
-        size: 10.5;
-        text: root.scene.note;
-        color: Colour.ink-secondary;
-        shown: root.rise(0.7, 1);
     }
 }
 
-// A figure and its words, under one print or a grid of them.
-export component PlainScene inherits Rectangle {
+// A scene's column: standing on the brand's band, inside a story's safe area, the eyebrow, the giant
+// figure in the photo's own ink, the bold words and the line with a wink; over them, the room its
+// photos take, whatever the words' lines.
+export component Column inherits Rectangle {
     in property <WrappedScene> scene;
-    // The frame's unit: its width over 360.
     in property <length> u;
     in property <float> told: 1;
-    // The scene's figure, counted up where it is a number.
     in property <string> figure-text;
+    in property <color> accent;
+    // The figure's size, where a scene sets it smaller than its own.
+    in property <float> size: root.scene.size;
     property <length> pad: WrappedStyle.pad * root.u;
-    property <length> inner: WrappedStyle.inner * root.u;
-    property <length> foot: WrappedStyle.foot * root.u;
-    property <bool> has-photo: root.scene.photos.length > 0;
-    pure function rise(from: float, to: float) -> float {
-        WrappedStyle.rise(root.told, from, to)
-    }
-    property <bool> grid: root.scene.kind == WrappedKind.photos;
-    property <int> columns: root.scene.photos.length <= 2 ? 2 : 3;
-    property <length> cell: (root.inner - (self.columns - 1) * 8 * root.u) / self.columns;
-    property <length> photos-height: !root.has-photo ? 0px : self.grid ? ceil(root.scene.photos.length / self.columns) * (self.cell * 0.8 + 8 * root.u) : 184 * root.u;
-    property <length> top: !root.has-photo ? 120 * root.u : 52 * root.u;
-    // A row the photos do not fill is centred.
-    property <length> left: (root.inner - min(root.scene.photos.length, self.columns) * (self.cell + 8 * root.u) + 8 * root.u) / 2;
-    if root.has-photo && !root.grid: Print {
-        u: root.u;
-        source: root.scene.photos[0];
-        x: root.pad + 8 * root.u;
-        y: root.top;
-        width: root.inner - 16 * root.u;
-        height: 172 * root.u;
-        tilt: -1.6deg * root.rise(0, 0.5);
-        shown: root.rise(0, 0.35);
-    }
-    if root.grid: Rectangle {
-        x: root.pad;
-        y: root.top;
-        width: root.inner;
-        height: root.photos-height;
-        for photo[i] in root.scene.photos: Print {
-            u: root.u;
-            source: photo;
-            width: root.cell;
-            height: root.cell * 0.8;
-            x: root.left + mod(i, root.columns) * (root.cell + 8 * root.u);
-            y: floor(i / root.columns) * (self.height + 8 * root.u) + (1 - self.shown) * 12 * root.u;
-            shown: root.rise(0.1 + i * 0.06, 0.4 + i * 0.06);
-        }
-    }
+    property <length> top: WrappedStyle.safe-top * root.u;
+    out property <length> room-left: root.pad;
+    out property <length> room-width: WrappedStyle.inner * root.u;
+    // The photos' room runs from under the film's edge print, behind what a story's player lays over
+    // its top, down to the words.
+    out property <length> room-top: WrappedStyle.room-top * root.u;
+    out property <length> words-top: root.top + over.y;
+    out property <length> figure-foot: root.top + foot.y;
+    out property <length> room-height: root.words-top - WrappedStyle.gap * root.u - root.room-top;
     VerticalLayout {
         x: root.pad;
-        y: root.top + root.photos-height + 8 * root.u;
-        width: root.inner;
-        height: self.preferred-height;
-        spacing: 4 * root.u;
-        Figure {
+        y: root.top;
+        width: root.room-width;
+        height: (WrappedStyle.foot - WrappedStyle.gap) * root.u - root.top;
+        alignment: end;
+        spacing: 7 * root.u;
+        // Where the words begin, once every line of theirs is laid.
+        over := Rectangle { height: 0; }
+        if root.scene.eyebrow != "": Eyebrow {
             u: root.u;
-            size: root.grid ? 44 : 60;
-            text: root.figure-text;
-            shown: root.rise(0.1, 0.45);
+            told: root.told;
+            text: root.scene.eyebrow;
+            accent: root.accent;
         }
-        Words {
+        Display {
             u: root.u;
-            size: 15;
-            text: root.scene.caption;
-            shown: root.rise(0.3, 0.65);
+            size: root.size;
+            text: root.figure-text;
+            color: root.accent;
+            wrap: no-wrap;
+            opacity: WrappedStyle.rise(root.told, 0.14, 0.24);
+            transform-scale: WrappedStyle.slam(root.told, 0.14, 0.4);
+            transform-origin: { x: 0px, y: self.height };
+        }
+        // Where the figure ends.
+        foot := Rectangle { height: 0; }
+        if root.scene.headline != "": Display {
+            u: root.u;
+            size: 21;
+            text: root.scene.headline;
+            opacity: WrappedStyle.rise(root.told, 0.34, 0.54);
         }
         if root.scene.note != "": Words {
             u: root.u;
-            size: 12;
             text: root.scene.note;
-            color: Colour.ink-secondary;
-            shown: root.rise(0.5, 0.9);
+            opacity: WrappedStyle.rise(root.told, 0.5, 0.8);
         }
+        @children
     }
 }
 
-// A figure over a row of bars, one lit: the months, the hours.
-export component BarsScene inherits Rectangle {
+// What fills a frame under its words: the photos, exposed in a white flash, and the veil that lets the
+// words be read, from `veil-top` down to `veil-foot` and on to the frame's foot.
+export component Bleed inherits Rectangle {
+    in property <float> told: 1;
+    in property <length> veil-top;
+    in property <length> veil-foot;
+    clip: true;
+    Rectangle {
+        opacity: WrappedStyle.rise(root.told, 0, 0.16);
+        @children
+    }
+    Rectangle {
+        y: root.veil-top;
+        height: root.veil-foot - self.y;
+        background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(0) 0%, WrappedStyle.ground.with-alpha(WrappedStyle.veil) 100%);
+    }
+    Rectangle {
+        y: root.veil-foot;
+        height: parent.height - self.y;
+        background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(WrappedStyle.veil) 0%, WrappedStyle.ground.with-alpha(WrappedStyle.veil-foot) 100%);
+    }
+    // The frame is exposed: a flash of white that the photos come out of.
+    Rectangle {
+        background: WrappedStyle.ink;
+        opacity: 1 - WrappedStyle.rise(root.told, 0.02, 0.26);
+    }
+}
+
+// One photo and the scene's words, and a summary's lines under them. The photo fills the frame, the words
+// laid over it; `whole`, it is laid as a print in the room above them instead.
+export component HeroScene inherits Rectangle {
     in property <WrappedScene> scene;
-    // The frame's unit: its width over 360.
     in property <length> u;
     in property <float> told: 1;
-    // The scene's figure, counted up where it is a number.
+    in property <float> drift;
     in property <string> figure-text;
-    property <length> pad: WrappedStyle.pad * root.u;
-    property <length> inner: WrappedStyle.inner * root.u;
-    property <length> foot: WrappedStyle.foot * root.u;
-    property <bool> has-photo: root.scene.photos.length > 0;
-    pure function rise(from: float, to: float) -> float {
-        WrappedStyle.rise(root.told, from, to)
-    }
-    property <bool> spread: root.scene.marks.length != root.scene.bars.length;
-    property <length> chart-top: 170 * root.u;
-    property <length> chart-height: 138 * root.u;
-    property <length> step: root.inner / max(1, root.scene.bars.length);
-    VerticalLayout {
-        x: root.pad;
-        y: 50 * root.u;
-        width: root.inner;
-        height: self.preferred-height;
-        spacing: 4 * root.u;
-        Figure {
-            u: root.u;
-            size: root.scene.count > 0 ? 58 : 40;
-            text: root.figure-text;
-            shown: root.rise(0.05, 0.4);
-        }
-        Words {
-            u: root.u;
-            size: 15;
-            text: root.scene.caption;
-            shown: root.rise(0.2, 0.55);
+    in property <color> accent;
+    in property <bool> whole;
+    // Odd frames lean the other way, so two prints in a row never look alike.
+    in property <bool> turned;
+    property <image> photo: root.scene.photos[0];
+    property <bool> has-photo: root.scene.photos.length > 0 && self.photo.width > 0;
+    property <float> ratio: self.photo.width > 0 ? self.photo.height / self.photo.width : 0.667;
+    if root.has-photo && !root.whole: Bleed {
+        told: root.told;
+        veil-top: column.words-top - WrappedStyle.fade * root.u;
+        veil-foot: column.words-top + WrappedStyle.veiled * root.u;
+        Image {
+            width: parent.width * (1 + 0.08 * root.drift);
+            height: parent.height * (1 + 0.08 * root.drift);
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.photo;
+            image-fit: cover;
         }
     }
-    for bar[i] in root.scene.bars: Rectangle {
-        property <float> grown: root.rise(0.25 + i * 0.5 / max(1, root.scene.bars.length), 0.6 + i * 0.4 / max(1, root.scene.bars.length));
-        x: root.pad + i * root.step + root.step * 0.14;
-        width: root.step * 0.72;
-        height: max(2 * root.u, bar * root.chart-height * self.grown);
-        y: root.chart-top + root.chart-height - self.height;
-        border-radius: min(3 * root.u, self.width / 2);
-        background: i == root.scene.lit ? WrappedStyle.gold : Colour.track-fill;
-    }
-    for mark[i] in root.scene.marks: Text {
-        property <length> at: root.spread ? root.inner * i / max(1, root.scene.marks.length - 1) : (i + 0.5) * root.step;
-        x: root.pad + self.at - 20 * root.u;
-        y: root.chart-top + root.chart-height + 7 * root.u;
-        width: 40 * root.u;
-        text: mark;
-        font-family: Type.family;
-        font-size: 9.5 * root.u;
-        color: !root.spread && i == root.scene.lit ? WrappedStyle.gold : Colour.ink-secondary;
-        horizontal-alignment: center;
-        opacity: root.rise(0.3, 0.7);
-    }
-    Words {
+    column := Column {
+        scene: root.scene;
         u: root.u;
-        x: root.pad;
-        y: root.chart-top + root.chart-height + 32 * root.u;
-        width: root.inner;
-        size: 12;
-        text: root.scene.note;
-        color: Colour.ink-secondary;
-        shown: root.rise(0.6, 1);
-    }
-}
-
-// A figure over named lines, under its film's canister when it tells one.
-export component ListScene inherits Rectangle {
-    in property <WrappedScene> scene;
-    // The frame's unit: its width over 360.
-    in property <length> u;
-    in property <float> told: 1;
-    // The scene's figure, counted up where it is a number.
-    in property <string> figure-text;
-    property <length> pad: WrappedStyle.pad * root.u;
-    property <length> inner: WrappedStyle.inner * root.u;
-    property <length> foot: WrappedStyle.foot * root.u;
-    property <bool> has-photo: root.scene.photos.length > 0;
-    pure function rise(from: float, to: float) -> float {
-        WrappedStyle.rise(root.told, from, to)
-    }
-    property <bool> film: root.scene.kind == WrappedKind.film;
-    property <length> top: self.film ? 152 * root.u : 58 * root.u;
-    property <bool> counts: root.scene.count > 0;
-    if root.film && root.scene.has-artwork: Image {
-        x: (root.width - self.width) / 2;
-        y: 44 * root.u + (1 - root.rise(0, 0.45)) * 20 * root.u;
-        width: 104 * root.u;
-        height: 104 * root.u;
-        source: root.scene.artwork;
-        image-fit: contain;
-        opacity: root.rise(0, 0.35);
-    }
-    VerticalLayout {
-        x: root.pad;
-        y: root.top;
-        width: root.inner;
-        height: self.preferred-height;
-        spacing: 6 * root.u;
-        if root.figure-text != "": Figure {
-            u: root.u;
-            size: root.counts ? 54 : 30;
-            text: root.figure-text;
-            shown: root.rise(0.1, 0.45);
-        }
-        if root.scene.caption != "": Words {
-            u: root.u;
-            size: 14;
-            text: root.scene.caption;
-            shown: root.rise(0.25, 0.6);
-        }
-        Rectangle { height: 8 * root.u; }
+        told: root.told;
+        figure-text: root.figure-text;
+        accent: root.accent;
         for line[i] in root.scene.lines: LineRow {
             u: root.u;
             line: line;
-            shown: root.rise(0.3 + i * 0.4 / max(1, root.scene.lines.length), 0.6 + i * 0.4 / max(1, root.scene.lines.length));
+            accent: root.accent;
+            shown: WrappedStyle.rise(root.told, 0.35 + i * 0.08, 0.6 + i * 0.08);
         }
     }
-    Words {
+    if root.has-photo && root.whole: Print {
         u: root.u;
-        x: root.pad;
-        y: root.foot - 22 * root.u;
-        width: root.inner;
-        size: 12;
-        text: root.scene.note;
-        color: Colour.ink-secondary;
-        shown: root.rise(0.6, 1);
+        source: root.photo;
+        whole: true;
+        drift: root.drift;
+        width: min(column.room-width, column.room-height / root.ratio);
+        height: self.width * root.ratio;
+        x: column.room-left + (column.room-width - self.width) / 2;
+        y: column.room-top + column.room-height - self.height + (1 - WrappedStyle.rise(root.told, 0, 0.3)) * 26 * root.u;
+        tilt: (root.turned ? 2deg : -2deg) * WrappedStyle.rise(root.told, 0, 0.35);
+        shown: WrappedStyle.rise(root.told, 0, 0.16);
+        Rectangle {
+            background: WrappedStyle.ink;
+            opacity: 1 - WrappedStyle.rise(root.told, 0.02, 0.26);
+        }
     }
 }

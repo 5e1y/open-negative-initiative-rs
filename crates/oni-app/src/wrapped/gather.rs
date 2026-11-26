@@ -78,15 +78,17 @@ pub fn frames(entries: &[Entry], markers: &HashMap<String, Film>, year: Option<i
     })
 }
 
-/// Each photo's own colour off its thumbnail, for those that have one; `paths` holds each photo's
-/// path and fingerprint by date.
-pub fn tones(support: &Path, paths: &[(String, String)]) -> Vec<Lab> {
+/// Each photo's own colour off its thumbnail, with its path, for those that have one; `paths` holds each
+/// photo's path and fingerprint by date.
+pub fn tones(support: &Path, paths: &[(String, String)]) -> (Vec<String>, Vec<Lab>) {
     let stride = paths.len().div_ceil(TONES).max(1);
     let read: Vec<&(String, String)> = paths.iter().step_by(stride).collect();
-    spread(&read, |(_, fingerprint)| {
+    spread(&read, |(path, fingerprint)| {
         let (rgba, width, height) = crate::thumbnails::load(support, fingerprint, Screen::Srgb)?;
-        dominant(&rgba, width, height)
+        dominant(&rgba, width, height).map(|tone| (path.clone(), tone))
     })
+    .into_iter()
+    .unzip()
 }
 
 #[cfg(test)]
