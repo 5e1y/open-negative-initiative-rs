@@ -4,10 +4,10 @@ import { DS } from "tokens.slint";
 
 export global Type {
     // The text face: ONI Sans, Zalando Sans at its normal width, tabular figures.
-    out property <string> family: "ONI Sans";
+    out property <string> family: DS.typo-text-family;
     // The display face: Zalando Sans Expanded Black, for titles, large figures and the brand's screens.
-    out property <string> display: "Zalando Sans Expanded";
-    out property <int> display-weight: 900;
+    out property <string> display: DS.typo-display-family;
+    out property <int> display-weight: DS.typo-display-weight;
     out property <int> regular: 400;
     out property <int> medium: 500;
     out property <int> strong: 600;

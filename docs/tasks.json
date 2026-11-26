@@ -13866,5 +13866,12 @@
     "title": "ONI_BENCH=screens takes the main screens at the smallest window, in the language spoken, from the app's own build",
     "status": "done",
     "detail": "The editor's three panes, the export, Settings, the gallery and Prepare the Roll at 1100 × 680, each taken off the window (take_snapshot) into ONI_SHOTS as <language>-<screen>.jpg: the app's build bundles its translations, which a debug build's interface lacks, so French and Spanish are judged there."
+  },
+  {
+    "id": 4015,
+    "type": "ui",
+    "title": "The faces named in the design system's tokens, which the catalogue knows name fonts, never words shown",
+    "status": "done",
+    "detail": "Type.family, Type.display and Type.display-weight bind to DS.typo-text-family, DS.typo-display-family and DS.typo-display-weight in tokens.slint: a family's name written in theme_type.slint read to the catalogue's check as a word left outside @tr."
   }
 ]
