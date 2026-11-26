@@ -5,8 +5,13 @@ use oni_export::Image as Picture;
 use swash::scale::{Render, ScaleContext, Source as Outline};
 use swash::zeno::Format as Mask;
 
-/// The interface's face, which the numbers are set in on screen.
-const FACE: &[u8] = include_bytes!("../../../../oni-ui/fonts/Inter.ttf");
+/// The interface's text face, which the numbers are set in on screen: its four weights, the lightest first.
+const FACES: [(f32, &[u8]); 4] = [
+    (400.0, include_bytes!("../../../../oni-ui/fonts/ONISans-Regular.ttf")),
+    (500.0, include_bytes!("../../../../oni-ui/fonts/ONISans-Medium.ttf")),
+    (600.0, include_bytes!("../../../../oni-ui/fonts/ONISans-SemiBold.ttf")),
+    (700.0, include_bytes!("../../../../oni-ui/fonts/ONISans-Bold.ttf")),
+];
 
 /// The numbers' ink as the design system states it, in sRGB, and their weight.
 #[derive(Clone, Copy, Debug)]
@@ -101,20 +106,21 @@ impl Plate {
     }
 }
 
-/// The interface's face at a weight, and its measures.
+/// The interface's face at the weight nearest the one asked, and its measures.
 pub(super) struct Face {
+    bytes: &'static [u8],
     coords: Vec<i16>,
 }
 
 impl Face {
     pub fn of(weight: f32) -> Option<Face> {
-        let font = swash::FontRef::from_index(FACE, 0)?;
-        let axes = [(b"wght", weight)];
-        Some(Face { coords: font.variations().normalized_coords(&axes).collect() })
+        let bytes = FACES.iter().min_by(|a, b| (a.0 - weight).abs().total_cmp(&(b.0 - weight).abs()))?.1;
+        swash::FontRef::from_index(bytes, 0)?;
+        Some(Face { bytes, coords: Vec::new() })
     }
 
     fn font(&self) -> swash::FontRef<'static> {
-        swash::FontRef::from_index(FACE, 0).expect("the bundled face reads")
+        swash::FontRef::from_index(self.bytes, 0).expect("the bundled face reads")
     }
 
     /// The baseline that centres a line of `size` pixels in a band from `top`, `height` tall, as a

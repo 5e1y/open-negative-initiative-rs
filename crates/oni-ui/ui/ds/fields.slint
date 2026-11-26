@@ -102,7 +102,7 @@ export component Entry inherits Rectangle {
             wrap: root.multiline ? word-wrap : no-wrap;
             vertical-alignment: root.multiline ? top : center;
             horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
-            font-family: Type.family;
+            font-family: Roles.family(root.role);
             font-size: Roles.size(root.role);
             font-weight: Roles.weight(root.role);
             color: root.resting ? transparent : root.ink;

@@ -88,8 +88,8 @@ fn page(lab: &Path, name: &str) -> Option<(String, String)> {
 /// A window holding one page on the lab's ground and font, `Raster` exported so it is answered.
 fn wrapper(file: &str, name: &str) -> String {
     format!(
-        "import \"../fonts/Inter.ttf\";\nimport {{ DS }} from \"../ui/ds/tokens.slint\";\n\
+        "import \"../fonts/ONISans-Regular.ttf\";\nimport {{ DS }} from \"../ui/ds/tokens.slint\";\n\
          import {{ {name} }} from \"{file}\";\nexport {{ Depth, Raster }} from \"depth.slint\";\n\
-         export component Shot inherits Window {{ background: DS.palette-panel; default-font-family: \"Inter\"; {name} {{ }} }}\n"
+         export component Shot inherits Window {{ background: DS.palette-panel; default-font-family: \"ONI Sans\"; {name} {{ }} }}\n"
     )
 }

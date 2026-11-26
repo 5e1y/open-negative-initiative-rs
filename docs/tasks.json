@@ -13824,5 +13824,12 @@
     "title": "The welcome on a stage the GPU draws: four gifts of lit foil untied in real time, the huge one's film told as a strip exposed, developed, scanned and inverted",
     "status": "done",
     "detail": "The 2.0 welcome's flat sheet gave way, on the owner's word, to a stage: a WGSL compute pass marches four signed-distance gifts (silver, copper, gold, holographic foil; satin ribbons; a studio of strip lights mirrored in the brushed metals) into the texture the sheet shows, a second pass shares each edge pixel between the faces it covers, a third finishes (glow, curve, dither). `stage::direction::frame` is one function of the cue (act, seconds, hand), so `welcome_reel` steps the film on a held clock and writes its sheets. Each gift comes undone its own way (`stage::unwrap`); the huge gift's page is all stage: the photo in the gate of a 35 mm strip laid flat in the ray (perforations and edge print cut to the pixel), a latent picture, the negative coming up, the scanner lifting its orange mask, every tone crossing to its opposite, the print, a second stock with the camera's photo laid back over it, a third, the three side by side. The stage's cost is measured once off the interface's thread (`Stage::pace`) and its pixels fitted to the screen's frame, one picture in flight. Keys name where they lead; the steps are named and clickable. Blind reviews after each capture: /10 on six criteria by five roles, rounds 1 to 4 kept outside the repository. Checks: stage unit tests with twins, window checks welcome_reel, welcome_card, help, sheets, sheet_stack, sheet_layout, migration, design_system, collection; catalogue; architecture. Not run: the full check, the lint, Windows (FXC's compile time of the stage's loops is unmeasured)."
+  },
+  {
+    "id": 4012,
+    "type": "ui",
+    "title": "The faces screen by screen: the export's title in the display face, a renamed title typed in its own face, the contact sheet's numbers in ONI Sans, keycap legends 0.2 pt apart",
+    "status": "in progress",
+    "detail": "RenameField types in its role's face (Roles.family), so a title renamed stays in the display face. The contact sheet's numbers (together/plate.rs) set in ONI Sans at the nearest of its four weights instead of Inter's axis. Keycap legends 0.5 → 0.2 pt apart: ONI Sans's bold capitals run about 4 pt wider over CANCEL, BACK and PREPARE ROLL, which pushed Prepare's commit onto a line of its own and its check's click between them. The lab's shots load ONI Sans."
   }
 ]
