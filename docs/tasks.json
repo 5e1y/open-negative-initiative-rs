@@ -13929,5 +13929,12 @@
     "title": "The welcome's mystery gift lays the person's own first Wrapped cards on its screen; no way out of the welcome before its end, Escape included",
     "status": "done",
     "detail": "Owner's calls: no exit before the end (Escape included), the Collection's screen stays, the mystery gift shows the person's real cards. The welcome reads the year as it opens (Ctl::ready_wrapped: the Wrapped's own reading and cards, not shown); its mystery screen lays the first three frames as the Wrapped draws them (WrappedFrame), a promise while the year is read. Open My Wrapped shows that story from its start (show_wrapped reuses a story read for the welcome); closing the Wrapped over the welcome only steps aside, so the cards stay; the welcome's close forgets a year it read and nobody showed. A scene's photos and light now land on a story read and not yet shown (the told counter alone guards a stale one). The welcome's sheet is never dismissed by Escape. Checks: window checks welcome_reel (the year read, its cards on the welcome and not the Wrapped), wrapped, welcome_card, sheets, help, design_system; oni-app lib tests; catalogue; clippy on oni-app."
+  },
+  {
+    "id": 4250,
+    "type": "docs",
+    "title": "CLAUDE.md: a digital photo's virtual negative is a scan made once, its two points a channel with no layer offset and no gamut compressed, a tungsten film blue in daylight, the halation red alone",
+    "status": "done",
+    "detail": "The virtual film paragraph says the scene reaches layers balanced for the stock's own light, so a tungsten film turns daylight blue (#3875), and that a neutral exposes the three layers alike with each channel's black on the bare film and its white at the sensor's saturation, in place of the filtration (#3878); a new paragraph tells the scan made once and read as a scanned negative's (#3872) and the halation on the red layer alone."
   }
 ]

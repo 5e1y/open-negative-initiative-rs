@@ -56,16 +56,25 @@ the code; a costly trap keeps its constraint and its number in two lines.
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
-- **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, lit at the
-  stock's own white (Portra 800: D55), is exposed and developed on the stock's profile (`virtual_negative`), uncoupled, then
+- **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, in the light
+  its decode balanced (5000 K on a RAW), reaches layers balanced for the stock's own light (Portra 800: D55, Vision3 500T: tungsten),
+  so a tungsten film turns a daylight scene blue as a real one does and the Source tab's Filtration takes the cast away (owner's
+  call, 2026-11-26); the Film block names both lights. It is exposed and developed on the stock's profile (`virtual_negative`), uncoupled, then
   scanned by ONI's one scanner (owner's call, 2026-11-25), the same for every colour negative and every camera a photo comes from:
   a D50 lamp through the sheet's dyes and orange D-min, a Nikon D850's measured sensitivities, then the decode a scanned
   negative's RAW takes, LibRaw's matrix at 5000 K, Bradford to D65 (`film::scanner`, the sensor in `resources/film`). That scan is
   read by the negative pipeline unchanged, its reference derived on it: each channel's black on the bare film, no light, and its
-  white on the sensor's saturation, the decode's 5000 K neutral at the white level, `2^0.48`; a film's filtration, one exposure
-  offset a layer that lays a mid grey on one share of the three windows, is its sheet's through that scanner, nothing measured on
-  the photos. A paper is a print laid over it, never its reader. The film of no character is the neutral one. spektrafilm's full
+  white on the sensor's saturation, the decode's 5000 K neutral at the white level, `2^0.48`; a neutral exposes the film's three layers
+  at the same log exposure and the scene's chromaticity is read as it is, no layer offset and no gamut compressed (owner's call,
+  2026-11-26): each channel's two points are its black on the bare film and its white where a neutral at the sensor's saturation
+  reads, nothing measured on the photos. A paper is a print laid over it, never its reader. The film of no character is the neutral one. spektrafilm's full
   chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
+- **A digital photo's virtual negative is a scan made once** (owner's call, 2026-11-26): its scene shot on its film (shooting
+  exposure, halation, bloom, curves, grain, the scanner's reading) is rendered on the scan's grid before any crop or turn
+  (`Pipeline::scan`) and kept in `rgba16float` as a decode is, at the editor's resolution, at full definition only once the view
+  reads past it (100 %, export), made in 4 MP bands (`Graph::materialise_half`); the frame is read off it as a scanned negative's
+  (`Pipeline::on_scan`), Lighting included. A film's setting under a hand renders on the preview's scan, sharp once the hand
+  rests. The halation is red alone (`HALATION_COLOUR`): the red layer, the deepest, takes the light the base sends back.
 - **A new digital photo is shot on the neutral film** (owner's calls, 2026-11-24): a film of no character, first in the list
   (`stocks/generic-neutral.json`, `VirtualStock::NEUTRAL`), so a photo opens as its decode holds it, its white on the sensor's
   saturation. Each layer's density above its clear bare film is its `range` times the sRGB code of its own working-space channel's
