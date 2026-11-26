@@ -14062,5 +14062,12 @@
     "status": "done",
     "title": "CLAUDE.md: a colour negative's virtual film is its data sheet (model S), no scanner between",
     "detail": "The working notes follow #3880 to #3882: Otsu 2018's spectra for colour negatives, the sheet's Status M curves with each film's own couplers as the negative, each channel its own layer, the grain's Amount read alone; the D850 scanner's lines leave. The state before stays under the tag virtual-negative-d850-two-points."
+  },
+  {
+    "id": 3965,
+    "type": "fix",
+    "title": "The menu's welcome plays again from its first gift, every gift wrapped, as often as it is asked; a welcome seen to its end keeps none of its gifts opened",
+    "status": "done",
+    "detail": "Show What's New Again only emptied the 1.x notes' list and never showed the welcome; What's New in ONI 2.0 showed it on the gifts opened on an earlier pass, so a person who had seen it got every gift already open. The opened gifts are kept only while a first pass is left halfway: the welcome closed at its end lets them go, and both menu entries wrap them again before showing it. The seen marker compares the release alone (2.0), not the build: an earlier 2.0 build's showing counts as seen, a 1.6 one does not. Checks: window check welcome_reel::a_welcome_seen_plays_again_from_its_first_gift (seen on 2.0 with every gift opened, three showings from the menu each on its first gift wrapped, seen on 1.6 or 1.6.2 shown at launch; twin: without the fix the menu shows nothing), welcome_reel, welcome_card, help, migration, sheets; help unit tests; clippy on oni-app."
   }
 ]

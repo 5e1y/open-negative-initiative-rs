@@ -197,6 +197,14 @@ impl Ctl {
     }
 
 
+    /// The welcome asked for from the menu: again from its first gift, every gift wrapped, however often it is asked.
+    pub(in crate::app) fn replay_welcome(&self) -> bool {
+        if let Err(e) = self.state.borrow_mut().preferences.set(PROGRESS_KEY, serde_json::Value::Null) {
+            crate::timing::line(&format!("welcome: the opened gifts cannot be wrapped again: {e}"));
+        }
+        self.open_welcome()
+    }
+
     /// The welcome on its first gift still wrapped, the gifts opened on an earlier launch left open; whether a
     /// window shows it.
     pub(in crate::app) fn open_welcome(&self) -> bool {
@@ -258,10 +266,12 @@ impl Ctl {
             return;
         }
         w.global::<Help>().set_welcome_shown(false);
+        // Seen to its end: the gifts opened are kept only while a first pass is left halfway, so the next showing
+        // begins on the first gift, wrapped.
         let written = {
             let mut s = self.state.borrow_mut();
             s.help.welcome = None;
-            s.preferences.set(WELCOME_KEY, EDITION.into())
+            s.preferences.set(WELCOME_KEY, EDITION.into()).and_then(|()| s.preferences.set(PROGRESS_KEY, serde_json::Value::Null))
         };
         if let Err(e) = written {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));

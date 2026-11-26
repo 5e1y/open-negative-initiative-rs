@@ -233,3 +233,51 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
     assert!(!help.get_welcome_shown(), "its last key enters the app");
     shell.window.hide().unwrap();
 }
+
+/// A welcome seen to its end on an earlier build of this release, its gifts all opened: not shown at launch, and the
+/// menu plays it again from its first gift, every gift wrapped, as often as it is asked; a person from the release
+/// before sees it at launch.
+pub(crate) fn a_welcome_seen_plays_again_from_its_first_gift() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the welcome's replay is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-welcome-again-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let support = root.join("Support");
+    std::fs::create_dir_all(&support).unwrap();
+    let seen = |edition: &str| std::fs::write(support.join("preferences.json"), format!("{{\"welcomeSeen\": \"{edition}\", \"welcomeProgress\": \"2.0:15\"}}")).unwrap();
+    seen("2.0");
+    let rig = common::rig();
+    oni_app::language::speak(Some(oni_i18n::Language::English));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.set_size(slint::PhysicalSize::new(1440, 900));
+    shell.window.show().unwrap();
+    let help = shell.window.global::<Help>();
+    assert!(!shell.ctl.welcome_due(), "seen on this release: not shown at launch");
+    for (round, act) in [oni_app::Act::WhatsNew, oni_app::Act::Welcome, oni_app::Act::WhatsNew].into_iter().enumerate() {
+        shell.ctl.act(act);
+        rig.settle();
+        assert!(help.get_welcome_shown(), "round {round}: the menu shows the welcome");
+        assert_eq!((help.get_welcome_page(), help.get_welcome_unwrapped()), (1, 0), "round {round}: on its first gift, every gift wrapped");
+        // Opened, then left at its end: seen, and nothing of its gifts kept for the next showing.
+        help.invoke_welcome_open();
+        assert_ne!(help.get_welcome_unwrapped(), 0, "round {round}: twin, the gift opened shows opened");
+        help.invoke_welcome_closed();
+        rig.settle();
+        assert!(!help.get_welcome_shown() && !shell.ctl.welcome_due(), "round {round}: closed and seen");
+    }
+    shell.window.hide().unwrap();
+    drop(shell);
+    // A person whose last welcome was the release before's sees this one at launch.
+    for edition in ["1.6", "1.6.2"] {
+        seen(edition);
+        let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+        let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+        let shell = Shell::new(store, oni_app::render::Engine::shared(&gpu), options).unwrap();
+        assert!(shell.ctl.welcome_due(), "seen on {edition}: shown at launch");
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}

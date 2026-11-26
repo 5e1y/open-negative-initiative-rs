@@ -207,7 +207,7 @@ impl Ctl {
         }
     }
 
-    /// `showAgain`: every note news again, now and on the next launch.
+    /// `showAgain`: every note news again, now and on the next launch; the menu then shows the welcome again.
     pub(super) fn show_whats_new_again(&self) {
         let removed = {
             let mut s = self.state.borrow_mut();

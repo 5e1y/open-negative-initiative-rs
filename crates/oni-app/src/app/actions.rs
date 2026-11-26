@@ -131,9 +131,12 @@ impl Ctl {
             Act::ShowPresets => self.show_presets_folder(),
             Act::Console => self.open_console(),
             Act::Welcome => {
-                self.open_welcome();
+                self.replay_welcome();
             }
-            Act::WhatsNew => self.show_whats_new_again(),
+            Act::WhatsNew => {
+                self.show_whats_new_again();
+                self.replay_welcome();
+            }
             Act::Report => self.open_report(),
             Act::CheckUpdates | Act::Update => self.check_for_updates(true),
             Act::Wrapped => self.show_wrapped(super::year::told_year(oni_library::wrapped::today())),
