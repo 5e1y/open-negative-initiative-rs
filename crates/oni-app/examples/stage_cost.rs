@@ -131,6 +131,39 @@ fn main() {
         t.bloom = Default::default();
     }));
     println!("  pinch, a lighter render: {pinched:.1} ms p50; without grain {no_grain:.1}, halation {no_halation:.1}, bloom {no_bloom:.1}, any {none:.1}");
+    // The owner's open question: a gesture's lighter render taken from a neighbour scale's, stretched, against the exact
+    // one; its cost is the stretch alone, its difference read in display code on the overlap.
+    if std::env::var_os("ONI_COST_NEIGHBOUR").is_some() {
+        let request = |scale: f64| Request { full_width: Some(negative.full_width), scale, ..Request::default() };
+        let inputs = inputs_seeded(negative.seed);
+        let code = |v: f32| if v <= 0.003_130_8 { 12.92 * v } else { 1.055 * v.max(0.0).powf(1.0 / 2.4) - 0.055 };
+        for ratio in [2f64.powf(0.125), 2f64.powf(0.25), 2f64.powf(0.5)] {
+            let (mut mean, mut p99, mut grain) = (Vec::new(), Vec::new(), Vec::new());
+            for s0 in [0.45, 0.6, 0.8] {
+                let (graph, pipeline) = e.parts();
+                let exact = pipeline.image(graph, &full, &s, &request(s0), &inputs).unwrap();
+                let rung = pipeline.image(graph, &full, &s, &request(s0 / ratio), &inputs).unwrap();
+                let made = graph.materialise(&rung).unwrap();
+                let stretched = Image::new(&made).lanczos(ratio);
+                let r = exact.extent().intersect(&stretched.extent());
+                let r = Rect::new(r.x + r.w as i32 / 4, r.y + r.h as i32 / 4, r.w / 2, r.h / 2);
+                let a = graph.render(&exact, r, None).unwrap();
+                let b = graph.render(&stretched, r, None).unwrap();
+                let mut d: Vec<f32> = a.iter().zip(&b).flat_map(|(x, y)| (0..3).map(move |c| (code(x[c]) - code(y[c])).abs())).collect();
+                mean.push(d.iter().sum::<f32>() / d.len() as f32);
+                d.sort_by(f32::total_cmp);
+                p99.push(d[d.len() * 99 / 100]);
+                // The grain's own spread in display code, 1-pixel differences of green, exact against stretched.
+                let spread = |v: &[[f32; 4]]| {
+                    let g: Vec<f32> = v.windows(2).map(|w| code(w[1][1]) - code(w[0][1])).collect();
+                    (g.iter().map(|x| x * x).sum::<f32>() / g.len() as f32).sqrt()
+                };
+                grain.push(spread(&b) / spread(&a));
+            }
+            let avg = |v: &[f32]| v.iter().sum::<f32>() / v.len() as f32;
+            println!("  neighbour scale x{ratio:.3}: display code off by {:.4} mean, {:.4} p99 (of 1); pixel-to-pixel spread {:.2} of the exact's", avg(&mean), avg(&p99), avg(&grain));
+        }
+    }
     // A gesture's pan: lighter renders while the hand moves, then the sharp one it ends on.
     let gesture = |dx: f64, coarse: bool| View { coarse, ..at(dx) };
     let ended: Vec<f64> = (0..5).map(|i| {
@@ -159,11 +192,12 @@ fn main() {
 
     // The chain's stages on the same pixels: at fit the preview reduced to the region's width, each prefix made whole;
     // at 100 % the full frame's centre, the canvas's size.
-    for (zoomed, base) in [(false, negative.preview.clone()), (true, full.clone())] {
+    // At fit from the full frame too, as the canvas renders once the whole decode is in, at the canvas's own size.
+    let fitted = (canvas.0 / f64::from(full.extent().w)).min(canvas.1 / f64::from(full.extent().h));
+    for (case, base, zoomed, scale) in [("fit, from the preview", negative.preview.clone(), false, f64::from(region.w) / f64::from(w)), ("fit, from the full frame", full.clone(), false, fitted), ("100 %", full.clone(), true, 1.0)] {
     let (w, h) = (base.extent().w, base.extent().h);
-    let scale = if zoomed { 1.0 } else { f64::from(region.w) / f64::from(w) };
     let shown = zoomed.then(|| Rect::new(((w as f64 - canvas.0) / 2.0) as i32, ((h as f64 - canvas.1) / 2.0) as i32, canvas.0 as u32, canvas.1 as u32));
-    println!("{}:", if zoomed { "100 %" } else { "fit" });
+    println!("{case}:");
     let request = Request { full_width: Some(negative.full_width), scale, ..Request::default() };
     let inputs = Inputs { seed: negative.seed, ..Inputs::default() };
     let (graph, pipeline) = e.parts();
@@ -198,7 +232,7 @@ fn main() {
         let r = shown.unwrap_or_else(|| last.extent());
         let px = graph.render(last, r, None).unwrap();
         let bytes: Vec<u8> = px.iter().flat_map(|p| p.iter().flat_map(|v| v.to_le_bytes())).collect();
-        let name = format!("{}-{}.f32", photo.file_name().unwrap().to_string_lossy(), if zoomed { "100" } else { "fit" });
+        let name = format!("{}-{}.f32", photo.file_name().unwrap().to_string_lossy(), case.replace([' ', ','], ""));
         std::fs::write(Path::new(&dir).join(name), bytes).unwrap();
     }
     let mut before = 0.0;
