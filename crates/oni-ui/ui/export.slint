@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Flight, Place, Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField, PreviewState } from "ds/ds.slint";
+import { Flight, Place, Card, CardCorners, Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField, PreviewState } from "ds/ds.slint";
 import { FrameFields, FrameName } from "export_fields.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
 import { PresetPicker, PresetNameSheet } from "export_presets.slint";
@@ -123,6 +123,20 @@ export component ExportColumn inherits Scroller {
     }
 }
 
+
+// The export's card: it opens from `beside` to `rest` as `open` goes to 1, its content laid once at its rest.
+export component ExportCard inherits Card {
+    in property <Place> rest;
+    in property <Place> beside;
+    in property <float> open;
+    x: root.beside.x + (root.rest.x - root.beside.x) * root.open;
+    y: root.beside.y + (root.rest.y - root.beside.y) * root.open;
+    width: root.beside.width + (root.rest.width - root.beside.width) * root.open;
+    height: root.beside.height + (root.rest.height - root.beside.height) * root.open;
+    clip: root.open < 1;
+    ExportColumn { x: root.rest.x - root.x; y: root.rest.y - root.y; width: root.rest.width; height: root.rest.height; }
+    CardCorners { width: parent.width; height: parent.height; }
+}
 
 // The quality slider, its hand held by Rust like every other slider.
 component QualitySlider inherits Slider {

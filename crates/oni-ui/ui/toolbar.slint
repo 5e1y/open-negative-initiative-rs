@@ -367,3 +367,19 @@ export component Toolbar inherits Surface {
         }
     }
 }
+
+// The bar's room at the window's top: the bar slides up out of it as the export opens, which keeps the room
+// to drag the window under the traffic lights; that room takes every press from the bar on its way out.
+export component BarRoom inherits Rectangle {
+    in property <bool> exporting;
+    // How far the bar has gone, 1 once it is out of sight.
+    in property <float> gone;
+    height: ShellStyle.bar-height;
+    clip: true;
+    if !root.exporting || root.gone < 1: Toolbar { y: -root.gone * self.height; cache-rendering-hint: true; }
+    if root.exporting: TouchArea {
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { Bar.room-pressed(); }
+        }
+    }
+}
