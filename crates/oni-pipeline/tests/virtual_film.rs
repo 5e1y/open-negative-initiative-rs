@@ -314,3 +314,45 @@ fn the_film_prints_a_grey_and_its_negative_is_read_as_any_negative() {
     assert!(on.iter().all(|p| p.iter().all(|v| v.is_finite())));
 }
 
+
+/// A tungsten film sees a daylight scene in its decode's light and prints its grey blue, as a real one does; a daylight
+/// film prints it near neutral, and the Source tab's Filtration takes the cast away along the whole ramp.
+#[test]
+fn a_tungsten_film_prints_a_daylight_grey_blue_and_the_filtration_takes_it_away() {
+    let Some(mut g) = graph("a_tungsten_film_prints_a_daylight_grey_blue_and_the_filtration_takes_it_away") else { return };
+    let shot = |key: &'static str| {
+        let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of(key)).per_pixel_only();
+        s.grain.amount = 0.0;
+        s
+    };
+    let mut at = |s: &PipelineSettings, scene: [f32; 3]| {
+        let source = g.upload(4, 4, &[[scene[0], scene[1], scene[2], 1.0]; 16]).unwrap();
+        Pipeline::new().render(&mut g, &source, s, &Request::default(), &Default::default(), None).unwrap().1[0]
+    };
+    let blue = |p: V4| p[2] / p[0];
+    let (mut tungsten, daylight) = (shot("kodak-vision3-500t"), shot("kodak-vision3-250d"));
+    let (cast, day) = (at(&tungsten, [GREY; 3]), at(&daylight, [GREY; 3]));
+    println!("a daylight grey: 500T {cast:?}, 250D {day:?}");
+    assert!(blue(cast) > 1.5 && cast[2] > cast[1] && cast[1] > cast[0], "{cast:?}");
+    assert!((blue(day) - 1.0).abs() < 0.15, "{day:?}");
+    // Twin: the same grey lit at the tungsten film's own white reaches its layers neutral and prints so.
+    let to_white = oni_pipeline::conversion::scene_white(&tungsten).unwrap();
+    let rows = [to_white.r_vector, to_white.g_vector, to_white.b_vector].map(|r| [f64::from(r[0]), f64::from(r[1]), f64::from(r[2])]);
+    let lit = oni_settings::white::apply(&oni_settings::white::inverse(&rows), [f64::from(GREY); 3]).map(|v| v as f32);
+    let under = at(&tungsten, lit);
+    assert!((blue(under) - 1.0).abs() < 0.1, "twin: {under:?}");
+    // Red and blue filtration until the mid grey prints neutral, as a hand sets them; the ramp follows it.
+    let ramp = [0.045, GREY, 0.5];
+    let widest = |at: &mut dyn FnMut(&PipelineSettings, [f32; 3]) -> V4, s: &PipelineSettings| {
+        ramp.iter().map(|&v| at(s, [v; 3])).map(|p| (p[0] - p[1]).abs().max((p[2] - p[1]).abs())).fold(0.0f32, f32::max)
+    };
+    let before = widest(&mut at, &tungsten);
+    for _ in 0..30 {
+        let p = at(&tungsten, [GREY; 3]);
+        tungsten.gains.stops[0] += 0.4 * (p[0] / p[1]).log2();
+        tungsten.gains.stops[2] += 0.4 * (p[2] / p[1]).log2();
+    }
+    let after = widest(&mut at, &tungsten);
+    println!("the filtration {:?}: the ramp's widest channel gap {before:.3} before, {after:.4} after", tungsten.gains.stops);
+    assert!(after < 0.01 && before > 0.1, "{before} {after}");
+}

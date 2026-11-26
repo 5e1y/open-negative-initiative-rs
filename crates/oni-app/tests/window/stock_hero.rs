@@ -244,7 +244,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     rig.key("\u{1b}");
     rig.pump();
 
-    // Each film picked shoots the photo on it, at its own white, as one step an Undo takes back.
+    // Each film picked shoots the photo on it, its own light in sight, as one step an Undo takes back.
     for &next in VirtualStock::all().iter().rev() {
         let (before, renders, undo) = (film().stock, ctl.state.borrow().renders(), menus.get_live().undo);
         drop_menu(rig, w);
@@ -253,8 +253,8 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
         // Each step reads the store and the panel, which land with the posts: no spring of the eighty to wait out.
         rig.pump();
         assert_eq!((film().stock, panel.get_stock().name.as_str()), (next, next.name()));
-        let light = next.white().map_or("The scene's own light".to_string(), |w| format!("{} K", (w.kelvin / 10.0).round() * 10.0));
-        assert!(panel.get_film_white().starts_with(&light), "{} lights the scene at {light}: {}", next.name(), panel.get_film_white());
+        let light = next.white().map_or("The scene's own light".to_string(), |w| format!("balanced for {} K", (w.kelvin / 10.0).round() * 10.0));
+        assert!(panel.get_film_white().contains(&light), "{} names its light, {light}: {}", next.name(), panel.get_film_white());
         if next == before {
             assert_eq!(menus.get_live().undo, undo, "the film it stands on writes no step");
             continue;

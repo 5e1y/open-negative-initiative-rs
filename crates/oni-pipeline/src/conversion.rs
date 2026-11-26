@@ -30,8 +30,8 @@ pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
     if s.mode.reads_positive() { density_axis::base() } else { s.density_ceiling }
 }
 
-/// A digital photo's scene lit at its film's own white, relative to the white its decode stands on, as the
-/// film sees a scene and its print balances what it leaves; none on a film mode or a film keeping the scene's own.
+/// A digital photo's scene, in the light its decode balanced, as a film balanced for its own white sees it: a grey under
+/// that white reaches the layers neutral, so a tungsten film turns a daylight scene blue; none on a film keeping the scene's own.
 pub fn scene_white(s: &PipelineSettings) -> Option<ColorMatrix> {
     let white = s.film()?.stock.white()?;
     let anchor = oni_settings::white::anchor(s.decoded_from_mosaic);

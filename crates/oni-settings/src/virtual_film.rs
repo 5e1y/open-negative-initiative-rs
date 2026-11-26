@@ -135,8 +135,8 @@ impl VirtualStock {
         self.entry().balance
     }
 
-    /// The light the stock is balanced for, its profile's own: the scene is lit at it, as the film sees a
-    /// scene, and the print balances what it leaves; none on a film that keeps the scene's own.
+    /// The light the stock is balanced for, its profile's own: a grey under it reaches its layers neutral, any other
+    /// light casts its colour on them; none on a film that keeps the scene's own.
     pub fn white(self) -> Option<White> {
         let (x, y) = self.balance().xy()?;
         Some(white::of_uv(white::uv_of_xy(x, y)))

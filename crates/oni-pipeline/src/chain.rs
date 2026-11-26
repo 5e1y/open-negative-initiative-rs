@@ -65,11 +65,11 @@ impl Pipeline {
         self.read_scan(graph, image, s, &input)
     }
 
-    /// The scene healed and lit at its film's white, shot on its film with its effects and grained: a scan.
+    /// The scene healed, seen by its film in its decode's light, shot on that film with its effects and grained: a scan.
     fn shot(&mut self, graph: &mut Graph, input: &Input, source: &Source, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {
         let scan = input.image.extent();
         let healed = self.healed(graph, input.image.clone(), s, input.scale, inputs)?;
-        // A film's look reads the scene as it was shot, its own white; any other film takes its own light.
+        // A film's look reads the scene as its decode balanced it; any other film sees it against its own white.
         let has_look = s.film().is_some_and(|f| f.stock.look().is_some());
         let field_base = healed.clone();
         let lit = match conversion::scene_white(s).filter(|_| !has_look) {

@@ -118,7 +118,7 @@ pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSetting
     }
 }
 
-/// The Film block's read-only lines: the stock's own white, the reference its negative is read on, then the scanner
+/// The Film block's read-only lines: the scene's light and the stock's own, the reference its negative is read on, then the scanner
 /// reading it, a colour negative's alone.
 pub fn film_lines(s: &PipelineSettings) -> [String; 5] {
     let Some(film) = s.film() else { return Default::default() };
@@ -126,8 +126,10 @@ pub fn film_lines(s: &PipelineSettings) -> [String; 5] {
     let stops = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x), 2, true, crate::fields::Unit::Stops));
     let shares = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x) * 100.0, 1, false, crate::fields::Unit::Percent));
     let channels = |[red, green, blue]: [String; 3]| oni_i18n::tr!("R {red} · G {green} · B {blue}", red = red, green = green, blue = blue);
+    let kelvin = |w: oni_settings::white::White| (w.kelvin / 10.0).round() * 10.0;
+    let scene = kelvin(oni_settings::white::of_uv(oni_settings::white::anchor(s.decoded_from_mosaic)));
     let light = match film.stock.white() {
-        Some(white) => oni_i18n::tr!("{kelvin} K, the light the stock is balanced for", kelvin = (white.kelvin / 10.0).round() * 10.0),
+        Some(white) => oni_i18n::tr!("A {scene} K scene on a film balanced for {film} K", scene = scene, film = kelvin(white)),
         None => oni_i18n::tr("The scene's own light, as its decode balanced it").to_owned(),
     };
     let entry = film.stock.entry();
