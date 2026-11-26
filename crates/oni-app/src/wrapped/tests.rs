@@ -1,6 +1,6 @@
 use super::*;
 use oni_library::wrapped::palette::Swatch;
-use oni_library::wrapped::{Darkroom, Frames, Palette, Persona};
+use oni_library::wrapped::{Darkroom, Frames, Palette, Persona, Trait};
 
 fn full() -> Year {
     let mut by_month = [0; 12];

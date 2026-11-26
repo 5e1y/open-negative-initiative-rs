@@ -1,0 +1,240 @@
+// The year on film's parts: what a scene is made of, the measures every piece shares, a print, a scene's
+// words and figure, a named line, and the brand's band at a frame's foot.
+import { DS } from "tokens.slint";
+import { Colour, Motion, Type } from "theme.slint";
+import { Icons } from "icons.slint";
+
+export enum WrappedKind { title, figure, bars, film, lines, photos, palette, persona, summary, farewell }
+
+export struct WrappedLine {
+    label: string,
+    value: string,
+    // Its weight against the heaviest, 0 to 1; 0 draws no bar.
+    share: float,
+}
+
+export struct WrappedSwatch {
+    ink: color,
+    share: float,
+}
+
+export struct WrappedScene {
+    kind: WrappedKind,
+    eyebrow: string,
+    figure: string,
+    // Above zero, the figure is this number counted up as the scene shows, `unit` after it.
+    count: int,
+    unit: string,
+    caption: string,
+    note: string,
+    photos: [image],
+    lines: [WrappedLine],
+    bars: [float],
+    // The bar lit, -1 for none.
+    lit: int,
+    marks: [string],
+    swatches: [WrappedSwatch],
+    artwork: image,
+    has-artwork: bool,
+}
+
+export global WrappedStyle {
+    // `Color.black`, the ground the year is told on, whatever the theme.
+    out property <color> ground: Colour.black;
+    // A developed strip's base in the dark, warm and nearly black.
+    out property <color> film: #241a11;
+    out property <color> frame: Colour.ground;
+    out property <color> gold: Colour.medal[3];
+    out property <color> title-ink: Colour.selected;
+    // A print's white border, a paper's rather than a screen's.
+    out property <color> paper: #f1ede4;
+    // A frame is 360 by 480 units, a half-frame's 3 by 4; the strip adds a rebate above and under it, which
+    // makes a frame's piece of it 9 by 16, and a frame line between two.
+    out property <float> frame-width: 360;
+    out property <float> frame-height: 480;
+    out property <float> rebate: 80;
+    out property <float> frame-line: 16;
+    out property <float> pitch: root.frame-width + root.frame-line;
+    out property <float> strip-height: root.frame-height + 2 * root.rebate;
+    // Half-frame: four perforations a frame.
+    out property <int> perforations: 4;
+    out property <float> hole-width: 38;
+    out property <float> hole-height: 30;
+    out property <float> hole-inset: 12;
+    // A story's players cover its top and bottom 14 %: the rebates lie there, and nothing of a scene.
+    out property <float> brand-height: 58;
+    // A scene's margin each side, the width it leaves, and where a scene ends above the brand's band.
+    out property <float> pad: 26;
+    out property <float> inner: root.frame-width - 2 * root.pad;
+    out property <float> foot: root.frame-height - root.brand-height - 14;
+    // How far a part has risen in: `told` runs 0 to 1 as a scene tells itself, the part over `from` to `to` of it.
+    public pure function rise(told: float, from: float, to: float) -> float {
+        1 - Math.pow(1 - clamp((told - from) / (to - from), 0, 1), 3)
+    }
+    // The frames beside the one in the gate, dimmed.
+    out property <float> beside: 0.45;
+    // The film's advance to the next frame, landing with a short overrun as a lever's stroke does.
+    out property <duration> advance: Motion.reduced ? 0ms : 720ms;
+    // A scene tells itself over this long once in the gate, then holds until the film advances.
+    out property <duration> tell: Motion.reduced ? 0ms : 2200ms;
+    out property <duration> hold: 7s;
+    out property <duration> tick: 50ms;
+    out property <duration> enter: Motion.reduced ? 0ms : 500ms;
+    // One frame at 60 Hz: a value set as the view is laid would not animate.
+    out property <duration> frame-time: 16ms;
+    // The room kept above the strip for the progress, and under it for the keys.
+    out property <length> chrome-above: 44px;
+    out property <length> chrome-under: 92px;
+    out property <length> progress-height: 3px;
+    out property <length> progress-gap: 4px;
+    out property <length> progress-width: 520px;
+    out property <color> progress-idle: Colour.track;
+    out property <color> progress-done: Colour.ink;
+    // The share screen's cards: the room its words and keys take, and the gap between two cards.
+    out property <length> share-words: 150px;
+    out property <length> share-keys: 96px;
+    out property <float> share-gap: 28;
+    out property <color> share-ring: Colour.selected;
+    out property <length> share-heading: 34px;
+}
+
+// A small print with its paper's white border, laid a little askew as a hand lays one.
+export component Print inherits Rectangle {
+    in property <image> source;
+    in property <length> u;
+    in property <angle> tilt;
+    in property <float> shown: 1;
+    background: WrappedStyle.paper;
+    opacity: root.shown;
+    transform-rotation: root.tilt;
+    transform-origin: { x: self.width / 2, y: self.height / 2 };
+    drop-shadow-color: Colour.scrim;
+    drop-shadow-blur: 12 * root.u;
+    drop-shadow-offset-y: 5 * root.u;
+    Image {
+        x: 4 * root.u;
+        y: 4 * root.u;
+        width: parent.width - 8 * root.u;
+        height: parent.height - 8 * root.u;
+        source: root.source;
+        image-fit: cover;
+    }
+}
+
+export component Words inherits Text {
+    in property <length> u;
+    in property <float> size: 14;
+    in property <float> shown: 1;
+    font-family: Type.family;
+    font-size: root.size * root.u;
+    color: Colour.ink;
+    opacity: root.shown;
+    horizontal-alignment: center;
+    wrap: word-wrap;
+}
+
+export component Figure inherits Text {
+    in property <length> u;
+    in property <float> size: 60;
+    in property <float> shown: 1;
+    font-family: DS.typo-wrapped-figure-family;
+    font-weight: DS.typo-wrapped-figure-weight;
+    font-size: root.size * root.u;
+    color: Colour.ink;
+    opacity: root.shown;
+    horizontal-alignment: center;
+    wrap: word-wrap;
+}
+
+// A named line with its value, over a thin bar of its share when it has one.
+export component LineRow inherits Rectangle {
+    in property <WrappedLine> line;
+    in property <length> u;
+    in property <float> shown: 1;
+    height: (root.line.share > 0 ? 30 : 22) * root.u;
+    opacity: root.shown;
+    HorizontalLayout {
+        y: 0;
+        height: 18 * root.u;
+        spacing: 10 * root.u;
+        Text {
+            text: root.line.label;
+            font-family: Type.family;
+            font-size: 12.5 * root.u;
+            color: Colour.ink-secondary;
+            vertical-alignment: center;
+        }
+        Text {
+            horizontal-stretch: 1;
+            text: root.line.value;
+            font-family: Type.family;
+            font-size: 12.5 * root.u;
+            font-weight: Type.strong;
+            color: Colour.ink;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    if root.line.share > 0: Rectangle {
+        x: 0;
+        y: 22 * root.u;
+        width: parent.width;
+        height: 3 * root.u;
+        border-radius: self.height / 2;
+        background: Colour.track;
+        Rectangle {
+            x: 0;
+            width: parent.width * root.line.share * root.shown;
+            height: parent.height;
+            border-radius: self.height / 2;
+            background: WrappedStyle.gold;
+        }
+    }
+}
+
+// Who made the picture, at a frame's foot: ONI's mark, and what to tag when it is posted.
+export component Brand inherits Rectangle {
+    in property <length> u;
+    in property <string> hashtag;
+    in property <string> account;
+    height: WrappedStyle.brand-height * root.u;
+    Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: max(1px, 0.75 * root.u);
+        background: Colour.separator;
+    }
+    Image {
+        x: 0;
+        y: 17 * root.u;
+        height: 34 * root.u;
+        width: self.height * self.source.width / max(1, self.source.height);
+        source: Icons.oni-logo;
+        colorize: Colour.ink;
+        image-fit: contain;
+    }
+    Text {
+        x: 0;
+        y: 15 * root.u;
+        width: parent.width;
+        text: root.hashtag;
+        font-family: Type.family;
+        font-size: 16 * root.u;
+        font-weight: Type.bold;
+        color: WrappedStyle.gold;
+        horizontal-alignment: right;
+    }
+    Text {
+        x: 0;
+        y: 37 * root.u;
+        width: parent.width;
+        text: root.account;
+        font-family: Type.family;
+        font-size: 11.5 * root.u;
+        font-weight: Type.strong;
+        color: Colour.ink-secondary;
+        horizontal-alignment: right;
+    }
+}
