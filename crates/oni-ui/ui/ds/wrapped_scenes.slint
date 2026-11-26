@@ -37,9 +37,12 @@ export component Column inherits Rectangle {
     in property <length> u;
     in property <float> told: 1;
     in property <string> figure-text;
+    // The figure as it stands once counted.
+    in property <string> figure-whole;
     in property <color> accent;
-    // The figure's size, where a scene sets it smaller than its own.
-    in property <float> size: root.scene.size;
+    // The figure measured at its size: where the face makes it wider than its room, it is set that much smaller.
+    probe := Display { visible: false; width: 0; u: root.u; size: root.scene.size; text: root.figure-whole; wrap: no-wrap; }
+    property <float> size: root.scene.size * min(1, root.room-width / max(1px, probe.preferred-width));
     property <length> pad: WrappedStyle.pad * root.u;
     property <length> top: WrappedStyle.safe-top * root.u;
     out property <length> room-left: root.pad;
@@ -92,15 +95,27 @@ export component Column inherits Rectangle {
     }
 }
 
-// What fills a frame under its words: the photos, exposed in a white flash, and the veil that lets the
-// words be read, from `veil-top` down to `veil-foot` and on to the frame's foot.
+// What fills a frame under its words: its photo's own light, blurred, until the photos are `exposed`,
+// which come out of a white flash; and the veil that lets the words be read, from `veil-top` down.
 export component Bleed inherits Rectangle {
     in property <float> told: 1;
     in property <length> veil-top;
     in property <length> veil-foot;
+    in property <image> backdrop;
+    in property <bool> exposed: true;
     clip: true;
+    // 0 to 1 as photos developed after the scene was laid come out.
+    property <float> exposure: root.exposed ? 1 : 0;
+    animate exposure { duration: WrappedStyle.expose; easing: ease-out; }
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.backdrop;
+        image-fit: cover;
+        opacity: WrappedStyle.rise(root.told, 0, 0.3) * (1 - root.exposure);
+    }
     Rectangle {
-        opacity: WrappedStyle.rise(root.told, 0, 0.16);
+        opacity: root.exposure * WrappedStyle.rise(root.told, 0, 0.16);
         @children
     }
     Rectangle {
@@ -113,10 +128,11 @@ export component Bleed inherits Rectangle {
         height: parent.height - self.y;
         background: @linear-gradient(180deg, WrappedStyle.ground.with-alpha(WrappedStyle.veil) 0%, WrappedStyle.ground.with-alpha(WrappedStyle.veil-foot) 100%);
     }
-    // The frame is exposed: a flash of white that the photos come out of.
+    // The frame is exposed: a flash of white that the photos come out of, as the scene is told or as
+    // they are developed.
     Rectangle {
         background: WrappedStyle.ink;
-        opacity: 1 - WrappedStyle.rise(root.told, 0.02, 0.26);
+        opacity: root.exposed ? max(1 - WrappedStyle.rise(root.told, 0.02, 0.26), 1 - root.exposure) : 0;
     }
 }
 
@@ -128,6 +144,7 @@ export component HeroScene inherits Rectangle {
     in property <float> told: 1;
     in property <float> drift;
     in property <string> figure-text;
+    in property <string> figure-whole;
     in property <color> accent;
     in property <bool> whole;
     // Odd frames lean the other way, so two prints in a row never look alike.
@@ -135,8 +152,10 @@ export component HeroScene inherits Rectangle {
     property <image> photo: root.scene.photos[0];
     property <bool> has-photo: root.scene.photos.length > 0 && self.photo.width > 0;
     property <float> ratio: self.photo.width > 0 ? self.photo.height / self.photo.width : 0.667;
-    if root.has-photo && !root.whole: Bleed {
+    if !root.whole: Bleed {
         told: root.told;
+        backdrop: root.scene.backdrop;
+        exposed: root.has-photo;
         veil-top: column.words-top - WrappedStyle.fade * root.u;
         veil-foot: column.words-top + WrappedStyle.veiled * root.u;
         Image {
@@ -153,6 +172,7 @@ export component HeroScene inherits Rectangle {
         u: root.u;
         told: root.told;
         figure-text: root.figure-text;
+        figure-whole: root.figure-whole;
         accent: root.accent;
         for line[i] in root.scene.lines: LineRow {
             u: root.u;

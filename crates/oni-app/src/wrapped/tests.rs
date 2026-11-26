@@ -156,7 +156,7 @@ fn a_full_year_tells_every_scene_in_order_each_on_a_photo_of_its_own() {
         (Kind::Hero, "SEE YOU NEXT YEAR", "ON FILM, OBVIOUSLY.", ["/roll/F47.NEF".to_string()].as_slice())
     );
     // Every figure is set to hold in its frame.
-    assert!(story.iter().all(|s| (staging::LEAST..=staging::MOST).contains(&s.size)), "{:?}", story.iter().map(|s| s.size).collect::<Vec<_>>());
+    assert!(story.iter().all(|s| s.size > 0.0 && s.size <= staging::MOST), "{:?}", story.iter().map(|s| s.size).collect::<Vec<_>>());
 }
 
 #[test]

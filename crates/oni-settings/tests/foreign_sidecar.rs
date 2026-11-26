@@ -144,3 +144,24 @@ fn a_name_too_long_for_its_sidecar_says_so() {
     sidecar::set_label(Medal::Gold, &fits, false).unwrap();
     assert!(url_for(&fits).exists());
 }
+
+#[test]
+fn a_sidecar_is_read_against_a_print_already_known_without_opening_its_original() {
+    let dir = scratch("foreign-printed");
+    let photo = dir.join("DSC_0002.NEF");
+    std::fs::write(&photo, shot("2024:05:01 10:00:00", 3)).unwrap();
+    let mut edited = PipelineSettings::default();
+    edited.print.exposure = 0.7;
+    sidecar::write(&edited, &photo, Default::default()).unwrap();
+    let own = identity::of(&photo).unwrap();
+    // The original gone from the disk: its print, as an index keeps it, still reads its sidecar.
+    std::fs::remove_file(&photo).unwrap();
+    let loaded = sidecar::read_printed(&photo, false, &own).unwrap();
+    assert!(!loaded.foreign && !loaded.is_new);
+    assert_eq!(loaded.settings.print.exposure, 0.7);
+    // Twin: another photo's print, its own date and bytes, is not this sidecar's.
+    let other = dir.join("other.NEF");
+    std::fs::write(&other, shot("2026:10:25 09:00:00", 5)).unwrap();
+    let stranger = sidecar::read_printed(&photo, false, &identity::of(&other).unwrap()).unwrap();
+    assert!(stranger.foreign && stranger.is_new);
+}

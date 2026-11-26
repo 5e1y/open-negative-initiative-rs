@@ -21,7 +21,8 @@ pub fn upper(text: &str) -> String {
 /// A scene whose figure is a number, counted up as it shows.
 pub fn counted_scene(eyebrow: &str, count: usize, unit: &str, headline: &str, note: String, photo: Option<String>) -> Scene {
     let whole = format!("{}{unit}", figure(count));
-    let (size, _) = fit(&whole, ACROSS, DOWN, MOST, LEAST);
+    // A number and its unit stand on one line: the space between them breaks nothing.
+    let (size, _) = fit(&whole.replace(' ', "\u{a0}"), ACROSS, DOWN, MOST, LEAST);
     Scene { eyebrow: upper(eyebrow), figure: whole, count: Some(count), unit: unit.into(), size, headline: upper(headline), note, photos: photo.into_iter().collect(), ..Default::default() }
 }
 
@@ -152,5 +153,43 @@ mod tests {
         assert!(film.size < rolls.size && film.size >= LEAST);
         // Twin: a year written as a word is not counted, nor grouped as a number is.
         assert_eq!((worded("", "2026", "", String::new(), None).figure.as_str(), counted_scene("", 2026, "", "", String::new(), None).figure.as_str()), ("2026", "2,026"));
+    }
+
+    /// Every line of a staged figure inside its box.
+    fn holds(scene: &Scene) -> bool {
+        use crate::wrapped::fit::{LEADING, width};
+        let lines: Vec<&str> = scene.figure.lines().collect();
+        let wide = lines.iter().all(|line| width(line) * scene.size <= ACROSS + 0.01);
+        wide && lines.len() as f32 * scene.size * LEADING <= DOWN + 0.01
+    }
+
+    #[test]
+    fn every_personality_film_and_number_holds_in_its_frame_in_three_languages() {
+        let personas = [
+            "The Night Developer", "The Silver Soul", "The Projectionist", "The Time Traveller", "The Loyalist", "The Explorer",
+            "The Dust Hunter", "The Curator", "The Printer", "The Purist", "The Regular", "The Film Photographer",
+        ];
+        let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let words = ["See you next year", "Frame 0", "Grain", "White balance"];
+        for language in oni_i18n::Language::ALL {
+            for english in personas.iter().chain(&months).chain(&words) {
+                let word = oni_i18n::translated(language, english, None).unwrap_or(english);
+                assert!(holds(&worded("", word, "", String::new(), None)), "{language:?}: {word}");
+            }
+        }
+        // Every film of the catalogue, the longest camera and preset names a year may hold.
+        let films: Vec<String> = oni_settings::film::stocks().iter().map(|k| k.display_name.to_string()).collect();
+        assert!(films.len() > 50);
+        let names = ["Olympus OM-D E-M1 Mark III", "Hasselblad 500C/M", "Portra_warm_v2_final_export_definitive", "Donaudampfschifffahrtsgesellschaft"];
+        for name in films.iter().map(String::as_str).chain(names) {
+            assert!(holds(&worded("", name, "", String::new(), None)), "{name}");
+        }
+        for count in [7, 42, 1_732, 99_999, 9_999_999] {
+            assert!(holds(&counted_scene("", count, " H", "", String::new(), None)), "{count}");
+        }
+        // Twin: the French explorer at the least size a figure was once held to runs out of its frame.
+        let explorer = oni_i18n::translated(oni_i18n::Language::French, "The Explorer", None).unwrap();
+        assert!(crate::wrapped::fit::width(&upper(explorer)) * LEAST > ACROSS, "{explorer}");
+        assert!(worded("", explorer, "", String::new(), None).size < LEAST);
     }
 }

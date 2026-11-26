@@ -45,8 +45,10 @@ pub fn frames(entries: &[Entry], markers: &HashMap<String, Film>, year: Option<i
             return None;
         }
         let path = Path::new(&entry.path);
-        // The original is never opened, which a disk away would make wait: its name says how it decodes.
-        let settings = entry.sidecar_format.and_then(|_| oni_settings::sidecar::read(path, oni_decode::is_raw(path)).ok()).map(|l| l.settings);
+        // The original is never opened, which a disk away would make wait: its name says how it decodes,
+        // the index's print whose sidecar this is.
+        let read = |_| oni_settings::sidecar::read_printed(path, oni_decode::is_raw(path), &entry.fingerprint).ok();
+        let settings = entry.sidecar_format.and_then(read).map(|l| l.settings);
         let mode = settings.as_ref().map(|s| s.mode).or(entry.mode).unwrap_or_default();
         let digital = mode == ConversionMode::Digital;
         let stock = match (&settings, digital) {

@@ -91,8 +91,6 @@ export global WrappedStyle {
     out property <float> inner: root.frame-width - 2 * root.pad;
     out property <float> brand-height: 34;
     out property <float> foot: root.safe-bottom - root.brand-height;
-    // The mark's part of the logo's drawing, its left 66 of 246 units: the name beside it is set in the display face.
-    out property <int> mark-clip: 66;
     // How bright the backdrop's light is behind a scene, and on the window around the strip.
     out property <float> glow: 0.62;
     out property <float> ambient: 0.34;
@@ -102,6 +100,10 @@ export global WrappedStyle {
     out property <duration> advance: Motion.reduced ? 0ms : 320ms;
     // A scene tells itself over this long once in the gate, then holds until the film is pulled.
     out property <duration> tell: Motion.reduced ? 0ms : 1500ms;
+    // A photo developed after its scene was laid comes out of its flash over this long.
+    out property <duration> expose: Motion.reduced ? 0ms : 500ms;
+    // The film's run through the gate while a year is read, in the frame's units a millisecond.
+    out property <float> run: Motion.reduced ? 0 : 0.12;
     out property <duration> hold: 6s;
     out property <duration> tick: 50ms;
     out property <duration> enter: Motion.reduced ? 0ms : 400ms;
@@ -220,13 +222,13 @@ export component Brand inherits Rectangle {
     height: WrappedStyle.brand-height * root.u;
     // The app's name beside its mark, as the app writes it.
     in property <string> name;
+    // The mark alone, drawn at the size it is laid: never the whole logo's picture cut and stretched.
     Image {
         x: 0;
         y: (parent.height - self.height) / 2;
         height: 30 * root.u;
         width: self.height;
-        source: Icons.oni-logo;
-        source-clip-width: WrappedStyle.mark-clip;
+        source: Icons.oni-mark;
         colorize: WrappedStyle.ink;
         image-fit: contain;
     }
@@ -273,12 +275,17 @@ export component LineRow inherits Rectangle {
     in property <color> accent: WrappedStyle.ink;
     height: 23 * root.u;
     opacity: root.shown;
+    property <length> between: 7 * root.u;
+    // The line measured at its size: one wider than its room is set that much smaller.
+    value := Display { visible: false; width: 0; u: root.u; size: 17; text: root.line.value; wrap: no-wrap; }
+    label := Display { visible: false; width: 0; u: root.u; size: 17; text: root.line.label; wrap: no-wrap; }
+    property <float> size: 17 * min(1, (root.width - root.between) / max(1px, value.preferred-width + label.preferred-width));
     HorizontalLayout {
         alignment: start;
-        spacing: 7 * root.u;
+        spacing: root.between;
         Display {
             u: root.u;
-            size: 17;
+            size: root.size;
             text: root.line.value;
             color: root.accent;
             vertical-alignment: center;
@@ -286,7 +293,7 @@ export component LineRow inherits Rectangle {
         }
         Display {
             u: root.u;
-            size: 17;
+            size: root.size;
             text: root.line.label;
             vertical-alignment: center;
             wrap: no-wrap;

@@ -11,6 +11,10 @@ const TOLD: Duration = Duration::from_millis(2_400);
 const FILMED: usize = 2;
 const FRAMES: usize = 16;
 const SHOWN: Duration = Duration::from_secs(60);
+/// The loading state is shot once it has been laid this long, and a scene waits this long at most for
+/// its photo to be developed.
+const LAID: Duration = Duration::from_millis(600);
+const DEVELOPED: Duration = Duration::from_secs(20);
 
 pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let timer = Rc::new(Timer::default());
@@ -44,6 +48,17 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             return finish(format!("wrapped: {count} scenes told in {:.1} s, {saved}; {frames}", started.elapsed().as_secs_f64()));
         }
         let Some((scene, since)) = step.get() else {
+            // The year still read: the window's picture of that, once it has been drawn a while.
+            if g.get_loading() {
+                if let Some(folder) = shots.as_ref().filter(|folder| started.elapsed() > LAID && !folder.join("loading.jpg").exists())
+                    && let Ok(shot) = w.window().take_snapshot()
+                    && let Some(data) = crate::wrapped::share::jpeg(shot.as_bytes(), shot.width() as usize, shot.height() as usize)
+                {
+                    let _ = std::fs::create_dir_all(folder);
+                    let _ = std::fs::write(folder.join("loading.jpg"), data);
+                }
+                return;
+            }
             if g.get_shown() {
                 g.set_playing(false);
                 step.set(Some((0, Instant::now())));
@@ -61,7 +76,7 @@ pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             let _ = std::fs::write(folder.join(format!("motion-{:02}.jpg", filmed.get())), data);
             filmed.set(filmed.get() + 1);
         }
-        if since.elapsed() < TOLD {
+        if since.elapsed() < TOLD || (since.elapsed() < DEVELOPED && ctl.wrapped_owes(scene)) {
             return;
         }
         let count = g.get_scenes().row_count();

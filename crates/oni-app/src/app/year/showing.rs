@@ -1,9 +1,10 @@
 //! The year shown: read off the disk on another thread, laid as the strip's scenes, its photos landing
 //! as they are read, the film advanced and wound back, and the summary closed.
 
-use super::{ACCOUNT, HASHTAG, NAME, PRINTS_A_SCENE, PRINT_SIDE, SAMPLE, SHOWN_YEAR_KEY, Story, offer_due};
+use super::{ACCOUNT, HASHTAG, NAME, PRINT_SIDE, SAMPLE, SHOWN_YEAR_KEY, SLOW, Stamp, Story, WALL_SIDE, offer_due};
 use crate::app::{Ctl, image, with_shell};
-use crate::wrapped::{SWATCHES, Scene, gather, scenes};
+use crate::wrapped::share::CARD;
+use crate::wrapped::{Kind, SWATCHES, Scene, cover, gather, scenes};
 use crate::{Wrapped, WrappedKind, WrappedLine, WrappedScene, WrappedSwatch};
 use oni_library::journal::Journal;
 use oni_library::wrapped::{Darkroom, Frames, Moment, Palette, today};
@@ -12,47 +13,77 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
+/// How large a scene's photo is wanted: filling a card, or whole with its long side at a size.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum Need {
+    Card,
+    Long(usize),
+}
+
+impl Need {
+    fn of(kind: Kind) -> Need {
+        match kind {
+            Kind::Title | Kind::Hero | Kind::Summary => Need::Card,
+            Kind::Print | Kind::Palette => Need::Long(PRINT_SIDE),
+            Kind::Mosaic => Need::Long(WALL_SIDE),
+        }
+    }
+}
+
 impl Ctl {
-    /// `year` shown: told from its start if the welcome read it already, else read first.
+    /// `year` shown at once: told from its start when it is read already, else over the words that say
+    /// it is being read, which its first scene replaces.
     pub fn show_wrapped(self: &Rc<Self>, year: i32) {
         // A year shown in its own December, by the offer, the menu or the welcome, is the offer made.
         if year == today().0 && offer_due(today(), self.shown_year()) {
             self.remember(SHOWN_YEAR_KEY, year.into());
         }
         let ready = self.state.borrow_mut().year.story.as_mut().filter(|s| s.year == year).map(|story| (story.index, story.sharing) = (0, false)).is_some();
-        match self.window().filter(|_| ready) {
-            Some(w) => {
-                let g = w.global::<Wrapped>();
-                g.set_index(0);
-                g.set_sharing(false);
-                g.set_notice(SharedString::default());
-                g.set_playing(true);
-                g.set_shown(true);
-                self.publish_bar();
-            }
-            None => self.read_wrapped(year, true),
+        let Some(w) = self.window() else { return };
+        let g = w.global::<Wrapped>();
+        g.set_index(0);
+        g.set_sharing(false);
+        g.set_notice(SharedString::default());
+        g.set_playing(true);
+        if !ready {
+            self.state.borrow_mut().year.wanted = Some(year);
+            g.set_year(year.to_string().into());
+            g.set_scenes(ModelRc::default());
+        }
+        g.set_loading(!ready);
+        g.set_shown(true);
+        self.publish_bar();
+        if !ready {
+            self.read_wrapped(year);
         }
     }
 
-    /// `year` read and its cards made, not shown: the welcome lays a few of them on its mystery gift.
+    /// `year` read ahead of its showing, so a click finds it told.
     pub fn ready_wrapped(self: &Rc<Self>, year: i32) {
-        self.read_wrapped(year, false);
+        self.read_wrapped(year);
     }
 
     /// `year` read off this thread: the journal, the library's rows and their sidecars, their thumbnails'
-    /// colours. The ONI Trash's photos count for nothing.
-    fn read_wrapped(self: &Rc<Self>, year: i32, show: bool) {
-        let (rows, support) = {
+    /// colours. The ONI Trash's photos count for nothing. A year read while nothing has changed is not read again.
+    fn read_wrapped(self: &Rc<Self>, year: i32) {
+        let (rows, support, stamp) = {
             let mut s = self.state.borrow_mut();
-            if s.year.story.is_some() || s.year.reading {
+            if s.year.reading == Some(year) || s.year.story.as_ref().is_some_and(|story| story.year == year) {
                 return;
             }
-            s.year.reading = true;
-            (s.index.as_ref().map(|i| i.all()).unwrap_or_default(), s.support.clone())
+            let rows = s.index.as_ref().map(|i| i.all()).unwrap_or_default();
+            let stamp: Stamp = (digest(&rows), journal_bytes(&s.support));
+            if let Some(told) = s.year.read.as_ref().filter(|(was, told)| *was == stamp && told.year == year).map(|(_, told)| told.clone()) {
+                drop(s);
+                return self.wrapped_read(stamp, told);
+            }
+            s.year.reading = Some(year);
+            (rows, s.support.clone(), stamp)
         };
         // The person's own journal even under a bench, whose gestures a scratch one takes: a year is only read.
         let journal = Journal::in_support(&support);
         let sample = std::env::var_os(SAMPLE).is_some();
+        let slow = std::env::var(SLOW).ok().and_then(|ms| ms.parse().ok()).map(std::time::Duration::from_millis);
         std::thread::spawn(move || {
             let asked = std::time::Instant::now();
             let mut steps = Vec::new();
@@ -81,12 +112,33 @@ impl Ctl {
             };
             let read = format!("{:.0} ms ({})", asked.elapsed().as_secs_f64() * 1000.0, steps.join(", "));
             crate::timing::line(&format!("wrapped: {} frames of {} and {} thumbnails read in {read}", told.frames.count, shown.len(), told.palette.sampled));
-            with_shell(move |c| c.present_wrapped(told, show));
+            if let Some(slow) = slow {
+                std::thread::sleep(slow);
+            }
+            with_shell(move |c| c.wrapped_read(stamp, told));
         });
     }
 
-    fn present_wrapped(self: &Rc<Self>, told: oni_library::wrapped::Year, show: bool) {
-        self.state.borrow_mut().year.reading = false;
+    /// A year read: kept for the next asking, and told now when its showing waited for it.
+    fn wrapped_read(self: &Rc<Self>, stamp: Stamp, told: oni_library::wrapped::Year) {
+        let wanted = {
+            let mut s = self.state.borrow_mut();
+            if s.year.reading == Some(told.year) {
+                s.year.reading = None;
+            }
+            s.year.read = Some((stamp, told.clone()));
+            s.year.wanted
+        };
+        match wanted {
+            Some(year) if year == told.year => self.present_wrapped(told),
+            Some(other) => self.read_wrapped(other),
+            None => {}
+        }
+    }
+
+    /// The year told from its first scene, its photos landing as they are read and developed.
+    fn present_wrapped(self: &Rc<Self>, told: oni_library::wrapped::Year) {
+        self.state.borrow_mut().year.wanted = None;
         let Some(w) = self.window() else { return };
         let story = scenes(&told);
         let g = w.global::<Wrapped>();
@@ -101,27 +153,29 @@ impl Ctl {
         g.set_playing(true);
         g.set_scenes(ModelRc::new(VecModel::from(story.iter().map(face).collect::<Vec<_>>())));
         g.set_showing(g.get_showing() + 1);
-        g.set_shown(show);
+        g.set_loading(false);
+        g.set_shown(true);
         // Every photo a scene shows: its place, its path, the print that names its thumbnail (the year's
-        // frames carry theirs, the opened folder's the rest), and whether its scene shows it large.
+        // frames carry theirs, the opened folder's the rest), and how large its scene wants it.
         let prints: HashMap<&str, &str> = told.frames.paths.iter().map(|(p, f)| (p.as_str(), f.as_str())).collect();
-        let photos: Vec<(usize, usize, String, Option<String>, bool)> = {
+        let photos: Vec<(usize, usize, String, Option<String>, Need)> = {
             let s = self.state.borrow();
             let print = |path: &String| prints.get(path.as_str()).map(|f| f.to_string()).or_else(|| s.fingerprints.get(path).cloned());
-            let shown = |(i, scene): (usize, &Scene)| scene.photos.iter().enumerate().map(|(j, p)| (i, j, p.clone(), print(p), scene.photos.len() <= PRINTS_A_SCENE)).collect::<Vec<_>>();
+            let shown = |(i, scene): (usize, &Scene)| scene.photos.iter().enumerate().map(|(j, p)| (i, j, p.clone(), print(p), Need::of(scene.kind))).collect::<Vec<_>>();
             story.iter().enumerate().flat_map(shown).collect()
         };
         let (support, screen, previews, showing) = {
             let mut s = self.state.borrow_mut();
-            s.year.story = Some(Story { year: told.year, scenes: story, index: 0, sharing: false });
+            let owed = photos.iter().map(|(scene, slot, ..)| (*scene, *slot)).collect();
+            s.year.story = Some(Story { year: told.year, scenes: story, index: 0, sharing: false, owed });
             (s.support.clone(), s.screen, s.previews.clone(), s.year.told.clone())
         };
         self.publish_bar();
         let engine = self.engine.clone();
         let mine = showing.fetch_add(1, Ordering::Relaxed) + 1;
-        // The thumbnails on disk first; then the larger photos developed again as prints, and those no
-        // thumbnail showed made as a thumbnail is, its scan for a frame never converted; each lands in
-        // its place as it is made, and a thumbnail stands where no print can be.
+        // The thumbnails on disk first: each lights its scene, and stands in a wall, a print or a slice
+        // until the photo is developed at the size it is drawn. A photo that fills a card is laid only
+        // once developed that large, never a thumbnail stretched; a frame never converted gives its scan.
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
             let mut owed = Vec::new();
@@ -134,34 +188,63 @@ impl Ctl {
                     with_shell(move |c| c.wrapped_light(mine, scene, glow, ink));
                 }
             };
-            for (scene, slot, path, fingerprint, large) in photos {
+            for (scene, slot, path, fingerprint, need) in photos {
                 let thumbnail = fingerprint.and_then(|f| crate::thumbnails::load(&support, &f, screen));
-                if large || thumbnail.is_none() {
-                    owed.push((scene, slot, path, if large { PRINT_SIDE } else { crate::thumbnails::SIDE }, thumbnail.is_some()));
-                }
+                let shape = thumbnail.as_ref().map_or(f32::NAN, |(_, width, height)| *width as f32 / (*height).max(1) as f32);
+                let side = match need {
+                    Need::Card => cover::side(shape, CARD),
+                    Need::Long(side) => side,
+                };
+                owed.push((scene, slot, path, need, side));
                 if let Some((rgba, width, height)) = thumbnail {
                     light(scene, slot, &rgba, width, height);
-                    with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
+                    if need != Need::Card {
+                        with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
+                    }
                 }
             }
-            let mut printed: HashMap<(String, usize), (Vec<u8>, usize, usize)> = HashMap::new();
-            for (scene, slot, path, side, shown) in owed {
+            let mut printed: HashMap<(String, Need), (Vec<u8>, usize, usize)> = HashMap::new();
+            for (scene, slot, path, need, side) in owed {
                 if showing.load(Ordering::Relaxed) != mine {
                     return;
                 }
-                let key = (path, side);
-                let scan = || (!shown).then(|| crate::app::workers::scanned(&key.0, screen)).flatten();
-                if !printed.contains_key(&key)
-                    && let Some(print) = crate::app::workers::print(&engine, &previews, &key.0, screen, side).or_else(scan)
-                {
-                    printed.insert(key.clone(), print);
+                let key = (path, need);
+                if !printed.contains_key(&key) {
+                    let made = crate::app::workers::print(&engine, &previews, &key.0, screen, side).or_else(|| crate::app::workers::scanned(&key.0, screen));
+                    let fitted = match need {
+                        Need::Card => made.and_then(|(rgba, width, height)| cover::filling(&rgba, width, height, CARD)),
+                        Need::Long(_) => made,
+                    };
+                    if let Some(print) = fitted {
+                        printed.insert(key.clone(), print);
+                    }
                 }
-                if let Some((rgba, width, height)) = printed.get(&key).cloned() {
-                    light(scene, slot, &rgba, width, height);
-                    with_shell(move |c| c.wrapped_photo(mine, scene, slot, image(&rgba, width, height)));
+                // Developed or not, the photo is owed no more: its card can be taken as it stands.
+                let print = printed.get(&key).cloned();
+                if let Some((rgba, width, height)) = &print {
+                    light(scene, slot, rgba, *width, *height);
                 }
+                with_shell(move |c| c.wrapped_developed(mine, scene, slot, print));
             }
         });
+    }
+
+    /// A photo developed as large as its scene draws it, laid in its place; none where it could not be.
+    fn wrapped_developed(&self, showing: usize, scene: usize, slot: usize, print: Option<(Vec<u8>, usize, usize)>) {
+        if self.state.borrow().year.told.load(Ordering::Relaxed) != showing {
+            return;
+        }
+        if let Some(story) = self.state.borrow_mut().year.story.as_mut() {
+            story.owed.remove(&(scene, slot));
+        }
+        if let Some((rgba, width, height)) = print {
+            self.wrapped_photo(showing, scene, slot, image(&rgba, width, height));
+        }
+    }
+
+    /// Whether a photo of `scene` is still being developed: its card waits for it.
+    pub fn wrapped_owes(&self, scene: usize) -> bool {
+        self.state.borrow().year.story.as_ref().is_some_and(|story| story.owed.iter().any(|(of, _)| *of == scene))
     }
 
     fn wrapped_photo(&self, showing: usize, scene: usize, slot: usize, picture: Image) {
@@ -225,9 +308,11 @@ impl Ctl {
 
     pub(super) fn close_wrapped(&self) {
         // Over the welcome, it only steps aside: the mystery gift keeps its cards.
+        self.state.borrow_mut().year.wanted = None;
         if let Some(w) = self.window().filter(|w| w.global::<crate::Help>().get_welcome_shown()) {
             let g = w.global::<Wrapped>();
             g.set_shown(false);
+            g.set_loading(false);
             g.set_sharing(false);
             w.invoke_refocus();
             self.publish_bar();
@@ -246,6 +331,7 @@ impl Ctl {
         if let Some(w) = self.window() {
             let g = w.global::<Wrapped>();
             g.set_shown(false);
+            g.set_loading(false);
             g.set_sharing(false);
             g.set_scenes(ModelRc::default());
             g.set_year(SharedString::default());
@@ -284,4 +370,23 @@ fn face(scene: &Scene) -> WrappedScene {
         lines: ModelRc::new(VecModel::from(scene.lines.iter().map(|l| WrappedLine { label: l.label.as_str().into(), value: l.value.as_str().into() }).collect::<Vec<_>>())),
         swatches: ModelRc::new(VecModel::from(scene.swatches.iter().map(|(rgb, share)| WrappedSwatch { ink: slint::Color::from_rgb_u8(rgb[0], rgb[1], rgb[2]), share: *share }).collect::<Vec<_>>())),
     }
+}
+
+/// The rows as a year reads them, in one number: a photo added, removed, trashed, rated or given a roll
+/// changes it.
+fn digest(rows: &[oni_library::index::Entry]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    for row in rows {
+        (&row.path, &row.fingerprint, std::mem::discriminant(&row.label), row.trashed_at.is_some(), row.sidecar_format).hash(&mut hasher);
+        let roll = |film: &oni_settings::Film| (film.name.clone(), film.stock.clone(), film.camera_body.clone(), film.shot_date.map(|date| date.unix_seconds().to_bits()));
+        row.film.as_ref().map(roll).hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
+/// The journal's bytes on the disk: they grow with every gesture noted.
+fn journal_bytes(support: &std::path::Path) -> u64 {
+    let Ok(files) = std::fs::read_dir(support.join("Journal")) else { return 0 };
+    files.flatten().filter_map(|file| file.metadata().ok()).map(|data| data.len()).sum()
 }

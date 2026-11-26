@@ -6,6 +6,7 @@ use oni_library::wrapped::Year;
 use oni_library::wrapped::persona::ENOUGH;
 
 pub mod backdrop;
+pub mod cover;
 pub mod fit;
 pub mod gather;
 pub mod sample;

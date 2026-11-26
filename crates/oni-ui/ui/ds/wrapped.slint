@@ -66,6 +66,7 @@ export component WrappedFrame inherits Rectangle {
     // The scene's ink: its photo's own hue, or white for a photo with no colour.
     property <color> accent: root.scene.accent.alpha > 0 ? root.scene.accent : WrappedStyle.ink;
     property <string> figure-text: root.scene.count > 0 ? root.counted(round(root.scene.count * WrappedStyle.rise(root.told, 0.14, 0.5))) + root.scene.unit : root.scene.figure;
+    property <string> figure-whole: root.scene.count > 0 ? root.counted(root.scene.count) + root.scene.unit : root.scene.figure;
 
     Image {
         width: parent.width;
@@ -85,10 +86,11 @@ export component WrappedFrame inherits Rectangle {
         drift: root.drift;
         accent: root.accent;
         figure-text: root.figure-text;
+        figure-whole: root.figure-whole;
         whole: root.kind == WrappedKind.print;
         turned: mod(root.number, 2) == 1;
     }
-    if root.kind == WrappedKind.mosaic: MosaicScene { scene: root.scene; u: root.u; told: root.told; drift: root.drift; accent: root.accent; figure-text: root.figure-text; }
+    if root.kind == WrappedKind.mosaic: MosaicScene { scene: root.scene; u: root.u; told: root.told; drift: root.drift; accent: root.accent; figure-text: root.figure-text; figure-whole: root.figure-whole; }
     if root.kind == WrappedKind.palette: PaletteScene { scene: root.scene; u: root.u; told: root.told; accent: root.accent; }
     // The film's edges lie over a photo that fills the frame.
     Perforations {
@@ -113,6 +115,48 @@ export component WrappedFrame inherits Rectangle {
         account: root.account;
         accent: root.accent;
         name: root.name;
+    }
+}
+
+// The gate while a year is read: the film runs through it unexposed, the year and one line on it.
+export component WrappedLoading inherits Rectangle {
+    in property <length> u;
+    in property <string> year;
+    in property <string> text;
+    width: WrappedStyle.frame-width * root.u;
+    height: WrappedStyle.frame-height * root.u;
+    background: WrappedStyle.ground;
+    clip: true;
+    property <float> along: Math.mod(animation-tick() / 1ms * WrappedStyle.run, WrappedStyle.hole-pitch * 1000);
+    Perforations {
+        x: 0;
+        height: parent.height;
+        u: root.u;
+        along: root.along;
+    }
+    Perforations {
+        x: parent.width - self.width;
+        height: parent.height;
+        u: root.u;
+        along: root.along;
+        right: true;
+    }
+    VerticalLayout {
+        x: WrappedStyle.pad * root.u;
+        width: WrappedStyle.inner * root.u;
+        alignment: center;
+        spacing: WrappedStyle.gap * root.u;
+        Display {
+            u: root.u;
+            size: 80;
+            text: root.year;
+            wrap: no-wrap;
+        }
+        Display {
+            u: root.u;
+            size: 21;
+            text: root.text;
+        }
     }
 }
 

@@ -127,6 +127,16 @@ pub fn read(original: &Path, mosaic: bool) -> Result<Loaded, Error> {
     standing(&bytes, original, mosaic)
 }
 
+/// `read` for an original whose `print` is already known, as the library's index holds it: the original
+/// itself is opened only where that print and the sidecar's name two photos.
+pub fn read_printed(original: &Path, mosaic: bool, print: &str) -> Result<Loaded, Error> {
+    let Some(bytes) = stored(original)? else { return Ok(fresh(mosaic, false)) };
+    if identity::foreign_with(&bytes, Some(print), || identity::tail(original)) {
+        return Ok(fresh(mosaic, true));
+    }
+    standing(&bytes, original, mosaic)
+}
+
 /// A sidecar's `bytes` read, written for this original.
 fn standing(bytes: &[u8], original: &Path, mosaic: bool) -> Result<Loaded, Error> {
     match migrate::standing(bytes) {

@@ -53,15 +53,20 @@ fn broken(text: &str, ems: f32) -> Vec<String> {
     lines
 }
 
-/// The largest size, from `most` down to `least`, at which `text` holds in a box `across` wide and `down`
-/// tall, and the text broken as that size breaks it. Sizes and the box are in one unit.
+/// The largest size, from `most` down, at which `text` holds in a box `across` wide and `down` tall, and
+/// the text broken as that size breaks it. One no size down to `least` holds is set as small as its
+/// widest line and its lines ask: the size follows the box, never the reverse.
 pub fn fit(text: &str, across: f32, down: f32, most: f32, least: f32) -> (f32, String) {
     let mut size = most;
     loop {
         let lines = broken(text, across / size);
-        let holds = lines.iter().all(|l| width(l) * size <= across) && lines.len() as f32 * size * LEADING <= down;
-        if holds || size <= least {
+        let widest = lines.iter().map(|l| width(l)).fold(0.0, f32::max);
+        let tall = lines.len().max(1) as f32 * LEADING;
+        if (widest * size <= across && tall * size <= down) || widest <= 0.0 {
             return (size, lines.join("\n"));
+        }
+        if size <= least {
+            return ((across / widest).min(down / tall).min(least), lines.join("\n"));
         }
         size = (size - 2.0).max(least);
     }
@@ -90,8 +95,11 @@ mod tests {
         assert!(small < size, "the longer name is set smaller");
         // Twin: at the size the short figure takes, the long name runs out of its box.
         assert!(width("DEVELOPER") * 150.0 > 292.0);
-        // A word no size holds is set at the least, on its own line.
-        assert_eq!(fit("WWWWWWWWWWWWWWWWWWWW", 100.0, 100.0, 80.0, 30.0).0, 30.0);
+        // A word the least size does not hold is set as small as its width asks, on its own line.
+        let (tiny, word) = fit("WWWWWWWWWWWWWWWWWWWW", 100.0, 100.0, 80.0, 30.0);
+        assert!(tiny < 30.0 && (width(&word) * tiny - 100.0).abs() < 0.01, "{tiny}");
+        // Twin: at the least size it would run out of its box.
+        assert!(width(&word) * 30.0 > 100.0);
     }
 
     #[test]

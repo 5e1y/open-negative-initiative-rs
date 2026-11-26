@@ -307,7 +307,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_gallery_shown(move || {
             p.land_gallery();
-            p.wrapped_season(oni_library::wrapped::today());
+            p.wrapped_in_gallery();
         });
         Ctl::wire_band_rename(me, &lib);
         let p = me.clone();

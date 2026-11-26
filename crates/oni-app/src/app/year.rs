@@ -25,10 +25,13 @@ pub const HASHTAG: &str = "#madewithoni";
 pub const ACCOUNT: &str = "@open.negative.initiative";
 /// The app's name beside its mark, the same in every language.
 pub(super) const NAME: &str = "ONI";
-/// A print's long side, enough for a frame as large as a tall window draws it.
-pub(super) const PRINT_SIDE: usize = 1024;
-/// A scene showing more photos than this shows them small: their thumbnails are enough.
-pub(super) const PRINTS_A_SCENE: usize = 4;
+/// The long side of a photo laid whole as a print or cut in a slice, and of one in a wall of them.
+pub(super) const PRINT_SIDE: usize = 1280;
+pub(super) const WALL_SIDE: usize = 640;
+/// A bench's or a check's slow disk: the year's read waits this many milliseconds more.
+pub const SLOW: &str = "ONI_WRAPPED_SLOW";
+/// What the library and the journal held when a year was read: a digest of the rows, and the journal's bytes.
+pub(super) type Stamp = (u64, u64);
 
 /// Whether December's offer is still to make: in December, for a year not shown yet.
 pub fn offer_due((year, month): (i32, u32), shown: i64) -> bool {
@@ -56,8 +59,11 @@ pub struct Year {
     last: HashMap<String, PipelineSettings>,
     /// The summary while it shows: the year it tells, its scenes and the one in the gate.
     story: Option<Story>,
-    /// A showing asked, its year still being read off the disk.
-    reading: bool,
+    /// The year being read off the disk, and the one whose showing waits for a read.
+    reading: Option<i32>,
+    wanted: Option<i32>,
+    /// The last year read and what the library held then: told again unread while nothing changed.
+    read: Option<(Stamp, oni_library::wrapped::Year)>,
     /// Counts the showings and their ends: a photo landing for a summary since closed is dropped.
     told: Arc<AtomicUsize>,
     /// The launch's offer, waiting for the opened folder's rows as Swift's waits for `fillOpened`.
@@ -71,6 +77,8 @@ struct Story {
     scenes: Vec<Scene>,
     index: usize,
     sharing: bool,
+    /// The photos still being developed as large as their scenes draw them, by scene and place.
+    owed: std::collections::HashSet<(usize, usize)>,
 }
 
 fn medal_rank(medal: Medal) -> u16 {
@@ -196,6 +204,14 @@ impl Ctl {
         w.global::<Wrapped>().set_season(season_word(today).into());
     }
 
+    /// The gallery shown: its entry for today, and in its season the year read ahead of a click.
+    pub(super) fn wrapped_in_gallery(self: &Rc<Self>) {
+        self.wrapped_season(today());
+        if let Some(year) = season(today()) {
+            self.ready_wrapped(year);
+        }
+    }
+
     pub(super) fn shown_year(&self) -> i64 {
         self.state.borrow().preferences.value(SHOWN_YEAR_KEY).and_then(serde_json::Value::as_i64).unwrap_or(0)
     }
@@ -203,7 +219,10 @@ impl Ctl {
     /// In December, once a year, never under a bench, and never at the launch that shows the welcome,
     /// which gives the year itself.
     pub fn offer_wrapped(self: &Rc<Self>) {
-        if offer_due(today(), self.shown_year()) && !self.welcome_due() {
+        if self.welcome_due() {
+            // The welcome gives the year itself: read now, it is ready when its gift is opened.
+            self.ready_wrapped(told_year(today()));
+        } else if offer_due(today(), self.shown_year()) {
             self.show_wrapped(today().0);
         }
     }

@@ -10,6 +10,7 @@ export component MosaicScene inherits Rectangle {
     in property <float> told: 1;
     in property <float> drift;
     in property <string> figure-text;
+    in property <string> figure-whole;
     in property <color> accent;
     property <int> columns: 2;
     property <int> rows: ceil(root.scene.photos.length / self.columns);
@@ -39,7 +40,7 @@ export component MosaicScene inherits Rectangle {
             }
         }
     }
-    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; accent: root.accent; }
+    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.figure-text; figure-whole: root.figure-whole; accent: root.accent; }
 }
 
 // The year's colours: for each, a slice of the photo nearest it, as wide as the colour's share, from the
@@ -49,7 +50,7 @@ export component PaletteScene inherits Rectangle {
     in property <length> u;
     in property <float> told: 1;
     in property <color> accent;
-    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.scene.figure; accent: root.accent; }
+    column := Column { scene: root.scene; u: root.u; told: root.told; figure-text: root.scene.figure; figure-whole: root.scene.figure; accent: root.accent; }
     HorizontalLayout {
         x: WrappedStyle.band * root.u;
         y: 0;

@@ -19,6 +19,16 @@ fn eyebrows(w: &Wrapped) -> Vec<String> {
     (0..scenes.row_count()).filter_map(|i| scenes.row_data(i)).map(|c| c.eyebrow.to_string()).collect()
 }
 
+/// Whether a key named `word` stands whole inside the window.
+fn key_inside(w: &oni_app::MainWindow, word: &str) -> bool {
+    use i_slint_backend_testing::{AccessibleRole, ElementHandle};
+    let window = w.window().size().to_logical(w.window().scale_factor());
+    ElementHandle::find_by_accessible_label(w, word).filter(|e| e.accessible_role() == Some(AccessibleRole::Button)).any(|key| {
+        let (at, size) = (key.absolute_position(), key.size());
+        size.width > 0.0 && at.x >= 0.0 && at.y >= 0.0 && at.x + size.width <= window.width && at.y + size.height <= window.height
+    })
+}
+
 pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     let root = common::Root::new("wrapped");
     let (folder, support) = (root.join("Scans"), root.join("Support"));
@@ -80,9 +90,34 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     // Show My Year on Film: the strip's first frame is the title, then one scene a frame.
     let wrapped = w.global::<Wrapped>();
     let year = oni_library::wrapped::today().0;
+    // On a slow disk the click is answered at once: the view shows, saying the year is being read, and is
+    // drawn so before any scene is there.
+    unsafe { std::env::set_var("ONI_WRAPPED_SLOW", "2500") };
     ctl.show_wrapped(year);
-    rig.until("the summary", Duration::from_secs(20), || wrapped.get_shown());
+    assert!(wrapped.get_shown() && wrapped.get_loading(), "shown by the click itself");
+    assert_eq!((wrapped.get_scenes().row_count(), wrapped.get_year().as_str()), (0, year.to_string().as_str()));
+    rig.settle();
+    println!("shot {}", rig.shot("wrapped-loading").display());
+    let drawn = w.window().take_snapshot().unwrap();
+    let (across, down) = (drawn.width() as usize, drawn.height() as usize);
+    let lit = |x: usize, y: usize| drawn.as_bytes()[(y * across + x) * 4..][..3].iter().map(|c| u32::from(*c)).sum::<u32>() > 600;
+    let inked = (down * 2 / 5..down * 3 / 5).flat_map(|y| (across * 2 / 5..across * 3 / 5).map(move |x| (x, y))).filter(|(x, y)| lit(*x, *y)).count();
+    assert!(inked > 500, "the year stands on the film while it is read: {inked} pixels of its ink");
+    assert!(wrapped.get_loading() && wrapped.get_scenes().row_count() == 0, "twin: drawn before the year was read");
+    assert!(key_inside(w, "Close"), "the way out is there while the year is read");
+    unsafe { std::env::remove_var("ONI_WRAPPED_SLOW") };
+    rig.until("the summary", Duration::from_secs(20), || !wrapped.get_loading());
+    assert!(wrapped.get_shown() && wrapped.get_scenes().row_count() > 0);
     wrapped.set_playing(false);
+    // Every key is a keycap inside the window at its smallest, none past its edge.
+    let size = w.window().size();
+    w.window().set_size(slint::LogicalSize::new(1100.0, 680.0));
+    rig.settle();
+    for word in ["Save All", "Save Card", "Copy Card", "Previous", "Pause", "Next", "Close"] {
+        assert!(key_inside(w, word), "{word}");
+    }
+    w.window().set_size(size);
+    rig.settle();
     assert_eq!((wrapped.get_index(), wrapped.get_year().as_str()), (0, year.to_string().as_str()));
     // Laid by a first frame, then run in.
     rig.shot("wrapped-title");
@@ -111,9 +146,9 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert_eq!(wrapped.get_index(), 1);
     rig.settle();
     println!("shot {}", rig.shot("wrapped-frames").display());
-    rig.key(&key(Key::RightArrow));
-    rig.key(&key(Key::RightArrow));
-    rig.key(&key(Key::LeftArrow));
+    rig.key(&key(Key::DownArrow));
+    rig.key(&key(Key::DownArrow));
+    rig.key(&key(Key::UpArrow));
     assert_eq!(wrapped.get_index(), 2);
     rig.settle();
     println!("shot {}", rig.shot("wrapped-month").display());
@@ -189,14 +224,14 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert_eq!(wrapped.get_index() as usize, story.len() - 1);
     rig.settle();
     println!("shot {}", rig.shot("wrapped-share").display());
-    rig.key(&key(Key::LeftArrow));
+    rig.key(&key(Key::UpArrow));
     assert!(!wrapped.get_sharing(), "twin: back from the share screen is the last scene again");
-    rig.key(&key(Key::RightArrow));
+    rig.key(&key(Key::DownArrow));
     assert!(wrapped.get_sharing());
-    rig.key(&key(Key::RightArrow));
+    rig.key(&key(Key::DownArrow));
     assert!(!wrapped.get_shown());
     ctl.act(oni_app::Act::Wrapped);
-    rig.until("the summary again", Duration::from_secs(20), || wrapped.get_shown());
+    rig.until("the summary again", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
     wrapped.set_playing(false);
     assert!(!wrapped.get_sharing(), "it opens on its story");
     // Drawn once, as a person sees it before pressing: the view takes the keyboard as it is laid.
@@ -213,7 +248,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.landed(&ctl);
     rig.settle();
     ctl.show_wrapped(year);
-    rig.until("the summary without A", Duration::from_secs(20), || wrapped.get_shown());
+    rig.until("the summary without A", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
     let kept = eyebrows(&wrapped);
     assert!(!kept.contains(&"THE ONLY THING I SEE IS GOLD".to_string()) && !kept.contains(&"YOUR MOST EDITED PHOTO".to_string()), "{kept:?}");
     assert_eq!(scene("THIS YEAR").count, 2);
@@ -240,7 +275,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     }
     println!("shot {}", rig.shot("wrapped-entry").display());
     entry().unwrap().invoke_accessible_default_action();
-    rig.until("the year shown from the gallery", Duration::from_secs(20), || wrapped.get_shown());
+    rig.until("the year shown from the gallery", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
     wrapped.invoke_close();
     rig.settle();
     // Twin: the months on either side have no entry.

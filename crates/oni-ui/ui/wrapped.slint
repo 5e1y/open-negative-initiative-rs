@@ -1,12 +1,16 @@
 // "Show My Year on Film": a strip of film pulled down through the gate, one scene a frame, each 9 by 16 in
-// the light of its own photo. A click or → pulls the next, ← winds back, it runs by itself unless Space or a
-// held press pauses it, and Esc leaves. Past the last scene, every card is laid out to be saved and posted.
-import { Space, Motion, WrappedStyle, WrappedGround, WrappedAmbient, WrappedProgress, WrappedFrame, WrappedPick, WrappedHeading, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Label, TextRole, Tone, VStack, Gap } from "ds/ds.slint";
+// the light of its own photo. ↓ or a click pulls the next, ↑ winds back, it runs by itself unless Space or a
+// held press pauses it, and Esc leaves: each a keycap beside the strip. Past the last scene, every card is
+// laid out to be saved and posted. Shown before its year is read, it says so on the film running unexposed.
+import { Space, Motion, Icons, WrappedStyle, WrappedGround, WrappedAmbient, WrappedProgress, WrappedFrame, WrappedLoading, WrappedPick } from "ds/ds.slint";
+import { WrappedHeading, WrappedKind, WrappedLine, WrappedSwatch, WrappedScene, Keyboard, Button, ButtonKind, Look, Label, TextRole, Tone } from "ds/ds.slint";
 
 export { WrappedKind, WrappedLine, WrappedSwatch, WrappedScene }
 
 export global Wrapped {
     in property <bool> shown;
+    // Shown while its year is still being read: the view says so until the first scene is laid.
+    in property <bool> loading;
     // The year the gallery's entry tells, through December and January; empty out of them.
     in property <string> season;
     // The gallery's entry, clicked.
@@ -50,6 +54,17 @@ export global Wrapped {
     pure callback counted(int) -> string;
 }
 
+// A key of the year on film: a keycap, its glyph over its word, shown pressed while its own key is held
+// on the keyboard.
+component WrappedKey inherits Button {
+    in property <bool> held;
+    keycap: true;
+    stacked: true;
+    has-icon: true;
+    tabbed: false;
+    look: root.held ? Look.pressed : Look.live;
+}
+
 export component WrappedView inherits WrappedGround {
     property <bool> revealed;
     property <int> showing: Wrapped.showing;
@@ -67,6 +82,8 @@ export component WrappedView inherits WrappedGround {
     property <length> u: min((root.height - 2 * WrappedStyle.peek) / WrappedStyle.frame-height, (root.width - 2 * Space.l) / WrappedStyle.frame-width);
     property <length> pitch: WrappedStyle.pitch * root.u;
     property <length> gate: WrappedStyle.frame-width * root.u;
+    // The key held down on the keyboard, which its keycap shows pressed.
+    property <string> held-key;
     property <Point> origin: self.absolute-position;
     init => {
         root.placed();
@@ -119,7 +136,7 @@ export component WrappedView inherits WrappedGround {
     }
     // A click left of the gate winds back, anywhere else pulls the next; a press held keeps the scene.
     touch := TouchArea {
-        enabled: !Wrapped.sharing;
+        enabled: !Wrapped.sharing && !Wrapped.loading;
         clicked => {
             if (self.mouse-x < (root.width - root.gate) / 2) {
                 Wrapped.back();
@@ -134,16 +151,38 @@ export component WrappedView inherits WrappedGround {
     keys := FocusScope {
         focus-on-tab-navigation: false;
         key-pressed(event) => {
+            root.held-key = event.text;
             if (event.text == Key.Escape) { Wrapped.close(); return accept; }
-            if (event.text == Key.RightArrow || event.text == Key.DownArrow || event.text == Key.Return) { Wrapped.forward(); return accept; }
-            if (event.text == Key.LeftArrow || event.text == Key.UpArrow) { Wrapped.back(); return accept; }
+            if (Wrapped.loading) { return reject; }
+            if (event.text == Key.DownArrow || event.text == Key.RightArrow || event.text == Key.Return) { Wrapped.forward(); return accept; }
+            if (event.text == Key.UpArrow || event.text == Key.LeftArrow) { Wrapped.back(); return accept; }
             if (event.text == " ") { root.paused = !root.paused; return accept; }
             if (event.text == "s") { Wrapped.save-card(root.index); return accept; }
             if (event.text == "c") { Wrapped.copy-card(root.index); return accept; }
             reject
         }
+        key-released(event) => {
+            root.held-key = "";
+            reject
+        }
     }
-    if !Wrapped.still && !Wrapped.sharing: Rectangle {
+    // The year still being read: the film runs through the gate, and the one key is the way out.
+    if Wrapped.loading && !Wrapped.still: Rectangle {
+        WrappedLoading {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            u: root.u;
+            year: Wrapped.year;
+            text: @tr("Developing your year");
+        }
+        VerticalLayout {
+            x: (parent.width + root.gate) / 2 + Space.l;
+            width: self.preferred-width;
+            alignment: center;
+            WrappedKey { icon: Icons.close; text: @tr("Close"); held: root.held-key == Key.Escape; clicked => { Wrapped.close(); } }
+        }
+    }
+    if !Wrapped.loading && !Wrapped.still && !Wrapped.sharing: Rectangle {
         opacity: root.revealed ? 1 : 0;
         animate opacity { duration: WrappedStyle.enter; easing: ease-out; }
         // The window around the strip stands in the light of the scene in the gate.
@@ -195,24 +234,34 @@ export component WrappedView inherits WrappedGround {
             at: root.index;
             held: root.held / WrappedStyle.hold;
         }
-        // The keys stand beside the strip, the one that saves every card first.
-        VStack {
+        // The keys stand beside the strip: what saves the cards, then the film's own, then the way out.
+        VerticalLayout {
             x: (parent.width + root.gate) / 2 + Space.l;
-            y: (parent.height - self.preferred-height) / 2;
             width: self.preferred-width;
-            height: self.preferred-height;
-            gap: Gap.s;
-            Button { text: @tr("Save All Cards"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
-            Button { text: @tr("Save This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.save-card(root.index); keys.focus(); } }
-            Button { text: @tr("Copy This Card"); kind: ButtonKind.ghost; clicked => { Wrapped.copy-card(root.index); keys.focus(); } }
-            Button { text: @tr("Close"); kind: ButtonKind.ghost; clicked => { Wrapped.close(); } }
+            alignment: center;
+            spacing: Space.s;
+            WrappedKey { icon: Icons.update; text: @tr("Save All"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
+            WrappedKey { icon: Icons.update; text: @tr("Save Card"); held: root.held-key == "s"; clicked => { Wrapped.save-card(root.index); keys.focus(); } }
+            WrappedKey { icon: Icons.copy; text: @tr("Copy Card"); held: root.held-key == "c"; clicked => { Wrapped.copy-card(root.index); keys.focus(); } }
+            Rectangle { height: Space.m; }
+            WrappedKey { icon: Icons.parent; text: @tr("Previous"); held: root.held-key == Key.UpArrow; enabled: root.index > 0; clicked => { Wrapped.back(); keys.focus(); } }
+            WrappedKey {
+                icon: root.paused ? Icons.play : Icons.pause;
+                text: root.paused ? @tr("Play") : @tr("Pause");
+                held: root.held-key == " ";
+                clicked => { root.paused = !root.paused; keys.focus(); }
+            }
+            WrappedKey { icon: Icons.next; text: @tr("Next"); held: root.held-key == Key.DownArrow; clicked => { Wrapped.forward(); keys.focus(); } }
+            Rectangle { height: Space.m; }
+            WrappedKey { icon: Icons.close; text: @tr("Close"); held: root.held-key == Key.Escape; clicked => { Wrapped.close(); } }
         }
+        // What the last save or copy did.
         Label {
             x: Space.l;
             y: parent.height - self.preferred-height - Space.l;
             width: (parent.width - root.gate) / 2 - 2 * Space.l;
             role: TextRole.note;
-            text: Wrapped.notice != "" ? Wrapped.notice : root.paused ? @tr("Paused · Space to play · → for the next · ← to go back · Esc to leave") : @tr("Click or press → for the next · ← to go back · Space to pause · Esc to leave");
+            text: Wrapped.notice;
         }
     }
     // Every card at once, as large as the window holds them in at most three rows.
@@ -261,9 +310,9 @@ export component WrappedView inherits WrappedGround {
             height: self.preferred-height;
             alignment: center;
             spacing: Space.s;
-            Button { text: @tr("Save All Cards"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
-            Button { text: @tr("Back"); kind: ButtonKind.ghost; clicked => { Wrapped.back(); keys.focus(); } }
-            Button { text: @tr("Close"); kind: ButtonKind.ghost; clicked => { Wrapped.close(); } }
+            WrappedKey { icon: Icons.update; text: @tr("Save All"); kind: ButtonKind.accent; clicked => { Wrapped.save-all(); keys.focus(); } }
+            WrappedKey { icon: Icons.parent; text: @tr("Back"); held: root.held-key == Key.UpArrow; clicked => { Wrapped.back(); keys.focus(); } }
+            WrappedKey { icon: Icons.close; text: @tr("Close"); held: root.held-key == Key.Escape; clicked => { Wrapped.close(); } }
         }
     }
     if Wrapped.still: WrappedFrame {

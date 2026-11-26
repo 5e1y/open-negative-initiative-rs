@@ -89,6 +89,10 @@ impl Ctl {
         // The sender leaves with the timer's closure: the writer then knows every card was handed over.
         let mut cards = Some(cards);
         timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(1), move || {
+            // A card is taken once its photos are developed as large as it draws them.
+            if me.upgrade().is_some_and(|ctl| scenes.start < scenes.end && ctl.wrapped_owes(scenes.start)) {
+                return;
+            }
             let next = me.upgrade().zip(scenes.next()).map(|(ctl, scene)| ctl.card_picture(scene).map(|card| (scene, card)));
             // A card that could not be taken is handed over too, as the failure the writer reports.
             let sent = match (next, &cards) {
