@@ -13565,5 +13565,19 @@
     "title": "A pan's render in a file of its own, graph/over.rs, under the source files' ceiling",
     "status": "done",
     "detail": "Graph::materialise_over moved out of graph/rendering.rs, which it had taken to 420 lines past the 400-line ceiling (oni-core's architecture check). The full check at the end of the digital performance stream (#3860-#3863): 168 of 169 binaries green, the architecture check the one failure, green after this move; 59 checks skipped without ONI_RAW_DIR and the other sample folders."
+  },
+  {
+    "id": 3865,
+    "type": "perf",
+    "title": "A Halation notch blurs nothing again: the glow's source holds no dose in its uniform",
+    "status": "done",
+    "detail": "halation_source never reads the dose, yet its uniform carried it, so each Halation notch changed its node's key and the canvas's cache blurred the glow again on both axes. Its uniform now holds the saturation alone: a notch reruns the halation's laying, the film's development and scan and the grain's laying. 47 Mpx RW2 on Portra 800 at fit from the preview: a Halation notch 13.1 -> 9.4 ms p50; the blur it saves is 17.6 ms at fit from the full frame. Renders equal to the bit at fit and at 100 %; a check counts a dose notch's passes against a size notch's, which blurs again."
+  },
+  {
+    "id": 3866,
+    "type": "perf",
+    "title": "Benches for what a digital photo costs beyond a notch: its export, a render at fit from the full frame, a neighbour scale's lighter render",
+    "status": "done",
+    "detail": "export_cost times a photo's full-definition export stage by stage: on a 47 Mpx RW2, 2.9 s on Portra 800 at its rests (decode 1.39 s, render and readback 1.00 s, convert 0.23 s, encode 0.25 s), 2.4 s on the neutral film, 1.3 s for a 24 Mpx NEF (render 0.15 s). stage_cost adds the render at fit from the full frame, the canvas's once the whole decode is in: 75 ms on Portra 800 (grain 36, halation 18, film and scan 6, reduction 6, finishing 7). ONI_COST_NEIGHBOUR measures the open question of a gesture's lighter render taken from a neighbour scale's, stretched: at x1.19 its display code is off by 0.005 mean and 0.024 at p99, its grain's pixel-to-pixel spread 0.91 of the exact one's, against 0.009 and 0.054 for a scanned NEF stretched alike."
   }
 ]

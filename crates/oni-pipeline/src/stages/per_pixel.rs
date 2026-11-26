@@ -168,9 +168,10 @@ pub fn optical_vignette(extent: Rect, stops: f32) -> PerPixel {
     PerPixel { name: "optical-vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
 }
 
-/// The light each pixel of a film's layers' exposures sends into its glow.
+/// The light each pixel of a film's layers' exposures sends into its glow. Its uniform holds no dose, which it never
+/// reads, so a Halation notch keeps its glow and blurs nothing again.
 pub fn halation_source(k: &Halation) -> PerPixel {
-    PerPixel { name: "halation-source", kernel: &HALATION_SOURCE, params: uniform(HEAD, &k.rows()) }
+    PerPixel { name: "halation-source", kernel: &HALATION_SOURCE, params: uniform(HEAD, &Halation { dose: [0.0; 3], ..*k }.rows()) }
 }
 
 /// The halation on a film's layers' exposures, their glow the auxiliary image.

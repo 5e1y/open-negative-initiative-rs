@@ -322,3 +322,26 @@ fn on_a_sheets_film_the_halation_lies_on_its_layers_exposures_before_their_curve
     let on_negative = mapped(&glowing(&mapped(&exposed, |e| cpu::virtual_development(e, &k, &stock.table)), n, n, sigma, &dose), |p| stock.scanned(p));
     judge("halation before the curve", &out, &reference, &on_negative);
 }
+
+#[test]
+fn a_dose_notch_keeps_the_glow_and_a_size_notch_blurs_it_again() {
+    let Some(mut g) = graph("a_dose_notch_keeps_the_glow_and_a_size_notch_blurs_it_again") else { return };
+    let source = lamp(&mut g, 256, 20.0);
+    let mut pipeline = Pipeline::new();
+    let request = Request { full_width: Some(256.0), ..Request::default() };
+    let mut cache = oni_graph::Cache::frontier();
+    let mut notch = |g: &mut Graph, s: &PipelineSettings| {
+        let image = pipeline.image(g, &source, s, &request, &Default::default()).unwrap();
+        let before = g.stats().dispatches;
+        let made = g.materialise_cached(&image, image.extent(), Some(&mut cache)).unwrap();
+        let ran = g.stats().dispatches - before;
+        assert_eq!(g.render(&Image::new(&made), image.extent(), None).unwrap(), g.render(&image, image.extent(), None).unwrap());
+        ran
+    };
+    notch(&mut g, &haloed(MEDIUM, WIDE));
+    notch(&mut g, &haloed(MEDIUM + 0.01, WIDE));
+    let dose = notch(&mut g, &haloed(MEDIUM + 0.02, WIDE));
+    // Twin: a notch on its size widens the glow, blurred again on both axes.
+    let size = notch(&mut g, &haloed(MEDIUM + 0.02, WIDE + 10.0));
+    assert!(size >= dose + 2, "a size notch ran {size} passes, a dose notch {dose}: the glow was blurred again on a dose notch");
+}
