@@ -1,7 +1,7 @@
 // `halation_laid`: each layer's exposure joined by `dose` of its glow, the glow read bilinearly off the film's plate,
 // where `row_x` and `row_y` map the pixel's centre; alpha kept.
 
-struct Params { head: vec4<u32>, dose: vec4<f32>, saturation: vec4<f32>, row_x: vec4<f32>, row_y: vec4<f32> }
+struct Params { head: vec4<u32>, dose: vec4<f32>, row_x: vec4<f32>, row_y: vec4<f32> }
 
 fn halation_laid_px(p: vec2<i32>) -> vec4<f32> {
     let e = load(p);

@@ -49,7 +49,7 @@ kernel!(TEXTURE, [wgsl::TEXTURE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return 
 kernel!(SCANNER_ENCODE, wgsl::SCANNER_ENCODE, call "scanner_encode_px(v)");
 kernel!(SCANNER_OUTPUT, [wgsl::SCANNER_OUTPUT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_output_px(load(p), load1(p)); }");
 kernel!(VIGNETTE, wgsl::VIGNETTE, call "vignette_px(v, vec2<f32>(p) + 0.5)");
-kernel!(HALATION_SOURCE, wgsl::HALATION_SOURCE, call "halation_source_px(v)");
+kernel!(HALATION_TAIL, [wgsl::HALATION_TAIL], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_tail_px(load(p), load1(p), load2(p)); }");
 kernel!(HALATION, [wgsl::HALATION], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_px(load(p), load1(p)); }");
 
 /// The fused stages 4 to 7 past Lighting on the negative, which `converted` lays before them.
@@ -168,10 +168,9 @@ pub fn optical_vignette(extent: Rect, stops: f32) -> PerPixel {
     PerPixel { name: "optical-vignette", kernel: &VIGNETTE, params: uniform(HEAD, &[vec![[0.0; 4]], k.rows()].concat()) }
 }
 
-/// The light each pixel of a film's layers' exposures sends into its glow. Its uniform holds no dose, which it never
-/// reads, so a Halation notch keeps its glow and blurs nothing again.
-pub fn halation_source(k: &Halation) -> PerPixel {
-    PerPixel { name: "halation-source", kernel: &HALATION_SOURCE, params: uniform(HEAD, &Halation { dose: [0.0; 3], ..*k }.rows()) }
+/// The halation's glow: its light spread by its three Gaussians, the narrowest the input, the others the auxiliary images.
+pub fn halation_tail() -> PerPixel {
+    PerPixel { name: "halation-tail", kernel: &HALATION_TAIL, params: uniform(HEAD, &[]) }
 }
 
 /// The halation on a film's layers' exposures, their glow the auxiliary image.

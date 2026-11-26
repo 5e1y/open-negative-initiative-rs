@@ -13826,6 +13826,13 @@
     "detail": "Why the factor exists: a film's grain Amount is the grain a scan shows, and a scanner's broad channels average three independent layers' grains; the D850's reading did so until model S. Read layer by layer, with no reader averaging them, each channel carried a third more grain (Portra 800 at rest 0.0189 of green's window in 32-pixel tiles against the real scan's 0.014, the anchor of #3855). grain::READ_ALONE, 0.739, is that share, defined once in the code: the files and the Grain slider keep their numbers (Portra 800 at 25 %), the neutral film, black and white films and slides are untouched. Proven by grain's a_photo_on_portra_800_grains_as_a_real_portra_800_scan_did, back at 0.0140; twin: each layer carrying the whole Amount lays 0.0189."
   },
   {
+    "id": 3883,
+    "type": "feature",
+    "title": "The halation sends back every light with a long tail: no threshold, a glow falling as an exponential of the distance",
+    "status": "done",
+    "detail": "Owner's call on board 39c (2026-11-27, real night scenes and a bright day): his Portra 800 negatives are all a little pink, the light the base sends back spreading far. The glow is now fed by each layer's whole exposure, no threshold (the former (E/saturation)^2 weight dropped), and spread as exp(-r / λ), λ the width each film's file gives (200 µm on Portra 800), drawn on the film's plate as three Gaussians (HALATION_TAIL: 0.5, 1.5 and 2.75 λ, within 15 % of the exponential out to nine λ, a new per-pixel stage halation_tail and its CPU reference), red alone, baked once into the frozen scan. The dose: halation::DOSE_PER_AMOUNT, 0.05 / 0.31, laid on Halation's amount, so the files' rests and the slider keep their numbers (Portra 800 at 31 %, its dose 0.05); a high film (0.92) lays 0.148, a low one (0.10) 0.016. Measured on board 39c: a bright day's red +4.6 % on Portra 800 at rest, a night's lamps lose the tight rim the Gaussian drew. Proven by halation's tests: the stages against their CPU reference within 1.2e-7 (twin: one Gaussian, no tail), a point source's log falling by one every λ (twin: a Gaussian falls far faster), a flat grey and a clipped light rising by the same dose (twin: the former weight). Only legacy_print's two digital cases move."
+  },
+  {
     "id": 4008,
     "type": "ui",
     "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",

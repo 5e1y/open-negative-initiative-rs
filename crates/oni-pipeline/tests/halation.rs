@@ -1,6 +1,6 @@
-//! The halation on a film's layers against its reference: its glow fed by each layer's light weighted by how near the
-//! saturation it stands, so a mid tone barely moves, a halo that follows its source's light with no step, Portra 800's
-//! glow past a lamp, the same at every scale, a region's the whole's, absent at rest; each verdict with a twin.
+//! The halation on a film's layers against its reference: its glow fed by each layer's whole light, a mid tone as a lamp,
+//! spread as an exponential of the distance, a halo that follows its source's light with no step, the same at every
+//! scale, a region's the whole's, absent at rest; each verdict with a twin.
 
 mod common;
 
@@ -9,7 +9,7 @@ use oni_graph::{Graph, Image, Rect, Source, Stage};
 use oni_pipeline::stages::{self, Blur};
 use oni_pipeline::{Pipeline, Request, film, halation};
 use oni_render::cpu::{self, Grid};
-use oni_render::{Gaussian, Halation};
+use oni_render::{Gaussian, HALATION_TAIL, Halation};
 use oni_settings::{ConversionMode, PipelineSettings, VirtualStock};
 
 /// The dose at Halation's top, and the one photographers' medium glow takes.
@@ -82,10 +82,22 @@ fn blurred(pixels: &[V4], w: usize, h: usize, sigma: f32) -> Vec<V4> {
     cpu::gaussian(&cpu::gaussian(&Grid::new(0, 0, w, h, pixels.to_vec()), &gaussian(false)), &gaussian(true)).pixels
 }
 
-/// `pixels` with the halation `k` of deviation `sigma`, as its reference lays it.
+/// `pixels`' glow of width `sigma`, as its reference spreads it: `HALATION_TAIL`'s three Gaussians weighed and summed.
+fn spread(pixels: &[V4], w: usize, h: usize, sigma: f32) -> Vec<V4> {
+    let [near, mid, far] = HALATION_TAIL.map(|t| blurred(pixels, w, h, sigma * t[0]));
+    (0..pixels.len()).map(|i| cpu::halation_tail(near[i], mid[i], far[i])).collect()
+}
+
+/// `pixels` with the halation `k` of width `sigma`, as its reference lays it.
 fn glowing(pixels: &[V4], w: usize, h: usize, sigma: f32, k: &Halation) -> Vec<V4> {
-    let glow = blurred(&mapped(pixels, |e| cpu::halation_source(e, k)), w, h, sigma);
+    let glow = spread(pixels, w, h, sigma);
     pixels.iter().zip(&glow).map(|(e, b)| cpu::halation(*e, *b, k)).collect()
+}
+
+/// `image`'s glow of width `sigma` on the GPU, as the pipeline spreads it.
+fn tail(image: &Image, sigma: f64) -> Image {
+    let [near, mid, far] = HALATION_TAIL.map(|t| stages::blurred(image.clone(), sigma * f64::from(t[0]), false));
+    near.then_reading(stages::halation_tail(), &[mid, far])
 }
 
 #[test]
@@ -96,16 +108,16 @@ fn the_halation_matches_its_reference_and_adds_the_glow_of_the_brightest_light()
     let input = g.upload_at(extent, &pixels).unwrap();
     let sigma = 3.2;
     let (w, h) = (extent.w as usize, extent.h as usize);
-    // A colour film's three layers, then a silver film's one, each layer its own saturation.
-    for k in [Halation::on(0.4, false, [1.2, 1.4, 0.9]), Halation::on(0.07, true, [1.39; 3])] {
-        let glow = stages::blurred(Image::new(&input).then(stages::halation_source(&k)), f64::from(sigma), false);
+    // A colour film's three layers, then a silver film's one.
+    for k in [Halation::on(0.4, false), Halation::on(0.07, true)] {
+        let glow = tail(&Image::new(&input), f64::from(sigma));
         let out = whole(&mut g, &Image::new(&input).then_reading(stages::halation(&k), &[glow]));
         let reference = glowing(&pixels, w, h, sigma, &k);
-        // Twin: every light feeding the glow whole, as a linear halation would.
-        let linear = blurred(&pixels, w, h, sigma);
-        judge("halation", &out, &reference, &pixels.iter().zip(&linear).map(|(e, b)| cpu::halation(*e, *b, &k)).collect::<Vec<_>>());
+        // Twin: one Gaussian of the glow's width, no tail.
+        let narrow = blurred(&pixels, w, h, sigma);
+        judge("halation", &out, &reference, &pixels.iter().zip(&narrow).map(|(e, b)| cpu::halation(*e, *b, &k)).collect::<Vec<_>>());
         // Twin: the other film's layers.
-        let other = Halation::on(k.dose[0], k.dose[2] == 0.0, k.saturation);
+        let other = Halation::on(k.dose[0], k.dose[2] == 0.0);
         judge("halation, the other film's layers", &out, &reference, &glowing(&pixels, w, h, sigma, &other));
     }
 
@@ -117,7 +129,7 @@ fn the_halation_matches_its_reference_and_adds_the_glow_of_the_brightest_light()
     let after = whole(&mut g, &halation::halated(Image::new(&source), &s, scan));
     let k = halation::kernel(&s);
     let sum = |p: &[V4], c: usize| p.iter().map(|v| f64::from(v[c])).sum::<f64>();
-    let fed = |c: usize| before.iter().map(|v| f64::from(cpu::halation_source(*v, &k)[c])).sum::<f64>();
+    let fed = |c: usize| sum(&before, c);
     let (was, is) = (sum(&before, 0), sum(&after, 0));
     assert!(((is - was) / (f64::from(k.dose[0]) * fed(0)) - 1.0).abs() < 1e-3, "red: {was} became {is}");
     assert!(before.iter().zip(&after).all(|(a, b)| a[1] == b[1] && a[2] == b[2]), "the green and blue layers never glow");
@@ -129,8 +141,8 @@ fn the_halation_matches_its_reference_and_adds_the_glow_of_the_brightest_light()
 }
 
 #[test]
-fn a_mid_tone_barely_moves_and_a_clipped_light_glows_its_whole_dose() {
-    let Some(mut g) = graph("a_mid_tone_barely_moves_and_a_clipped_light_glows_its_whole_dose") else { return };
+fn every_light_feeds_the_glow_a_mid_tone_as_a_clipped_one() {
+    let Some(mut g) = graph("every_light_feeds_the_glow_a_mid_tone_as_a_clipped_one") else { return };
     let side = 96u32;
     let white = film::saturation();
     // The scene's own grey and the sensor's saturation, flat over the frame: the neutral film's layers.
@@ -140,12 +152,12 @@ fn a_mid_tone_barely_moves_and_a_clipped_light_glows_its_whole_dose() {
         out[(side * side / 2 + side / 2) as usize][0] / light - 1.0
     };
     let (grey, clipped) = (raised(&mut g, 0.184), raised(&mut g, white));
-    println!("under the top dose a mid grey's red rises {:.4}, a clipped light's {clipped:.4}", grey);
-    assert!((grey - TOP * (0.184 / white).powi(2)).abs() < 2e-4, "a mid grey rises by the dose over its share of the saturation squared: {grey}");
-    assert!(grey < 0.02, "a mid tone barely moves: {grey}");
-    assert!((clipped - TOP).abs() < 1e-4, "a clipped light glows its whole dose: {clipped}");
-    // Twin: a glow fed by every light whole moves the grey as much as the lamp.
-    assert!(clipped > 50.0 * grey);
+    let dose = TOP * halation::DOSE_PER_AMOUNT;
+    println!("under the top amount, a dose of {dose:.4}, a mid grey's red rises {grey:.4}, a clipped light's {clipped:.4}");
+    // No threshold: a flat frame's red rises by the whole dose, whatever its light, the veil over a bright frame.
+    assert!((grey - dose).abs() < 1e-3 && (clipped - dose).abs() < 1e-3, "{grey} {clipped}");
+    // Twin: a glow fed by each light's share of the saturation squared, the former rule, barely moves the grey.
+    assert!((grey - dose * (0.184 / white).powi(2)).abs() > 0.5 * dose, "{grey}");
 }
 
 #[test]
@@ -155,7 +167,6 @@ fn a_point_sources_halo_follows_its_light_with_no_step() {
     let s = haloed(TOP, WIDE * 4.0 / 1.6);
     let scan = Rect::new(0, 0, side, side);
     let halo = ring(side, 9.0, 14.0);
-    let white = film::saturation();
     // The glow a source of each light lays on its surround, over the light it feeds: from the shadows to past white.
     let lights = [0.05f32, 0.3, 0.59, 0.61, 1.2, 4.0, 16.0];
     let shares: Vec<f32> = lights
@@ -164,8 +175,8 @@ fn a_point_sources_halo_follows_its_light_with_no_step() {
             let source = lamp_of(&mut g, side, 6.0, *light);
             let (before, after) = (whole(&mut g, &Image::new(&source)), whole(&mut g, &halation::halated(Image::new(&source), &s, scan)));
             // The dark ground's own glow, even over the frame, laid aside: the lamp feeds its light over the ground's.
-            let feeds = |v: f32| v * (v / white).min(1.0).powi(2);
-            let (ground, fed) = (TOP * feeds(0.02), feeds(*light) - feeds(0.02));
+            let feeds = |v: f32| v;
+            let (ground, fed) = (TOP * halation::DOSE_PER_AMOUNT * feeds(0.02), feeds(*light) - feeds(0.02));
             (halo.iter().map(|i| after[*i][0] - before[*i][0]).sum::<f32>() / halo.len() as f32 - ground) / fed
         })
         .collect();
@@ -179,26 +190,29 @@ fn a_point_sources_halo_follows_its_light_with_no_step() {
 }
 
 #[test]
-fn portra_800s_glow_past_a_clipped_lamp_falls_as_measured() {
-    let Some(mut g) = graph("portra_800s_glow_past_a_clipped_lamp_falls_as_measured") else { return };
-    // A frame 3600 pixels long, ten micrometres a pixel; a clipped lamp over its left half, a dark ground past it.
-    let (w, h) = (3600u32, 32u32);
-    let white = film::saturation();
-    let grey = 0.184;
-    let pixels: Vec<V4> = (0..w * h).map(|i| if i % w < w / 2 { [white, white, white, 1.0] } else { [0.04 * grey, 0.04 * grey, 0.04 * grey, 1.0] }).collect();
-    let source = g.upload(w, h, &pixels).unwrap();
-    let excess = |g: &mut Graph, size: f32| -> Vec<f32> {
-        let out = whole(g, &halation::halated(Image::new(&source), &haloed(MEDIUM, size), Rect::new(0, 0, w, h)));
-        let row = (h / 2 * w) as usize;
-        [15u32, 30, 45].iter().map(|d| (out[row + (w / 2 + d) as usize][0] - pixels[row + (w / 2 + d) as usize][0]) / grey).collect()
+fn a_point_sources_glow_falls_as_an_exponential_of_the_distance() {
+    let Some(mut g) = graph("a_point_sources_glow_falls_as_an_exponential_of_the_distance") else { return };
+    // A point of light at the centre of a dark frame, the glow's width λ eight pixels.
+    let side = 241u32;
+    let (centre, lambda) = (side / 2, 8.0f32);
+    let pixels: Vec<V4> = (0..side * side).map(|i| if i == centre * side + centre { [1.0, 0.0, 0.0, 1.0] } else { [0.0, 0.0, 0.0, 1.0] }).collect();
+    let source = g.upload(side, side, &pixels).unwrap();
+    let glow = whole(&mut g, &tail(&Image::new(&source), f64::from(lambda)));
+    let at = |r: f32| {
+        let ring = ring(side, r - 0.5, r + 0.5);
+        f64::from(ring.iter().map(|i| glow[*i][0]).sum::<f32>()) / ring.len() as f64
     };
-    let at = excess(&mut g, 200.0);
-    println!("the red past a clipped lamp, in shares of a mid grey's exposure, at 150, 300 and 450 µm: {at:?}");
-    for (got, want) in at.iter().zip([0.51, 0.15, 0.02]) {
-        assert!((got - want).abs() < 0.03, "{got} against {want}");
-    }
-    // Twin: the former width, 125 µm, falls far faster.
-    assert!((excess(&mut g, 125.0)[0] - 0.51).abs() > 0.1);
+    // Its log falls by one every λ, within the three Gaussians' 15 %, out to nine λ.
+    let slopes: Vec<f64> = (1..=8).map(|n| (at(lambda * (n + 1) as f32) / at(lambda * n as f32)).ln()).collect();
+    println!("the glow's log fall each λ from λ to 9 λ: {slopes:.3?}");
+    assert!(slopes.iter().all(|v| (v + 1.0).abs() < 0.35), "{slopes:?}");
+    // Twin: one Gaussian of the same width falls far faster past two λ.
+    let gaussian = whole(&mut g, &stages::blurred(Image::new(&source), f64::from(lambda), false));
+    let g_at = |r: f32| {
+        let ring = ring(side, r - 0.5, r + 0.5);
+        f64::from(ring.iter().map(|i| gaussian[*i][0]).sum::<f32>()) / ring.len() as f64
+    };
+    assert!((g_at(lambda * 4.0) / g_at(lambda * 3.0)).ln() < -2.0);
 }
 
 #[test]
@@ -233,7 +247,7 @@ fn a_reduced_render_glows_as_the_full_one_reduced() {
         assert!(off < 0.1, "at 1/{n}: {off:.3} of the glow's peak");
         // Twin: the full resolution's deviation laid on the reduced pixels, a glow n times as wide.
         let k = halation::kernel(&s);
-        let wide = stages::blurred(reduced.clone().then(stages::halation_source(&k)), halation::deviation(&s, full_scan), false);
+        let wide = tail(&reduced, halation::deviation(&s, full_scan));
         let twin = whole(&mut g, &reduced.then_reading(stages::halation(&k), &[wide]));
         assert!(gap(&twin) > 0.2, "at 1/{n}: the twin passes at {:.3}", gap(&twin));
     }
@@ -260,7 +274,7 @@ fn a_region_glows_as_the_whole_frame_does_there() {
     let source = lamp(&mut g, side, 40.0);
     let k = halation::kernel(&s);
     let gaussian = |vertical| Gaussian { sigma: sigma as f32, vertical, transparent: false };
-    let glow = Image::new(&source).then(stages::halation_source(&k)).then(Marginless(Blur(gaussian(false)))).then(Marginless(Blur(gaussian(true))));
+    let glow = Image::new(&source).then(Marginless(Blur(gaussian(false)))).then(Marginless(Blur(gaussian(true))));
     let twin = Image::new(&source).then_reading(stages::halation(&k), &[glow]);
     let part = g.render(&twin, region, None).unwrap();
     let all = whole(&mut g, &twin);
@@ -355,7 +369,7 @@ fn a_glow_read_off_the_film_s_plate_matches_its_reference() {
     let plate_pixels = common::noise(plate_extent.w, plate_extent.h, 43, 0.0, 2.0);
     let plate = g.upload_at(plate_extent, &plate_pixels).unwrap();
     let (grid, plate_grid) = (Grid::new(0, 0, 61, 43, pixels.clone()), Grid::new(0, 0, 29, 23, plate_pixels));
-    let k = Halation::on(0.4, false, [1.2, 1.4, 0.9]);
+    let k = Halation::on(0.4, false);
     // A render at 0.42 of the plate's scale, turned a little and moved, its edges reading the plate's.
     let map = [[0.42, 0.03, 1.7], [-0.02, 0.41, 2.3]];
     let out = whole(&mut g, &Image::new(&input).then_reading(stages::halation_laid(&k, map, plate_extent), &[Image::new(&plate)]));

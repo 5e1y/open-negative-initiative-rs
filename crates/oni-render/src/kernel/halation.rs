@@ -1,5 +1,5 @@
-//! Halation: the light a film's base sends back into its layers, each layer's exposure joined by a dose of the blur of
-//! its light weighted by how near the sensor's saturation it stands, before the film's curve.
+//! Halation: the light a film's base sends back into its layers, each layer's exposure joined by a dose of its light
+//! spread with a long tail, every light feeding it, before the film's curve.
 
 use super::*;
 
@@ -7,28 +7,32 @@ use super::*;
 /// back is red, blue stopped by the yellow filter and green absorbed by its own layer.
 pub const HALATION_COLOUR: [f32; 3] = [1.0, 0.0, 0.0];
 
-/// The halation's dose on each layer and each layer's exposure at the sensor's saturation.
+/// The glow's spread with distance, decaying as `exp(-r / λ)` on the film (owner's call): three Gaussians, each its
+/// deviation in λ and its weight, within 15 % of the exponential out to nine λ.
+pub const HALATION_TAIL: [[f32; 2]; 3] = [[0.5, 0.141_47], [1.5, 0.673_79], [2.75, 0.184_74]];
+
+/// The halation's dose on each layer.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Halation {
     pub dose: [f32; 3],
-    pub saturation: [f32; 3],
 }
 
 impl Halation {
     /// `dose` on a colour film's layers, or on a silver film's one layer the same on its three channels.
-    pub fn on(dose: f32, silver: bool, saturation: [f32; 3]) -> Halation {
-        Halation { dose: if silver { [dose; 3] } else { HALATION_COLOUR.map(|c| dose * c) }, saturation }
+    pub fn on(dose: f32, silver: bool) -> Halation {
+        Halation { dose: if silver { [dose; 3] } else { HALATION_COLOUR.map(|c| dose * c) } }
     }
 
     pub fn rows(&self) -> Vec<V4> {
-        vec![v3(self.dose, 0.0), v3(self.saturation, 0.0)]
+        vec![v3(self.dose, 0.0)]
     }
 }
 
-/// The light one pixel sends into its glow: its exposure weighted by the square of its share of the saturation, so a
-/// mid tone sends about a sixtieth of what a clipped lamp does; alpha zero.
-pub fn halation_source(e: V4, k: &Halation) -> V4 {
-    with_alpha(map(rgb(e), |c, v| v * clamp(v / k.saturation[c], 0.0, 1.0).powi(2)), 0.0)
+/// The glow of one pixel: its light spread by each of `HALATION_TAIL`'s Gaussians, `near`, `mid` and `far`, weighed and
+/// summed; alpha zero.
+pub fn halation_tail(near: V4, mid: V4, far: V4) -> V4 {
+    let [a, b, c] = HALATION_TAIL.map(|t| t[1]);
+    with_alpha(map(rgb(near), |i, v| a * v + b * mid[i] + c * far[i]), 0.0)
 }
 
 /// One pixel's exposures joined by `k`'s dose of their glow; alpha kept.

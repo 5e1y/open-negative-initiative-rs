@@ -34,8 +34,8 @@ pub const VIGNETTE: &str = include_str!("wgsl/vignette.wgsl");
 pub const GRAIN: &str = include_str!("wgsl/grain.wgsl");
 /// `grain_px(p)`, the film grained, reading its layers' field through `load1`; after `GRAIN`.
 pub const GRAIN_LAID: &str = include_str!("wgsl/grain_laid.wgsl");
-/// `halation_source_px(e)`.
-pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
+/// `halation_tail_px(near, mid, far)`, the glow's three spreads weighed and summed.
+pub const HALATION_TAIL: &str = include_str!("wgsl/halation_tail.wgsl");
 /// `halation_px(e, glow)`.
 pub const HALATION: &str = include_str!("wgsl/halation.wgsl");
 /// `halation_laid_px(p)`, the glow read off the film's plate through `load1`.
