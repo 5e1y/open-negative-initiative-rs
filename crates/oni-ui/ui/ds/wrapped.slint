@@ -95,11 +95,14 @@ export component WrappedFrame inherits Rectangle {
         x: 0;
         height: parent.height;
         u: root.u;
+        along: (root.number - 1) * WrappedStyle.pitch;
     }
     Perforations {
         x: parent.width - self.width;
         height: parent.height;
         u: root.u;
+        along: (root.number - 1) * WrappedStyle.pitch;
+        right: true;
     }
     Brand {
         x: WrappedStyle.pad * root.u;
