@@ -158,7 +158,12 @@ mod tests {
     /// the twin, a report holding no main thread, reads none.
     #[test]
     fn a_sample_report_gives_the_main_threads_heaviest_path() {
-        let report = "Call graph:\n    2290 Thread_1   DispatchQueue_1: com.apple.main-thread  (serial)\n    + 2290 start  (in dyld) + 6992  [0x1]\n    +   2290 main  (in oni) + 52  [0x2]\n    +     2288 mach_msg  (in libsystem_kernel.dylib) + 24  [0x3]\n    +     2 other_branch  (in oni) + 1  [0x4]\n    2290 Thread_2: log\n    + 2290 thread_start  (in libsystem_pthread.dylib) + 8  [0x5]\n";
+        let report = concat!(
+            "Call graph:\n    2290 Thread_1   DispatchQueue_1: com.apple.main-thread  (serial)\n",
+            "    + 2290 start  (in dyld) + 6992  [0x1]\n    +   2290 main  (in oni) + 52  [0x2]\n",
+            "    +     2288 mach_msg  (in libsystem_kernel.dylib) + 24  [0x3]\n    +     2 other_branch  (in oni) + 1  [0x4]\n",
+            "    2290 Thread_2: log\n    + 2290 thread_start  (in libsystem_pthread.dylib) + 8  [0x5]\n",
+        );
         assert_eq!(main_thread_frames(report), ["mach_msg (libsystem_kernel.dylib)", "main (oni)", "start (dyld)"]);
         assert!(main_thread_frames(&report.replace("com.apple.main-thread", "com.apple.other")).is_empty(), "twin: no main thread, no frames");
     }

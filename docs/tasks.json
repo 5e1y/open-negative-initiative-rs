@@ -14097,5 +14097,19 @@
     "title": "The welcome's message always shows its three keys: Instagram's address is a constant, no longer a condition",
     "status": "done",
     "detail": "'Follow ONI on Instagram' stood on `Help.instagram-known`, set by the app from an address that might be unknown; the address is known, the app always showed the key, but a window that did not set the property dropped it and the check's sheet showed two keys. The address is now a plain constant and the key is always drawn. Check welcome_card::the_welcome_stands_on_the_windows_middle_line_at_every_size: on the message, its three keys each drawn whole inside the window, clear of the keys' band and of one another, in English, French and Spanish at 1000x620, 1100x680 and 1728x1117 (one row in each); twin: without the key, the check finds none."
+  },
+  {
+    "id": 4060,
+    "type": "refactor",
+    "title": "oni-decode's lib.rs in one file a part: LibRaw's interface, the balance, the branch, the reading without demosaic",
+    "status": "done",
+    "detail": "lib.rs had passed its 400-line ceiling (435). `ffi` holds LibRaw's C interface and the session freeing its buffers, `balance` the 5000 K balance and the camera-to-Rec. 2020 matrix, `branch` the routing on bytes and names and the depth, `mosaic` the identification, the full unpack and the sensor counts; lib.rs keeps the decode itself (172 lines). Every public name stays at the crate's root, the code moved line for line, only visibilities widened to the crate: no behaviour moves. Proven by oni-decode's tests and the architecture test."
+  },
+  {
+    "id": 4061,
+    "type": "refactor",
+    "title": "Three lines past 200 characters broken, the width ceiling at 77",
+    "status": "done",
+    "detail": "The double click's stall reason in the motion bench, the watchdog's sample report (a concat! of the same text, checked equal) and model S's twin assertion, which names its first half. A line of year.rs fell under the width since, so the ceiling is 77 once the welcome's four new wide lines in its window checks are broken by their stream."
   }
 ]

@@ -113,7 +113,8 @@ mod tests {
             assert!((landed.levels.red.white - (now.levels().red.white + 0.03)).abs() < 1e-5, "format {version}: {:?}", landed.levels.red);
             // Twin: the same photo stored as the next format, which laid another reference, does not land there.
             let wrong = read(&stored(&laid(was), version + 1));
-            assert!((0..3).any(|c| (wrong.gains.stops[c] - now.stops[c]).abs() > 1e-3) || (wrong.levels.red.white - landed.levels.red.white).abs() > 1e-3, "format {version}: a wrong format lands alike");
+            let moved = (0..3).any(|c| (wrong.gains.stops[c] - now.stops[c]).abs() > 1e-3);
+            assert!(moved || (wrong.levels.red.white - landed.levels.red.white).abs() > 1e-3, "format {version}: a wrong format lands alike");
         }
     }
 

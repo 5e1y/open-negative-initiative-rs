@@ -20,7 +20,7 @@ const GRANDFATHERED: &[(&str, usize)] = &[
 const WIDE: usize = 200;
 
 /// Rust lines past `WIDE` today: a count that only falls, never a target.
-const WIDE_LINES: usize = 78;
+const WIDE_LINES: usize = 77;
 
 /// Every source file under `crates/`, as its path from `root` and its text.
 fn sources(root: &Path) -> Vec<(String, String)> {

@@ -13,79 +13,32 @@ mod m3;
 mod size;
 #[cfg(test)]
 mod stamp;
+mod ffi;
+mod balance;
+mod branch;
+mod mosaic;
 // Links LibRaw's archive; that crate holds no Rust to name.
 use oni_libraw as _;
 pub use size::full_size;
-use m3::{apply, inverse, mul};
 pub use neutral::{Neutral, SLIDE_KELVIN};
 
+pub use balance::working_from_camera;
+pub(crate) use balance::NEUTRAL_UV;
+use balance::{baseline, converted_on};
+#[cfg(test)]
+use balance::{Conversion, D65_XY, bradford, rec2020_from_xyz, white_xyz, xyz};
+#[cfg(test)]
+use m3::apply;
+pub use branch::{Branch, PLAIN_EXTENSIONS, decodes_via_mosaic, is_low_precision, is_raw, named_decodable, route, unsupported_format};
+pub(crate) use ffi::DNG_UNPACK;
+use ffi::{Session, oni_inset, oni_open, oni_process};
+pub use mosaic::{Mosaic, is_nikon_he, mosaic, reads};
+
 use source::{Route, Source};
-use std::os::raw::{c_char, c_float, c_int, c_ushort, c_void};
+use std::os::raw::c_int;
 use std::path::Path;
-use std::sync::Mutex;
-
-#[repr(C)]
-struct Decoded {
-    width: c_int,
-    height: c_int,
-    colors: c_int,
-    dng: c_int,
-    cam_xyz: [[c_float; 3]; 4],
-    baseline_exposure: c_float,
-    pixels: *const c_ushort,
-    image: *mut c_void,
-    raw: *mut c_void,
-    half: c_int,
-    inset: [c_int; 4],
-    flip: c_int,
-    stream: *mut c_void,
-    cut: c_int,
-    cam_mul: [c_float; 4],
-}
-
-unsafe extern "C" {
-    fn oni_open(path: *const c_char, stream: *mut c_void, exposure_gain: c_float, min_side: c_int, out: *mut Decoded) -> c_int;
-    fn oni_unpack(d: *mut Decoded) -> c_int;
-    fn oni_inset(d: *const Decoded, out: *mut c_int);
-    fn oni_process(d: *mut Decoded, mul: *const c_float) -> c_int;
-    fn oni_release(d: *mut Decoded);
-    fn oni_mosaic(d: *const Decoded, counts: *mut *const c_ushort, out: *mut c_int) -> c_int;
-}
-
-/// Frees LibRaw's buffers on every exit path.
-struct Session(Decoded);
-
-impl Drop for Session {
-    fn drop(&mut self) {
-        unsafe { oni_release(&mut self.0) };
-    }
-}
-
-impl Session {
-    fn unpack(&mut self) -> i32 {
-        let _held = (self.0.dng != 0).then(|| DNG_UNPACK.lock().unwrap_or_else(|e| e.into_inner()));
-        unsafe { oni_unpack(&mut self.0) }
-    }
-}
-
-/// LibRaw's DNG unpacker fills a static cosine table on first use, unguarded (`ljpeg_idct`): DNG
-/// unpacks take this lock, every other stage of every decode runs concurrently.
-pub(crate) static DNG_UNPACK: Mutex<()> = Mutex::new(());
 
 type M3 = [[f64; 3]; 3];
-
-/// The neutral of the Swift app's `CIRAWFilter`, 5000 K and tint 0: Robertson's isotemperature node at
-/// 200 mired, on the Planckian locus, in CIE 1960 (u, v), the table DNG temperature and tint are read on.
-pub(crate) const NEUTRAL_UV: (f64, f64) = (0.21142, 0.32312);
-
-const D65_XY: (f64, f64) = (0.3127, 0.3290);
-const REC2020_XY: [(f64, f64); 3] = [(0.708, 0.292), (0.170, 0.797), (0.131, 0.046)];
-
-const BRADFORD: M3 = [
-    [0.8951, 0.2664, -0.1614],
-    [-0.7502, 1.7135, 0.0367],
-    [0.0389, -0.0685, 1.0296],
-];
 
 pub use oni_settings::white::DEFAULT_BASELINE_EV;
 
@@ -116,166 +69,6 @@ impl DecodeError {
     }
 }
 
-/// The multipliers LibRaw demosaics on and the matrix from its 16-bit output to Rec. 2020.
-#[derive(Debug)]
-struct Conversion {
-    mul: [f32; 3],
-    matrix: [[f32; 3]; 3],
-}
-
-fn xyz((x, y): (f64, f64)) -> [f64; 3] {
-    [x / y, 1.0, (1.0 - x - y) / y]
-}
-
-fn white_xyz(neutral: Neutral) -> [f64; 3] {
-    let (u, v) = neutral.uv();
-    let d = u - 4.0 * v + 2.0;
-    xyz((1.5 * u / d, v / d))
-}
-
-/// XYZ to linear Rec. 2020, a D65 white of Y = 1 landing on (1, 1, 1).
-fn rec2020_from_xyz() -> M3 {
-    let p = REC2020_XY.map(xyz);
-    let primaries = [0, 1, 2].map(|r| [p[0][r], p[1][r], p[2][r]]);
-    let to_xyz_unscaled = inverse(&primaries).expect("Rec. 2020 primaries are independent");
-    let s = apply(&to_xyz_unscaled, xyz(D65_XY));
-    let to_xyz = [0, 1, 2].map(|r| [0, 1, 2].map(|c| primaries[r][c] * s[c]));
-    inverse(&to_xyz).expect("scaled primaries are independent")
-}
-
-/// Bradford's von Kries adaptation from white `from` to white `to`.
-fn bradford(from: [f64; 3], to: [f64; 3]) -> M3 {
-    let (a, b) = (apply(&BRADFORD, from), apply(&BRADFORD, to));
-    let gains = [
-        [b[0] / a[0], 0.0, 0.0],
-        [0.0, b[1] / a[1], 0.0],
-        [0.0, 0.0, b[2] / a[2]],
-    ];
-    mul(
-        &inverse(&BRADFORD).expect("Bradford is invertible"),
-        &mul(&gains, &BRADFORD),
-    )
-}
-
-/// A camera's channels to working Rec. 2020 as a decode lays them, less its scale: `cam_xyz` inverted, the light of
-/// `neutral` adapted by Bradford to D65; none where the matrix has no inverse.
-fn working_from(cam_xyz: &M3, neutral: Neutral) -> Option<M3> {
-    let to_2020 = mul(&rec2020_from_xyz(), &bradford(white_xyz(neutral), xyz(D65_XY)));
-    Some(mul(&to_2020, &inverse(cam_xyz)?))
-}
-
-/// `working_from` for a negative's 5000 K, as a scanned negative's RAW is decoded: what ONI's own scanner reads through.
-pub fn working_from_camera(cam_xyz: &[[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
-    working_from(cam_xyz, Neutral::Swift)
-}
-
-/// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
-/// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
-fn converted_on(cam_xyz: &M3, stops: f64, neutral: Neutral) -> Option<Conversion> {
-    let white = white_xyz(neutral);
-    let n = apply(cam_xyz, white);
-    if n.iter().any(|v| !v.is_finite() || *v <= 0.0) {
-        return None;
-    }
-    let (lo, hi) = (
-        n.iter().cloned().fold(f64::MAX, f64::min),
-        n.iter().cloned().fold(0.0, f64::max),
-    );
-    // LibRaw scales channel c by (1 / n_c) / max(1 / n), so its output o_c is r_c * lo / n_c.
-    let undo = [0, 1, 2].map(|c| hi * n[c] / lo * stops.exp2());
-    let m = working_from(cam_xyz, neutral)?;
-    Some(Conversion {
-        mul: n.map(|v| (1.0 / v) as f32),
-        matrix: [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),
-    })
-}
-
-/// The stops a decode adds: the file's own BaselineExposure, else the camera RAW default.
-fn baseline(tag: f32) -> f64 {
-    if tag > -999.0 {
-        tag as f64
-    } else {
-        DEFAULT_BASELINE_EV
-    }
-}
-
-/// The branch a file decodes through, as `RawDecode.alone` sorts it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Branch {
-    /// A camera mosaic, through LibRaw.
-    Mosaic,
-    /// A demosaiced linear scan in a TIFF container, through `container`.
-    LinearRgb,
-    /// Anything else, read by an image reader in its declared or chosen space.
-    Plain,
-}
-
-/// Camera RAW extensions (`UTType.rawImage`), the fallback for a file whose bytes no probe claims.
-const RAW_EXTENSIONS: &[&str] = &[
-    "3fr", "ari", "arw", "bay", "braw", "cap", "cr2", "cr3", "crw", "dcr", "dcs", "dng", "drf", "eip", "erf", "fff", "gpr",
-    "iiq", "k25", "kdc", "mdc", "mef", "mos", "mrw", "nef", "nrw", "orf", "pef", "ptx", "pxn", "r3d", "raf", "raw", "rw2",
-    "rwl", "rwz", "sr2", "srf", "srw", "x3f",
-];
-
-/// `RawDecode.isRaw`: the extension, consulted only when the bytes claim nothing.
-pub fn is_raw(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()).is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-}
-
-/// Sorted on the bytes: a CFA is a mosaic, LinearRaw a linear scan; a file neither claims falls back
-/// on the extension, so the probe only ever adds files to the linear branch.
-pub fn route(path: &Path) -> Branch {
-    match container::probe(path) {
-        Some(container::Kind::Mosaic) => Branch::Mosaic,
-        Some(container::Kind::LinearRgb) => Branch::LinearRgb,
-        _ if is_raw(path) => Branch::Mosaic,
-        _ => Branch::Plain,
-    }
-}
-
-/// The extensions the image reader takes, its features in `Cargo.toml`: a file named otherwise
-/// that no RAW engine reads is looked at for `unsupported_format`.
-pub const PLAIN_EXTENSIONS: &[&str] = &["jpg", "jpeg", "jpe", "jfif", "png", "tif", "tiff", "gif", "bmp", "ico", "webp"];
-
-/// Whether `path`'s name alone says a reader of ONI takes it; its bytes still decide (`route`).
-pub fn named_decodable(path: &Path) -> bool {
-    is_raw(path) || path.extension().and_then(|e| e.to_str()).is_some_and(|e| PLAIN_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-}
-
-/// The format of a file neither LibRaw, the linear container nor an image reader takes: `HEIC`, `PSD`.
-pub fn unsupported_format(path: &Path) -> Option<String> {
-    (route(path) == Branch::Plain).then(|| plain::unsupported(path)).flatten()
-}
-
-/// `RawDecode.decodesViaMosaic`, which the settings' migration shares with the decode.
-pub fn decodes_via_mosaic(path: &Path) -> bool {
-    route(path) == Branch::Mosaic
-}
-
-/// `RawDecode.isLowPrecision`: 8 bits per channel or fewer, a warning and never a refusal, since
-/// the density inversion bands low-code shadows. A RAW name is never low.
-pub fn is_low_precision(path: &Path) -> bool {
-    if container::probe(path) == Some(container::Kind::LinearRgb)
-        && let Some(bits) = container::bits_per_sample(path)
-    {
-        return bits <= 8;
-    }
-    !is_raw(path) && image_depth(path).is_some_and(|bits| bits <= 8)
-}
-
-/// The depth an image reader reports: a TIFF's directory, a PNG's header, 8 for a JPEG.
-fn image_depth(path: &Path) -> Option<usize> {
-    use std::io::Read;
-    let mut head = [0u8; 26];
-    let n = std::fs::File::open(path).ok()?.read(&mut head).ok()?;
-    match &head[..n.min(8)] {
-        [0xFF, 0xD8, 0xFF, ..] => Some(8),
-        [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] if n >= 25 => Some(head[24] as usize),
-        [b'I', b'I', ..] | [b'M', b'M', ..] => container::bits_per_sample(path),
-        _ => None,
-    }
-}
-
 /// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none. Safe from several
 /// threads at once: every decode owns its LibRaw instance.
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
@@ -289,62 +82,6 @@ pub const HALF: usize = 1;
 /// pixel per 2x2 block with no demosaic; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
     decoded(path, exposure_gain, side, Neutral::Swift)
-}
-
-/// Whether `path` is Nikon's High Efficiency RAW, told by LibRaw's identification alone.
-pub fn is_nikon_he(path: &Path) -> bool {
-    let Ok(mut source) = Source::open(path, Route::PLATFORM) else { return false };
-    let mut s = Session(unsafe { std::mem::zeroed() });
-    unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) == NIKON_HE }
-}
-
-/// Whether LibRaw opens and unpacks every pixel of `path`: a decode's own reading, no demosaic.
-pub fn reads(path: &Path) -> bool {
-    let Ok(mut source) = Source::open(path, Route::PLATFORM) else { return false };
-    let mut s = Session(unsafe { std::mem::zeroed() });
-    let opened = unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) } == 0;
-    opened && s.unpack() == 0
-}
-
-/// A RAW's sensor counts as LibRaw unpacks them, before any demosaic or colour: the visible area, row by row.
-pub struct Mosaic {
-    pub width: usize,
-    pub height: usize,
-    pub counts: Vec<u16>,
-    /// LibRaw's colour filter pattern, two bits a site over an 8 × 2 tile.
-    pub filters: u32,
-    pub black: u16,
-    pub white: u16,
-}
-
-impl Mosaic {
-    /// The colour, 0 red, 1 green, 2 blue, the site at (`x`, `y`) filters.
-    pub fn colour(&self, x: usize, y: usize) -> usize {
-        let c = (self.filters >> ((((y << 1) & 14) | (x & 1)) << 1)) & 3;
-        if c == 3 { 1 } else { c as usize }
-    }
-}
-
-/// `path`'s sensor counts, or why LibRaw holds no mosaic for it.
-pub fn mosaic(path: &Path) -> Result<Mosaic, DecodeError> {
-    let mut source = Source::open(path, Route::PLATFORM)?;
-    let mut s = Session(unsafe { std::mem::zeroed() });
-    let rc = unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) };
-    if rc != 0 {
-        return Err(DecodeError(rc));
-    }
-    let rc = s.unpack();
-    if rc != 0 {
-        return Err(DecodeError(rc));
-    }
-    let (mut counts, mut out) = (std::ptr::null(), [0 as c_int; 6]);
-    if unsafe { oni_mosaic(&s.0, &mut counts, out.as_mut_ptr()) } != 0 || counts.is_null() {
-        return Err(DecodeError(NO_COLOUR_MATRIX));
-    }
-    let [w, h, pitch, filters, black, white] = out.map(|v| v as usize);
-    let rows = unsafe { std::slice::from_raw_parts(counts, pitch * (h - 1) + w) };
-    let counts = (0..h).flat_map(|y| rows[y * pitch..y * pitch + w].iter().copied()).collect();
-    Ok(Mosaic { width: w, height: h, counts, filters: filters as u32, black: black as u16, white: white as u16 })
 }
 
 /// `decode_for` balanced on `neutral`.

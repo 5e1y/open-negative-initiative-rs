@@ -117,7 +117,11 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if !watched() || app.get_gallery() {
                     let prepare = w.global::<crate::Preparing>().get_shown();
                     let (tiles, rows) = lit(&w);
-                    let why = if prepare { "the double click opened Prepare the Roll".to_string() } else { format!("the double click opened no photo (lit {tiles:?} in the grid, {rows:?} in the column)") };
+                    let why = if prepare {
+                        "the double click opened Prepare the Roll".to_string()
+                    } else {
+                        format!("the double click opened no photo (lit {tiles:?} in the grid, {rows:?} in the column)")
+                    };
                     return stalled(&why);
                 }
                 journey("gallery to editor");
