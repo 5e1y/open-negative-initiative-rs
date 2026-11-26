@@ -1,6 +1,6 @@
 //! `stage_cost <photo> [canvas w h]`: a photo's render at fit on a canvas (3456 × 2034 drawable pixels by default),
 //! each stage of its chain timed as the render up to it less the one before, then Exposure and grain notches through
-//! the canvas's own path, each to the GPU's end. Its sidecar is read, never written.
+//! the canvas's own path, each to the GPU's end, one way so no notch meets a render the canvas keeps. Its sidecar is read, never written.
 
 use oni_app::render::{self, Device, Engine, Reading, View};
 use oni_graph::{Graph, Image, Rect};
@@ -68,16 +68,16 @@ fn main() {
     let (_, region) = resident(&mut e, &s);
     println!("canvas {} x {}: region {} x {}", canvas.0, canvas.1, region.w, region.h);
     let notches: [(&str, fn(&mut PipelineSettings, usize)); 10] = [
-        ("Exposure", |t, i| t.print.exposure += if i % 2 == 0 { 0.01 } else { -0.01 }),
-        ("Contrast", |t, i| t.print.contrast += if i % 2 == 0 { 0.01 } else { -0.01 }),
-        ("Shadows", |t, i| t.print.shadows += if i % 2 == 0 { 0.01 } else { -0.01 }),
-        ("Red gain", |t, i| t.gains.stops[0] += if i % 2 == 0 { 0.01 } else { -0.01 }),
-        ("Density", |t, i| t.density += if i % 2 == 0 { 0.01 } else { -0.01 }),
-        ("Chroma", |t, i| t.chroma.force = (t.chroma.force + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
-        ("Sharpen", |t, i| t.sharpen.amount = (t.sharpen.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
-        ("Grain", |t, i| t.grain.amount = (t.grain.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
-        ("Halation", |t, i| t.halation.amount = (t.halation.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
-        ("Vignette", |t, i| t.vignette.stops += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Exposure", |t, _| t.print.exposure += 0.01),
+        ("Contrast", |t, _| t.print.contrast += 0.01),
+        ("Shadows", |t, _| t.print.shadows += 0.01),
+        ("Red gain", |t, _| t.gains.stops[0] += 0.01),
+        ("Density", |t, _| t.density += 0.01),
+        ("Chroma", |t, _| t.chroma.force = (t.chroma.force + 0.01).max(0.0)),
+        ("Sharpen", |t, _| t.sharpen.amount = (t.sharpen.amount + 0.01).max(0.0)),
+        ("Grain", |t, _| t.grain.amount = (t.grain.amount + 0.01).max(0.0)),
+        ("Halation", |t, _| t.halation.amount = (t.halation.amount + 0.01).max(0.0)),
+        ("Vignette", |t, _| t.vignette.stops += 0.01),
     ];
     for (name, step) in notches {
         let mut t = s.clone();
@@ -102,12 +102,35 @@ fn main() {
     };
     let first = near(&mut e, &s, &at(0.0));
     let mut t = s.clone();
-    let notches: Vec<f64> = (0..RUNS + 2).map(|i| {
-        t.print.exposure += if i % 2 == 0 { 0.01 } else { -0.01 };
+    let notches: Vec<f64> = (0..RUNS + 2).map(|_| {
+        t.print.exposure += 0.01;
         near(&mut e, &t, &at(0.0))
     }).skip(2).collect();
     let pans: Vec<f64> = (1..=RUNS).map(|i| near(&mut e, &s, &at(-(i as f64) * canvas.0 / 10.0))).collect();
     println!("  100 %: first {first:.1} ms, Exposure notch {:.1} ms p50, pan {:.1} ms p50, {:.1} worst", median(notches), median(pans.clone()), pans.iter().cloned().fold(0.0, f64::max));
+    // A pinch: lighter renders at a new scale each, then the same with each film effect at rest.
+    let pinch = |e: &mut Engine, s: &PipelineSettings| {
+        let times: Vec<f64> = (0..RUNS).map(|i| {
+            let v = View { viewport: oni_app::viewport::Viewport { scale: Some(0.4 + 0.03 * i as f64), offset: (0.0, 0.0) }, size: canvas, full: Some(full.clone()), coarse: true };
+            near(e, s, &v)
+        }).collect();
+        median(times)
+    };
+    let quiet = |f: fn(&mut PipelineSettings)| {
+        let mut t = s.clone();
+        f(&mut t);
+        t
+    };
+    let pinched = pinch(&mut e, &s);
+    let no_grain = pinch(&mut e, &quiet(|t| t.grain.amount = 0.0));
+    let no_halation = pinch(&mut e, &quiet(|t| t.halation.amount = 0.0));
+    let no_bloom = pinch(&mut e, &quiet(|t| t.bloom = Default::default()));
+    let none = pinch(&mut e, &quiet(|t| {
+        t.grain.amount = 0.0;
+        t.halation.amount = 0.0;
+        t.bloom = Default::default();
+    }));
+    println!("  pinch, a lighter render: {pinched:.1} ms p50; without grain {no_grain:.1}, halation {no_halation:.1}, bloom {no_bloom:.1}, any {none:.1}");
     // A gesture's pan: lighter renders while the hand moves, then the sharp one it ends on.
     let gesture = |dx: f64, coarse: bool| View { coarse, ..at(dx) };
     let ended: Vec<f64> = (0..5).map(|i| {

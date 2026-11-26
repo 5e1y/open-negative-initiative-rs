@@ -13551,5 +13551,12 @@
     "title": "The canvas keeps its last lighter and its last sharp render, so the sharp render a pan gesture ends on reuses the one before it",
     "status": "done",
     "detail": "A pan gesture renders lighter while the hand moves, then sharp: keeping one render, the sharp one found only the lighter recipe and rendered whole. Two kept, one a recipe (SHOWN), the sharp render after a quarter canvas pan at 100 % on a 47 Mpx RW2 on Portra 800 (halation 0.31, bloom 3.4, grain 0.25) takes 20.8 ms p50 against 165-196 ms for a whole one (stage_cost). Memory: one canvas texture more while a gesture runs (graph peak unchanged at 1.3 GB RSS in the zoom bench). No full check (owner's rule during a work stream)."
+  },
+  {
+    "id": 3863,
+    "type": "perf",
+    "title": "stage_cost: notches one way, a pinch's lighter renders and each film effect's share of them",
+    "status": "done",
+    "detail": "Notches alternating back and forth met a render the canvas now keeps (#3862) and read 0.5 ms: they step one way. A pinch's lighter renders, a new scale each, on a 47 Mpx RW2 on Portra 800 at its rests: 46.3 ms p50, 21.4 without grain, 32.9 without halation, 43.9 without bloom, 9.7 without any, against 9.1 for a scanned NEF: the grain (25 ms, its field and its laying at each scale) and the halation's blur (13 ms) are what a digital photo's gesture pays. Tried without gain and withdrawn: precomputed blur weights, a blur and a grain by work groups in workgroup memory (no faster at best, the grain's 50 % slower at fit), square distances in the grain."
   }
 ]
