@@ -1,0 +1,10 @@
+{
+  "name": "oni-welcome-motion",
+  "private": true,
+  "description": "The welcome's films, composed over the app's renders and takes and filmed frame by frame in headless Chrome.",
+  "type": "module",
+  "dependencies": {
+    "gsap": "3.15.1",
+    "puppeteer-core": "23.11.1"
+  }
+}

@@ -14013,5 +14013,12 @@
     "status": "done",
     "title": "A roll opened from the gallery lands on Prepare's sheet as a wave from its tiles; at the Film Type step the sheet answers no press",
     "detail": "Each cell flies from its gallery tile, 14 ms after the one before, a tile laid off screen rising from the sheet's foot; Reduce Motion lays them at once. At the film step the sheet only shows the roll, its opened photo ringed: no hover, no hand, no press (owner, option B). ONI_BENCH=wave times both openings at the screen's size."
+  },
+  {
+    "id": 3963,
+    "type": "feature",
+    "title": "The welcome's four films, composed over the real app and its renders and filmed frame by frame, each played as it is decoded",
+    "status": "done",
+    "detail": "Each gift's demo is a film of its own, 800 by 500 at 25 frames a second, looping without a seam: the interface (a photo flying into the editor, then onto the export's preview, 6.3 s, 3.4 MB), the Collection (Search Gear, Nikon FM2 typed, added, laid in the Kit, 8.4 s, 2.4 MB), the huge gift (the negative read by the scanner's head into Ektar, the Film panel's picks, ten films cut on the beat, the contact sheet, 14.8 s, 8.5 MB) and the Wrapped as it plays (four scenes, 9.3 s, 3.8 MB): 18.1 MB in all, against the 6.6 MB of strips and prints they replace. `welcome_films` shoots takes of the real app on a held clock, the whole window at twice its pixels; `crates/oni-app/welcome-motion` composes each film over the takes and the app's renders in HTML and GSAP, films it in headless Chrome with no screen capture, and folds identical frames into one held longer, each kept frame a JPEG of its own. The app decodes a film as it plays on a thread of its own, at most five frames ahead, never the whole film: no platform library, the same on macOS and Windows. The drawn fallback scenes and the person's cards on the mystery gift go: every film is built into the binary and checked. `scripts/welcome-assets <RAW>` makes everything again. Checks: reels (every film reads and decodes, twin a list short of a frame; at 120 Hz no frame late and at most five decoded, twin with no frame ahead 66 of 67 late), stage tests, window checks welcome_reel, welcome_card, design_system, sheets, help, sheet_stack, wrapped; catalogue."
   }
 ]

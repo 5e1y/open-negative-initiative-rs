@@ -36,8 +36,7 @@ export global Help {
     in property <float> opened-time: -1;
     in property <float> words-at;
     in property <bool> may-go-on;
-    // The huge gift's demo: the photo as the camera saw it, then the films it is shot on; how many films there are.
-    in property <[StockLine]> film-cells;
+    // How many films the editor's Film panel holds.
     in property <int> film-count;
     // The film the screen's demo plays, shot in the real app, and the gift it belongs to (-1 none).
     in property <image> reel;
@@ -51,8 +50,6 @@ export global Help {
     in property <bool> instagram-known;
     // Whether the welcome holds the Collection's gift, a screen with it.
     in property <bool> kit-gift: true;
-    // The year the mystery gift tells.
-    in property <string> year;
     callback welcome-closed();
     callback wrapped();
     callback donate();

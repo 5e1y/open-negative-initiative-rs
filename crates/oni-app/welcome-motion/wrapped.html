@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script src="/gsap/gsap.min.js"></script>
+<script type="module">
+// The mystery gift's film: the year on film as the Wrapped plays it. Each scene comes in under a camera that holds
+// the whole card, then comes close on what it tells; a cut to the next, and the last gives way to the first.
+import { S, tl, cut, play, look, dissolve, film } from '/takes.js';
+
+// The card, in the window's points: whole, and its lower half, where each scene says what it tells.
+const card = { x: 438, y: 62, w: 402, h: 714 };
+const whole = { x: card.x + card.w / 2 - 1180 / 2, y: 6, w: 1180 };
+const told = { x: card.x - 30, y: card.y + card.h * 0.42, w: card.w + 60 };
+S.cam = { ...whole };
+cut('wrapped-1', 0);
+let t = 0.3;
+for (const scene of ['wrapped-1', 'wrapped-3', 'wrapped-6', 'wrapped-9']) {
+  cut(scene, t);
+  look(whole, t, 0.01, 'none');
+  const comes = play(scene, t);
+  look(told, t + comes * 0.55, 1.0);
+  t += comes + 0.9;
+}
+dissolve('wrapped-1', 0, t, 0.5);
+look(whole, t, 0.5, 'power2.inOut');
+t += 0.6;
+film(t);
+</script>
+</body>
+</html>

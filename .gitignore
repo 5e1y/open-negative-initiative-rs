@@ -3,3 +3,6 @@
 /target*/
 .DS_Store
 target.noindex/
+
+# The welcome films composer's packages
+crates/oni-app/welcome-motion/node_modules/

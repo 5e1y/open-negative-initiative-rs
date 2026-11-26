@@ -467,90 +467,6 @@ msgstr "De The Lens DB"
 msgid "Page {} of {}"
 msgstr "Página {} de {}"
 
-#: crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/toolbar.slint
-msgid "EDIT"
-msgstr "EDITAR"
-
-#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/toolbar.slint
-msgid "PREPARE ROLL"
-msgstr "PREPARAR ROLLO"
-
-#: crates/oni-app/src/export.rs crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
-msgid "EXPORT"
-msgstr "EXPORTAR"
-
-#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_interface.slint
-msgid "Favourites"
-msgstr "Favoritos"
-
-#: crates/oni-ui/ui/ds/welcome_interface.slint
-msgid "Roll #{}"
-msgstr "Rollo n.º {}"
-
-#: crates/oni-ui/ui/ds/welcome_interface.slint
-msgid "Summer"
-msgstr "Verano"
-
-#: crates/oni-app/src/app/navigator/rows.rs crates/oni-ui/ui/ds/welcome_interface.slint
-msgid "Computer"
-msgstr "Ordenador"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
-msgid "Colour"
-msgstr "Color"
-
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/panel/color_tab.slint
-msgid "Lighting"
-msgstr "Luz"
-
-#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_interface.slint crates/oni-ui/ui/panel/film_block.slint
-msgid "Film"
-msgstr "Película"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Nikon FM2"
-msgstr "Nikon FM2"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "{} · {}"
-msgstr "{} · {}"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Canon AE-1 Program"
-msgstr "Canon AE-1 Program"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Nikon Z f"
-msgstr "Nikon Z f"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Nikon Nikkor 50mm f/1.4 AI-S"
-msgstr "Nikon Nikkor 50mm f/1.4 AI-S"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "{} mm · f/{} · {} · {}"
-msgstr "{} mm · f/{} · {} · {}"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint
-msgid "Canon FD 28mm f/2.8"
-msgstr "Canon FD 28mm f/2.8"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint crates/oni-ui/ui/kit.slint
-msgid "Bodies"
-msgstr "Cuerpos"
-
-#: crates/oni-ui/ui/ds/welcome_kit.slint crates/oni-ui/ui/kit.slint
-msgid "Lenses"
-msgstr "Objetivos"
-
-#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_mystery.slint
-msgid "Your Year"
-msgstr "Tu año"
-
-#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_mystery.slint
-msgid "On Film"
-msgstr "En película"
-
 #: crates/oni-ui/ui/ds/welcome_stage.slint
 msgid "Screen {} of {}"
 msgstr "Pantalla {} de {}"
@@ -935,6 +851,10 @@ msgstr "Nombre del preajuste"
 msgid "e.g. Client TIFF"
 msgstr "p. ej. TIFF cliente"
 
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
+msgid "EXPORT"
+msgstr "EXPORTAR"
+
 #: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/menus.slint
 msgid "Show What This Screen Cannot Show"
 msgstr "Mostrar lo que esta pantalla no puede mostrar"
@@ -1158,6 +1078,14 @@ msgstr "proporcionado por"
 #: crates/oni-ui/ui/kit.slint
 msgid "Search Gear"
 msgstr "Buscar equipo"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies"
+msgstr "Cuerpos"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Lenses"
+msgstr "Objetivos"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Add to Your Kit"
@@ -1403,6 +1331,10 @@ msgstr "La densidad de color que la copia de ONI aplica por sí sola cuando su c
 msgid "This photo was edited on the former Scanner face and keeps its print as that face laid it: the machine's look over ONI's print, or on a paper its keys alone, with the keypad's D, C, M, Y and TEMP read below. Off, the photo prints as the sliders above say, and the legacy print is kept to be laid again; a photo never edited there has none."
 msgstr "Esta foto se editó en la antigua cara Escáner y conserva su copia tal como esa cara la ponía: el aspecto de la máquina sobre la copia de ONI, o sobre un papel solo sus teclas, con los D, C, M, Y y TEMP del teclado que se leen abajo. Desactivada, la foto se imprime como dicen los controles de arriba, y la copia heredada se guarda para volver a ponerla; una foto nunca editada allí no tiene ninguna."
 
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
+msgid "Colour"
+msgstr "Color"
+
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing most, and turns it toward grey with the filters. Auto White Balance Strength is the share of that correction they take: each photo keeps its own correction, the share is the roll's.\n\nC, M and Y each move one band of light on the negative, in stops, either way: C between cyan and red, M between magenta and green, Y between yellow and blue. Moved together they move the photograph's light: all three a stop down darken it a stop. Temperature and Tint, which Settings shows instead, read the differences between them; what the three share is told under Tint.\n\nSaturation makes every colour stronger or greyer at once, on the negative, so none goes past what the print can hold."
 msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras, y la lleva hacia el gris con los filtros. La intensidad del balance de blancos automático es la parte de esa corrección que asumen: cada foto conserva su propia corrección, la proporción es la del rollo.\n\nC, M e Y mueven cada uno una banda de luz en el negativo, en pasos, en ambos sentidos: C entre cian y rojo, M entre magenta y verde, Y entre amarillo y azul. Movidos juntos mueven la luz de la foto: los tres un paso abajo la oscurecen un paso. Temperatura y Matiz, que los Ajustes muestran en su lugar, leen sus diferencias; lo que los tres comparten se indica bajo Matiz.\n\nLa saturación hace todos los colores más intensos o más grises a la vez, sobre el negativo, de modo que ninguno supera lo que la copia puede reproducir."
@@ -1546,6 +1478,10 @@ msgstr "Negros proyectados"
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "On, the slide keeps its screen's own ends: its film's densest under the room's veil, a little above black, and the bare film's white, as in a darkened room. Off, that black lies on pure black and that white on pure white, as a slide shown on a display."
 msgstr "Activado, la diapositiva conserva los extremos de su pantalla: lo más denso de su película bajo el velo de la sala, un poco por encima del negro, y el blanco de la película desnuda, como en una sala a oscuras. Desactivado, ese negro se posa en el negro puro y ese blanco en el blanco puro, como una diapositiva mostrada en una pantalla de ordenador."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Luz"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white.\n\nEvery slider but Contrast brightens to the right; Contrast bends the print into an S about a middle grey, its ends held. Black point and White point move the ends of the scan itself.\n\nThe sliders act on the negative as in a darkroom, the black picked in Prepare the Roll held: Exposure is the light, Temperature and Tint its filters, Contrast the grade. On a paper, Brightness is Exposure sparing that black and the first shadows."
@@ -1878,6 +1814,10 @@ msgstr "Textura"
 #: crates/oni-ui/ui/panel/details_tab.slint
 msgid "Contrast at the scale of hair and fabric — leaves grain and overall tone alone."
 msgstr "Contraste a la escala del cabello y los tejidos: no toca el grano ni el tono general."
+
+#: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/panel/film_block.slint
+msgid "Film"
+msgstr "Película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Shoots the photo on a film: its scene, in the light its decode balanced, exposes the film's three layers, balanced for the film's own light, so a tungsten film turns a daylight scene blue; they develop on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab, whose Filtration takes a cast away.\n\nShooting exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, the scene's light and the one the film is balanced for shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there."
@@ -2651,6 +2591,10 @@ msgstr "Pegar ajustes ({})"
 msgid "Paste All"
 msgstr "Pegar todo"
 
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
+msgid "PREPARE ROLL"
+msgstr "PREPARAR ROLLO"
+
 #: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Preparar el rollo"
@@ -2666,6 +2610,10 @@ msgstr "Marcar como favorita una carpeta de escaneos y abrirla"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "BACK"
 msgstr "VOLVER"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "EDIT"
+msgstr "EDITAR"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Gallery (Esc or {})"
@@ -3374,10 +3322,6 @@ msgstr[0] "Recorte pegado en una foto."
 msgstr[1] "Recorte pegado en {n} fotos del rollo."
 
 #: crates/oni-app/src/app/help/welcome.rs
-msgid "Your camera"
-msgstr "Tu cámara"
-
-#: crates/oni-app/src/app/help/welcome.rs
 msgid "The welcome cannot be marked seen: {error}"
 msgstr "No se puede marcar la bienvenida como vista: {error}"
 
@@ -3704,6 +3648,14 @@ msgstr[1] "ONI olvida las {n} fotos que conoce en «{folder}». No se toca ning�
 #: crates/oni-app/src/app/navigator/memory.rs
 msgid "Favourites and Projects"
 msgstr "Favoritos y proyectos"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "Favourites"
+msgstr "Favoritos"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "Computer"
+msgstr "Ordenador"
 
 #: crates/oni-app/src/app/navigator.rs
 msgid "The favourites cannot be saved: {error}"
@@ -5440,6 +5392,14 @@ msgstr "noviembre"
 #: crates/oni-app/src/wrapped/words.rs
 msgid "December"
 msgstr "diciembre"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Your Year"
+msgstr "Tu año"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "On Film"
+msgstr "En película"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "Read off this computer alone. Nothing was sent anywhere."

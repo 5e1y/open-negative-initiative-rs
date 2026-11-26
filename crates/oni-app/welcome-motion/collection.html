@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script src="/gsap/gsap.min.js"></script>
+<script type="module">
+// The second gift's film: the Kit filled from The Lens DB. Close on the Kit, the hand opens Search Gear, a body is
+// typed letter by letter, added, and Done lays it in the Kit; then the Kit as it was, where the film began.
+import { S, tl, point, about, cut, play, look, reach, press, dissolve, film } from '/takes.js';
+
+const kit = about({ x: point('search').x - 80, y: point('search').y + 120 }, 600);
+const sheet = about({ x: point('field').x + 30, y: point('field').y + 90 }, 640);
+S.cam = { ...kit };
+cut('kit', 0);
+let t = 0.6;
+// Search Gear: the search opens over the window.
+reach(point('search'), t, 0.6);
+t += 0.6;
+press(t);
+t += 0.1;
+const opening = play('search', t);
+look(sheet, t, 1.0);
+tl.to(S.hand, { x: point('field').x + 40, y: point('field').y + 30, duration: 0.8, ease: 'power3.inOut' }, t + 0.2);
+t += Math.max(opening, 1.0);
+// A body typed letter by letter, and The Lens DB's answer.
+cut('typed', t);
+for (let k = 1; k < 10; k++) tl.set(S, { frame: k }, t + k * 0.09);
+t += 0.9 + 0.2;
+cut('found', t);
+t += 0.25;
+// Add, then Done.
+reach(point('add'), t, 0.45);
+t += 0.45;
+press(t);
+t += 0.05;
+t += play('added', t);
+t += 0.2;
+look(about({ x: point('done').x - 260, y: point('done').y + 140 }, 700), t, 0.7);
+reach(point('done'), t + 0.1, 0.6);
+t += 0.75;
+press(t);
+t += 0.05;
+const closing = play('closed', t);
+look(kit, t, 1.0);
+tl.to(S.hand, { x: '+=160', y: '+=520', duration: 0.6, ease: 'power3.in' }, t + 0.1);
+t += Math.max(closing, 1.0);
+cut('kit-after', t);
+t += 1.0;
+// The Kit as it was, where the film began.
+dissolve('kit', 0, t, 0.5);
+t += 0.6;
+film(t);
+</script>
+</body>
+</html>

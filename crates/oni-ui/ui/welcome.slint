@@ -1,11 +1,10 @@
 // `WelcomeSheet`: the release told once, over the whole window, one screen a gift: the gift alone in the middle,
 // opened by a click or Return, then its demo on the left and its words on the right; the message comes last.
-import { Space, Motion, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
-import { WelcomeStyle, Headline, InterfaceScene, KitScene, MysteryScene, WrappedFrame, WrappedStyle } from "ds/ds.slint";
-import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, DemoReel, StageRail, FilmDemo } from "ds/ds.slint";
+import { Space, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
+import { WelcomeStyle, Headline } from "ds/ds.slint";
+import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, DemoReel, StageRail } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
-import { Wrapped } from "wrapped.slint";
 
 // A gift's words, right of it: which gift it is, its name in the display face, what it holds, a key if it has one.
 component Words inherits VerticalLayout {
@@ -37,20 +36,14 @@ export component WelcomeSheet inherits Sheet {
     function slot(page: int) -> int { !Help.kit-gift && page > 2 ? page - 2 : page - 1 }
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
-    property <float> demo-clock: Help.opened-time - Help.words-at - 0.4;
     property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
     // The columns: the gift's in the middle, the demo's left of it, the words' right of it.
     property <length> room: root.height - footer-room.height;
     property <length> middle: root.height * StageStyle.gift-share;
     property <length> side: (root.width - root.middle) / 2 - StageStyle.gap - 2 * Space.l;
     property <length> left: 2 * Space.l;
-    // Once its gift has gone, a screen's demo takes the stage left of the words, as large as the room lets it.
-    function demo-height(page: int, width: length) -> length {
-        page == 3 ? width * StageStyle.picture-shape + StageStyle.demo-cells : width * (page <= 2 ? StageStyle.window-shape : StageStyle.picture-shape)
-    }
-    function demo-width(page: int) -> length {
-        min(root.right - StageStyle.gap - root.left, page == 3 ? (root.room - 4 * Space.l - StageStyle.demo-cells) / StageStyle.picture-shape : (root.room - 4 * Space.l) / (page <= 2 ? StageStyle.window-shape : StageStyle.picture-shape))
-    }
+    // Once its gift has gone, a screen's film takes the stage left of the words, as large as the room lets it.
+    property <length> demo-width: min(root.right - StageStyle.gap - root.left, (root.room - 4 * Space.l) / StageStyle.window-shape);
     property <length> right: root.width / 2 + root.middle / 2 + StageStyle.gap;
     // On: the gift opened if it is still wrapped, else the next screen; the last screen's key enters the app.
     function onward() {
@@ -111,34 +104,12 @@ export component WelcomeSheet inherits Sheet {
             // The demo, left of the gift.
             DemoFrame {
                 x: root.left;
-                width: root.demo-width(page);
-                height: root.demo-height(page, self.width);
+                width: root.demo-width;
+                height: self.width * StageStyle.window-shape;
                 y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
                 shown: here ? root.words : 0;
-                // A small gift's film of the real app; its drawn scene where the film cannot be read.
-                if page <= 2 && Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
-                if page == 1 && Help.reel-gift != 0: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.75); }
-                if page == 2 && Help.reel-gift != 1: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.45); }
-                if page == 3: FilmDemo { width: parent.width; height: parent.height; cells: Help.film-cells; t: Motion.reduced ? 6 : root.demo-clock; }
-                // The person's own year: its first cards, as the Wrapped makes them; a promise while it is read.
-                if page == 4 && Wrapped.scenes.length == 0: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 6.0); }
-                if page == 4: Rectangle {
-                    for scene[i] in Wrapped.scenes: WrappedFrame {
-                        property <int> cards: min(3, Wrapped.scenes.length);
-                        property <float> come: Motion.reduced ? 1 : Beat.at(root.demo-clock, 0.25 * i, 0.7);
-                        visible: i < self.cards;
-                        u: parent.height * StageStyle.card-share / WrappedStyle.frame-height;
-                        x: (parent.width - self.width) / 2 + (i - (self.cards - 1) / 2) * (self.width + Space.s);
-                        y: (parent.height - self.height) / 2 + (1 - self.come) * StageStyle.rise;
-                        opacity: self.come;
-                        scene: scene;
-                        number: i + 1;
-                        hashtag: Wrapped.hashtag;
-                        account: Wrapped.account;
-                        name: Wrapped.name;
-                        counted(n) => { Wrapped.counted(n) }
-                    }
-                }
+                // The gift's film, made from the real app.
+                if Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
             }
             // The words, right of the gift.
             VerticalLayout {

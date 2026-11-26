@@ -1,15 +1,15 @@
 //! The welcome in the window: one screen a gift, each opened before the next, the message last. Its clock moves
 //! the screens and the gift the GPU draws into the texture the sheet shows; a check holds the clock and steps it.
 
-use super::reels::{self, Decoded, Reel};
+use super::reels::{self, Reel};
 use super::{EDITION, KIT_GIFT, WELCOME_KEY};
 use crate::app::{Ctl, SHELL};
 use crate::stage::direction::{self, Cue};
 use crate::stage::{Stage, glide, unwrap};
-use crate::{Help, StageSpot, StockLine};
+use crate::{Help, StageSpot};
 use oni_i18n::tr;
 use slint::winit_030::WinitWindowAccessor;
-use slint::{ComponentHandle, Image, ModelRc, SharedPixelBuffer, Timer, TimerMode, VecModel};
+use slint::{ComponentHandle, Image, SharedPixelBuffer, Timer, TimerMode};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, TryRecvError, channel};
@@ -30,9 +30,6 @@ const TRAVEL: f32 = 0.7;
 pub const PROGRESS_KEY: &str = "welcomeProgress";
 /// The message's screen, after the four gifts'.
 const MESSAGE: i32 = 5;
-/// The stocks the huge gift's demo shoots its photo on, after the photo as the camera saw it: the keys of their
-/// virtual films, in the order of `ui/welcome/film-print-*.jpg` (`scripts/welcome-assets`).
-const STOCKS: [&str; 3] = ["kodak-ektar-100", "fujifilm-velvia-50", "kodak-tri-x-400"];
 
 /// The screen's frame, in seconds: a 60 Hz one where the window's screen tells no rate.
 fn screen_frame(w: &crate::MainWindow) -> f32 {
@@ -86,8 +83,7 @@ pub(in crate::app) struct Playing {
     foot: f32,
     /// Whether the GPU is still drawing the last picture handed to it.
     flying: Arc<AtomicBool>,
-    /// The small gifts' films, decoded off this thread, then ready to play.
-    decoding: Option<Receiver<Vec<Decoded>>>,
+    /// The gifts' films, each decoded as it plays off this thread.
     reels: Vec<Reel>,
     /// Kept so its frames keep coming; dropped with the stage.
     _timer: Timer,
@@ -200,33 +196,17 @@ impl Ctl {
         super::welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }
 
-    /// The huge gift's demo: the photo as the camera saw it, then the films it is shot on, as the picker shows them.
-    fn film_cells() -> Vec<StockLine> {
-        let all = oni_settings::film::stocks();
-        let cell = |index: usize, key: &str, name: String| {
-            let artwork = all.iter().find(|k| k.film.is_some_and(|f| f.key() == key)).and_then(|k| crate::stocks::icon(k.id));
-            StockLine { index: index as i32, name: name.into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false }
-        };
-        let camera = cell(0, oni_settings::VirtualStock::NEUTRAL.key(), tr("Your camera").to_string());
-        std::iter::once(camera).chain(STOCKS.iter().enumerate().map(|(i, key)| cell(i + 1, key, oni_settings::VirtualStock::of(key).name().to_string()))).collect()
-    }
 
     /// The welcome on its first gift still wrapped, the gifts opened on an earlier launch left open; whether a
     /// window shows it.
     pub(in crate::app) fn open_welcome(&self) -> bool {
         let Some(w) = self.window() else { return false };
         let h = w.global::<Help>();
-        h.set_year(oni_library::wrapped::today().0.to_string().into());
-        h.set_film_cells(ModelRc::new(VecModel::from(Ctl::film_cells())));
         h.set_film_count(oni_settings::VirtualStock::sheets().len() as i32);
         let bits = progress(self.state.borrow().preferences.string(PROGRESS_KEY));
         let opened: [Option<f32>; 4] = std::array::from_fn(|i| (bits & (1 << i) != 0 || i == 1 && !KIT_GIFT).then_some(-1000.0));
         let page = (1..MESSAGE).find(|p| gift_of(*p).is_some_and(|i| opened[i].is_none())).unwrap_or(MESSAGE);
         let (sender, building) = channel();
-        let (films, decoding) = channel();
-        let _ = std::thread::Builder::new().name("welcome films".into()).spawn(move || {
-            let _ = films.send(reels::decoded());
-        });
         {
             let mut s = self.state.borrow_mut();
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());
@@ -258,8 +238,7 @@ impl Ctl {
                 size: (0.0, 0.0),
                 foot: 0.0,
                 flying: Arc::new(AtomicBool::new(false)),
-                decoding: Some(decoding),
-                reels: Vec::new(),
+                reels: reels::reels(),
                 _timer: timer,
             });
         }
@@ -269,10 +248,6 @@ impl Ctl {
         h.set_stage(Image::default());
         h.set_stage_live(false);
         h.set_welcome_shown(true);
-        // The mystery gift lays the person's own year on its screen: read now, off this thread.
-        if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
-            me.ready_wrapped(crate::app::year::told_year(oni_library::wrapped::today()));
-        }
         true
     }
 
@@ -290,10 +265,6 @@ impl Ctl {
         };
         if let Err(e) = written {
             self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
-        }
-        // The year read for the mystery gift goes with it, unless the Wrapped shows it.
-        if !w.global::<crate::Wrapped>().get_shown() {
-            self.forget_wrapped();
         }
         w.invoke_refocus();
         self.launch_sheet_after(Some(crate::app::shell::LaunchSheet::Welcome));
@@ -327,9 +298,6 @@ impl Ctl {
                 crate::timing::line("welcome: the stage cannot be drawn on this GPU; its gifts are shown as stills");
             }
             _ => {}
-        }
-        if let Some(films) = play.decoding.as_ref().and_then(|d| d.try_recv().ok()) {
-            (play.reels, play.decoding) = (films.into_iter().map(Reel::of).collect(), None);
         }
         let now = play.now();
         let cue = play.cue(now, still);
@@ -377,11 +345,18 @@ impl Ctl {
         help.set_words_at(gift_of(play.page).map_or(0.0, |i| if still { 0.0 } else { unwrap::title(i) }));
         help.set_may_go_on(play.may_go_on(now, still));
         // The screen's film, from the moment its words come.
-        let reel = gift_of(play.page).and_then(|i| play.reels.iter().find(|r| r.gift == i).map(|r| (r, i)));
-        help.set_reel_gift(reel.map_or(-1, |(_, i)| i as i32));
+        let reel = gift_of(play.page).and_then(|i| play.reels.iter_mut().find(|r| r.gift == i).map(|r| (r, i)));
+        let showing = help.get_reel_gift();
+        help.set_reel_gift(reel.as_ref().map_or(-1, |(_, i)| *i as i32));
         if let Some((reel, i)) = reel {
+            // Another film's frame is in the picture: this one's is given again.
+            if showing != i as i32 {
+                reel.again();
+            }
             let words = if still { 0.0 } else { unwrap::title(i) };
-            help.set_reel(reel.at(since - words - 0.4, still));
+            if let Some(frame) = reel.at(since - words - 0.4, still) {
+                help.set_reel(frame);
+            }
         }
         let spot = direction::gift_spot(&frame, cue.aspect).unwrap_or_default();
         help.set_gift_spot(StageSpot { x: spot[0] * play.size.0, y: spot[1] * play.size.1, width: spot[2] * play.size.0, height: spot[3] * play.size.1 });
