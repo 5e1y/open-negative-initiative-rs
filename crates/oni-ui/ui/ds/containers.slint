@@ -224,7 +224,7 @@ export component Sheet inherits Rectangle {
     callback paged(int);
     // The height the sheet takes, its margins included, in a room that holds it whole.
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
-    property <bool> fixed: root.card-height > 0;
+    property <bool> fixed: root.card-height > 0 || root.full;
     // The card's width as laid: its gauge, or the window's room under it.
     out property <length> shown-width: card.width;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;

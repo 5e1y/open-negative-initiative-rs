@@ -1,8 +1,8 @@
 // `WelcomeSheet`: the release told once, over the whole window. The hall holds four wrapped gifts; a click
 // unties one and opens its page, a scene on the stage beside its words; the message comes last. Return and
 // the arrows turn the pages in order, the dots jump, Escape or Skip leaves at any time.
-import { Space, Colour, Motion, Label, TextRole, Tone, Button, ButtonKind, Sheet, SheetFooter, Scroller, Divider } from "ds/ds.slint";
-import { WelcomeStyle, SceneFrame, PageDots, Headline, StepLine, Gift, GiftStyle, InterfaceScene, KitScene, FilmScene, MysteryScene } from "ds/ds.slint";
+import { Space, Motion, Label, TextRole, Tone, Button, ButtonKind, Sheet, SheetFooter, Scroller, Divider } from "ds/ds.slint";
+import { WelcomeStyle, WelcomeGround, SceneFrame, PageDots, Headline, StepLine, Gift, GiftStyle, InterfaceScene, KitScene, FilmScene, MysteryScene } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
 
@@ -111,7 +111,6 @@ component Hall inherits VerticalLayout {
 export component WelcomeSheet inherits Sheet {
     full: true;
     bleed: true;
-    card-height: 1px;
     paging: true;
     // The pages in order; without the Collection's gift, its page is skipped and the dots count one less.
     property <int> count: Help.kit-gift ? 6 : 5;
@@ -149,9 +148,7 @@ export component WelcomeSheet inherits Sheet {
             root.untying = -1;
         }
     }
-    // The window's flat ground under every page, where a card's sheen would band across the whole window.
-    Rectangle {
-        background: Colour.ground;
+    WelcomeGround {
         VerticalLayout {
             if root.page == 0: Hall {
                 vertical-stretch: 1;

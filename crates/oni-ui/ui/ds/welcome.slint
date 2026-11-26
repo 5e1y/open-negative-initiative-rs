@@ -24,6 +24,11 @@ export global WelcomeStyle {
     out property <color> headline-ink: Colour.selected;
 }
 
+// The whole window's ground under the welcome's pages, flat where a card's sheen would band across it.
+export component WelcomeGround inherits Rectangle {
+    background: Colour.ground;
+}
+
 // The stage: a scene on the canvas's ground, cropped to the room the page gives it.
 export component SceneFrame inherits Rectangle {
     background: Colour.canvas;
