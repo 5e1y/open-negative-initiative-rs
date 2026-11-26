@@ -13999,5 +13999,12 @@
     "title": "Prepare's demo fills the column's width at its own proportion",
     "status": "done",
     "detail": "It stood at a fixed 224 pt square in the middle of the column; it now takes the whole width inside the panel's padding, its height following the demo's proportion, the body scrolling under it. RollStyle.demo, named nowhere else, goes."
+  },
+  {
+    "id": 4019,
+    "type": "ui",
+    "title": "ONI Sans whole again: the eight borrowed signs carry their vertical metrics, which browsers refused the four weights without",
+    "status": "done",
+    "detail": "scripts/oni-fonts.py drew Inter's eight signs into glyf, hmtx and cmap but not vmtx: Zalando Sans has vertical metrics, so vmtx fell 16 bytes short and a sanitiser refused each weight whole (Chrome's OTS: vmtx: Failed to read side bearing 603, on Regular, Medium, SemiBold and Bold alike; Slint on macOS read past it, DirectWrite might not). Each borrowed sign now takes the column's advance and its top bearing from the face's vertical ascent; the script reads every face it writes back table by table and stops on a table short of a glyph; Zalando Sans Expanded Black is copied byte for byte. Chrome headless loads the five faces without an OTS error; twin: the former files are refused."
   }
 ]

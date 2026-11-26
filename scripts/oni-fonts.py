@@ -11,6 +11,7 @@ Sans Expanded Black, ships as it is.
     scripts/oni-fonts.py <folder holding Zalando Sans's static/ files>
 """
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -74,7 +75,14 @@ def borrow(font: TTFont, weight: int) -> int:
         font["glyf"][name] = pen.glyph()
         width = round(inter["hmtx"][glyphs[code]][0] * scale)
         font["glyf"][name].recalcBounds(font["glyf"])
-        font["hmtx"][name] = (width, font["glyf"][name].xMin if font["glyf"][name].numberOfContours else 0)
+        glyph = font["glyf"][name]
+        font["hmtx"][name] = (width, glyph.xMin if glyph.numberOfContours else 0)
+        # Every glyph keeps its vertical metrics, which a face with `vmtx` owes it: the column's own advance
+        # and the top bearing from the face's vertical ascent, or a reader refuses the table whole.
+        if "vmtx" in font:
+            advance = font["vmtx"][".notdef"][0]
+            top = font["vhea"].ascent - glyph.yMax if glyph.numberOfContours else 0
+            font["vmtx"][name] = (advance, top)
         order.append(name)
         for cmap in font["cmap"].tables:
             if cmap.isUnicode():
@@ -106,6 +114,19 @@ def rename(font: TTFont, style: str, weight: int) -> None:
         del font["STAT"]
 
 
+def whole(path: Path) -> None:
+    """Every table of the face written reads back whole, each glyph with its metrics, or the build stops: a
+    browser's sanitiser and a system's text engine refuse a face whose one table falls short."""
+    font = TTFont(path)
+    for tag in font.keys():
+        if tag != "GlyphOrder":
+            font[tag]
+    glyphs = len(font.getGlyphOrder())
+    for table in ("hmtx", "vmtx"):
+        if table in font and len(font[table].metrics) != glyphs:
+            raise SystemExit(f"{path.name}: {table} holds {len(font[table].metrics)} glyphs of {glyphs}")
+
+
 def main() -> None:
     static = Path(sys.argv[1]) / "static"
     for style, weight in WEIGHTS.items():
@@ -115,8 +136,9 @@ def main() -> None:
         rename(font, style, weight)
         target = FONTS / f"ONISans-{style}.ttf"
         font.save(target)
+        whole(target)
         print(f"{target.name}: {moved} codes tabular, {taken} of {len(BORROWED)} signs borrowed")
-    TTFont(static / DISPLAY).save(FONTS / DISPLAY)
+    shutil.copyfile(static / DISPLAY, FONTS / DISPLAY)
     (FONTS / "ZALANDO-SANS-OFL.txt").write_text((Path(sys.argv[1]) / "OFL.txt").read_text())
     print(f"{DISPLAY}: as it is")
 
