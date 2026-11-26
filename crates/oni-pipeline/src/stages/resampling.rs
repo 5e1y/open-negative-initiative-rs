@@ -10,6 +10,7 @@ shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN
 shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
 shader!(GRAIN, [wgsl::GRAIN, wgsl::GRAIN_LAID], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_px(p); }");
 shader!(GRAIN_FIELD, [wgsl::GRAIN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return grain_field_px(p); }");
+shader!(HALATION_LAID, [wgsl::HALATION_LAID], "fn pixel(p: vec2<i32>) -> vec4<f32> { return halation_laid_px(p); }");
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
 shader!(WARP, [wgsl::WARP], "fn pixel(p: vec2<i32>) -> vec4<f32> { return warp_px(p); }");
@@ -283,3 +284,35 @@ pub fn grain_field(k: &Grain) -> GrainField {
     GrainField(*k)
 }
 
+
+/// The halation of `k` on a film's layers' exposures, its glow read off the film's plate of extent `plate`, where `map`
+/// takes a pixel's centre.
+pub struct HalationLaid {
+    pub k: oni_render::Halation,
+    pub map: [[f32; 3]; 2],
+    pub plate: Rect,
+}
+
+impl Stage for HalationLaid {
+    fn name(&self) -> &'static str {
+        "halation-laid"
+    }
+
+    fn shader(&self) -> &'static str {
+        HALATION_LAID.as_str()
+    }
+
+    fn params(&self) -> Vec<u8> {
+        let [x, y] = self.map;
+        uniform([0; 4], &[self.k.rows(), vec![[x[0], x[1], x[2], 0.0], [y[0], y[1], y[2], 0.0]]].concat())
+    }
+
+    fn aux_region(&self, _index: usize, output: Rect) -> Rect {
+        mapped(&self.map, output, 2).nearest_in(&self.plate)
+    }
+}
+
+/// The halation of `k`, its glow read off a plate of extent `plate` through `map`.
+pub fn halation_laid(k: &oni_render::Halation, map: [[f32; 3]; 2], plate: Rect) -> HalationLaid {
+    HalationLaid { k: *k, map, plate }
+}

@@ -34,3 +34,18 @@ pub fn halation_source(e: V4, k: &Halation) -> V4 {
 pub fn halation(e: V4, glow: V4, k: &Halation) -> V4 {
     with_alpha(map(rgb(e), |c, v| v + k.dose[c] * glow[c]), e[3])
 }
+
+/// One pixel of `exposed` at `at`, in the graph's pixels, joined by `k`'s dose of the glow read bilinearly off `plate`
+/// where `map` takes the pixel's centre; alpha kept.
+pub fn halation_laid(exposed: &Grid, at: V2, plate: &Grid, map: [[f32; 3]; 2], k: &Halation) -> V4 {
+    let e = exposed.load([at[0].floor() as i32, at[1].floor() as i32]);
+    let [x, y] = map;
+    let q = [x[0] * at[0] + x[1] * at[1] + x[2] - 0.5, y[0] * at[0] + y[1] * at[1] + y[2] - 0.5];
+    let f = q.map(f32::floor);
+    let t = [q[0] - f[0], q[1] - f[1]];
+    let (i, j) = (f[0] as i32, f[1] as i32);
+    let mix = |a: V4, b: V4, t: f32| std::array::from_fn::<f32, 4, _>(|c| a[c] + (b[c] - a[c]) * t);
+    let top = mix(plate.load([i, j]), plate.load([i + 1, j]), t[0]);
+    let bottom = mix(plate.load([i, j + 1]), plate.load([i + 1, j + 1]), t[0]);
+    halation(e, mix(top, bottom, t[1]), k)
+}

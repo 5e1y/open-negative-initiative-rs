@@ -331,7 +331,7 @@ impl Engine {
         let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let region = image.extent();
@@ -360,7 +360,7 @@ impl Engine {
     /// De-dust reads, so a second reading no longer sees what the first healed. Rows top first.
     pub fn framed_whole(&mut self, full: &Source, settings: &PipelineSettings) -> Result<(usize, Vec<[f32; 4]>), String> {
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, [0, 0]);
+        let inputs = inputs_of(&self.patches, &self.custom, settings, [0, 0], None);
         let framed = self.pipeline.framed(&mut self.graph, Image::new(full), settings, 1.0, &inputs).map_err(|e| e.to_string())?;
         let e = framed.extent();
         let pixels = self.graph.render(&framed, e, None).map_err(|e| e.to_string())?;
@@ -373,7 +373,7 @@ impl Engine {
     /// `None` on an unlaid band.
     pub fn loupe(&mut self, (full, seed): (&Source, [u32; 2]), settings: &PipelineSettings, viewport: &Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, seed);
+        let inputs = inputs_of(&self.patches, &self.custom, settings, seed, None);
         let image = self.pipeline.image(&mut self.graph, full, settings, &Request::default(), &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let Some(zone) = crate::loupe::region(image.extent(), viewport, drawable, magnification) else { return Ok(None) };
@@ -394,7 +394,7 @@ impl Engine {
     /// `Pipeline.apply` unproofed on the scan of `seed`'s photo, with the canvas's masks and patches: an export's render.
     pub fn unproofed(&mut self, source: &Source, seed: [u32; 2], settings: &PipelineSettings, request: &Request) -> Result<Image, String> {
         self.read_custom(settings);
-        let inputs = inputs_of(&self.patches, &self.custom, settings, seed);
+        let inputs = inputs_of(&self.patches, &self.custom, settings, seed, None);
         self.pipeline.image(&mut self.graph, source, settings, request, &inputs).map_err(|e| e.to_string())
     }
 }

@@ -13586,5 +13586,12 @@
     "title": "The full check at the end of the digital performance night: green but a line of stage_cost's past the width, broken",
     "status": "done",
     "detail": "After #3865-#3866, 168 of 169 binaries green; the architecture check counted 79 lines past 200 characters against 78, stage_cost's list of cases (232): laid one case a line, the check green. 59 checks skipped without ONI_RAW_DIR and the other sample folders."
+  },
+  {
+    "id": 3868,
+    "type": "perf",
+    "title": "The halation's glow drawn once on the film's plate, the photo's whole frame at the preview's side, and read at every scale and place",
+    "status": "done",
+    "detail": "Owner's go (2026-11-26): the glow, wide and smooth, is drawn on the scan's own frame at the preview's side (2000 px, a fourth of a 47 Mpx frame), lit and exposed as the scene is, blurred there, kept by the pipeline while its recipe holds (Pipeline::glow) and read bilinearly by each render where its pixel lies on the film (halation_laid, its CPU reference cpu::halation_laid); a zoom, a pan or a pinch draws none, the dose stays a factor (#3865), a size, exposure or light change draws it again on the plate. 47 Mpx RW2 on Portra 800 at its rests: a pinch's lighter render 46.4 -> 35.0 ms p50, a first render at 100 % 200 -> 131 ms, a size notch 13.6 ms with the plate drawn again. Against the render before on P1073214 (a slide's lamps, shot as digital) in display code: at 100 % mean 1.8e-5, p99 1.7e-4, max 6.5e-4; at fit p99 2-3e-4 and up to 1e-2 on the crop's edges alone, where light past the frame now feeds the glow as on a film halated before its cut; on P1073071 under 1.3e-5 everywhere. The neutral film, a look and a slide read the same plate; a recipe laid with no plate (filmed, tests) draws it on its own image, as before."
   }
 ]

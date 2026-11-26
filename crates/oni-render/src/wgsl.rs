@@ -38,6 +38,8 @@ pub const GRAIN_LAID: &str = include_str!("wgsl/grain_laid.wgsl");
 pub const HALATION_SOURCE: &str = include_str!("wgsl/halation_source.wgsl");
 /// `halation_px(e, glow)`.
 pub const HALATION: &str = include_str!("wgsl/halation.wgsl");
+/// `halation_laid_px(p)`, the glow read off the film's plate through `load1`.
+pub const HALATION_LAID: &str = include_str!("wgsl/halation_laid.wgsl");
 /// `color_matrix_px(s)`.
 pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");
 /// `color_cube_px(s)`, reading `cube_node(r, g, b, n)`.

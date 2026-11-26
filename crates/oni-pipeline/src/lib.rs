@@ -3,6 +3,7 @@
 
 mod baked;
 mod chain;
+mod filmed;
 pub mod conversion;
 pub mod corrections;
 pub mod film;
@@ -70,6 +71,9 @@ pub struct Inputs<'a> {
     pub patches: HashMap<Id, &'a Source>,
     pub custom_flat_field: Option<&'a CustomFlatField>,
     pub seed: [u32; 2],
+    /// The photo's whole frame at the preview's side, the film's plate its halation's glow is drawn on; none draws it
+    /// on the render's own source reduced to that side.
+    pub plate: Option<&'a Source>,
 }
 
 /// The constant images the chain reads, uploaded once per graph, and the tables last baked.
@@ -88,7 +92,12 @@ pub struct Pipeline {
     scanners: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// The frames' corrections as last laid.
     healing: healing::Healing,
+    /// The halation's glow on the film's plate, with its recipe.
+    glow: Option<(u64, Source)>,
 }
+
+/// A render's pixel centre onto itself.
+const IDENTITY: [[f32; 3]; 2] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
 
 /// Tables kept per pipeline, as two curve sets alternate.
 const KEPT_LUTS: usize = 4;
@@ -109,6 +118,7 @@ impl Pipeline {
     /// The corrections' sheets and recipes let go, with the frame they were laid on.
     pub fn trim(&mut self) {
         self.healing = Default::default();
+        self.glow = None;
     }
 
     /// The recipe evaluated on the request's region and read back, with that region.
@@ -155,37 +165,6 @@ impl Pipeline {
             out = out.then(stages::exposure(-s.capture_stops));
         }
         self.flat_field(graph, out, s, inputs)
-    }
-
-    /// A digital photo's scene on its virtual film: exposed, developed and, a colour negative, scanned through its dyes
-    /// as a real negative is; a slide's layers as they are, for the projector; the neutral film's code as it is. On a
-    /// scan of extent `effects` the film's layers take its blur and its halation between exposure and development.
-    pub fn filmed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, effects: Option<Rect>) -> Result<Image> {
-        let Some(f) = s.film() else { return Ok(image) };
-        let on_layers = |exposed: Image| effects.and_then(|scan| layers::laid(exposed, s, scan));
-        // The neutral film's layers are the scene's own channels, their exposure its light.
-        if let Some(k) = film::neutral::kernel(f.stock) {
-            let scene = on_layers(image.clone()).unwrap_or(image);
-            return Ok(scene.then(stages::neutral_negative(&film::neutral::exposed(k, f.exposure))));
-        }
-        let stock = film::stock(f.stock);
-        let key = (f.stock, stock.revision);
-        if let Entry::Vacant(e) = self.films.entry(key) {
-            let (w, h) = stock.kernel.table_size();
-            let scan = stock.scan.as_ref().map(|scan| graph.upload(scan.projection.bands as u32, 2, &scan.table)).transpose()?;
-            e.insert((graph.upload(w as u32, h as u32, &stock.table)?, scan));
-        }
-        let (table, scan) = self.films[&key].clone();
-        let (k, table) = (stock.kernel_at(f.exposure), [Image::new(&table)]);
-        // No effect on its layers: the exposure and the development are one pass.
-        let developed = match on_layers(image.clone().then_reading(stages::virtual_exposure(&k), &table)) {
-            Some(laid) => laid.then_reading(stages::virtual_development(&k), &table),
-            None => image.then_reading(stages::virtual_negative(&k), &table),
-        };
-        Ok(match (&stock.scan, scan) {
-            (Some(k), Some(table)) => developed.then_reading(stages::projection(&k.projection), &[Image::new(&table)]),
-            _ => developed,
-        })
     }
 
     /// A digital photo's scene read through its film's look in place of a negative: exposed at the film's stops, taken

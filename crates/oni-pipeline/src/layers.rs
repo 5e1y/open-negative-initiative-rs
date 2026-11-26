@@ -12,13 +12,16 @@ pub fn bloom(s: &PipelineSettings, scan: Rect) -> f64 {
 }
 
 /// `exposed`, a film's layers' exposures or the scene a film of no layer reads, with the effects of `s` on a scan of
-/// extent `scan`; none where both rest, so the film stays one pass.
-pub fn laid(exposed: Image, s: &PipelineSettings, scan: Rect) -> Option<Image> {
+/// extent `scan`, the halation's glow read off `glow`; none where both rest, so the film stays one pass.
+pub fn laid(exposed: Image, s: &PipelineSettings, scan: Rect, glow: Option<&halation::Glow>) -> Option<Image> {
     let sigma = bloom(s, scan);
     let soft = sigma > BLUR_FLOOR;
     if !soft && !halation::lays(s) {
         return None;
     }
     let spread = if soft { stages::blurred(exposed, sigma, false) } else { exposed };
-    Some(halation::halated(spread, s, scan))
+    Some(match glow {
+        Some(glow) => halation::halated_from(spread, s, glow),
+        None => spread,
+    })
 }

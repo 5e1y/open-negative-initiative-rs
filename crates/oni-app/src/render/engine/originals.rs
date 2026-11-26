@@ -17,7 +17,7 @@ impl Engine {
         bare.corrections.clear();
         self.read_custom(&bare);
         let request = Request { scale: 1.0, full_width: Some(negative.full_width), ..Request::default() };
-        let inputs = inputs_of(&self.patches, &self.custom, &bare, negative.seed);
+        let inputs = inputs_of(&self.patches, &self.custom, &bare, negative.seed, Some(&negative.preview));
         let image = self.pipeline.image(&mut self.graph, &negative.preview, &bare, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, &bare)?;
         let e = image.extent();

@@ -2,7 +2,7 @@
 //! over its width on the film and added to the layers before their development, the red layer's most.
 
 use crate::{film, stages};
-use oni_graph::{Image, Rect};
+use oni_graph::{Image, Rect, Source};
 use oni_render::{Halation, cpu};
 use oni_settings::PipelineSettings;
 
@@ -33,8 +33,26 @@ pub fn lays(s: &PipelineSettings) -> bool {
     s.halation.amount != 0.0
 }
 
-/// `exposed`, a film's layers' exposures or the scene a film of no layer reads, with the halation of `s` on a scan
-/// of extent `scan`; itself at rest, with no stage.
+/// The long side of the film's plate a glow is drawn on, the preview's.
+pub const PLATE_SIDE: f64 = 2000.0;
+
+/// The glow of `s`'s halation on `exposed`, the film's plate of its layers' exposures or of the scene a film of no
+/// layer reads: their light weighted by its share of the saturation, blurred over the glow's width there.
+pub fn glow(exposed: Image, s: &PipelineSettings) -> Image {
+    let scan = exposed.extent();
+    stages::blurred(exposed.then(stages::halation_source(&kernel(s))), deviation(s, scan), false)
+}
+
+/// What a render reads its glow off: the film's plate, drawn once a photo and its exposure, and where a render
+/// pixel's centre lies on it.
+#[derive(Clone)]
+pub struct Glow {
+    pub plate: Source,
+    pub map: [[f32; 3]; 2],
+}
+
+/// `exposed`, a film's layers' exposures or the scene a film of no layer reads on a scan of extent `scan`, with the
+/// halation of `s` drawn on itself, its own plate; itself at rest, with no stage.
 pub fn halated(exposed: Image, s: &PipelineSettings, scan: Rect) -> Image {
     if !lays(s) {
         return exposed;
@@ -42,4 +60,14 @@ pub fn halated(exposed: Image, s: &PipelineSettings, scan: Rect) -> Image {
     let k = kernel(s);
     let glow = stages::blurred(exposed.clone().then(stages::halation_source(&k)), deviation(s, scan), false);
     exposed.then_reading(stages::halation(&k), &[glow])
+}
+
+/// `exposed`, a film's layers' exposures or the scene a film of no layer reads, with the halation of `s`, its glow read
+/// off `glow`; itself at rest, with no stage.
+pub fn halated_from(exposed: Image, s: &PipelineSettings, glow: &Glow) -> Image {
+    if !lays(s) {
+        return exposed;
+    }
+    let plate = glow.plate.extent();
+    exposed.then_reading(stages::halation_laid(&kernel(s), glow.map, plate), &[Image::new(&glow.plate)])
 }

@@ -330,9 +330,10 @@ fn a_dose_notch_keeps_the_glow_and_a_size_notch_blurs_it_again() {
     let mut pipeline = Pipeline::new();
     let request = Request { full_width: Some(256.0), ..Request::default() };
     let mut cache = oni_graph::Cache::frontier();
+    // The glow is drawn on the film's plate as the recipe is laid: the passes are counted from there.
     let mut notch = |g: &mut Graph, s: &PipelineSettings| {
-        let image = pipeline.image(g, &source, s, &request, &Default::default()).unwrap();
         let before = g.stats().dispatches;
+        let image = pipeline.image(g, &source, s, &request, &Default::default()).unwrap();
         let made = g.materialise_cached(&image, image.extent(), Some(&mut cache)).unwrap();
         let ran = g.stats().dispatches - before;
         assert_eq!(g.render(&Image::new(&made), image.extent(), None).unwrap(), g.render(&image, image.extent(), None).unwrap());
@@ -344,4 +345,26 @@ fn a_dose_notch_keeps_the_glow_and_a_size_notch_blurs_it_again() {
     // Twin: a notch on its size widens the glow, blurred again on both axes.
     let size = notch(&mut g, &haloed(MEDIUM + 0.02, WIDE + 10.0));
     assert!(size >= dose + 2, "a size notch ran {size} passes, a dose notch {dose}: the glow was blurred again on a dose notch");
+}
+
+#[test]
+fn a_glow_read_off_the_film_s_plate_matches_its_reference() {
+    let Some(mut g) = graph("a_glow_read_off_the_film_s_plate_matches_its_reference") else { return };
+    let extent = Rect::new(0, 0, 61, 43);
+    let pixels = common::noise(extent.w, extent.h, 41, 0.0, 3.0);
+    let input = g.upload_at(extent, &pixels).unwrap();
+    let plate_extent = Rect::new(0, 0, 29, 23);
+    let plate_pixels = common::noise(plate_extent.w, plate_extent.h, 43, 0.0, 2.0);
+    let plate = g.upload_at(plate_extent, &plate_pixels).unwrap();
+    let (grid, plate_grid) = (Grid::new(0, 0, 61, 43, pixels.clone()), Grid::new(0, 0, 29, 23, plate_pixels));
+    let k = Halation::on(0.4, false, [1.2, 1.4, 0.9]);
+    // A render at 0.42 of the plate's scale, turned a little and moved, its edges reading the plate's.
+    let map = [[0.42, 0.03, 1.7], [-0.02, 0.41, 2.3]];
+    let out = whole(&mut g, &Image::new(&input).then_reading(stages::halation_laid(&k, map, plate_extent), &[Image::new(&plate)]));
+    let centre = |i: usize| [(i % 61) as f32 + 0.5, (i / 61) as f32 + 0.5];
+    let reference: Vec<V4> = (0..pixels.len()).map(|i| cpu::halation_laid(&grid, centre(i), &plate_grid, map, &k)).collect();
+    // Twin: the plate read a pixel over.
+    let moved = [[0.42, 0.03, 2.7], [-0.02, 0.41, 2.3]];
+    let twin: Vec<V4> = (0..pixels.len()).map(|i| cpu::halation_laid(&grid, centre(i), &plate_grid, moved, &k)).collect();
+    judge("halation off the plate", &out, &reference, &twin);
 }

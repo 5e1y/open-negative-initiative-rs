@@ -4,7 +4,7 @@
 
 use oni_app::render::{self, Device, Engine, Reading, View};
 use oni_graph::{Graph, Image, Rect};
-use oni_pipeline::{Inputs, Request, conversion, grain, layers, stages};
+use oni_pipeline::{Inputs, Request, conversion, grain, stages};
 use oni_settings::{PipelineSettings, sidecar};
 use std::path::Path;
 use std::time::Instant;
@@ -67,7 +67,10 @@ fn main() {
     };
     let (_, region) = resident(&mut e, &s);
     println!("canvas {} x {}: region {} x {}", canvas.0, canvas.1, region.w, region.h);
-    let notches: [(&str, fn(&mut PipelineSettings, usize)); 10] = [
+    let notches: [(&str, fn(&mut PipelineSettings, usize)); 13] = [
+        ("Halation size", |t, _| t.halation.size += 1.0),
+        ("Bloom", |t, _| t.bloom.size += 0.1),
+        ("Grain size", |t, _| t.grain.size += 0.2),
         ("Exposure", |t, _| t.print.exposure += 0.01),
         ("Contrast", |t, _| t.print.contrast += 0.01),
         ("Shadows", |t, _| t.print.shadows += 0.01),
@@ -217,12 +220,6 @@ fn main() {
     let digital = s.mode.is_digital();
     let effects = digital.then_some(scan);
     let mut steps: Vec<(&str, Image)> = vec![("reduced", input), ("framed and lit", lit.clone())];
-    if let Some(scan) = effects {
-        let bloomed = layers::bloom(&s, scan);
-        let spread = if bloomed > oni_settings::axis::pipeline::BLUR_FLOOR { stages::blurred(lit.clone(), bloomed, false) } else { lit.clone() };
-        steps.push(("bloom", spread.clone()));
-        steps.push(("halation", oni_pipeline::halation::halated(spread, &s, scan)));
-    }
     let filmed = pipeline.filmed(graph, lit.clone(), &s, effects).unwrap();
     steps.push(("film and scan", filmed.clone()));
     let grained = match effects.and_then(|scan| grain::grain(&s, scan, full_scale)).map(|k| k.seeded(negative.seed)) {
@@ -237,7 +234,7 @@ fn main() {
         let r = shown.unwrap_or_else(|| last.extent());
         let px = graph.render(last, r, None).unwrap();
         let bytes: Vec<u8> = px.iter().flat_map(|p| p.iter().flat_map(|v| v.to_le_bytes())).collect();
-        let name = format!("{}-{}.f32", photo.file_name().unwrap().to_string_lossy(), case.replace([' ', ','], ""));
+        let name = format!("{}-{}-{}x{}.f32", photo.file_name().unwrap().to_string_lossy(), case.replace([' ', ','], ""), r.w, r.h);
         std::fs::write(Path::new(&dir).join(name), bytes).unwrap();
     }
     let mut before = 0.0;

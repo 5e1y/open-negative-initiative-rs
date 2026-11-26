@@ -33,7 +33,7 @@ impl Engine {
         let source = if held { small.clone() } else { measure.clone() };
         let mut read = |slot: usize, stage: Stage| -> Histogram {
             let entering = truncated(settings, stage);
-            let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed);
+            let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
             let copy = Copy { source: &source, full_width: Some(negative.full_width) };
             let mut reader = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, laying: Laying::Held(inputs) };
             let recipe = reader.image(copy, settings, stage).map(|image| image.key());

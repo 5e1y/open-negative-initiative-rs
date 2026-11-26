@@ -100,8 +100,14 @@ pub(crate) fn custom_for<'a>(kept: &'a HashMap<String, Kept<CustomFlatField>>, s
     kept.get(settings.flat_field.custom.as_deref()?).map(|k| &k.value)
 }
 
-/// What a render of `settings` reads beside its scan: the patches and the mask kept for it, and the
+/// What a render of `settings` reads beside its scan: the patches and the mask kept for it, the film's plate and the
 /// grain seed of its photo.
-pub(crate) fn inputs_of<'a>(patches: &'a HashMap<PatchKey, Kept<Source>>, custom: &'a HashMap<String, Kept<CustomFlatField>>, settings: &PipelineSettings, seed: [u32; 2]) -> Inputs<'a> {
-    Inputs { patches: patches_for(patches, settings), custom_flat_field: custom_for(custom, settings), seed }
+pub(crate) fn inputs_of<'a>(
+    patches: &'a HashMap<PatchKey, Kept<Source>>,
+    custom: &'a HashMap<String, Kept<CustomFlatField>>,
+    settings: &PipelineSettings,
+    seed: [u32; 2],
+    plate: Option<&'a Source>,
+) -> Inputs<'a> {
+    Inputs { patches: patches_for(patches, settings), custom_flat_field: custom_for(custom, settings), seed, plate }
 }
