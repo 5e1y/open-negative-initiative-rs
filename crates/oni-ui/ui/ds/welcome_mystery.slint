@@ -22,7 +22,7 @@ export component MysteryScene inherits Rectangle {
     in property <float> held: -1;
     clip: true;
     background: Colour.black;
-    property <[image]> photos: [@image-url("../splash/1.0.0.jpg"), @image-url("../welcome/film-print.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.3.0.jpg")];
+    property <[image]> photos: [@image-url("../splash/1.0.0.jpg"), @image-url("../splash/1.3.0.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.3.0.jpg")];
     property <float> loop: MysteryBeats.deal-from + root.photos.length * MysteryBeats.every + MysteryBeats.deal-for + MysteryBeats.hold;
     property <duration> began;
     init => { root.began = animation-tick(); }

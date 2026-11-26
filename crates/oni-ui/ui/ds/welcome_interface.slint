@@ -3,6 +3,7 @@
 // the column from its foot and the panel comes in; a slider moves; then it all folds back, and again.
 import { Colour, Space, Radius, ShellStyle, ButtonStyle } from "theme.slint";
 import { Label, TextRole, Tone } from "base.slint";
+import { Button } from "button.slint";
 import { Curves, Arrow } from "welcome.slint";
 
 export global InterfaceBeats {
@@ -58,23 +59,16 @@ export component InterfaceScene inherits Rectangle {
         property <length> card-x: self.side;
         property <length> card-w: self.width - self.side - self.panel;
         property <length> card-h: self.height - self.bar;
-        // The bar: three keys at its left, the mode's keycap at its right.
-        for key in 3: Rectangle {
-            x: Space.m + key * (ButtonStyle.bar-key + Space.s);
-            y: (window.bar - ButtonStyle.bar-glyph-key) / 2;
-            width: ButtonStyle.bar-key;
-            height: ButtonStyle.bar-glyph-key;
-            border-radius: ButtonStyle.radius;
-            background: Colour.hover;
-        }
-        Rectangle {
-            x: window.width - self.width - Space.m;
-            y: (window.bar - ButtonStyle.cap-height) / 2;
-            width: 96px;
-            height: ButtonStyle.cap-height;
-            border-radius: ButtonStyle.radius;
-            background: Colour.raised;
-            Label { text: root.grown > 0.5 ? @tr("EXPORT") : @tr("EDIT"); role: TextRole.button; centred: true; }
+        // The bar: the window's own keys, the editor's held down once the photo has opened.
+        HorizontalLayout {
+            x: Space.m;
+            y: (window.bar - self.preferred-height) / 2;
+            width: self.preferred-width;
+            height: self.preferred-height;
+            spacing: Space.s;
+            Button { keycap: true; text: @tr("EDIT"); on: root.grown > 0.5; }
+            Button { keycap: true; text: @tr("PREPARE ROLL"); }
+            Button { keycap: true; text: @tr("EXPORT"); }
         }
         // The library's column, its folders.
         for row[i] in [@tr("Favourites"), @tr("Roll #{}", 12), @tr("Roll #{}", 11), @tr("Summer"), @tr("Computer"), "2026", "2025"]: Label {
@@ -92,7 +86,7 @@ export component InterfaceScene inherits Rectangle {
             height: window.card-h;
             background: Colour.canvas;
         }
-        property <[image]> photos: [@image-url("../splash/1.0.0.jpg"), @image-url("../splash/1.3.0.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../welcome/film-print.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.0.0.jpg")];
+        property <[image]> photos: [@image-url("../splash/1.0.0.jpg"), @image-url("../splash/1.3.0.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.3.0.jpg"), @image-url("../splash/1.5.0.jpg"), @image-url("../splash/1.0.0.jpg")];
         // The roll's photos, rising into the column from its foot under the folders.
         property <length> rows-end: window.bar + Space.m + 7 * (ButtonStyle.height + Space.xs) + Space.m;
         Rectangle {

@@ -57,18 +57,26 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     let seen = Preferences::load(&support).value("whatsNewSeen").cloned();
     assert_eq!(seen, Some(serde_json::json!(["lighting.1.3.1"])));
 
-    // The welcome sheet: due on a fresh Mac, its pages turned by Return, closed by the last, not due again.
+    // The welcome sheet: due on a fresh Mac, Return going on through it, the huge gift first and its film step by
+    // step, closed by the last page, not due again.
     assert!(first.ctl.welcome_due());
+    // With nothing moving, no scene plays between two pages: Return turns them.
+    first.window.global::<oni_app::Motion>().set_reduced(true);
     first.launch_sheets();
     let help = first.window.global::<Help>();
     assert!(help.get_welcome_shown());
-    for page in 1..6 {
+    let mut pages = Vec::new();
+    for _ in 0..24 {
+        if !help.get_welcome_shown() {
+            break;
+        }
+        if pages.last() != Some(&help.get_welcome_page()) {
+            pages.push(help.get_welcome_page());
+        }
         rig.key("\n");
-        assert!(help.get_welcome_shown(), "twin: Return on a page before the last turns it");
-        assert_eq!(help.get_welcome_page(), page);
     }
-    rig.key("\n");
-    assert!(!help.get_welcome_shown());
+    assert!(!help.get_welcome_shown(), "Return on the last page closes it");
+    assert_eq!(pages, [0, 3, 1, 2, 4, 5], "twin: every page before the last was turned, none skipped");
     assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("2.0"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.

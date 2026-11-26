@@ -165,7 +165,7 @@ impl Shell {
             discard: options.discard,
             reporter: options.reporter,
             news_kept: HashSet::new(),
-            help: super::help::Surfaces { console: None },
+            help: super::help::Surfaces { console: None, welcome: None },
             nav,
             prepare: prepare::Roll::new(options.require_roll),
             updates: updates::Updates::new(options.updates),

@@ -1,8 +1,8 @@
-// `WelcomeSheet`: the release told once, over the whole window. The hall holds four wrapped gifts; a click
-// unties one and opens its page, a scene on the stage beside its words; the message comes last. Return and
-// the arrows turn the pages in order, the dots jump, Escape or Skip leaves at any time.
-import { Space, Motion, Label, TextRole, Tone, Button, ButtonKind, Sheet, SheetFooter, Scroller, Divider } from "ds/ds.slint";
-import { WelcomeStyle, WelcomeGround, SceneFrame, PageDots, Headline, StepLine, Gift, GiftStyle, InterfaceScene, KitScene, FilmScene, MysteryScene } from "ds/ds.slint";
+// `WelcomeSheet`: the release told once, over the whole window, on a stage the GPU draws: an overture, four gifts
+// a click unties, the message last. Return and the arrows turn the pages; Escape or the left key leaves at any time.
+import { Space, Motion, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
+import { WelcomeStyle, PageDots, Headline, InterfaceScene, KitScene, MysteryScene } from "ds/ds.slint";
+import { StageStyle, Beat, StagePicture, StageLine, StageMark, StageNote, GiftSpot, StageCard, StageText, StageChip, StageGrip, StageRail } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
 
@@ -11,15 +11,10 @@ component Point inherits VerticalLayout {
     in property <string> text;
     spacing: Space.xs;
     Label { text: root.title; role: TextRole.section; wrap: word-wrap; }
-    Label { text: root.text; role: TextRole.note; wrap: word-wrap; }
+    StageText { text: root.text; }
 }
 
-component Eyebrow inherits Label {
-    role: TextRole.caption;
-    tone: Tone.secondary;
-}
-
-// A gift's words beside its stage: its size, its name in the release's serif, then what it holds.
+// A gift's words beside its stage: which gift it is, its name in the release's serif, then what it holds.
 component Words inherits Scroller {
     in property <string> eyebrow;
     in property <string> title;
@@ -27,85 +22,83 @@ component Words inherits Scroller {
     column := VerticalLayout {
         width: parent.width;
         spacing: Space.m;
-        Eyebrow { text: root.eyebrow; }
+        Label { text: root.eyebrow; role: TextRole.label; tone: Tone.secondary; }
         Headline { text: root.title; }
         @children
     }
 }
 
-// The hall: the headline over the four gifts standing on one floor, the huge one among the small.
-component Hall inherits VerticalLayout {
-    in property <int> untying: -1;
-    in property <float> untie;
-    // The huge gift's side, the small ones a share of it, so a short window keeps the floor in sight.
-    in property <length> huge: GiftStyle.huge;
-    property <length> small: root.huge * GiftStyle.small / GiftStyle.huge;
-    callback chosen(int);
-    padding: Space.l;
-    padding-top: Space.l * 2;
-    spacing: Space.m;
-    function unwrapped(i: int) -> bool { Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, i)), 2) == 1 }
-    Eyebrow { text: @tr("ONI {}", Help.release); centred: true; }
-    Headline { text: @tr("ONI {} is out", Help.release); horizontal-alignment: center; }
-    Label { text: @tr("Unpack your gifts for 2027."); role: TextRole.title; tone: Tone.secondary; centred: true; }
-    Rectangle { vertical-stretch: 1; }
-    HorizontalLayout {
-        alignment: center;
-        spacing: Space.l * 2;
-        VerticalLayout {
-            alignment: end;
-            Gift {
-                side: root.small;
-                tag: @tr("Small gift");
-                name: @tr("A livelier interface");
-                opened: root.unwrapped(0);
-                untie: root.untying == 0 ? root.untie : 0;
-                chosen => { root.chosen(0); }
+// The huge gift's page, all stage: under the film, the step it shows in one line and one sentence, the steps by
+// name; on the print, whose side is whose; at the end, the three prints and what waits in the editor.
+component FilmWords inherits Rectangle {
+    in property <length> foot;
+    // The seconds into the step.
+    in property <float> t;
+    property <int> step: Help.film-step;
+    property <bool> printed: Help.film-printed;
+    property <bool> ended: Help.film-ended > 0.5;
+    property <[string]> steps: [@tr("Your photo"), @tr("Exposed"), @tr("Developed"), @tr("Scanned"), @tr("Inverted")];
+    property <[string]> told: [
+        @tr("The light your camera recorded, nothing added."),
+        @tr("ONI shoots it again on a film rebuilt from its maker's data sheet: {}.", Help.film-stocks[0]),
+        @tr("The picture comes up on the film itself, with its grain and its halation."),
+        @tr("A virtual scanner reads the negative through its orange mask, as you would scan a real roll."),
+        @tr("ONI inverts it with the tools that invert your own negatives."),
+    ];
+    property <string> stock: Help.film-stocks[Math.mod(round(Help.film-show), Help.film-stocks.length)];
+    // The print's own captions and the edge a hand drags.
+    if Help.plate-spot.width > 0: Rectangle {
+        x: Help.plate-spot.x;
+        y: Help.plate-spot.y;
+        width: Help.plate-spot.width;
+        height: Help.plate-spot.height;
+        if Help.film-compare > 0.04: StageChip { x: Space.s; y: Space.s; text: @tr("Your camera"); }
+        if Help.film-compare > 0: StageChip { x: parent.width - self.width - Space.s; y: Space.s; text: root.stock; }
+        TouchArea {
+            mouse-cursor: ew-resize;
+            accessible-role: slider;
+            accessible-label: @tr("Your camera");
+            moved => {
+                if (self.pressed) { Help.welcome-compare(max(0.02, min(0.98, self.mouse-x / self.width))); }
             }
         }
-        if Help.kit-gift: VerticalLayout {
-            alignment: end;
-            Gift {
-                side: root.small;
-                paper: GiftStyle.blue;
-                ribbon: GiftStyle.kraft;
-                tag: @tr("Small gift");
-                name: @tr("The Collection");
-                opened: root.unwrapped(1);
-                untie: root.untying == 1 ? root.untie : 0;
-                chosen => { root.chosen(1); }
-            }
+        if Help.film-compare > 0: StageGrip { x: parent.width * Help.film-compare - self.width / 2; y: (parent.height - self.height) / 2; }
+    }
+    if !root.ended: VerticalLayout {
+        y: parent.height - root.foot - self.height;
+        height: self.preferred-height;
+        spacing: Space.xs;
+        if !root.printed: StageLine {
+            size: min(StageStyle.step, root.height * StageStyle.step-share);
+            text: root.steps[root.step];
+            shown: Beat.at(root.t, 0.15, 0.6);
         }
-        VerticalLayout {
-            alignment: end;
-            Gift {
-                side: root.huge;
-                paper: GiftStyle.orange;
-                ribbon: GiftStyle.black-ribbon;
-                tag: @tr("Huge gift");
-                name: @tr("Digital photos on real film");
-                opened: root.unwrapped(2);
-                untie: root.untying == 2 ? root.untie : 0;
-                chosen => { root.chosen(2); }
-            }
+        // The film a print is made on, in the interface's own face: a name read off a box of film.
+        if root.printed: StageNote {
+            property <float> turning: Help.film-show - floor(Help.film-show);
+            text: root.stock;
+            role: TextRole.heading;
+            shown: Beat.at(root.t, 2.5, 0.5) * abs(1 - 2 * self.turning);
         }
-        VerticalLayout {
-            alignment: end;
-            Gift {
-                side: root.small;
-                paper: GiftStyle.night;
-                ribbon: GiftStyle.gold;
-                mystery: true;
-                tag: @tr("Mystery gift");
-                name: @tr("Your year on film");
-                opened: root.unwrapped(3);
-                untie: root.untying == 3 ? root.untie : 0;
-                chosen => { root.chosen(3); }
-            }
+        StageText {
+            centred: true;
+            lead: true;
+            text: !root.printed ? root.told[root.step] : Help.film-compare > 0 ? @tr("Drag across the print to bring your camera's photo back.") : @tr("One photo, {} films to shoot it on.", Help.film-count);
+            shown: root.printed ? Beat.at(root.t, 2.7, 0.6) : Beat.at(root.t, 0.4, 0.6);
+        }
+        StageRail { steps: root.steps; at: root.step; picked(step) => { Help.welcome-step(step); } }
+    }
+    // The end: the three prints side by side, and what the person now has.
+    if root.ended: VerticalLayout {
+        y: parent.height * 0.55;
+        height: self.preferred-height;
+        spacing: Space.m;
+        StageLine { tint: StageStyle.metals[2]; size: min(StageStyle.count, root.height * StageStyle.count-share); text: @tr("Your photo, on any film."); shown: Beat.at(Help.film-ended, 0.8, 1.0); }
+        HorizontalLayout {
+            alignment: center;
+            StageText { width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l); centred: true; lead: true; text: @tr("{} films wait in the editor's Film panel. A new photo opens on the neutral one, just as your camera saw it.", Help.film-count); shown: Beat.at(Help.film-ended, 1.6, 0.9); }
         }
     }
-    Label { text: @tr("Click a gift to open it."); role: TextRole.note; tone: Tone.tertiary; centred: true; }
-    Rectangle { vertical-stretch: 1; }
 }
 
 export component WelcomeSheet inherits Sheet {
@@ -116,182 +109,238 @@ export component WelcomeSheet inherits Sheet {
     property <int> count: Help.kit-gift ? 6 : 5;
     property <int> page: Help.welcome-page;
     property <bool> last: root.page == 5;
+    // What plays: 0 the overture, 1 the hall, 2 a gift untied, 3 its page, 4 the message; and its seconds.
+    property <int> act: Help.act == 2 ? 2 : root.page == 0 ? min(Help.act, 1) : root.last ? 4 : 3;
+    property <float> t: Help.act-time;
     // A page's words take the whole window where too little is left beside them for a stage.
     property <bool> staged: root.width - WelcomeStyle.words-width >= WelcomeStyle.stage-least;
-    // The gift being untied, and since when: its page opens as the lid lands.
-    property <int> untying: -1;
-    property <duration> untie-start;
-    // The huge gift's step, which its words and its scene both show and both turn.
-    property <int> film-step;
-    property <bool> film-held: Motion.reduced;
-    property <float> untie: root.untying < 0 ? 0 : max(0, min(1, (animation-tick() - root.untie-start) / GiftStyle.untie));
+    property <length> room: root.staged ? root.width - WelcomeStyle.words-width : root.width;
+    property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
+    property <[string]> hints: [@tr("Something moves"), @tr("Something for your gear"), @tr("Something for your digital photos"), @tr("Something about your year")];
+    property <[string]> names: [@tr("A livelier interface"), @tr("The Collection"), @tr("Digital photos on real film"), @tr("Your year on film")];
+    property <[string]> titles: [@tr("A livelier interface"), @tr("The Collection, with The Lens DB"), @tr("Your digital photos, on real film"), @tr("Your year on film")];
+    // What the hall's key opens next, by the gift it names; and whether the huge gift's film still plays.
+    property <[string]> onward-names: [@tr("Open the First Gift"), @tr("Open the Second Gift"), @tr("Open the Huge Gift"), @tr("Open the Mystery Gift"), @tr("Read the Message")];
+    property <bool> film-playing: root.act == 3 && root.page == 3 && Help.film-ended < 0;
+    // The hall's words wait until the camera has come back to it.
+    property <float> settled: root.act == 1 ? Beat.at(root.t, 1.0, 0.5) : 0;
+    property <length> mark: min(StageStyle.mark, root.height * StageStyle.mark-share);
+    function unwrapped(i: int) -> bool { Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, i)), 2) == 1 }
     function place(page: int) -> int { !Help.kit-gift && page > 2 ? page - 1 : page }
     function page-at(place: int) -> int { !Help.kit-gift && place >= 2 ? place + 1 : place }
     function turn(by: int) { root.show(root.page-at(max(0, min(root.count - 1, root.place(root.page) + by)))); }
+    // The next gift still wrapped, the huge one first, then in the order they stand; all opened, the message.
+    function next() -> int {
+        !root.unwrapped(2) ? 3 : !root.unwrapped(0) ? 1 : Help.kit-gift && !root.unwrapped(1) ? 2 : !root.unwrapped(3) ? 4 : 5
+    }
     // A gift's page shown is that gift unwrapped, however the person came to it.
     function show(page: int) {
-        if (page >= 1 && page <= 4 && Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, page - 1)), 2) == 0) {
+        if (page >= 1 && page <= 4 && !root.unwrapped(page - 1)) {
             Help.welcome-unwrapped += Math.pow(2, page - 1);
         }
         Help.welcome-page = page;
     }
+    // While a scene plays, Return and a click bring it to its end; in the hall they open the next gift; then they
+    // turn the page.
+    function onward() {
+        if (root.act == 0 || root.act == 2) { Help.welcome-hurry(); } else if (root.last) { Help.welcome-closed(); } else if (root.film-playing) { Help.welcome-step(Help.film-step + 1); } else { root.show(root.next()); }
+    }
+    function sized() { Help.welcome-sized(root.width, root.height, root.staged ? WelcomeStyle.words-width : 0, footer-room.height); }
+    init => { root.sized(); }
+    changed width => { root.sized(); }
+    changed height => { root.sized(); }
     dismissed => { Help.welcome-closed(); }
-    returned => {
-        if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
-    }
+    returned => { root.onward(); }
     paged(by) => { root.turn(by); }
-    Timer {
-        interval: GiftStyle.untie;
-        running: root.untying >= 0;
-        triggered => {
-            root.show(root.untying + 1);
-            root.untying = -1;
-        }
-    }
-    WelcomeGround {
-        VerticalLayout {
-            if root.page == 0: Hall {
-                vertical-stretch: 1;
-                huge: max(GiftStyle.small, min(GiftStyle.huge, root.height * GiftStyle.huge-share));
-                untying: root.untying;
-                untie: root.untie;
-                chosen(i) => {
-                    // An opened gift, or any under Reduce Motion, opens its page at once.
-                    if (Motion.reduced || Math.mod(floor(Help.welcome-unwrapped / Math.pow(2, i)), 2) == 1) {
-                        root.show(i + 1);
-                    } else if (root.untying < 0) {
-                        root.untie-start = animation-tick();
-                        root.untying = i;
-                    }
-                }
+    StagePicture {
+        source: Help.stage;
+        revision: Help.stage-revision;
+        // The pointer leans the camera; a click hurries the scene that plays.
+        TouchArea {
+            clicked => {
+                if (root.act == 0 || root.act == 2) { Help.welcome-hurry(); }
             }
-            if root.page >= 1 && root.page <= 4: HorizontalLayout {
-                vertical-stretch: 1;
-                if root.staged: SceneFrame {
-                    horizontal-stretch: 1;
-                    // Reduce Motion holds each scene on the moment that tells it.
-                    if root.page == 1: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : -1; }
-                    if root.page == 2: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : -1; }
-                    if root.page == 3: FilmScene { width: parent.width; height: parent.height; stock: Help.film-stock; step <=> root.film-step; held <=> root.film-held; }
-                    if root.page == 4: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : -1; }
-                }
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.move) { Help.welcome-pointer(self.mouse-x / self.width * 2 - 1, self.mouse-y / self.height * 2 - 1); }
+            }
+        }
+        // The release's name: alone on black as the welcome opens, then up to the head of the stage before any
+        // gift is lit, where it stays.
+        if root.act <= 1: StageMark {
+            property <float> up: root.act == 1 ? 1 : Beat.glide(root.t, 2.3, 1.0);
+            property <length> large: min(StageStyle.giant, parent.height * StageStyle.giant-share);
+            width: parent.width;
+            y: parent.height * (0.32 + (0.03 - 0.32) * self.up);
+            size: self.large + (root.mark - self.large) * self.up;
+            name: @tr("ONI");
+            number: Help.release;
+            shown: root.act == 1 ? root.settled : Beat.at(root.t, 0.4, 1.0);
+        }
+        // What to do there, under the name; then each gift's tag under it.
+        if root.act <= 1: VerticalLayout {
+            y: parent.height * 0.03 + root.mark * 1.3;
+            height: self.preferred-height;
+            spacing: Space.xs;
+            property <float> late: root.act == 0 ? 1 : 0;
+            StageNote { text: @tr("is out. Unpack your gifts for 2027."); role: TextRole.title; shown: parent.late * Beat.at(root.t, 6.0, 0.8) + (1 - parent.late) * root.settled; }
+            StageText { text: @tr("Click a gift to open it."); centred: true; shown: parent.late * Beat.at(root.t, 6.5, 0.8) + (1 - parent.late) * root.settled; }
+        }
+        if root.act <= 1: Rectangle {
+            for spot[i] in Help.spots: GiftSpot {
+                spot: spot;
+                tag: root.tags[i];
+                hint: root.hints[i];
+                name: root.names[i];
+                done: @tr("Opened");
+                opened: root.unwrapped(i);
+                under-hand: Help.hovered == i;
+                shown: root.act == 1 ? root.settled : Beat.at(root.t, 6.5, 0.8);
+                tag-y: parent.height * 0.845;
+                visible: i != 1 || Help.kit-gift;
+                chosen => { root.show(i + 1); }
+                hovered(on) => { Help.welcome-hover(on ? i : -1); }
+            }
+        }
+        // A gift untied: once its lid is off, its name arrives over its light, in its own metal, holds, and goes
+        // as its page comes.
+        if root.act == 2: VerticalLayout {
+            property <float> gone: Beat.at(root.t, Help.act-length - 0.5, 0.4);
+            y: parent.height * 0.07;
+            height: self.preferred-height;
+            spacing: Space.s;
+            StageNote { text: root.tags[Help.act-gift]; role: TextRole.title; tone: Tone.secondary; shown: Beat.at(root.t, Help.act-cue, 0.7) * (1 - parent.gone); }
+            StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); tint: StageStyle.metals[Help.act-gift]; text: root.titles[Help.act-gift]; shown: Beat.at(root.t, Help.act-cue + 0.12, 0.9) * (1 - parent.gone); }
+        }
+        // A small gift's page: its scene risen out of the box's mouth on a card, its words beside the light.
+        if root.act == 3 && root.staged && root.page != 3: StageCard {
+            room: root.room;
+            tall: parent.height;
+            mouth: Help.mouth;
+            risen: Beat.at(root.t, 0.5, 1.4);
+            // Each scene plays on the page's own clock; Reduce Motion holds it on the moment that tells it.
+            property <float> clock: max(0, root.t - 1.2);
+            if root.page == 1: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(parent.clock, 7.75); }
+            if root.page == 2: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(parent.clock, 7.45); }
+            if root.page == 4: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : Math.mod(parent.clock, 6.0); }
+        }
+        if root.act == 3 && root.page == 3: FilmWords { foot: footer-room.height; t: Help.film-time; }
+        if root.act == 3 && root.page != 3: VerticalLayout {
+            x: root.room;
+            width: parent.width - root.room;
+            height: parent.height - footer-room.height;
+            padding: Space.l;
+            padding-top: parent.height * StageStyle.card-top;
+            opacity: Beat.at(root.t, 0.3, 0.9);
+            if root.page == 1: Words {
+                eyebrow: root.tags[0];
+                title: root.titles[0];
+                StageText { text: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped."); }
+                Point { title: @tr("The photo comes to you"); text: @tr("It lifts off the gallery and grows into the editor, while the roll's photos rise into the column beside it."); }
+                Point { title: @tr("From edit to export, in one move"); text: @tr("The editor turns into the export, and every sheet arrives with a motion of its own."); }
+                Point { title: @tr("Quick, never in the way"); text: @tr("Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."); }
+            }
+            if root.page == 2: Words {
+                eyebrow: root.tags[1];
+                title: root.titles[1];
+                StageText { text: @tr("ONI partners with The Lens DB, a catalogue of camera bodies and lenses."); }
+                Point { title: @tr("Your gear in one place"); text: @tr("Connect your account on The Lens DB, then search its catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
+                Point { title: @tr("EXIF filled with ease"); text: @tr("Your camera and lens fill your exports' metadata, maker and lens specification included."); }
+                Point { title: @tr("Free, and private"); text: @tr("Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."); }
+                if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
+                if Kit.link == KitLink.waiting: StageText { text: @tr("Finish in Your Browser"); }
+                if Kit.link == KitLink.in: StageText { text: @tr("Connected as {}", Kit.account); }
+            }
+            if root.page == 4: Words {
+                eyebrow: root.tags[3];
+                title: root.titles[3];
+                StageText { text: @tr("ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."); }
+                HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
+            }
+        }
+        // The message: its two lines one after the other over the opened gifts, then what a person can do.
+        if root.act == 4: Scroller {
+            height: parent.height - footer-room.height;
+            content-height: letter.preferred-height;
+            letter := HorizontalLayout {
+                width: parent.width;
+                alignment: center;
                 VerticalLayout {
-                    width: root.staged ? WelcomeStyle.words-width : root.width;
-                    padding: Space.l;
-                    if root.page == 1: Words {
-                        vertical-stretch: 1;
-                        eyebrow: @tr("Small gift");
-                        title: @tr("A livelier interface");
-                        Label { text: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped."); role: TextRole.note; wrap: word-wrap; }
-                        Point { title: @tr("The photo comes to you"); text: @tr("It lifts off the gallery and grows into the editor, while the roll's photos rise into the column beside it."); }
-                        Point { title: @tr("From edit to export, in one move"); text: @tr("The editor turns into the export, and every sheet arrives with a motion of its own."); }
-                        Point { title: @tr("Quick, never in the way"); text: @tr("Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."); }
+                    width: min(WelcomeStyle.letter-width * 1.9, root.width - 4 * Space.l);
+                    padding-top: root.height * 0.07;
+                    padding-bottom: Space.l;
+                    spacing: Space.m;
+                    StageNote { text: @tr("I have a message for you"); role: TextRole.title; tone: Tone.secondary; shown: Beat.at(root.t, 0.4, 1.0); }
+                    StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share) * 0.8; text: @tr("You already paid for your film."); shown: Beat.at(root.t, 1.3, 1.3); }
+                    StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share) * 0.8; tint: StageStyle.metals[2]; text: @tr("You shouldn't have to pay just to look at it."); shown: Beat.at(root.t, 2.9, 1.4); }
+                    HorizontalLayout {
+                        alignment: center;
+                        StageText {
+                            width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
+                            centred: true;
+                            lead: true;
+                            text: @tr("Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI. ONI is free and open source, with no ads and no marketing budget: it only grows when someone tells a friend.");
+                            shown: Beat.at(root.t, 5.0, 1.0);
+                        }
                     }
-                    if root.page == 2: Words {
-                        vertical-stretch: 1;
-                        eyebrow: @tr("Small gift");
-                        title: @tr("The Collection, with The Lens DB");
-                        Label { text: @tr("ONI partners with The Lens DB, a catalogue of camera bodies and lenses."); role: TextRole.note; wrap: word-wrap; }
-                        Point { title: @tr("Your gear in one place"); text: @tr("Connect your account on The Lens DB, then search its catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."); }
-                        Point { title: @tr("EXIF filled with ease"); text: @tr("Your camera and lens fill your exports' metadata, maker and lens specification included."); }
-                        Point { title: @tr("Free, and private"); text: @tr("Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."); }
-                        if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
-                        if Kit.link == KitLink.waiting: Label { text: @tr("Finish in Your Browser"); role: TextRole.note; wrap: word-wrap; }
-                        if Kit.link == KitLink.in: Label { text: @tr("Connected as {}", Kit.account); role: TextRole.note; wrap: word-wrap; }
-                    }
-                    if root.page == 3: Words {
-                        vertical-stretch: 1;
-                        eyebrow: @tr("Huge gift");
-                        title: @tr("Your digital photos, on real film");
-                        Label { text: @tr("ONI lays no filter over a digital photo: it shoots it again on film, then scans and inverts the negative, as a lab would."); role: TextRole.note; wrap: word-wrap; }
-                        for step[i] in [
-                            { title: @tr("Your photo"), text: @tr("The light your camera recorded, nothing added.") },
-                            { title: @tr("Exposed on a real film"), text: @tr("The scene exposes a film stock rebuilt from its maker's data sheet: each layer's sensitivity, its curves and its dyes.") },
-                            { title: @tr("Developed"), text: @tr("Grain and halation are born on the film itself, at the size and strength the stock gives them.") },
-                            { title: @tr("Scanned"), text: @tr("A virtual Nikon D850 under a D50 lamp reads the negative through its orange mask, as you would scan a real roll.") },
-                            { title: @tr("Inverted"), text: @tr("ONI inverts it as it inverts your own negatives, with the same tools. Drag across the photo to compare.") },
-                        ]: StepLine {
-                            number: i + 1;
-                            title: step.title;
-                            text: step.text;
-                            lit: root.film-step == i;
-                            picked => {
-                                root.film-step = i;
-                                root.film-held = true;
+                    VerticalLayout {
+                        spacing: Space.s;
+                        opacity: Beat.at(root.t, 5.8, 1.0);
+                        Label { text: @tr("ONI needs you: spread the word"); role: TextRole.heading; centred: true; wrap: word-wrap; }
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: Space.s;
+                            if Help.instagram-known: Button { keycap: true; text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
+                            Button { keycap: true; text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                            if Help.contest-open: Button { keycap: true; text: @tr("Send My Photo"); clicked => { Help.contest(); } }
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            Label {
+                                width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
+                                role: TextRole.note;
+                                centred: true;
+                                text: @tr("This welcome stays in the Help menu, under What's New.");
                             }
                         }
-                        Label { text: @tr("Pick the film in the Film block. A new photo opens on the neutral film, just as your camera saw it."); role: TextRole.note; tone: Tone.tertiary; wrap: word-wrap; }
-                    }
-                    if root.page == 4: Words {
-                        vertical-stretch: 1;
-                        eyebrow: @tr("Mystery gift");
-                        title: @tr("Your year on film");
-                        Label { text: @tr("ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."); role: TextRole.note; wrap: word-wrap; }
-                        HorizontalLayout { alignment: start; Button { kind: ButtonKind.accent; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
-                    }
-                }
-            }
-            if root.last: Scroller {
-                vertical-stretch: 1;
-                content-height: letter.preferred-height;
-                letter := HorizontalLayout {
-                    width: parent.width;
-                    alignment: center;
-                    VerticalLayout {
-                        width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
-                        padding-top: Space.l * 2;
-                        padding-bottom: Space.l;
-                        spacing: Space.m;
-                        Eyebrow { text: @tr("From the person who makes ONI"); }
-                        Headline { text: @tr("I have a message for you"); }
-                        Label { text: @tr("Too many tools charge you every month to convert your negatives, and most of them do it worse than ONI."); role: TextRole.note; wrap: word-wrap; }
-                        Headline { quiet: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
-                        Label { text: @tr("ONI is free and open source. It has no ads and no marketing budget: it only grows when someone tells a friend."); role: TextRole.note; wrap: word-wrap; }
-                        Label { text: @tr("ONI needs you: spread the word"); role: TextRole.title; wrap: word-wrap; }
                         HorizontalLayout {
-                            alignment: start;
-                            spacing: Space.s;
-                            if Help.instagram-known: Button { text: @tr("Follow ONI on Instagram"); clicked => { Help.instagram(); } }
-                            Button { text: @tr("Support ONI on Ko-fi"); clicked => { Help.donate(); } }
+                            alignment: center;
+                            Label {
+                                width: min(WelcomeStyle.letter-width, root.width - 4 * Space.l);
+                                role: TextRole.note;
+                                centred: true;
+                                text: Help.contest-open
+                                    ? @tr("Your photo on ONI's opening screen: from December 1, every month, one photo opens ONI for everyone. Send yours through the form, or post it on Instagram with {}.", Help.contest-tag)
+                                    : @tr("Your photo on ONI's opening screen: from December 1, every month, one photo opens ONI for everyone. Post yours on Instagram with {}.", Help.contest-tag);
+                            }
                         }
-                        Divider { }
-                        Label { text: @tr("Your photo on ONI's opening screen"); role: TextRole.section; wrap: word-wrap; }
-                        Label {
-                            text: Help.contest-open
-                                ? @tr("From December 1, every month, one photo opens ONI for everyone. Send yours through the form, or post it on Instagram with {}.", Help.contest-tag)
-                                : @tr("From December 1, every month, one photo opens ONI for everyone. Post yours on Instagram with {}.", Help.contest-tag);
-                            role: TextRole.note;
-                            wrap: word-wrap;
-                        }
-                        if Help.contest-open: HorizontalLayout { alignment: start; Button { text: @tr("Send My Photo"); clicked => { Help.contest(); } } }
                     }
                 }
             }
-            // The footer's keys, the dots centred on the window under them whatever the keys' widths.
-            Rectangle {
-                height: footer.preferred-height + Space.m + Space.l;
-                footer := SheetFooter {
-                    x: Space.l;
-                    y: Space.m;
-                    width: parent.width - 2 * Space.l;
-                    height: self.preferred-height;
-                    cancel: root.last ? "" : @tr("Skip");
-                    back: root.page >= 1 && root.page <= 4 ? @tr("All Gifts") : root.last ? @tr("Back") : "";
-                    commit: root.last ? @tr("GET STARTED") : root.page == 0 ? @tr("Unwrap") : root.page == 4 ? @tr("One More Thing") : @tr("Next Gift");
-                    cancelled => { Help.welcome-closed(); }
-                    backed => { root.show(root.last ? 4 : 0); }
-                    committed => {
-                        if (root.last) { Help.welcome-closed(); } else { root.turn(1); }
-                    }
-                }
-                PageDots {
-                    x: (parent.width - self.preferred-width) / 2;
-                    y: footer.y + (footer.height - self.preferred-height) / 2;
-                    width: self.preferred-width;
-                    count: root.count;
-                    at: root.place(root.page);
-                    picked(place) => { root.show(root.page-at(place)); }
-                }
+        }
+        // The footer's keys, the dots centred on the window under them whatever the keys' widths.
+        footer-room := Rectangle {
+            y: parent.height - self.height;
+            height: footer.preferred-height + Space.m + Space.l;
+            footer := SheetFooter {
+                x: Space.l;
+                y: Space.m;
+                width: parent.width - 2 * Space.l;
+                height: self.preferred-height;
+                // One way out, in one place, until the last page makes it the way on; each key names where it leads.
+                cancel: root.last ? "" : @tr("Enter ONI");
+                back: root.page != 0 ? @tr("All Gifts") : "";
+                commit: root.last ? @tr("Enter ONI") : root.act == 0 ? @tr("Skip the Opening") : root.act == 2 ? @tr("Open It Now") : root.page == 0 ? root.onward-names[root.next() - 1] : root.film-playing ? (Help.film-printed ? @tr("Next Film") : @tr("Next Step")) : root.next() == 5 ? @tr("Read the Message") : @tr("Next Gift");
+                cancelled => { Help.welcome-closed(); }
+                backed => { root.show(0); }
+                committed => { root.onward(); }
+            }
+            PageDots {
+                x: (parent.width - self.preferred-width) / 2;
+                y: footer.y + (footer.height - self.preferred-height) / 2;
+                width: self.preferred-width;
+                count: root.count;
+                at: root.place(root.page);
+                picked(place) => { root.show(root.page-at(place)); }
             }
         }
     }

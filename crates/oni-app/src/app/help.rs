@@ -18,6 +18,8 @@ use std::time::Duration;
 /// log into it.
 pub struct Surfaces {
     pub(super) console: Option<(ConsoleWindow, Timer)>,
+    /// The welcome's stage while its sheet shows.
+    pub(super) welcome: Option<welcome::Playing>,
 }
 
 /// Sends one report: the message and, when ticked, the sealed log; a check hands its own.
@@ -39,8 +41,6 @@ pub const CONTEST_TAG: &str = "#ONIsplash";
 pub const MADE_WITH: &str = "#madewithoni";
 /// Whether the welcome offers the Collection's gift: one switch, while The Lens DB validates what it shows.
 pub const KIT_GIFT: bool = true;
-/// The stock the huge gift's renders were shot on (`examples/welcome_stills`).
-const FILM_STOCK: &str = "kodak-portra-800";
 /// Development pauses between these days, both included, local time; the gallery says so, then nothing.
 pub const PAUSE: ((i32, u32, u32), (i32, u32, u32)) = ((2026, 12, 15), (2027, 1, 15));
 /// `DS.Motion.consoleRefresh`.
@@ -149,6 +149,7 @@ impl Ctl {
         let help = window.global::<Help>();
         let p = me.clone();
         help.on_welcome_closed(move || p.welcome_closed());
+        Ctl::wire_welcome(me, &help);
         let p = me.clone();
         help.on_wrapped(move || {
             p.welcome_closed();
@@ -219,38 +220,6 @@ impl Ctl {
             self.say(&tr!("The notes cannot be shown again: {error}", error = e));
         }
         self.publish_news();
-    }
-
-    /// `WelcomeSheet.isDue`: this release's sheet not yet shown on this computer.
-    pub fn welcome_due(&self) -> bool {
-        welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
-    }
-
-    /// The welcome on its hall, every gift wrapped again; whether a window shows it.
-    pub(super) fn open_welcome(&self) -> bool {
-        let Some(w) = self.window() else { return false };
-        let h = w.global::<Help>();
-        h.set_year(oni_library::wrapped::today().0.to_string().into());
-        h.set_film_stock(oni_settings::VirtualStock::of(FILM_STOCK).name().into());
-        h.set_welcome_unwrapped(0);
-        h.set_welcome_page(0);
-        h.set_welcome_shown(true);
-        true
-    }
-
-    /// However it closes, it is not shown again on the next launch.
-    fn welcome_closed(&self) {
-        let Some(w) = self.window() else { return };
-        if !w.global::<Help>().get_welcome_shown() {
-            return;
-        }
-        w.global::<Help>().set_welcome_shown(false);
-        let written = self.state.borrow_mut().preferences.set(WELCOME_KEY, EDITION.into());
-        if let Err(e) = written {
-            self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
-        }
-        w.invoke_refocus();
-        self.launch_sheet_after(Some(super::shell::LaunchSheet::Welcome));
     }
 
     pub(super) fn open_report(&self) {
@@ -361,5 +330,6 @@ impl Ctl {
 
 mod clip;
 pub(super) mod player;
+mod welcome;
 #[cfg(test)]
 mod tests;

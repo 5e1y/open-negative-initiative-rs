@@ -1,5 +1,5 @@
 // The Help menu's surfaces: Report a Bug and the console window, and the state the welcome reads.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, Toggle, Sheet, Scroller, LogText, AppWindow, Badge, Surface, TextField, SheetFooter } from "ds/ds.slint";
+import { StageSpot, Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, Toggle, Sheet, Scroller, LogText, AppWindow, Badge, Surface, TextField, SheetFooter } from "ds/ds.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -18,14 +18,49 @@ export global Help {
     in-out property <int> welcome-page;
     // The gifts unwrapped, one bit a gift in the hall's order.
     in-out property <int> welcome-unwrapped;
+    // The stage the GPU draws, its revision bumped at each picture drawn into the same texture.
+    in property <image> stage;
+    in property <int> stage-revision;
+    // What the stage plays (0 the overture, 1 the hall, 2 a gift untied, 3 a page, 4 the message), for which
+    // gift, and the seconds since it began; with no one driving it, every scene stands at its end.
+    in property <int> act: 1;
+    in property <int> act-gift;
+    in property <float> act-time: 99;
+    // In an untying, the second its title arrives: once the lid is down.
+    in property <float> act-cue;
+    // How long the gift's untying lasts, and the seconds into the huge gift's step.
+    in property <float> act-length;
+    in property <float> film-time;
+    // Whether its print has come forward, and the seconds since its three prints stood side by side.
+    in property <bool> film-printed;
+    in property <float> film-ended: -1;
+    // The gift under the hand, none below 0.
+    in property <int> hovered: -1;
+    // Each gift's place in the window while the hall shows, and the film's plate on the huge gift's page.
+    in property <[StageSpot]> spots;
+    in property <StageSpot> plate-spot;
+    // The mouth of the page's box, which its scene's card rises from.
+    in property <StageSpot> mouth;
+    // The huge gift's step, which its words and the stage both show; the films its print is shown on, the one
+    // showing (the share past a whole number the next coming), and the photo's share laid back over the print.
+    in property <int> film-step;
+    in property <[string]> film-stocks;
+    in property <float> film-show;
+    in property <float> film-compare;
+    in property <int> film-count;
+    callback welcome-sized(length, length, length, length);
+    callback welcome-pointer(float, float);
+    callback welcome-hover(int);
+    callback welcome-hurry();
+    callback welcome-step(int);
+    callback welcome-compare(float);
     // The contest's hashtag, and whether its form and ONI's Instagram are known to the build.
     in property <string> contest-tag;
     in property <bool> contest-open;
     in property <bool> instagram-known;
     // Whether the hall holds the Collection's gift, a page with it.
     in property <bool> kit-gift: true;
-    // The stock the huge gift's renders were shot on; the year the mystery gift tells.
-    in property <string> film-stock;
+    // The year the mystery gift tells.
     in property <string> year;
     callback welcome-closed();
     callback wrapped();

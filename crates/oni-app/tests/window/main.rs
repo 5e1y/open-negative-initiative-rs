@@ -144,6 +144,7 @@ mod sheet_layout;
 mod settings_rows;
 mod sheet_stack;
 mod welcome_card;
+mod welcome_reel;
 mod mode_header;
 mod sheets;
 mod sheet_escape;

@@ -94,18 +94,24 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.pump();
     assert!(w.get_keys_focused() && w.get_keys_held(), "back, the key monitor holds the keyboard again");
 
-    // The welcome is modal: a click beside it leaves it, Return turns its pages and closes it on the last.
+    // The welcome is modal: a click beside it leaves it, Return goes on through it and closes it on the last page.
+    // With nothing moving, no scene plays between two pages: Return turns them.
+    shell.window.global::<oni_app::Motion>().set_reduced(true);
     ctl.act(oni_app::Act::Welcome);
     rig.pump();
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
     assert!(help.get_welcome_shown(), "a click beside the welcome leaves it open");
-    for _ in 0..5 {
-        rig.key("\n");
-    }
-    assert!(help.get_welcome_shown(), "Return on a page before the last turns it");
     rig.key("\n");
-    assert!(!help.get_welcome_shown(), "twin: Return on the last page closes it");
+    assert!(help.get_welcome_shown() && help.get_welcome_page() != 0, "Return on a page before the last turns it");
+    let mut presses = 0;
+    while help.get_welcome_page() != 5 && presses < 24 {
+        rig.key("\n");
+        presses += 1;
+    }
+    assert!(help.get_welcome_shown(), "twin: the last page reached, still open");
+    rig.key("\n");
+    assert!(!help.get_welcome_shown(), "Return on the last page closes it");
 
     // A post answered after its sheet closed and opened again does not thank the new report.
     hold.store(true, Ordering::Relaxed);

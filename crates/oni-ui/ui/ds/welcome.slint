@@ -6,7 +6,7 @@ import { Colour, Motion, Space, Type } from "theme.slint";
 export global WelcomeStyle {
     // The words beside a page's stage, a column a paragraph reads in; narrower than `stage-least` left
     // beside them, the stage gives way and the words take the window.
-    out property <length> words-width: 420px;
+    out property <length> words-width: 470px;
     out property <length> stage-least: 360px;
     // The message's column, a letter's measure.
     out property <length> letter-width: 620px;
@@ -18,15 +18,10 @@ export global WelcomeStyle {
     out property <length> dot-reach: DS.control-grab-size;
     // The release's headline, in the Wrapped's serif: the one moment the app speaks louder than its tools.
     out property <string> headline-family: DS.typo-wrapped-title-family;
-    out property <length> headline: 44px;
+    out property <length> headline: 40px;
     out property <length> quote: 28px;
     out property <int> headline-weight: DS.typo-wrapped-title-weight;
     out property <color> headline-ink: Colour.selected;
-}
-
-// The whole window's ground under the welcome's pages, flat where a card's sheen would band across it.
-export component WelcomeGround inherits Rectangle {
-    background: Colour.ground;
 }
 
 // The stage: a scene on the canvas's ground, cropped to the room the page gives it.
@@ -95,47 +90,6 @@ export component PageDots inherits HorizontalLayout {
             background: page == root.at ? Colour.ink : parent.has-hover ? WelcomeStyle.dot-hover : WelcomeStyle.dot-idle;
             animate width { duration: Motion.quick; easing: ease-out; }
             animate background { duration: Motion.quick; }
-        }
-    }
-}
-
-// A scene's step, numbered: lit while it plays, a click plays it.
-export component StepLine inherits Rectangle {
-    in property <int> number;
-    in property <string> title;
-    in property <string> text;
-    in property <bool> lit;
-    callback picked();
-    height: column.preferred-height + 2 * Space.s;
-    border-radius: Space.s;
-    background: root.lit ? Colour.hover : touch.has-hover ? Colour.hover.with-alpha(0.5) : transparent;
-    accessible-role: button;
-    accessible-label: root.title;
-    accessible-action-default => { root.picked(); }
-    animate background { duration: Motion.quick; }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.picked(); } }
-    HorizontalLayout {
-        padding: Space.s;
-        spacing: Space.s;
-        Text {
-            width: Space.l;
-            vertical-alignment: top;
-            text: root.number;
-            font-family: WelcomeStyle.headline-family;
-            font-size: Type.section;
-            color: root.lit ? WelcomeStyle.headline-ink : Colour.ink-tertiary;
-            animate color { duration: Motion.quick; }
-        }
-        column := VerticalLayout {
-            spacing: Space.xxs;
-            Text { text: root.title; font-family: Type.family; font-size: Type.section; font-weight: Type.strong; color: root.lit ? Colour.ink : Colour.ink-secondary; wrap: word-wrap; }
-            if root.lit: Text {
-                text: root.text;
-                font-family: Type.family;
-                font-size: Type.label;
-                color: Colour.ink-secondary;
-                wrap: word-wrap;
-            }
         }
     }
 }
