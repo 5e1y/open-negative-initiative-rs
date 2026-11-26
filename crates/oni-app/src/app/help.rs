@@ -35,6 +35,8 @@ pub const DONATE: &str = "https://ko-fi.com/remicourtillon";
 pub const INSTAGRAM: Option<&str> = Some("https://www.instagram.com/open.negative.initiative/");
 pub const CONTEST_FORM: Option<&str> = None;
 pub const CONTEST_TAG: &str = "#ONIsplash";
+/// The hashtag of any picture made with ONI, which the export's notice invites people to post with.
+pub const MADE_WITH: &str = "#madewithoni";
 /// Whether the welcome offers the Collection's gift: one switch, while The Lens DB validates what it shows.
 pub const KIT_GIFT: bool = true;
 /// The stock the huge gift's renders were shot on (`examples/welcome_stills`).

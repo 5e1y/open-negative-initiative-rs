@@ -13768,5 +13768,12 @@
     "title": "Film exposure named Shooting exposure",
     "status": "done",
     "detail": "The Film block's exposure slider is the exposure at capture, the camera's on the virtual film: Shooting exposure, Exposition à la prise de vue, Exposición en la toma, its help sentence with it; the window check reads the new name."
+  },
+  {
+    "id": 4008,
+    "type": "ui",
+    "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",
+    "status": "done",
+    "detail": "No sheet: the export's notice (Toast's aside) carries one line and three mini keys, Copy #madewithoni, Open Instagram and Don't Show Again, which hides it for good (exportInviteHidden); Settings > General > Sharing brings it back. The hashtag is one constant (help::MADE_WITH), the link ONI's Instagram (help::INSTAGRAM). Proven by export_invite: shown after a written export, hidden for good, twin: absent on the next export, back from Settings."
   }
 ]

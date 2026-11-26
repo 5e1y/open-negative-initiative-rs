@@ -57,6 +57,11 @@ impl Ctl {
             End::Failed(why) => (tr("Export Failed"), why.clone()),
         };
         self.told_with(title, &message, (done > 0).then(|| first.to_string_lossy().into_owned()));
+        if end == End::Written && done > 0 && self.state.borrow().preferences.export_invite()
+            && let Some(w) = self.window()
+        {
+            w.global::<crate::Told>().set_invite(true);
+        }
     }
 
     /// The status bar's Stop: the frame under way is finished, none after it begun.

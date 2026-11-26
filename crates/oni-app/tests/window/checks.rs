@@ -69,6 +69,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most", export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most),
     ("export_speed::a_parameter_change_on_a_batch_is_timed", export_speed::a_parameter_change_on_a_batch_is_timed),
     ("export_speed::an_export_is_timed_stage_by_stage", export_speed::an_export_is_timed_stage_by_stage),
+    ("export_invite::an_export_written_invites_to_share_until_told_not_to", export_invite::an_export_written_invites_to_share_until_told_not_to),
     ("export_entering::entering_the_export_reads_no_scan_on_the_interface_thread", export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
     ("export_modal::the_export_surface_lets_nothing_reach_what_it_covers", export_modal::the_export_surface_lets_nothing_reach_what_it_covers),
     ("export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar", export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar),

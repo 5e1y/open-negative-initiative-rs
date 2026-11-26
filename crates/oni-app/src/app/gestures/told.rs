@@ -12,6 +12,24 @@ impl Ctl {
         window.global::<Told>().on_acted(move || p.told_acted());
         let p = me.clone();
         window.global::<Told>().on_closed(move || p.told_closed());
+        let told = window.global::<Told>();
+        told.set_tag(crate::app::help::MADE_WITH.into());
+        let w = window.as_weak();
+        told.on_copy_tag(move || {
+            system::set_text(crate::app::help::MADE_WITH);
+            if let Some(w) = w.upgrade() {
+                w.global::<Told>().set_copied(true);
+            }
+        });
+        told.on_instagram(|| crate::app::help::INSTAGRAM.into_iter().for_each(system::open_url));
+        let p = me.clone();
+        told.on_hide_invite(move || {
+            p.remember(crate::preferences::EXPORT_INVITE_HIDDEN, true.into());
+            if let Some(w) = p.window() {
+                w.global::<Told>().set_invite(false);
+            }
+            p.publish_settings();
+        });
     }
 
     /// The notice titled with the gesture, as Swift's `reportFailure(_:as:)`; one shown gives way to it.
@@ -34,6 +52,8 @@ impl Ctl {
         t.set_title(oni_i18n::spoken(title).into());
         t.set_message(oni_i18n::spoken(message).into());
         t.set_action(key.into());
+        t.set_invite(false);
+        t.set_copied(false);
         t.set_serial(t.get_serial().wrapping_add(1));
         t.set_shown(true);
     }

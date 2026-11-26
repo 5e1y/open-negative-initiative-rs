@@ -27,6 +27,8 @@ pub const COPY_CARRIES: &str = "copyCarries";
 pub const WHOLE_ROLL_AFTER_PREPARE: &str = "wholeRollAfterPrepare";
 /// Colour's filters read as an enlarger's C, M and Y, a choice this build adds; Temperature and Tint without it.
 pub const FILTRATION_CMY: &str = "filtrationCmy";
+/// The export's notice keeps its invitation to share off for good, until Settings brings it back.
+pub const EXPORT_INVITE_HIDDEN: &str = "exportInviteHidden";
 
 enum Read {
     Absent,
@@ -90,6 +92,10 @@ impl Preferences {
     /// Whether Prepare the Roll ends on the whole roll together; off in a file written without the key.
     pub fn whole_roll_after_prepare(&self) -> bool {
         self.bool(WHOLE_ROLL_AFTER_PREPARE).unwrap_or(false)
+    }
+
+    pub fn export_invite(&self) -> bool {
+        !self.bool(EXPORT_INVITE_HIDDEN).unwrap_or(false)
     }
 
     /// The whole file written at once, read again first as another holder may have written a key;

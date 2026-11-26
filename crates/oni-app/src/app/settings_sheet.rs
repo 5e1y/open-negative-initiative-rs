@@ -87,6 +87,7 @@ impl Ctl {
         s.set_full_decode(crate::render::FULL_DECODE.load(Ordering::Relaxed));
         s.set_whole_roll_after_prepare(self.state.borrow().preferences.whole_roll_after_prepare());
         s.set_filtration_cmy(self.state.borrow().preferences.filtration_cmy());
+        s.set_share_invite(self.state.borrow().preferences.export_invite());
         s.set_screen_gamut(self.state.borrow().screen_gamut);
         s.set_version(oni_i18n::tr!("Version {version}", version = crate::updates::version()).into());
         let pairing = w.global::<crate::Pairing>();

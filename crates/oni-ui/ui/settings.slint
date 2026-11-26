@@ -2,6 +2,7 @@
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
 import { Pairing } from "pairing.slint";
+import { Told } from "told.slint";
 import { Sheet, SheetHeader, SheetStyle, SectionStyle, ButtonRows, Section, Tabs, Label, TextRole, Row, Toggle, Divider, RowForm, LcdReadout, Tone, Field, FieldLayout, Button, TldbMark, Space } from "ds/ds.slint";
 import { Kit, KitLink } from "gear_state.slint";
 
@@ -19,6 +20,7 @@ export global AppSettings {
     in property <bool> whole-roll-after-prepare;
     // Colour's filters read as an enlarger's C, M and Y in place of Temperature and Tint.
     in property <bool> filtration-cmy;
+    in property <bool> share-invite;
     // The phones connected or paired, empty with none, and whether any can be forgotten.
     in property <string> phones;
     in property <bool> can-forget;
@@ -77,6 +79,18 @@ component GeneralPage inherits Page {
             toggled => { AppSettings.flip(Act.toggle-sound); }
         }
         Label { role: TextRole.note; text: @tr("A click as each key is pressed and released."); }
+    }
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.sheet-before;
+        title: @tr("Sharing");
+        Toggle {
+            label: @tr("Invite me to share my exports");
+            on: AppSettings.share-invite;
+            toggled => { AppSettings.flip(Act.share-invite); }
+        }
+        Label { role: TextRole.note; text: @tr("A quiet line under an export's notice: post your photos on Instagram with {}.", Told.tag); }
     }
 }
 

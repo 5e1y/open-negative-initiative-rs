@@ -2400,6 +2400,18 @@ msgid "A click as each key is pressed and released."
 msgstr "Un clic al pulsar y al soltar cada tecla."
 
 #: crates/oni-ui/ui/settings.slint
+msgid "Sharing"
+msgstr "Compartir"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Invite me to share my exports"
+msgstr "Invitarme a compartir mis exportaciones"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "A quiet line under an export's notice: post your photos on Instagram with {}."
+msgstr "Una línea discreta bajo el aviso de una exportación: publica tus fotos en Instagram con {}."
+
+#: crates/oni-ui/ui/settings.slint
 msgid "Viewing"
 msgstr "Visualización"
 
@@ -2538,6 +2550,26 @@ msgstr "Acerca de"
 #: crates/oni-ui/ui/stocks.slint
 msgid "Select Film Stock"
 msgstr "Seleccionar emulsión"
+
+#: crates/oni-ui/ui/told.slint
+msgid "Post your photos on Instagram with {}, we'd love to see them."
+msgstr "Publica tus fotos en Instagram con {}, nos encantaría verlas."
+
+#: crates/oni-ui/ui/told.slint
+msgid "Copied"
+msgstr "Copiado"
+
+#: crates/oni-ui/ui/told.slint
+msgid "Copy {}"
+msgstr "Copiar {}"
+
+#: crates/oni-ui/ui/told.slint
+msgid "Open Instagram"
+msgstr "Abrir Instagram"
+
+#: crates/oni-ui/ui/told.slint
+msgid "Don't Show Again"
+msgstr "No volver a mostrar"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Base"

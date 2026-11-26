@@ -80,6 +80,11 @@ impl Ctl {
                 self.publish_settings();
                 self.publish_mode();
             }
+            Act::ShareInvite => {
+                let hidden = self.state.borrow().preferences.export_invite();
+                self.remember(preferences::EXPORT_INVITE_HIDDEN, hidden.into());
+                self.publish_settings();
+            }
             Act::WholeRollAfterPrepare => {
                 let whole = !self.state.borrow().preferences.whole_roll_after_prepare();
                 self.remember(preferences::WHOLE_ROLL_AFTER_PREPARE, whole.into());

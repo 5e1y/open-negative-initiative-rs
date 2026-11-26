@@ -1,7 +1,7 @@
 // The notices: the one that passes over the view the hand works in, and the banner that stays over its view.
 import { Space, Motion, ButtonStyle, SheetStyle } from "theme.slint";
-import { Label, Icon, TextRole, Raised, Lift, Gap } from "base.slint";
-import { Button, ButtonKind, ButtonGroup, GroupAlign } from "controls.slint";
+import { Label, Icon, TextRole, Tone, Raised, Lift, Gap } from "base.slint";
+import { Button, ButtonKind, ButtonSize, ButtonGroup, GroupAlign } from "controls.slint";
 import { Reach, Reaches } from "reach.slint";
 
 // A transient notice: what a gesture could not do, or a step landed with its Undo, never stopping the hand.
@@ -22,6 +22,10 @@ export component Toast inherits Rectangle {
     in property <length> bottom;
     callback acted();
     callback closed();
+    // A quiet line under its words with keys of its own, as an invitation the hand may take or leave.
+    in property <string> aside;
+    in property <[string]> aside-keys;
+    callback aside-acted(int);
     width: min(SheetStyle.notice-width, root.room - 2 * SheetStyle.margin);
     height: card.height;
     property <float> come;
@@ -55,6 +59,13 @@ export component Toast inherits Rectangle {
             width: root.width;
             Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
             Label { role: TextRole.note; text: root.message; }
+            if root.aside != "": VerticalLayout {
+                spacing: Space.xs;
+                Label { role: TextRole.note; tone: Tone.secondary; text: root.aside; }
+                ButtonGroup { align: GroupAlign.start;
+                    for key[i] in root.aside-keys: Button { size: ButtonSize.mini; text: key; clicked => { root.aside-acted(i); } }
+                }
+            }
             // Dismiss beside its action, the accent key, at its foot.
             ButtonGroup { align: GroupAlign.end;
                 Button { text: @tr("Dismiss"); clicked => { root.leave(); } }
