@@ -8,7 +8,7 @@ use crate::{Flight, FlightRoute, Place, Walk};
 impl Ctl {
     /// The tile of `path` where the grid lays it now, in the window's points, with its index; none while
     /// it lies outside the laid cells.
-    fn tile_in_window(&self, path: &str) -> Option<(usize, Place)> {
+    pub(super) fn tile_in_window(&self, path: &str) -> Option<(usize, Place)> {
         let w = self.window()?;
         let lib = w.global::<Library>();
         let s = self.state.borrow();
@@ -134,5 +134,20 @@ impl Ctl {
             f.set_flying(false);
             f.set_landing(false);
         }
+    }
+
+    /// Prepare opened from the gallery, by its key or a photo of the roll opened there: each frame of the roll
+    /// leaves from its tile as the grid laid it, the photo opened ringed; a tile laid off screen has no place.
+    pub(super) fn wave_from_gallery(&self, paths: &[String], gallery: bool) {
+        let Some(w) = self.window() else { return };
+        if !gallery || w.global::<crate::Motion>().get_reduced() {
+            return;
+        }
+        let opened = self.state.borrow().open_path().map(str::to_string);
+        let places: Vec<Place> = paths.iter().map(|p| self.tile_in_window(p).map(|(_, place)| place).unwrap_or_default()).collect();
+        let p = w.global::<crate::Preparing>();
+        p.set_opened_cell(paths.iter().position(|p| Some(p) == opened.as_ref()).map_or(-1, |i| i as i32));
+        p.set_wave_from(slint::ModelRc::new(slint::VecModel::from(places)));
+        p.set_wave(p.get_wave() + 1);
     }
 }

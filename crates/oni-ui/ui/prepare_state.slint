@@ -1,5 +1,5 @@
 // Prepare the Roll's state: every value Rust sets and every callback the panel, the card and the bar raise.
-import { MenuLine, CrtCurve, CrtEcho } from "ds/ds.slint";
+import { MenuLine, CrtCurve, CrtEcho, Place } from "ds/ds.slint";
 import { Canister } from "stocks.slint";
 
 // One frame of the roll as a cell shows it.
@@ -58,6 +58,14 @@ export global Preparing {
     in property <bool> can-previous;
     in property <bool> can-next;
     in property <[RollCell]> cells;
+    // Prepare opened from the gallery: each cell's tile where the gallery laid it in the window, none of
+    // no width where it lay off screen; each serial lays the roll's cells by a wave from there.
+    in property <[Place]> wave-from;
+    in property <int> wave;
+    // The last wave a sheet played: a sheet laid after its serial was bumped plays it as it shows.
+    in-out property <int> wave-played;
+    // The cell of the photo the roll was opened from, ringed on the roll's sheet; -1 for none.
+    in property <int> opened-cell: -1;
     in property <bool> back-shown;
     // The step's keycap, in one place on every step, live unless the step may not go on.
     in property <string> action-title: @tr("NEXT");

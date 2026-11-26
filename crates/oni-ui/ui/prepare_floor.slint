@@ -1,14 +1,17 @@
 // Prepare the Roll's floor: the flags' sheet, the base's scan, the frame card with its window, or the
 // measure's screens; Rust holds every value and rule.
-import { Space, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Pick, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
+import { Space, Ease, Place, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Pick, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
 import { CanvasKeys } from "canvas_keys.slint";
 import { KeyWords } from "key_words.slint";
 
-// `RollFrameSheet`: six to a row, a click flagging a frame, an unticked one dimmed.
+// `RollFrameSheet`: six to a row, a click flagging a frame, an unticked one dimmed. Opened from the gallery,
+// its cells fly in from their tiles as a wave, one after the other; a tile the gallery laid off screen
+// rises into its cell from the sheet's foot. On the film step it shows the roll, its photo opened ringed.
 component FlagSheet inherits Scroller {
+    in property <bool> flagging: true;
     content-height: grid.preferred-height;
     function laid() {
         Preparing.sheet-origin-x = self.absolute-position.x;
@@ -16,7 +19,18 @@ component FlagSheet inherits Scroller {
         Preparing.sheet-width = self.width;
     }
     changed width => { self.laid(); }
-    init => { self.laid(); }
+    init => { self.laid(); root.play(); }
+    property <int> wave: Preparing.wave;
+    property <bool> waved: true;
+    function play() {
+        if (Preparing.wave != Preparing.wave-played) {
+            Preparing.wave-played = Preparing.wave;
+            root.waved = false;
+            arrive.start();
+        }
+    }
+    changed wave => { root.play(); }
+    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); root.waved = true; } }
     grid := VerticalLayout {
         width: root.width;
         alignment: start;
@@ -25,13 +39,20 @@ component FlagSheet inherits Scroller {
         for row in Math.ceil(Preparing.cells.length / RollStyle.sheet-columns): HorizontalLayout {
             spacing: Space.m;
             alignment: start;
-            for column in RollStyle.sheet-columns: Rectangle {
+            for column in RollStyle.sheet-columns: cell := Rectangle {
                 property <int> at: row * RollStyle.sheet-columns + column;
+                property <Place> from: self.at < Preparing.wave-from.length ? Preparing.wave-from[self.at] : { x: 0, y: 0, width: 0, height: 0 };
+                property <bool> known: self.from.width > 0;
+                property <duration> delay: root.waved ? min(self.at, Motion.wave-cells) * Motion.wave-step : 0ms;
                 width: (grid.width - 2 * Space.l - (RollStyle.sheet-columns - 1) * Space.m) / RollStyle.sheet-columns;
                 height: self.width * RollStyle.well-ratio;
                 if self.at < Preparing.cells.length: TileView {
-                    width: parent.width;
-                    picture-height: parent.height;
+                    x: root.waved ? 0px : cell.known ? cell.from.x - cell.absolute-position.x : 0px;
+                    y: root.waved ? 0px : cell.known ? cell.from.y - cell.absolute-position.y : root.height - cell.absolute-position.y + root.absolute-position.y;
+                    width: root.waved || !cell.known ? parent.width : cell.from.width;
+                    picture-height: root.waved || !cell.known ? parent.height : cell.from.height;
+                    opacity: root.waved || cell.known ? 1 : 0;
+                    animate x, y, width, picture-height, opacity { duration: root.waved ? Motion.travel : 0ms; delay: cell.delay; easing: Ease.weighted; }
                     marks: TileMarks.apart;
                     rounded: true;
                     ring: RingPlacement.outset;
@@ -40,7 +61,8 @@ component FlagSheet inherits Scroller {
                     apart: Preparing.cells[parent.at].apart;
                     rgb: Preparing.cells[parent.at].rgb;
                     left-out: !Preparing.cells[parent.at].ticked;
-                    clicked => { Preparing.sheet-clicked(parent.at); }
+                    selected: !root.flagging && parent.at == Preparing.opened-cell;
+                    clicked => { if (root.flagging) { Preparing.sheet-clicked(parent.at); } }
                 }
             }
         }
@@ -170,8 +192,9 @@ component FrameCard inherits Rectangle {
 // `rollFloor`: the flags' sheet, the base's scan, the frame card, or the measure's screens.
 export component RollFloor inherits Card {
     if Preparing.step == 3: FlagSheet { width: parent.width; height: parent.height; }
+    if Preparing.step == 0 && !Preparing.measuring: FlagSheet { width: parent.width; height: parent.height; flagging: false; }
     if Preparing.step == 2: BaseSurface { width: parent.width; height: parent.height; }
-    if Preparing.step != 2 && Preparing.step != 3 && !Preparing.measuring: FrameCard { width: parent.width; height: parent.height; }
+    if Preparing.step != 0 && Preparing.step != 2 && Preparing.step != 3 && !Preparing.measuring: FrameCard { width: parent.width; height: parent.height; }
     if Preparing.step == 4 && Preparing.measuring: MeasureFloor { width: parent.width; height: parent.height; }
     CardCorners { width: parent.width; height: parent.height; }
     // The floor's place in Tab's order on the two steps that place something on it.
