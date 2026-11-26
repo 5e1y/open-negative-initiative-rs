@@ -82,7 +82,14 @@ fn photos(scans: &Path) {
     let ui = Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui/splash");
     let renders = std::env::var_os("ONI_WELCOME_RENDERS").map(PathBuf::from);
     let render = |name: &str, splash: &str| renders.as_ref().map(|r| r.join(name)).filter(|p| p.exists()).unwrap_or_else(|| ui.join(splash));
-    let files = [ui.join("1.0.0.jpg"), render("film-photo.jpg", "1.3.0.jpg"), ui.join("1.3.0.jpg"), render("film-print-2.jpg", "1.5.0.jpg"), ui.join("1.5.0.jpg"), render("film-print-3.jpg", "1.0.0.jpg")];
+    let files = [
+        ui.join("1.0.0.jpg"),
+        render("film-photo.jpg", "1.3.0.jpg"),
+        ui.join("1.3.0.jpg"),
+        render("film-print-2.jpg", "1.5.0.jpg"),
+        ui.join("1.5.0.jpg"),
+        render("film-print-3.jpg", "1.0.0.jpg"),
+    ];
     std::fs::create_dir_all(scans).unwrap();
     for (i, file) in files.iter().enumerate() {
         let photo = scans.join(format!("{}.jpg", (b'A' + i as u8) as char));

@@ -12,7 +12,15 @@ use crate::common::{self, Placed};
 /// `SheetStyle.margin`.
 const MARGIN: f32 = 24.0;
 /// Each screen's title, a gift's once it is opened.
-const TITLES: [&str; 5] = ["A livelier interface", "Import your photo kit into ONI, with The Lens DB", "Your digital photos, on film", "Your Wrapped is here", "You already paid for your film. You shouldn't have to pay just to look at it."];
+const TITLES: [&str; 5] = [
+    "A livelier interface",
+    "Import your photo kit into ONI, with The Lens DB",
+    "Your digital photos, on film",
+    "Your Wrapped is here",
+    "You already paid for your film. You shouldn't have to pay just to look at it.",
+];
+/// Each gift's tag while it is wrapped.
+const TAGS: [&str; 4] = ["A small gift", "Another small gift", "The huge gift", "The mystery gift"];
 
 fn title(window: &MainWindow, page: usize) -> Placed {
     common::the(window, Role::Text, tr(TITLES[page - 1]))
@@ -206,13 +214,14 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
                 rig.settle();
                 keep(&format!("{language}-{w}x{h}-{page}-{}", if opened { "opened" } else { "wrapped" }));
                 let key = if opened { commit(&window, page) } else { common::the(&window, Role::Button, tr("Unwrap")) };
-                let words = if opened { title(&window, page) } else { common::placed(&window, Role::Text, tr(["A small gift", "Another small gift", "The huge gift", "The mystery gift"][page - 1]))[0] };
+                let words = if opened { title(&window, page) } else { common::placed(&window, Role::Text, tr(TAGS[page - 1]))[0] };
                 columns.push(words.x);
                 // The whole block of words, eyebrow to last key, its middle on the sheet's; the film's too.
                 let top = h as f32 - size.get().1;
                 let held = block(&window, words.x, key.y - MARGIN / 2.0);
                 let off = off_middle(&held, top, size.get().1);
-                println!("{language} {w}×{h} screen {page} {}: block {held:?} off the middle by {off:.1}, sheet {:?}, film {:?}", if opened { "opened" } else { "wrapped" }, size.get(), common::placed(&window, Role::Image, tr(TITLES[page - 1])));
+                let (state, film) = (if opened { "opened" } else { "wrapped" }, common::placed(&window, Role::Image, tr(TITLES[page - 1])));
+                println!("{language} {w}×{h} screen {page} {state}: block {held:?} off the middle by {off:.1}, sheet {:?}, film {film:?}", size.get());
                 assert!(off.abs() <= 1.0, "{language} {w}×{h} screen {page}: the words' block on the middle, off by {off:.1}: {held:?}");
                 if opened {
                     let film = common::the(&window, Role::Image, tr(TITLES[page - 1]));
@@ -252,7 +261,8 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
                 // Its three keys, each drawn whole inside the window, side by side or on two lines, none over another.
                 let keys: Vec<Placed> = ["Follow ONI on Instagram", "Support ONI on Ko-fi", "Enter the Contest"].iter().map(|k| common::the(&window, Role::Button, tr(k))).collect();
                 for (i, k) in keys.iter().enumerate() {
-                    assert!(k.width > 40.0 && k.x >= 0.0 && k.x + k.width <= w as f32 && k.y >= top && k.y + k.height < key.y - MARGIN / 2.0, "{language} {w}×{h}: key {i} whole in the window, {k:?}");
+                    let whole = k.width > 40.0 && k.x >= 0.0 && k.x + k.width <= w as f32;
+                    assert!(whole && k.y >= top && k.y + k.height < key.y - MARGIN / 2.0, "{language} {w}×{h}: key {i} whole in the window, {k:?}");
                     for other in &keys[i + 1..] {
                         let apart = k.x + k.width <= other.x || other.x + other.width <= k.x || k.y + k.height <= other.y || other.y + other.height <= k.y;
                         assert!(apart, "{language} {w}×{h}: keys apart, {k:?} {other:?}");

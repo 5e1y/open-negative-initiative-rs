@@ -14111,5 +14111,12 @@
     "title": "Three lines past 200 characters broken, the width ceiling at 77",
     "status": "done",
     "detail": "The double click's stall reason in the motion bench, the watchdog's sample report (a concat! of the same text, checked equal) and model S's twin assertion, which names its first half. A line of year.rs fell under the width since, so the ceiling is 77 once the welcome's four new wide lines in its window checks are broken by their stream."
+  },
+  {
+    "id": 3969,
+    "type": "chore",
+    "title": "The welcome's controller in one file a part: its lifecycle, its screens and its picture, each under the workspace's ceiling",
+    "status": "done",
+    "detail": "`app/help/welcome.rs` had grown to 402 lines, past the 400 the architecture check allows: its screens (which gift each shows, the scroll's places, the gifts kept, the state the clock moves) go to `welcome/screens.rs`, its picture (the stage drawn, one picture in flight, the screen's film) to `welcome/picture.rs`, its lifecycle (opened, replayed, closed, held by a check) stays; 183, 138 and 115 lines, nothing else changed. The welcome's checks' lines past 200 characters are broken (welcome_card, welcome_films). Checks: oni-core architecture's file ceiling for these files; help, stage and reels unit tests; window checks welcome_card (both), welcome_reel (both), help; clippy."
   }
 ]
