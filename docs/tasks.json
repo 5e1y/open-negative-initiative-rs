@@ -14055,5 +14055,12 @@
     "status": "done",
     "title": "A project shows its photos in one run, in its own order, no roll heading them in the sidebar or the grid",
     "detail": "Owner: splitting a project by roll made the sidebar confusing. The tree lays a project's photos straight under its name, the grid one band per project, the project's stored order whatever roll each lies in; a drop lands on any line of its project. Prepare asked from a project still takes the frame's roll alone. The Archive keeps its rolls."
+  },
+  {
+    "id": 4251,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: a colour negative's virtual film is its data sheet (model S), no scanner between",
+    "detail": "The working notes follow #3880 to #3882: Otsu 2018's spectra for colour negatives, the sheet's Status M curves with each film's own couplers as the negative, each channel its own layer, the grain's Amount read alone; the D850 scanner's lines leave. The state before stays under the tag virtual-negative-d850-two-points."
   }
 ]

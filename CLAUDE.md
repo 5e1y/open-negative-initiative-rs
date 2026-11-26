@@ -56,25 +56,25 @@ the code; a costly trap keeps its constraint and its number in two lines.
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
-- **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, in the light
-  its decode balanced (5000 K on a RAW), reaches layers balanced for the stock's own light (Portra 800: D55, Vision3 500T: tungsten),
-  so a tungsten film turns a daylight scene blue as a real one does and the Source tab's Filtration takes the cast away (owner's
-  call, 2026-11-26); the Film block names both lights. It is exposed and developed on the stock's profile (`virtual_negative`), uncoupled, then
-  scanned by ONI's one scanner (owner's call, 2026-11-25), the same for every colour negative and every camera a photo comes from:
-  a D50 lamp through the sheet's dyes and orange D-min, a Nikon D850's measured sensitivities, then the decode a scanned
-  negative's RAW takes, LibRaw's matrix at 5000 K, Bradford to D65 (`film::scanner`, the sensor in `resources/film`). That scan is
-  read by the negative pipeline unchanged, its reference derived on it: each channel's black on the bare film, no light, and its
-  white on the sensor's saturation, the decode's 5000 K neutral at the white level, `2^0.48`; a neutral exposes the film's three layers
-  at the same log exposure and the scene's chromaticity is read as it is, no layer offset and no gamut compressed (owner's call,
-  2026-11-26): each channel's two points are its black on the bare film and its white where a neutral at the sensor's saturation
-  reads, nothing measured on the photos. A paper is a print laid over it, never its reader. The film of no character is the neutral one. spektrafilm's full
-  chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
+- **A digital photo is shot on a virtual film** (owner's call, 2026-11-21): no Digital pipeline of its own. Its scene, in the light its decode balanced
+  (5000 K on a RAW), reaches layers balanced for the stock's own light (Portra 800: D55, Vision3 500T: tungsten), so a tungsten film turns a daylight scene
+  blue as a real one does and the Source tab's Filtration takes the cast away (owner's call, 2026-11-26); the Film block names both lights. It is exposed
+  through Otsu 2018's spectra of real objects (`irradiance_xy_otsu2018.npy`; slides and black and white films keep spektrafilm's table) and developed on
+  its data sheet's Status M curves, its layers inhibiting one another through `couplers`, each film's own matrix derived from its sheet alone
+  (`scripts/derive-couplers.py`), over its bare film's Status M D-min (`film::status`): its negative is those densities, each channel its own layer,
+  written less the veil its reading adds, no dye spectrum, lamp, sensor or matrix between (model S, owner's call, 2026-11-26). That negative is read by the
+  negative pipeline unchanged, its reference derived on it: each channel's black on the bare film, no light, and its white on the sensor's saturation, the
+  decode's 5000 K neutral at the white level, `2^0.48`; a neutral exposes the film's three layers at the same log exposure and the scene's chromaticity is
+  read as it is, no layer offset and no gamut compressed (owner's call, 2026-11-26): each channel's two points are its black on the bare film and its white
+  where a neutral at the sensor's saturation reads, nothing measured on the photos. A paper is a print laid over it, never its reader. The film of no
+  character is the neutral one. spektrafilm's full chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`,
+  `docs/research/colour-diagnosis`).
 - **A digital photo's virtual negative is a scan made once** (owner's call, 2026-11-26): its scene shot on its film (shooting
-  exposure, halation, bloom, curves, grain, the scanner's reading) is rendered on the scan's grid before any crop or turn
-  (`Pipeline::scan`) and kept in `rgba16float` as a decode is, at the editor's resolution, at full definition only once the view
-  reads past it (100 %, export), made in 4 MP bands (`Graph::materialise_half`); the frame is read off it as a scanned negative's
-  (`Pipeline::on_scan`), Lighting included. A film's setting under a hand renders on the preview's scan, sharp once the hand
-  rests. The halation is red alone (`HALATION_COLOUR`): the red layer, the deepest, takes the light the base sends back.
+  exposure, halation, bloom, curves, grain) is rendered on the scan's grid before any crop or turn (`Pipeline::scan`) and kept in
+  `rgba16float` as a decode is, at the editor's resolution, at full definition only once the view reads past it (100 %, export),
+  made in 4 MP bands (`Graph::materialise_half`); the frame is read off it as a scanned negative's (`Pipeline::on_scan`),
+  Lighting included. A film's setting under a hand renders on the preview's scan, sharp once the hand rests. The halation is red
+  alone (`HALATION_COLOUR`): the red layer, the deepest, takes the light the base sends back.
 - **A new digital photo is shot on the neutral film** (owner's calls, 2026-11-24): a film of no character, first in the list
   (`stocks/generic-neutral.json`, `VirtualStock::NEUTRAL`), so a photo opens as its decode holds it, its white on the sensor's
   saturation. Each layer's density above its clear bare film is its `range` times the sRGB code of its own working-space channel's
@@ -83,19 +83,19 @@ the code; a costly trap keeps its constraint and its number in two lines.
   the window's share is that code and the pure inversion gives the light back. Its range, 1.0, is a real colour negative's window
   (Portra 800's green spans 0.99), so the gains and filters, laid in density, move it as they move a scan. Portra 800 stays what a
   photo storing no film, or a key no file defines, reads.
-- **The grain lies on the developed film** (owner's call, 2026-11-24): a digital photo's alone, uniform in the film's density after
-  its curve (`grain`), so the inversion weakens it toward the white and strengthens it in the shadows as on film; each layer
-  has its own grains, mixed on the three channels by the film's own reading (the scanner's gaze on a negative, the projector's
-  on a slide). Halation has no threshold (owner's call,
-  2026-11-25): a dose of each layer's blurred exposure, before the film's curve, which alone shows it around the highlights; each
-  film's file gives its rests (halation, Bloom from its MTF, grain amount and size), the sliders free on top. A slide's lies on
-  its positive; a scanned negative takes none.
-- **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each
-  profile from the official sheet's curves into its stock's file; no spektrafilm profile ships. A film's bake follows spektrafilm's
-  model (couplers, gamut compression); a paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. ONI Standard
-  is one more paper, never a default (owner's calls, 2026-11-24): a neutral paper, one curve on the three layers, pure dyes, no D-min, the
-  logistic in density the six data-sheet papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s − 0.354)))` over the
-  window share (`scripts/oni-standard-paper.py`).
+- **The grain lies on the developed film** (owner's call, 2026-11-24): a digital photo's alone, uniform in the film's density after its
+  curve (`grain`), so the inversion weakens it toward the white and strengthens it in the shadows as on film; each layer has its own
+  grains, a colour negative's channel its own layer's, carrying 0.739 of its film's grain Amount (the Amount is the grain a scan shows,
+  which a scanner's channels averaged over three layers: `grain::READ_ALONE`), a slide's mixed on the three channels by the projector's
+  gaze. Halation has no threshold (owner's call, 2026-11-25): a dose of each layer's blurred exposure, before the film's curve, which alone
+  shows it around the highlights; each film's file gives its rests (halation, Bloom from its MTF, grain amount and size), the sliders free
+  on top. A slide's lies on its positive; a scanned negative takes none.
+- **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each profile from the
+  official sheet's curves into its stock's file; no spektrafilm profile ships. A slide's bake follows spektrafilm's model (its dyes, couplers); a
+  colour negative's is its sheet's Status M curves and its own couplers; a paper's profile is its sheet's Status A curves, D-min included, and its
+  dyes' Status A crosstalk. ONI Standard is one more paper, never a default (owner's calls, 2026-11-24): a neutral paper, one curve on the three
+  layers, pure dyes, no D-min, the logistic in density the six data-sheet papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s −
+  0.354)))` over the window share (`scripts/oni-standard-paper.py`).
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
   canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
