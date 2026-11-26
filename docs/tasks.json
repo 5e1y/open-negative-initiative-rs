@@ -13829,7 +13829,7 @@
     "id": 4011,
     "type": "ui",
     "title": "ONI's faces become Zalando Sans: ONI Sans for every word read, Zalando Sans Expanded Black for titles and headings",
-    "status": "in progress",
+    "status": "done",
     "detail": "scripts/oni-fonts.py writes crates/oni-ui/fonts from Zalando Sans (OFL 1.1, ZALANDO-SANS-OFL.txt): ONI Sans, its normal width at 400, 500, 600 and 700, figures laid tabular in the default map (Slint asks no OpenType feature), the eight signs it lacks (↔ ⌘ ⇧ ⌥ ⌫ ✓ Δ σ) drawn from Inter at the same weight, renamed as the reserved name Zalando requires of a modified version; Zalando Sans Expanded Black ships as it is. Type.family is the text face, Type.display and Type.display-weight the display face, which Roles.family gives the title and heading roles; Inter is no longer embedded. The fit checks stay green (toolbar_fit, film_type_fit, mode_header, settings_rows, states); typeface.rs shoots the main screens at the smallest window in each language."
   },
   {
@@ -13843,7 +13843,7 @@
     "id": 4012,
     "type": "ui",
     "title": "The faces screen by screen: the export's title in the display face, a renamed title typed in its own face, the contact sheet's numbers in ONI Sans, keycap legends 0.2 pt apart",
-    "status": "in progress",
-    "detail": "RenameField types in its role's face (Roles.family), so a title renamed stays in the display face. The contact sheet's numbers (together/plate.rs) set in ONI Sans at the nearest of its four weights instead of Inter's axis. Keycap legends 0.5 → 0.2 pt apart: ONI Sans's bold capitals run about 4 pt wider over CANCEL, BACK and PREPARE ROLL, which pushed Prepare's commit onto a line of its own and its check's click between them. The lab's shots load ONI Sans."
+    "status": "done",
+    "detail": "RenameField types in its role's face (Roles.family), so a title renamed stays in the display face; the export's panel title in the display face. The contact sheet's numbers (together/plate.rs) set in ONI Sans at the nearest of its four weights instead of Inter's axis. Keycap legends 0.5 → 0.2 pt apart: ONI Sans's bold capitals run about 4 pt wider over CANCEL, BACK and PREPARE ROLL, which pushed Prepare's commit onto a line of its own. The lab's shots load ONI Sans. The 308 window checks pass in ONI Sans."
   }
 ]
