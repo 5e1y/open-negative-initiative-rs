@@ -9,7 +9,13 @@ impl Engine {
     /// the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         let (image, region, placed) = self.composed(negative, settings, view)?;
-        Ok((self.one_texture(&image, region)?, placed))
+        // A pan keeps the recipe: the last render's pixels the new region still covers are copied, the rest rendered.
+        let source = match (&self.fitted.shown, region) {
+            (Some((key, before)), Some(region)) if *key == image.key() => self.graph.materialise_over(&image, region, before).map_err(|e| e.to_string())?,
+            _ => self.one_texture(&image, region)?,
+        };
+        self.fitted.shown = Some((image.key(), source.clone()));
+        Ok((source, placed))
     }
 
     /// Compare's before, `resident` on `reference`, kept while its recipe and region hold, so a notch
@@ -210,6 +216,8 @@ pub(crate) struct Fitting {
     /// The histogram's picture and Compare's before, each with the recipe it was made from.
     counted: Option<(u64, Source)>,
     before: Option<((u64, Option<Rect>), Source)>,
+    /// The canvas's last render and its recipe.
+    shown: Option<(u64, Source)>,
 }
 
 #[cfg(test)]

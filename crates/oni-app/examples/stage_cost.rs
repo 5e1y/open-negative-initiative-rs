@@ -1,0 +1,179 @@
+//! `stage_cost <photo> [canvas w h]`: a photo's render at fit on a canvas (3456 × 2034 drawable pixels by default),
+//! each stage of its chain timed as the render up to it less the one before, then Exposure and grain notches through
+//! the canvas's own path, each to the GPU's end. Its sidecar is read, never written.
+
+use oni_app::render::{self, Device, Engine, Reading, View};
+use oni_graph::{Graph, Image, Rect};
+use oni_pipeline::{Inputs, Request, conversion, grain, layers, stages};
+use oni_settings::{PipelineSettings, sidecar};
+use std::path::Path;
+use std::time::Instant;
+
+const RUNS: usize = 15;
+
+/// `image` made whole, then one pixel read back, which waits for every pass queued before it.
+fn ms(g: &mut Graph, image: &Image, region: Option<Rect>) -> f64 {
+    let started = Instant::now();
+    let made = g.materialise_cached(image, region.unwrap_or_else(|| image.extent()), None).expect("renders");
+    let e = made.extent();
+    g.render(&Image::new(&made), Rect::new(e.x, e.y, 1, 1), None).expect("reads");
+    started.elapsed().as_secs_f64() * 1000.0
+}
+
+fn inputs_seeded(seed: [u32; 2]) -> Inputs<'static> {
+    Inputs { seed, ..Inputs::default() }
+}
+
+fn median(mut v: Vec<f64>) -> f64 {
+    v.sort_by(f64::total_cmp);
+    v[v.len() / 2]
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let photo = Path::new(&args[0]);
+    let canvas = (args.get(1).map_or(3456.0, |v| v.parse().unwrap()), args.get(2).map_or(2034.0, |v| v.parse().unwrap()));
+    let s = sidecar::read(photo, true).expect("a sidecar").settings;
+    println!("mode {:?}, film {:?}, grain {} size {}, halation {}, bloom {:?}", s.mode, s.film(), s.grain.amount, s.grain.size, s.halation.amount, s.bloom);
+    let device = Device::open().expect("a GPU");
+    let engine = Engine::shared(&device);
+    let mut e = engine.lock().unwrap();
+    let started = Instant::now();
+    let decoded = render::decode(photo, Reading::of(&s)).expect("a decode");
+    let decode = started.elapsed().as_secs_f64() * 1000.0;
+    let started = Instant::now();
+    let negative = e.prepare(decoded).unwrap();
+    let prepare = started.elapsed().as_secs_f64() * 1000.0;
+    let (w, h) = negative.size();
+    println!("decode {decode:.0} ms, prepare {prepare:.0} ms, preview {w} x {h}, full width {}", negative.full_width);
+
+    // The canvas's whole render at fit, then a notch of each kind through its cache.
+    let view = View { viewport: Default::default(), size: canvas, full: None, coarse: false };
+    let resident = |e: &mut Engine, s: &PipelineSettings| {
+        let started = Instant::now();
+        let (source, _) = e.resident(&negative, s, Some(&view)).unwrap();
+        let x = source.extent();
+        e.parts().0.render(&Image::new(&source), Rect::new(x.x, x.y, 1, 1), None).unwrap();
+        (started.elapsed().as_secs_f64() * 1000.0, x)
+    };
+    let s = match std::env::var("ONI_COST_FILM").ok().filter(|k| !k.is_empty()) {
+        Some(key) => {
+            let mut t = s.clone();
+            t.virtual_film = Some(oni_settings::VirtualFilm { stock: oni_settings::VirtualStock::of(Box::leak(key.into_boxed_str())), exposure: 0.0 });
+            t.halation.amount = std::env::var("ONI_COST_HALATION").ok().and_then(|v| v.parse().ok()).unwrap_or(0.0);
+            t
+        }
+        None => s,
+    };
+    let (_, region) = resident(&mut e, &s);
+    println!("canvas {} x {}: region {} x {}", canvas.0, canvas.1, region.w, region.h);
+    let notches: [(&str, fn(&mut PipelineSettings, usize)); 10] = [
+        ("Exposure", |t, i| t.print.exposure += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Contrast", |t, i| t.print.contrast += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Shadows", |t, i| t.print.shadows += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Red gain", |t, i| t.gains.stops[0] += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Density", |t, i| t.density += if i % 2 == 0 { 0.01 } else { -0.01 }),
+        ("Chroma", |t, i| t.chroma.force = (t.chroma.force + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
+        ("Sharpen", |t, i| t.sharpen.amount = (t.sharpen.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
+        ("Grain", |t, i| t.grain.amount = (t.grain.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
+        ("Halation", |t, i| t.halation.amount = (t.halation.amount + if i % 2 == 0 { 0.01 } else { -0.01 }).max(0.0)),
+        ("Vignette", |t, i| t.vignette.stops += if i % 2 == 0 { 0.01 } else { -0.01 }),
+    ];
+    for (name, step) in notches {
+        let mut t = s.clone();
+        let times: Vec<f64> = (0..RUNS + 2).map(|i| {
+            step(&mut t, i);
+            resident(&mut e, &t).0
+        }).skip(2).collect();
+        println!("  {name} notch: {:.1} ms p50, {:.1} ms worst", median(times.clone()), times.iter().cloned().fold(0.0, f64::max));
+    }
+
+    // At 100 % on the full frame: a notch through the cache, then pans of a tenth of the canvas, each a new region.
+    let started = Instant::now();
+    let full = e.full(render::decode_full(photo, Reading::of(&s)).expect("a decode")).unwrap();
+    println!("full decode and upload {:.0} ms", started.elapsed().as_secs_f64() * 1000.0);
+    let at = |dx: f64| View { viewport: oni_app::viewport::Viewport { scale: Some(1.0), offset: (dx, 0.0) }, size: canvas, full: Some(full.clone()), coarse: false };
+    let near = |e: &mut Engine, s: &PipelineSettings, v: &View| {
+        let started = Instant::now();
+        let (source, _) = e.resident(&negative, s, Some(v)).unwrap();
+        let x = source.extent();
+        e.parts().0.render(&Image::new(&source), Rect::new(x.x, x.y, 1, 1), None).unwrap();
+        started.elapsed().as_secs_f64() * 1000.0
+    };
+    let first = near(&mut e, &s, &at(0.0));
+    let mut t = s.clone();
+    let notches: Vec<f64> = (0..RUNS + 2).map(|i| {
+        t.print.exposure += if i % 2 == 0 { 0.01 } else { -0.01 };
+        near(&mut e, &t, &at(0.0))
+    }).skip(2).collect();
+    let pans: Vec<f64> = (1..=RUNS).map(|i| near(&mut e, &s, &at(-(i as f64) * canvas.0 / 10.0))).collect();
+    println!("  100 %: first {first:.1} ms, Exposure notch {:.1} ms p50, pan {:.1} ms p50, {:.1} worst", median(notches), median(pans.clone()), pans.iter().cloned().fold(0.0, f64::max));
+    // The last pan's render against the same region rendered afresh, then against it a pixel over, which must differ.
+    let last = at(-(RUNS as f64) * canvas.0 / 10.0);
+    let (panned, _) = e.resident(&negative, &s, Some(&last)).unwrap();
+    let r = panned.extent();
+    let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+    let (graph, pipeline) = e.parts();
+    let image = pipeline.image(graph, &full, &s, &request, &inputs_seeded(negative.seed)).unwrap();
+    let read = |g: &mut Graph, source: &oni_graph::Source| g.render(&Image::new(source), source.extent(), None).unwrap();
+    let kept = read(graph, &panned);
+    let fresh = graph.materialise_cached(&image, r, None).unwrap();
+    let worst = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).map(|(x, y)| (0..3).map(|c| (x[c] - y[c]).abs()).fold(0.0f32, f32::max)).fold(0.0f32, f32::max);
+    println!("  last pan against a fresh render: worst {:.3e}", worst(&kept, &read(graph, &fresh)));
+    let shifted = graph.materialise_cached(&image, Rect::new(r.x - 1, r.y, r.w, r.h), None).unwrap();
+    println!("  twin, a pixel over: worst {:.3e}", worst(&kept, &read(graph, &shifted)));
+
+    // The chain's stages on the same pixels: at fit the preview reduced to the region's width, each prefix made whole;
+    // at 100 % the full frame's centre, the canvas's size.
+    for (zoomed, base) in [(false, negative.preview.clone()), (true, full.clone())] {
+    let (w, h) = (base.extent().w, base.extent().h);
+    let scale = if zoomed { 1.0 } else { f64::from(region.w) / f64::from(w) };
+    let shown = zoomed.then(|| Rect::new(((w as f64 - canvas.0) / 2.0) as i32, ((h as f64 - canvas.1) / 2.0) as i32, canvas.0 as u32, canvas.1 as u32));
+    println!("{}:", if zoomed { "100 %" } else { "fit" });
+    let request = Request { full_width: Some(negative.full_width), scale, ..Request::default() };
+    let inputs = Inputs { seed: negative.seed, ..Inputs::default() };
+    let (graph, pipeline) = e.parts();
+    let input = if zoomed { Image::new(&base) } else { Image::new(&base).lanczos(scale) };
+    let scan = input.extent();
+    let full_scale = f64::from(scan.w) / negative.full_width;
+    let framed = pipeline.framed(graph, input.clone(), &s, full_scale, &inputs).unwrap();
+    let lit = match conversion::scene_white(&s) {
+        Some(m) => framed.clone().then(stages::color_matrix(&m)),
+        None => framed.clone(),
+    };
+    let digital = s.mode.is_digital();
+    let effects = digital.then_some(scan);
+    let mut steps: Vec<(&str, Image)> = vec![("reduced", input), ("framed and lit", lit.clone())];
+    if let Some(scan) = effects {
+        let bloomed = layers::bloom(&s, scan);
+        let spread = if bloomed > oni_settings::axis::pipeline::BLUR_FLOOR { stages::blurred(lit.clone(), bloomed, false) } else { lit.clone() };
+        steps.push(("bloom", spread.clone()));
+        steps.push(("halation", oni_pipeline::halation::halated(spread, &s, scan)));
+    }
+    let filmed = pipeline.filmed(graph, lit.clone(), &s, effects).unwrap();
+    steps.push(("film and scan", filmed.clone()));
+    let grained = match effects.and_then(|scan| grain::grain(&s, scan, full_scale)).map(|k| k.seeded(negative.seed)) {
+        Some(k) => grain::grained(filmed, &k),
+        None => filmed,
+    };
+    steps.push(("grain", grained.clone()));
+    steps.push(("inversion", stages::converted(grained, &conversion::stage47(&s))));
+    steps.push(("finishing", pipeline.image(graph, &base, &s, &request, &inputs).unwrap()));
+    if let Some(dir) = std::env::var_os("ONI_COST_DUMP") {
+        let last = &steps.last().unwrap().1;
+        let r = shown.unwrap_or_else(|| last.extent());
+        let px = graph.render(last, r, None).unwrap();
+        let bytes: Vec<u8> = px.iter().flat_map(|p| p.iter().flat_map(|v| v.to_le_bytes())).collect();
+        let name = format!("{}-{}.f32", photo.file_name().unwrap().to_string_lossy(), if zoomed { "100" } else { "fit" });
+        std::fs::write(Path::new(&dir).join(name), bytes).unwrap();
+    }
+    let mut before = 0.0;
+    for (name, image) in &steps {
+        let t = median((0..RUNS).map(|_| ms(graph, image, shown)).collect());
+        println!("  {name:>16}: {t:7.1} ms total, {:+7.1} ms", t - before);
+        before = t;
+    }
+    }
+    let st = e.stats();
+    println!("graph: peak {:.0} MB, live {:.0} MB", st.peak_bytes as f64 / 1e6, st.live_bytes as f64 / 1e6);
+}

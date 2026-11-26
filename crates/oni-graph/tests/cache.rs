@@ -43,3 +43,31 @@ fn a_frontier_cache_keeps_only_what_the_next_notch_starts_from() {
     assert_eq!(rendered(&mut g, &image(1.2, 1.3), &mut cache), 3, "the source is never kept");
     assert_eq!(cache.len(), 0);
 }
+
+#[test]
+fn a_pan_copies_what_the_last_render_covers_and_renders_only_the_rest() {
+    let Some(mut g) = graph("a_pan_copies_what_the_last_render_covers_and_renders_only_the_rest") else { return };
+    let (s, _) = source(&mut g, 7);
+    let image = Image::new(&s).then(Gain([1.3; 4])).then(BoxBlur3).then(BoxBlur3);
+    let first = Rect::new(40, 30, 120, 90);
+    let before = g.materialise_cached(&image, first, None).expect("first render");
+    for moved in [Rect::new(70, 30, 120, 90), Rect::new(10, 60, 120, 90), Rect::new(60, 50, 60, 40), Rect::new(180, 100, 120, 90)] {
+        let started = g.stats().pixels;
+        let over = g.materialise_over(&image, moved, &before).expect("render over the last");
+        let ran = g.stats().pixels - started;
+        let fresh = g.render(&image, moved, None).expect("fresh");
+        assert_eq!(g.render(&Image::new(&over), moved, None).expect("read back"), fresh, "a pan to {moved:?} differs from a fresh render");
+        let fresh_pixels = {
+            let started = g.stats().pixels;
+            g.materialise_cached(&image, moved, None).expect("fresh render");
+            g.stats().pixels - started
+        };
+        let kept = first.intersect(&moved);
+        assert!(kept.is_empty() || ran < fresh_pixels, "a pan to {moved:?} rendered {ran} pixels, a fresh render {fresh_pixels}");
+    }
+    // Twin: the last render of another recipe laid over the same region is no fresh render of this one.
+    let other = Image::new(&s).then(Gain([1.1; 4])).then(BoxBlur3).then(BoxBlur3);
+    let theirs = g.materialise_cached(&other, first, None).expect("other");
+    let wrong = g.materialise_over(&image, Rect::new(70, 30, 120, 90), &theirs).expect("over");
+    assert_ne!(g.render(&Image::new(&wrong), Rect::new(70, 30, 120, 90), None).expect("read back"), g.render(&image, Rect::new(70, 30, 120, 90), None).expect("fresh"));
+}

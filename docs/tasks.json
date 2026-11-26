@@ -13530,5 +13530,12 @@
     "title": "The full check green after the scanner but for roll #8's Swift state; the grain re-anchored on the real scan through the scanner",
     "status": "done",
     "detail": "Grain: the real Portra 800 scan's 0.014 of green's window is now met on Portra 800 at its own rest through the scanner's gaze (0.0130 before), GRAIN_TOP 0.1563 and the survey's deviations a factor 1.075 over, each film's Amount unchanged. Tests brought to the scanner: the stocks' counts (112 files, 9 papers), every shipped film offered, paper_gaze landing on format 78's references and migrate::scanner's own test, the corpus's newer file at format 80 and its two digital goldens, the legacy prints' two digital cases re-pinned, the couplers' grey checked at no filtration, the Saturation twin pushed twice as far. cameraChannels listed among the excluded fields (missed by #3810). Left failing, as before: oni-library roll8, oni-measure roll_prepare, oni-pipeline adversarial and oni_app's roll_8 library test, which wait for roll #8's Swift state. A worktree on the T7 must lose its ._ files before a check: macOS writes them on exFAT and the source walks read them."
+  },
+  {
+    "id": 3860,
+    "type": "perf",
+    "title": "A pan renders only what its region newly shows: the canvas's last render is copied where both cover",
+    "status": "done",
+    "detail": "Every pixel's value depends only on where it lies, so a pan of the same recipe copies the last render's overlap and evaluates only the strips the new region adds (Graph::materialise_over, Engine::resident keeping the shown render). Measured on a 47 Mpx RW2 at 100 % on a 3456 x 2034 canvas, Portra 800 with halation 0.5 and grain 0.25 (stage_cost example): a pan of a tenth of the canvas 155 ms -> 5.7 ms p50; a scanned NEF 15 -> 4 ms. The panned render equals a fresh render of its region to the bit (worst 0), its twin a pixel over differs by 0.23; the graph's check compares four pans with a fresh render, and the same strips over another recipe's render must differ. No full check (owner's rule during a work stream)."
   }
 ]
