@@ -13516,5 +13516,12 @@
     "title": "The scanner's checks: GPU against its scalar reference, the bare film against two real rolls, the filtration derived again, the grain's gaze",
     "status": "done",
     "detail": "tests/scanner.rs replaces tests/paper_gaze.rs: Portra 800 filmed on the GPU against film::Stock::shot (twin: the read-out alone); bare Portra 800 within 0.1 D of the owner's two real rolls, S1R and Z f, measured in the working space (0.039 D off; twin: the read-out alone, 0.2 D and more); its filtration held equal to the one its sheet derives through the scanner (twin: 0.1 log off bakes another reference); its grain's gaze rows summing to one, the red channel seeing the magenta dye (twins: silver's own layers, a slide's projector)."
+  },
+  {
+    "id": 3854,
+    "type": "docs",
+    "title": "CLAUDE.md: a digital photo's virtual film is read by ONI's one scanner, a paper only a print over it; each layer's grain mixed by the film's own reading",
+    "status": "done",
+    "detail": "The virtual film paragraph names the D850 under a D50 lamp decoded as a scanned RAW, the filtration derived through it and no paper as reader, in place of the 1931 observer and the reference-fitted couplers; the grain paragraph drops GRAIN_WINDOW for each layer's grains mixed by the scanner's or the projector's gaze, and a film's file gives its grain's amount and size."
   }
 ]
