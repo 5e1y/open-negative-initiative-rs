@@ -39,10 +39,7 @@ fn studio(d: vec3<f32>, soft: f32) -> f32 {
     let left = softbox(d, vec3<f32>(-0.72, 0.0, 0.69), vec3<f32>(0.69, 0.0, 0.72), vec2<f32>(drift * 0.3, 0.1), vec2<f32>(0.035, 1.5), 0.022) * 2.3;
     let right = softbox(d, vec3<f32>(0.78, 0.0, 0.62), vec3<f32>(0.62, 0.0, -0.78), vec2<f32>(drift * 0.3, 0.1), vec2<f32>(0.022, 1.5), 0.016) * 2.0;
     let rim = softbox(d, vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(1.0, 0.0, 0.0), vec2<f32>(0.0, -0.27), vec2<f32>(2.6, 0.13), soft) * frame.light.z * 1.3;
-    // A strip carried round the stage, its band sweeping whatever faces it; 0 puts it away.
-    let round = frame.fan.w;
-    let sweep = softbox(d, vec3<f32>(sin(round), 0.0, cos(round)), vec3<f32>(cos(round), 0.0, -sin(round)), vec2<f32>(0.0, 0.1), vec2<f32>(0.03, 1.5), 0.02) * 2.4 * step(0.0001, abs(round));
-    return (over + before + left + right + sweep) * frame.light.y + rim + 0.02 * max(d.y, 0.0) + 0.012 * max(-d.y, 0.0);
+    return (over + before + left + right) * frame.light.y + rim + 0.02 * max(d.y, 0.0) + 0.012 * max(-d.y, 0.0);
 }
 
 // `Foil`'s ramp for a metal: deep to body below 1, body to its bright above, which keeps the metal's own hue

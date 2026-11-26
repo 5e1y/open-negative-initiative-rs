@@ -219,7 +219,8 @@ export component Sheet inherits Rectangle {
     callback dismissed();
     // Return on a sheet whose default key would scroll away or that has none.
     callback returned();
-    // A sheet of pages, as the welcome: the arrow keys turn them, `paged` by one forward or back.
+    // A sheet of pages, as the welcome: the arrow and page keys turn them, `paged` by one forward or back, and
+    // Space presses on as Return does.
     in property <bool> paging;
     callback paged(int);
     // The height the sheet takes, its margins included, in a room that holds it whole.
@@ -264,8 +265,16 @@ export component Sheet inherits Rectangle {
                 root.returned();
                 return accept;
             }
-            if (root.paging && (event.text == Key.LeftArrow || event.text == Key.RightArrow)) {
-                root.paged(event.text == Key.RightArrow ? 1 : -1);
+            if (root.paging && event.text == " ") {
+                root.returned();
+                return accept;
+            }
+            if (root.paging && (event.text == Key.DownArrow || event.text == Key.RightArrow || event.text == Key.PageDown)) {
+                root.paged(1);
+                return accept;
+            }
+            if (root.paging && (event.text == Key.UpArrow || event.text == Key.LeftArrow || event.text == Key.PageUp)) {
+                root.paged(-1);
                 return accept;
             }
             reject

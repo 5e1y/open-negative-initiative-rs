@@ -1,5 +1,5 @@
 // The Help menu's surfaces: Report a Bug and the console window, and the state the welcome reads.
-import { StageSpot, Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, Toggle, Sheet, Scroller, LogText, AppWindow, Badge, Surface, TextField, SheetFooter } from "ds/ds.slint";
+import { StageSpot, StockLine, Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, Toggle, Sheet, Scroller, LogText, AppWindow, Badge, Surface, TextField, SheetFooter } from "ds/ds.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -14,51 +14,39 @@ export global Help {
     // The release's welcome, shown once per edition; the release it speaks of, which the menu names too.
     in property <bool> welcome-shown;
     in property <string> release;
-    // The page shown: 0 the gifts, one page a gift, the message last.
-    in-out property <int> welcome-page;
-    // The gifts unwrapped, one bit a gift in the hall's order.
-    in-out property <int> welcome-unwrapped;
-    // The stage the GPU draws, its revision bumped at each picture drawn into the same texture.
+    // The screen shown: 1 to 4 a gift, 5 the message; and the gifts opened, one bit a gift.
+    in property <int> welcome-page: 1;
+    in property <int> welcome-unwrapped;
+    // Where the screens stand, in screens from the first, travelling between two as one gives way.
+    in property <float> scroll;
+    // The stage the GPU draws, its revision bumped at each picture drawn into the same texture; while it is not
+    // drawn (not yet, or not on this GPU), each gift's still in its place.
     in property <image> stage;
     in property <int> stage-revision;
-    // What the stage plays (0 the overture, 1 the hall, 2 a gift untied, 3 a page, 4 the message), for which
-    // gift, and the seconds since it began; with no one driving it, every scene stands at its end.
-    in property <int> act: 1;
-    in property <int> act-gift;
-    in property <float> act-time: 99;
-    // In an untying, the second its title arrives: once the lid is down.
-    in property <float> act-cue;
-    // How long the gift's untying lasts, and the seconds into the huge gift's step.
-    in property <float> act-length;
-    in property <float> film-time;
-    // Whether its print has come forward, and the seconds since its three prints stood side by side.
-    in property <bool> film-printed;
-    in property <float> film-ended: -1;
-    // The gift under the hand, none below 0.
-    in property <int> hovered: -1;
-    // Each gift's place in the window while the hall shows, and the film's plate on the huge gift's page.
-    in property <[StageSpot]> spots;
-    in property <StageSpot> plate-spot;
-    // The mouth of the page's box, which its scene's card rises from.
-    in property <StageSpot> mouth;
-    // The huge gift's step, which its words and the stage both show; the films its print is shown on, the one
-    // showing (the share past a whole number the next coming), and the photo's share laid back over the print.
-    in property <int> film-step;
-    in property <[string]> film-stocks;
-    in property <float> film-show;
-    in property <float> film-compare;
+    in property <bool> stage-live;
+    // The gift the stage shows (-1 none) and how much of its light, as one screen gives way to the next.
+    in property <int> gift-shown: -1;
+    in property <float> stage-shown: 1;
+    // Where the gift stands in the window, which takes the click that opens it.
+    in property <StageSpot> gift-spot;
+    // Seconds since the screen's gift was opened, below 0 while wrapped; when its words come; and whether the
+    // person may go on.
+    in property <float> opened-time: -1;
+    in property <float> words-at;
+    in property <bool> may-go-on;
+    // The huge gift's demo: the photo as the camera saw it, then the films it is shot on; how many films there are.
+    in property <[StockLine]> film-cells;
     in property <int> film-count;
-    callback welcome-sized(length, length, length, length);
-    callback welcome-pointer(float, float);
-    callback welcome-hover(int);
-    callback welcome-hurry();
-    callback welcome-step(int);
-    callback welcome-compare(float);
+    callback welcome-sized(length, length, length);
+    callback welcome-open();
+    callback welcome-go(int);
+    // Whether Escape leaves the welcome before its end (`help::ESCAPE_LEAVES`).
+    in property <bool> welcome-escapes;
     // The contest's hashtag, the hashtag of any picture made with ONI, and whether ONI's Instagram is known.
     in property <string> contest-tag;
     in property <string> made-with;
     in property <bool> instagram-known;
-    // Whether the hall holds the Collection's gift, a page with it.
+    // Whether the welcome holds the Collection's gift, a screen with it.
     in property <bool> kit-gift: true;
     // The year the mystery gift tells.
     in property <string> year;

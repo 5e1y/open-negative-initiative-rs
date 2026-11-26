@@ -1,12 +1,11 @@
-//! The welcome's stage: four wrapped gifts in a black studio, drawn by the GPU into the texture the welcome
-//! shows. `Frame` is one picture's whole description; `direction` writes it from the welcome's clock.
+//! The welcome's stage: a wrapped gift in a black studio, drawn by the GPU into the texture the welcome shows.
+//! `Frame` is one picture's whole description; `direction` writes it from the welcome's clock.
 
 use bytemuck::{Pod, Zeroable};
 
 pub mod direction;
 mod ease;
 pub use ease::glide;
-pub mod film;
 pub mod unwrap;
 
 #[cfg(test)]
@@ -32,19 +31,14 @@ pub struct Frame {
     pub eye: [f32; 4],
     pub aim: [f32; 4],
     pub light: [f32; 4],
-    pub plate: [f32; 4],
-    pub turn: [f32; 4],
-    pub film: [f32; 4],
     pub lens: [f32; 4],
     pub show: [f32; 4],
-    pub strip: [f32; 4],
-    pub fan: [f32; 4],
     pub gifts: [Gift; 4],
 }
 
 /// The shader that draws the stage in light, its parts in the order they name one another.
 pub fn source() -> String {
-    [include_str!("stage/scene.wgsl"), include_str!("stage/light.wgsl"), include_str!("stage/plate.wgsl"), include_str!("stage/picture.wgsl")].join("\n")
+    [include_str!("stage/scene.wgsl"), include_str!("stage/light.wgsl"), include_str!("stage/picture.wgsl")].join("\n")
 }
 
 /// The shader that finishes the light for the screen.
@@ -69,7 +63,7 @@ struct Between {
     spread: wgpu::TextureView,
 }
 
-/// The stage's pipelines and the three pictures the film's plate shows.
+/// The stage's pipelines and the pictures between its light and the screen.
 pub struct Stage {
     pipeline: wgpu::ComputePipeline,
     layout: wgpu::BindGroupLayout,
@@ -78,7 +72,6 @@ pub struct Stage {
     finishing: wgpu::ComputePipeline,
     finish_layout: wgpu::BindGroupLayout,
     passes: [wgpu::Buffer; 4],
-    pictures: [wgpu::TextureView; 3],
     sampler: wgpu::Sampler,
     between: Option<Between>,
 }
@@ -114,19 +107,19 @@ fn light(device: &wgpu::Device, width: u32, height: u32) -> wgpu::TextureView {
 }
 
 impl Stage {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Stage {
-        Stage::with_source(device, queue, &source(), FINISH)
+    pub fn new(device: &wgpu::Device) -> Stage {
+        Stage::with_source(device, &source(), FINISH)
     }
 
     /// The stage drawn by `source` and finished by `finish`, which a look's trial reads from its files.
-    pub fn with_source(device: &wgpu::Device, queue: &wgpu::Queue, source: &str, finish: &str) -> Stage {
+    pub fn with_source(device: &wgpu::Device, source: &str, finish: &str) -> Stage {
         let entry = |binding, ty| wgpu::BindGroupLayoutEntry { binding, visibility: wgpu::ShaderStages::COMPUTE, ty, count: None };
         let block = wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None };
         let picture = wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false };
         let written = |format| wgpu::BindingType::StorageTexture { access: wgpu::StorageTextureAccess::WriteOnly, format, view_dimension: wgpu::TextureViewDimension::D2 };
         let sampled = wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering);
         let (float, bytes) = (wgpu::TextureFormat::Rgba16Float, wgpu::TextureFormat::Rgba8Unorm);
-        let stage = [entry(0, block), entry(1, written(float)), entry(2, picture), entry(3, picture), entry(4, picture), entry(5, sampled), entry(6, picture)];
+        let stage = [entry(0, block), entry(1, written(float)), entry(2, picture)];
         let (pipeline, layout) = piped(device, "stage", source, &stage);
         let finishing = [entry(0, block), entry(1, picture), entry(2, picture), entry(3, sampled), entry(4, written(float)), entry(5, written(bytes))];
         let (finishing, finish_layout) = piped(device, "stage finish", finish, &finishing);
@@ -140,18 +133,17 @@ impl Stage {
             finishing,
             finish_layout,
             passes: std::array::from_fn(|_| buffer(std::mem::size_of::<Finish>())),
-            pictures: film::pictures(device, queue),
             sampler,
             between: None,
         }
     }
 
-    /// The seconds this GPU takes over a million pixels of the hall, the stage's heaviest picture: the least of a
-    /// few, each awaited, so a busy moment counts for nothing.
+    /// The seconds this GPU takes over a million pixels of the opened huge gift, the stage's heaviest picture: the
+    /// least of a few, each awaited, so a busy moment counts for nothing.
     pub fn pace(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) -> f32 {
         let (width, height) = (960, 600);
         let target = Stage::target(device, width, height);
-        let frame = direction::frame(&direction::Cue::at(direction::Act::Hall, 3.0));
+        let frame = direction::frame(&direction::Cue::at(Some(2), Some(30.0)));
         let mut least = f32::MAX;
         for _ in 0..6 {
             let began = std::time::Instant::now();
@@ -202,11 +194,7 @@ impl Stage {
                 entries: &[
                     wgpu::BindGroupEntry { binding: 0, resource: self.blocks[pass].as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 1, resource: seen(into) },
-                    wgpu::BindGroupEntry { binding: 2, resource: seen(&self.pictures[0]) },
-                    wgpu::BindGroupEntry { binding: 3, resource: seen(&self.pictures[1]) },
-                    wgpu::BindGroupEntry { binding: 4, resource: seen(&self.pictures[2]) },
-                    wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::Sampler(&self.sampler) },
-                    wgpu::BindGroupEntry { binding: 6, resource: seen(from) },
+                    wgpu::BindGroupEntry { binding: 2, resource: seen(from) },
                 ],
             })
         };

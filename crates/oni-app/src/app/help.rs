@@ -39,6 +39,8 @@ pub const CONTEST: &str = "https://open-negative-initiative.com/contest";
 pub const CONTEST_TAG: &str = "#ONIsplash";
 /// The hashtag of any picture made with ONI, which the export's notice invites people to post with.
 pub const MADE_WITH: &str = "#madewithoni";
+/// Whether Escape leaves the welcome before its end; else only its last key does, every gift opened first.
+pub const ESCAPE_LEAVES: bool = false;
 /// Whether the welcome offers the Collection's gift: one switch, while The Lens DB validates what it shows.
 pub const KIT_GIFT: bool = true;
 /// Development pauses between these days, both included, local time; the gallery says so, then nothing.
@@ -140,6 +142,7 @@ impl Ctl {
         h.set_release(release(EDITION).into());
         h.set_contest_tag(CONTEST_TAG.into());
         h.set_made_with(MADE_WITH.into());
+        h.set_welcome_escapes(ESCAPE_LEAVES);
         h.set_instagram_known(INSTAGRAM.is_some());
         h.set_kit_gift(KIT_GIFT);
         h.set_pause_line(if paused(today()) { tr("Development and new features are paused from Dec 15 to Jan 15.").into() } else { Default::default() });

@@ -57,8 +57,8 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     let seen = Preferences::load(&support).value("whatsNewSeen").cloned();
     assert_eq!(seen, Some(serde_json::json!(["lighting.1.3.1"])));
 
-    // The welcome sheet: due on a fresh Mac, Return going on through it, the huge gift first and its film step by
-    // step, closed by the last page, not due again.
+    // The welcome sheet: due on a fresh Mac, Return opening each gift and going on to the next, closed by the last
+    // screen alone, not due again.
     assert!(first.ctl.welcome_due());
     // With nothing moving, no scene plays between two pages: Return turns them.
     first.window.global::<oni_app::Motion>().set_reduced(true);
@@ -76,7 +76,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
         rig.key("\n");
     }
     assert!(!help.get_welcome_shown(), "Return on the last page closes it");
-    assert_eq!(pages, [0, 3, 1, 2, 4, 5], "twin: every page before the last was turned, none skipped");
+    assert_eq!(pages, [1, 2, 3, 4, 5], "twin: every screen before the last was reached, none skipped");
     assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("2.0"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.

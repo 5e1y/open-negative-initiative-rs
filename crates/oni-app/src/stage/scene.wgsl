@@ -1,5 +1,5 @@
-// The welcome's stage: four wrapped gifts on a black floor, each a box, its lid, its ribbon and bow, and the
-// film's plate above the largest; signed distances in the stage's units, a gift's half-width its `place.w`.
+// The welcome's stage: wrapped gifts on a black floor, each a box, its lid, its ribbon and bow; signed
+// distances in the stage's units, a gift's half-width its `place.w`.
 
 struct Gift {
     // xyz where it stands on the floor, w its half-width (0: absent).
@@ -27,35 +27,16 @@ struct Frame {
     aim: vec4<f32>,
     // x the key light, y the softbox overhead, z the rim behind, w the floor's mirror.
     light: vec4<f32>,
-    // xyz the middle of the film's frame, w its half-height (0: no film).
-    plate: vec4<f32>,
-    // x the plate's turn about the vertical, y the print's sheet, 0 away to 1 there, z its own light, w the grain.
-    turn: vec4<f32>,
-    // x the scanner's bar across the frame, y the film inverted, 0 a negative to 1 its print, z the lamp behind,
-    // w the strip of film, 0 away to 1 there.
-    film: vec4<f32>,
-    // x and z how far the lens looks off its axis, across and down, in picture heights; y the photo laid back over
-    // the print up to that share of it (0: none); w the words' column beside the stage, in picture heights.
+    // x and z how far the lens looks off its axis, across and down, in picture heights.
     lens: vec4<f32>,
-    // x which print shows, a whole number a stock and the share past it the next one coming over it; y 1 while
-    // the grain still shimmers; z the pass, 1 the one that draws edges again; w the footer, in picture heights.
+    // z the pass, 1 the one that draws edges again; w the footer under the stage, in picture heights.
     show: vec4<f32>,
-    // x how far the strip has still to run, in frame half-heights; y the film developed, 0 to 1; z the latent
-    // picture the exposure left; w the halation about its lights.
-    strip: vec4<f32>,
-    // x the three prints fanned out, 0 to 1; z the camera close on the grain, where the film is seen brighter;
-    // w where a strip of light stands round the stage, in radians (0: away).
-    fan: vec4<f32>,
     gifts: array<Gift, 4>,
 }
 
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var target_picture: texture_storage_2d<rgba16float, write>;
-@group(0) @binding(2) var photo: texture_2d<f32>;
-@group(0) @binding(3) var negative: texture_2d<f32>;
-@group(0) @binding(4) var print: texture_2d<f32>;
-@group(0) @binding(5) var smooth_sampler: sampler;
-@group(0) @binding(6) var drawn: texture_2d<f32>;
+@group(0) @binding(2) var drawn: texture_2d<f32>;
 
 // The box's proportions, in half-widths: the lid's half-height, its overhang, the wall, the round.
 const LID: f32 = 0.2;

@@ -1,20 +1,19 @@
-//! The welcome's film on a held clock: the overture, a gift untied by a click, the huge gift's steps, a scene hurried.
-//! With `ONI_WELCOME_REEL` naming a folder, every scene's sheet and its stills are written there.
+//! The welcome on a held clock: each gift opened before the next, on by a click or Return, never past one still
+//! wrapped. With `ONI_WELCOME_REEL` naming a folder, its moments are laid on one contact sheet there.
 
 use oni_app::app::{Options, Shell};
-use oni_app::stage::direction::OVERTURE;
-use oni_app::stage::{film, unwrap};
-use oni_app::{Help, StageSpot};
+use oni_app::Help;
+use oni_app::stage::unwrap;
 use oni_core::{Archive, EditorStore};
 use slint::platform::{PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, LogicalPosition, Model, Rgb8Pixel};
+use slint::{ComponentHandle, LogicalPosition, Rgb8Pixel};
 use std::path::{Path, PathBuf};
 
 use crate::common;
 
 /// A sheet's cell, and how many stand on a row.
 const CELL: (usize, usize) = (480, 300);
-const ROW: usize = 4;
+const ROW: usize = 3;
 
 struct Reel<'a> {
     rig: &'a common::Rig,
@@ -38,11 +37,15 @@ impl Reel<'_> {
         (w, h, buffer.iter().flat_map(|p| [p.r, p.g, p.b]).collect())
     }
 
-    /// The clock moved on by `seconds` and the picture drawn; kept for the scene's sheet when a reel is asked.
+    /// The clock moved on by `seconds` and the picture drawn.
     fn step(&mut self, seconds: f32) {
         self.clock += seconds;
         self.shell.ctl.welcome_hold(Some(self.clock));
         self.rig.pump();
+    }
+
+    /// This moment kept for the contact sheet, when a reel is asked.
+    fn keep(&mut self) {
         if self.out.is_some() {
             let (w, h, pixels) = self.drawn();
             self.cells.push(reduced(&pixels, w, h));
@@ -56,18 +59,12 @@ impl Reel<'_> {
         }
     }
 
-    /// The scene filmed since the last cut, laid on a sheet under `name`; then the next scene starts.
+    /// The moments kept, laid on one sheet under `name`.
     fn cut(&mut self, name: &str) {
-        let cells = std::mem::take(&mut self.cells);
+        let kept = std::mem::take(&mut self.cells);
         let Some(out) = &self.out else { return };
-        if cells.is_empty() {
+        if kept.is_empty() {
             return;
-        }
-        // At most three rows a sheet: a long scene shows every nth picture, its last always.
-        let nth = cells.len().div_ceil(ROW * 3);
-        let mut kept: Vec<&Vec<u8>> = cells.iter().step_by(nth).collect();
-        if (cells.len() - 1) % nth != 0 {
-            kept.push(&cells[cells.len() - 1]);
         }
         let rows = kept.len().div_ceil(ROW);
         let (w, h) = (ROW * CELL.0, rows * CELL.1);
@@ -79,15 +76,7 @@ impl Reel<'_> {
             }
         }
         write(&out.join(format!("{name}.png")), &sheet, w, h);
-        println!("sheet {name}: {} pictures, every {nth}", cells.len());
-    }
-
-    /// One picture at full size under `name`.
-    fn still(&self, name: &str) {
-        if let Some(out) = &self.out {
-            let (w, h, pixels) = self.drawn();
-            write(&out.join(format!("{name}.png")), &pixels, w, h);
-        }
+        println!("sheet {name}: {} moments", kept.len());
     }
 
     fn tap(&self, (x, y): (f32, f32)) {
@@ -102,9 +91,9 @@ impl Reel<'_> {
         self.shell.window.global::<Help>()
     }
 
-    /// The middle of gift `i` in the window, from the place the stage tells the sheet.
-    fn gift(&self, i: usize) -> (f32, f32) {
-        let spot: StageSpot = self.help().get_spots().row_data(i).expect("the gift's place");
+    /// The middle of the screen's gift in the window, from the place the stage tells the sheet.
+    fn gift(&self) -> (f32, f32) {
+        let spot = self.help().get_gift_spot();
         let origin = self.shell.window.window().size().to_logical(1.0).height - self.sheet_height();
         (spot.x + spot.width / 2.0, origin + spot.y + spot.height / 2.0)
     }
@@ -159,7 +148,7 @@ fn light(reel: &Reel, (x, y): (f32, f32)) -> f32 {
     sum as f32 / (1600.0 * 3.0)
 }
 
-pub(crate) fn the_welcome_plays_its_acts_on_a_held_clock() {
+pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the welcome's stage is not exercised"),
@@ -183,131 +172,52 @@ pub(crate) fn the_welcome_plays_its_acts_on_a_held_clock() {
     // Drawn once, so the sheet stands in the window and tells the stage its size.
     rig.settle();
     let mut reel = Reel { rig: &rig, shell: &shell, out, clock: 0.0, cells: Vec::new() };
-    // The stage's shader compiles off the interface's thread: the film starts once it has landed.
-    reel.shell.ctl.welcome_hold(Some(0.0));
+    let help = shell.window.global::<Help>();
+    // Before the stage's shader lands, the gift stands as its still: the welcome never waits on the GPU.
+    reel.step(0.0);
+    assert!(help.get_welcome_shown() && help.get_welcome_page() == 1, "the welcome opens on its first gift");
     rig.until("the stage", std::time::Duration::from_secs(60), || {
         shell.ctl.welcome_hold(Some(0.0));
-        shell.window.global::<Help>().get_stage().size().width > 0
+        help.get_stage_live() && help.get_stage().size().width > 0
     });
-    let help = shell.window.global::<Help>();
-
-    // The overture: black, the release's name alone, then each gift lit where it stands, the hall's words at its end.
-    assert_eq!(help.get_act(), 0, "the welcome opens on its overture");
-    reel.step(0.0);
-    let dark = light(&reel, (size[0] as f32 / 2.0, size[1] as f32 * 0.7));
-    reel.play(2.0, 0.2);
-    reel.still("1-overture-name");
-    reel.play(2.8, 0.2);
-    reel.still("1-overture-huge-gift");
-    reel.play(OVERTURE - 4.4, 0.2);
-    assert_eq!(help.get_act(), 1, "the overture ends on the hall");
-    reel.cut("1-overture");
-    reel.still("1-hall-end");
-    let lit = light(&reel, reel.gift(2));
-    assert!(dark < 3.0 && lit > 30.0, "black at first, the huge gift lit in the hall: {dark} then {lit}");
-
-    // The hand on the huge gift: it answers; a click unties it, its page only once its light is out.
-    let gold = reel.gift(2);
-    rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(gold.0, gold.1) });
-    reel.play(1.2, 0.15);
-    reel.cut("2-hover");
-    reel.still("2-hover-end");
-    // Twin: a click on the dark above the gifts opens nothing.
-    reel.tap((gold.0, size[1] as f32 * 0.3));
-    reel.step(0.1);
-    assert_eq!((help.get_welcome_page(), help.get_act()), (0, 1), "twin: a click beside the gifts opens nothing");
-    reel.tap(gold);
-    reel.step(0.1);
-    assert_eq!((help.get_welcome_page(), help.get_act(), help.get_act_gift()), (3, 2, 2), "the huge gift untied before its page");
-    reel.play(unwrap::pop(2) - 0.3, 0.2);
-    reel.still("3-unwrap-huge-seam");
-    reel.play(unwrap::length(2) - unwrap::pop(2) - 1.0, 0.2);
-    assert_eq!(help.get_act(), 2, "still untying a breath before its end");
-    reel.still("3-unwrap-huge-title");
-    reel.play(1.4, 0.2);
-    assert_eq!((help.get_act(), help.get_welcome_unwrapped()), (3, 4), "its page once untied, the gift counted unwrapped");
-    reel.cut("3-unwrap-huge");
-
-    // Its steps follow one another by themselves; the last holds: the print, the photo laid back over it, each
-    // film once, then the three side by side.
-    for step in 0..film::STEPS - 1 {
+    for page in 1..=4 {
+        let gift = page as usize - 1;
+        reel.play(0.6, 0.2);
+        assert_eq!(help.get_welcome_page(), page, "gift {gift}'s screen");
+        assert!(help.get_opened_time() < 0.0, "gift {gift} still wrapped");
+        reel.keep();
+        // Twin: neither Return-less keys nor the wheel go on past a gift still wrapped.
+        rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
+        reel.step(0.1);
+        assert_eq!(help.get_welcome_page(), page, "gift {gift}: no way on while it is wrapped");
+        // A click on the gift opens it; the first gift by Return.
+        if page == 1 {
+            rig.key("\n");
+        } else {
+            reel.tap(reel.gift());
+        }
         reel.step(0.05);
-        assert_eq!(help.get_film_step(), step as i32, "step {step} plays in its turn");
-        let length = film::length(step);
-        reel.play((length * 0.5 / 0.2).floor() * 0.2, 0.2);
-        reel.still(&format!("4-film-step-{}-middle", step + 1));
-        reel.play(length - 0.4 - (length * 0.5 / 0.2).floor() * 0.2, 0.2);
-        reel.still(&format!("4-film-step-{}-end", step + 1));
-        reel.play(0.4, 0.2);
-        reel.cut(&format!("4-film-step-{}", step + 1));
+        assert!(help.get_opened_time() >= 0.0, "gift {gift} opened");
+        let words = unwrap::title(gift);
+        reel.play((unwrap::pop(gift) / 0.2).round() * 0.2, 0.2);
+        reel.keep();
+        reel.play(((words + 1.2 - unwrap::pop(gift)) / 0.2).round() * 0.2, 0.2);
+        assert!(help.get_may_go_on(), "gift {gift}: its words come, the way on opens");
+        reel.play(2.4, 0.2);
+        reel.keep();
+        assert!(light(&reel, reel.gift()) > 3.0, "gift {gift} drawn where it stands");
+        rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
+        reel.play(0.8, 0.2);
+        assert_eq!(help.get_welcome_page(), page + 1, "on past gift {gift} once opened");
     }
-    reel.step(0.05);
-    assert_eq!(help.get_film_step(), 4, "the last step holds");
-    // Each moment of the last step, in seconds since it began, reached in turn.
-    let mut at = 0.05f32;
-    let mut until = |reel: &mut Reel, moment: f32| {
-        reel.play(((moment - at) / 0.2).round() * 0.2, 0.2);
-        at += ((moment - at) / 0.2).round() * 0.2;
-    };
-    until(&mut reel, 0.85);
-    reel.still("4-film-step-5-middle");
-    until(&mut reel, film::PRINTED + 0.85);
-    assert!(help.get_film_printed() && help.get_plate_spot().width > 100.0, "the print come forward, its place told for the hand");
-    reel.still("4-film-step-5-end");
-    until(&mut reel, film::SECOND + 0.85);
-    reel.still("4-film-stock-2");
-    until(&mut reel, film::COMPARE.0 + 1.65);
-    assert!(help.get_film_compare() > 0.3, "the photo laid back over the second stock's print");
-    reel.still("4-film-compare");
-    reel.cut("4-film-step-5");
-    until(&mut reel, film::THIRD + 1.25);
-    assert!(help.get_film_compare() < 0.01, "then the print alone");
-    reel.still("4-film-stock-3");
-    until(&mut reel, film::FINALE + 4.05);
-    assert!(help.get_film_ended() > 3.0 && help.get_plate_spot().width == 0.0, "the three prints side by side, no edge left to drag");
-    reel.still("4-film-finale-end");
-    reel.cut("4-film-finale");
-
-    // Back to the hall, then a small gift played whole.
-    help.set_welcome_page(0);
-    reel.play(2.2, 0.2);
-    assert_eq!(help.get_act(), 1);
-    reel.cut("5-back-to-hall");
-    reel.still("5-hall-one-opened");
-    reel.tap(reel.gift(0));
-    reel.play(unwrap::length(0) + 0.6, 0.2);
-    reel.cut("6-unwrap-small");
-    reel.play(6.0, 0.25);
-    reel.cut("6-page-interface");
-    reel.still("6-page-interface-end");
-
-    // The mystery, played whole from a page: the camera goes from one gift to the other.
-    help.set_welcome_page(4);
-    reel.play(unwrap::length(3) + 0.6, 0.2);
-    assert_eq!((help.get_act(), help.get_act_gift()), (3, 3));
-    reel.cut("7-unwrap-mystery");
-    reel.play(5.0, 0.25);
-    reel.cut("7-page-mystery");
-    reel.still("7-page-mystery-end");
-
-    // The Collection's: Return hurries its untying to its page.
-    help.set_welcome_page(2);
-    reel.play(1.2, 0.2);
-    assert_eq!(help.get_act(), 2);
+    // The message, and only its key leaves; the gifts kept opened for a launch after this one.
+    reel.play(1.0, 0.2);
+    reel.keep();
+    reel.cut("welcome");
+    assert_eq!(help.get_welcome_unwrapped(), 0b1111, "every gift opened");
+    rig.key(&slint::SharedString::from(slint::platform::Key::Escape));
+    assert!(help.get_welcome_shown(), "Escape does not leave it");
     rig.key("\n");
-    reel.step(0.1);
-    assert_eq!((help.get_act(), help.get_act_gift()), (3, 1), "Return hurries the untying to its page");
-    reel.play(6.0, 0.25);
-    reel.cut("8-page-collection");
-    reel.still("8-page-collection-end");
-
-    // The message, its lines one after the other.
-    help.set_welcome_page(5);
-    reel.play(3.0, 0.2);
-    reel.still("9-message-lights");
-    reel.play(5.6, 0.2);
-    assert_eq!(help.get_act(), 4);
-    reel.cut("9-message");
-    reel.still("9-message-end");
+    assert!(!help.get_welcome_shown(), "its last key enters the app");
     shell.window.hide().unwrap();
 }

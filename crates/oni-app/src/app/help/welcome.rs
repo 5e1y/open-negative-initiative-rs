@@ -1,17 +1,17 @@
-//! The welcome's stage in the window: its acts on one clock, each picture drawn by the GPU into the texture the
-//! sheet shows, the gifts' places told back so the hand finds them. A check holds the clock and steps it.
+//! The welcome in the window: one screen a gift, each opened before the next, the message last. Its clock moves
+//! the screens and the gift the GPU draws into the texture the sheet shows; a check holds the clock and steps it.
 
-use super::{EDITION, WELCOME_KEY};
+use super::{EDITION, KIT_GIFT, WELCOME_KEY};
 use crate::app::{Ctl, SHELL};
-use crate::stage::direction::{self, Act, Cue, OVERTURE};
-use crate::stage::{Stage, film, unwrap};
-use crate::{Help, StageSpot};
+use crate::stage::direction::{self, Cue};
+use crate::stage::{Stage, glide, unwrap};
+use crate::{Help, StageSpot, StockLine};
 use oni_i18n::tr;
 use slint::winit_030::WinitWindowAccessor;
 use slint::{ComponentHandle, Image, ModelRc, SharedPixelBuffer, Timer, TimerMode, VecModel};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{Receiver, channel};
+use std::sync::mpsc::{Receiver, TryRecvError, channel};
 use std::time::{Duration, Instant};
 
 /// A picture every 8 ms at the most: the pace of a 120 Hz screen.
@@ -23,8 +23,15 @@ const LEAST: f32 = 0.3;
 const SHARE: f32 = 0.7;
 /// How much finer than the window's own pixels the stage may be drawn, each way.
 const FINER: f32 = 1.4;
-/// How fast a gift answers the hand, a share of the way each second.
-const ANSWER: f32 = 9.0;
+/// How long one screen takes to give way to the next, in seconds.
+const TRAVEL: f32 = 0.7;
+/// Where the gifts opened on this computer are kept, so a welcome closed midway resumes where it was.
+pub const PROGRESS_KEY: &str = "welcomeProgress";
+/// The message's screen, after the four gifts'.
+const MESSAGE: i32 = 5;
+/// The stocks the huge gift's demo shoots its photo on, after the photo as the camera saw it: the keys of their
+/// virtual films, in the order of `ui/welcome/film-print-*.jpg` (`scripts/welcome-assets`).
+const STOCKS: [&str; 3] = ["kodak-ektar-100", "fujifilm-velvia-50", "kodak-tri-x-400"];
 
 /// The screen's frame, in seconds: a 60 Hz one where the window's screen tells no rate.
 fn screen_frame(w: &crate::MainWindow) -> f32 {
@@ -32,39 +39,48 @@ fn screen_frame(w: &crate::MainWindow) -> f32 {
     1000.0 / (rate as f32).clamp(30_000.0, 240_000.0)
 }
 
+/// The gift a screen shows, none on the message's.
+fn gift_of(page: i32) -> Option<usize> {
+    (1..=4).contains(&page).then(|| page as usize - 1)
+}
+
+/// The screen `by` from `page`, the Collection's passed over without its gift.
+fn step(page: i32, by: i32) -> i32 {
+    let next = (page + by).clamp(1, MESSAGE);
+    if next == 2 && !KIT_GIFT { (next + by).clamp(1, MESSAGE) } else { next }
+}
+
+/// A screen's place in the scroll, the Collection's taking none without its gift.
+fn slot(page: i32) -> f32 {
+    (if !KIT_GIFT && page > 2 { page - 2 } else { page - 1 }) as f32
+}
+
+/// The gifts opened, as kept for this edition: one bit a gift.
+pub fn progress(kept: Option<&str>) -> u8 {
+    kept.and_then(|k| k.strip_prefix(EDITION)?.strip_prefix(':')?.parse::<u8>().ok()).unwrap_or(0) & 0b1111
+}
+
 /// The stage while the welcome shows.
 pub(in crate::app) struct Playing {
     stage: Option<Stage>,
-    /// The pipeline being built off this thread, so the sheet opens at once.
+    /// The pipeline being built off this thread, so the sheet opens at once; gone, the stage failed.
     building: Option<Receiver<(Stage, f32)>>,
-    /// The seconds this GPU takes over a million pixels of the stage, and the most pixels it draws in a frame.
-    pace: f32,
+    /// The most pixels this GPU draws in a screen's frame.
     most: f32,
     target: Option<wgpu::Texture>,
     revision: i32,
     began: Instant,
     /// A check's clock, in seconds, in place of the time since the welcome opened.
     held: Option<f32>,
-    act: Act,
-    act_began: f32,
-    before: Option<(Act, f32)>,
-    /// The page the act answers, which a turn of the sheet changes under it.
+    /// The screen shown, the one it came from and when it left it.
     page: i32,
-    opened: [bool; 4],
-    hover: [f32; 4],
-    hovered: Option<usize>,
-    pointer: (f32, f32),
-    leaned: (f32, f32),
-    step: usize,
-    step_began: f32,
-    /// A step the person picked holds until they pick another.
-    step_held: bool,
-    compare: Option<f32>,
-    /// The sheet's size, the words' column and the footer's band, in the window's points.
+    from: i32,
+    moved: f32,
+    /// When each gift was opened, on the welcome's clock; one opened on an earlier launch long before.
+    opened: [Option<f32>; 4],
+    /// The sheet's size and its footer's band, in the window's points.
     size: (f32, f32),
-    words: f32,
     foot: f32,
-    last: f32,
     /// Whether the GPU is still drawing the last picture handed to it.
     flying: Arc<AtomicBool>,
     /// Kept so its frames keep coming; dropped with the stage.
@@ -76,116 +92,65 @@ impl Playing {
         self.held.unwrap_or_else(|| self.began.elapsed().as_secs_f32())
     }
 
-    fn enter(&mut self, act: Act, now: f32) {
-        self.before = Some((self.act, now - self.act_began));
-        // The overture ends on the hall as it stands: its words are there already.
-        self.act_began = if self.act == Act::Overture && act == Act::Hall { now - 60.0 } else { now };
-        self.act = act;
-        if let Act::Page(2) = act {
-            (self.step, self.step_began, self.step_held, self.compare) = (0, now, false, None);
-        }
+    fn bits(&self) -> u8 {
+        self.opened.iter().enumerate().fold(0, |bits, (i, o)| bits | (u8::from(o.is_some()) << i))
     }
 
-    /// The act the sheet's page asks for: a gift still wrapped is untied first, unless nothing may move.
-    fn follow(&mut self, page: i32, now: f32, still: bool) {
-        if page == self.page {
+    /// Opens the screen's gift if it is still wrapped; whether it did.
+    fn open(&mut self, now: f32, still: bool) -> bool {
+        let Some(i) = gift_of(self.page).filter(|i| self.opened[*i].is_none()) else { return false };
+        // With nothing moving it lies open at once.
+        self.opened[i] = Some(if still { now - 1000.0 } else { now });
+        true
+    }
+
+    /// Whether the person may go on past this screen: its gift opened and its words come.
+    fn may_go_on(&self, now: f32, still: bool) -> bool {
+        gift_of(self.page).is_some_and(|i| self.opened[i].is_some_and(|o| still || now - o >= unwrap::title(i)))
+    }
+
+    /// Goes `by` screens: back at any time, on only past an opened gift; never while a screen still travels.
+    fn go(&mut self, by: i32, now: f32, still: bool) {
+        if !still && now - self.moved < TRAVEL || by > 0 && !self.may_go_on(now, still) {
             return;
         }
-        self.page = page;
-        let act = match page {
-            1..=4 if self.opened[page as usize - 1] || still => Act::Page(page as usize - 1),
-            1..=4 => Act::Unwrap(page as usize - 1),
-            5 => Act::Message,
-            _ => Act::Hall,
-        };
-        if let Act::Page(i) = act {
-            self.opened[i] = true;
-        }
-        self.enter(act, now);
-    }
-
-    /// The acts that end by themselves, and the film's steps that follow one another.
-    fn advance(&mut self, now: f32) {
-        let t = now - self.act_began;
-        match self.act {
-            Act::Overture if t >= OVERTURE => self.enter(Act::Hall, now),
-            Act::Unwrap(i) if t >= unwrap::length(i) => {
-                self.opened[i] = true;
-                self.enter(Act::Page(i), now);
-            }
-            Act::Page(2) if !self.step_held && now - self.step_began >= film::length(self.step) && self.step + 1 < film::STEPS => {
-                self.step += 1;
-                self.step_began = now;
-            }
-            _ => {}
+        let next = step(self.page, by.signum());
+        if next != self.page {
+            (self.from, self.page, self.moved) = (self.page, next, now);
         }
     }
 
-    fn cue(&mut self, now: f32) -> Cue {
-        let passed = (now - self.last).clamp(0.0, 0.1);
-        self.last = now;
-        let near = 1.0 - (-ANSWER * passed).exp();
-        for (i, h) in self.hover.iter_mut().enumerate() {
-            *h += ((if self.hovered == Some(i) { 1.0 } else { 0.0 }) - *h) * near;
-        }
-        self.leaned = (self.leaned.0 + (self.pointer.0 - self.leaned.0) * near * 0.4, self.leaned.1 + (self.pointer.1 - self.leaned.1) * near * 0.4);
-        let step_t = now - self.step_began;
-        // Over the second stock's print the photo is laid back across half of it for a while, its edge swaying
-        // once; a hand that takes the edge keeps it, until the three prints stand side by side.
-        let (from, until) = film::COMPARE;
-        let laid = crate::stage::glide(((step_t - from) / 1.1).clamp(0.0, 1.0)) * (1.0 - crate::stage::glide(((step_t - until) / 0.6).clamp(0.0, 1.0)));
-        let sway = (step_t - from - 1.1).max(0.0);
-        let printed = self.step == 4 && step_t > film::PRINTED && step_t < film::FINALE - 0.2;
-        let shown = if printed { self.compare.unwrap_or(laid * (0.5 + 0.14 * (sway * 1.6).sin() * (-sway * 0.5).exp())) } else { 0.0 };
-        Cue {
-            act: self.act,
-            t: now - self.act_began,
-            clock: now,
-            aspect: self.size.0 / self.size.1.max(1.0),
-            // The huge gift's page is all stage: its words lie under the film, not beside it.
-            words: if self.act == Act::Page(2) { 0.0 } else { self.words / self.size.1.max(1.0) },
-            foot: self.foot / self.size.1.max(1.0),
-            opened: self.opened,
-            hover: self.hover,
-            pointer: self.leaned,
-            step: self.step,
-            step_t,
-            compare: shown,
-            before: self.before,
-        }
+    /// How far the screens have travelled from the last to this one, 0 to 1.
+    fn travelled(&self, now: f32, still: bool) -> f32 {
+        if still { 1.0 } else { glide(((now - self.moved) / TRAVEL).clamp(0.0, 1.0)) }
+    }
+
+    fn cue(&self, now: f32, still: bool) -> Cue {
+        let p = self.travelled(now, still);
+        // The stage goes dark as one screen leaves and lights the next as it settles.
+        let (page, shown) = if p < 0.5 { (self.from, 1.0 - 2.0 * p) } else { (self.page, 2.0 * p - 1.0) };
+        let gift = gift_of(page);
+        let since = gift.and_then(|i| self.opened[i]).map(|o| now - o);
+        let aspect = self.size.0 / self.size.1.max(1.0);
+        Cue { gift, since, clock: now, aspect, foot: self.foot / self.size.1.max(1.0), shown }
     }
 }
 
 impl Ctl {
     pub(super) fn wire_welcome(me: &std::rc::Rc<Ctl>, help: &Help) {
         let p = me.clone();
-        help.on_welcome_sized(move |width, height, words, foot| p.welcome_set(|play| (play.size, play.words, play.foot) = ((width, height), words, foot)));
+        help.on_welcome_sized(move |width, height, foot| p.welcome_set(|play| (play.size, play.foot) = ((width, height), foot)));
         let p = me.clone();
-        help.on_welcome_pointer(move |x, y| p.welcome_set(|play| play.pointer = (x, y)));
+        help.on_welcome_open(move || p.welcome_open());
         let p = me.clone();
-        help.on_welcome_hover(move |gift| p.welcome_set(|play| play.hovered = usize::try_from(gift).ok()));
-        let p = me.clone();
-        help.on_welcome_hurry(move || p.welcome_hurry());
-        let p = me.clone();
-        help.on_welcome_step(move |step| {
+        help.on_welcome_go(move |by| {
+            let still = p.window().is_some_and(|w| w.global::<crate::Motion>().get_reduced());
             p.welcome_set(|play| {
                 let now = play.now();
-                let last = film::STEPS - 1;
-                if step as usize > last && play.step == last {
-                    // Past the last step, on to its next moment: its print, each other stock, the three together.
-                    let t = now - play.step_began;
-                    let moments = [film::PRINTED + 0.1, film::SECOND + 0.7, film::THIRD + 0.7, film::FINALE + 1.7];
-                    let next = moments.into_iter().find(|m| *m > t + 0.3).unwrap_or(film::FINALE + 1.7);
-                    (play.step_began, play.compare) = (now - next, None);
-                } else {
-                    (play.step, play.step_began, play.step_held, play.compare) = (step.clamp(0, last as i32) as usize, now, true, None);
-                }
+                play.go(by, now, still);
             });
-            // Told to the sheet at once: its keys read the step they act on.
             p.welcome_frame();
         });
-        let p = me.clone();
-        help.on_welcome_compare(move |share| p.welcome_set(|play| play.compare = Some(share)));
     }
 
     fn welcome_set(&self, set: impl FnOnce(&mut Playing)) {
@@ -194,31 +159,59 @@ impl Ctl {
         }
     }
 
+    /// The screen's gift opened, and kept opened for a launch after this one.
+    fn welcome_open(&self) {
+        let still = self.window().is_some_and(|w| w.global::<crate::Motion>().get_reduced());
+        let kept = {
+            let mut s = self.state.borrow_mut();
+            let opened = s.help.welcome.as_mut().and_then(|play| {
+                let now = play.now();
+                play.open(now, still).then(|| play.bits())
+            });
+            opened.map(|bits| s.preferences.set(PROGRESS_KEY, format!("{EDITION}:{bits}").into()))
+        };
+        if let Some(Err(e)) = kept {
+            crate::timing::line(&format!("welcome: the opened gifts cannot be kept: {e}"));
+        }
+        self.welcome_frame();
+    }
+
     /// `WelcomeSheet.isDue`: this release's sheet not yet shown on this computer.
     pub fn welcome_due(&self) -> bool {
         super::welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }
 
-    /// The welcome from its overture, every gift wrapped again; whether a window shows it.
+    /// The huge gift's demo: the photo as the camera saw it, then the films it is shot on, as the picker shows them.
+    fn film_cells() -> Vec<StockLine> {
+        let all = oni_settings::film::stocks();
+        let cell = |index: usize, key: &str, name: String| {
+            let artwork = all.iter().find(|k| k.film.is_some_and(|f| f.key() == key)).and_then(|k| crate::stocks::icon(k.id));
+            StockLine { index: index as i32, name: name.into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false }
+        };
+        let camera = cell(0, oni_settings::VirtualStock::NEUTRAL.key(), tr("Your camera").to_string());
+        std::iter::once(camera).chain(STOCKS.iter().enumerate().map(|(i, key)| cell(i + 1, key, oni_settings::VirtualStock::of(key).name().to_string()))).collect()
+    }
+
+    /// The welcome on its first gift still wrapped, the gifts opened on an earlier launch left open; whether a
+    /// window shows it.
     pub(in crate::app) fn open_welcome(&self) -> bool {
         let Some(w) = self.window() else { return false };
         let h = w.global::<Help>();
         h.set_year(oni_library::wrapped::today().0.to_string().into());
-        let stocks: Vec<slint::SharedString> = film::STOCKS.iter().map(|key| oni_settings::VirtualStock::of(key).name().into()).collect();
-        h.set_film_stocks(ModelRc::new(VecModel::from(stocks)));
+        h.set_film_cells(ModelRc::new(VecModel::from(Ctl::film_cells())));
         h.set_film_count(oni_settings::VirtualStock::sheets().len() as i32);
-        h.set_welcome_unwrapped(0);
-        h.set_welcome_page(0);
-        let still = w.global::<crate::Motion>().get_reduced();
+        let bits = progress(self.state.borrow().preferences.string(PROGRESS_KEY));
+        let opened: [Option<f32>; 4] = std::array::from_fn(|i| (bits & (1 << i) != 0 || i == 1 && !KIT_GIFT).then_some(-1000.0));
+        let page = (1..MESSAGE).find(|p| gift_of(*p).is_some_and(|i| opened[i].is_none())).unwrap_or(MESSAGE);
         let (sender, building) = channel();
         {
             let mut s = self.state.borrow_mut();
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());
-            // Its shader compiles off this thread: the sheet and its keys are there at once.
+            // Its shader compiles off this thread: the sheet is there at once, each gift a still until it lands;
+            // a stage that fails on this GPU drops its end, and the stills stay.
             let _ = std::thread::Builder::new().name("stage".into()).spawn(move || {
-                let mut stage = Stage::new(&device, &queue);
+                let mut stage = Stage::new(&device);
                 let pace = stage.pace(&device, &queue);
-                // A welcome closed meanwhile has dropped its end: the stage goes with this thread.
                 let _ = sender.send((stage, pace));
             });
             let timer = Timer::default();
@@ -230,41 +223,31 @@ impl Ctl {
             s.help.welcome = Some(Playing {
                 stage: None,
                 building: Some(building),
-                pace: 0.0,
                 most: BUDGET,
                 target: None,
                 revision: 0,
                 began: Instant::now(),
                 held: None,
-                act: if still { Act::Hall } else { Act::Overture },
-                act_began: 0.0,
-                before: None,
-                page: 0,
-                opened: [false; 4],
-                hover: [0.0; 4],
-                hovered: None,
-                pointer: (0.0, 0.0),
-                leaned: (0.0, 0.0),
-                step: 0,
-                step_began: 0.0,
-                step_held: false,
-                compare: None,
+                page,
+                from: page,
+                moved: -10.0,
+                opened,
                 size: (0.0, 0.0),
-                words: 0.0,
                 foot: 0.0,
-                last: 0.0,
                 flying: Arc::new(AtomicBool::new(false)),
                 _timer: timer,
             });
         }
-        h.set_act(if still { 1 } else { 0 });
-        h.set_act_time(0.0);
+        h.set_welcome_unwrapped(i32::from(bits));
+        h.set_welcome_page(page);
+        h.set_scroll(slot(page));
         h.set_stage(Image::default());
+        h.set_stage_live(false);
         h.set_welcome_shown(true);
         true
     }
 
-    /// However it closes, it is not shown again on the next launch; its stage and its clock go with it.
+    /// From its last key alone: not shown again on the next launch; its stage and its clock go with it.
     pub(super) fn welcome_closed(&self) {
         let Some(w) = self.window() else { return };
         if !w.global::<Help>().get_welcome_shown() {
@@ -283,25 +266,13 @@ impl Ctl {
         self.launch_sheet_after(Some(crate::app::shell::LaunchSheet::Welcome));
     }
 
-    /// A scene that plays by itself brought to its end: the overture to the hall, an untying to its page.
-    fn welcome_hurry(&self) {
-        self.welcome_set(|play| {
-            let now = play.now();
-            match play.act {
-                Act::Overture => play.act_began = now - OVERTURE,
-                Act::Unwrap(i) => play.act_began = now - unwrap::length(i),
-                _ => {}
-            }
-        });
-    }
-
     /// A check's clock: the welcome at `seconds` since it opened, drawn; none gives the clock back to time.
     pub fn welcome_hold(&self, seconds: Option<f32>) {
         self.welcome_set(|play| play.held = seconds);
         self.welcome_frame();
     }
 
-    /// One picture: the act the page asks, its moment on the clock, drawn and told to the sheet.
+    /// One picture: the screens where the clock has them, the gift drawn and told to the sheet.
     pub(in crate::app) fn welcome_frame(&self) {
         let Some(w) = self.window() else { return };
         let help = w.global::<Help>();
@@ -312,20 +283,24 @@ impl Ctl {
         if play.size.0 < 1.0 || play.size.1 < 1.0 {
             return;
         }
-        if let Some((built, pace)) = play.building.as_ref().and_then(|b| b.try_recv().ok()) {
-            let most = (SHARE * screen_frame(&w) / pace.max(1e-6) * 1e6).clamp(LEAST * BUDGET, BUDGET);
-            (play.stage, play.building, play.pace, play.most) = (Some(built), None, pace, most);
-            crate::timing::line(&format!("welcome: the stage draws a million pixels in {:.1} ms, {:.1} of them a picture", pace * 1000.0, most / 1e6));
+        match play.building.as_ref().map(Receiver::try_recv) {
+            Some(Ok((built, pace))) => {
+                play.most = (SHARE * screen_frame(&w) / pace.max(1e-6) * 1e6).clamp(LEAST * BUDGET, BUDGET);
+                (play.stage, play.building) = (Some(built), None);
+                crate::timing::line(&format!("welcome: the stage draws a million pixels in {:.1} ms, {:.1} of them a picture", pace * 1000.0, play.most / 1e6));
+            }
+            Some(Err(TryRecvError::Disconnected)) => {
+                play.building = None;
+                crate::timing::line("welcome: the stage cannot be drawn on this GPU; its gifts are shown as stills");
+            }
+            _ => {}
         }
         let now = play.now();
-        play.follow(help.get_welcome_page(), now, still);
-        play.advance(now);
-        let cue = play.cue(now);
+        let cue = play.cue(now, still);
         let frame = direction::frame(&cue);
         // One picture in flight: the next waits until the GPU has finished the last, so none queues behind it.
         let _ = state.gpu.device.poll(wgpu::PollType::Poll);
         let free = !play.flying.load(Ordering::Acquire);
-        // The picture at the window's own pixels, fewer past the budget or past what this GPU draws in a frame.
         // A screen of few pixels is drawn finer than it shows, as far as the budget goes: its edges come out smooth.
         let fit = (play.most / (play.size.0 * play.size.1 * scale * scale)).sqrt().min(FINER) * scale;
         let size = ((play.size.0 * fit).round().max(8.0) as u32, (play.size.1 * fit).round().max(8.0) as u32);
@@ -353,43 +328,17 @@ impl Ctl {
             play.revision = play.revision.wrapping_add(1);
             help.set_stage_revision(play.revision);
         }
-        let (kind, gift) = match cue.act {
-            Act::Overture => (0, 0),
-            Act::Hall => (1, 0),
-            Act::Unwrap(i) => (2, i),
-            Act::Page(i) => (3, i),
-            Act::Message => (4, 0),
-        };
-        help.set_act(kind);
-        help.set_act_gift(gift as i32);
-        help.set_act_time(cue.t);
-        help.set_film_step(cue.step as i32);
-        help.set_film_time(cue.step_t);
-        help.set_film_printed(cue.step == 4 && cue.step_t > film::PRINTED);
-        help.set_film_ended(if cue.step == 4 { cue.step_t - film::FINALE } else { -1.0 });
-        help.set_hovered(play.hovered.map_or(-1, |i| i as i32));
-        help.set_film_show(frame.show[0]);
-        help.set_film_compare(cue.compare);
-        if let Act::Unwrap(i) = cue.act {
-            help.set_act_cue(unwrap::title(i));
-            help.set_act_length(unwrap::length(i));
-        }
-        if let Act::Page(i) = cue.act {
-            let (x, y) = direction::mouth_spot(&frame, cue.aspect, i);
-            help.set_mouth(StageSpot { x: x * play.size.0, y: y * play.size.1, width: 0.0, height: 0.0 });
-        }
-        if let Act::Unwrap(i) | Act::Page(i) = cue.act {
-            let bit = 1 << i;
-            if help.get_welcome_unwrapped() & bit == 0 {
-                help.set_welcome_unwrapped(help.get_welcome_unwrapped() | bit);
-            }
-        }
-        let spot = |s: [f32; 4]| StageSpot { x: s[0] * play.size.0, y: s[1] * play.size.1, width: s[2] * play.size.0, height: s[3] * play.size.1 };
-        if kind <= 1 {
-            let spots: Vec<StageSpot> = (0..4).map(|i| spot(direction::gift_spot(&frame, cue.aspect, i))).collect();
-            help.set_spots(ModelRc::new(VecModel::from(spots)));
-        }
-        // The print's own place, once it has come forward: its captions and the hand's drag lie on it.
-        help.set_plate_spot(direction::plate_spot(&frame, cue.aspect).filter(|_| cue.step == 4 && cue.step_t > film::PRINTED && cue.step_t < film::FINALE).map_or_else(StageSpot::default, spot));
+        help.set_stage_live(play.stage.is_some());
+        help.set_welcome_page(play.page);
+        help.set_welcome_unwrapped(i32::from(play.bits()));
+        help.set_scroll(slot(play.from) + (slot(play.page) - slot(play.from)) * play.travelled(now, still));
+        help.set_stage_shown(cue.shown);
+        help.set_gift_shown(cue.gift.map_or(-1, |i| i as i32));
+        let since = gift_of(play.page).and_then(|i| play.opened[i]).map_or(-1.0, |o| (now - o).max(0.0));
+        help.set_opened_time(since);
+        help.set_words_at(gift_of(play.page).map_or(0.0, |i| if still { 0.0 } else { unwrap::title(i) }));
+        help.set_may_go_on(play.may_go_on(now, still));
+        let spot = direction::gift_spot(&frame, cue.aspect).unwrap_or_default();
+        help.set_gift_spot(StageSpot { x: spot[0] * play.size.0, y: spot[1] * play.size.1, width: spot[2] * play.size.0, height: spot[3] * play.size.1 });
     }
 }

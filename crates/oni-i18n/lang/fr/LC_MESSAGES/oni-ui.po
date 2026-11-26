@@ -455,7 +455,7 @@ msgstr "The Lens DB"
 msgid "THE LENS DB"
 msgstr "THE LENS DB"
 
-#: crates/oni-ui/ui/ds/tldb.slint crates/oni-ui/ui/welcome.slint
+#: crates/oni-ui/ui/ds/tldb.slint
 msgid "ONI"
 msgstr "ONI"
 
@@ -550,6 +550,10 @@ msgstr "Votre année"
 #: crates/oni-app/src/wrapped.rs crates/oni-ui/ui/ds/welcome_mystery.slint
 msgid "On Film"
 msgstr "En argentique"
+
+#: crates/oni-ui/ui/ds/welcome_stage.slint
+msgid "Screen {} of {}"
+msgstr "Écran {} sur {}"
 
 #: crates/oni-ui/ui/ds/wrapped.slint
 msgid "Save card {}"
@@ -2259,7 +2263,7 @@ msgstr "Masquer"
 msgid "Show How"
 msgstr "Montrer comment"
 
-#: crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/wrapped.slint
+#: crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/welcome.slint crates/oni-ui/ui/wrapped.slint
 msgid "Back"
 msgstr "Retour"
 
@@ -2684,66 +2688,6 @@ msgid "Export ({})"
 msgstr "Exporter ({})"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Your photo"
-msgstr "Votre photo"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Exposed"
-msgstr "Exposée"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Developed"
-msgstr "Développée"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Scanned"
-msgstr "Scannée"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Inverted"
-msgstr "Inversée"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "The light your camera recorded, nothing added."
-msgstr "La lumière que votre appareil a enregistrée, rien de plus."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "ONI shoots it again on a film rebuilt from its maker's data sheet: {}."
-msgstr "ONI la photographie à nouveau sur une pellicule reconstruite d'après la fiche technique de son fabricant : {}."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "The picture comes up on the film itself, with its grain and its halation."
-msgstr "L'image monte sur la pellicule elle-même, avec son grain et son halo."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "A virtual scanner reads the negative through its orange mask, as you would scan a real roll."
-msgstr "Un scanner virtuel lit le négatif à travers son masque orange, comme vous scanneriez une vraie pellicule."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "ONI inverts it with the tools that invert your own negatives."
-msgstr "ONI l'inverse avec les outils qui inversent vos propres négatifs."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your camera"
-msgstr "Votre appareil"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Drag across the print to bring your camera's photo back."
-msgstr "Faites glisser sur le tirage pour retrouver la photo de votre appareil."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "One photo, {} films to shoot it on."
-msgstr "Une photo, {} pellicules pour la refaire."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your photo, on any film."
-msgstr "Votre photo, sur n'importe quelle pellicule."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "{} films wait in the editor's Film panel. A new photo opens on the neutral one, just as your camera saw it."
-msgstr "{} pellicules vous attendent dans le panneau Pellicule de l'éditeur. Une nouvelle photo s'ouvre sur la neutre, telle que votre appareil l'a vue."
-
-#: crates/oni-ui/ui/welcome.slint
 msgid "A small gift"
 msgstr "Un petit cadeau"
 
@@ -2760,128 +2704,28 @@ msgid "The mystery gift"
 msgstr "Le cadeau mystère"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Something moves"
-msgstr "Quelque chose bouge"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Something for your gear"
-msgstr "Quelque chose pour votre matériel"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Something for your digital photos"
-msgstr "Quelque chose pour vos photos numériques"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Something about your year"
-msgstr "Quelque chose sur votre année"
+msgid "Click it or press Return to unwrap it."
+msgstr "Cliquez dessus ou appuyez sur Entrée pour le déballer."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "A livelier interface"
 msgstr "Une interface plus vivante"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "The Collection"
-msgstr "La Collection"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Digital photos on real film"
-msgstr "Le numérique sur vraie pellicule"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your year on film"
-msgstr "Votre année sur pellicule"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "The Collection, with The Lens DB"
-msgstr "La Collection, avec The Lens DB"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your digital photos, on real film"
-msgstr "Vos photos numériques, sur vraie pellicule"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Open the First Gift"
-msgstr "Ouvrir le premier cadeau"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Open the Second Gift"
-msgstr "Ouvrir le deuxième cadeau"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Open the Huge Gift"
-msgstr "Ouvrir l'énorme cadeau"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Open the Mystery Gift"
-msgstr "Ouvrir le cadeau mystère"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Read the Message"
-msgstr "Lire le message"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "is out. Unpack your gifts for 2027."
-msgstr "est sorti. Déballez vos cadeaux pour 2027."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Click a gift to open it."
-msgstr "Cliquez sur un cadeau pour l'ouvrir."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Opened"
-msgstr "Ouvert"
-
-#: crates/oni-ui/ui/welcome.slint
 msgid "ONI now moves the way you look at your photos: every change of place is shown, never jumped."
 msgstr "ONI bouge désormais comme votre regard : chaque changement de place se voit, rien ne saute."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "The photo comes to you"
-msgstr "La photo vient à vous"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "It lifts off the gallery and grows into the editor, while the roll's photos rise into the column beside it."
-msgstr "Elle se soulève de la galerie et grandit jusqu'à l'éditeur, pendant que les photos de la pellicule montent dans la colonne à côté."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "From edit to export, in one move"
-msgstr "De l'édition à l'export, d'un seul geste"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "The editor turns into the export, and every sheet arrives with a motion of its own."
-msgstr "L'éditeur se change en export, et chaque fenêtre arrive avec son propre mouvement."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Quick, never in the way"
-msgstr "Rapide, jamais encombrant"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Each move is short and weighted, so the app feels faster, not slower. Your tools stay where they were."
 msgstr "Chaque mouvement est court et pesé : l'app paraît plus rapide, pas plus lente. Vos outils restent à leur place."
 
 #: crates/oni-ui/ui/welcome.slint
+msgid "The Collection, with The Lens DB"
+msgstr "La Collection, avec The Lens DB"
+
+#: crates/oni-ui/ui/welcome.slint
 msgid "ONI partners with The Lens DB, a catalogue of camera bodies and lenses."
 msgstr "ONI s'associe à The Lens DB, un catalogue de boîtiers et d'objectifs."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your gear in one place"
-msgstr "Votre matériel au même endroit"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Connect your account on The Lens DB, then search its catalogue and add your bodies and lenses: your Kit shows in the archive whenever nothing is picked."
-msgstr "Connectez votre compte The Lens DB, puis cherchez dans son catalogue et ajoutez vos boîtiers et objectifs : votre kit s'affiche dans l'archive dès que rien n'est sélectionné."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "EXIF filled with ease"
-msgstr "Des EXIF remplis sans effort"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your camera and lens fill your exports' metadata, maker and lens specification included."
-msgstr "Votre boîtier et votre objectif remplissent les métadonnées de vos exports, marque et caractéristiques de l'objectif comprises."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Free, and private"
-msgstr "Gratuit, et privé"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Two independent projects, no ads. The Lens DB sees your list of gear, never your photos."
@@ -2890,6 +2734,22 @@ msgstr "Deux projets indépendants, sans publicité. The Lens DB voit la liste d
 #: crates/oni-ui/ui/welcome.slint
 msgid "Connected as {}"
 msgstr "Connecté en tant que {}"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your digital photos, on film"
+msgstr "Vos photos numériques, sur pellicule"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would."
+msgstr "ONI photographie à nouveau une photo numérique sur une pellicule reconstruite d'après la fiche technique de son fabricant, la développe, la scanne et l'inverse, comme un laboratoire."
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "{} films wait in the editor's Film panel. A new photo opens untouched, just as your camera saw it."
+msgstr "{} pellicules vous attendent dans le panneau Pellicule de l'éditeur. Une nouvelle photo s'ouvre intacte, telle que votre appareil l'a vue."
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your year on film"
+msgstr "Votre année sur pellicule"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "ONI Wrapped, rebuilt from scratch: your rolls, your films, your favourite frames and the time you spent with them, told in one go."
@@ -2936,36 +2796,24 @@ msgid "Enter the Contest"
 msgstr "Participer au concours"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "This welcome stays in the Help menu, under What's New."
-msgstr "Cet accueil reste dans le menu Aide, sous Nouveautés."
-
-#: crates/oni-ui/ui/welcome.slint
 msgid "Every month, the community's top five; the winning photo opens the next version of ONI for everyone, with its author's name. Anyone can enter, with a photo where no one is recognisable. One step, the form; {} to share."
 msgstr "Chaque mois, le top 5 de la communauté ; la photo gagnante ouvre la version suivante d'ONI pour tout le monde, avec le nom de son auteur. Tout le monde peut participer, avec une photo où personne n'est reconnaissable. Une seule étape, le formulaire ; {} pour partager."
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "This welcome stays in the Help menu, under What's New."
+msgstr "Cet accueil reste dans le menu Aide, sous Nouveautés."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Enter ONI"
 msgstr "Entrer dans ONI"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "All Gifts"
-msgstr "Tous les cadeaux"
+msgid "Unwrap"
+msgstr "Déballer"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Skip the Opening"
-msgstr "Passer l'ouverture"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Open It Now"
-msgstr "Ouvrir tout de suite"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Next Film"
-msgstr "Pellicule suivante"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Next Step"
-msgstr "Étape suivante"
+msgid "Read the Message"
+msgstr "Lire le message"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Next Gift"
@@ -3532,6 +3380,10 @@ msgid "Crop pasted on one photo."
 msgid_plural "Crop pasted on {n} photos of the roll."
 msgstr[0] "Recadrage collé sur une photo."
 msgstr[1] "Recadrage collé sur {n} photos de la pellicule."
+
+#: crates/oni-app/src/app/help/welcome.rs
+msgid "Your camera"
+msgstr "Votre appareil"
 
 #: crates/oni-app/src/app/help/welcome.rs
 msgid "The welcome cannot be marked seen: {error}"

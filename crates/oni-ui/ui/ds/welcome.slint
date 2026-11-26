@@ -16,11 +16,11 @@ export global WelcomeStyle {
     out property <color> dot-hover: Colour.ink.with-alpha(0.7);
     // A dot's touch, the hand's least target around a dot drawn small.
     out property <length> dot-reach: DS.control-grab-size;
-    // The release's headline, in the Wrapped's serif: the one moment the app speaks louder than its tools.
-    out property <string> headline-family: DS.typo-wrapped-title-family;
-    out property <length> headline: 40px;
+    // The release's titles, in the display face: the one moment the app speaks louder than its tools.
+    out property <string> headline-family: Type.display;
+    out property <length> headline: 34px;
     out property <length> quote: 28px;
-    out property <int> headline-weight: DS.typo-wrapped-title-weight;
+    out property <int> headline-weight: Type.display-weight;
     out property <color> headline-ink: Colour.selected;
 }
 
@@ -30,7 +30,7 @@ export component SceneFrame inherits Rectangle {
     clip: true;
 }
 
-// A line in the release's serif: the hall's headline, a page's title, the message's quote.
+// A title in the display face: a screen's, the message's.
 export component Headline inherits Text {
     in property <bool> quiet;
     font-family: WelcomeStyle.headline-family;

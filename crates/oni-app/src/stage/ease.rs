@@ -24,7 +24,3 @@ pub fn give(p: f32) -> f32 {
 pub fn mix(a: f32, b: f32, p: f32) -> f32 {
     a + (b - a) * p
 }
-
-pub fn mix3(a: [f32; 3], b: [f32; 3], p: f32) -> [f32; 3] {
-    [mix(a[0], b[0], p), mix(a[1], b[1], p), mix(a[2], b[2], p)]
-}

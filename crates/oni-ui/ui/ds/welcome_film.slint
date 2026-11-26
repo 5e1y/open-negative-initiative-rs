@@ -1,0 +1,65 @@
+// The huge gift's demo: one digital photo, the picker's own cells under it; the hand picks a film, then the
+// next, and the photo becomes what the app renders on each (`scripts/welcome-assets` makes those pictures).
+import { Space } from "theme.slint";
+import { StageStyle } from "welcome_stage.slint";
+import { Curves, Arrow } from "welcome.slint";
+import { StockCellView, StockLine } from "stocks.slint";
+
+// When the hand picks each cell, in seconds into the loop: a film, the next, the last, then the camera again.
+global FilmBeats {
+    out property <[float]> picks: [2.0, 4.9, 7.8, 10.6];
+    out property <[int]> cells: [1, 2, 3, 0];
+    out property <float> loop: 12.0;
+    out property <float> reach: 0.8;
+    out property <float> fade: 0.45;
+}
+
+export component FilmDemo inherits Rectangle {
+    in property <[StockLine]> cells;
+    // Seconds into the demo, below 0 before it starts; it plays in a loop.
+    in property <float> t;
+    property <[image]> pictures: [
+        @image-url("../welcome/film-photo.jpg"), @image-url("../welcome/film-print-1.jpg"),
+        @image-url("../welcome/film-print-2.jpg"), @image-url("../welcome/film-print-3.jpg"),
+    ];
+    property <float> at: Math.mod(max(0, root.t), FilmBeats.loop);
+    // The last pick made by `at`, its cell, and the cell before it.
+    property <int> made: root.at < FilmBeats.picks[0] ? -1 : root.at < FilmBeats.picks[1] ? 0 : root.at < FilmBeats.picks[2] ? 1 : root.at < FilmBeats.picks[3] ? 2 : 3;
+    property <int> picked: root.made < 0 ? 0 : FilmBeats.cells[root.made];
+    property <int> before: root.made <= 0 ? 0 : FilmBeats.cells[root.made - 1];
+    property <float> fading: root.made < 0 ? 1 : Curves.glide(max(0, min(1, (root.at - FilmBeats.picks[root.made]) / FilmBeats.fade)));
+    // The next pick the hand goes to, and how far along it is.
+    property <int> next: root.made + 1 > 3 ? 0 : root.made + 1;
+    property <float> going: root.made + 1 > 3 ? 0 : Curves.glide(max(0, min(1, (root.at - FilmBeats.picks[root.next] + FilmBeats.reach + 0.1) / FilmBeats.reach)));
+    property <length> cell-width: row.width / 4;
+    function cell-x(cell: int) -> length { row.x + (cell + 0.5) * root.cell-width }
+    property <length> rest-x: root.cell-x(root.picked) + root.cell-width * 0.2;
+    property <length> aim-x: root.cell-x(root.made + 1 > 3 ? root.picked : FilmBeats.cells[root.next]);
+    picture := Rectangle {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: parent.width * StageStyle.picture-shape;
+        clip: true;
+        Image { width: parent.width; height: parent.height; source: root.pictures[root.before]; image-fit: cover; }
+        Image { width: parent.width; height: parent.height; source: root.pictures[root.picked]; image-fit: cover; opacity: root.fading; }
+    }
+    row := HorizontalLayout {
+        x: Space.m;
+        y: picture.height + Space.m;
+        width: parent.width - 2 * Space.m;
+        height: self.preferred-height;
+        for cell[i] in root.cells: StockCellView {
+            width: root.cell-width;
+            artwork: cell.artwork;
+            has-artwork: cell.has-artwork;
+            name: cell.name;
+            picked: i == root.picked;
+        }
+    }
+    // The hand: from the cell it picked to the next, a press as it arrives.
+    Arrow {
+        x: root.rest-x + (root.aim-x - root.rest-x) * root.going;
+        y: row.y + row.height * 0.35;
+    }
+}

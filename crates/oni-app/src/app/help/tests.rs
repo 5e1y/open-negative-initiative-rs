@@ -126,3 +126,13 @@ fn a_first_read_of_a_long_log_starts_near_its_end_on_a_whole_line() {
     assert_eq!(100 - start % 100, 76);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_gifts_opened_are_kept_for_this_edition_alone() {
+    use super::welcome::progress;
+    assert_eq!(progress(Some(&format!("{EDITION}:5"))), 0b0101, "the first and third gifts opened");
+    assert_eq!(progress(None), 0, "nothing opened on a first launch");
+    // Twin: another edition's gifts, or a value no build wrote, open nothing here.
+    assert_eq!(progress(Some("1.9:15")), 0);
+    assert_eq!(progress(Some(&format!("{EDITION}:x"))), 0);
+}

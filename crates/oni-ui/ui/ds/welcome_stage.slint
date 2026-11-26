@@ -1,55 +1,49 @@
-// The welcome's stage as the window lays it: the picture the GPU draws of the gifts, the type that arrives over
-// it, each gift's place under the hand, and the card a page's scene rises on.
+// The welcome's stage as the window lays it: the gift the GPU draws or its still, the words beside it, the frame
+// a screen's demo plays in, and the rail that says which screen shows. Plain type, no colour but the content's.
 import { Colour, Space, Radius, Type } from "theme.slint";
-import { Label } from "base.slint";
+import { Label, TextRole, Tone } from "base.slint";
 import { WelcomeStyle, Curves } from "welcome.slint";
 
 // A place on the stage, in the window's points.
 export struct StageSpot { x: length, y: length, width: length, height: length }
 
 export global StageStyle {
-    // The release's wordmark: alone on black this share of the window's height, at most `giant`; over the gifts
-    // it stands at `mark`.
-    out property <length> giant: 240px;
-    out property <float> giant-share: 0.28;
-    out property <length> mark: 112px;
-    out property <float> mark-share: 0.125;
-    // A gift's name as its light comes out, and the message's quote.
-    out property <length> title: 76px;
-    out property <float> title-share: 0.088;
-    out property <length> quote: 46px;
-    out property <float> quote-share: 0.054;
-    // The huge gift's step under its film, and the line its page ends on.
-    out property <length> step: 44px;
-    out property <float> step-share: 0.05;
-    out property <length> count: 96px;
-    out property <float> count-share: 0.108;
-    // A step's name in the rail under the film, while another plays.
-    out property <color> rail: Colour.selected.with-alpha(0.45);
-    // How far a line rises as it arrives.
-    out property <length> rise: 28px;
+    // The message's two lines, and a screen's title.
+    out property <length> title: 64px;
+    out property <float> title-share: 0.075;
+    out property <length> heading: 40px;
+    out property <float> heading-share: 0.052;
+    // How far words rise as they arrive.
+    out property <length> rise: 18px;
     out property <color> ink: Colour.selected;
-    out property <color> ink-soft: Colour.selected.with-alpha(0.8);
+    out property <color> ink-soft: Colour.selected.with-alpha(0.72);
+    out property <color> ink-faint: Colour.selected.with-alpha(0.45);
     out property <color> ground: Colour.black;
-    // Each gift's metal, as type: silver, copper, gold and the foil's violet, each pale enough to read as light.
-    out property <[color]> metals: [#e3e6ee, #f0bd9c, #f3e2b3, #d5cbff];
     // The words read over the stage: a size up from the interface's, for a column read from further back.
     out property <length> body: 15px;
     out property <length> lead: 17px;
-    out property <length> tag: 15px;
-    out property <color> tag-ink: Colour.selected.with-alpha(0.82);
-    // A page's scene, on its card over the opened box: its width at most, its height over its width, its top.
-    out property <length> card-width: 900px;
-    out property <float> card-shape: 0.6;
-    out property <float> card-top: 0.06;
-    out property <color> card-edge: #ffffff1f;
-    out property <color> card-ground: Colour.canvas;
-    out property <length> card-fade: 56px;
-    // A caption over the film's print, and the grip of the edge a hand drags across it.
-    out property <color> chip: #000000a6;
-    out property <length> grip: 30px;
-    out property <color> grip-ground: Colour.selected;
-    out property <color> grip-ink: Colour.black;
+    // The middle column the gift stands in, as a share of the window's height, and the gap about it.
+    out property <float> gift-share: 0.44;
+    out property <length> gap: 56px;
+    // A demo's frame, its picture's shape, and the edge that holds it on black.
+    out property <color> frame-ground: Colour.canvas;
+    out property <color> frame-edge: #ffffff1f;
+    out property <float> picture-shape: 0.6667;
+    // The room under a demo's picture for a row of the picker's cells.
+    out property <length> demo-cells: 112px;
+    // How far the wheel or the trackpad must move before a screen gives way.
+    out property <length> wheel: 4px;
+    // The rail of screens at the window's right edge.
+    out property <length> rail: 3px;
+    out property <length> rail-long: 18px;
+    out property <length> rail-short: 8px;
+    // Each gift's still, wrapped then opened, where the stage is not drawn (`scripts/welcome-assets`).
+    out property <[image]> stills: [
+        @image-url("../welcome/gift-0-closed.jpg"), @image-url("../welcome/gift-0-opened.jpg"),
+        @image-url("../welcome/gift-1-closed.jpg"), @image-url("../welcome/gift-1-opened.jpg"),
+        @image-url("../welcome/gift-2-closed.jpg"), @image-url("../welcome/gift-2-opened.jpg"),
+        @image-url("../welcome/gift-3-closed.jpg"), @image-url("../welcome/gift-3-opened.jpg"),
+    ];
 }
 
 // How far a beat has come: 0 before `from` seconds, 1 once `length` more have passed, landing as a weight.
@@ -58,29 +52,40 @@ export global Beat {
     public pure function glide(t: float, from: float, length: float) -> float { Curves.glide(max(0, min(1, (t - from) / length))) }
 }
 
-// The picture of the stage, over black until the first one lands.
+// The gift on the stage: the GPU's picture, or the gift's still while that is not drawn.
 export component StagePicture inherits Rectangle {
     in property <image> source;
     // Bumped when the texture behind `source` is drawn again in place, which changes no property.
     in property <int> revision;
+    in property <bool> live;
+    // The gift whose still stands in (-1 none), whether it is opened, and how much of it shows.
+    in property <int> gift: -1;
+    in property <bool> opened;
+    in property <float> shown: 1;
     background: StageStyle.ground;
-    Image {
+    if root.live: Image {
         width: parent.width;
         height: parent.height;
         source: root.source;
         image-fit: root.revision < 0 ? ImageFit.contain : ImageFit.fill;
     }
+    if !root.live && root.gift >= 0: Image {
+        width: parent.width;
+        height: parent.height;
+        source: StageStyle.stills[root.gift * 2 + (root.opened ? 1 : 0)];
+        image-fit: contain;
+        opacity: root.shown;
+    }
 }
 
-// A line of the release's serif arriving over the stage: it rises into place, set from the start as it will
-// stand, so nothing in it moves but the line. `plain` sets it in the interface's face, whose figures stand level.
+// A line of the display face, set as it will stand from the start: it rises into place, nothing else moves.
 export component StageLine inherits Rectangle {
     in property <string> text;
     // 0 away to 1 in place.
     in property <float> shown: 1;
     in property <length> size: StageStyle.title;
+    in property <bool> centred: true;
     in property <color> tint: StageStyle.ink;
-    in property <bool> plain;
     min-height: line.preferred-height;
     preferred-height: line.preferred-height;
     visible: root.shown > 0;
@@ -92,33 +97,12 @@ export component StageLine inherits Rectangle {
         width: parent.width;
         text: root.text;
         opacity: root.shown;
-        font-family: root.plain ? Type.family : WelcomeStyle.headline-family;
-        font-weight: root.plain ? Type.strong : WelcomeStyle.headline-weight;
+        font-family: WelcomeStyle.headline-family;
+        font-weight: WelcomeStyle.headline-weight;
         font-size: root.size;
         color: root.tint;
-        horizontal-alignment: center;
+        horizontal-alignment: root.centred ? center : left;
         wrap: word-wrap;
-    }
-}
-
-// The release's wordmark: its name in the serif, its number beside it in the interface's face, whose figures
-// stand level with the capitals.
-export component StageMark inherits Rectangle {
-    in property <string> name;
-    in property <string> number;
-    in property <float> shown: 1;
-    in property <length> size: StageStyle.giant;
-    height: self.size * 1.25;
-    visible: root.shown > 0;
-    accessible-role: AccessibleRole.text;
-    accessible-label: root.name + " " + root.number;
-    HorizontalLayout {
-        y: (1 - root.shown) * StageStyle.rise;
-        alignment: center;
-        spacing: root.size * 0.24;
-        opacity: root.shown;
-        Text { accessible-role: none; text: root.name; font-family: WelcomeStyle.headline-family; font-weight: WelcomeStyle.headline-weight; font-size: root.size; color: StageStyle.ink; vertical-alignment: center; }
-        Text { accessible-role: none; text: root.number; font-family: Type.family; font-weight: Type.regular; font-size: root.size * 0.92; color: StageStyle.ink; vertical-alignment: center; }
     }
 }
 
@@ -130,96 +114,7 @@ export component StageNote inherits Label {
     centred: true;
 }
 
-// A gift under the hand: its place on the stage takes the click; its tag says its size, the hand on it a hint
-// of what it holds, and once opened its name.
-export component GiftSpot inherits Rectangle {
-    in property <StageSpot> spot;
-    in property <string> tag;
-    in property <string> hint;
-    in property <string> name;
-    in property <string> done;
-    in property <bool> opened;
-    // Whether the hand is on it, as the stage that lifts it knows.
-    in property <bool> under-hand;
-    in property <float> shown: 1;
-    // The line every tag stands on, in the stage's own points, under the gifts' reflections.
-    in property <length> tag-y;
-    callback chosen();
-    callback hovered(bool);
-    x: root.spot.x;
-    y: root.spot.y;
-    width: root.spot.width;
-    height: root.spot.height;
-    accessible-role: button;
-    accessible-label: root.opened ? root.name : root.tag;
-    accessible-action-default => { root.chosen(); }
-    touch := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.chosen(); }
-        changed has-hover => { root.hovered(self.has-hover); }
-    }
-    VerticalLayout {
-        x: (parent.width - self.width) / 2;
-        y: root.tag-y - root.y;
-        width: max(self.preferred-width, root.width);
-        height: self.preferred-height;
-        spacing: Space.xxs;
-        opacity: root.shown;
-        Text {
-            text: root.opened ? root.name : root.tag;
-            font-family: Type.family;
-            font-size: StageStyle.tag;
-            font-weight: root.under-hand && !root.opened ? Type.strong : Type.regular;
-            color: root.under-hand ? StageStyle.ink : StageStyle.tag-ink;
-            horizontal-alignment: center;
-        }
-        Text {
-            text: root.opened ? root.done : root.hint;
-            opacity: root.opened || root.under-hand ? 1 : 0;
-            font-family: Type.family;
-            font-size: Type.caption;
-            color: StageStyle.ink-soft;
-            horizontal-alignment: center;
-        }
-    }
-}
-
-// The card a page's scene plays on: it rises out of the opened box's mouth into its place in the light.
-export component StageCard inherits Rectangle {
-    // The room left of the words, the stage's height, the mouth it rises from, and how far it has risen.
-    in property <length> room;
-    in property <length> tall;
-    in property <StageSpot> mouth;
-    in property <float> risen: 1;
-    // Never so tall that it hides the mouth it came out of: the box's light shows under it.
-    property <length> wide: min(StageStyle.card-width, root.room - 4 * Space.l, (root.mouth.y - 2 * Space.l - root.rest-y) / StageStyle.card-shape);
-    property <length> rest-x: (root.room - root.wide) / 2;
-    property <length> rest-y: root.tall * StageStyle.card-top;
-    property <float> grown: 0.08 + 0.92 * root.risen;
-    width: root.wide * root.grown;
-    height: root.wide * StageStyle.card-shape * root.grown;
-    x: root.mouth.x - self.width / 2 + (root.rest-x + root.wide / 2 - root.mouth.x) * root.risen;
-    y: root.mouth.y - self.height + (root.rest-y + root.wide * StageStyle.card-shape - root.mouth.y) * root.risen;
-    opacity: min(1, root.risen * 2.2);
-    visible: root.risen > 0;
-    border-radius: Radius.card;
-    background: StageStyle.card-ground;
-    clip: true;
-    @children
-    // What runs past the card's foot fades into it, never cut mid-line.
-    Rectangle {
-        y: parent.height - self.height;
-        height: StageStyle.card-fade;
-        background: @linear-gradient(180deg, StageStyle.card-ground.transparentize(1) 0%, StageStyle.card-ground 100%);
-    }
-    Rectangle {
-        border-radius: Radius.card;
-        border-width: 1px;
-        border-color: StageStyle.card-edge;
-    }
-}
-
-// A paragraph read over the stage; `lead` sets it a size up, for the one sentence a scene is told in.
+// A paragraph read over the stage; `lead` sets it a size up, for the one sentence a screen is told in.
 export component StageText inherits Text {
     in property <float> shown: 1;
     in property <bool> centred;
@@ -232,65 +127,33 @@ export component StageText inherits Text {
     horizontal-alignment: root.centred ? center : left;
 }
 
-// A caption laid on the film's plate, on a veil that keeps it read over any picture.
-export component StageChip inherits Rectangle {
-    in property <string> text;
-    width: words.preferred-width + 2 * Space.s;
-    height: words.preferred-height + Space.s;
-    border-radius: self.height / 2;
-    background: StageStyle.chip;
-    words := Text {
-        x: Space.s;
-        y: Space.s / 2;
-        text: root.text;
-        font-family: Type.family;
-        font-size: Type.caption;
-        font-weight: Type.strong;
-        color: StageStyle.ink;
+// The frame a screen's demo plays in, cut out of the black.
+export component DemoFrame inherits Rectangle {
+    in property <float> shown: 1;
+    opacity: root.shown;
+    visible: root.shown > 0;
+    border-radius: Radius.card;
+    background: StageStyle.frame-ground;
+    clip: true;
+    @children
+    Rectangle {
+        border-radius: Radius.card;
+        border-width: 1px;
+        border-color: StageStyle.frame-edge;
     }
 }
 
-// The grip on the edge between the photo and its print: a hand drags it across.
-export component StageGrip inherits Rectangle {
-    width: StageStyle.grip;
-    height: StageStyle.grip;
-    border-radius: self.height / 2;
-    background: StageStyle.grip-ground;
-    for side in 2: Path {
-        x: parent.width * (side == 0 ? 0.2 : 0.56);
-        y: parent.height * 0.32;
-        width: parent.width * 0.24;
-        height: parent.height * 0.36;
-        viewbox-width: 6;
-        viewbox-height: 10;
-        fill: StageStyle.grip-ink;
-        commands: side == 0 ? "M 6 0 L 0 5 L 6 10 Z" : "M 0 0 L 6 5 L 0 10 Z";
-    }
-}
-
-// The huge gift's steps by name, in a row: the one that plays lit, a click plays another.
-export component StageRail inherits HorizontalLayout {
-    in property <[string]> steps;
+// The screens, one mark each down the window's right edge: the one shown long and lit.
+export component StageRail inherits VerticalLayout {
+    in property <int> count;
     in property <int> at;
-    callback picked(int);
-    alignment: center;
-    spacing: Space.m;
-    for step[i] in root.steps: TouchArea {
-        width: name.preferred-width;
-        height: name.preferred-height + Space.xs;
-        mouse-cursor: pointer;
-        accessible-role: tab;
-        accessible-label: step;
-        accessible-item-selectable: true;
-        accessible-item-selected: i == root.at;
-        accessible-action-default => { root.picked(i); }
-        clicked => { root.picked(i); }
-        name := Text {
-            text: step;
-            font-family: Type.family;
-            font-size: Type.label;
-            font-weight: i == root.at ? Type.strong : Type.regular;
-            color: i == root.at || parent.has-hover ? StageStyle.ink : StageStyle.rail;
-        }
+    spacing: Space.xs;
+    accessible-role: AccessibleRole.text;
+    accessible-label: @tr("Screen {} of {}", root.at + 1, root.count);
+    for screen in root.count: Rectangle {
+        width: StageStyle.rail;
+        height: screen == root.at ? StageStyle.rail-long : StageStyle.rail-short;
+        border-radius: self.width / 2;
+        background: screen == root.at ? StageStyle.ink : StageStyle.ink-faint;
     }
 }
