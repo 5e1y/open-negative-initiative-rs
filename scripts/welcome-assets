@@ -3,7 +3,7 @@
 # gift's demo (one photo on the neutral film and each demo stock) and each gift's still. Usage: scripts/welcome-assets RAW
 set -euo pipefail
 cd "$(dirname "$0")/.."
-raw="${1:?the demo photo's RAW}"
+raw="${1:?the demo RAW}"
 out="crates/oni-ui/ui/welcome"
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
@@ -14,3 +14,5 @@ for name in film-photo film-print-1 film-print-2 film-print-3; do
     cp "$scratch/$name.jpg" "$out/$name.jpg"
 done
 target/debug/examples/welcome_stage --stills "$out"
+# The small gifts' films, shot in the real app over the pictures just made.
+ONI_BACKGROUND=1 ONI_ONE=welcome_films::the_welcome_films_are_shot_in_the_real_app ONI_WELCOME_FILMS="$PWD/$out" cargo test -p oni-app --test window -- --nocapture

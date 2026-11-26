@@ -37,6 +37,9 @@ export global Help {
     // The huge gift's demo: the photo as the camera saw it, then the films it is shot on; how many films there are.
     in property <[StockLine]> film-cells;
     in property <int> film-count;
+    // The film the screen's demo plays, shot in the real app, and the gift it belongs to (-1 none).
+    in property <image> reel;
+    in property <int> reel-gift: -1;
     callback welcome-sized(length, length, length);
     callback welcome-open();
     callback welcome-go(int);

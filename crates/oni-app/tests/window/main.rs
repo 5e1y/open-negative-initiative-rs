@@ -23,6 +23,7 @@ mod dedust_turn;
 mod collection;
 mod colour_compensation;
 mod kit;
+mod welcome_films;
 mod kit_failures;
 mod kit_vault;
 mod column_edges;

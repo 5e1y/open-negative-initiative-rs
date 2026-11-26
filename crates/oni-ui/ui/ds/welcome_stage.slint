@@ -29,6 +29,8 @@ export global StageStyle {
     out property <color> frame-ground: Colour.canvas;
     out property <color> frame-edge: #ffffff1f;
     out property <float> picture-shape: 0.6667;
+    // A film of the app's window, its height over its width.
+    out property <float> window-shape: 0.625;
     // A card of the person's year, as a share of its frame's height.
     out property <float> card-share: 0.86;
     // The room under a demo's picture for a row of the picker's cells.
@@ -143,6 +145,12 @@ export component DemoFrame inherits Rectangle {
         border-width: 1px;
         border-color: StageStyle.frame-edge;
     }
+}
+
+// A film of the real app playing in a demo's frame, a frame at a time.
+export component DemoReel inherits Rectangle {
+    in property <image> source;
+    Image { width: parent.width; height: parent.height; source: root.source; image-fit: cover; }
 }
 
 // The screens, one mark each down the window's right edge: the one shown long and lit.

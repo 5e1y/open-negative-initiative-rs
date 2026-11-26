@@ -330,6 +330,7 @@ impl Ctl {
 
 mod clip;
 pub(super) mod player;
+mod reels;
 mod welcome;
 #[cfg(test)]
 mod tests;

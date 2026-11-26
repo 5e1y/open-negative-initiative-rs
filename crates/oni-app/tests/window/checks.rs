@@ -249,6 +249,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     ("sheet_layout::a_notices_key_sits_right", sheet_layout::a_notices_key_sits_right),
     ("welcome_card::the_welcome_fills_the_window_in_every_language", welcome_card::the_welcome_fills_the_window_in_every_language),
     ("welcome_reel::the_welcome_is_unwrapped_screen_by_screen", welcome_reel::the_welcome_is_unwrapped_screen_by_screen),
+    ("welcome_films::the_welcome_films_are_shot_in_the_real_app", welcome_films::the_welcome_films_are_shot_in_the_real_app),
     ("mode_header::every_tool_title_is_whole_at_the_smallest_window", mode_header::every_tool_title_is_whole_at_the_smallest_window),
     ("mode_header::a_title_longer_than_the_panel_is_caught_cut", mode_header::a_title_longer_than_the_panel_is_caught_cut),
     ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),

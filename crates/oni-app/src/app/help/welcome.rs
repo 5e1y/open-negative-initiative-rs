@@ -1,6 +1,7 @@
 //! The welcome in the window: one screen a gift, each opened before the next, the message last. Its clock moves
 //! the screens and the gift the GPU draws into the texture the sheet shows; a check holds the clock and steps it.
 
+use super::reels::{self, Decoded, Reel};
 use super::{EDITION, KIT_GIFT, WELCOME_KEY};
 use crate::app::{Ctl, SHELL};
 use crate::stage::direction::{self, Cue};
@@ -83,6 +84,9 @@ pub(in crate::app) struct Playing {
     foot: f32,
     /// Whether the GPU is still drawing the last picture handed to it.
     flying: Arc<AtomicBool>,
+    /// The small gifts' films, decoded off this thread, then ready to play.
+    decoding: Option<Receiver<Vec<Decoded>>>,
+    reels: Vec<Reel>,
     /// Kept so its frames keep coming; dropped with the stage.
     _timer: Timer,
 }
@@ -204,6 +208,8 @@ impl Ctl {
         let opened: [Option<f32>; 4] = std::array::from_fn(|i| (bits & (1 << i) != 0 || i == 1 && !KIT_GIFT).then_some(-1000.0));
         let page = (1..MESSAGE).find(|p| gift_of(*p).is_some_and(|i| opened[i].is_none())).unwrap_or(MESSAGE);
         let (sender, building) = channel();
+        let (films, decoding) = channel();
+        let _ = std::thread::Builder::new().name("welcome films".into()).spawn(move || films.send(reels::decoded()));
         {
             let mut s = self.state.borrow_mut();
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());
@@ -235,6 +241,8 @@ impl Ctl {
                 size: (0.0, 0.0),
                 foot: 0.0,
                 flying: Arc::new(AtomicBool::new(false)),
+                decoding: Some(decoding),
+                reels: Vec::new(),
                 _timer: timer,
             });
         }
@@ -303,6 +311,9 @@ impl Ctl {
             }
             _ => {}
         }
+        if let Some(films) = play.decoding.as_ref().and_then(|d| d.try_recv().ok()) {
+            (play.reels, play.decoding) = (films.into_iter().map(Reel::of).collect(), None);
+        }
         let now = play.now();
         let cue = play.cue(now, still);
         let frame = direction::frame(&cue);
@@ -346,6 +357,13 @@ impl Ctl {
         help.set_opened_time(since);
         help.set_words_at(gift_of(play.page).map_or(0.0, |i| if still { 0.0 } else { unwrap::title(i) }));
         help.set_may_go_on(play.may_go_on(now, still));
+        // The screen's film, from the moment its words come.
+        let reel = gift_of(play.page).and_then(|i| play.reels.iter().find(|r| r.gift == i).map(|r| (r, i)));
+        help.set_reel_gift(reel.map_or(-1, |(_, i)| i as i32));
+        if let Some((reel, i)) = reel {
+            let words = if still { 0.0 } else { unwrap::title(i) };
+            help.set_reel(reel.at(since - words - 0.4, still));
+        }
         let spot = direction::gift_spot(&frame, cue.aspect).unwrap_or_default();
         help.set_gift_spot(StageSpot { x: spot[0] * play.size.0, y: spot[1] * play.size.1, width: spot[2] * play.size.0, height: spot[3] * play.size.1 });
     }

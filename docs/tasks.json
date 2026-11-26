@@ -13936,5 +13936,12 @@
     "title": "CLAUDE.md: a digital photo's virtual negative is a scan made once, its two points a channel with no layer offset and no gamut compressed, a tungsten film blue in daylight, the halation red alone",
     "status": "done",
     "detail": "The virtual film paragraph says the scene reaches layers balanced for the stock's own light, so a tungsten film turns daylight blue (#3875), and that a neutral exposes the three layers alike with each channel's black on the bare film and its white at the sensor's saturation, in place of the filtration (#3878); a new paragraph tells the scan made once and read as a scanned negative's (#3872) and the halation on the red layer alone."
+  },
+  {
+    "id": 3958,
+    "type": "feature",
+    "title": "The welcome's two small gifts play films of the real app, shot by a script on a held clock; the huge gift's pictures made again on the new virtual negative",
+    "status": "done",
+    "detail": "welcome_films (a window check, run by scripts/welcome-assets with ONI_WELCOME_FILMS) launches the app on the welcome's own photos as digital photos on the neutral film and films, on a held clock at twice the pixels, the photo flying from the gallery into the editor, the editor turning into the export and back, then the Kit (The Lens DB simulated) taking a Nikon FM2 through Search Gear. Each film is one JPEG of its frames and a list of holds (ui/welcome/film-interface.*, film-collection.*); help::reels decodes them off the interface's thread and the welcome plays the screen's film from the moment its words come (Reduce Motion: the frame held longest), its drawn scene where a film cannot be read. scripts/welcome-assets now makes every welcome picture in one command: the huge gift's photo and prints (re-run on 96df856a's virtual negative), each gift's still, then both films. Checks: welcome_films, welcome_reel, welcome_card, sheet_stack, sheets, help, design_system; oni-app lib tests; catalogue; architecture; clippy on oni-app."
   }
 ]

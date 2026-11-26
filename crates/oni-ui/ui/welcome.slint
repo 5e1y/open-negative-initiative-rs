@@ -2,7 +2,7 @@
 // opened by a click or Return, then its demo on the left and its words on the right; the message comes last.
 import { Space, Motion, Label, TextRole, Tone, Button, Sheet, SheetFooter, Scroller } from "ds/ds.slint";
 import { WelcomeStyle, Headline, InterfaceScene, KitScene, MysteryScene, WrappedFrame, WrappedStyle } from "ds/ds.slint";
-import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, StageRail, FilmDemo } from "ds/ds.slint";
+import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, DemoReel, StageRail, FilmDemo } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
 import { Wrapped } from "wrapped.slint";
@@ -101,11 +101,13 @@ export component WelcomeSheet inherits Sheet {
             DemoFrame {
                 x: root.left;
                 width: root.side;
-                height: page == 3 ? self.width * StageStyle.picture-shape + StageStyle.demo-cells : self.width * StageStyle.picture-shape;
+                height: page == 3 ? self.width * StageStyle.picture-shape + StageStyle.demo-cells : page <= 2 ? self.width * StageStyle.window-shape : self.width * StageStyle.picture-shape;
                 y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
                 shown: here ? root.words : 0;
-                if page == 1: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.75); }
-                if page == 2: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.45); }
+                // A small gift's film of the real app; its drawn scene where the film cannot be read.
+                if page <= 2 && Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
+                if page == 1 && Help.reel-gift != 0: InterfaceScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.75); }
+                if page == 2 && Help.reel-gift != 1: KitScene { width: parent.width; height: parent.height; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 7.45); }
                 if page == 3: FilmDemo { width: parent.width; height: parent.height; cells: Help.film-cells; t: Motion.reduced ? 6 : root.demo-clock; }
                 // The person's own year: its first cards, as the Wrapped makes them; a promise while it is read.
                 if page == 4 && Wrapped.scenes.length == 0: MysteryScene { width: parent.width; height: parent.height; year: Help.year; held: Motion.reduced ? 4 : Math.mod(max(0, root.demo-clock), 6.0); }
