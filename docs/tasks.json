@@ -13798,6 +13798,13 @@
     "detail": "Owner's call, spec by the colorimetry session (spec-deux-points.md): the film's filtration (each layer's exposure offset laying a mid grey on one share of the three windows, film::scanner::filtration and its field in 48 films' files) and the input gamut compression (bake::compressed) removed; CAT16 and bake::balanced kept. Each film's reference is its two points, black on the bare film and white where a neutral at the sensor's saturation reads, derived again (examples/stock_references); a person's own file still holding a filtration reads, the field left aside. Format 80 moves a digital photo of format 79 onto its stock's new reference, every hand's move kept (migrate::two_points). Measured against the spec: ranges R/G, B/G Portra 0.827 / 1.203, Gold 0.845 / 1.145, 250D 0.831 / 1.061, within 0.01; a grey leaves the black on Portra's three channels within 0.1 stop. Proven by scanner's a_grey_leaves_the_black_on_the_three_channels_together (twins: format 79's ranges, a grey lit by the former offsets leaving apart) and two_points' migration check."
   },
   {
+    "id": 3879,
+    "type": "tool",
+    "title": "A digital photo's render written stage by stage from the app's own chain, for the process board",
+    "status": "done",
+    "detail": "examples/digital_stages writes every stage of a digital photo's render on its film at rest, from the sensor's counts (oni_decode::mosaic, a LibRaw unpack read through oni_mosaic in pinned.c, no knob touched) through the demosaic, the camera matrix, the editor's reduction, the scene seen at the film's white, its XYZ for the film, each layer's exposure, bloom, the halation's glow and dose, the development, the scanner's own channels and their decode, the grain, the frozen scan, then stage 4-7 laid out on the CPU (Lighting, gains, density on its two points, shares, inversion) and the finishing on the GPU, with the bare film's and a saturated neutral's readings and the open lamp (film::scanner::open_lamp) for the owner's transmission scale. It checks itself: the exposure against its CPU reference (1.3e-5), the frozen scan against the stages (4.9e-4, half floats), the inversion laid by hand against the fused stage (0)."
+  },
+  {
     "id": 4008,
     "type": "ui",
     "title": "An export written invites, quietly, to post the photos on Instagram with #madewithoni",

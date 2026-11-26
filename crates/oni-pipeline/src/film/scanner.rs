@@ -31,6 +31,7 @@ struct Data {
 struct Scanner {
     seen: Vec<[f64; 3]>,
     to_working: bake::M3,
+    open: [f64; 3],
 }
 
 static SCANNER: LazyLock<Scanner> = LazyLock::new(|| {
@@ -43,8 +44,15 @@ static SCANNER: LazyLock<Scanner> = LazyLock::new(|| {
     let decode = oni_decode::working_from_camera(&cam_xyz).expect("the shipped sensor's matrix has an inverse");
     let open: [f64; 3] = std::array::from_fn(|c| seen.iter().map(|s| s[c]).sum());
     let green = bake::apply(&decode, open)[1];
-    Scanner { seen, to_working: decode.map(|r| r.map(|v| v / green)) }
+    Scanner { seen, to_working: decode.map(|r| r.map(|v| v / green)), open }
 });
+
+/// The lamp read with no film, the source a negative's transmission is counted against: in the sensor's own channels,
+/// then decoded to working Rec. 2020, its green one.
+pub fn open_lamp() -> ([f64; 3], [f64; 3]) {
+    let s = &*SCANNER;
+    (s.open, bake::apply(&s.to_working, s.open))
+}
 
 /// A colour negative of `profile` scanned: each layer's amount, coded as `10^-amount`, to the scan's light in working
 /// Rec. 2020, the bare film reading its own orange, which its reference's gains even.

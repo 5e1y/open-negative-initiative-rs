@@ -112,6 +112,19 @@ int oni_unpack(oni_decoded *d)
     return d->cut ? -5 : rc;
 }
 
+// The sensor's own counts once unpacked, before any demosaic: the visible mosaic, its pattern, black and white levels.
+int oni_mosaic(const oni_decoded *d, const unsigned short **counts, int out[6])
+{
+    const libraw_data_t *lr = d->raw;
+    const libraw_rawdata_t *rd = &lr->rawdata;
+    if (!rd->raw_image || !rd->iparams.filters) return -1;
+    const libraw_image_sizes_t *z = &rd->sizes;
+    *counts = rd->raw_image + (size_t)z->top_margin * z->raw_pitch / 2 + z->left_margin;
+    out[0] = z->width; out[1] = z->height; out[2] = z->raw_pitch / 2;
+    out[3] = (int)rd->iparams.filters; out[4] = (int)rd->color.black; out[5] = (int)rd->color.maximum;
+    return 0;
+}
+
 // Demosaics on the given multipliers, then hands out the camera-space 16-bit image.
 int oni_process(oni_decoded *d, const float mul[3])
 {
