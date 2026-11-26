@@ -2741,7 +2741,7 @@ msgstr "Chaque mois, le top 5 de la communauté : la photo gagnante ouvre la ver
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "You already paid for your film. You shouldn't have to pay just to look at it."
-msgstr "Vous avez déjà payé votre pellicule. Vous ne devriez pas payer encore rien que pour la regarder."
+msgstr "Vous avez déjà payé votre pellicule. Vous ne devriez pas payer rien que pour la regarder."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Enter ONI"

@@ -22,6 +22,8 @@ export global StageStyle {
     // The words read over the stage: a size up from the interface's, for a column read from further back.
     out property <length> body: 15px;
     out property <length> lead: 17px;
+    // The hook a screen opens on: a sentence in the interface's face, between the lead and the display lines.
+    out property <length> hook: 28px;
     // The middle column the gift stands in, as a share of the window's height, and the gap about it.
     out property <float> gift-share: 0.44;
     out property <length> gap: 56px;
@@ -113,15 +115,18 @@ export component StageNote inherits Label {
     centred: true;
 }
 
-// A paragraph read over the stage; `lead` sets it a size up, for the one sentence a screen is told in.
+// A paragraph read over the stage; `lead` sets it a size up, for the one sentence a screen is told in, `hook` a
+// size more and in full ink, for the sentence a screen opens on.
 export component StageText inherits Text {
     in property <float> shown: 1;
     in property <bool> centred;
     in property <bool> lead;
+    in property <bool> hook;
     opacity: root.shown;
     font-family: Type.family;
-    font-size: root.lead ? StageStyle.lead : StageStyle.body;
-    color: StageStyle.ink-soft;
+    font-size: root.hook ? StageStyle.hook : root.lead ? StageStyle.lead : StageStyle.body;
+    font-weight: root.hook ? 600 : 400;
+    color: root.hook ? StageStyle.ink : StageStyle.ink-soft;
     wrap: word-wrap;
     horizontal-alignment: root.centred ? center : left;
 }

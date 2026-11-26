@@ -152,7 +152,7 @@ export component WelcomeSheet inherits Sheet {
                 }
             }
         }
-        // The message, the welcome's last word before the app: why ONI is free, the call to share it, its tag.
+        // The message, the welcome's last word before the app: its hook, why ONI is free, the call to share it, its tag.
         if root.last: Scroller {
             height: root.room;
             opacity: Help.message-shown;
@@ -167,6 +167,7 @@ export component WelcomeSheet inherits Sheet {
                     inner := VerticalLayout {
                         spacing: Space.l;
                         StageNote { text: @tr("I have a message for you"); role: TextRole.title; tone: Tone.secondary; }
+                        StageText { centred: true; hook: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
                         VerticalLayout {
                             spacing: Space.s;
                             StageText { centred: true; lead: true; text: @tr("Most negative tools are paid: they keep to themselves a know-how that was lost when digital arrived."); }
@@ -191,7 +192,6 @@ export component WelcomeSheet inherits Sheet {
                         wrap: word-wrap;
                         text: @tr("Every month, the community's top five: the winning photo opens the next version of ONI, with its author's name. One step, the form; {} to share.", Help.contest-tag);
                     }
-                    StageText { centred: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
                     }
                 }
             }
