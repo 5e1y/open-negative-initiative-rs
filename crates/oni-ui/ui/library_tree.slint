@@ -34,7 +34,7 @@ export component Tree inherits Surface {
     // opens and sink back as the gallery returns, laid once at their resting height so no row is laid again.
     property <float> unfold: root.beside-photo ? 1 : 0;
     animate unfold { duration: Motion.travel; easing: Ease.weighted; }
-    property <bool> drawer: Library.surface == 0 && root.unfold > 0;
+    property <bool> drawer: Library.surface == 0 && (root.beside-photo || root.unfold > 0);
     // Each part pads itself by the column's one inset: the tab bar, the headers, the rows.
     VerticalLayout {
         // The tab bar's top on the canvas card's.

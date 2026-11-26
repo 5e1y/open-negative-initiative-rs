@@ -1,6 +1,6 @@
 // A photo's flight between the screens: its picture lifts off where it stood, the gallery's tile, the editor's
 // canvas or the export's preview, and grows or shrinks into its place on the next, which shows around it.
-import { Motion, Ease } from "ds/ds.slint";
+import { Motion, Ease } from "theme.slint";
 
 // Where a flight goes: the tile into the canvas, the canvas into its tile, the canvas into the export's
 // preview, the preview back onto the canvas.
@@ -64,7 +64,7 @@ export component FlightView {
     // when a gesture reverses the flight.
     // Off once the window has drawn it where it leaves: a value set as the view is laid would not move.
     property <bool> off;
-    Timer { interval: 1ms; running: !root.off; triggered => { root.off = true; } }
+    Timer { interval: Motion.next-frame; running: !root.off; triggered => { root.off = true; } }
     property <Place> at: root.off ? root.to : Flight.from;
     property <int> serial: Flight.serial;
     changed serial => { Flight.landing = false; root.arrived = false; travel.restart(); }

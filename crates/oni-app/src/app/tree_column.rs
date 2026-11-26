@@ -359,12 +359,17 @@ impl Ctl {
                 c.project_resized(width, height);
             }
         });
-        // A mode changed: the projects' tree takes the other mode's layout, and the key wears it.
+        // A mode changed: the projects' tree takes the other mode's layout, and the key wears it. Beside a
+        // photo the archive's column centres on it, its rows kept laid when the gallery showed but a moment.
         let me = Rc::downgrade(self);
         lib.on_tree_moded(move || {
             if let Some(c) = me.upgrade() {
                 c.publish_projects();
                 c.publish_layout_key();
+                if c.window().is_some_and(|w| !w.global::<App>().get_gallery()) && c.state.borrow().tree.size.1 > 0.0 {
+                    c.centre_tree();
+                    c.pin_column(Which::Archive);
+                }
             }
         });
     }

@@ -21,10 +21,14 @@ export component ModeRing {
     in property <bool> square-top-right;
     in property <bool> square-left;
     in property <bool> square-right;
+    // Its owner's flag, false while it fades away.
+    in property <bool> shown: true;
     property <length> inset: root.depth * ToolStyle.ring;
+    animate inset { duration: Motion.quick; easing: ease-out; }
     property <length> round: max(0px, CardStyle.radius - root.inset);
     property <float> come;
     init => { root.come = 1; }
+    changed shown => { root.come = root.shown ? 1 : 0; }
     animate come { duration: Motion.overlay-out; easing: ease-out; }
     opacity: root.come;
     Rectangle {

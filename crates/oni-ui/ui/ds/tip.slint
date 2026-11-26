@@ -1,5 +1,5 @@
 // The notes a control gives: a hovered control's tooltip, the layer that holds it, and a help mark's card.
-import { Colour, Space, Motion, TipStyle } from "theme.slint";
+import { Colour, Space, Motion, Ease, TipStyle, SheetStyle } from "theme.slint";
 import { Outward } from "depth.slint";
 import { Tip, Tips, TipBox, Label, TextRole, Tone, Picture, Ground, Raised, Lift, Gap } from "base.slint";
 
@@ -89,9 +89,14 @@ export component HelpLayer {
         height: card.height;
         clicked => { Tips.close(); }
     }
+    // It comes in as a popover does, a step below its place and grown into it.
+    property <float> come;
+    init => { root.come = 1; }
+    animate come { duration: Motion.pop; easing: Ease.weighted; }
     card := HelpCard {
         x: root.box.x;
-        y: root.box.y;
+        y: root.box.y + (1 - root.come) * SheetStyle.rise;
+        opacity: min(1, 2 * root.come);
         width: TipStyle.card-width;
         note: Tip.open;
         subject: Tip.subject;

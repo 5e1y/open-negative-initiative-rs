@@ -172,6 +172,24 @@ export component Section inherits VerticalLayout {
     }
 }
 
+// The last sheet closed goes at once, every press reaching the window, while the scrim it laid lightens
+// behind it.
+export component ScrimFade {
+    in property <bool> covered;
+    property <float> shade: root.covered ? 1 : 0;
+    animate shade { duration: root.covered ? 0ms : Motion.overlay-out; easing: ease-out; }
+    if !root.covered && root.shade > 0: Rectangle { x: 0; y: 0; width: root.width; height: root.height; background: Colour.scrim; opacity: root.shade; }
+}
+
+// An overlay kept laid while it leaves, so it goes as it came rather than vanishing: a sheet, a tool's ring.
+export component Held {
+    in property <bool> open;
+    property <bool> leaving;
+    out property <bool> laid: root.open || root.leaving;
+    changed open => { root.leaving = !root.open; }
+    Timer { interval: Motion.overlay-out; running: root.leaving; triggered => { root.leaving = false; } }
+}
+
 // How a sheet titles itself: `leading`, its title over the content in the section face for a
 // question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
 export enum SheetHeader { leading, bar }
@@ -216,18 +234,11 @@ export component Sheet inherits Rectangle {
     in property <bool> shown: true;
     property <int> serial;
     init => { root.come = 1; Keyboard.opened += 1; root.serial = Keyboard.opened; }
-    // Closed, it sinks back as it came while its owner keeps it laid; shown again on its way out, it rises
-    // and takes the keyboard as a sheet just opened.
-    changed shown => {
-        root.come = root.shown ? 1 : 0;
-        if (root.shown) { Keyboard.opened += 1; root.serial = Keyboard.opened; scope.focus(); }
-    }
     property <int> closed: Keyboard.closed;
     changed closed => { if (root.shown && root.serial > Keyboard.top) { Keyboard.top = root.serial; scope.focus(); } }
-    animate come { duration: root.shown ? Motion.overlay-in : Motion.overlay-out; easing: root.shown ? Ease.weighted : ease-in; }
+    animate come { duration: Motion.overlay-in; easing: Ease.weighted; }
     Rectangle { width: 100%; height: 100%; background: Colour.scrim; opacity: min(1, root.come); }
-    // On its way out the window behind takes every press at once, but on the card, which takes none.
-    TouchArea { enabled: root.shown; }
+    TouchArea { }
     // Tab leaving the sheet meets the window's walls, which hand the keyboard back to the sheet: to this
     // scope going forward, so Tab goes on to its first control, to `back` going back, before its last.
     property <int> entered: Keyboard.entered;
@@ -245,7 +256,6 @@ export component Sheet inherits Rectangle {
             if (!TextInputInterface.text-input-focused) { self.focus(); }
         }
         key-pressed(event) => {
-            if (!root.shown) { return reject; }
             if (event.text == Key.Escape) {
                 if (root.exit-enabled) { root.dismissed(); }
                 return accept;
@@ -291,7 +301,6 @@ export component Sheet inherits Rectangle {
             }
         }
         back := FocusScope { focus-on-click: false; focus-on-tab-navigation: false; }
-        if !root.shown: TouchArea { x: card.x; y: card.y; width: card.width; height: card.height; }
     }
 }
 

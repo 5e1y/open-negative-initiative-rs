@@ -13655,7 +13655,7 @@
     "type": "ui",
     "title": "Gallery to editor: the column's photos rise from its foot under the rows, the gallery's filter tucks under the tab bar; back, they sink",
     "status": "in progress",
-    "detail": "One list of rows in both modes (NavigatorSection), the photos laid once at their resting height inside a part that grows from the column's foot (Tree.unfold on Motion.travel, Ease.weighted), so no row is laid again while it moves; the rows keep their folder centred as they shorten."
+    "detail": "One list of rows in both modes (NavigatorSection), the photos laid once at their resting height inside a part that grows from the column's foot (Tree.unfold on Motion.travel, Ease.weighted), so no row is laid again while it moves; the rows keep their folder centred as they shorten. The photos stay laid while they sink, so entering the editor centres the column from tree-moded too, not only from a new list's shown."
   },
   {
     "id": 4001,
@@ -13667,9 +13667,9 @@
   {
     "id": 4002,
     "type": "ui",
-    "title": "Pop-ups move: menus, pickers and popovers grow out of their anchor; sheets rise on a spring and sink away as they close",
+    "title": "Pop-ups move: menus, pickers and popovers grow out of their anchor; sheets rise on a spring, and the scrim of the last one closed lightens behind it",
     "status": "in progress",
-    "detail": "Popover (every menu and popover) grows from its tail or top edge on Motion.pop; Sheet comes in on Ease.weighted and, kept laid by Sheets' Held while it leaves, sinks back on overlay-out; the window behind takes every press at once, the leaving card none, its keys answer nothing."
+    "detail": "Popover (every menu and popover) grows from its tail or top edge on Motion.pop; Sheet comes in on Ease.weighted. A closing sheet goes at once, so every press and key reaches the window behind it, and ScrimFade lightens its scrim on overlay-out: a sheet kept laid while it sank swallowed the presses and keys of the next gesture (gallery, gestures, migration and sheet checks)."
   },
   {
     "id": 4003,
@@ -13684,5 +13684,12 @@
     "title": "A section folds and unfolds sliding, its chevron turning; the tooltip fades in",
     "status": "in progress",
     "detail": "Section's content laid at its own height, the block's height sliding on the hand's fold alone (Ease.firm, Motion.travel), a content changing height laid at once; FoldMark one chevron turned by Button.turned, which turns on Motion.quick; TipView fades in on Motion.quick."
+  },
+  {
+    "id": 4005,
+    "type": "ui",
+    "title": "A canvas tool's ring fades out as it leaves and the rings inside close in; the help card rises into place",
+    "status": "in progress",
+    "detail": "Held (ds/containers.slint) keeps a ring laid while it fades on overlay-out, its inset sliding on Motion.quick; the rings take no press. HelpLayer comes in as a popover does, on Motion.pop."
   }
 ]

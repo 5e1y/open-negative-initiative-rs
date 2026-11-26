@@ -1,6 +1,6 @@
 // Each canvas tool held, shown on the card: a ring of its colour around it, nested in its keys' order, an
 // inner ring over the outer ones, and its tab hanging from its key down onto its ring.
-import { ModeRing, ToolStyle } from "ds/ds.slint";
+import { ModeRing, ToolStyle, Held } from "ds/ds.slint";
 import { Bar } from "toolbar.slint";
 import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -23,7 +23,9 @@ export component ModeRings {
     property <int> crop-depth: root.sheet ? 1 : 0;
     property <int> dust-depth: root.crop-depth + (root.crop ? 1 : 0);
     property <int> compare-depth: root.dust-depth + (root.dust ? 1 : 0);
-    if root.sheet: ModeRing {
+    sheet-held := Held { open: root.sheet; }
+    if sheet-held.laid: ModeRing {
+        shown: root.sheet;
         x: 0;
         y: 0;
         width: root.width;
@@ -40,7 +42,9 @@ export component ModeRings {
         square-left: root.square-left;
         square-right: root.square-right;
     }
-    if root.crop: ModeRing {
+    crop-held := Held { open: root.crop; }
+    if crop-held.laid: ModeRing {
+        shown: root.crop;
         x: 0;
         y: 0;
         width: root.width;
@@ -57,7 +61,9 @@ export component ModeRings {
         square-left: root.square-left;
         square-right: root.square-right;
     }
-    if root.dust: ModeRing {
+    dust-held := Held { open: root.dust; }
+    if dust-held.laid: ModeRing {
+        shown: root.dust;
         x: 0;
         y: 0;
         width: root.width;
@@ -74,7 +80,9 @@ export component ModeRings {
         square-left: root.square-left;
         square-right: root.square-right;
     }
-    if root.compare: ModeRing {
+    compare-held := Held { open: root.compare; }
+    if compare-held.laid: ModeRing {
+        shown: root.compare;
         x: 0;
         y: 0;
         width: root.width;

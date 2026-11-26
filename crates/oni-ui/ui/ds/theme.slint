@@ -125,6 +125,8 @@ export global Motion {
     out property <duration> overlay-out: Motion.reduced ? 0ms : DS.motion-overlay-out;
     // A part of the window travelling to its new place, as the column's photos rising, on `Ease.weighted`.
     out property <duration> travel: Motion.reduced ? 0ms : 420ms;
+    // The window's next frame: what moves from where it was just laid waits for it to be drawn there.
+    out property <duration> next-frame: 1ms;
     // A menu or a popover opening out of its anchor, quick enough that a line is read as it lands.
     out property <duration> pop: Motion.reduced ? 0ms : 160ms;
 }
