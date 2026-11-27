@@ -14517,5 +14517,12 @@
     "status": "done",
     "title": "CLAUDE.md: working notes tidied",
     "detail": "The working notes are tidied."
+  },
+  {
+    "id": 4023,
+    "type": "bug",
+    "status": "done",
+    "title": "Every arrow beside a photo walks with its slide: what steps aside is the picture the canvas shows",
+    "detail": "Owner: the walk's animation played half the time. The photo left stepped aside as its gallery thumbnail, and walked nowhere when that thumbnail was not in memory yet, as on a photo the filmstrip had not asked for: arrows in a burst lost their slide from the third step. The canvas's own picture and clip now step aside, whatever the thumbnails hold; a check walks a burst with no thumbnail in memory, its twins the roll's end and Reduce Motion."
   }
 ]

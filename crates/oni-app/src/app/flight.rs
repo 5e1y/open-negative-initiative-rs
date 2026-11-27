@@ -98,27 +98,27 @@ impl Ctl {
         f.set_tile_place(place);
     }
 
-    /// The photo left as the editor walks to `to`, beside a photo alone: its thumbnail steps aside where the
-    /// canvas showed it, the way the walk goes in the gallery's order.
+    /// The photo left as the editor walks to `to`, beside a photo alone: the picture the canvas shows steps
+    /// aside, the way the walk goes in the gallery's order, whatever its thumbnail's state.
     pub(super) fn walk_from(&self, to: &str) {
         let Some(w) = self.window() else { return };
         if w.global::<App>().get_gallery() || w.global::<crate::Exporting>().get_shown() || w.global::<crate::Motion>().get_reduced() {
             return;
         }
         let Some(from) = self.canvas_in_window() else { return };
-        let (picture, way) = {
+        let way = {
             let s = self.state.borrow();
             let Some(left) = s.open_path().filter(|p| *p != to) else { return };
             let at = |p: &str| s.order.iter().position(|o| o == p);
-            let way = match (at(left), at(to)) {
+            match (at(left), at(to)) {
                 (Some(a), Some(b)) if b < a => -1,
                 _ => 1,
-            };
-            (s.fingerprints.get(left).and_then(|f| s.thumbs.get(f)), way)
+            }
         };
-        let Some(picture) = picture else { return };
-        let walk = w.global::<Walk>();
-        walk.set_picture(picture);
+        let (canvas, walk) = (w.global::<Canvas>(), w.global::<Walk>());
+        walk.set_picture(canvas.get_frame());
+        walk.set_clip_width(canvas.get_frame_clip_width());
+        walk.set_clip_height(canvas.get_frame_clip_height());
         walk.set_from(from);
         walk.set_way(way);
         walk.set_serial(walk.get_serial() + 1);

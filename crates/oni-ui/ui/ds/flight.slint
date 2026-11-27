@@ -96,7 +96,10 @@ export component FlightView {
 export global Walk {
     in-out property <bool> walking;
     in property <int> serial;
+    // What the canvas showed, its texels from the corner as the canvas clips them (0 whole).
     in property <image> picture;
+    in property <int> clip-width;
+    in property <int> clip-height;
     in property <Place> from;
     // 1 walking forward, -1 back.
     in property <int> way: 1;
@@ -114,7 +117,9 @@ export component WalkView {
         width: Walk.from.width;
         height: Walk.from.height;
         source: Walk.picture;
-        image-fit: contain;
+        source-clip-width: Walk.clip-width > 0 ? Walk.clip-width : Walk.picture.width;
+        source-clip-height: Walk.clip-height > 0 ? Walk.clip-height : Walk.picture.height;
+        image-fit: fill;
         opacity: root.off ? 0 : 1;
         animate x, opacity { duration: root.off ? Motion.travel : 0ms; easing: Ease.firm; }
     }
