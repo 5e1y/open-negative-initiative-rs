@@ -14615,5 +14615,12 @@
     "title": "The traverse bench says when the window's longest frame gap began",
     "status": "done",
     "detail": "One line, the longest gap between two frames the window drew and its start counted from the double click, to read beside the session's log."
+  },
+  {
+    "id": 4256,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: the faces, the black canvas, the WRAPPED key, the welcome's stage and overture, the decode on selection",
+    "detail": "The working notes follow #3892, #3912, #3913, #3954, #3976, #4011 and #4022, each sentence written on the code as it stands."
   }
 ]

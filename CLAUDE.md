@@ -163,6 +163,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   file's reading alone (`Reading::stamp`): a gain slider never drops or re-heals a patch, which takes the gain of where it lies.
 - **The editor reads a RAW at LibRaw's half size** (owner's call, 2026-10-22): 3 to 5 times faster to open, no
   difference on screen; the whole decode is a Settings choice, and Details, De-dust and every export read it.
+- **A photo is decoded on its selection**: a plain press leaving one photo selected decodes it into the disk cache behind the hand's
+  work, as an open photo's neighbours are, two either side (the next first); an opening whose decode another thread runs waits for it
+  and reads it back (`cache::Flight`), never LibRaw twice.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
   flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms; a frame is submitted every 16 passes, as
   Metal holds about 2.6 MB of driver memory per pass until its command buffer completes (590 MB on a first frame). Slint's femtovg renderer is
@@ -268,6 +271,21 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
 - **Every screen is built from the design system** (`crates/oni-ui/ui/ds/`): no literal size, colour or
   radius outside it, so a change of look is one edit. The design system is ONI's own, its tokens kept by
   hand; its look follows the art direction and the UI bench.
+- **ONI's faces are ONI Sans and Zalando Sans Expanded Black**: ONI Sans, Zalando Sans's normal width at 400 to 700 with tabular
+  figures and the eight signs it lacks drawn from Inter (`scripts/oni-fonts.py`, renamed as the OFL requires of a modified face), sets
+  every word read (`Type.family`); Expanded Black sets titles and headings (`Type.display`). A borrowed sign carries its vertical
+  metrics, or a sanitiser refuses the whole weight.
+- **The canvas is pure black** (owner's call, 2026-11-27): panel #1a1a1a, keycap #252525, tile #0c0c0c; on a near-black ground cast
+  shadows vanish, so lit edges carry the relief (`Depth`: ambient 0.18, raise-light 0.06, raise-edge 0.08, well-lip 0.16).
+- **WRAPPED 26 is a season's key** (owner's call, 2026-11-27): through December and the January after it, the bar holds, before the
+  app's own keys, a design-system keycap with a holographic face (`Button` `foil`, `ds/holo.slint`) that opens the year on film, in
+  the gallery as in the editor; it counts in the bar's widths and folds like any key, so the bar never passes the window's edge.
+- **The welcome is a stage the GPU draws** (`app/help/welcome`): four gifts of foil marched as signed distances in WGSL, one function
+  of the cue (`stage::direction::frame`), so a check steps it on a held clock; its films are takes of the app's own renderer, WebP
+  decoded on up to three threads aimed where the film will be, never holding the interface.
+- **Every opening of the welcome begins on its overture** (owner's call, 2026-11-27), its menu's included: ONI 1.6 in 1.6's face
+  (`ONI 1.6 Mark`, loaded nowhere else) on 1.6's ground #282828, a constant of the scene and never a live token, turns into ONI 2.0 on
+  the welcome's black, then glides off the first gift.
 - **Any screen, flow or interaction may be rethought whole** when the benches show a better way. Today drag
   adjusts parameters and the image, and lists scroll by wheel or trackpad (`mouse-drag-pan-enabled:
   false`). That is the current state, not a rule. Only the conversion's result is untouchable.
