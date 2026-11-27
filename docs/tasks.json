@@ -14580,5 +14580,12 @@
     "title": "The person's stock files are read by one check, the catalogue being the process's one",
     "status": "done",
     "detail": "stock_files' two checks each installed the process's one stock catalogue, so run side by side one could replace the other's between its install and its asserts: a person's paper went missing from the list (#4052). They are now two readings one check makes in turn. Under twelve busy cores the two checks failed 9 runs in 60, the one check 0 in 60; calm, both 40 in 40."
+  },
+  {
+    "id": 4095,
+    "type": "feature",
+    "title": "A job that waits past 50 ms for the render thread names what it ran meanwhile",
+    "status": "done",
+    "detail": "The owner sees the pan stutter; the bench, on a fresh app, does not. The render thread now keeps its last tasks by name (the render before, Compare's before, the histogram's count, the input histograms and those at rest, a scan ahead, the GPU finishing a render), and a job taken more than 50 ms after it was asked writes one line, 'render: a view waited N ms behind …', each task's share of the wait and what none accounts for; nothing when the thread was free. The line names no file. A check and its twin; oni-app's 590 unit tests and clippy green."
   }
 ]

@@ -145,7 +145,7 @@ pub enum Kind {
 }
 
 impl Kind {
-    fn word(self) -> &'static str {
+    pub(crate) fn word(self) -> &'static str {
         match self {
             Kind::Notch => "notch",
             Kind::Thumbnail => "thumbnail",

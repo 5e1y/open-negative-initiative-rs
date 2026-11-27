@@ -91,6 +91,7 @@ impl Worker {
                 let mut drawn_last: Option<(PathBuf, PipelineSettings)> = None;
                 let mut moved: Option<(crate::fields::Field, bool)> = None;
                 let mut ahead: Option<(Arc<Negative>, Vec<PipelineSettings>)> = None;
+                let mut busy = super::busy::Busy::default();
                 loop {
                     let (job, sharpening) = loop {
                         let idle = (resting.is_some() || sharpen.is_some()).then_some(REST).or(ahead.as_ref().map(|_| Duration::ZERO));
@@ -100,7 +101,7 @@ impl Worker {
                             Taken::TimedOut if sharpen.is_some() => break (Job { held: false, ..sharpen.take().expect("a job to sharpen") }, true),
                             Taken::TimedOut if resting.is_some() => {
                                 if let Some((path, negative, settings, wanted)) = resting.take()
-                                    && let Some(inputs) = renderer.inputs(&negative, &settings, false, wanted)
+                                    && let Some(inputs) = busy.run("the input histograms at rest", || renderer.inputs(&negative, &settings, false, wanted))
                                 {
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
@@ -110,9 +111,11 @@ impl Worker {
                                     && !notches.is_empty()
                                 {
                                     let next = notches.remove(0);
-                                    if renderer.preload(negative, &next) {
-                                        renderer.ran();
-                                    }
+                                    busy.run("a scan ahead", || {
+                                        if renderer.preload(negative, &next) {
+                                            renderer.ran();
+                                        }
+                                    });
                                 }
                                 if ahead.as_ref().is_some_and(|(_, n)| n.is_empty()) {
                                     ahead = None;
@@ -122,11 +125,14 @@ impl Worker {
                     };
                     ahead = None;
                     let started = Instant::now();
+                    if let Some(line) = busy.behind(job.kind.word(), job.asked, started) {
+                        crate::timing::line(&line);
+                    }
                     // A digital photo's full scan is made only once the hand or the pointer rests: the job that
                     // sharpens the last one drawn on the preview's scan alone makes it.
                     sharpen = None;
                     renderer.hold_scan(!sharpening);
-                    let done = renderer.resident(&job.negative, &job.settings, job.view.as_ref()).map(|(picture, placed)| Done {
+                    let done = busy.run("the render before", || renderer.resident(&job.negative, &job.settings, job.view.as_ref())).map(|(picture, placed)| Done {
                         revision: job.revision,
                         path: job.path.clone(),
                         picture,
@@ -140,7 +146,7 @@ impl Worker {
                         coarse: job.view.as_ref().is_some_and(|v| v.coarse),
                     });
                     // The engine keeps the before while what it reads holds; Compare off lets it go.
-                    let before = renderer.before(&job.negative, job.reference.as_ref(), job.view.as_ref());
+                    let before = busy.run("Compare's before", || renderer.before(&job.negative, job.reference.as_ref(), job.view.as_ref()));
                     let drawn = done.is_ok();
                     deliver(Delivery::Render(done.map(|d| Done { before, ..d }).map_err(|e| (job.path.clone(), e))));
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
@@ -148,7 +154,7 @@ impl Worker {
                     let quiet = !shared.waiting();
                     if drawn && job.counted && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_counted = Instant::now();
-                        if let Some(picture) = renderer.counted(&job.negative, &job.settings) {
+                        if let Some(picture) = busy.run("the histogram's count", || renderer.counted(&job.negative, &job.settings)) {
                             deliver(Delivery::Counted { path: job.path.clone(), picture });
                         }
                     }
@@ -158,7 +164,7 @@ impl Worker {
                     let wanted = job.inputs.contains(&true);
                     if drawn && wanted && due {
                         last_inputs = Instant::now();
-                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held, job.inputs) {
+                        if let Some(inputs) = busy.run("the input histograms", || renderer.inputs(&job.negative, &job.settings, job.held, job.inputs)) {
                             deliver(Delivery::Inputs { path: job.path.clone(), inputs });
                         }
                     }
@@ -179,7 +185,7 @@ impl Worker {
                     }
                     // The next job waits for the GPU to run this one: taken sooner, it queues behind it there,
                     // and the window's frames behind both, 50 to 100 ms late under a pinch.
-                    renderer.ran();
+                    busy.run("the GPU finishing a render", || renderer.ran());
                 }
             })
             .expect("render thread");
