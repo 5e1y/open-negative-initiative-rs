@@ -87,9 +87,11 @@ the code; a costly trap keeps its constraint and its number in two lines.
   curve (`grain`), so the inversion weakens it toward the white and strengthens it in the shadows as on film; each layer has its own
   grains, a colour negative's channel its own layer's, carrying 0.739 of its film's grain Amount (the Amount is the grain a scan shows,
   which a scanner's channels averaged over three layers: `grain::READ_ALONE`), a slide's mixed on the three channels by the projector's
-  gaze. Halation has no threshold (owner's call, 2026-11-25): a dose of each layer's blurred exposure, before the film's curve, which alone
-  shows it around the highlights; each film's file gives its rests (halation, Bloom from its MTF, grain amount and size), the sliders free
-  on top. A slide's lies on its positive; a scanned negative takes none.
+  gaze. Halation has no threshold and a long tail (owner's calls, 2026-11-25 and 27): each layer's whole exposure, spread as exp(−r / λ)
+  over the width its film's file gives (`HALATION_TAIL`, three Gaussians on the film's plate), a dose of it laid before the film's curve,
+  red alone, so a bright frame takes a light pink veil and its lights a wide glow; the dose is `halation::DOSE_PER_AMOUNT` (0.05 / 0.31) of
+  the amount the files and the slider hold; each film's file gives its rests (halation, Bloom from its MTF, grain amount and size), the
+  sliders free on top. A slide's lies on its positive; a scanned negative takes none.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each profile from the
   official sheet's curves into its stock's file; no spektrafilm profile ships. A slide's bake follows spektrafilm's model (its dyes, couplers); a
   colour negative's is its sheet's Status M curves and its own couplers; a paper's profile is its sheet's Status A curves, D-min included, and its

@@ -14132,5 +14132,12 @@
     "title": "The 1.x welcome's staged films leave oni-demos: nothing of the 2.0 welcome reads them",
     "status": "done",
     "detail": "The welcome 2.0 plays films composed in `crates/oni-app/welcome-motion`; the staged films of the 1.x horizontal card (the De-dust and interface scenes, `src/welcome/`, the `welcome` binary, the `welcome_dedust` and `dedust_assets` examples, their tests, `scripts/welcome`, and `wipe.rs`, which only they used) had no reader left and their scene no longer compiled since its stage's tokens went with the card. No other demo, release script, README, document or embedded resource read what they made; the help cards' demos keep every shared module. 15 files, 2264 lines, 112 KB. Checks: oni-demos tests (every remaining scene compiles in every language), oni-core architecture, clippy on oni-demos."
+  },
+  {
+    "id": 4252,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: halation has no threshold and a long tail, its dose a share of the amount shown",
+    "detail": "The working notes follow #3883: the whole exposure spread as exp(-r / λ), red alone, the dose DOSE_PER_AMOUNT of the amount the files and the slider hold."
   }
 ]
