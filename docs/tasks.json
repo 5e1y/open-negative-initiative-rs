@@ -14349,5 +14349,12 @@
     "status": "done",
     "title": "CLAUDE.md: a colour negative's fitted curves and couplers, and the film effects in notches",
     "detail": "The working notes follow #3884 to #3891: effect levels made ahead, and the 46 colour negatives' curves and couplers fitted on the owner's reference or their family's mean, the sheet keeping the sensitivities and the D-min."
+  },
+  {
+    "id": 3892,
+    "type": "performance",
+    "status": "done",
+    "title": "A digital photo decoded ahead of its opening: on its selection, and two neighbours either side",
+    "detail": "A plain press on a gallery tile that leaves one photo selected decodes it into the disk cache behind the hand's work, the same decode the neighbours of an open photo take, now two either side (the next first); an opening of a file whose decode another thread runs waits for it and reads it back (`cache::Flight`) rather than running LibRaw a second time. A double click on a 47 Mpx RW2 not yet decoded: 287 ms from its second press to the image, against 500 ms."
   }
 ]

@@ -1,4 +1,4 @@
-//! `open_cost <photo> <stock>`: the time each step of opening a digital photo on `stock` takes, as the editor opens it:
+//! `open_cost <photo> <stock> [<another photo>]`: the time each step of opening a digital photo on `stock` takes, as the editor opens it:
 //! LibRaw's half-size read, the preview laid on the GPU, the preview's frozen scan, the first render at fit, then the
 //! full definition's read and its scan for 100 %; twice, the decode cache cold then warm. `ONI_CACHES` names the cache.
 
@@ -20,6 +20,25 @@ fn main() {
     let began = Instant::now();
     Engine::shared(&device).prewarm();
     println!("kernels compiled at launch             {:>7.1} ms", began.elapsed().as_secs_f64() * 1e3);
+    // A double click on a photo not yet decoded: its first press selects it and starts the decode ahead, the second
+    // opens it `DOUBLE_CLICK` later and waits for that decode; the time from the second press to the image.
+    if let Some(selected) = args.get(2).map(Path::new) {
+        const DOUBLE_CLICK: std::time::Duration = std::time::Duration::from_millis(250);
+        let ahead = selected.to_path_buf();
+        let reading = Reading::of(&s);
+        let started = std::thread::spawn(move || { let _ = render::decode(&ahead, reading); });
+        std::thread::sleep(DOUBLE_CLICK);
+        let opened = Instant::now();
+        let engine = Engine::shared(&device);
+        let mut e = engine.lock().unwrap();
+        let negative = e.prepare(render::decode(selected, Reading::of(&s)).expect("a decode")).unwrap();
+        let fit = View { viewport: oni_app::viewport::Viewport { scale: None, offset: (0.0, 0.0) }, size: (3456.0, 2034.0), full: None, coarse: false };
+        let (shown, _) = e.resident(&negative, &s, Some(&fit)).unwrap();
+        let r = shown.extent();
+        e.parts().0.render(&Image::new(&shown), Rect::new(r.x, r.y, 1, 1), None).unwrap();
+        println!("selected then opened {} ms later: second press to image {:>7.1} ms", DOUBLE_CLICK.as_millis(), opened.elapsed().as_secs_f64() * 1e3);
+        started.join().unwrap();
+    }
     for pass in ["cold", "warm"] {
         let engine = Engine::shared(&device);
         let mut e = engine.lock().unwrap();

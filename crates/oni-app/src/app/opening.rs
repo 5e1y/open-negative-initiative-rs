@@ -84,14 +84,33 @@ impl Ctl {
         self.journal_opened(path);
     }
 
-    /// The frames either side of the one opened, decoded into the disk cache behind the hand's own,
-    /// so a step to one reads its decode back rather than LibRaw's; a later opening drops the rest.
+    /// The two frames either side of the one opened, the next first, decoded into the disk cache behind the hand's own,
+    /// so a step to one, or two quick steps, read their decode back rather than LibRaw's; a later opening drops the rest.
     fn prefetch_neighbours(&self, path: &str) {
         let near: Vec<String> = {
             let s = self.state.borrow();
             let Some(at) = s.order.iter().position(|p| p == path) else { return };
-            [at + 1, at.wrapping_sub(1)].iter().filter_map(|&i| s.order.get(i)).filter(|p| oni_decode::route(Path::new(p.as_str())) == oni_decode::Branch::Mosaic).cloned().collect()
+            [at + 1, at.wrapping_sub(1), at + 2, at.wrapping_sub(2)].iter().filter_map(|&i| s.order.get(i)).cloned().collect()
         };
+        self.decode_ahead(near);
+    }
+
+    /// The photo the gallery's selection settles on alone, decoded into the disk cache ahead of its opening: a double
+    /// click's first press starts it, and the opening waits for that decode rather than running LibRaw again.
+    pub(in crate::app) fn prefetch_selected(&self) {
+        let one = {
+            let s = self.state.borrow();
+            let selection = &s.shown_picks().selection;
+            (selection.len() == 1).then(|| selection.iter().next().cloned()).flatten()
+        };
+        if let Some(path) = one.filter(|p| self.state.borrow().open_path() != Some(p.as_str())) {
+            self.decode_ahead(vec![path]);
+        }
+    }
+
+    /// `paths`' RAWs decoded into the disk cache in turn, behind the hand's own; asked again, the former paths are dropped.
+    fn decode_ahead(&self, paths: Vec<String>) {
+        let near: Vec<String> = paths.into_iter().filter(|p| oni_decode::route(Path::new(p.as_str())) == oni_decode::Branch::Mosaic).collect();
         let mine = self.state.borrow().asks.near.next();
         std::thread::spawn(move || {
             crate::decode_gate::in_background();

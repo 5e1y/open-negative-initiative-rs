@@ -120,6 +120,7 @@ impl Ctl {
         match outcome {
             // The ONI Trash laid as a folder is; a tile opens nothing.
             Outcome::Open(path) if !trash => self.open_in_editor(&path),
+            _ if !trash => self.prefetch_selected(),
             _ => {}
         }
         self.publish_tiles();

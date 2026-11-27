@@ -22,6 +22,32 @@ pub fn keep_in(dir: PathBuf, cap: u64) {
     }
 }
 
+/// The keys whose decode a thread runs now: another asking one waits for it and reads it back, never LibRaw twice.
+static FLYING: (std::sync::Mutex<Vec<String>>, std::sync::Condvar) = (std::sync::Mutex::new(Vec::new()), std::sync::Condvar::new());
+
+/// `key`'s decode held as this thread's until dropped, once no other thread's runs.
+pub(crate) struct Flight(String);
+
+impl Flight {
+    pub(crate) fn take(key: &str) -> Flight {
+        let (lock, turn) = &FLYING;
+        let mut flying = lock.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        while flying.iter().any(|k| k == key) {
+            flying = turn.wait(flying).unwrap_or_else(std::sync::PoisonError::into_inner);
+        }
+        flying.push(key.to_string());
+        Flight(key.to_string())
+    }
+}
+
+impl Drop for Flight {
+    fn drop(&mut self) {
+        let (lock, turn) = &FLYING;
+        lock.lock().unwrap_or_else(std::sync::PoisonError::into_inner).retain(|k| *k != self.0);
+        turn.notify_all();
+    }
+}
+
 /// A decode as kept: its window's pixels, three channels a pixel, and how they are turned and converted.
 pub(crate) struct Kept {
     pub width: usize,
@@ -163,6 +189,23 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("oni-decode-cache-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir
+    }
+
+    #[test]
+    fn a_decode_running_holds_back_the_same_one_and_no_other() {
+        use std::sync::mpsc;
+        let first = Flight::take("frame|flying");
+        let (said, heard) = mpsc::channel();
+        let waiter = std::thread::spawn(move || {
+            let _second = Flight::take("frame|flying");
+            said.send(()).unwrap();
+        });
+        // Twin: another key's decode goes at once beside it.
+        drop(Flight::take("frame|other"));
+        assert!(heard.recv_timeout(Duration::from_millis(200)).is_err(), "the same decode waits");
+        drop(first);
+        assert!(heard.recv_timeout(Duration::from_secs(5)).is_ok(), "and goes once the first is done");
+        waiter.join().unwrap();
     }
 
     #[test]
