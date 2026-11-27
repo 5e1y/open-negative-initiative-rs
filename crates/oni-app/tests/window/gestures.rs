@@ -69,7 +69,9 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.until("the frame decoded", Duration::from_secs(60), || ctl.state.borrow().renders() >= 1);
 
     // Fitted, this small frame stands at the ceiling: ⌘+ has nothing above, ⌘0 is always there.
-    assert!(ctl.state.borrow().viewport().is_fitted() && !menus.get_live().larger && menus.get_live().fit);
+    assert!(ctl.state.borrow().viewport().is_fitted(), "the frame opens fitted");
+    assert!(!menus.get_live().larger, "fitted, this small frame has no ⌘+ above it");
+    assert!(menus.get_live().fit, "⌘0 is lit once the frame has rendered");
     // A double click shows 100 %, which no menu item asked: ⌘+ follows it up to fit, and ⌘0 fits.
     w.global::<oni_app::Canvas>().invoke_double_clicked();
     rig.pump();
@@ -77,6 +79,15 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert!(menus.get_live().larger, "twin of the fitted frame's dark ⌘+");
     rig.chord(Key::Control, "0");
     assert!(ctl.state.borrow().viewport().is_fitted(), "⌘0 fits the frame again");
+    // The next photo, of this one's size, lands where this one lay, a render that publishes nothing:
+    // its decode is what lights ⌘0.
+    let shown = ctl.state.borrow().renders();
+    rig.key(&slint::SharedString::from(Key::RightArrow));
+    assert_eq!(ctl.state.borrow().open_path(), Some(b.to_str().unwrap()));
+    rig.until("the next frame rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > shown);
+    assert!(menus.get_live().fit, "⌘0 is lit on the next photo once it has rendered");
+    rig.key(&slint::SharedString::from(Key::LeftArrow));
+    assert_eq!(ctl.state.borrow().open_path(), Some(a.to_str().unwrap()));
 
     // ⌥⌘] hides the panel and the title says how to bring it back; ⌘K opens the Crop tab.
     // Windows reads a bare Ctrl+Alt as AltGr when the event names no unmodified text, as this rig's do.

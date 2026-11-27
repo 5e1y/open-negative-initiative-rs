@@ -134,9 +134,7 @@ impl Ctl {
         };
         let known = previews.lock().expect("previews").get(path, &converted);
         if let Some(negative) = known {
-            if let Some(f) = self.state.borrow_mut().frame_for(path) {
-                f.negative = Some(negative);
-            }
+            self.install_negative(path, negative, None);
             self.publish_readouts([Field::GrainSize]);
             if self.downloaded(path) {
                 return;
@@ -181,13 +179,7 @@ impl Ctl {
         }
         match prepared {
             Ok((negative, full)) => {
-                if let Some(f) = self.state.borrow_mut().frame_for(path) {
-                    // The decode read the whole frame: it is the full resolution, kept rather than read again.
-                    if f.full.is_none() {
-                        f.full = full;
-                    }
-                    f.negative = Some(negative);
-                }
+                self.install_negative(path, negative, full);
                 // Grain size reads in the scan's pixels, which the decode gives.
                 self.publish_readouts([Field::GrainSize]);
                 if self.downloaded(path) {
@@ -198,6 +190,24 @@ impl Ctl {
                 self.balance_ahead();
             }
             Err(e) => self.decode_failed(path, e),
+        }
+    }
+
+    /// The open frame's decode laid in, a whole one kept as its full resolution, and the menus that read
+    /// it published: a render landing where the last one lay publishes nothing.
+    fn install_negative(self: &Rc<Self>, path: &str, negative: Arc<Negative>, full: Option<oni_graph::Source>) {
+        let installed = match self.state.borrow_mut().frame_for(path) {
+            Some(f) => {
+                if f.full.is_none() {
+                    f.full = full;
+                }
+                f.negative = Some(negative);
+                true
+            }
+            None => false,
+        };
+        if installed {
+            self.publish_menus();
         }
     }
 

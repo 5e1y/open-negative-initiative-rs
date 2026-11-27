@@ -14524,5 +14524,12 @@
     "status": "done",
     "title": "Every arrow beside a photo walks with its slide: what steps aside is the picture the canvas shows",
     "detail": "Owner: the walk's animation played half the time. The photo left stepped aside as its gallery thumbnail, and walked nowhere when that thumbnail was not in memory yet, as on a photo the filmstrip had not asked for: arrows in a burst lost their slide from the third step. The canvas's own picture and clip now step aside, whatever the thumbnails hold; a check walks a burst with no thumbnail in memory, its twins the roll's end and Reduce Motion."
+  },
+  {
+    "id": 4093,
+    "type": "fix",
+    "title": "⌘0 and Compare light as soon as the open photo is decoded",
+    "status": "done",
+    "detail": "The menus read whether the open photo is decoded (Fit, Compare), but nothing published them when its decode landed: a render republished them only when the zoom's reach moved, so a photo landing where the last one lay (the next of the same size), or a first render before the canvas was measured, left ⌘0 dark until another gesture published the menus. The window check the_menus_name_what_they_do_and_the_gestures_reach_every_target failed under load on it. The decode is now laid in through one method, install_negative, for a preview already decoded and a fresh decode alike, which publishes the menus with it. The check's assertion is split in three, each naming what it read, and walks to the next photo of the same size: there ⌘0 is lit once it has rendered; twin, without the publication the check fails 3 times in 3; with it, 24 runs in 24 green, twelve at once under load, and oni-app's 589 unit tests and clippy green."
   }
 ]
