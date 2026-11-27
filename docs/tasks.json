@@ -14146,5 +14146,12 @@
     "title": "The example upgrade_check out: it judged a render against the Swift app's thumbnails",
     "status": "done",
     "detail": "Its verdict was a render within 0.15 of the Swift thumbnail, a comparison the conversion no longer seeks; nothing runs it (no script, check or document but this log). The sidecar sweep it also made is the window check upgrade's and the migration corpus's. 208 lines removed."
+  },
+  {
+    "id": 4063,
+    "type": "refactor",
+    "title": "LocalSend's receiver in two files: its state and lifecycle, its routes and handlers",
+    "status": "done",
+    "detail": "receiver.rs had stood past the 400-line ceiling (560, grandfathered). The router and the five handlers (register, info, prepare-upload, upload, cancel) with the guard and the queries they use go to receiver/routes.rs (252 lines), moved line for line; receiver.rs keeps the policies, events, configuration, the Receiver and its shared state (313). Its ceiling entry goes. oni-localsend's 30 tests green."
   }
 ]
