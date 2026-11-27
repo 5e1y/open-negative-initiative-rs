@@ -1,7 +1,8 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, Tabs, RollStyle, Keyboard, HoloKey } from "ds/ds.slint";
+import { Wrapped } from "wrapped.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -267,12 +268,14 @@ export component Toolbar inherits Surface {
     property <length> start: Bar.traffic-lights > 0 ? Bar.traffic-lights : ShellStyle.bar-end;
     property <length> full: root.start + ShellStyle.bar-end + mode.preferred-width + history-sizing.preferred-width
         + max(sizing.preferred-width, gallery-sizing.preferred-width, steps-sizing.preferred-width)
-        + own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
+        + own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap + root.year-room;
     // The bar at its least with the gallery's keycaps worded, the flat keys' glyphs alone: narrower, the
     // keycaps lose their words too.
     property <length> least: root.start + ShellStyle.bar-end + mode.preferred-width + compact-history-sizing.preferred-width
         + max(compact-gallery-sizing.preferred-width, compact-sizing.min-width, steps-sizing.min-width)
-        + compact-own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap;
+        + compact-own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap + root.year-room;
+    // The year on film's key and its gap, through its season.
+    property <length> year-room: Wrapped.title != "" ? year-sizing.preferred-width + ShellStyle.bar-gap : 0px;
     // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
     // a binding would feed their widths back into the width that decides them.
     property <bool> compact;
@@ -331,6 +334,7 @@ export component Toolbar inherits Surface {
             history-sizing := History { visible: false; }
             compact-history-sizing := History { visible: false; compact: true; }
             own-sizing := Own { visible: false; }
+            year-sizing := HoloKey { visible: false; text: Wrapped.title; }
             compact-own-sizing := Own { visible: false; compact: true; }
             edit-sizing := Cap { visible: false; text: @tr("EDIT"); icon: Icons.edit; }
             back-sizing := Cap { visible: false; text: @tr("BACK"); icon: Icons.back; }
@@ -349,6 +353,13 @@ export component Toolbar inherits Surface {
                 width: min(self.preferred-width, parent.width);
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
+        }
+        // The year on film, in the gallery as in the editor: a plate of holographic foil among the keys.
+        if Wrapped.title != "" && !Preparing.shown: HoloKey {
+            text: Wrapped.title;
+            motif: Wrapped.motif;
+            enabled: !Wrapped.shown;
+            clicked => { Wrapped.open(); }
         }
         own := Own { compact: root.compact; }
         // `ExportButton`: one slot in both screens, EXPORT or an update over it, the primary except beside a

@@ -14559,5 +14559,12 @@
     "status": "done",
     "title": "A medal laid, turned or taken off moves the same way wherever it shows",
     "detail": "Owner: rework the medal animations a little, everywhere a medal shows. One Medal component carries it on the tile, the filmstrip's tile, the tile's keys under the hand and the status bar's keys: laid or turned by a hand, it lands from 1.3 of its side on the lively spring with a glint over its foil, settled within the curtain's 140 ms; taken off, it sinks to 0.6 of its side and fades in the same time instead of vanishing; a key passing between given and the shade turns its light. A scroll or a selection moves nothing; Reduce Motion lays and takes off at once."
+  },
+  {
+    "id": 3912,
+    "type": "feature",
+    "title": "WRAPPED 26: a key of holographic foil in the bar opens the year on film, in the gallery as in the editor",
+    "status": "done",
+    "detail": "The owner asked for a holographic WRAPPED 26 key in the header to reach the Wrapped. Through December and the January after it the bar holds, before the app's own keys, a plate of the welcome gifts' foil (ds/holo.slint, HoloKey, its measures in HoloStyle): a silver mirror under the seal's seven inks, a second grating askew over them, the light down a brushed plate, and the wordmark OPEN NEGATIVE INITIATIVE embossed across it in rows each half a phrase from the last, as the gifts carry it. It is still at rest and alive under the hand: the inks slide and a sheen crosses with the pointer; a hover lights it, a press sinks it. Its words are the owner's, the year in two figures read off the year the Wrapped tells (year::season_title), in no catalogue. A click is Act::Wrapped, so it opens on the loading state. The bar counts the key in the widths that decide where its words give way. The line that opened the year at the head of the gallery's column (#3909) is withdrawn, the key standing for it in the same window through the same two months; the menu's item, the welcome's gift and December's offer at launch stay. ONI_TODAY=2026-12 gives a bench or a check its calendar, which the season and the offer read (wrapped::today). The plate is judged in the real window, a gradient on a rounded plate being drawn square by the checks' software renderer: ONI_BENCH=wrapped takes it at rest, under the hand and pressed before it shows the year (bench/holo.rs). Checked on the window with the date given: the key stands in the gallery's bar and the editor's, inside the window, a click on either shows the year; November and February hold none."
   }
 ]

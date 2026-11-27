@@ -17,6 +17,17 @@ const LAID: Duration = Duration::from_millis(600);
 const DEVELOPED: Duration = Duration::from_secs(20);
 
 pub(super) fn wrapped(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    // The bar's key first, where a folder takes the shots and the season lays one.
+    match std::env::var_os("ONI_WRAPPED_SHOTS").map(std::path::PathBuf::from) {
+        Some(folder) => {
+            let me = ctl.clone();
+            holo::plate(ctl, folder, move || told(&me, done));
+        }
+        None => told(ctl, done),
+    }
+}
+
+fn told(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let timer = Rc::new(Timer::default());
     let done = RefCell::new(Some(done));
     let shots = std::env::var_os("ONI_WRAPPED_SHOTS").map(std::path::PathBuf::from);

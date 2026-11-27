@@ -11,9 +11,11 @@ export global Wrapped {
     in property <bool> shown;
     // Shown while its year is still being read: the view says so until the first scene is laid.
     in property <bool> loading;
-    // The year the gallery's entry tells, through December and January; empty out of them.
-    in property <string> season;
-    // The gallery's entry, clicked.
+    // The bar's key through December and January, the year it tells in two figures; empty out of them.
+    in property <string> title;
+    // The wordmark that key's foil is embossed with.
+    in property <string> motif;
+    // The bar's key, clicked.
     callback open();
     // Bumped at each showing: a view kept across a quick close and reopen starts over.
     in property <int> showing;

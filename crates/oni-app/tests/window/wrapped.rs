@@ -260,29 +260,56 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.settle();
     assert!(!wrapped.get_shown(), "shown above already, or not December");
 
-    // The gallery's column opens on the year through December and the January after it, which tells the
-    // year just ended; a click on it shows the year.
+    // The bar holds the year's key through December and the January after it, which tells the year just
+    // ended: a plate of holographic foil, in the gallery as in the editor, and a click on it shows the year.
     assert!(w.global::<oni_app::App>().get_gallery());
-    let entry = || {
+    let plate = || {
         use i_slint_backend_testing::{AccessibleRole, ElementHandle};
-        ElementHandle::find_by_accessible_label(w, "Your year on film").find(|e| e.accessible_role() == Some(AccessibleRole::Button))
+        ElementHandle::find_by_accessible_label(w, "WRAPPED 26").find(|e| e.accessible_role() == Some(AccessibleRole::Button))
     };
-    for (today, told) in [((2026, 12), "2026"), ((2027, 1), "2026")] {
+    for today in [(2026, 12), (2027, 1)] {
         ctl.wrapped_season(today);
         rig.settle();
-        assert_eq!(wrapped.get_season().as_str(), told, "{today:?}");
-        assert!(entry().is_some(), "{today:?}: the entry heads the gallery's column");
+        assert_eq!(wrapped.get_title().as_str(), "WRAPPED 26", "{today:?}");
+        assert!(plate().is_some() && key_inside(w, "WRAPPED 26"), "{today:?}: the key stands in the bar");
     }
-    println!("shot {}", rig.shot("wrapped-entry").display());
-    entry().unwrap().invoke_accessible_default_action();
-    rig.until("the year shown from the gallery", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
+    // The plate at rest, under the hand and pressed, in each mode.
+    let held = |mode: &str| {
+        use slint::platform::{PointerEventButton, WindowEvent};
+        let key = plate().unwrap();
+        let (at, size) = (key.absolute_position(), key.size());
+        let position = slint::LogicalPosition::new(at.x + size.width * 0.7, at.y + size.height / 2.0);
+        println!("shot {}", rig.shot(&format!("holo-{mode}-rest")).display());
+        w.window().dispatch_event(WindowEvent::PointerMoved { position });
+        rig.settle();
+        println!("shot {}", rig.shot(&format!("holo-{mode}-hover")).display());
+        w.window().dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
+        rig.settle();
+        println!("shot {}", rig.shot(&format!("holo-{mode}-pressed")).display());
+        w.window().dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
+    };
+    held("gallery");
+    rig.until("the year shown from the bar", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
     wrapped.invoke_close();
     rig.settle();
-    // Twin: the months on either side have no entry.
+    w.window().dispatch_event(slint::platform::WindowEvent::PointerExited);
+    lib.invoke_tile_clicked(0, false, false);
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.landed(&ctl);
+    rig.settle();
+    assert!(!w.global::<oni_app::App>().get_gallery() && plate().is_some(), "the key stands in the editor's bar too");
+    held("editor");
+    rig.until("the year shown from the editor", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
+    wrapped.invoke_close();
+    w.window().dispatch_event(slint::platform::WindowEvent::PointerExited);
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.landed(&ctl);
+    rig.settle();
+    // Twin: the months on either side have no key.
     for today in [(2026, 11), (2027, 2)] {
         ctl.wrapped_season(today);
         rig.settle();
-        assert!(wrapped.get_season().is_empty() && entry().is_none(), "{today:?}");
+        assert!(wrapped.get_title().is_empty() && plate().is_none(), "{today:?}");
     }
 
     // New Roll from Selection notes the photos it gathered.

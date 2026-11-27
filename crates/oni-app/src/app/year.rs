@@ -48,10 +48,14 @@ pub fn season(today: (i32, u32)) -> Option<i32> {
     matches!(today.1, 12 | 1).then(|| told_year(today))
 }
 
-/// The season's year as the entry's seal shows it, empty out of the season.
-fn season_word(today: (i32, u32)) -> String {
-    season(today).map(|year| year.to_string()).unwrap_or_default()
+/// The bar's key through the season: the name the owner gave it and the year in two figures, the same in
+/// every language; empty out of the season.
+fn season_title(today: (i32, u32)) -> String {
+    season(today).map(|year| format!("WRAPPED {:02}", year.rem_euclid(100))).unwrap_or_default()
 }
+
+/// The wordmark the key's foil is embossed with, as the welcome's gifts are.
+const MOTIF: &str = "OPEN NEGATIVE INITIATIVE";
 
 #[derive(Default)]
 pub struct Year {
@@ -167,7 +171,8 @@ impl Ctl {
         w.on_close(move || p.close_wrapped());
         let p = me.clone();
         w.on_open(move || p.act(crate::Act::Wrapped));
-        w.set_season(season_word(today()).into());
+        w.set_title(season_title(today()).into());
+        w.set_motif(MOTIF.into());
         let p = me.clone();
         w.on_save_all(move || p.save_wrapped(None));
         let p = me.clone();
@@ -198,13 +203,13 @@ impl Ctl {
         }
     }
 
-    /// The gallery's entry for `today`: the year it tells in its season, none out of it.
+    /// The bar's key for `today`: named for the year it tells in its season, none out of it.
     pub fn wrapped_season(&self, today: (i32, u32)) {
         let Some(w) = self.window() else { return };
-        w.global::<Wrapped>().set_season(season_word(today).into());
+        w.global::<Wrapped>().set_title(season_title(today).into());
     }
 
-    /// The gallery shown: its entry for today, and in its season the year read ahead of a click.
+    /// The gallery shown: the bar's key for today, and in its season the year read ahead of a click.
     pub(super) fn wrapped_in_gallery(self: &Rc<Self>) {
         self.wrapped_season(today());
         if let Some(year) = season(today()) {
@@ -249,8 +254,10 @@ mod tests {
     }
 
     #[test]
-    fn the_gallerys_entry_lasts_december_and_january_and_tells_one_year() {
+    fn the_bars_key_lasts_december_and_january_and_names_one_year() {
         assert_eq!((season((2026, 12)), season((2027, 1))), (Some(2026), Some(2026)));
+        assert_eq!((season_title((2026, 12)).as_str(), season_title((2027, 1)).as_str(), season_title((2100, 12)).as_str()), ("WRAPPED 26", "WRAPPED 26", "WRAPPED 00"));
+        assert_eq!(season_title((2026, 11)), "", "twin: no key out of the season");
         // Twin: the months on either side have none.
         assert_eq!((season((2026, 11)), season((2027, 2))), (None, None));
     }

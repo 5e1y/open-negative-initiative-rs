@@ -1172,10 +1172,6 @@ msgid "Projects"
 msgstr "Proyectos"
 
 #: crates/oni-ui/ui/library_tree.slint
-msgid "Your year on film"
-msgstr "Tu año en película"
-
-#: crates/oni-ui/ui/library_tree.slint
 msgid "Select photos in the Archive, then choose New Project."
 msgstr "Selecciona fotos en la pestaña Archivo y elige Nuevo proyecto."
 

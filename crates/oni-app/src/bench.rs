@@ -55,6 +55,7 @@ mod motion;
 mod screens;
 mod wave;
 mod wrapped;
+mod holo;
 pub mod chain;
 use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
 

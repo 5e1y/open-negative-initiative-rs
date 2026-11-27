@@ -49,8 +49,20 @@ impl Moment {
     }
 }
 
-/// This machine's year and month now, which the December offer reads.
+/// A bench's or a check's calendar: `ONI_TODAY=2026-12` is the year and month `today` gives.
+pub const TODAY: &str = "ONI_TODAY";
+
+/// A year and a month as `TODAY` writes them; none for anything else.
+fn dated(text: &str) -> Option<(i32, u32)> {
+    let (year, month) = text.split_once('-')?;
+    Some((year.parse().ok()?, month.parse().ok().filter(|m| (1..=12).contains(m))?))
+}
+
+/// This machine's year and month now, which the December offer and the season read.
 pub fn today() -> (i32, u32) {
+    if let Some(set) = std::env::var(TODAY).ok().as_deref().and_then(dated) {
+        return set;
+    }
     let now = chrono::Local::now();
     (now.year(), now.month())
 }
@@ -78,5 +90,17 @@ impl Year {
     /// Nothing worth telling: no frame dated in the year and no gesture made in it.
     pub fn is_empty(&self) -> bool {
         self.frames.count == 0 && self.darkroom.photos == 0 && self.darkroom.gestures == 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_checks_calendar_is_a_year_and_a_month() {
+        assert_eq!((dated("2026-12"), dated("2027-1")), (Some((2026, 12)), Some((2027, 1))));
+        // Twin: a month no calendar holds, or no month at all, sets nothing.
+        assert_eq!((dated("2026-13"), dated("2026"), dated("december")), (None, None, None));
     }
 }
