@@ -39,7 +39,7 @@ pub fn read<T: DeserializeOwned>(path: &Path, current: i64) -> Read<T> {
     match serde_json::from_slice(&bytes) {
         Ok(value) => Read::Current(value),
         Err(_) => {
-            crate::set_aside(path);
+            let _ = crate::set_aside(path);
             Read::Unreadable
         }
     }

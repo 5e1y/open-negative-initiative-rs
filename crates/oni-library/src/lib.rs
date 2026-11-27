@@ -74,16 +74,17 @@ pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Opti
     let data = std::fs::read(path).ok()?;
     let parsed = serde_json::from_slice(&data);
     if parsed.is_err() {
-        set_aside(path);
+        let _ = set_aside(path);
     }
     parsed.ok()
 }
 
-/// The file renamed beside itself, `<name>.unreadable-<stamp>`.
-pub(crate) fn set_aside(path: &std::path::Path) {
+/// A support file that does not parse renamed beside itself, `<name>.unreadable-<stamp>`, so whatever it
+/// held stays readable by a hand.
+pub fn set_aside(path: &std::path::Path) -> std::io::Result<()> {
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let _ = std::fs::rename(path, path.with_file_name(format!("{name}.unreadable-{stamp}")));
+    std::fs::rename(path, path.with_file_name(format!("{name}.unreadable-{stamp}")))
 }
 
 /// `Date` as a plain `JSONEncoder` writes a required one: seconds since 2001-01-01, as old files keep it.

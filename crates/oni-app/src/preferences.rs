@@ -117,7 +117,7 @@ impl Preferences {
         let mut values = match Self::read(&self.file)? {
             Read::Parsed(values) => values,
             Read::Unreadable => {
-                self.set_aside()?;
+                oni_library::set_aside(&self.file)?;
                 self.values.clone()
             }
             Read::Absent => Map::new(),
@@ -129,12 +129,6 @@ impl Preferences {
         }
         let text = serde_json::to_vec_pretty(&self.values).map_err(std::io::Error::other)?;
         oni_settings::atomic::write_atomically(&self.file, &text)
-    }
-
-    /// The unreadable file renamed beside itself, so whatever it held can still be read by a hand.
-    fn set_aside(&self) -> std::io::Result<()> {
-        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        std::fs::rename(&self.file, self.file.with_file_name(format!("preferences.json.unreadable-{stamp}")))
     }
 }
 

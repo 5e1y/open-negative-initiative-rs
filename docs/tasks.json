@@ -14475,5 +14475,12 @@
     "status": "done",
     "title": "The starter prepares the photo opened last while its picture shows",
     "detail": "A step of the starter begins, off the interface thread and behind the hand's decodes, the default film's bake and the photo the journal last notes as opened: its film baked, its preview decoded, laid on the GPU among the kept previews and its scan made ahead (`launch_ahead`); none of it holds the starter. Its first opening in the window checks' harness: 147 ms instead of 836. About 45 MB held: the preview and its scan, a film's tables."
+  },
+  {
+    "id": 4090,
+    "type": "refactor",
+    "title": "One way to set an unreadable support file aside",
+    "status": "done",
+    "detail": "The preferences renamed an unreadable preferences.json to preferences.json.unreadable-<stamp> with a copy of oni_library's own set_aside, which names the file <name>.unreadable-<stamp>: the same rename. The library's now answers whether it moved the file, the preferences propagate that answer as before, the index's state and read_json still go on whatever it says. The sidecar's orphan and the prepare file's own names stay apart, their rules differ. oni-library's 228 tests, the preferences' four and oni-app's 587 green."
   }
 ]
