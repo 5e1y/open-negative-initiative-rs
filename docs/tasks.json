@@ -14454,5 +14454,12 @@
     "title": "The freed zones' doc comments name no Swift type any more",
     "status": "done",
     "detail": "Thirty-two comments in the help and welcome, the journal, the loupe, the stock catalogue, the film's scene, the decode's and pipeline's checks and the measure's opened on the Swift function they once ported (WhatsNew.notes, JournalEdits.settled, Pipeline.filmed, ContainerRead.writeTestDNG and the like); each now opens on what the item is or does, and the notes' order is said without Swift. Comments naming one of the interface's own globals (Space.s, ShellStyle.panel-width and the like), whose token a constant follows, stay. Comments only; the seven crates check clean."
+  },
+  {
+    "id": 4022,
+    "type": "ui",
+    "status": "done",
+    "title": "The interface's greys a step darker and the canvas pure black, the relief carried by lit edges",
+    "detail": "Owner: darker greys, the canvas 100 % black. Tokens: canvas #1b1b1b -> #000000, panel #282828 -> #1a1a1a, keycap #313131 -> #252525, tile #121212 -> #0c0c0c, the tip #2c2c2cf2 -> #202020f2, the crop's canvas bound to the canvas. Keycaps on the ground follow through their tokens, coloured ones keep theirs. On the near-black ground cast shadows vanish, so the light edges carry the relief: Depth ambient 0.25 -> 0.18, raise-light 0.04 -> 0.06, raise-edge 0.05 -> 0.08, well-lip 0.1 -> 0.16."
   }
 ]

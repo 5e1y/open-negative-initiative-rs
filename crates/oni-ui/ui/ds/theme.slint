@@ -39,7 +39,8 @@ export global Colour {
     out property <color> scrim: #0000008c;
     // `DS.Palette.overlay`: a dark badge's fill over the photo, black at 60 %.
     out property <color> overlay: #00000099;
-    out property <color> canvas-cropping: #0c0c0cff;
+    // The canvas under a crop: already black, the darkest a screen shows.
+    out property <color> canvas-cropping: DS.palette-canvas;
     // Frames shown together: their numbers in a film's edge print, an amber softened to OKLab chroma
     // 0.08 so it nods to the film beside the photos and never competes with them; 9:1 on the black.
     out property <color> edge-print: #cba372;
@@ -70,7 +71,7 @@ export global Colour {
     // The medals' three metals as flat colours, index 0 being no medal.
     out property <[color]> medal: [transparent, #b08d57, #c0c0c0, #e6c200];
     // The system tooltip's ground, opaque enough to read over a photo.
-    out property <color> tip: #2c2c2cf2;
+    out property <color> tip: #202020f2;
     // AppKit's overlay scroller knob on a dark panel.
     out property <color> knob: DS.palette-marker;
 }

@@ -28,7 +28,8 @@ export global Depth {
     // Swift's 33, so the walls stay near the face's shade, yet low enough to light the top wall at a glance.
     in-out property <float> azimuth: 100;
     in-out property <float> elevation: 40;
-    in-out property <float> ambient: 0.25;
+    // Low enough that a wall's shade reads on the near-black ground, where cast shadows no longer show.
+    in-out property <float> ambient: 0.18;
     in-out property <float> diffuse: 1;
     // 1 divides every shade by the flat face's, so the face keeps the albedo and the walls move around it.
     in-out property <float> midtone: 1;
@@ -61,10 +62,10 @@ export global Depth {
     in-out property <float> socket-softness: 0.5;
     // `Outward`, Swift's `dsFloating` (DSPopover.swift:89) at half its strength (owner's call): a lit rim along
     // the top, a face lighter at the top than at the foot, a hairline edge inside, a cast shadow (4, 3).
-    in-out property <float> raise-light: 0.04;
+    in-out property <float> raise-light: 0.06;
     in-out property <float> raise-sheen: 0.02;
     in-out property <float> raise-shade: 0.05;
-    in-out property <float> raise-edge: 0.05;
+    in-out property <float> raise-edge: 0.08;
     // CSS blur is twice SwiftUI's shadow radius: radius 4 is 8px here.
     in-out property <length> raise-shadow-y: 3px;
     in-out property <length> raise-shadow-blur: 8px;
@@ -78,7 +79,7 @@ export global Depth {
     in-out property <length> well-hollow-drop: 3px;
     // The edge one line inside (`trackLine`), and the lit lower rim outside (`rim`, radius 0.7, y 1).
     in-out property <float> well-edge: 0.35;
-    in-out property <float> well-lip: 0.1;
+    in-out property <float> well-lip: 0.16;
     in-out property <length> well-lip-y: 1px;
     in-out property <float> well-lip-soft: 0.4;
     // How far the lip reaches under a well's bounds: what a clipping container leaves below its last child.
