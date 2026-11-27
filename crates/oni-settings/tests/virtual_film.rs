@@ -63,7 +63,8 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     use oni_settings::effect_levels::{snapped, GRAIN_AMOUNT, GRAIN_SIZE, HALATION_AMOUNT, HALATION_SIZE};
     // Grain and halation keep their places on their tracks, then land on their nearest levels.
     let grain = oni_settings::blocks::Grain { amount: snapped(&GRAIN_AMOUNT, before.grain.amount), size: snapped(&GRAIN_SIZE, migrate::grain_size::microns(0.5, 1.0)) };
-    let halation = oni_settings::blocks::Halation { amount: snapped(&HALATION_AMOUNT, 0.3 * oni_settings::blocks::Halation::AMOUNT_RANGE.1), size: snapped(&HALATION_SIZE, migrate::halation::microns(0.5)) };
+    let amount = snapped(&HALATION_AMOUNT, 0.3 * oni_settings::blocks::Halation::AMOUNT_RANGE.1);
+    let halation = oni_settings::blocks::Halation { amount, size: snapped(&HALATION_SIZE, migrate::halation::microns(0.5)) };
     assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, grain, halation));
     assert_eq!((s.lens_correction, s.geometry, &s.corrections), (before.lens_correction, before.geometry, &before.corrections));
     assert_eq!((doc.label, doc.exif_line.camera.as_deref()), (Medal::Gold, Some("Lumix")));

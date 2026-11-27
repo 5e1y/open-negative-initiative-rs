@@ -337,7 +337,8 @@ fn shown(e: &mut Engine, negative: &Negative, settings: &PipelineSettings) -> Ve
 fn a_notch_made_ahead_renders_as_the_notch_made_on_its_own() {
     let Ok(device) = Device::open() else { return eprintln!("no adapter: the scans ahead are not exercised") };
     let (w, h) = (48usize, 32usize);
-    let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: (0..w * h).map(|i| { let v = (i % w) as f32 / w as f32; [v, 0.6 * v, 0.3, 1.0] }).collect() }, full_width: w as f64, undeclared: None, seed: [3, 5] };
+    let ramp = || -> Vec<[f32; 4]> { (0..w * h).map(|i| { let v = (i % w) as f32 / w as f32; [v, 0.6 * v, 0.3, 1.0] }).collect() };
+    let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: ramp() }, full_width: w as f64, undeclared: None, seed: [3, 5] };
     let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true).picking(oni_settings::VirtualStock::of("kodak-portra-800"));
     let next = crate::fields::Field::GrainAmount.knob().set(&rest, 0.3783);
     let mut engine = Engine::on(&device);

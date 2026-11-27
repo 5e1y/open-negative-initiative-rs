@@ -14384,5 +14384,12 @@
     "title": "Four files past the ceiling split: main, the engine, its view and the slider track",
     "status": "done",
     "detail": "main.rs (402) gives the window's events and the watchdog to main/watch.rs (309 left); render/engine.rs (401) its reduced decode's rebuilt border to engine/edge.rs (361 left); render/engine/view.rs (413) and slider_track.rs (401) their inline tests to view/tests.rs and slider_track/tests.rs (371 and 198 left). Moved line for line, the border's doc no longer naming its Swift function. oni-app's 585 unit tests and its binary green."
+  },
+  {
+    "id": 4082,
+    "type": "refactor",
+    "title": "Two new lines past 200 characters broken",
+    "status": "done",
+    "detail": "The ramp a render check decodes and the halation a virtual film check lays, each split where it reads, no expression changed: back to 68."
   }
 ]
