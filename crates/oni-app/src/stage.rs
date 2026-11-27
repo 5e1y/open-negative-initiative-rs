@@ -176,14 +176,19 @@ impl Stage {
 
     /// The seconds this GPU takes over a million pixels of the opened huge gift, the stage's heaviest picture: the
     /// least of a few, each awaited, so a busy moment counts for nothing.
-    pub fn pace(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) -> f32 {
+    pub fn pace(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, door: Option<&crate::render::Door>) -> f32 {
         let (width, height) = (960, 600);
         let target = Stage::target(device, width, height);
         let frame = direction::frame(&direction::Cue::at(Some(2), Some(30.0)));
         let mut least = f32::MAX;
         for _ in 0..6 {
             let began = std::time::Instant::now();
+            // Off the interface thread each draw passes `door`: wgpu refuses a surface configured while another thread submits.
+            let entered = door.is_some_and(|d| d.enter().is_ok());
             self.draw(device, queue, &frame, &target);
+            if entered {
+                door.map(crate::render::Door::leave);
+            }
             let _ = device.poll(wgpu::PollType::wait_indefinitely());
             least = least.min(began.elapsed().as_secs_f32());
         }

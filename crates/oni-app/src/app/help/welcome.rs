@@ -112,9 +112,10 @@ impl Ctl {
             let (device, queue) = (s.gpu.device.clone(), s.gpu.queue.clone());
             // Its shader compiles off this thread: the sheet is there at once, each gift a still until it lands;
             // a stage that fails on this GPU drops its end, and the stills stay.
+            let door = crate::render::app_gpu().map(|(_, _, door)| door);
             let _ = std::thread::Builder::new().name("stage".into()).spawn(move || {
                 let mut stage = Stage::new(&device);
-                let pace = stage.pace(&device, &queue);
+                let pace = stage.pace(&device, &queue, door.as_deref());
                 let _ = sender.send((stage, pace));
             });
             let timer = Timer::default();

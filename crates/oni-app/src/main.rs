@@ -112,6 +112,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         e.caches = Some(oni_app::patches::caches());
     }
     let kernels = std::sync::Arc::new(Kernels::default());
+    // wgpu refuses a surface configured while another thread submits (`GpuWaitTimeout`), which leaves the window no
+    // surface: the prewarm's submissions wait at the door until winit has made the window and configured its first.
+    engine.hold();
     let (warming, counted) = (engine.clone(), kernels.clone());
     std::thread::spawn(move || {
         let started = Instant::now();
@@ -219,6 +222,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let before = vec![(marked("Starting the graphics card"), graphics), (marked("Starting the interface"), interface), (marked("Building the window"), built)];
     starter::launch(&window, began, before, steps, kernels, ready)?;
     lights(&window);
+    let (made, door) = (window.as_weak(), engine.clone());
+    let _ = slint::spawn_local(async move {
+        if let Some(w) = made.upgrade() {
+            let _ = w.window().winit_window().await;
+        }
+        door.release();
+    });
     // winit makes the window once the loop runs: its full-screen transitions are followed from then.
     let after = window.as_weak();
     let _ = slint::spawn_local(async move {

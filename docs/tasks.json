@@ -14356,5 +14356,12 @@
     "status": "done",
     "title": "A digital photo decoded ahead of its opening: on its selection, and two neighbours either side",
     "detail": "A plain press on a gallery tile that leaves one photo selected decodes it into the disk cache behind the hand's work, the same decode the neighbours of an open photo take, now two either side (the next first); an opening of a file whose decode another thread runs waits for it and reads it back (`cache::Flight`) rather than running LibRaw a second time. A double click on a 47 Mpx RW2 not yet decoded: 287 ms from its second press to the image, against 500 ms."
+  },
+  {
+    "id": 3893,
+    "type": "fix",
+    "status": "done",
+    "title": "No thread submits on the shared device while the window configures its surface",
+    "detail": "wgpu refuses a surface configured while another thread submits (`GpuWaitTimeout`), the surface then left as it was or with none: the welcome stage's pace measure submitted off the interface thread outside the render door, so under load a launch kept the starter's 720 × 568 drawable in its 1100 × 680 window and failed its configure every frame (3 launches in 16); and the kernels' prewarm submitted while winit made the window and configured its first surface. The pace's draws pass the door, and the door stays closed from the prewarm's start until winit has made the window: 0 launches in 10 under the same load."
   }
 ]
