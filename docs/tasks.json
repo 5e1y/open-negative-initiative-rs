@@ -14377,5 +14377,12 @@
     "title": "The pipeline's, render's, settings' and keycap's doc comments name no Swift type any more",
     "status": "done",
     "detail": "Twenty-five doc comments in oni-pipeline (chain, finishing, flat-field, detail, texture, the scanner's legacy look), oni-render, oni-settings (spectrogram, saturation, vignette, geometry, parameters) and oni-keycap opened on the Swift function they once ported; each now opens on what the item is or does. Four more said the Swift app did it so (the pipeline's order, a mask gone, the settings' serialised names, Geometry's gestures): they now give the reason alone, the names being those the sidecars on disk carry. Comments only; the crates check clean."
+  },
+  {
+    "id": 4081,
+    "type": "refactor",
+    "title": "Four files past the ceiling split: main, the engine, its view and the slider track",
+    "status": "done",
+    "detail": "main.rs (402) gives the window's events and the watchdog to main/watch.rs (309 left); render/engine.rs (401) its reduced decode's rebuilt border to engine/edge.rs (361 left); render/engine/view.rs (413) and slider_track.rs (401) their inline tests to view/tests.rs and slider_track/tests.rs (371 and 198 left). Moved line for line, the border's doc no longer naming its Swift function. oni-app's 585 unit tests and its binary green."
   }
 ]
