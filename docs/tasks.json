@@ -14391,5 +14391,12 @@
     "title": "Two new lines past 200 characters broken",
     "status": "done",
     "detail": "The ramp a render check decodes and the halation a virtual film check lays, each split where it reads, no expression changed: back to 68."
+  },
+  {
+    "id": 4083,
+    "type": "fix",
+    "title": "The superseded-read check no longer hangs on macOS's FIFO",
+    "status": "done",
+    "detail": "library::reading::tests::a_read_superseded_during_a_file_read_writes_no_row_under_a_moved_path hung 3 times in 200 runs alone (and once for five hours in the night's run): its read waits on a FIFO standing in for a sidecar, and macOS can leave a FIFO's reader in read() after its last writer wrote and closed. Caught live: the FIFO open for reading alone, its two bytes read, no writer in any process. Reproduced outside ONI in Python, 4 then 5 in 3000 runs, each freed by one more open and close for writing. The check now opens and closes the FIFO read-write until the read's thread ends (read too, so it never blocks): 200 runs in 200, oni-app's 585 tests green. The library's read path reads no FIFO; the window check prepare_masks holds a mask's read on a FIFO the same way and is left as it is."
   }
 ]
