@@ -14482,5 +14482,12 @@
     "title": "One way to set an unreadable support file aside",
     "status": "done",
     "detail": "The preferences renamed an unreadable preferences.json to preferences.json.unreadable-<stamp> with a copy of oni_library's own set_aside, which names the file <name>.unreadable-<stamp>: the same rename. The library's now answers whether it moved the file, the preferences propagate that answer as before, the index's state and read_json still go on whatever it says. The sidecar's orphan and the prepare file's own names stay apart, their rules differ. oni-library's 228 tests, the preferences' four and oni-app's 587 green."
+  },
+  {
+    "id": 4091,
+    "type": "refactor",
+    "title": "The window checks' list names each check once",
+    "status": "done",
+    "detail": "Each of the 315 checks was written twice in tests/window/checks.rs, its name as a string beside its path, and ten of those lines ran past 200 characters. A macro, check!, takes the path and makes the name from it, a check in one of a module's parts (editors::curves, editors::panel) keeping its module's name, so every name the runner prints, filters on and times stays as it was: the runner's --list gives the same 315 names before and after. Lines past 200 characters: 68 to 58."
   }
 ]
