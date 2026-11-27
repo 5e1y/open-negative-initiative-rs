@@ -306,6 +306,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     check!(toolbar_fit::the_bar_holds_every_word_on_a_13_inch_screen),
     check!(toolbar_fit::the_bars_last_key_stays_inside_the_narrowest_window_in_every_language),
+    check!(toolbar_fit::the_bar_with_the_years_key_stays_inside_the_window_in_every_language),
     check!(hand_rest::the_view_renders_sharp_once_the_hand_has_rested_on_the_timers_clock),
     check!(knob_arrival::a_blocks_reset_springs_every_knob_home_on_one_timer),
     check!(toolbar::every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu),

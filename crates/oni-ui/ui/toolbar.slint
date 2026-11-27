@@ -1,8 +1,9 @@
 // The top bar, one layout in every mode: the mode key and the history, the mode's own groups centred and ended
 // past a rule by Reset, Trash too in the gallery, then the app's keys and the screen's commit, each a glyph over its word.
 import { Act } from "act.slint";
-import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, Tabs, RollStyle, Keyboard, HoloKey } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, ButtonStyle, Divider, Surface, ShellStyle, Tabs, RollStyle, Keyboard } from "ds/ds.slint";
 import { Wrapped } from "wrapped.slint";
+import { YearKey } from "year_key.slint";
 import { Preparing } from "prepare_state.slint";
 import { PanelState, PanelTab } from "panel/state.slint";
 import { Canvas } from "canvas_state.slint";
@@ -274,13 +275,18 @@ export component Toolbar inherits Surface {
     property <length> least: root.start + ShellStyle.bar-end + mode.preferred-width + compact-history-sizing.preferred-width
         + max(compact-gallery-sizing.preferred-width, compact-sizing.min-width, steps-sizing.min-width)
         + compact-own-sizing.preferred-width + ShellStyle.export-width + 4 * ShellStyle.bar-gap + root.year-room;
-    // The year on film's key and its gap, through its season.
-    property <length> year-room: Wrapped.title != "" ? year-sizing.preferred-width + ShellStyle.bar-gap : 0px;
+    // The year on film's key through its season, out of a roll's steps: its room bare, and what its word adds.
+    property <bool> year: Wrapped.title != "" && !Preparing.shown;
+    property <length> year-room: root.year ? bare-year-sizing.preferred-width + ShellStyle.bar-gap : 0px;
+    property <length> year-word: root.year ? year-sizing.preferred-width - bare-year-sizing.preferred-width : 0px;
     // Settled once the bar is laid: the history's and the app's keys stand in the bar's own layout, so
     // a binding would feed their widths back into the width that decides them.
     property <bool> compact;
     property <bool> bare;
+    // The year's word goes first: it stays only where every word of the bar has its room beside it.
+    property <bool> year-worded;
     function fit() {
+        root.year-worded = root.width >= root.full + root.year-word;
         root.compact = root.width < root.full;
         root.bare = root.width < root.least;
         Bar.needed = root.full;
@@ -290,6 +296,7 @@ export component Toolbar inherits Surface {
     changed width => { root.fit(); }
     changed full => { root.fit(); }
     changed least => { root.fit(); }
+    changed year-word => { root.fit(); }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
     property <bool> tool: Bar.editing && (PanelState.tab == PanelTab.crop || PanelState.tab == PanelTab.dedust);
     // Out of the gallery, the mode key goes back to it.
@@ -334,7 +341,8 @@ export component Toolbar inherits Surface {
             history-sizing := History { visible: false; }
             compact-history-sizing := History { visible: false; compact: true; }
             own-sizing := Own { visible: false; }
-            year-sizing := HoloKey { visible: false; text: Wrapped.title; }
+            year-sizing := YearKey { visible: false; }
+            bare-year-sizing := YearKey { visible: false; worded: false; }
             compact-own-sizing := Own { visible: false; compact: true; }
             edit-sizing := Cap { visible: false; text: @tr("EDIT"); icon: Icons.edit; }
             back-sizing := Cap { visible: false; text: @tr("BACK"); icon: Icons.back; }
@@ -354,13 +362,7 @@ export component Toolbar inherits Surface {
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
         }
-        // The year on film, in the gallery as in the editor: a plate of holographic foil among the keys.
-        if Wrapped.title != "" && !Preparing.shown: HoloKey {
-            text: Wrapped.title;
-            motif: Wrapped.motif;
-            enabled: !Wrapped.shown;
-            clicked => { Wrapped.open(); }
-        }
+        if root.year: YearKey { worded: root.year-worded; }
         own := Own { compact: root.compact; }
         // `ExportButton`: one slot in both screens, EXPORT or an update over it, the primary except beside a
         // roll awaiting Prepare Roll or under a tool; hidden while a roll is prepared.

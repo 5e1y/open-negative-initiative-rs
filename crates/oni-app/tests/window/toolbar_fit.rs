@@ -127,3 +127,53 @@ pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_langu
     }
     oni_app::language::speak(Some(oni_i18n::Language::English));
 }
+
+/// In its season the bar holds the year's key as well: on the narrowest window and on a 13-inch screen, in
+/// every language, in the editor, in the gallery and while a roll is prepared, its last key ends inside
+/// the window by the bar's end.
+pub(crate) fn the_bar_with_the_years_key_stays_inside_the_window_in_every_language() {
+    // The check's calendar says December from the launch on: the gallery reads it again each time it shows.
+    unsafe { std::env::set_var(oni_library::wrapped::TODAY, "2026-12") };
+    let Some(app) = crate::panel_bindings::opened("bar-year") else { return };
+    let common::App { rig, shell, .. } = &app;
+    let (w, ctl) = (&shell.window, shell.ctl.clone());
+    let bar = w.global::<Bar>();
+    bar.set_traffic_lights(LIGHTS);
+    let height = bar.get_height();
+    rig.settle();
+    let preparing = w.global::<oni_app::Preparing>();
+    let keyed = || !common::placed(w, Role::Button, "WRAPPED 26").is_empty();
+    assert!(keyed(), "the year's key stands in December's bar");
+    let mut ends = Vec::new();
+    for language in [oni_i18n::Language::English, oni_i18n::Language::French, oni_i18n::Language::Spanish] {
+        oni_app::language::speak(Some(language));
+        rig.settle();
+        if common::placed(w, Role::Button, oni_i18n::tr("EXPORT")).is_empty() {
+            println!("{language:?}: the live interface reads English, judged on the app profile");
+            continue;
+        }
+        for width in [NARROWEST, AIR_13] {
+            let editor = right_end(rig, w, width, height);
+            rig.chord(slint::platform::Key::Control, "g");
+            let gallery = right_end(rig, w, width, height);
+            assert!(keyed(), "{language:?}, {width} pt: the year's key stands in the gallery's bar");
+            println!("shot {}", rig.shot(&format!("bar-year-gallery-{}-{width}", language.key())).display());
+            ctl.act(oni_app::Act::PrepareRoll);
+            rig.until("the roll's surface", std::time::Duration::from_secs(5), || preparing.get_shown());
+            let prepare = right_end(rig, w, width, height);
+            ctl.act(oni_app::Act::LeaveRoll);
+            rig.settle();
+            rig.chord(slint::platform::Key::Control, "g");
+            rig.settle();
+            ends.push((language.key(), width, editor, gallery, prepare));
+        }
+    }
+    println!("the bar's last key ends at (language, window, editor, gallery, prepare): {ends:?}");
+    let past: Vec<_> = ends.iter().filter(|(_, width, editor, gallery, prepare)| [editor, gallery, prepare].iter().any(|end| **end > width - END + 0.5)).collect();
+    assert!(past.is_empty(), "past the window's edge: {past:?}");
+    // Twin: on a window narrower than the bar folds to, the same measure sees its last key past the edge.
+    oni_app::language::speak(Some(oni_i18n::Language::English));
+    let cramped = NARROWEST / 2.0;
+    assert!(right_end(rig, w, cramped, height) > cramped - END + 0.5, "twin: a bar that cannot fit is seen past the edge");
+}
+

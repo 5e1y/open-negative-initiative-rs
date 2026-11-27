@@ -1,56 +1,51 @@
-// The holographic key: a plate of the welcome gifts' foil laid in the bar. A silver mirror whose gratings
-// split the light into the seal's seven inks, the wordmark embossed across it in rows; the inks slide and a
-// sheen follows as the hand crosses it, so it is alive under the hand and still at rest.
-import { Space, Radius, Type, Motion, ButtonStyle, SealStyle, Foil } from "theme.slint";
-import { Look } from "button.slint";
+// The holographic face of a keycap: the welcome gifts' foil. A silver mirror whose gratings split the light
+// into the seal's seven inks, the wordmark embossed across it in rows; the inks slide and a sheen follows
+// as the hand crosses the key, so it is alive under the hand and still at rest.
+import { Type, Motion, SealStyle, Foil } from "theme.slint";
+
+// The wordmark every holographic face is embossed with, one phrase, set once by the app.
+export global Holo {
+    in property <string> wordmark;
+}
 
 export global HoloStyle {
-    out property <length> padding: Space.m;
+    // The key's body under its face, and the ink that stands on the foil.
+    out property <color> body: Foil.body(1);
+    out property <color> ink: SealStyle.ink;
     // The wordmark's rows: their height, the letters' size in them, and how far the inks travel under the hand.
     out property <length> row: 7px;
     out property <length> letters: 5px;
     out property <int> rows: 8;
-    // The embossing stops this far from the plate's edge.
+    // The embossing stops this far from the face's edge.
     out property <length> inset: 2px;
     out property <float> travel: 0.1;
-    // How far the gratings lean when the hand reaches an end of the plate.
+    // How far the gratings lean when the hand reaches an end of the key.
     out property <angle> lean: 14deg;
-    // The light the plate's top edge takes, and the shade its foot falls into.
+    // The light the face's top edge takes, and the shade its foot falls into.
     out property <float> top: 0.35;
     out property <float> foot: 0.5;
     // How much of the facets' second grating shows over the first, and of the embossed letters.
     out property <float> facet: 0.25;
     out property <float> emboss: 0.16;
-    // The sheen that crosses the plate with the hand, and the light a hover and a press give and take.
+    // The sheen that crosses the face with the hand, at rest and under it.
     out property <float> sheen: 0.7;
-    out property <float> lift: 0.16;
-    out property <float> sink: 0.36;
-    out property <length> press: 1px;
-    out property <length> rule: 0.5px;
 }
 
-export component HoloKey inherits Rectangle {
-    in property <string> text;
-    // The wordmark the foil is embossed with, one phrase.
-    in property <string> motif;
-    in property <Look> look: Look.live;
-    in property <bool> enabled: true;
-    callback clicked();
-    property <bool> hovered: root.enabled && (root.look == Look.hover || (root.look == Look.live && touch.has-hover));
-    property <bool> pressed: root.enabled && (root.look == Look.pressed || (root.look == Look.live && touch.pressed));
-    // Where the hand is across the plate, 0 to 1: its middle at rest.
-    property <float> hand: touch.has-hover ? clamp(touch.mouse-x / max(1px, self.width), 0, 1) : 0.5;
-    animate hand { duration: Motion.quick; easing: ease-out; }
-    height: ButtonStyle.bar-key;
-    width: label.preferred-width + 2 * HoloStyle.padding;
-    border-radius: Radius.control;
+export component HoloFace inherits Rectangle {
+    in property <length> radius;
+    // Where the hand is across the key, 0 to 1, its middle at rest; and whether it is on the key.
+    in property <float> hand: 0.5;
+    in property <bool> hovered;
+    property <float> at: root.hand;
+    animate at { duration: Motion.quick; easing: ease-out; }
+    border-radius: root.radius;
     background: Foil.deep(1);
-    // How far the hand has turned the plate, -1 to 1: the gratings lean and their inks slide with it.
-    property <float> turn: 2 * (root.hand - 0.5);
+    // How far the hand has turned the key, -1 to 1: the gratings lean and their inks slide with it.
+    property <float> turn: 2 * (root.at - 0.5);
     property <float> slide: root.turn * HoloStyle.travel;
-    // The gratings' inks, the seal's seven, across the plate.
+    // The gratings' inks, the seal's seven, across the face.
     Rectangle {
-        border-radius: root.border-radius;
+        border-radius: root.radius;
         property <float> a: 0.14 + root.slide;
         property <float> b: 0.29 + root.slide;
         property <float> c: 0.43 + root.slide;
@@ -62,7 +57,7 @@ export component HoloKey inherits Rectangle {
     }
     // The facets' own grating, askew, leaning the other way, mixed over the first.
     Rectangle {
-        border-radius: root.border-radius;
+        border-radius: root.radius;
         property <color> first: #9090ff;
         property <color> second: #ff9090;
         property <color> third: #90ff90;
@@ -70,14 +65,14 @@ export component HoloKey inherits Rectangle {
         background: @linear-gradient(35deg - root.turn * HoloStyle.lean, self.first.with-alpha(HoloStyle.facet) 0%, self.second.with-alpha(HoloStyle.facet) 33%,
             self.third.with-alpha(HoloStyle.facet) 66%, self.last.with-alpha(HoloStyle.facet) 100%);
     }
-    // The light down the plate: a lit top edge, the body left to its inks, a foot in the plate's own shade.
+    // The light down the face: a lit top edge, the body left to its inks, a foot in the foil's own shade.
     Rectangle {
-        border-radius: root.border-radius;
+        border-radius: root.radius;
         property <color> shade: Foil.deep(1);
         background: @linear-gradient(180deg, Foil.bright(1).with-alpha(HoloStyle.top) 0%, Foil.bright(1).with-alpha(0) 30%, self.shade.with-alpha(0) 50%,
             self.shade.with-alpha(HoloStyle.foot) 100%);
     }
-    // The wordmark embossed in rows, each half a phrase from the last, kept inside the plate's edge.
+    // The wordmark embossed in rows, each half a phrase from the last, kept inside the face's edge.
     Rectangle {
         x: HoloStyle.inset;
         y: HoloStyle.inset;
@@ -85,13 +80,13 @@ export component HoloKey inherits Rectangle {
         height: parent.height - 2 * HoloStyle.inset;
         clip: true;
         for row in HoloStyle.rows: HorizontalLayout {
-            x: -(mod(row, 2) == 0 ? 0px : self.preferred-width / 6) - root.width * 0.3 * (root.hand - 0.5) - HoloStyle.row;
+            x: -(mod(row, 2) == 0 ? 0px : self.preferred-width / 6) - root.width * 0.3 * (root.at - 0.5) - HoloStyle.row;
             y: row * HoloStyle.row - HoloStyle.row / 2;
             width: self.preferred-width;
             height: HoloStyle.row;
             spacing: HoloStyle.row;
             for copy in 3: Text {
-                text: root.motif;
+                text: Holo.wordmark;
                 font-family: Type.display;
                 font-weight: Type.display-weight;
                 font-size: HoloStyle.letters;
@@ -102,51 +97,13 @@ export component HoloKey inherits Rectangle {
     }
     // The sheen: a band of the studio's light that crosses with the hand.
     Rectangle {
-        border-radius: root.border-radius;
-        property <float> at: clamp(root.hand, 0.24, 0.76);
-        property <float> before: self.at - 0.22;
-        property <float> after: self.at + 0.22;
+        border-radius: root.radius;
+        property <float> middle: clamp(root.at, 0.24, 0.76);
+        property <float> before: self.middle - 0.22;
+        property <float> after: self.middle + 0.22;
         property <color> clear: Foil.bright(1).with-alpha(0);
         property <float> strength: root.hovered ? HoloStyle.sheen : HoloStyle.sheen / 2;
-        background: @linear-gradient(90deg, self.clear 0%, self.clear self.before, Foil.bright(1).with-alpha(self.strength) self.at, self.clear self.after, self.clear 100%);
+        background: @linear-gradient(90deg, self.clear 0%, self.clear self.before, Foil.bright(1).with-alpha(self.strength) self.middle, self.clear self.after, self.clear 100%);
         animate strength { duration: Motion.quick; }
-    }
-    // Under the hand the plate lights; pressed, it sinks into its own shade.
-    Rectangle {
-        border-radius: root.border-radius;
-        background: root.pressed ? SealStyle.ink.with-alpha(HoloStyle.sink) : root.hovered ? Foil.bright(1).with-alpha(HoloStyle.lift) : transparent;
-        animate background { duration: Motion.quick; }
-    }
-    Rectangle {
-        border-radius: root.border-radius;
-        border-width: HoloStyle.rule;
-        border-color: Foil.bright(1).with-alpha(0.5);
-    }
-    // The words stand proud of the foil: a light edge under ink the seal's own.
-    Text {
-        x: label.x;
-        y: label.y + SealStyle.emboss-y * -1;
-        text: root.text;
-        font-family: Type.display;
-        font-weight: Type.display-weight;
-        font-size: Type.caption;
-        color: Foil.bright(1).with-alpha(0.55);
-    }
-    label := Text {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2 + (root.pressed ? HoloStyle.press : 0px);
-        text: root.text;
-        font-family: Type.display;
-        font-weight: Type.display-weight;
-        font-size: Type.caption;
-        color: SealStyle.ink;
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        mouse-cursor: pointer;
-        accessible-role: button;
-        accessible-label: root.text;
-        accessible-action-default => { root.clicked(); }
-        clicked => { root.clicked(); }
     }
 }

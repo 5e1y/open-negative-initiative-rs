@@ -1,5 +1,5 @@
-//! The bar's holographic key taken off the real window before the year on film is shown: at rest, under
-//! the hand and pressed, found by its foil, the bar's one light and coloured thing.
+//! The bar's holographic keycap taken off the real window before the year on film is shown: at rest,
+//! under the hand and pressed, narrow and wide, found by its foil, the bar's one light and coloured thing.
 
 use super::*;
 use crate::Wrapped;
@@ -40,45 +40,73 @@ fn foil((rgba, width): &(Vec<u8>, usize)) -> Option<(f32, f32)> {
     Some((left as f32 + (right - left) as f32 * ACROSS, (top + foot) as f32 / 2.0))
 }
 
-/// The key's three looks written into `folder`, then `after`; at once where the bar holds no key.
+/// The window narrow, where the bar folds, and wide, where every word has its room, in points.
+const SIZES: [(&str, (f32, f32)); 2] = [("narrow", (1100.0, 680.0)), ("wide", (1440.0, 900.0))];
+
+/// The key's looks written into `folder`, then `after`: at rest, under the hand and pressed in the
+/// gallery's bar at each size, then at rest in the editor's; at once where the bar holds no key.
 pub(super) fn plate(ctl: &Rc<Ctl>, folder: std::path::PathBuf, after: impl FnOnce() + 'static) {
     let Some(w) = ctl.window().filter(|w| !w.global::<Wrapped>().get_title().is_empty()) else { return after() };
     let timer = Rc::new(Timer::default());
-    let (held, after) = (timer.clone(), RefCell::new(Some(after)));
+    let (me, held, after) = (Rc::downgrade(ctl), timer.clone(), RefCell::new(Some(after)));
     let (step, at) = (Cell::new(0usize), Cell::new(None::<slint::LogicalPosition>));
     let asked = Instant::now();
     timer.start(TimerMode::Repeated, LAID, move || {
-        let Some(w) = w.as_weak().upgrade() else { return held.stop() };
+        let (Some(ctl), Some(w)) = (me.upgrade(), w.as_weak().upgrade()) else { return held.stop() };
         if asked.elapsed() < DRAWN {
             return;
         }
         let scale = w.window().scale_factor();
-        let left = PointerEventButton::Left;
-        match step.replace(step.get() + 1) {
+        let sized = |(across, down): (f32, f32)| w.window().set_size(slint::LogicalSize::new(across, down));
+        let shot = |name: String| {
+            let picture = taken(&w);
+            if let Some(picture) = &picture {
+                written(&folder, &name, picture);
+            }
+            picture
+        };
+        let now = step.replace(step.get() + 1);
+        // Each size takes four ticks in the gallery: laid, at rest, under the hand, pressed.
+        let (size, look) = (now / 4, now % 4);
+        if let Some((name, points)) = SIZES.get(size) {
+            match look {
+                0 => sized(*points),
+                1 => {
+                    let rest = shot(format!("holo-{name}-rest.jpg"));
+                    at.set(rest.as_ref().and_then(foil).map(|(x, y)| slint::LogicalPosition::new(x / scale, y / scale)));
+                    if let Some(position) = at.get() {
+                        w.window().dispatch_event(WindowEvent::PointerMoved { position });
+                    }
+                }
+                2 => {
+                    shot(format!("holo-{name}-hover.jpg"));
+                    if let Some(position) = at.get() {
+                        w.window().dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
+                    }
+                }
+                _ => {
+                    shot(format!("holo-{name}-pressed.jpg"));
+                    // The hand leaves without a click: the bench shows the year itself.
+                    w.window().dispatch_event(WindowEvent::PointerExited);
+                }
+            }
+            return;
+        }
+        // Then the editor's bar, on the gallery's first photo, wide then narrow.
+        match now - 4 * SIZES.len() {
             0 => {
-                let rest = taken(&w);
-                at.set(rest.as_ref().and_then(foil).map(|(x, y)| slint::LogicalPosition::new(x / scale, y / scale)));
-                if let Some(picture) = &rest {
-                    written(&folder, "holo-rest.jpg", picture);
-                }
-                if let Some(position) = at.get() {
-                    w.window().dispatch_event(WindowEvent::PointerMoved { position });
-                }
+                w.global::<crate::Library>().invoke_tile_clicked(0, false, false);
+                ctl.act(crate::Act::ToggleMode);
             }
-            1 => {
-                if let Some(picture) = taken(&w) {
-                    written(&folder, "holo-hover.jpg", &picture);
-                }
-                if let Some(position) = at.get() {
-                    w.window().dispatch_event(WindowEvent::PointerPressed { position, button: left });
-                }
+            1..=3 => {}
+            4 => {
+                shot("holo-editor-wide.jpg".into());
+                sized(SIZES[0].1);
             }
+            5 => {}
             _ => {
-                if let Some(picture) = taken(&w) {
-                    written(&folder, "holo-pressed.jpg", &picture);
-                }
-                // The hand leaves without a click: the bench shows the year itself.
-                w.window().dispatch_event(WindowEvent::PointerExited);
+                shot("holo-editor-narrow.jpg".into());
+                ctl.act(crate::Act::ToggleMode);
                 held.stop();
                 if let Some(after) = after.borrow_mut().take() {
                     after();
