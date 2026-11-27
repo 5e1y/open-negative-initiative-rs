@@ -14643,5 +14643,12 @@
     "title": "A notched slider's knob stands on its notches: under the hand it lands on each it crosses, and a key or an arrow moves it one at once",
     "status": "done",
     "detail": "Owner's notes: the notched sliders of a digital photo's film effects felt no notch, + and - seemed not to work and the knob lagged before it placed. Reproduced through the window's pointer: under a drag the knob was laid where the hand was, between notches (0.044 of the travel while its readout already named the first notch), and aligned only at the release; after a - or + key or an arrow the value moved one notch at once but the knob sprang there, Rust's spring and the slider's own animation one over the other, 925 to 947 ms before it stood on its notch. The drag and the scroll now lay a notched knob on the notch its value is on (wiring), a value arriving on a notched track places its knob rather than springing it (publishing), and the design system's slider draws a notched knob unanimated (ds/slider.slint): the knob stands on its notch in the turn that took the press, 0 ms. Continuous sliders spring as before. The scans made ahead at rest now cover a notch either side of each of the six scanned fields, the one moved last first (render::ahead, AHEAD 12, about 255 MB on a 47 Mpx photo against 85), so the next notch of any field lands on a scan made ahead, not only the last field's and shooting exposure's and grain's. Checks: notched_sliders::a_notched_slider_lands_on_each_notch_under_the_hand_and_each_key_moves_one_at_once (twins: Exposure's drag floats between values and its key still springs), render::ahead::tests::the_notches_ahead_are_the_hands_way_first_then_every_scanned_fields (each scanned field's notches either side made)."
+  },
+  {
+    "id": 4257,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: a notched slider's knob stands on its notches, twelve scans made ahead",
+    "detail": "The working notes follow #4102: the knob rests on each notch under a drag and at a key, and the scans made ahead cover one notch either side of the six fields."
   }
 ]

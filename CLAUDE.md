@@ -95,10 +95,11 @@ the code; a costly trap keeps its constraint and its number in two lines.
   sliders free on top. A slide's lies on its positive; a scanned negative takes none.
 - **A digital photo's film effects are notched** (owner's call, 2026-11-27): grain, halation, bloom and the shooting exposure step through
   named levels (`oni_settings::effect_levels`), each film's rests among them, ticked on the rail; a key, an arrow or the value editor moves
-  one notch, a drag lands on the nearer, a number typed on the nearest. At rest the render thread makes the preview scans one notch either
-  side of the field the hand moved last, then of exposure and grain, while no job waits (`render::ahead`, four kept, about 85 MB on a 47
-  Mpx photo), so the notch beside lands in the next frame. Format 82 lays an older photo's values on their nearest levels, the person's own
-  stock files read first.
+  one notch, the knob standing on it in the same turn, no spring; under a drag the knob rests on each notch it crosses, the readout with
+  it; a number typed lands on the nearest. At rest the render thread makes the preview scans one notch either side of each of the six
+  fields, the one the hand moved last first, while no job waits (`render::ahead`, twelve kept, about 255 MB on a 47 Mpx photo), so the
+  notch beside lands in the next frame. Format 82 lays an older photo's values on their nearest levels, the person's own stock files
+  read first.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each profile from the
   official sheet's curves into its stock's file; no spektrafilm profile ships. A slide's bake follows spektrafilm's model (its dyes, couplers); a
   colour negative's is its fitted curves and couplers over its sheet's sensitivities and D-min, the sheet's printed curves kept in its profile; a
