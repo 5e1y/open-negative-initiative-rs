@@ -41,13 +41,15 @@ impl Ctl {
         g.on_drag(move |field, translation, span, fine| {
             let Some(f) = Field::from_index(field) else { return };
             let i = f.index() as usize;
-            let (asked, live, offer) = {
+            let (at, live, offer) = {
                 let mut s = p.state.borrow_mut();
                 let (range, rest) = (track_on(f, s.store.settings()), f.base(s.store.settings()));
                 let slide = &mut s.slides[i];
                 let Some(drag) = slide.drag.as_mut() else { return };
                 let asked = track::clamped(track::asked(drag.from, translation, span, fine));
                 let live = crate::slider_track::landed(f, asked, &range, rest);
+                // A notched knob stands on the notch the hand is nearest, never between two.
+                let at = if range.levels.is_some() { position_on(f, live, &range) } else { asked };
                 let now = Instant::now();
                 drag.live = Some(live);
                 slide.moved_at = Some(now);
@@ -55,9 +57,9 @@ impl Ctl {
                 if offer == Offer::Now {
                     s.moved_at = Some(now);
                 }
-                (asked, live, offer)
+                (at, live, offer)
             };
-            p.place(f, asked);
+            p.place(f, at);
             if let Some(w) = p.window() {
                 set_readout(&w.global::<Store>(), f, p.readout_at(f, live).into());
             }
@@ -95,9 +97,10 @@ impl Ctl {
             let from = p.state.borrow().slides[f.index() as usize].knob.at(Instant::now());
             let asked = track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine));
             p.scroll_kept_alive();
-            p.place(f, asked);
             let range = track_on(f, p.state.borrow().store.settings());
-            p.set(f, stored_on(f, asked, &range));
+            let stored = stored_on(f, asked, &range);
+            p.place(f, if range.levels.is_some() { position_on(f, stored, &range) } else { asked });
+            p.set(f, stored);
             true
         });
 

@@ -33,6 +33,7 @@ mod frame_gesture;
 mod frame_owner;
 mod folder_owner;
 mod film_effects;
+mod notched_sliders;
 mod lens;
 mod density;
 mod picture_plots;

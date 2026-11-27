@@ -123,9 +123,10 @@ export component Slider inherits VerticalLayout {
     accessible-action-increment => { root.nudge(1); }
     accessible-action-decrement => { root.nudge(-1); }
     property <float> at: clamp(root.fraction, 0, 1);
-    // What the rail and the knob show: sprung on `settle` for a value from elsewhere, never under the hand.
+    // What the rail and the knob show: sprung on `settle` for a value from elsewhere, never under the hand nor
+    // between two notches, which it goes from one to the next at once.
     property <float> shown: root.at;
-    animate shown { duration: area.held || area.scrolling ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
+    animate shown { duration: area.held || area.scrolling || root.notches > 1 ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
     // The steps from the readout to a number typed over it; Return gives the photos the keyboard back,
     // a press elsewhere has given it on already.
     function type-in(text: string) {

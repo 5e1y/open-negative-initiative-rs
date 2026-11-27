@@ -345,8 +345,8 @@ pub(crate) struct Fitting {
     provisional: bool,
 }
 
-/// The preview scans kept ahead: four of a 47 Mpx photo hold about 85 MB.
-pub(crate) const AHEAD: usize = 4;
+/// The preview scans kept ahead, a notch either side of each scanned field: twelve hold about 255 MB on a 47 Mpx photo.
+pub(crate) const AHEAD: usize = 12;
 
 impl Fitting {
     /// The scans ahead dropped when they are another photo's.

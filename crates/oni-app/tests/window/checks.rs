@@ -233,6 +233,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(channel_points::more_color_settings_move_each_its_own_channel),
     check!(film_effects::a_press_on_grains_rail_lays_the_grain_and_renders_it),
     check!(film_effects::a_press_on_halations_rail_makes_a_highlight_glow_red),
+    check!(notched_sliders::a_notched_slider_lands_on_each_notch_under_the_hand_and_each_key_moves_one_at_once),
     check!(virtual_film::a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference),
     check!(lens::each_lens_slider_lays_its_correction_and_moves_the_canvas),
     check!(lens::a_stroke_on_a_distorted_picture_is_kept_under_the_hand),

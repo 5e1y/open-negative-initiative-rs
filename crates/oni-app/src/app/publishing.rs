@@ -44,8 +44,10 @@ impl Ctl {
             set_value(&g, *f, text.clone());
             if !held {
                 set_readout(&g, *f, text);
-                let at = position_on(*f, *v, &track_on(*f, self.state.borrow().store.settings()));
-                if jump {
+                let track = track_on(*f, self.state.borrow().store.settings());
+                let at = position_on(*f, *v, &track);
+                // A notched knob goes from notch to notch at once, as the value does: it never travels between two.
+                if jump || track.levels.is_some() {
                     self.place(*f, at);
                 } else {
                     self.spring(*f, at);

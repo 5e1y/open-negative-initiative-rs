@@ -14636,5 +14636,12 @@
     "title": "A bench given a folder opens its first photo once read: the add carries the ask, which its landing no longer overwrites",
     "status": "done",
     "detail": "ONI_BENCH with a folder named at launch opened none: the bench's ask to open the first photo once read was set at once, then the add, looked at behind, set the opening it found, none for a folder, over it, so a bench drew no frame. The add now carries the ask (Added::opening_first, Shell::add_opening_first), and a file named keeps its own opening. Check: app::archive_view::adding::tests::a_path_handed_over_opens_its_folder_or_nothing (twin: a photo named keeps its own opening)."
+  },
+  {
+    "id": 4102,
+    "type": "fix",
+    "title": "A notched slider's knob stands on its notches: under the hand it lands on each it crosses, and a key or an arrow moves it one at once",
+    "status": "done",
+    "detail": "Owner's notes: the notched sliders of a digital photo's film effects felt no notch, + and - seemed not to work and the knob lagged before it placed. Reproduced through the window's pointer: under a drag the knob was laid where the hand was, between notches (0.044 of the travel while its readout already named the first notch), and aligned only at the release; after a - or + key or an arrow the value moved one notch at once but the knob sprang there, Rust's spring and the slider's own animation one over the other, 925 to 947 ms before it stood on its notch. The drag and the scroll now lay a notched knob on the notch its value is on (wiring), a value arriving on a notched track places its knob rather than springing it (publishing), and the design system's slider draws a notched knob unanimated (ds/slider.slint): the knob stands on its notch in the turn that took the press, 0 ms. Continuous sliders spring as before. The scans made ahead at rest now cover a notch either side of each of the six scanned fields, the one moved last first (render::ahead, AHEAD 12, about 255 MB on a 47 Mpx photo against 85), so the next notch of any field lands on a scan made ahead, not only the last field's and shooting exposure's and grain's. Checks: notched_sliders::a_notched_slider_lands_on_each_notch_under_the_hand_and_each_key_moves_one_at_once (twins: Exposure's drag floats between values and its key still springs), render::ahead::tests::the_notches_ahead_are_the_hands_way_first_then_every_scanned_fields (each scanned field's notches either side made)."
   }
 ]
