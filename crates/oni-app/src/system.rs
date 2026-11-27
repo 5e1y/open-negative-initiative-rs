@@ -161,6 +161,25 @@ pub fn get_text() -> Option<String> {
 /// Whether this system has a folder picker at all, so the app says so instead of doing nothing.
 pub const HAS_PICKER: bool = cfg!(any(target_os = "macos", target_os = "windows"));
 
+/// The folder every platform's support directory holds for this app.
+pub const FOLDER: &str = "Open Negative Initiative";
+
+/// The app's support folder: `ONI_SUPPORT`, else the platform's application-support directory.
+pub fn support() -> PathBuf {
+    if let Some(dir) = std::env::var_os("ONI_SUPPORT") {
+        return PathBuf::from(dir);
+    }
+    let home = oni_library::navigator::home_folder;
+    let base = if cfg!(target_os = "macos") {
+        home().join("Library/Application Support")
+    } else if cfg!(windows) {
+        std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_else(home)
+    } else {
+        std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).unwrap_or_else(|| home().join(".local/share"))
+    };
+    base.join(FOLDER)
+}
+
 /// `AppFolders.caches`, which the system may purge and the index rebuilds from; `ONI_CACHES` gives
 /// a check its own.
 pub fn caches() -> PathBuf {
@@ -175,7 +194,7 @@ pub fn caches() -> PathBuf {
     } else {
         std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).unwrap_or_else(|| home().join(".cache"))
     };
-    base.join(crate::timing::FOLDER)
+    base.join(FOLDER)
 }
 
 /// Where the support folder's durable but rebuildable files go: on Windows the local application
@@ -185,7 +204,7 @@ pub fn local_support(support: &Path) -> PathBuf {
 }
 
 fn local_of(support: &Path, windows: bool, roaming: Option<std::ffi::OsString>, local: Option<std::ffi::OsString>) -> PathBuf {
-    let folder = |base: std::ffi::OsString| PathBuf::from(base).join(crate::timing::FOLDER);
+    let folder = |base: std::ffi::OsString| PathBuf::from(base).join(FOLDER);
     match (roaming.map(folder), local) {
         (Some(roamed), Some(local)) if windows && roamed == support => folder(local),
         _ => support.to_path_buf(),
@@ -193,206 +212,16 @@ fn local_of(support: &Path, windows: bool, roaming: Option<std::ffi::OsString>, 
 }
 
 #[cfg(target_os = "macos")]
-mod platform {
-    use std::io;
-    use std::path::{Path, PathBuf};
-    use std::time::Duration;
-
-    pub fn double_click() -> Option<Duration> {
-        let seconds = objc2_app_kit::NSEvent::doubleClickInterval();
-        Duration::try_from_secs_f64(seconds).ok()
-    }
-
-    pub fn modifiers() -> Option<(bool, bool)> {
-        use objc2_app_kit::NSEventModifierFlags as Flags;
-        let f = objc2_app_kit::NSEvent::modifierFlags_class();
-        Some((f.contains(Flags::Command) || f.contains(Flags::Control), f.contains(Flags::Shift)))
-    }
-
-    pub fn pick_folder(message: &str) -> Option<PathBuf> {
-        rfd::FileDialog::new().set_title(message).pick_folder()
-    }
-
-    fn dialog(message: &str, extensions: &[&str]) -> rfd::FileDialog {
-        let dialog = rfd::FileDialog::new().set_title(message);
-        if extensions.is_empty() { dialog } else { dialog.add_filter("", extensions) }
-    }
-
-    pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
-        dialog(message, extensions).pick_files().unwrap_or_default()
-    }
-
-    pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
-        dialog(message, extensions).pick_file()
-    }
-
-    pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
-        dialog(message, extensions).set_file_name(suggested_name).save_file()
-    }
-
-    pub fn reveal(path: &Path) {
-        let mut open = std::process::Command::new("/usr/bin/open");
-        open.arg("-R").arg(path);
-        let _ = super::launched(open);
-    }
-
-    pub fn reveal_all(paths: &[PathBuf]) {
-        use objc2_foundation::{NSArray, NSString, NSURL};
-        let urls: Vec<_> = paths.iter().map(|p| NSURL::fileURLWithPath(&NSString::from_str(&p.to_string_lossy()))).collect();
-        objc2_app_kit::NSWorkspace::sharedWorkspace().activateFileViewerSelectingURLs(&NSArray::from_retained_slice(&urls));
-    }
-
-    pub fn open_url(url: &str) {
-        let mut open = std::process::Command::new("/usr/bin/open");
-        open.arg(url);
-        let _ = super::launched(open);
-    }
-
-    pub fn show_folder(path: &Path) {
-        let mut open = std::process::Command::new("/usr/bin/open");
-        open.arg(path);
-        let _ = super::launched(open);
-    }
-
-    pub fn trash(path: &Path) -> io::Result<()> {
-        use objc2_foundation::{NSFileManager, NSString, NSURL};
-        let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
-        NSFileManager::defaultManager()
-            .trashItemAtURL_resultingItemURL_error(&url, None)
-            .map_err(|e| io::Error::other(e.localizedDescription().to_string()))
-    }
-}
+#[path = "system/macos.rs"]
+mod platform;
 
 #[cfg(target_os = "windows")]
-mod platform {
-    use std::io;
-    use std::path::{Path, PathBuf};
-    use std::time::Duration;
-
-    pub fn double_click() -> Option<Duration> {
-        // SAFETY: a plain read of a system setting, with no argument.
-        let ms = unsafe { windows_sys::Win32::UI::Input::KeyboardAndMouse::GetDoubleClickTime() };
-        Some(Duration::from_millis(u64::from(ms)))
-    }
-
-    pub fn modifiers() -> Option<(bool, bool)> {
-        use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetKeyState, VK_CONTROL, VK_SHIFT};
-        // SAFETY: a plain read of a key's state, the high bit set while it is down.
-        let down = |key: u16| unsafe { GetKeyState(i32::from(key)) } < 0;
-        Some((down(VK_CONTROL), down(VK_SHIFT)))
-    }
-
-    pub fn pick_folder(message: &str) -> Option<PathBuf> {
-        rfd::FileDialog::new().set_title(message).pick_folder()
-    }
-
-    fn dialog(message: &str, extensions: &[&str]) -> rfd::FileDialog {
-        let dialog = rfd::FileDialog::new().set_title(message);
-        if extensions.is_empty() { dialog } else { dialog.add_filter("", extensions) }
-    }
-
-    pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
-        dialog(message, extensions).pick_files().unwrap_or_default()
-    }
-
-    pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
-        dialog(message, extensions).pick_file()
-    }
-
-    pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
-        dialog(message, extensions).set_file_name(suggested_name).save_file()
-    }
-
-    /// Explorer selects one file a call: the first stands for the scope.
-    pub fn reveal_all(paths: &[PathBuf]) {
-        if let Some(first) = paths.first() {
-            reveal(first);
-        }
-    }
-
-    pub fn reveal(path: &Path) {
-        use std::os::windows::process::CommandExt;
-        let mut explorer = std::process::Command::new("explorer");
-        explorer.raw_arg(super::explorer_select(path));
-        let _ = super::launched(explorer);
-    }
-
-    pub fn open_url(url: &str) {
-        let mut explorer = std::process::Command::new("explorer");
-        explorer.arg(url);
-        let _ = super::launched(explorer);
-    }
-
-    pub fn show_folder(path: &Path) {
-        let mut explorer = std::process::Command::new("explorer");
-        explorer.arg(super::explorer_path(path));
-        let _ = super::launched(explorer);
-    }
-
-    pub fn trash(path: &Path) -> io::Result<()> {
-        use std::os::windows::ffi::OsStrExt;
-        use windows_sys::Win32::UI::Shell::*;
-        // The source list ends with two NULs; `FOF_ALLOWUNDO` sends it to the Recycle Bin.
-        let mut from: Vec<u16> = std::path::absolute(path)?.as_os_str().encode_wide().collect();
-        from.extend([0, 0]);
-        let mut op = SHFILEOPSTRUCTW {
-            wFunc: FO_DELETE,
-            pFrom: from.as_ptr(),
-            fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT) as u16,
-            ..Default::default()
-        };
-        // SAFETY: `op` and the list it points at live until the call returns.
-        let code = unsafe { SHFileOperationW(&mut op) };
-        if code == 0 && op.fAnyOperationsAborted == 0 {
-            Ok(())
-        } else {
-            Err(io::Error::other(format!("SHFileOperationW failed with {code}")))
-        }
-    }
-}
+#[path = "system/windows.rs"]
+mod platform;
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-mod platform {
-    use std::io;
-    use std::path::{Path, PathBuf};
-    use std::time::Duration;
-
-    pub fn double_click() -> Option<Duration> {
-        None
-    }
-
-    pub fn modifiers() -> Option<(bool, bool)> {
-        None
-    }
-
-    pub fn pick_folder(_message: &str) -> Option<PathBuf> {
-        None
-    }
-
-    pub fn pick_files(_message: &str, _extensions: &[&str]) -> Vec<PathBuf> {
-        Vec::new()
-    }
-
-    pub fn pick_file(_message: &str, _extensions: &[&str]) -> Option<PathBuf> {
-        None
-    }
-
-    pub fn save_file(_message: &str, _suggested_name: &str, _extensions: &[&str]) -> Option<PathBuf> {
-        None
-    }
-
-    pub fn reveal(_path: &Path) {}
-
-    pub fn reveal_all(_paths: &[PathBuf]) {}
-
-    pub fn open_url(_url: &str) {}
-
-    pub fn show_folder(_path: &Path) {}
-
-    pub fn trash(_path: &Path) -> io::Result<()> {
-        Err(io::Error::new(io::ErrorKind::Unsupported, "no system Trash on this system"))
-    }
-}
+#[path = "system/other.rs"]
+mod platform;
 
 #[cfg(test)]
 mod tests;

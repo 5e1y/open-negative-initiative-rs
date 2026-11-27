@@ -134,7 +134,7 @@ pub fn device_name() -> String {
         let (program, args): (&str, &[&str]) = if cfg!(target_os = "macos") { ("scutil", &["--get", "ComputerName"]) } else { ("hostname", &[]) };
         std::process::Command::new(program).args(args).output().ok().and_then(|o| String::from_utf8(o.stdout).ok())
     };
-    asked.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| crate::timing::FOLDER.to_string())
+    asked.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| crate::system::FOLDER.to_string())
 }
 
 /// The phones connected now, one entry a connection: a phone back before its old link timed out

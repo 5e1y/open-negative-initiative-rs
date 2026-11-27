@@ -274,7 +274,7 @@ fn a_move_out_never_replaces_a_file_that_took_the_free_name() {
 /// The masks the Swift app saved on this machine, read in place and never written.
 #[test]
 fn the_swift_apps_own_masks_read_whole() {
-    let support = crate::timing::support();
+    let support = crate::system::support();
     let found = entries(&support);
     if found.is_empty() {
         println!("SKIPPED: no custom flat-field in {}", support.display());

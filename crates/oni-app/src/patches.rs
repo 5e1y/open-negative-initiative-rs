@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 /// This instance's folder of patches, under the caches folder every running ONI shares: one of its
 /// own, named after the support folder that one instance at a time holds, so a quit purges its own.
 pub fn caches() -> PathBuf {
-    instance(&crate::system::caches(), &crate::timing::support())
+    instance(&crate::system::caches(), &crate::system::support())
 }
 
 /// The folder under `caches` of the instance holding `support`, named by the path's FNV-1a hash,

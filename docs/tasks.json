@@ -14195,5 +14195,12 @@
     "title": "Comments cite no Swift file any more",
     "status": "done",
     "detail": "Seventeen comments in the tree's code (tree_pick, sidebar, project_drop, tree_clicks, state_read, tree_column, tree_reveal, tree_menu) and the store (commands, opening) named the Swift function or file:line they once ported; each now says what it does and why alone, and two test comments that restated their test's name went. Comments only."
+  },
+  {
+    "id": 4070,
+    "type": "refactor",
+    "title": "The system's calls in one file a platform, and the support folder beside the caches",
+    "status": "done",
+    "detail": "system.rs stood at 398 lines, two short of its ceiling. Its three platform modules (macOS, Windows, the rest) go to system/macos.rs, windows.rs and other.rs, moved line for line and outdented one level (no string spans a line, checked), each chosen by the same cfg; system.rs falls to 227 lines. The support folder's path and the app's folder name leave timing.rs, the log, for system.rs, beside caches() and local_support() whose platform logic they share; their five callers name system. The Windows file is not compiled on this Mac. oni-app's 581 unit tests green."
   }
 ]

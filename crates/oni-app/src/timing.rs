@@ -9,8 +9,6 @@ use std::sync::mpsc::{Sender, channel};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-/// `AppFolders.name`: the folder every platform's support directory holds for this app.
-pub const FOLDER: &str = "Open Negative Initiative";
 /// The notch renders between two printed reports.
 pub const REPORT_EVERY: usize = 120;
 /// One refresh at 120 Hz: a notch shown later than this behind the previous one missed a frame.
@@ -22,22 +20,6 @@ pub const STALL: Duration = Duration::from_millis(50);
 pub const BEAT: Duration = Duration::from_millis(5);
 /// Beyond this a pause between two notch frames is the hand resting, not a slow frame.
 const IDLE: Duration = Duration::from_secs(1);
-
-/// The app's support folder: `ONI_SUPPORT`, else the platform's application-support directory.
-pub fn support() -> PathBuf {
-    if let Some(dir) = std::env::var_os("ONI_SUPPORT") {
-        return PathBuf::from(dir);
-    }
-    let home = oni_library::navigator::home_folder;
-    let base = if cfg!(target_os = "macos") {
-        home().join("Library/Application Support")
-    } else if cfg!(windows) {
-        std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_else(home)
-    } else {
-        std::env::var_os("XDG_DATA_HOME").map(PathBuf::from).unwrap_or_else(|| home().join(".local/share"))
-    };
-    base.join(FOLDER)
-}
 
 /// `<support>/Logs/oni.log`, appended to by every run.
 pub fn log_path(support: &Path) -> PathBuf {

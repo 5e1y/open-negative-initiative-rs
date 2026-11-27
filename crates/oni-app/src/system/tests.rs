@@ -41,9 +41,9 @@ fn reveal_hands_explorer_backslashes() {
 #[test]
 fn windows_keeps_rebuildable_files_off_the_roaming_profile() {
     let (roaming, local) = (Some("C:/Users/a/AppData/Roaming".into()), Some("C:/Users/a/AppData/Local".into()));
-    let support = Path::new("C:/Users/a/AppData/Roaming").join(crate::timing::FOLDER);
+    let support = Path::new("C:/Users/a/AppData/Roaming").join(super::FOLDER);
     let chosen = local_of(&support, true, roaming.clone(), local.clone());
-    assert_eq!(chosen, Path::new("C:/Users/a/AppData/Local").join(crate::timing::FOLDER));
+    assert_eq!(chosen, Path::new("C:/Users/a/AppData/Local").join(super::FOLDER));
     // Twin: a check's own support folder, and every other system, keep the support folder.
     let own = Path::new("C:/Temp/oni-check/Support");
     assert_eq!(local_of(own, true, roaming.clone(), local.clone()), own);

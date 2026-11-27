@@ -40,7 +40,7 @@ fn more_descriptors() {
 fn main() {
     if let Err(e) = run() {
         timing::fatal(&e.to_string());
-        oni_app::instance::could_not_start(&timing::support(), &e.to_string());
+        oni_app::instance::could_not_start(&oni_app::system::support(), &e.to_string());
         std::process::exit(1);
     }
 }
@@ -52,7 +52,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "macos")]
     more_descriptors();
     let began = Instant::now();
-    let support = timing::support();
+    let support = oni_app::system::support();
     // Before any write, the log included: a second launch on the same folder leaves it as it is.
     let _instance = match oni_app::instance::hold(&support) {
         oni_app::instance::Held::Mine(instance) => Some(instance),
