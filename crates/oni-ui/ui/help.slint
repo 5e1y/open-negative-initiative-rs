@@ -20,7 +20,11 @@ export global Help {
     // Where the screens stand, in screens from the first, travelling between two as one gives way.
     in property <float> scroll;
     // How much of the message shows, once the gifts are left for it.
-    in property <float> message-shown;
+    // The screen the list glides from, and whether its gift is opened, which keeps its words and film as it leaves.
+    in property <int> welcome-from;
+    in property <bool> from-opened;
+    // Where the stage's picture stands, in screens from its place: it glides with the screen whose gift it draws.
+    in property <float> stage-offset;
     // How far the message has turned from its announcement to what it says, 0 to 1; asking for it turns it at once.
     in property <float> message-turn;
     callback message-on();
@@ -44,6 +48,9 @@ export global Help {
     // The film the screen's demo plays, shot in the real app, and the gift it belongs to (-1 none).
     in property <image> reel;
     in property <int> reel-gift: -1;
+    // The film last shown and its gift, its last frame kept on its screen as it glides away.
+    in property <image> reel-from;
+    in property <int> reel-from-gift: -1;
     callback welcome-sized(length, length, length, float);
     callback welcome-open();
     callback welcome-go(int);

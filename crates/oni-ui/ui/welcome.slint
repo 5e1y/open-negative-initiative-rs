@@ -38,7 +38,7 @@ export component WelcomeSheet inherits Sheet {
     function slot(page: int) -> int { !Help.kit-gift && page > 2 ? page - 2 : page - 1 }
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
-    property <[string]> titles: [@tr("A livelier interface"), @tr("Import your photo kit into ONI, with The Lens DB"), @tr("Your digital photos, on film"), @tr("Your Wrapped is here")];
+    property <[string]> titles: [@tr("ONI's interface comes alive"), @tr("Your cameras and lenses in ONI"), @tr("Your digital photos, on film"), @tr("Your Wrapped is here")];
     property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
     // Two blocks on the window's middle line: the gift, then its film, on the left, the words in one column on the
     // right, the same for every screen; the film takes the room the column leaves, kept clear of the keys' band.
@@ -70,6 +70,7 @@ export component WelcomeSheet inherits Sheet {
         gift: Help.gift-shown;
         opened: root.opened;
         middle: (root.left + root.demo-width / 2) / root.width;
+        offset: Help.stage-offset * root.height;
         shown: Help.stage-shown;
         // The wheel and the trackpad go from screen to screen, on only past an opened gift.
         TouchArea {
@@ -90,60 +91,64 @@ export component WelcomeSheet inherits Sheet {
             accessible-action-default => { Help.welcome-open(); }
             TouchArea { mouse-cursor: pointer; clicked => { Help.welcome-open(); } }
         }
-        // Where its words will come: which gift it is, and what to do.
-        if !root.opened && !root.last: VerticalLayout {
-            x: root.right;
-            width: root.column;
-            y: (root.height - self.height) / 2;
-            height: root.words-room;
-            alignment: center;
-            spacing: Space.s;
-            opacity: Help.stage-shown;
-            Headline { text: root.tags[root.page - 1]; size: root.title-size; }
-            StageText { text: @tr("Click it or press Return to unwrap it."); }
-        }
-        // The screens, one above the other, the scroll bringing each in.
+        // The screens, one under the other: the one shown and the one it leaves glide together, up going on, down
+        // going back; a screen leaving keeps its words and film, or its gift's tag while it is wrapped.
         for screen in 4: Rectangle {
             property <int> page: screen + 1;
             property <bool> here: page == root.page;
-            visible: here && (page != 2 || Help.kit-gift);
+            property <bool> leaving: !here && page == Help.welcome-from;
+            property <float> told: here ? root.words : leaving && Help.from-opened ? 1 : 0;
+            property <bool> wrapped: here ? !root.opened : leaving && !Help.from-opened;
+            visible: (here || leaving) && (page != 2 || Help.kit-gift);
             y: (root.slot(page) - Help.scroll) * root.height;
             height: root.height;
+            // Where its words will come: which gift it is, and what to do.
+            if wrapped: VerticalLayout {
+                x: root.right;
+                width: root.column;
+                y: (parent.height - self.height) / 2;
+                height: root.words-room;
+                alignment: center;
+                spacing: Space.s;
+                Headline { text: root.tags[page - 1]; size: root.title-size; }
+                StageText { text: @tr("Click the gift or press Return to open it."); }
+            }
             // The film, where the gift stood.
             DemoFrame {
                 x: root.left;
                 width: root.demo-width;
                 height: self.width * StageStyle.window-shape;
-                y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
-                shown: here ? root.words : 0;
+                y: (parent.height - self.height) / 2 + (1 - told) * StageStyle.rise;
+                shown: told;
                 accessible-role: image;
                 accessible-label: root.titles[page - 1];
                 // The gift's film, made from the real app.
                 if Help.reel-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel; }
+                if Help.reel-gift != page - 1 && Help.reel-from-gift == page - 1: DemoReel { width: parent.width; height: parent.height; source: Help.reel-from; }
             }
             // The words, right of the film, the whole block's middle on the window's: the layout centres it, as a
             // wrapped paragraph's height is known only once it is laid out.
             VerticalLayout {
                 x: root.right;
                 width: root.column;
-                y: (parent.height - self.height) / 2 + (1 - root.words) * StageStyle.rise;
+                y: (parent.height - self.height) / 2 + (1 - told) * StageStyle.rise;
                 height: root.words-room;
                 alignment: center;
                 if page == 1: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[0];
                     title: root.titles[0];
-                    lead: @tr("ONI now moves the way you look at your photos: every change of place is shown, never jumped.");
+                    lead: @tr("Each photo glides from the gallery to the editor and on to the export: you always see where it comes from and where it goes.");
                     text: "";
-                    shown: here ? root.words : 0;
+                    shown: told;
                 }
                 if page == 2: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[1];
                     title: root.titles[1];
-                    lead: @tr("Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports.");
+                    lead: @tr("Find them in The Lens DB's catalogue and add them to your Kit: ONI writes them into every photo you export.");
                     text: "";
-                    shown: here ? root.words : 0;
+                    shown: told;
                     if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
                     if Kit.link == KitLink.waiting: StageText { text: @tr("Finish in Your Browser"); }
                     if Kit.link == KitLink.in: StageText { text: @tr("Connected as {}", Kit.account); }
@@ -152,25 +157,26 @@ export component WelcomeSheet inherits Sheet {
                     title-size: root.title-size;
                     eyebrow: root.tags[2];
                     title: root.titles[2];
-                    lead: @tr("ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would.");
-                    text: @tr("{} films wait in the editor's Film panel.", Help.film-count);
-                    shown: here ? root.words : 0;
+                    lead: @tr("Pick a film in the editor: ONI develops your photo the way that film would, from its maker's data sheet.");
+                    text: @tr("{} films to choose from, in the editor's Film panel.", Help.film-count);
+                    shown: told;
                 }
                 if page == 4: Words {
                     title-size: root.title-size;
                     eyebrow: root.tags[3];
                     title: root.titles[3];
-                    lead: @tr("Your year on film: your rolls, your films, your favourite frames and the time you spent with them.");
+                    lead: @tr("Your Wrapped tells your year in photos: your rolls, your favourite films and frames, the time you spent editing them.");
                     text: "";
-                    shown: here ? root.words : 0;
+                    shown: told;
                     HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Open My Wrapped"); clicked => { Help.wrapped(); } } }
                 }
             }
         }
         // The message, the welcome's last word before the app, in two screens: first its announcement alone on black,
         // then its hook, why ONI is free and why to tell others, its tag, and three keys.
-        if root.last: Rectangle {
-            opacity: Help.message-shown;
+        if root.last || Help.welcome-from == 5: Rectangle {
+            y: (root.slot(5) - Help.scroll) * root.height;
+            height: root.height;
             StageText {
                 x: root.edge;
                 width: root.width - 2 * root.edge;
@@ -190,7 +196,7 @@ export component WelcomeSheet inherits Sheet {
                 visible: Help.message-turn > 0;
                 spacing: Space.l;
                 StageText { centred: true; hook: true; text: @tr("You already paid for your film. You shouldn't have to pay just to look at it."); }
-                StageText { centred: true; lead: true; text: @tr("Most negative tools are paid and keep to themselves a know-how lost when digital came. Tell your friends about ONI before they spend hundreds on presets or editing software."); }
+                StageText { centred: true; lead: true; text: @tr("Most tools for negatives are paid and keep to themselves a know-how digital nearly made us lose. Tell your friends about ONI before they spend hundreds on presets or software."); }
                 StageLine { size: min(StageStyle.title, root.height * StageStyle.title-share); text: Help.made-with; }
                 HorizontalLayout {
                     alignment: center;
@@ -217,7 +223,7 @@ export component WelcomeSheet inherits Sheet {
                 width: parent.width - 2 * Space.l;
                 height: self.preferred-height;
                 back: root.slot(root.page) > 0 ? @tr("Back") : "";
-                commit: root.last && Help.message-turn < 1 ? @tr("Continue") : root.last ? @tr("Enter ONI") : !root.opened ? @tr("Unwrap") : root.page == 4 ? @tr("Continue") : @tr("Next Gift");
+                commit: root.last && Help.message-turn < 1 ? @tr("Continue") : root.last ? @tr("Enter ONI") : !root.opened ? @tr("Open the Gift") : root.page == 4 ? @tr("Continue") : @tr("Next Gift");
                 commit-enabled: root.last || !root.opened || Help.may-go-on;
                 backed => { Help.welcome-go(-1); }
                 committed => { root.onward(); }

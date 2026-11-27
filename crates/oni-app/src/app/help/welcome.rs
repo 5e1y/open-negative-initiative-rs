@@ -134,6 +134,7 @@ impl Ctl {
                 page,
                 from: page,
                 moved: -10.0,
+                origin: slot(page),
                 opened,
                 size: (0.0, 0.0),
                 foot: 0.0,

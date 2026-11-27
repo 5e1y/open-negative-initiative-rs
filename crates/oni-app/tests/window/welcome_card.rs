@@ -13,8 +13,8 @@ use crate::common::{self, Placed};
 const MARGIN: f32 = 24.0;
 /// Each screen's title, a gift's once it is opened.
 const TITLES: [&str; 5] = [
-    "A livelier interface",
-    "Import your photo kit into ONI, with The Lens DB",
+    "ONI's interface comes alive",
+    "Your cameras and lenses in ONI",
     "Your digital photos, on film",
     "Your Wrapped is here",
     "You already paid for your film. You shouldn't have to pay just to look at it.",
@@ -51,8 +51,8 @@ fn sized(rig: &common::Rig, (w, h): (u32, u32)) {
 /// Screen `page` with its gift opened long ago, its words in place, the scroll standing on it.
 fn shown(rig: &common::Rig, help: &Help, page: usize) {
     help.set_welcome_page(page as i32);
-    help.set_scroll((page.min(4) - 1) as f32);
-    help.set_message_shown(if page == 5 { 1.0 } else { 0.0 });
+    help.set_scroll((page - 1) as f32);
+    help.set_welcome_from(page as i32);
     help.set_message_turn(if page == 5 { 1.0 } else { 0.0 });
     help.set_opened_time(30.0);
     help.set_words_at(0.0);
@@ -101,7 +101,7 @@ pub(crate) fn the_welcome_fills_the_window_in_every_language() {
     // Wrapped, a gift's key unwraps it; twin: opened, it goes on.
     help.set_opened_time(-1.0);
     rig.settle();
-    common::the(&window, Role::Button, tr("Unwrap"));
+    common::the(&window, Role::Button, tr("Open the Gift"));
     assert!(common::placed(&window, Role::Button, tr("Next Gift")).is_empty(), "no way on past a wrapped gift");
 
     // A short window: the message stands inside it and its key answers; first its announcement alone, which the key
@@ -213,7 +213,7 @@ pub(crate) fn the_welcome_stands_on_the_windows_middle_line_at_every_size() {
                 }
                 rig.settle();
                 keep(&format!("{language}-{w}x{h}-{page}-{}", if opened { "opened" } else { "wrapped" }));
-                let key = if opened { commit(&window, page) } else { common::the(&window, Role::Button, tr("Unwrap")) };
+                let key = if opened { commit(&window, page) } else { common::the(&window, Role::Button, tr("Open the Gift")) };
                 let words = if opened { title(&window, page) } else { common::placed(&window, Role::Text, tr(TAGS[page - 1]))[0] };
                 columns.push(words.x);
                 // The whole block of words, eyebrow to last key, its middle on the sheet's; the film's too.

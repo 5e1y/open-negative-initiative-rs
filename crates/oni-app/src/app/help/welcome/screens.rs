@@ -3,7 +3,7 @@
 
 use super::super::reels::Reel;
 use super::super::{EDITION, KIT_GIFT};
-use crate::stage::direction::Cue;
+use crate::stage::direction::{self, Cue};
 use crate::stage::{Stage, glide, unwrap};
 use slint::Timer;
 use std::sync::Arc;
@@ -30,10 +30,8 @@ fn step(page: i32, by: i32) -> i32 {
     if next == 2 && !KIT_GIFT { (next + by).clamp(1, MESSAGE) } else { next }
 }
 
-/// A screen's place in the scroll, the Collection's taking none without its gift; the message comes over the last
-/// gift's, out of the scroll.
+/// A screen's place in the list of screens, one under the other, the Collection's taking none without its gift.
 pub(super) fn slot(page: i32) -> f32 {
-    let page = page.min(MESSAGE - 1);
     (if !KIT_GIFT && page > 2 { page - 2 } else { page - 1 }) as f32
 }
 
@@ -54,10 +52,11 @@ pub(in crate::app) struct Playing {
     pub(super) began: Instant,
     /// A check's clock, in seconds, in place of the time since the welcome opened.
     pub(super) held: Option<f32>,
-    /// The screen shown, the one it came from and when it left it.
+    /// The screen shown, the one it came from, when it left it and where the list of screens stood then.
     pub(super) page: i32,
     pub(super) from: i32,
     pub(super) moved: f32,
+    pub(super) origin: f32,
     /// When each gift was opened, on the welcome's clock; one opened on an earlier launch long before.
     pub(super) opened: [Option<f32>; 4],
     /// The sheet's size and its footer's band, in the window's points.
@@ -97,15 +96,29 @@ impl Playing {
         gift_of(self.page).is_some_and(|i| self.opened[i].is_some_and(|o| still || now - o >= unwrap::title(i)))
     }
 
-    /// Goes `by` screens: back at any time, on only past an opened gift; never while a screen still travels.
+    /// Goes `by` screens: back at any time, on only past an opened gift. A press while the screens still glide sets
+    /// off at once from where they stand.
     pub(super) fn go(&mut self, by: i32, now: f32, still: bool) {
-        if !still && now - self.moved < TRAVEL || by > 0 && !self.may_go_on(now, still) {
+        if by > 0 && !self.may_go_on(now, still) {
             return;
         }
         let next = step(self.page, by.signum());
         if next != self.page {
-            (self.from, self.page, self.moved, self.told) = (self.page, next, now, None);
+            let origin = self.scroll(now, still);
+            (self.from, self.page, self.moved, self.origin, self.told) = (self.page, next, now, origin, None);
         }
+    }
+
+    /// Where the list of screens stands, in screens: gliding from where it stood to the screen shown.
+    pub(super) fn scroll(&self, now: f32, still: bool) -> f32 {
+        self.origin + (slot(self.page) - self.origin) * self.travelled(now, still)
+    }
+
+    /// The screen whose gift the stage draws: the one shown, or while the screens glide the one they leave if its gift
+    /// is still wrapped and the one shown has none to show.
+    pub(super) fn staged(&self, now: f32) -> i32 {
+        let showing = |page: i32| gift_of(page).is_some_and(|i| direction::kept(i, self.opened[i].map(|o| now - o)) > 0.0);
+        if !showing(self.page) && showing(self.from) { self.from } else { self.page }
     }
 
     /// How far the message has turned from its announcement to what it says: by itself once the announcement has
@@ -126,10 +139,8 @@ impl Playing {
         if still { 1.0 } else { glide(((now - self.moved) / TRAVEL).clamp(0.0, 1.0)) }
     }
 
-    pub(super) fn cue(&self, now: f32, still: bool) -> Cue {
-        let p = self.travelled(now, still);
-        // The stage goes dark as one screen leaves and lights the next as it settles.
-        let (page, shown) = if p < 0.5 { (self.from, 1.0 - 2.0 * p) } else { (self.page, 2.0 * p - 1.0) };
+    pub(super) fn cue(&self, now: f32) -> Cue {
+        let (page, shown) = (self.staged(now), 1.0);
         let gift = gift_of(page);
         let since = gift.and_then(|i| self.opened[i]).map(|o| now - o);
         let aspect = self.size.0 / self.size.1.max(1.0);

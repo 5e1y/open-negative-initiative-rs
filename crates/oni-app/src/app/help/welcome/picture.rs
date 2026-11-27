@@ -1,7 +1,7 @@
 //! The welcome's picture: the screens where the clock has them, the gift drawn by the GPU into the texture the sheet
 //! shows, at most one picture in flight, and the screen's film from the moment its words come.
 
-use super::screens::{MESSAGE, gift_of, slot};
+use super::screens::{gift_of, slot};
 use crate::app::Ctl;
 use crate::stage::direction;
 use crate::stage::{Stage, unwrap};
@@ -50,7 +50,7 @@ impl Ctl {
             _ => {}
         }
         let now = play.now();
-        let cue = play.cue(now, still);
+        let cue = play.cue(now);
         let frame = direction::frame(&cue);
         // One picture in flight: the next waits until the GPU has finished the last, so none queues behind it.
         let _ = state.gpu.device.poll(wgpu::PollType::Poll);
@@ -85,11 +85,14 @@ impl Ctl {
         help.set_stage_live(play.stage.is_some());
         help.set_welcome_page(play.page);
         help.set_welcome_unwrapped(i32::from(play.bits()));
-        help.set_scroll(slot(play.from) + (slot(play.page) - slot(play.from)) * play.travelled(now, still));
+        // The screens glide as one list, the stage's picture with the screen whose gift it draws.
+        let scroll = play.scroll(now, still);
+        help.set_scroll(scroll);
+        help.set_stage_offset(slot(play.staged(now)) - scroll);
+        help.set_welcome_from(play.from);
+        help.set_from_opened(gift_of(play.from).is_none_or(|i| play.opened[i].is_some()));
         help.set_stage_shown(cue.shown * cue.gift.map_or(0.0, |i| direction::kept(i, cue.since)));
-        let travelled = play.travelled(now, still);
         help.set_message_turn(play.turned(now, still));
-        help.set_message_shown(if play.page == MESSAGE { travelled } else if play.from == MESSAGE { 1.0 - travelled } else { 0.0 });
         help.set_gift_shown(cue.gift.map_or(-1, |i| i as i32));
         let since = gift_of(play.page).and_then(|i| play.opened[i]).map_or(-1.0, |o| (now - o).max(0.0));
         help.set_opened_time(since);
@@ -98,6 +101,11 @@ impl Ctl {
         // The screen's film, from the moment its words come.
         let reel = gift_of(play.page).and_then(|i| play.reels.iter_mut().find(|r| r.gift == i).map(|r| (r, i)));
         let showing = help.get_reel_gift();
+        // The film left keeps its last frame on the screen gliding away.
+        if showing >= 0 && reel.as_ref().is_none_or(|(_, i)| *i as i32 != showing) {
+            help.set_reel_from(help.get_reel());
+            help.set_reel_from_gift(showing);
+        }
         help.set_reel_gift(reel.as_ref().map_or(-1, |(_, i)| *i as i32));
         if let Some((reel, i)) = reel {
             // Another film's frame is in the picture: this one's is given again.

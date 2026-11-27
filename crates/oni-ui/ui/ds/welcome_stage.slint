@@ -65,8 +65,11 @@ export component StagePicture inherits Rectangle {
     in property <float> shown: 1;
     // Where the gift stands across the picture, as a share of its width; the still moves there with it.
     in property <float> middle: 0.5;
+    // How far down the picture stands from its place, as it glides with its screen.
+    in property <length> offset;
     background: StageStyle.ground;
     if root.live: Image {
+        y: root.offset;
         width: parent.width;
         height: parent.height;
         source: root.source;
@@ -74,6 +77,7 @@ export component StagePicture inherits Rectangle {
     }
     if !root.live && root.gift >= 0: Image {
         x: (root.middle - 0.5) * parent.width;
+        y: root.offset;
         width: parent.width;
         height: parent.height;
         source: StageStyle.stills[root.gift * 2 + (root.opened ? 1 : 0)];

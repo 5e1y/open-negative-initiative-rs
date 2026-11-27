@@ -2640,6 +2640,22 @@ msgid "Export ({})"
 msgstr "Exporter ({})"
 
 #: crates/oni-ui/ui/welcome.slint
+msgid "ONI's interface comes alive"
+msgstr "L'interface d'ONI s'anime"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your cameras and lenses in ONI"
+msgstr "Vos appareils et objectifs dans ONI"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your digital photos, on film"
+msgstr "Vos photos numériques, sur pellicule"
+
+#: crates/oni-ui/ui/welcome.slint
+msgid "Your Wrapped is here"
+msgstr "Votre Wrapped est arrivé"
+
+#: crates/oni-ui/ui/welcome.slint
 msgid "A small gift"
 msgstr "Un petit cadeau"
 
@@ -2656,48 +2672,32 @@ msgid "The mystery gift"
 msgstr "Le cadeau mystère"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Click it or press Return to unwrap it."
-msgstr "Cliquez dessus ou appuyez sur Entrée pour le déballer."
+msgid "Click the gift or press Return to open it."
+msgstr "Cliquez sur le cadeau ou appuyez sur Entrée pour l'ouvrir."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "A livelier interface"
-msgstr "Une interface plus vivante"
+msgid "Each photo glides from the gallery to the editor and on to the export: you always see where it comes from and where it goes."
+msgstr "Chaque photo glisse de la galerie à l'éditeur, puis vers l'export : vous voyez toujours d'où elle vient et où elle va."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "ONI now moves the way you look at your photos: every change of place is shown, never jumped."
-msgstr "ONI bouge désormais comme votre regard : chaque changement de place se voit, rien ne saute."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Import your photo kit into ONI, with The Lens DB"
-msgstr "Importez votre kit photo dans ONI, avec The Lens DB"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Search The Lens DB's catalogue for your bodies and lenses: they fill the camera and lens of your exports."
-msgstr "Cherchez vos boîtiers et vos objectifs dans le catalogue de The Lens DB : ils renseignent l'appareil et l'objectif de vos exports."
+msgid "Find them in The Lens DB's catalogue and add them to your Kit: ONI writes them into every photo you export."
+msgstr "Retrouvez-les dans le catalogue de The Lens DB et ajoutez-les à votre Kit : ONI les inscrit dans chaque photo que vous exportez."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Connected as {}"
 msgstr "Connecté en tant que {}"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Your digital photos, on film"
-msgstr "Vos photos numériques, sur pellicule"
+msgid "Pick a film in the editor: ONI develops your photo the way that film would, from its maker's data sheet."
+msgstr "Choisissez une pellicule dans l'éditeur : ONI développe votre photo comme elle l'aurait fait, d'après la fiche technique de son fabricant."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "ONI shoots a digital photo again on a film rebuilt from its maker's data sheet, develops it, scans it and inverts it, as a lab would."
-msgstr "ONI photographie à nouveau une photo numérique sur une pellicule reconstruite d'après la fiche technique de son fabricant, la développe, la scanne et l'inverse, comme un laboratoire."
+msgid "{} films to choose from, in the editor's Film panel."
+msgstr "{} pellicules au choix, dans le panneau Pellicule de l'éditeur."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "{} films wait in the editor's Film panel."
-msgstr "{} pellicules vous attendent dans le panneau Pellicule de l'éditeur."
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your Wrapped is here"
-msgstr "Votre Wrapped est arrivé"
-
-#: crates/oni-ui/ui/welcome.slint
-msgid "Your year on film: your rolls, your films, your favourite frames and the time you spent with them."
-msgstr "Votre année en argentique : vos rouleaux, vos pellicules, vos images préférées et le temps passé avec elles."
+msgid "Your Wrapped tells your year in photos: your rolls, your favourite films and frames, the time you spent editing them."
+msgstr "Votre Wrapped raconte votre année en photo : vos rouleaux, vos pellicules et images préférées, le temps passé à les retoucher."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Open My Wrapped"
@@ -2712,8 +2712,8 @@ msgid "You already paid for your film. You shouldn't have to pay just to look at
 msgstr "Vous avez déjà payé votre pellicule. Vous ne devriez pas payer rien que pour la regarder."
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Most negative tools are paid and keep to themselves a know-how lost when digital came. Tell your friends about ONI before they spend hundreds on presets or editing software."
-msgstr "La plupart des outils pour négatifs sont payants et gardent pour eux un savoir perdu à l'arrivée du numérique. Parlez d'ONI à vos amis avant qu'ils ne dépensent des centaines d'euros en presets ou en logiciels d'édition."
+msgid "Most tools for negatives are paid and keep to themselves a know-how digital nearly made us lose. Tell your friends about ONI before they spend hundreds on presets or software."
+msgstr "La plupart des outils pour négatifs sont payants et gardent pour eux un savoir que le numérique a failli faire disparaître. Parlez d'ONI à vos amis avant qu'ils ne dépensent des centaines d'euros en presets ou en logiciels."
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Follow ONI on Instagram"
@@ -2736,8 +2736,8 @@ msgid "Enter ONI"
 msgstr "Entrer dans ONI"
 
 #: crates/oni-ui/ui/welcome.slint
-msgid "Unwrap"
-msgstr "Déballer"
+msgid "Open the Gift"
+msgstr "Ouvrir le cadeau"
 
 #: crates/oni-ui/ui/welcome.slint
 msgid "Next Gift"

@@ -219,6 +219,21 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         } else {
             rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
         }
+        if gift == 0 {
+            // Halfway, the screens glide up as one list: the one left above, the next coming up, the stage with it.
+            reel.play(0.3, 0.1);
+            reel.keep();
+            let mid = help.get_scroll();
+            assert!(mid > 0.1 && mid < 0.9 && help.get_welcome_from() == 1, "the screens glide up, at {mid}");
+            assert!(help.get_stage_offset() > 0.0, "the next gift comes up from below, {}", help.get_stage_offset());
+            // A press while they glide sets off at once from where they stand: no jump, no wait.
+            rig.key(&slint::SharedString::from(slint::platform::Key::UpArrow));
+            let back = help.get_scroll();
+            assert!(help.get_welcome_page() == 1 && (back - mid).abs() < 0.02, "back at once from {mid}, at {back}");
+            reel.play(0.8, 0.2);
+            assert_eq!(help.get_scroll(), 0.0, "back on the first screen");
+            rig.key(&slint::SharedString::from(slint::platform::Key::DownArrow));
+        }
         reel.play(0.8, 0.2);
         assert_eq!(help.get_welcome_page(), page + 1, "on past gift {gift} once opened");
     }
