@@ -147,7 +147,12 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
             export::write_one(&engine, t, to, &export, &l.row.metadata, &l.typed("", "", false)).unwrap();
         }
     } else {
-        let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&lines).map(|((t, d), l)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: l.row.metadata.clone(), typed: l.typed("", "", false) }).collect();
+        let jobs: Vec<export::batch::Job> = all
+            .iter()
+            .zip(&destinations)
+            .zip(&lines)
+            .map(|((t, d), l)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: l.row.metadata.clone(), typed: l.typed("", "", false) })
+            .collect();
         let stop = std::sync::atomic::AtomicBool::new(false);
         // The engine apart the surface writes on, as the app runs it.
         let apart = engine.apart().unwrap();

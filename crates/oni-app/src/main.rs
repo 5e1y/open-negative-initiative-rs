@@ -162,7 +162,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let pasteboard: Box<dyn oni_app::pasteboard::Board> = if benched.is_some() { Box::new(oni_app::pasteboard::Memory::default()) } else { oni_app::pasteboard::general() };
                 // A bench never asks The Lens DB, so its timings never wait on the network.
                 let tldb = if alone || benched.is_some() { oni_app::app::TldbSite::None } else { oni_app::app::TldbSite::launch(&support) };
-                let options = Options { support, tldb, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard, computer: oni_library::navigator::Computer::system(), updates: (!alone && benched.is_none()).then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, brought, ..Options::default() };
+                let options = Options {
+                    support,
+                    tldb,
+                    caches: oni_app::system::caches(),
+                    screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb },
+                    canvas,
+                    require_roll: true,
+                    pasteboard,
+                    computer: oni_library::navigator::Computer::system(),
+                    updates: (!alone && benched.is_none()).then(oni_app::app::Updater::system),
+                    reporter: Options::online_reporter(),
+                    phone,
+                    brought,
+                    ..Options::default()
+                };
                 match Shell::standing(built, store, engine, options) {
                     Ok(standing) => {
                         let quitting = standing.ctl.clone();

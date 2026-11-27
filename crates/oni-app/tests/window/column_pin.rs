@@ -36,7 +36,11 @@ pub(crate) fn the_roll_held_at_the_column_s_top_covers_what_scrolls_under_it() {
     lib.invoke_tree_layout_picked(1);
     rig.settle();
     common::scroll_tree(&lib, -200.0);
-    rig.until("the pictures in view", Duration::from_secs(60), || lib.get_rows().iter().filter(|r| r.kind == 2 && r.y + r.height > -lib.get_tree_viewport_y() && r.y < -lib.get_tree_viewport_y() + 600.0).all(|r| r.picture.size().width > 0));
+    rig.until(
+        "the pictures in view",
+        Duration::from_secs(60),
+        || lib.get_rows().iter().filter(|r| r.kind == 2 && r.y + r.height > -lib.get_tree_viewport_y() && r.y < -lib.get_tree_viewport_y() + 600.0).all(|r| r.picture.size().width > 0),
+    );
     rig.settle();
     let pin = lib.get_tree_pin();
     assert!(pin.shown && pin.push == 0.0, "a roll held at the top, unpushed: {:?}", (pin.shown, pin.push));

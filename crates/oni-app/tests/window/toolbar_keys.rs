@@ -70,7 +70,17 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     let (keys, others) = heights();
     assert!(keys.len() >= 9 && keys.iter().all(|k| k.height == KEY), "every key of the gallery's bar {KEY} pt tall: {keys:?}");
     assert!(others.iter().any(|k| k.height != KEY), "twin: the measure tells a key of another height");
-    for (label, word) in [("EDIT", "EDIT"), ("Sheet", "Sheet"), ("PREPARE ROLL", "PREPARE ROLL"), ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"), ("Reset", "Reset"), ("Trash", "Trash"), ("Feedback", "Feedback"), ("Settings", "Settings"), ("EXPORT", "EXPORT")] {
+    for (label, word) in [
+        ("EDIT", "EDIT"),
+        ("Sheet", "Sheet"),
+        ("PREPARE ROLL", "PREPARE ROLL"),
+        ("ADD FOLDER\u{2026}", "ADD FOLDER\u{2026}"),
+        ("Reset", "Reset"),
+        ("Trash", "Trash"),
+        ("Feedback", "Feedback"),
+        ("Settings", "Settings"),
+        ("EXPORT", "EXPORT"),
+    ] {
         stacked(rig, w, label, word);
     }
     // Twin: beside the glyph, within the key's padding, nothing is drawn but its face.
@@ -112,7 +122,10 @@ pub(crate) fn every_bar_key_wears_its_glyph_over_its_word_and_a_key_on_lies_flat
     };
     // Under a key, down to the bar's bottom edge: the room its tool's tab takes, its ends, and beside it.
     let below = |k: common::Placed| common::Placed { x: k.x + 2.0, y: k.y + k.height + 2.0, width: k.width - 4.0, height: 6.0 };
-    let ends = |k: common::Placed| [common::Placed { x: k.x, y: k.y + k.height + 4.0, width: 2.0, height: 3.0 }, common::Placed { x: k.x + k.width - 2.0, y: k.y + k.height + 4.0, width: 2.0, height: 3.0 }];
+    let ends = |k: common::Placed| [
+        common::Placed { x: k.x, y: k.y + k.height + 4.0, width: 2.0, height: 3.0 },
+        common::Placed { x: k.x + k.width - 2.0, y: k.y + k.height + 4.0, width: 2.0, height: 3.0 },
+    ];
     let beside = |k: common::Placed| common::Placed { x: k.x - 6.0, y: k.y + k.height + 4.0, width: 4.0, height: 3.0 };
     for (label, act, rgb) in [("Crop", Act::Framing, 0x3fae96), ("De-dust", Act::Correction, 0x9d7ff0), ("Compare", Act::Compare, 0xec6fa8), ("Sheet", Act::SelectAll, 0xe8873a)] {
         let (rest, ground, width) = face(label);

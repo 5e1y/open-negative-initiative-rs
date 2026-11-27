@@ -20,7 +20,18 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let geometry = || ctl.state.borrow().store().settings().geometry;
         let note = |what: &str| {
             let g = geometry();
-            lines.borrow_mut().push(format!("{what}: crop {:.3} {:.3} {:.3} {:.3}, turns {}, angle {:.2}, mirrored {}, ratio {:?}, kept {}", g.crop.x, g.crop.y, g.crop.width, g.crop.height, g.quarter_turns, g.angle, g.mirrored, g.ratio, f.get_kept()));
+            lines.borrow_mut().push(format!(
+                "{what}: crop {:.3} {:.3} {:.3} {:.3}, turns {}, angle {:.2}, mirrored {}, ratio {:?}, kept {}",
+                g.crop.x,
+                g.crop.y,
+                g.crop.width,
+                g.crop.height,
+                g.quarter_turns,
+                g.angle,
+                g.mirrored,
+                g.ratio,
+                f.get_kept(),
+            ));
         };
         let n = step.get();
         step.set(n + 1);

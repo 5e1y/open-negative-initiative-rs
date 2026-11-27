@@ -121,7 +121,11 @@ pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_windo
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
     // The measure lays no contact sheet beside the slides.
     let sheets = || {
-        let mut found: Vec<PathBuf> = std::fs::read_dir(&slides).unwrap().filter_map(|e| Some(e.ok()?.path())).filter(|p| p.extension().is_some_and(|x| x == "tif") && p.to_string_lossy().contains("contact sheet")).collect();
+        let mut found: Vec<PathBuf> = std::fs::read_dir(&slides)
+            .unwrap()
+            .filter_map(|e| Some(e.ok()?.path()))
+            .filter(|p| p.extension().is_some_and(|x| x == "tif") && p.to_string_lossy().contains("contact sheet"))
+            .collect();
         found.sort();
         found
     };

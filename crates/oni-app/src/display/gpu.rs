@@ -129,7 +129,16 @@ impl Gpu {
     /// Counts `picture`, `width` by `height`, its clear samples left out on a `sheet`, unless the last
     /// count is still being read; says whether it did. `read` runs once the count can be read, on whichever thread the device was polled.
     #[allow(clippy::too_many_arguments)]
-    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, (width, height): (u32, u32), screen: Screen, sheet: bool, read: impl FnOnce() + Send + 'static) -> bool {
+    pub fn count(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        picture: &wgpu::TextureView,
+        (width, height): (u32, u32),
+        screen: Screen,
+        sheet: bool,
+        read: impl FnOnce() + Send + 'static,
+    ) -> bool {
         use wgpu::util::DeviceExt;
         {
             let mut m = self.mapping.lock().expect("histogram mapping");

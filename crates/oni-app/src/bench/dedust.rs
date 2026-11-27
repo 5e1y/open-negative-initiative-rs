@@ -91,7 +91,13 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 painted.set(Some(Instant::now()));
                 let list = corrections();
                 *hand.borrow_mut() = list.iter().map(|c| c.id).filter(|id| !before.contains(id)).collect();
-                lines.borrow_mut().push(format!("{} correction, radius {:.0}, {} points, marks {}", list.len(), list.first().map_or(0.0, |c| c.radius), list.first().map_or(0, |c| c.stroke.len()), c.get_marks().row_count()));
+                lines.borrow_mut().push(format!(
+                    "{} correction, radius {:.0}, {} points, marks {}",
+                    list.len(),
+                    list.first().map_or(0.0, |c| c.radius),
+                    list.first().map_or(0, |c| c.stroke.len()),
+                    c.get_marks().row_count(),
+                ));
             }
             2 => {
                 let list = corrections();
@@ -188,7 +194,15 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     step.set(n);
                     return;
                 }
-                lines.borrow_mut().push(format!("reading {} ms: {} dust, {:?}, veil {}, mask {:?}, rings {}", since.get().elapsed().as_millis(), d.get_found(), d.get_found_note().to_string(), c.get_dust_shown(), (c.get_dust_mask().size().width, c.get_dust_mask().size().height), c.get_dust_marks().row_count()));
+                lines.borrow_mut().push(format!(
+                    "reading {} ms: {} dust, {:?}, veil {}, mask {:?}, rings {}",
+                    since.get().elapsed().as_millis(),
+                    d.get_found(),
+                    d.get_found_note().to_string(),
+                    c.get_dust_shown(),
+                    (c.get_dust_mask().size().width, c.get_dust_mask().size().height),
+                    c.get_dust_marks().row_count(),
+                ));
                 if n == 1 {
                     // The slider along its track, each step's cost on the hand's thread, then back at rest.
                     d.invoke_sensitivity_press(false);
@@ -213,7 +227,13 @@ pub(super) fn autodust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 since.set(Instant::now());
                 d.invoke_remove_found();
                 let list = corrections();
-                lines.borrow_mut().push(format!("removed: {} corrections, radii {:?}, points {:?}, veil {}", list.len(), list.iter().map(|c| c.radius.round()).collect::<Vec<_>>(), list.iter().map(|c| c.stroke.len()).collect::<Vec<_>>(), c.get_dust_shown()));
+                lines.borrow_mut().push(format!(
+                    "removed: {} corrections, radii {:?}, points {:?}, veil {}",
+                    list.len(),
+                    list.iter().map(|c| c.radius.round()).collect::<Vec<_>>(),
+                    list.iter().map(|c| c.stroke.len()).collect::<Vec<_>>(),
+                    c.get_dust_shown(),
+                ));
             }
             3 => {
                 if waited {

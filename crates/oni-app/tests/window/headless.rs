@@ -184,7 +184,14 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
     // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it; a contact sheet is no frame.
     let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true).map_or(true, |l| l.settings.sheet.is_none());
-    let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path()) }).count();
+    let n = std::fs::read_dir(&folder)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let n = e.file_name().to_string_lossy().into_owned();
+            !n.starts_with('.') && !n.ends_with(".json") && frame(&e.path())
+        })
+        .count();
     rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
     // The grid lays only the cells near its view: a walk down it meets every cell of the roll once.
     let lib = w.global::<Library>();

@@ -9,7 +9,7 @@ const LIMIT: usize = 400;
 const WIDE: usize = 200;
 
 /// Rust lines past `WIDE` today: a count that only falls, never a target.
-const WIDE_LINES: usize = 58;
+const WIDE_LINES: usize = 37;
 
 /// Every source file under `crates/`, as its path from `root` and its text.
 fn sources(root: &Path) -> Vec<(String, String)> {

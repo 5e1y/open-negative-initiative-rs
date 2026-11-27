@@ -209,7 +209,12 @@ impl Laid {
         let uniform = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("cost params"), contents: bytemuck::bytes_of(&params), usage: wgpu::BufferUsages::UNIFORM });
         let bytes = (count * 4) as u64;
         let out = gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some("costs"), size: bytes, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false });
-        let read = gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some("costs read"), size: bytes, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let read = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("costs read"),
+            size: bytes,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("correction cost"),
             layout: &gpu.layout,

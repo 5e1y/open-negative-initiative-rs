@@ -101,7 +101,9 @@ impl Hand {
         let i = self.shell.ctl.state.borrow().order().iter().position(|p| p == path).unwrap();
         let t = app::tiles(&self.shell.window).into_iter().find(|t| t.index as usize == i).unwrap();
         assert!(lib.invoke_context(t.x + t.width / 2.0, t.y + t.height / 2.0));
-        let find = |lines: slint::ModelRc<oni_app::MenuLine>, text: &str| (0..lines.row_count()).position(|i| lines.row_data(i).is_some_and(|l| l.text.starts_with(text))).unwrap_or_else(|| panic!("{text} in the menu"));
+        let find = |lines: slint::ModelRc<oni_app::MenuLine>, text: &str| {
+            (0..lines.row_count()).position(|i| lines.row_data(i).is_some_and(|l| l.text.starts_with(text))).unwrap_or_else(|| panic!("{text} in the menu"))
+        };
         let opens = lib.invoke_menu_chosen(find(lib.get_menu_lines(), line) as i32);
         self.rig.pump();
         if let Some(sub) = sub {
@@ -186,7 +188,11 @@ pub(crate) fn two_rolls_copies_join_one_project_said_with_undo() {
     let (r10a, r8a, r8b) = (hand.at("Roll 10/A.tif"), hand.at("Roll 8/A.tif"), hand.at("Roll 8/B.tif"));
     hand.open("");
     let ctl = hand.shell.ctl.clone();
-    assert_eq!(ctl.state.borrow().fingerprint(&r10a).map(|f| f.split('~').next().unwrap().to_owned()), ctl.state.borrow().fingerprint(&r8a).map(|f| f.split('~').next().unwrap().to_owned()), "one file twice");
+    assert_eq!(
+        ctl.state.borrow().fingerprint(&r10a).map(|f| f.split('~').next().unwrap().to_owned()),
+        ctl.state.borrow().fingerprint(&r8a).map(|f| f.split('~').next().unwrap().to_owned()),
+        "one file twice",
+    );
 
     hand.click(&r10a, false);
     hand.menu(&r10a, "New Project from", None);

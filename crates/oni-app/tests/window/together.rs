@@ -67,7 +67,12 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let (fx, fy, fw, fh) = (canvas.get_frame_x(), canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
     assert!(canvas.get_together() && sheet.x < fx && sheet.y < fy && sheet.x + sheet.width > fx + fw && sheet.y + sheet.height > fy + fh, "{fx} {fy} {fw} {fh}");
     // Under less than a row no logo: the row's numbers and a margin end the sheet.
-    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (3.0 * 60.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap above, the numbers' band and a margin below: {} × {}", sheet.width, sheet.height);
+    assert!(
+        ((sheet.width / sheet.height) as f64 - 3252.0 / (3.0 * 60.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02,
+        "a margin twice the gap above, the numbers' band and a margin below: {} × {}",
+        sheet.width,
+        sheet.height,
+    );
     assert!(canvas.get_logo().size().width == 0 && canvas.get_logo_box().height == 0.0, "no logo under three frames");
     rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
     assert_eq!(numbers(), ["A", "B", "C"].map(place));

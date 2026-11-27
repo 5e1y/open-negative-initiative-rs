@@ -152,7 +152,10 @@ pub(crate) fn an_export_closes_its_surface_and_counts_its_frames_in_the_status_b
     e.invoke_export();
     rig.drawn();
     let stop = common::the(w, Role::Button, "Stop").middle();
-    for event in [WindowEvent::PointerPressed { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left }, WindowEvent::PointerReleased { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left }] {
+    for event in [
+        WindowEvent::PointerPressed { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left },
+        WindowEvent::PointerReleased { position: LogicalPosition::new(stop.0, stop.1), button: PointerEventButton::Left },
+    ] {
         rig.window.dispatch_event(event);
     }
     assert!(e.get_job_stopping() && e.get_job_title() == "Stopping after this photo…", "the click reached Stop");

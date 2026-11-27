@@ -115,7 +115,10 @@ impl Shell {
             masks,
             masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
-            brush: Preferences::load(&options.support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64).map_or(oni_settings::frame::Correction::DEFAULT_RADIUS as f32, |r| r as f32),
+            brush: Preferences::load(&options.support)
+                .value(preferences::BRUSH_RADIUS)
+                .and_then(serde_json::Value::as_f64)
+                .map_or(oni_settings::frame::Correction::DEFAULT_RADIUS as f32, |r| r as f32),
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: Gpu {
@@ -141,7 +144,11 @@ impl Shell {
             building_full: None,
             full_failed: HashSet::new(),
             befores: 0,
-            dust: dedusting::Dust { next_number: 1, sensitivity: Preferences::load(&options.support).value(preferences::DUST_SENSITIVITY).and_then(serde_json::Value::as_f64).map_or(0.0, |v| v as f32), ..Default::default() },
+            dust: dedusting::Dust {
+                next_number: 1,
+                sensitivity: Preferences::load(&options.support).value(preferences::DUST_SENSITIVITY).and_then(serde_json::Value::as_f64).map_or(0.0, |v| v as f32),
+                ..Default::default()
+            },
             loupe: loupe::Held::default(),
             together: None,
             asks: Default::default(),

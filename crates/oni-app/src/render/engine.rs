@@ -203,7 +203,20 @@ impl Engine {
     }
 
     fn with(graph: Graph) -> Engine {
-        Engine { graph, pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), reads: 0, measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
+        Engine {
+            graph,
+            pipeline: Pipeline::new(),
+            fitted: Default::default(),
+            proof: Default::default(),
+            support: None,
+            custom: HashMap::new(),
+            caches: None,
+            patches: HashMap::new(),
+            reads: 0,
+            measures: None,
+            read: [None, None],
+            cache: oni_graph::Cache::frontier(),
+        }
     }
 
     pub fn shared(d: &Device) -> Shared {

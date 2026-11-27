@@ -14489,5 +14489,12 @@
     "title": "The window checks' list names each check once",
     "status": "done",
     "detail": "Each of the 315 checks was written twice in tests/window/checks.rs, its name as a string beside its path, and ten of those lines ran past 200 characters. A macro, check!, takes the path and makes the name from it, a check in one of a module's parts (editors::curves, editors::panel) keeping its module's name, so every name the runner prints, filters on and times stays as it was: the runner's --list gives the same 315 names before and after. Lines past 200 characters: 68 to 58."
+  },
+  {
+    "id": 4092,
+    "type": "refactor",
+    "title": "Twenty-one lines past 200 characters broken, the width ceiling at 37",
+    "status": "done",
+    "detail": "The engine's initialiser, the display's count signature, the cost pass's read buffer, the launch's options, the shell's brush and dust, the benches' report lines, and in the window checks the toolbar's keys and ends, a project's fingerprints, a sheet's ratio, the slides', loupe's and headless folder reads, the menu finder, the pointer's press and release, the pinned column's wait and an export's jobs: each split at its items or along its chain, no expression changed, the struct bases kept without a comma. Lines past 200 characters: 58 to 37; oni-app checks clean, its 587 unit tests green."
   }
 ]

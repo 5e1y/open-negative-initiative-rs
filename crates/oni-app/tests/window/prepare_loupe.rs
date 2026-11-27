@@ -24,7 +24,12 @@ fn click(rig: &common::Rig, x: f32, y: f32) {
 fn frames(folder: &Path) -> (Vec<String>, Option<(usize, usize)>) {
     std::fs::create_dir_all(folder).unwrap();
     if let Some(dir) = std::env::var_os("ONI_RAW_DIR") {
-        let mut raws: Vec<PathBuf> = std::fs::read_dir(dir).unwrap().flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("nef") || e.eq_ignore_ascii_case("rw2"))).collect();
+        let mut raws: Vec<PathBuf> = std::fs::read_dir(dir)
+            .unwrap()
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("nef") || e.eq_ignore_ascii_case("rw2")))
+            .collect();
         raws.sort();
         let names: Vec<String> = raws.iter().take(3).map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
         for (p, n) in raws.iter().zip(&names) {
