@@ -9,7 +9,6 @@ const LIMIT: usize = 400;
 const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-app/src/editors/tests.rs", 466),
     ("crates/oni-decode/tests/swift_checks.rs", 460),
-    ("crates/oni-graph/tests/graph.rs", 404),
     ("crates/oni-measure/src/registration.rs", 432),
     ("crates/oni-pipeline/tests/swift_checks.rs", 722),
     ("crates/oni-settings/tests/codec_checks.rs", 720),
