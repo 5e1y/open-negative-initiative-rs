@@ -260,8 +260,8 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     rig.settle();
     assert!(!wrapped.get_shown(), "shown above already, or not December");
 
-    // The bar holds the year's key through December and the January after it, which tells the year just
-    // ended: a plate of holographic foil, in the gallery as in the editor, and a click on it shows the year.
+    // The gallery's bar holds the year's key through December and the January after it, which tells the year
+    // just ended: a plate of holographic foil, and a click on it shows the year; the editor's holds none.
     assert!(w.global::<oni_app::App>().get_gallery());
     let plate = || {
         use i_slint_backend_testing::{AccessibleRole, ElementHandle};
@@ -273,7 +273,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
         assert_eq!(wrapped.get_title().as_str(), "WRAPPED 26", "{today:?}");
         assert!(plate().is_some() && key_inside(w, "WRAPPED 26"), "{today:?}: the key stands in the bar");
     }
-    // The plate at rest, under the hand and pressed, in each mode.
+    // The plate at rest, under the hand and pressed.
     let held = |mode: &str| {
         use slint::platform::{PointerEventButton, WindowEvent};
         let key = plate().unwrap();
@@ -297,11 +297,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     ctl.act(oni_app::Act::ToggleMode);
     rig.landed(&ctl);
     rig.settle();
-    assert!(!w.global::<oni_app::App>().get_gallery() && plate().is_some(), "the key stands in the editor's bar too");
-    held("editor");
-    rig.until("the year shown from the editor", Duration::from_secs(20), || wrapped.get_shown() && !wrapped.get_loading());
-    wrapped.invoke_close();
-    w.window().dispatch_event(slint::platform::WindowEvent::PointerExited);
+    assert!(!w.global::<oni_app::App>().get_gallery() && plate().is_none(), "the editor's bar holds no year's key");
     ctl.act(oni_app::Act::ToggleMode);
     rig.landed(&ctl);
     rig.settle();

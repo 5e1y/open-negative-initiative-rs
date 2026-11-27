@@ -14657,5 +14657,12 @@
     "title": "The contact sheet signs #madewithoni where it bore ONI's logo",
     "status": "done",
     "detail": "Owner's call: the sheet's signature is the text #madewithoni, his own words, never translated, set in the brand's display face (Zalando Sans Expanded Black), a tile wide against the band's left edge and centred in its height, in the logo's ink, on screen as in the file. Whether it shows and where are unchanged. The logo's SVG no longer reaches the sheet, and oni-app no longer depends on resvg. Checks: together::logo::tests::the_signature_spans_the_first_column_centred_in_the_band_and_nothing_else_is_drawn (twins: black ink lights nothing; a narrow sheet sets it smaller), export_sheet's five photos."
+  },
+  {
+    "id": 4104,
+    "type": "ui",
+    "title": "Undo and Redo head the bar's centre, left of the Sheet past a rule, in every mode; the year's key in the gallery alone",
+    "status": "done",
+    "detail": "Owner's call: Undo and Redo leave the mode key's side for the head of the bar's centre, left of the Sheet, followed by the same rule as stands before Reset; in the gallery and the editor, and at the head of a roll's steps while it is prepared. They fold with the centre's flat keys, and the bar's widths no longer count them apart. The year's key, WRAPPED 26, stands in the gallery's bar alone (owner's call): with the history's rule the bar ran 10 pt past the narrowest window in French and 16 in Spanish. Folded to glyphs, the bar draws neither rule, the history's nor Reset's, the bar's gap (Space.l) alone setting the groups apart (owner's call), which gives back about 25 pt a rule. RollStepKeys moves to its own file, so the bar's stays under the ceiling. Checks: toolbar_fit::undo_and_redo_head_the_centre_past_a_rule_in_the_editor_and_the_gallery (twin: the mode key no longer has them beside it), toolbar_fit's three checks in English, French and Spanish on the app profile, the year's check now asserting no key in the editor, wrapped's bar."
   }
 ]
