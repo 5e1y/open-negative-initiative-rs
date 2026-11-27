@@ -100,7 +100,7 @@ pub(super) fn journal_in(support: &std::path::Path) -> std::sync::Arc<Journal> {
 }
 
 impl Ctl {
-    fn journal(&self) -> std::sync::Arc<Journal> {
+    pub(in crate::app) fn journal(&self) -> std::sync::Arc<Journal> {
         journal_in(&self.state.borrow().support)
     }
 

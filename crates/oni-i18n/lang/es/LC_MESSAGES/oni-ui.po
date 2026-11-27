@@ -5018,6 +5018,10 @@ msgid "Opening the last folder"
 msgstr "Abriendo la última carpeta"
 
 #: crates/oni-app/src/main.rs
+msgid "Preparing the photo opened last"
+msgstr "Preparando la última foto abierta"
+
+#: crates/oni-app/src/main.rs
 msgid "Starting the graphics card"
 msgstr "Iniciando la tarjeta gráfica"
 
@@ -5180,6 +5184,10 @@ msgstr "{seconds} s"
 #: crates/oni-app/src/starter.rs
 msgid "Compiling the image kernels"
 msgstr "Compilando los núcleos de imagen"
+
+#: crates/oni-app/src/starter.rs
+msgid "Ready"
+msgstr "Listo"
 
 #: crates/oni-app/src/stocks.rs
 msgid "Stock not specified"

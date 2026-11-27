@@ -26,6 +26,16 @@ const DRAWN: Duration = Duration::from_millis(17);
 const TICK: Duration = Duration::from_millis(100);
 /// The last step, which waits on the kernels' thread rather than running on the interface's.
 const KERNELS: &str = oni_i18n::marked("Compiling the image kernels");
+/// Every step done, the version's picture still held for its time.
+const READY: &str = oni_i18n::marked("Ready");
+/// The least the version's picture stays once shown, every launch a person makes (owner's call): longer only while the
+/// kernels compile, as a first launch after an update takes.
+pub const HELD: Duration = Duration::from_millis(3400);
+
+/// Whether the starter gives way: the kernels compiled and the picture shown `held` at least.
+pub fn opens(kernels_done: bool, shown_for: Duration, held: Duration) -> bool {
+    kernels_done && shown_for >= held
+}
 
 /// The version's own picture, else the newest.
 pub fn picture(version: &str) -> usize {
@@ -84,15 +94,20 @@ impl Laps {
     }
 }
 
-/// The share of the launch done: each step one part, the kernels one more, filled as they compile.
-pub fn fraction(steps_done: usize, steps: usize, kernels_done: usize, kernels: usize) -> f32 {
+/// The share of the launch done: each step one part, the kernels one more, filled as they compile, and never ahead of
+/// the share of `held` the picture has been shown, so the bar ends full as the starter gives way.
+pub fn fraction(steps_done: usize, steps: usize, kernels_done: usize, kernels: usize, shown_for: Duration, held: Duration) -> f32 {
     let kernels = if kernels == 0 { 1.0 } else { kernels_done.min(kernels) as f32 / kernels as f32 };
-    (steps_done.min(steps) as f32 + kernels) / (steps + 1) as f32
+    let held = if held.is_zero() { 1.0 } else { (shown_for.as_secs_f32() / held.as_secs_f32()).min(1.0) };
+    ((steps_done.min(steps) as f32 + kernels) / (steps + 1) as f32).min(held)
 }
 
 struct Launch {
     window: slint::Weak<MainWindow>,
     began: Instant,
+    /// When the picture showed, and how long it stays at least: a bench measures the app, never the picture.
+    shown: std::cell::Cell<Instant>,
+    held: Duration,
     steps: RefCell<VecDeque<Step>>,
     total: std::cell::Cell<usize>,
     done: RefCell<Vec<(&'static str, Duration)>>,
@@ -117,6 +132,8 @@ pub fn launch(window: &MainWindow, began: Instant, before: Vec<(&'static str, Du
     let launch = Rc::new(Launch {
         window: window.as_weak(),
         began,
+        shown: std::cell::Cell::new(Instant::now()),
+        held: if crate::bench::requested().is_some() { Duration::ZERO } else { HELD },
         total: std::cell::Cell::new(before.len() + steps.len()),
         steps: RefCell::new(steps.into()),
         done: RefCell::new(before),
@@ -127,6 +144,7 @@ pub fn launch(window: &MainWindow, began: Instant, before: Vec<(&'static str, Du
     });
     sized(window, band.get_width(), band.get_height());
     window.show()?;
+    launch.shown.set(Instant::now());
     crate::timing::line(&format!("boot: the starter shown {:.0} ms after the launch", ms(began.elapsed())));
     let ticking = Rc::downgrade(&launch);
     launch.ticker.start(TimerMode::Repeated, TICK, move || {
@@ -171,9 +189,13 @@ impl Launch {
     /// The clock and the kernels' count on the band; the app once every step and the kernels are done.
     fn tick(self: &Rc<Self>) {
         let waiting = self.steps.borrow().is_empty() && self.current.borrow().0 == KERNELS;
-        if waiting && self.kernels.finished() && self.ready.borrow().is_some() {
+        if waiting && self.kernels.finished() && !self.done.borrow().iter().any(|(w, _)| *w == KERNELS) {
             let since = self.current.borrow().1.elapsed();
             self.finished(KERNELS, since);
+            *self.current.borrow_mut() = (READY, Instant::now());
+        }
+        let ready = self.current.borrow().0 == READY;
+        if ready && opens(self.kernels.finished(), self.shown.get().elapsed(), self.held) && self.ready.borrow().is_some() {
             return self.open();
         }
         self.publish();
@@ -193,7 +215,7 @@ impl Launch {
         let done = self.done.borrow();
         let line = done.iter().map(|(w, took)| tr!("{step} {seconds}", step = tr(w), seconds = seconds(*took))).collect::<Vec<_>>().join(" · ");
         band.set_done(line.into());
-        band.set_fraction(fraction(done.len(), self.total.get(), self.kernels.done(), Kernels::total()));
+        band.set_fraction(fraction(done.len(), self.total.get(), self.kernels.done(), Kernels::total(), self.shown.get().elapsed(), self.held));
     }
 
     /// The starter gone and the window at the app's size, centred where it stood, in one turn.
@@ -258,11 +280,26 @@ mod tests {
 
     #[test]
     fn the_bar_fills_with_the_steps_and_the_kernels_and_ends_full() {
-        assert_eq!(fraction(0, 3, 0, 27), 0.0);
-        assert_eq!(fraction(3, 3, 27, 27), 1.0);
-        assert!((fraction(3, 3, 0, 27) - 0.75).abs() < 1e-6, "the kernels weigh one step");
-        assert!(fraction(2, 3, 27, 27) < 1.0, "a step left keeps the bar short of the end");
+        let (long, none) = (Duration::from_secs(10), Duration::ZERO);
+        assert_eq!(fraction(0, 3, 0, 27, long, HELD), 0.0);
+        assert_eq!(fraction(3, 3, 27, 27, long, HELD), 1.0);
+        assert!((fraction(3, 3, 0, 27, long, HELD) - 0.75).abs() < 1e-6, "the kernels weigh one step");
+        assert!(fraction(2, 3, 27, 27, long, HELD) < 1.0, "a step left keeps the bar short of the end");
         // Twin: counts past their totals never push the bar beyond full.
-        assert_eq!(fraction(9, 3, 99, 27), 1.0);
+        assert_eq!(fraction(9, 3, 99, 27, long, HELD), 1.0);
+        // The work done early, the bar follows the picture's time: half the hold is half the bar.
+        assert!((fraction(3, 3, 27, 27, HELD / 2, HELD) - 0.5).abs() < 1e-6);
+        assert_eq!(fraction(3, 3, 27, 27, none, none), 1.0, "no hold, no wait");
+    }
+
+    #[test]
+    fn the_picture_stays_its_time_and_the_kernels_theirs() {
+        let just = HELD - Duration::from_millis(1);
+        assert!(opens(true, HELD, HELD), "the kernels compiled and the time shown: the app opens");
+        assert!(!opens(true, just, HELD), "the kernels compiled early: the picture keeps its time");
+        assert!(!opens(false, Duration::from_secs(9), HELD), "past its time, the picture waits on the kernels");
+        // Twin: a bench holds no picture, so it opens as soon as the kernels are compiled.
+        assert!(opens(true, Duration::ZERO, Duration::ZERO));
+        assert_eq!(HELD, Duration::from_millis(3400));
     }
 }

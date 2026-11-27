@@ -271,6 +271,11 @@ impl Shell {
         self.ctl.open_remembered()
     }
 
+    /// The photo opened last prepared off the interface thread while the starter shows (`launch_ahead`).
+    pub fn prepare_ahead(&self) {
+        self.ctl.prepare_ahead();
+    }
+
     /// The opened folder's first photo in the editor once read, for the bench; a file named at
     /// launch keeps its own opening.
     pub fn open_first_when_read(&self) {

@@ -115,6 +115,7 @@ pub type Shower = Box<dyn Fn(&Path)>;
 
 mod options;
 mod dng;
+mod launch_ahead;
 pub use options::{Options, PICKER_MESSAGE, TldbSite};
 pub use organising::{FolderVault, Vault};
 

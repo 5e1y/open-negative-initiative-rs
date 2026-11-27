@@ -197,6 +197,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }),
+        starter::step(marked("Preparing the photo opened last"), {
+            let shell = shell.clone();
+            move || {
+                if let Some(shell) = shell.borrow().as_ref().filter(|_| bench::requested().is_none() && !oni_app::wrapped::alone()) {
+                    shell.prepare_ahead();
+                }
+            }
+        }),
     ];
     let ready = {
         let (shell, hz, meter) = (shell.clone(), hz.clone(), engine.clone());

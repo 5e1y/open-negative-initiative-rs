@@ -57,12 +57,15 @@ pub(crate) fn the_starter_says_each_step_then_grows_into_the_app_and_the_notice_
     let opened = Rc::new(Cell::new(0));
     let seen = opened.clone();
     let before = vec![("Starting the graphics card", Duration::from_millis(1200))];
+    let shown = Instant::now();
     starter::launch(&window, Instant::now(), before, steps, kernels.clone(), move || seen.set(seen.get() + 1)).unwrap();
     let band = window.global::<Starter>();
     assert!(band.get_shown());
     let size = rig.window.size();
     assert_eq!((size.width, size.height), (physical(band.get_width()), physical(band.get_height())), "the window opens at the starter's size");
     rig.until("the app", Duration::from_secs(60), || opened.get() > 0);
+    // The version's picture keeps its time though every step and kernel was done sooner.
+    assert!(shown.elapsed() >= starter::HELD, "the starter gave way after {:?}", shown.elapsed());
     assert_eq!(*said.borrow(), STEPS, "each step is on the band while it runs");
     assert!(!band.get_shown() && kernels.finished());
     let size = rig.window.size();
