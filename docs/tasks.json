@@ -14419,5 +14419,12 @@
     "title": "The welcome's films keep their time on any processor: decoders aim where the film will be, skip what they cannot reach, never hold the interface; the check replays the player on a clock of its own",
     "status": "done",
     "detail": "A frame of 1600 by 1000 costs 20 to 36 ms to decode here (WebP, pure Rust), against 40 ms a frame: a machine loaded with the whole check, or a processor three or four times slower, could not keep up, and the decoder, aimed at the frame due now, finished only frames already past, so the screen froze on an old frame. Now a film has up to three decoders (the cores less two), each takes the first frame wanted that none has ready or under way, aimed at the frame due once it is decoded (the cost timed as it goes); a frame finished late is kept if it is the latest past, so the screen skips frames and the film keeps its time; the interface only reads what is ready, never waits. The check replays the player on a virtual clock with a chosen cost: at 30 ms a frame no frame late; four times slower, two or three frames behind at most, skipping; twin, aimed at the frame due now, nearly every frame shown already past. Checks: reels (four, none on the wall clock but a liveness one: the interface answered within 5 ms), passing three times beside a release build; welcome_reel (both); clippy."
+  },
+  {
+    "id": 4085,
+    "type": "refactor",
+    "title": "The pipeline's render checks in three files: the axis and curves, the density migration, the detail tracks",
+    "status": "done",
+    "detail": "tests/swift_checks.rs had stood past the 400-line ceiling (722, grandfathered). The density migration's frozen kernel and its real-frame check go to swift_checks/migration.rs, the neighbourhood probe with the chroma and sharpening tracks to swift_checks/detail.rs, both modules of the same binary, moved line for line (351 lines left). The 9 checks green, the three on the reference roll run on three of its frames."
   }
 ]
