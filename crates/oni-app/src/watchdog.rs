@@ -1,9 +1,10 @@
-//! `Diagnostics`' watchdog: a thread of its own asks the interface thread to answer every 0.1 s, a request
-//! unanswered past 0.35 s is a block written to the log while it lasts, the footprint beside it, and the console
-//! counts them; a block past `LONG_BLOCK` writes where the interface thread waits, read by the system's `sample`.
+//! The watchdog: a thread of its own asks the interface thread to answer every 0.1 s, a request unanswered
+//! past 0.35 s while that thread works is a block written to the log while it lasts, the footprint beside it, and the
+//! console counts them; a block past `LONG_BLOCK` writes where the interface thread waits, read by the system's `sample`.
 
 use std::cell::RefCell;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 /// `Diagnostics.stallFloor` and how often the interface thread is asked.
@@ -37,6 +38,25 @@ pub fn witness(said: impl Fn() -> String + 'static) {
     WITNESS.with(|w| *w.borrow_mut() = Some(Box::new(said)));
 }
 
+/// Whether the interface thread waits in its event loop for work: a thread at rest is never blocked, however late
+/// the system wakes it, as App Nap does a hidden window's by seconds.
+static RESTING: AtomicBool = AtomicBool::new(false);
+
+/// The interface thread about to wait in its event loop, `true`, answering the request waiting as it goes; woken,
+/// `false`, a request still waiting timed from now, as its wait so far was the system's.
+pub fn rest(resting: bool, now: Instant) {
+    RESTING.store(resting, Ordering::SeqCst);
+    let waiting = STORE.lock().is_ok_and(|mut s| {
+        if !resting && let Some(asked) = s.asked.as_mut() {
+            *asked = (*asked).max(now);
+        }
+        s.asked.is_some()
+    });
+    if resting && waiting {
+        answered_here();
+    }
+}
+
 /// The interface thread answers the request waiting, if any, with what it shows.
 pub fn answer(at: Instant, witness: String) {
     if let Ok(mut s) = STORE.lock() {
@@ -50,10 +70,10 @@ pub fn answer(at: Instant, witness: String) {
 /// One turn of the watchdog at `now`: a block begun or ended is written to the log, a new request handed to `ask`
 /// when none waits; how long the interface thread has left a request unanswered while blocked.
 pub fn check(now: Instant, ask: impl FnOnce()) -> Option<Duration> {
-    let (since, seen, began, ended, long, asking) = {
+    let (since, seen, blocked, began, ended, long, asking) = {
         let mut s = STORE.lock().ok()?;
         let waiting = s.asked.map(|asked| now.saturating_duration_since(asked));
-        let blocked = waiting.is_some_and(|w| w > STALL_FLOOR);
+        let blocked = waiting.is_some_and(|w| w > STALL_FLOOR) && !RESTING.load(Ordering::SeqCst);
         let since = waiting.unwrap_or(s.waited);
         let (began, ended) = (blocked && !s.reporting, !blocked && s.reporting);
         if began {
@@ -67,7 +87,7 @@ pub fn check(now: Instant, ask: impl FnOnce()) -> Option<Duration> {
         if asking {
             s.asked = Some(now);
         }
-        (since, s.witness.clone(), began, ended, long, asking)
+        (since, s.witness.clone(), blocked, began, ended, long, asking)
     };
     if asking {
         ask();
@@ -85,7 +105,7 @@ pub fn check(now: Instant, ask: impl FnOnce()) -> Option<Duration> {
     } else if ended {
         crate::timing::line(&format!("recovered · the interface thread answers again after {:.2} s · footprint {mb}", since.as_secs_f64()));
     }
-    (since > STALL_FLOOR && !ended).then_some(since)
+    blocked.then_some(since)
 }
 
 /// The blocks counted this session.
@@ -93,8 +113,9 @@ pub fn blocks() -> usize {
     STORE.lock().map_or(0, |s| s.stalls)
 }
 
-/// Watches from a thread of its own: a detector on the blocked thread would write nothing.
+/// Watches from a thread of its own, a detector on the blocked thread writing nothing; called on the interface thread.
 pub fn start() {
+    observe_rest();
     let _ = std::thread::Builder::new().name("watchdog".into()).spawn(|| {
         loop {
             std::thread::sleep(BEAT);
@@ -121,6 +142,33 @@ fn ask_interface() {
     // SAFETY: the main queue lives as long as the process, and `answered` reads nothing through its context.
     unsafe { dispatch_async_f(&raw const _dispatch_main_q, std::ptr::null_mut(), answered) };
 }
+
+/// The main run loop's waits told to `rest`, in its common modes, so the system's modal loops count as well.
+#[cfg(target_os = "macos")]
+fn observe_rest() {
+    type Ref = *mut std::ffi::c_void;
+    const BEFORE_WAITING: usize = 1 << 5;
+    const AFTER_WAITING: usize = 1 << 6;
+    #[link(name = "CoreFoundation", kind = "framework")]
+    unsafe extern "C" {
+        static kCFRunLoopCommonModes: Ref;
+        fn CFRunLoopGetMain() -> Ref;
+        fn CFRunLoopObserverCreate(allocator: Ref, activities: usize, repeats: u8, order: isize, callout: extern "C" fn(Ref, usize, Ref), context: Ref) -> Ref;
+        fn CFRunLoopAddObserver(run_loop: Ref, observer: Ref, mode: Ref);
+    }
+    extern "C" fn seen(_: Ref, activity: usize, _: Ref) {
+        rest(activity == BEFORE_WAITING, Instant::now());
+    }
+    // SAFETY: CoreFoundation's own calls, the observer kept by the main run loop for the process's life.
+    unsafe {
+        let observer = CFRunLoopObserverCreate(std::ptr::null_mut(), BEFORE_WAITING | AFTER_WAITING, 1, 0, seen, std::ptr::null_mut());
+        CFRunLoopAddObserver(CFRunLoopGetMain(), observer, kCFRunLoopCommonModes);
+    }
+}
+
+/// Elsewhere a request answers only once the event loop serves it.
+#[cfg(not(target_os = "macos"))]
+fn observe_rest() {}
 
 /// The interface thread asked through Slint's event loop.
 #[cfg(not(target_os = "macos"))]
@@ -214,6 +262,22 @@ mod tests {
         assert_eq!(blocks(), before + 1, "one block, however long it lasts");
         answer(asked + Duration::from_millis(950), "the editor".into());
         assert_eq!(check(asked + Duration::from_millis(1000), || {}), None, "recovered");
+        // A thread resting in its event loop that the system wakes late, as App Nap does, is no block; woken, its
+        // request is timed from the wake, and a busy thread past the floor is one again.
+        let napping = at(30_000);
+        answer(at(21_005), "the editor".into());
+        assert_eq!(check(napping, || {}), None);
+        rest(false, napping);
+        RESTING.store(true, Ordering::SeqCst);
+        assert_eq!(check(napping + Duration::from_secs(30), || {}), None, "a thread at rest is not blocked");
+        assert_eq!(blocks(), before + 1);
+        let woke = napping + Duration::from_secs(31);
+        rest(false, woke);
+        assert_eq!(check(woke + Duration::from_millis(100), || {}), None, "its wait so far was the system's");
+        assert!(check(woke + Duration::from_millis(500), || {}).is_some(), "twin: busy past the floor once woken");
+        assert_eq!(blocks(), before + 2);
+        rest(true, woke + Duration::from_millis(600));
+        assert_eq!(check(woke + Duration::from_millis(700), || {}), None, "about to wait, it answers");
         assert!(footprint().is_none_or(|b| b > 1_000_000), "a footprint in bytes");
     }
 

@@ -14587,5 +14587,12 @@
     "title": "A job that waits past 50 ms for the render thread names what it ran meanwhile",
     "status": "done",
     "detail": "The owner sees the pan stutter; the bench, on a fresh app, does not. The render thread now keeps its last tasks by name (the render before, Compare's before, the histogram's count, the input histograms and those at rest, a scan ahead, the GPU finishing a render), and a job taken more than 50 ms after it was asked writes one line, 'render: a view waited N ms behind …', each task's share of the wait and what none accounts for; nothing when the thread was free. The line names no file. A check and its twin; oni-app's 590 unit tests and clippy green."
+  },
+  {
+    "id": 4096,
+    "type": "fix",
+    "title": "The watchdog counts no block while the interface thread rests in its event loop",
+    "status": "done",
+    "detail": "The owner's log held 362 blocks in a session, 359 of them while the window was occluded, the stacks at rest in the run loop (mach_msg2_trap, __CFRunLoopDoTimer) and recoveries up to 35 s: the request posted on the main queue measured how late the system woke a napped, idle thread, not the app's work. A run-loop observer in the common modes now tells the watchdog when the interface thread is about to wait, which answers the request waiting, and when it wakes, which times a request still waiting from the wake; a request unanswered past the floor is a block only while the thread works, and check() answers a duration only for a block. The check gains the resting cases and its twin, a busy thread past the floor counted once woken. Not yet seen on the owner's app: two three-minute runs, hidden from launch, gave no block before or after; his next session's log is the proof."
   }
 ]
