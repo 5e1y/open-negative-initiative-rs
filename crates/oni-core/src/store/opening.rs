@@ -171,16 +171,6 @@ impl EditorStore {
         failure
     }
 
-    /// Flushes once the hand has rested `WRITE_DELAY`, so a drag writes the sidecar once.
-    pub fn flush_if_due(&mut self, now: f64) -> Option<String> {
-        let due = !self.held && self.last_change.is_some_and(|t| now - t >= sidecar::WRITE_DELAY.as_secs_f64());
-        if !due {
-            return None;
-        }
-        self.last_change = None;
-        self.flush()
-    }
-
     pub(super) fn replace(&mut self, next: PipelineSettings) -> FieldSet {
         let changed = FieldSet::between(&self.settings, &next);
         if !changed.is_empty() {

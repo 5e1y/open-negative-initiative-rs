@@ -107,9 +107,6 @@ impl EditorStore {
         if by_hand && changed.intersects(FieldSet::of_family(Family::Roll)) {
             self.roll_touched = true;
         }
-        if !changed.is_empty() {
-            self.last_change = Some(now);
-        }
         if !self.held {
             match self.deferred {
                 Some(_) => self.deferred = Some(now + SETTLE_DELAY),
@@ -158,14 +155,12 @@ impl EditorStore {
     /// The open frame laid as part of a gesture's own step, after the gesture's `release`; the frames
     /// together take it too, but those of `handled`, which the gesture writes itself.
     pub(super) fn lay_open(&mut self, next: PipelineSettings, handled: &[String]) -> Written {
-        let now = self.now();
         let Some(path) = self.path().map(str::to_string) else { return Written::default() };
         let before = self.settings.clone();
         if next == before {
             return Written::default();
         }
         self.replace(next.clone());
-        self.last_change = Some(now);
         let mut step = (Settings::from([(path.clone(), before.clone())]), Settings::from([(path, next.clone())]));
         let took = [together::Took::Wrote(Box::new(before.clone()), Box::new(next.clone()))];
         gather(&mut step, self.lay_step(&before, &next, &took, false, handled));

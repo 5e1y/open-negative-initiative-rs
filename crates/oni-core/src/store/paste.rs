@@ -112,7 +112,6 @@ impl EditorStore {
         self.roll_look = Some((copied, key));
         let now = self.now();
         self.replace(pasted);
-        self.last_change = Some(now);
         self.settle(now);
     }
 

@@ -14440,5 +14440,12 @@
     "title": "The store's second ONI Trash path out: its checks mark as the app does",
     "status": "done",
     "detail": "EditorStore::move_to_trash, restore_from_trash and the mark they shared ran only in the checks: the app marks through mark_begun, mark_run off its thread and mark_landed, which close the open frame before a trash where the checks' path flushed it. The three go; the checks of oni_trash, missing_originals and roll8 lay their marks through one helper in tests/common that runs the app's three steps, and gallery_steps holds mark_landed to its named step. oni-core's tests green, roll #8's eight on its 38 sidecars."
+  },
+  {
+    "id": 4088,
+    "type": "refactor",
+    "title": "The store's own write timer out: the app's is the one that writes",
+    "status": "done",
+    "detail": "EditorStore::flush_if_due and the last_change it read ran only in a check: the app holds its own change instant and writes through flush once the hand has rested WRITE_DELAY. The method, the field and its four writes go (lay_open's clock with them); the check that an untouched frame gains no sidecar and an edit is kept once written now writes through flush. oni-core's tests green, roll #8's included; oni-app, oni-link and oni-demos check clean."
   }
 ]

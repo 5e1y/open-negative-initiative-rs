@@ -110,17 +110,16 @@ fn an_adjusted_opening_starts_the_history_on_the_adjusted_settings() {
 }
 
 #[test]
-fn an_untouched_frame_gains_no_sidecar_and_a_rested_edit_writes_one() {
+fn an_untouched_frame_gains_no_sidecar_and_a_written_edit_keeps_one() {
     let (mut store, dir) = fresh("flush");
     let written = sidecar::url_for(&dir.join("frame.tif"));
     store.flush();
     assert!(!written.exists());
     assert!(!store.kept(), "an untouched frame has no sidecar holding its settings");
     store.apply_at(Command::Step { knob: Knob::Texture, by: 0.4 }, 0.0);
-    assert_eq!(store.flush_if_due(0.1), None);
-    assert!(!written.exists(), "a hand still moving writes nothing");
+    assert!(!written.exists(), "an edit writes nothing by itself");
     assert!(!store.kept(), "an edit not written yet is not kept");
-    store.flush_if_due(1.0);
+    store.flush();
     assert!(written.exists());
     assert!(store.kept());
     // Twin: the next edit is not kept until its own write.

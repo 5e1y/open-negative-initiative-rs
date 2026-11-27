@@ -111,7 +111,6 @@ pub struct EditorStore {
     measured: HashMap<RollKey, BTreeSet<String>>,
     pending: FieldSet,
     revision: u64,
-    last_change: Option<f64>,
     epoch: Instant,
     /// The last failure a gesture met, for the host to show.
     pub failure: Option<String>,
@@ -143,7 +142,6 @@ impl EditorStore {
             measured: HashMap::new(),
             pending: FieldSet::EMPTY,
             revision: 0,
-            last_change: None,
             epoch: Instant::now(),
             failure: None,
             walking: None,

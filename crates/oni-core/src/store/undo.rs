@@ -75,7 +75,6 @@ impl EditorStore {
         if let Some(wanted) = open.as_ref().and_then(|p| restored.get(p)) {
             changed = self.replace(wanted.clone());
             self.recorded = wanted.clone();
-            self.last_change = Some(self.now());
         }
         let others: Vec<String> = restored.keys().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         self.modify(&others, |path, _| restored.get(path).cloned());
