@@ -1,15 +1,9 @@
 //! The workspace's shape: no source file past `LIMIT` lines, so each stays one part an agent reads
-//! whole. The files listed under `GRANDFATHERED` may only shrink until they are split.
+//! whole, and no more wide lines than today.
 
 use std::path::{Path, PathBuf};
 
 const LIMIT: usize = 400;
-
-/// Files already past the limit, each at its size today: a ceiling that only comes down, never a target.
-const GRANDFATHERED: &[(&str, usize)] = &[
-    ("crates/oni-pipeline/tests/swift_checks.rs", 722),
-    ("crates/oni-settings/tests/codec_checks.rs", 720),
-];
 
 /// A Rust line past this many characters is hard to read whole.
 const WIDE: usize = 200;
@@ -42,12 +36,12 @@ fn sources(root: &Path) -> Vec<(String, String)> {
     out
 }
 
-/// Each source file under `crates/` past its ceiling, with its line count.
+/// Each source file under `crates/` past `LIMIT`, with its line count.
 fn breaches(root: &Path) -> Vec<(String, usize)> {
     let mut out: Vec<_> = sources(root)
         .into_iter()
         .map(|(rel, text)| (rel, text.lines().count()))
-        .filter(|(rel, lines)| *lines > ceiling(rel))
+        .filter(|(_, lines)| *lines > LIMIT)
         .collect();
     out.sort();
     out
@@ -58,16 +52,12 @@ fn wide_lines(root: &Path) -> usize {
     sources(root).iter().filter(|(rel, _)| rel.ends_with(".rs")).flat_map(|(_, text)| text.lines()).filter(|l| l.chars().count() > WIDE).count()
 }
 
-fn ceiling(rel: &str) -> usize {
-    GRANDFATHERED.iter().find(|(p, _)| *p == rel).map_or(LIMIT, |(_, n)| (*n).max(LIMIT))
-}
-
 fn workspace() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 #[test]
-fn no_source_file_grows_past_its_ceiling() {
+fn no_source_file_runs_past_the_limit() {
     let found = breaches(&workspace());
     assert!(found.is_empty(), "split these into one file per part: {found:?}");
 }
