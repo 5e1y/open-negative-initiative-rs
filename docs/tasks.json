@@ -14251,5 +14251,12 @@
     "title": "The archive's folding and medals in files of their own",
     "status": "done",
     "detail": "oni-app's library.rs stood at 393 lines. The tree's folding (unfold_to, unfold_every, expanded, unfold, keep_folded, folded, toggle and the folder walk) goes to library/folding.rs as an impl block of Archive, the medal's caption, podium place and its inverse to library/medals.rs, re-exported where they were; moved line for line (284 lines left). oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4077,
+    "type": "refactor",
+    "title": "The render's correction checks in a file of their own",
+    "status": "done",
+    "detail": "render/tests.rs stood at 399 lines. The custom flat-field reached by its id and the dust patch healing its stroke go to render/corrections_tests.rs, a test module beside kept_tests and the others, moved line for line (327 lines left). oni-app's 581 unit tests green."
   }
 ]

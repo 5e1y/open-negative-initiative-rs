@@ -37,6 +37,8 @@ mod door_tests;
 #[cfg(test)]
 mod kept_tests;
 #[cfg(test)]
+mod corrections_tests;
+#[cfg(test)]
 mod prewarm_tests;
 #[cfg(test)]
 mod inputs_tests;
