@@ -1,6 +1,8 @@
 //! The editing model on roll #8's own sidecars, copied to a folder of the test's own: the reference
 //! roll is read, never written.
 
+mod common;
+
 use oni_core::balance::{Outcome, Strategy};
 use oni_core::{Archive, Channel, Command, EditorStore, Family, FieldSet, Knob, PasteCheck};
 use oni_settings::{PipelineSettings, sidecar};
@@ -269,7 +271,7 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     roll.open(&mut store, &frame);
     store.flush();
     let (before, files, settings) = (roll.bytes(), roll.originals(), roll.settings(&frame));
-    assert_eq!(store.move_to_trash(std::slice::from_ref(&frame)), 1);
+    assert_eq!(common::trash(&mut store, std::slice::from_ref(&frame)), 1);
     assert!(store.path().is_none(), "the open frame closes");
     assert!(sidecar::read(Path::new(&frame), true).unwrap().trashed_at.is_some());
     assert_eq!(moved(&before, &roll.bytes()), std::slice::from_ref(&frame), "the marked frame's sidecar alone is written");

@@ -1,6 +1,8 @@
 //! Gestures on photos whose originals are not on disk: no sidecar is written beside nothing, no step
 //! is recorded for them, and the gesture says which were left out.
 
+mod common;
+
 use oni_core::knob::Knob;
 use oni_core::preset_parameters::pasted_rows;
 use oni_core::{Archive, Command, EditorStore};
@@ -53,7 +55,7 @@ fn a_gesture_on_a_missing_original_writes_no_sidecar() {
     store.copy_settings(None, &pasted_rows());
     assert_eq!(store.paste_settings(&targets), 1);
     untouched(&mut store, "paste");
-    assert_eq!(store.move_to_trash(&targets), 1);
+    assert_eq!(common::trash(&mut store, &targets), 1);
     let said = store.failure.take().unwrap_or_default();
     assert!(said.contains("2 photos were not moved to the ONI Trash") && said.contains("cannot be found"), "{said}");
     for path in [&moved, &away] {
@@ -76,12 +78,12 @@ fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
     let frames: Vec<String> = ["P1.RW2", "P2.RW2"].iter().map(|n| text(&disk.join("Roll").join(n))).collect();
     frames.iter().for_each(|f| std::fs::write(f, b"").unwrap());
     let mut store = EditorStore::new(Archive::new(frames.clone(), |_: &Path| true));
-    assert_eq!(store.move_to_trash(&frames), 2);
+    assert_eq!(common::trash(&mut store, &frames), 2);
     let trashed: Vec<Option<Vec<u8>>> = frames.iter().map(|f| side(f)).collect();
     let label = store.history().undo_label().map(str::to_owned);
 
     std::fs::rename(&disk, dir.join("T7 away")).unwrap();
-    assert_eq!(store.restore_from_trash(&frames), 0);
+    assert_eq!(common::restore(&mut store, &frames), 0);
     let said = store.failure.take().unwrap_or_default();
     assert!(said.starts_with("2 photos were not restored") && said.contains("cannot be found"), "{said}");
     assert_eq!(store.history().undo_label().map(str::to_owned), label, "no Restore step is recorded");
@@ -93,7 +95,7 @@ fn a_restore_on_a_disk_away_changes_nothing_and_says_so() {
     assert_eq!(frames.iter().map(|f| side(f)).collect::<Vec<_>>(), trashed, "the marks wait on the disk as they were");
 
     // Twin: the disk back, the same restore lands and opens its step.
-    assert_eq!(store.restore_from_trash(&frames), 2);
+    assert_eq!(common::restore(&mut store, &frames), 2);
     assert_eq!((store.failure.take(), store.history().undo_label()), (None, Some("Restore 2 Photos")));
     assert!(frames.iter().all(|f| sidecar::read(Path::new(f), true).unwrap().trashed_at.is_none()));
     let _ = std::fs::remove_dir_all(&dir);

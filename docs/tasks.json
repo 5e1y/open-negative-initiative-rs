@@ -14433,5 +14433,12 @@
     "title": "The codec's checks in three files, and no file past the ceiling any more",
     "status": "done",
     "detail": "tests/codec_checks.rs had stood past the 400-line ceiling (702, grandfathered at 720). The unit changes whose order is load-bearing go to codec_checks/units.rs, the former tone chain and the fields to codec_checks/fields.rs, moved line for line (310 lines left). With it the last grandfathered file is gone: the architecture test drops its list and its per-file ceiling, every file now held to LIMIT alone. The 22 codec checks and the architecture test green."
+  },
+  {
+    "id": 4087,
+    "type": "refactor",
+    "title": "The store's second ONI Trash path out: its checks mark as the app does",
+    "status": "done",
+    "detail": "EditorStore::move_to_trash, restore_from_trash and the mark they shared ran only in the checks: the app marks through mark_begun, mark_run off its thread and mark_landed, which close the open frame before a trash where the checks' path flushed it. The three go; the checks of oni_trash, missing_originals and roll8 lay their marks through one helper in tests/common that runs the app's three steps, and gallery_steps holds mark_landed to its named step. oni-core's tests green, roll #8's eight on its 38 sidecars."
   }
 ]

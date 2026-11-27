@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 /// The gestures on the selection or the roll, each owing ⌘Z one named step.
-const BATCH: [&str; 14] = [
+const BATCH: [&str; 13] = [
     "reset_frames",
     "apply_mode",
     "apply_preset",
@@ -16,8 +16,7 @@ const BATCH: [&str; 14] = [
     "paste_settings",
     "paste_framing",
     "reset_to_default",
-    "move_to_trash",
-    "restore_from_trash",
+    "mark_landed",
     "land_roll",
     "lay_roll",
 ];

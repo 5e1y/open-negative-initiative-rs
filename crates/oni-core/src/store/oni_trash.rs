@@ -3,24 +3,6 @@
 use super::*;
 
 impl EditorStore {
-    /// Marks each frame's sidecar, its files untouched; the open frame among them closes.
-    pub fn move_to_trash(&mut self, paths: &[String]) -> usize {
-        self.mark(paths, Some(Date::now()))
-    }
-
-    pub fn restore_from_trash(&mut self, paths: &[String]) -> usize {
-        self.mark(paths, None)
-    }
-
-    pub(super) fn mark(&mut self, paths: &[String], date: Option<Date>) -> usize {
-        if self.path().is_some_and(|p| paths.iter().any(|t| t == p)) {
-            self.flush();
-        }
-        let mosaic = &self.archive.mosaic;
-        let outcome = mark_run(paths, date, &|p: &Path| mosaic(p));
-        self.mark_landed(paths, &outcome, date)
-    }
-
     /// Before a mark runs off the host's thread: the open frame among `paths` written, and closed
     /// when it goes to the ONI Trash, so no edit lands on it meanwhile; a refused write keeps its edits.
     pub fn mark_begun(&mut self, paths: &[String], date: Option<Date>) {

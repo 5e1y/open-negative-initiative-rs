@@ -1,6 +1,8 @@
 //! `OniTrash.selfCheck` through the store, on files of the test's own: a triplet goes to the ONI
 //! Trash on its three sidecars and comes back from any of its files; one step, which ⌘Z hands back.
 
+mod common;
+
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RgbPasses;
 use oni_settings::sidecar::{self, WriteOptions};
@@ -61,7 +63,7 @@ fn a_triplet_goes_whole_in_one_step_and_undo_and_redo_hand_it_back() {
     let mut store = EditorStore::new(Archive::new(all.to_vec(), |_: &Path| false));
     store.open(&lead).unwrap();
 
-    assert_eq!(store.move_to_trash(std::slice::from_ref(&lead)), 1);
+    assert_eq!(common::trash(&mut store, std::slice::from_ref(&lead)), 1);
     assert!(store.path().is_none(), "the open frame closes");
     assert_eq!(trashed(&all), [true, true, true, false], "the triplet on its three files, the neighbour left alone");
     assert_eq!(files(&dir.0, false), originals, "no original moves, vanishes or changes");
@@ -74,10 +76,10 @@ fn a_triplet_goes_whole_in_one_step_and_undo_and_redo_hand_it_back() {
     assert_eq!(trashed(&all), [true, true, true, false], "redo marks them again");
 
     // Restored from a pass, the three come back; twin: a restore that moved nothing opens no step.
-    assert_eq!(store.restore_from_trash(std::slice::from_ref(&blue)), 1);
+    assert_eq!(common::restore(&mut store, std::slice::from_ref(&blue)), 1);
     assert_eq!(trashed(&all), [false; 4]);
     let label = store.history().undo_label().map(str::to_owned);
-    assert_eq!(store.restore_from_trash(&[]), 0);
+    assert_eq!(common::restore(&mut store, &[]), 0);
     assert_eq!(store.history().undo_label().map(str::to_owned), label);
     assert_eq!(files(&dir.0, false), originals);
 }
