@@ -329,7 +329,7 @@ impl Engine {
         Ok((e.w as usize, pixels))
     }
 
-    /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
+    /// The pipeline on the full-resolution frame FIRST, the region second, since
     /// the neighbourhood radii index on the incoming extent; kept on the GPU for the display kernel,
     /// `None` on an unlaid band.
     pub fn loupe(&mut self, (full, seed): (&Source, [u32; 2]), settings: &PipelineSettings, viewport: &Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {

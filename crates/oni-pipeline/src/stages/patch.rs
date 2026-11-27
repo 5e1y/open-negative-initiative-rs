@@ -47,7 +47,7 @@ impl Stage for Patched {
     }
 }
 
-/// `RawDecode.rebuildingEdge`: a reduced decode darkens its two outer rows and columns, which are
+/// A reduced decode darkens its two outer rows and columns, which are
 /// taken from the third.
 pub fn rebuilt_edge(image: oni_graph::Image) -> oni_graph::Image {
     let e = image.extent();

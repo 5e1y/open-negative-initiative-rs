@@ -31,7 +31,7 @@ impl FilmGroup {
     }
 }
 
-/// `CharacterSet.whitespaces`: tabs and space separators, never line breaks.
+/// Tabs and space separators, never line breaks.
 fn is_blank(c: char) -> bool {
     c == '\t'
         || (c.is_whitespace() && !matches!(c, '\n' | '\r' | '\u{0B}' | '\u{0C}' | '\u{85}' | '\u{2028}' | '\u{2029}'))

@@ -16,7 +16,7 @@ fn a_stored_radius_is_held_to_the_track_and_the_smallest_disc_holds_pixels() {
     assert_eq!(disc_offsets(0.9).len(), 1);
 }
 
-/// `Pipette.rimStraddle`: the last integer offset inside the rim and the first outside, `dx` positive.
+/// The last integer offset inside the rim and the first outside, `dx` positive.
 fn rim_straddle(radius: f64) -> Option<((i64, i64), (i64, i64))> {
     let reach = radius.ceil() as i64 + 1;
     let r2 = (radius * radius) as f32;

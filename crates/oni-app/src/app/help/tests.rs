@@ -55,7 +55,7 @@ fn the_message_names_no_inbox_and_its_links_are_the_sites() {
     assert!([CONTEST_TAG, MADE_WITH].iter().all(|tag| tag.starts_with('#') && !tag.contains(' ')));
 }
 
-/// `WhatsNew.selfCheck`: every note hangs on a heading the interface draws, and every heading's
+/// Every note hangs on a heading the interface draws, and every heading's
 /// id has its note, or a note is never seen and a heading draws nothing.
 #[test]
 fn every_note_hangs_on_a_heading_and_every_heading_has_its_note() {

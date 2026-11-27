@@ -84,7 +84,7 @@ impl Ctl {
         self.welcome_frame();
     }
 
-    /// `WelcomeSheet.isDue`: this release's sheet not yet shown on this computer.
+    /// This release's sheet not yet shown on this computer.
     pub fn welcome_due(&self) -> bool {
         super::welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }

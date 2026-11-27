@@ -1,4 +1,4 @@
-//! `GalleryHistory.selfCheck`'s scan: every gesture of the store that writes several photos at once
+//! Every gesture of the store that writes several photos at once
 //! lays one named step, directly or through a helper that does, so ⌘Z always answers for it.
 
 use std::collections::{BTreeMap, BTreeSet};

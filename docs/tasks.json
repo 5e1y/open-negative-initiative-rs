@@ -14447,5 +14447,12 @@
     "title": "The store's own write timer out: the app's is the one that writes",
     "status": "done",
     "detail": "EditorStore::flush_if_due and the last_change it read ran only in a check: the app holds its own change instant and writes through flush once the hand has rested WRITE_DELAY. The method, the field and its four writes go (lay_open's clock with them); the check that an untouched frame gains no sidecar and an edit is kept once written now writes through flush. oni-core's tests green, roll #8's included; oni-app, oni-link and oni-demos check clean."
+  },
+  {
+    "id": 4089,
+    "type": "refactor",
+    "title": "The freed zones' doc comments name no Swift type any more",
+    "status": "done",
+    "detail": "Thirty-two comments in the help and welcome, the journal, the loupe, the stock catalogue, the film's scene, the decode's and pipeline's checks and the measure's opened on the Swift function they once ported (WhatsNew.notes, JournalEdits.settled, Pipeline.filmed, ContainerRead.writeTestDNG and the like); each now opens on what the item is or does, and the notes' order is said without Swift. Comments naming one of the interface's own globals (Space.s, ShellStyle.panel-width and the like), whose token a constant follows, stay. Comments only; the seven crates check clean."
   }
 ]

@@ -55,7 +55,7 @@ fn season_word(today: (i32, u32)) -> String {
 
 #[derive(Default)]
 pub struct Year {
-    /// `JournalEdits.last`: each photo's settings at its last settled edit.
+    /// Each photo's settings at its last settled edit.
     last: HashMap<String, PipelineSettings>,
     /// The summary while it shows: the year it tells, its scenes and the one in the gate.
     story: Option<Story>,
@@ -115,7 +115,7 @@ impl Ctl {
         self.state.borrow_mut().year.last.insert(path.to_string(), settings);
     }
 
-    /// `JournalEdits.settled`: one record per settings row the gesture moved, never one per notch.
+    /// One record per settings row the gesture moved, never one per notch.
     pub(super) fn journal_settled(&self) {
         let (path, settings, before) = {
             let s = self.state.borrow();

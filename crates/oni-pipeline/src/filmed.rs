@@ -1,4 +1,4 @@
-//! `Pipeline.filmed`: a digital photo's scene on its virtual film, the halation's glow read off the film's plate.
+//! A digital photo's scene on its virtual film, the halation's glow read off the film's plate.
 
 use super::*;
 

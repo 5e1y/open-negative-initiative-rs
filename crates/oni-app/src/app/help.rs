@@ -25,7 +25,7 @@ pub struct Surfaces {
 /// Sends one report: the message and, when ticked, the sealed log; a check hands its own.
 pub type Reporter = Arc<dyn Fn(&str, Option<String>) -> Result<(), String> + Send + Sync>;
 
-/// `WhatsNew.preferenceKey`: the notes a hover has read.
+/// The notes a hover has read.
 pub const SEEN_KEY: &str = "whatsNewSeen";
 /// `WelcomeSheet.preferenceKey` and `edition`: the release the sheet speaks of, X.Y; a new one shows it
 /// to everyone again, a patch of a release seen never does.
@@ -45,7 +45,7 @@ pub const KIT_GIFT: bool = true;
 pub const PAUSE: ((i32, u32, u32), (i32, u32, u32)) = ((2026, 12, 15), (2027, 1, 15));
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
-/// `Diagnostics.ceiling`: the lines the console shows, or a long session lays out megabytes each read.
+/// The lines the console shows, or a long session lays out megabytes each read.
 const CONSOLE_LINES: usize = 4000;
 /// How far from its end a first read of the log starts, well past the ceiling's lines.
 const FIRST_READ: u64 = 1 << 20;
@@ -98,7 +98,7 @@ impl Tail {
     }
 }
 
-/// `WhatsNew.notes`: (id, word, note), in Swift's order; the word and note translated where shown.
+/// (id, word, note), in the order they show; the word and note translated where shown.
 pub const NOTES: [(&str, &str, &str); 2] = [
     ("lighting.1.3.1", marked("Updated"), marked("Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays.")),
     ("space.1.3.1", marked("New"), marked("ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips.")),
@@ -157,7 +157,7 @@ impl Ctl {
         help.on_contest(|| system::open_url(CONTEST));
         let p = me.clone();
         help.on_report_edited(move |text| {
-            // `BugReport.messageLimit`: typing stops at the site's bound.
+            // Typing stops at the site's bound.
             if text.chars().count() > report::MESSAGE_LIMIT
                 && let Some(w) = p.window()
             {
@@ -189,7 +189,7 @@ impl Ctl {
         n.set_space_note(note);
     }
 
-    /// `DSNewsBoard.read`: seen for the next launch, its pill kept until this one quits.
+    /// Seen for the next launch, its pill kept until this one quits.
     fn news_read(&self, id: &str) {
         let written = {
             let mut s = self.state.borrow_mut();
@@ -238,7 +238,7 @@ impl Ctl {
         }
     }
 
-    /// `ReportSheet.send`: sealed and posted off this thread; a failure stays on the sheet.
+    /// Sealed and posted off this thread; a failure stays on the sheet.
     fn send_report(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         let h = w.global::<Help>();

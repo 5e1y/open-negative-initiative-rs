@@ -52,7 +52,7 @@ fn luma(v: V3) -> f32 {
 
 // MARK: - DensityAxis.selfCheck
 
-/// `DensityAxis.rendered`: on the bare axis, decompression whole, the RGB black at zero, Lighting at rest.
+/// On the bare axis, decompression whole, the RGB black at zero, Lighting at rest.
 fn on_axis(rgb: V3, mode: ConversionMode, ceiling: f32) -> V3 {
     let mut s = PipelineSettings { mode, ..PipelineSettings::default() };
     s.chroma_decompression = 1.0;
@@ -165,7 +165,7 @@ fn the_colour_filters_move_the_render_and_reach_no_gain() {
 
 // MARK: - ChromaDecompression.selfCheck
 
-/// `ChromaDecompression.window`: one window's ends, gamma and two added points on a density.
+/// One window's ends, gamma and two added points on a density.
 fn window(e: f32, l: &Levels) -> f32 {
     let t = ((e - l.black) / (l.white - l.black).max(1e-4)).max(0.0).powf(l.gamma());
     let (c1, c3) = (l.shadow_ordinate(), l.highlight_ordinate());

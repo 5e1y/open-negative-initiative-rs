@@ -99,7 +99,7 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     rig.settle();
     let open = || Path::new(ctl.state.borrow().open_path().unwrap_or_default()).file_name().unwrap().to_string_lossy().into_owned();
 
-    // `FilmRow.title`: a name row shows the whole file name; a thumbnail its stem.
+    // A name row shows the whole file name; a thumbnail its stem.
     assert!(rows(&lib).iter().any(|r| r.thumb && r.title == "A01"), "a thumbnail is captioned by its stem");
     lib.invoke_tree_layout_picked(0);
     rig.pump();

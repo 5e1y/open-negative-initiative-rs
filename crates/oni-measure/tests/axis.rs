@@ -1,4 +1,4 @@
-//! `FilmProbe.axisChecks`: the density a reading names for a value is the one the kernel renders,
+//! The density a reading names for a value is the one the kernel renders,
 //! `−log10(max(v + pedestal, guard))`, at both ends of the ceiling's range.
 
 use oni_graph::{Graph, Rect};

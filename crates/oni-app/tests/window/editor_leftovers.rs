@@ -82,7 +82,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     band.invoke_toggled();
     assert_eq!(ctl.state.borrow().loupe_magnification(), 1.5);
 
-    // `DSHelpPlacement.place`: a note held Space.sm in from the window's four edges, cut to fit.
+    // A note held Space.sm in from the window's four edges, cut to fit.
     let tips = w.global::<oni_app::Tips>();
     let placed = |x: f32, y: f32, width: f32, height: f32| {
         let b = tips.invoke_place(x, y, width, height, 1280.0, 800.0);

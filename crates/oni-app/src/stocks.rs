@@ -119,7 +119,7 @@ pub fn virtual_stock(id: &str) -> Option<oni_settings::VirtualStock> {
     film_stock(Some(id)).and_then(|k| k.film)
 }
 
-/// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with the stocks it offers, as
+/// The brands in the catalogue's order, each with the stocks it offers, as
 /// indices into the catalogue; `current`, when a line, stays at its place among the line's stocks.
 pub fn by_brand(current: Option<&str>) -> Vec<(&'static str, Vec<usize>)> {
     among(|k| k.offered || (k.line && current == Some(k.id)))

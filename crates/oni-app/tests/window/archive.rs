@@ -111,7 +111,7 @@ pub(crate) fn a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once() 
     wait(rig, thumbnails::REFRESH_DELAY + Duration::from_millis(500));
     rig.until("the opening's redraw", Duration::from_secs(30), || !ctl.state.borrow().drawing());
 
-    // `Sidecar.writeDelay`: a notch writes the sidecar once the hand has rested 400 ms, not before.
+    // A notch writes the sidecar once the hand has rested 400 ms, not before.
     let c = PathBuf::from(ctl.state.borrow().open_path().unwrap());
     let side = oni_settings::sidecar::url_for(&c);
     let before = modified(&side);

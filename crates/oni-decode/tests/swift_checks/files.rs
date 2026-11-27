@@ -2,7 +2,7 @@
 
 use super::*;
 
-/// `ContainerRead.writeTestDNG`: a LinearRaw scan in one strip, its table and white level after the IFD.
+/// A LinearRaw scan in one strip, its table and white level after the IFD.
 pub(super) fn test_dng(path: &Path, curve: &[u16], samples: &[u16], w: usize, h: usize, bits: usize) {
     assert_eq!(samples.len(), w * h * 3);
     let mut out: Vec<u8> = Vec::new();
@@ -62,7 +62,7 @@ pub(super) fn test_dng(path: &Path, curve: &[u16], samples: &[u16], w: usize, h:
     std::fs::write(path, out).unwrap();
 }
 
-/// `ContainerRead.writeRawTIFF`: one directory of the given entries, then 512 bytes of 0x40.
+/// One directory of the given entries, then 512 bytes of 0x40.
 pub(super) fn raw_tiff(path: &Path, entries: &[(u16, u16, Vec<f64>)]) {
     let mut sorted = entries.to_vec();
     sorted.sort_by_key(|e| e.0);
@@ -110,7 +110,7 @@ pub(super) fn rgb(image: &Linear) -> Vec<[f64; 3]> {
     image.pixels.iter().map(|p| [p[0] as f64, p[1] as f64, p[2] as f64]).collect()
 }
 
-/// `ContainerRead.chromaEnergy`: the RMS gradient of Rec. 2020's two colour differences, two pixels in.
+/// The RMS gradient of Rec. 2020's two colour differences, two pixels in.
 pub(super) fn chroma_energy(w: usize, h: usize, px: &[[f64; 3]]) -> f64 {
     let margin = 2;
     if w <= 2 * margin + 1 || h <= 2 * margin + 1 {
@@ -134,7 +134,7 @@ pub(super) fn chroma_energy(w: usize, h: usize, px: &[[f64; 3]]) -> f64 {
     (sum / (4 * n) as f64).sqrt()
 }
 
-/// `ContainerRead.grainSamples`: a seeded field box-blurred twice to a 7 px grain, 0.10 spread around 0.5.
+/// A seeded field box-blurred twice to a 7 px grain, 0.10 spread around 0.5.
 pub(super) fn grain(side: usize) -> Vec<u16> {
     let mut seed: u64 = 0x9E37_79B9_7F4A_7C15;
     let mut field: Vec<f32> = (0..side * side * 3)

@@ -123,7 +123,7 @@ pub fn color_matrix(k: &ColorMatrix) -> PerPixel {
     PerPixel { name: "color-matrix", kernel: &MATRIX, params: uniform(HEAD, &k.rows()) }
 }
 
-/// `Pipeline.lumaOnly`: every channel the Rec. 2020 luminance, alpha kept.
+/// Every channel the Rec. 2020 luminance, alpha kept.
 pub fn luma_only() -> PerPixel {
     let w = oni_settings::axis::pipeline::LUMA_WEIGHTS;
     let row = [w[0], w[1], w[2], 0.0];

@@ -1,4 +1,4 @@
-//! `GeometryPanel.selfCheck`: the framing reset, the turns and mirror carrying the balance window,
+//! The framing reset, the turns and mirror carrying the balance window,
 //! the proposed window and the remembered framing, each with its twin.
 
 use oni_settings::cg::Rect;

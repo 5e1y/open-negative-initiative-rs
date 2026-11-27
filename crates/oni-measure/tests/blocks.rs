@@ -1,4 +1,4 @@
-//! `Blocks.selfCheck`: the grid lays its cells, drops a speck, keeps an area, and reads a roll
+//! The grid lays its cells, drops a speck, keeps an area, and reads a roll
 //! through its windows; each claim beside the twin that fails it.
 
 use oni_measure::blocks::{Grid, histogram, reading};
@@ -15,7 +15,7 @@ fn patch(p: Plane, v: f32, r: Rect) -> Plane {
     p.painted(&r, [v, v, v, 1.0])
 }
 
-/// `Pipeline.histogram`: every pixel counted, the twin a block reading is judged against.
+/// Every pixel counted, the twin a block reading is judged against.
 fn pixel_histogram(p: &Plane) -> Vec<[f32; 3]> {
     let rgb: Vec<[f32; 3]> = p.pixels.iter().map(|q| [q[0], q[1], q[2]]).collect();
     histogram(&rgb, &[], BINS).rgb

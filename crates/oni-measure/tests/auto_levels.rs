@@ -1,4 +1,4 @@
-//! `AutoLevels.selfCheck`: the suggestion's threshold, the alignment, the placed handles, the two
+//! The suggestion's threshold, the alignment, the placed handles, the two
 //! steps on simulated densities, each with its twin.
 
 use oni_core::balance::{self as core_balance, Suggestion};
