@@ -14139,5 +14139,12 @@
     "status": "done",
     "title": "CLAUDE.md: halation has no threshold and a long tail, its dose a share of the amount shown",
     "detail": "The working notes follow #3883: the whole exposure spread as exp(-r / λ), red alone, the dose DOSE_PER_AMOUNT of the amount the files and the slider hold."
+  },
+  {
+    "id": 4062,
+    "type": "refactor",
+    "title": "The example upgrade_check out: it judged a render against the Swift app's thumbnails",
+    "status": "done",
+    "detail": "Its verdict was a render within 0.15 of the Swift thumbnail, a comparison the conversion no longer seeks; nothing runs it (no script, check or document but this log). The sidecar sweep it also made is the window check upgrade's and the migration corpus's. 208 lines removed."
   }
 ]
