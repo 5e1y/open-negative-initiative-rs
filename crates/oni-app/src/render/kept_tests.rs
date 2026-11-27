@@ -17,7 +17,8 @@ fn the_patches_kept_stay_under_their_budget_and_go_with_the_editor() {
         (0..n)
             .map(|_| {
                 let c = Correction { id: Id::new(), stroke: Vec::new(), radius: 20.0, gesture: None };
-                crate::patches::write(&caches, oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c), side, side, &vec![[0.5; 4]; (side * side) as usize]).unwrap();
+                let key = oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c);
+                crate::patches::write(&caches, key, side, side, &vec![[0.5; 4]; (side * side) as usize]).unwrap();
                 c
             })
             .collect()
@@ -63,7 +64,8 @@ fn a_search_costs_what_lies_in_its_window_however_many_patches_the_frame_holds()
     let dot = |x: f64, y: f64| {
         let point = |x: f64| oni_settings::cg::Point { x, y };
         let c = Correction { id: Id::new(), stroke: vec![point(x), point(x + 0.002)], radius: 12.0, gesture: None };
-        crate::patches::write(&caches, oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c), 40, 40, &vec![[0.9, 0.9, 0.9, 1.0]; 1600]).unwrap();
+        let key = oni_pipeline::corrections::PatchKey::of(&PipelineSettings::rest(oni_settings::ConversionMode::Negative, true), &c);
+        crate::patches::write(&caches, key, 40, 40, &vec![[0.9, 0.9, 0.9, 1.0]; 1600]).unwrap();
         c
     };
     let (searched, near) = (dot(0.05, 0.5), dot(0.1, 0.4));

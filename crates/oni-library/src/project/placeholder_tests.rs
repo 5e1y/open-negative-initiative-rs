@@ -164,7 +164,8 @@ fn a_rescan_shows_in_trip_and_the_stale_print_as_a_missing_tile() {
     // Twin: by the row each member holds alone, as before, Portfolio's print hides Trip's photo unread.
     assert_eq!(holders(&read, &Reach::new(&st.rows, &st.found)).get(twelve), Some(&(0, 0)));
     // Twin: a print standing at its path whatever its file carries would take the new scan from Trip.
-    let blind: Vec<Project> = read.iter().map(|p| Project { members: p.members.iter().map(|m| if m.placeholder().is_some() { m.clone() } else { Member::new(m.path.as_deref(), None) }).collect(), ..p.clone() }).collect();
+    let bare = |m: &Member| if m.placeholder().is_some() { m.clone() } else { Member::new(m.path.as_deref(), None) };
+    let blind: Vec<Project> = read.iter().map(|p| Project { members: p.members.iter().map(bare).collect(), ..p.clone() }).collect();
     assert_eq!(showing(&blind, &rescanned, twelve), [("Portfolio".to_string(), "2-12".to_string())]);
 }
 

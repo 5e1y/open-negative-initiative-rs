@@ -77,7 +77,15 @@ impl Uploader {
 
 /// `pixels` written over `extent` in tiles of at most `max_side`, each a texture `make` gives; in half
 /// floats when asked and one tile holds them, as only like formats copy across tiles.
-fn laid(queue: &wgpu::Queue, door: Option<&Arc<dyn Door>>, max_side: u32, extent: Rect, pixels: &[[f32; 4]], asked: Precision, mut make: impl FnMut(u32, u32, Precision) -> FloatTexture) -> Result<Source, Error> {
+fn laid(
+    queue: &wgpu::Queue,
+    door: Option<&Arc<dyn Door>>,
+    max_side: u32,
+    extent: Rect,
+    pixels: &[[f32; 4]],
+    asked: Precision,
+    mut make: impl FnMut(u32, u32, Precision) -> FloatTexture,
+) -> Result<Source, Error> {
     // Each band passes the door on its own: a window reconfiguring waits one band, never a whole frame.
     let passing = |write: &dyn Fn()| {
         let entered = door.filter(|d| d.enter());

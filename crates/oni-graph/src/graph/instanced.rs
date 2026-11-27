@@ -139,7 +139,13 @@ impl Graph {
                 if arity > 0 {
                     let mut aux = [InstanceAux::default(); MAX_AUX];
                     for (f, a) in aux.iter_mut().zip(&i.aux) {
-                        *f = InstanceAux { in_origin: [a.rect.x, a.rect.y], in_min: [a.extent.x, a.extent.y], in_max: [a.extent.right(), a.extent.bottom()], in_size: [a.rect.w as i32, a.rect.h as i32], in_at: a.at };
+                        *f = InstanceAux {
+                            in_origin: [a.rect.x, a.rect.y],
+                            in_min: [a.extent.x, a.extent.y],
+                            in_max: [a.extent.right(), a.extent.bottom()],
+                            in_size: [a.rect.w as i32, a.rect.h as i32],
+                            in_at: a.at,
+                        };
                     }
                     places.push(aux);
                 }

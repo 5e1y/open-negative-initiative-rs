@@ -61,7 +61,10 @@ pub fn standing(projects: &[Project], held: &[Entry], index: &LibraryIndex, last
     }
     let copies: Vec<Vec<Entry>> = looked
         .iter()
-        .map(|(member, _)| member.print.as_deref().filter(|_| member.placeholder().is_none()).map(|print| index.with_fingerprint(print)).unwrap_or_default().into_iter().filter(|r| shown(r, index)).collect())
+        .map(|(member, _)| {
+            let print = member.print.as_deref().filter(|_| member.placeholder().is_none());
+            print.map(|print| index.with_fingerprint(print)).unwrap_or_default().into_iter().filter(|r| shown(r, index)).collect()
+        })
         .collect();
     // The copy each stood on last read stays its own while free, before any other member chooses.
     let mut chosen: Vec<Option<&Entry>> = vec![None; looked.len()];

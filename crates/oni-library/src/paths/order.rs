@@ -224,7 +224,10 @@ mod tests {
     /// A key weighed once orders every pair as `standard_order` does, accents and compositions included.
     #[test]
     fn a_name_key_orders_as_standard_order() {
-        let names = ["Roll 2", "roll 10", "Roll 02", "a", "A", "", "007", "\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025", "Etre", "Ete 2025", "\u{152}uf", "Oeuvre", "Ni\u{f1}o", "Nina", "F\u{e9}vrier", "Zoo"];
+        let names = [
+            "Roll 2", "roll 10", "Roll 02", "a", "A", "", "007", "\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025", "Etre", "Ete 2025", "\u{152}uf", "Oeuvre",
+            "Ni\u{f1}o", "Nina", "F\u{e9}vrier", "Zoo",
+        ];
         for a in names {
             for b in names {
                 assert_eq!(NameKey::new(a).cmp(&NameKey::new(b)), standard_order(a, b), "{a:?} against {b:?}");

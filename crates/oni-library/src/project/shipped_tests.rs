@@ -128,7 +128,8 @@ fn a_placeholder_alone_at_its_read_file_takes_its_print_and_is_written_so() {
     let (a, b) = ("/r/a.NEF", "/r/b.NEF");
     let waiting = format!("{}{a}", crate::library::WAITING_MARK);
     let recorded = BTreeMap::from([(waiting.clone(), a.to_owned()), ("1-b".to_owned(), b.to_owned())]);
-    let trip = shipped::Project { id: Id::new(), name: "Trip".into(), description: String::new(), created_at: stamp(), manual_order: None, members: vec![waiting.clone(), "1-b".into()], paths: Some(recorded) };
+    let members = vec![waiting.clone(), "1-b".into()];
+    let trip = shipped::Project { id: Id::new(), name: "Trip".into(), description: String::new(), created_at: stamp(), manual_order: None, members, paths: Some(recorded) };
     let file = shipped::ProjectsFile { version: 1, projects: vec![trip.clone()] };
     std::fs::write(old_path(support), serde_json::to_vec(&file).unwrap()).unwrap();
     let read = old(support);

@@ -14174,5 +14174,12 @@
     "title": "The registration's tests in a file of their own",
     "status": "done",
     "detail": "registration.rs had stood past the 400-line ceiling (432, grandfathered). Its inline tests module goes to registration/tests.rs, moved line for line and outdented one level; the registration itself is untouched (329 lines). Its ceiling entry goes. oni-measure's 38 tests green."
+  },
+  {
+    "id": 4067,
+    "type": "refactor",
+    "title": "Eight lines past 200 characters broken, the width ceiling at 69",
+    "status": "done",
+    "detail": "A project's copies (project_standing), a shipped project and a blind twin in the library's tests, the names a collation orders, the graph's tiled source's signature and an instance's auxiliary inputs, the archive's frame filter and the kept patches' keys in the app's tests: each split where it reads, no expression changed. Lines past 200 characters: 77 to 69."
   }
 ]
