@@ -14307,5 +14307,12 @@
     "title": "The welcome films' 120 Hz check tolerates a frame or two missed on a loaded machine",
     "status": "done",
     "detail": "Under the load of several builds at once a single late frame failed the check, which runs on the real clock. It now allows one frame in twenty late; a decoder that does not keep ahead misses nearly every one and still fails it (twin). Checks: reels."
+  },
+  {
+    "id": 3974,
+    "type": "fix",
+    "title": "The Collection's gift keeps the owner's title, The Lens DB in it; the huge gift's sentence says what the person gets",
+    "status": "done",
+    "detail": "The rewrite had replaced the owner's own title, 'Import your photo kit into ONI, with The Lens DB', which names the partner whose integration it is: it is back, and its sentence no longer repeats it ('Search The Lens DB's catalogue for your bodies and lenses and add them to your Kit: ONI writes them into every photo you export.'). The huge gift's sentence had a pronoun of no clear subject and named a source no longer whole: 'Pick a film in the editor: ONI renders your digital photo as if you had shot it on that film.' French and Spanish written alike. Checks: welcome_card (both; the 90 centred cases with these texts), welcome_reel; catalogue."
   }
 ]

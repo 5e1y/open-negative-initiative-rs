@@ -38,7 +38,7 @@ export component WelcomeSheet inherits Sheet {
     function slot(page: int) -> int { !Help.kit-gift && page > 2 ? page - 2 : page - 1 }
     // How far the screen's words and demo have come, from the moment its gift's lid is off.
     property <float> words: root.opened ? Beat.at(Help.opened-time, Help.words-at, 0.8) : 0;
-    property <[string]> titles: [@tr("ONI's interface comes alive"), @tr("Your cameras and lenses in ONI"), @tr("Your digital photos, on film"), @tr("Your Wrapped is here")];
+    property <[string]> titles: [@tr("ONI's interface comes alive"), @tr("Import your photo kit into ONI, with The Lens DB"), @tr("Your digital photos, on film"), @tr("Your Wrapped is here")];
     property <[string]> tags: [@tr("A small gift"), @tr("Another small gift"), @tr("The huge gift"), @tr("The mystery gift")];
     // Two blocks on the window's middle line: the gift, then its film, on the left, the words in one column on the
     // right, the same for every screen; the film takes the room the column leaves, kept clear of the keys' band.
@@ -146,7 +146,7 @@ export component WelcomeSheet inherits Sheet {
                     title-size: root.title-size;
                     eyebrow: root.tags[1];
                     title: root.titles[1];
-                    lead: @tr("Find them in The Lens DB's catalogue and add them to your Kit: ONI writes them into every photo you export.");
+                    lead: @tr("Search The Lens DB's catalogue for your bodies and lenses and add them to your Kit: ONI writes them into every photo you export.");
                     text: "";
                     shown: told;
                     if Kit.link == KitLink.out: HorizontalLayout { alignment: start; Button { keycap: true; text: @tr("Connect The Lens DB"); clicked => { Kit.connect(false); } } }
@@ -157,7 +157,7 @@ export component WelcomeSheet inherits Sheet {
                     title-size: root.title-size;
                     eyebrow: root.tags[2];
                     title: root.titles[2];
-                    lead: @tr("Pick a film in the editor: ONI develops your photo the way that film would, from its maker's data sheet.");
+                    lead: @tr("Pick a film in the editor: ONI renders your digital photo as if you had shot it on that film.");
                     text: @tr("{} films to choose from, in the editor's Film panel.", Help.film-count);
                     shown: told;
                 }

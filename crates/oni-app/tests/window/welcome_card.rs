@@ -14,7 +14,7 @@ const MARGIN: f32 = 24.0;
 /// Each screen's title, a gift's once it is opened.
 const TITLES: [&str; 5] = [
     "ONI's interface comes alive",
-    "Your cameras and lenses in ONI",
+    "Import your photo kit into ONI, with The Lens DB",
     "Your digital photos, on film",
     "Your Wrapped is here",
     "You already paid for your film. You shouldn't have to pay just to look at it.",
