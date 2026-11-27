@@ -1,5 +1,5 @@
-//! Ink on a clear plate, as the sheet's numbers and logo are set: text in the interface's face
-//! and the logo, in sRGB premultiplied by coverage, laid over the sheet's black or shown as is.
+//! Ink on a clear plate, as the sheet's numbers and signature are set: text in the interface's face
+//! or the brand's, in sRGB premultiplied by coverage, laid over the sheet's black or shown as is.
 
 use oni_export::Image as Picture;
 use swash::scale::{Render, ScaleContext, Source as Outline};
@@ -13,6 +13,9 @@ const FACES: [(f32, &[u8]); 4] = [
     (700.0, include_bytes!("../../../../oni-ui/fonts/ONISans-Bold.ttf")),
 ];
 
+/// The brand's display face, which the sheet's signature is set in.
+const DISPLAY: &[u8] = include_bytes!("../../../../oni-ui/fonts/ZalandoSans_Expanded-Black.ttf");
+
 /// The numbers' ink as the design system states it, in sRGB, and their weight.
 #[derive(Clone, Copy, Debug)]
 pub(in crate::app) struct Lettering {
@@ -20,7 +23,7 @@ pub(in crate::app) struct Lettering {
     pub weight: f32,
 }
 
-/// A sheet's inks as the canvas sets them, in sRGB: its ground, its numbers' lettering, its logo's ink.
+/// A sheet's inks as the canvas sets them, in sRGB: its ground, its numbers' lettering, its signature's ink.
 #[derive(Clone, Copy, Debug)]
 pub(in crate::app) struct Inks {
     pub ground: [f32; 3],
@@ -62,6 +65,11 @@ impl Plate {
     /// `text` at `size` pixels and `weight`, its baseline at `at.1`, from its pen at `at.0`.
     pub fn text(&mut self, at: (f32, f32), text: &str, size: f32, lettering: Lettering, context: &mut ScaleContext) {
         let Some(face) = Face::of(lettering.weight) else { return };
+        self.text_in(&face, at, text, size, lettering.ink, context);
+    }
+
+    /// `text` in `face` at `size` pixels and in `ink`, its baseline at `at.1`, from its pen at `at.0`.
+    pub fn text_in(&mut self, face: &Face, at: (f32, f32), text: &str, size: f32, ink: [f32; 3], context: &mut ScaleContext) {
         let font = face.font();
         let mut scaler = context.builder(font).size(size).normalized_coords(&face.coords).build();
         let advances = font.glyph_metrics(&face.coords).scale(size);
@@ -73,7 +81,7 @@ impl Plate {
                 let (left, top) = (i64::from(pen.round() as i32 + p.left), i64::from(at.1.round() as i32 - p.top));
                 for (i, &a) in mask.data.iter().enumerate() {
                     let (x, y) = (left + (i % p.width as usize) as i64, top + (i / p.width as usize) as i64);
-                    self.cover(x, y, f32::from(a) / 255.0, lettering.ink);
+                    self.cover(x, y, f32::from(a) / 255.0, ink);
                 }
             }
             pen += advances.advance_width(glyph);
@@ -119,8 +127,21 @@ impl Face {
         Some(Face { bytes, coords: Vec::new() })
     }
 
+    /// The brand's display face.
+    pub fn display() -> Option<Face> {
+        swash::FontRef::from_index(DISPLAY, 0)?;
+        Some(Face { bytes: DISPLAY, coords: Vec::new() })
+    }
+
     fn font(&self) -> swash::FontRef<'static> {
         swash::FontRef::from_index(self.bytes, 0).expect("the bundled face reads")
+    }
+
+    /// How far `text` at `size` pixels moves its pen.
+    pub fn advance(&self, text: &str, size: f32) -> f32 {
+        let font = self.font();
+        let advances = font.glyph_metrics(&self.coords).scale(size);
+        text.chars().map(|c| advances.advance_width(font.charmap().map(c))).sum()
     }
 
     /// The baseline that centres a line of `size` pixels in a band from `top`, `height` tall, as a

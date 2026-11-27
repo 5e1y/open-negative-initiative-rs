@@ -61,7 +61,6 @@ proc-macro2 = { version = "1" }
 quote = { version = "1" }
 read-fonts = { version = "0.41", default-features = false, features = ["experimental_font_api", "std"] }
 reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls-no-provider", "stream"] }
-resvg = { version = "0.48", default-features = false, features = ["raster-images", "svgz", "text"] }
 ring = { version = "0.17", features = ["std"] }
 rustc-hash = { version = "1" }
 semver = { version = "1", features = ["serde"] }
@@ -90,7 +89,6 @@ tracing = { version = "0.1" }
 tracing-core = { version = "0.1", default-features = false, features = ["std"] }
 typenum = { version = "1", default-features = false, features = ["const-generics"] }
 uniffi = { version = "0.32", features = ["cli"] }
-usvg = { version = "0.48", default-features = false, features = ["svgz", "text"] }
 wgpu = { version = "30" }
 wgpu-types = { version = "30", default-features = false, features = ["std", "web"] }
 winnow = { version = "1", features = ["simd"] }
@@ -131,7 +129,6 @@ potential_utf = { version = "0.1", default-features = false, features = ["alloc"
 proc-macro2 = { version = "1" }
 quote = { version = "1" }
 read-fonts = { version = "0.41", default-features = false, features = ["experimental_font_api", "std"] }
-resvg = { version = "0.48", default-features = false, features = ["raster-images", "svgz", "text"] }
 rustc-hash = { version = "1" }
 semver = { version = "1", features = ["serde"] }
 serde = { version = "1", features = ["alloc", "derive"] }
@@ -151,7 +148,6 @@ toml_datetime = { version = "1", features = ["serde"] }
 toml_edit = { version = "0.25" }
 toml_parser = { version = "1" }
 toml_writer = { version = "1" }
-usvg = { version = "0.48", default-features = false, features = ["svgz", "text"] }
 winnow = { version = "1", features = ["simd"] }
 writeable = { version = "0.6", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8", default-features = false, features = ["alloc", "derive"] }

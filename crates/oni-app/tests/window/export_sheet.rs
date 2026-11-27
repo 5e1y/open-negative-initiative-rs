@@ -1,6 +1,6 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
-//! gaps, each frame's number in a soft amber under its picture, no logo under less than a row; the same
-//! three as positives on the same black; five photos with the logo's band under a foot of four
+//! gaps, each frame's number in a soft amber under its picture, no signature under less than a row; the same
+//! three as positives on the same black; five photos with the signature's band under a foot of four
 //! margins; the sheet shown in the column, and Export As laying the gallery's pick on one sheet.
 
 use oni_app::app::export_card::{self, Ask, job::End};
@@ -55,13 +55,13 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert_eq!(e.get_dims(), "1500 × 1000 px", "a batch's size is its first photo's");
 
     // One sheet: three frames a tile wide, 30 px apart, as tall as B, a 60 px margin around them, and
-    // under the row the band of their numbers and the margin; no logo under less than a row.
+    // under the row the band of their numbers and the margin; no signature under less than a row.
     assert_eq!(e.get_sheet_tiles().row_count(), 0, "twin: separate photos show their lines");
     e.invoke_sheet_set(true);
     rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 948 px");
     assert_eq!(e.get_key_title(), "EXPORT CONTACT SHEET");
     // The column shows the sheet as the file lays it, fitted to its room: three tiles in a row,
-    // numbered, on the sheet's proportions, no logo under them.
+    // numbered, on the sheet's proportions, no signature under them.
     // Laid out once drawn: the room the column gives the sheet is read then.
     let _ = rig.drawn();
     rig.until("the sheet in the column", LONG, || e.get_sheet_tiles().row_count() == 3);
@@ -70,7 +70,7 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert!(((ground.width / ground.height) as f64 - 3252.0 / 948.0).abs() < 0.01, "{ground:?}");
     assert!(tiles[0].x < tiles[1].x && tiles[1].x < tiles[2].x && (tiles[0].width - tiles[2].width).abs() < 0.5, "one row, a tile wide each");
     assert_eq!(tiles.iter().map(|t| t.number.to_string()).collect::<Vec<_>>(), ["1", "2", "3"]);
-    assert!(e.get_sheet_logo().size().width == 0 && e.get_sheet_logo_box().height == 0.0, "no logo under three photos");
+    assert!(e.get_sheet_logo().size().width == 0 && e.get_sheet_logo_box().height == 0.0, "no signature under three photos");
     e.invoke_export();
     rig.until("the sheet written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
@@ -116,14 +116,14 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let numbered = count(60..260, bottom..bottom + 60, &amber);
     assert!(numbered > 100, "numbered in amber: {numbered} pixels");
 
-    // Five photos fill a row: the white logo four margins under it, across the first column, nothing
+    // Five photos fill a row: the white signature, #madewithoni, four margins under it, across the first column, nothing
     // beside it, and the margin under it.
     *file.borrow_mut() = out.join("Five.jpg");
     ctl.enter_export(all.clone());
     e.invoke_sheet_set(true);
     rig.until("the five's sheet", LONG, || e.get_dims().as_str() == "5360 × 1398 px");
     let _ = rig.drawn();
-    rig.until("the five's logo in the column", LONG, || e.get_sheet_logo().size().width > 0);
+    rig.until("the five's signature in the column", LONG, || e.get_sheet_logo().size().width > 0);
     e.invoke_export();
     rig.until("the five written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
@@ -131,8 +131,8 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let px = |x: u32, y: u32| sheet.get_pixel(x, y).0;
     let count = |xs: std::ops::Range<u32>, ys: std::ops::Range<u32>, f: &dyn Fn([u8; 3]) -> bool| xs.flat_map(|x| ys.clone().map(move |y| (x, y))).filter(|&(x, y)| f(px(x, y))).count();
     assert_eq!(count(0..5360, 896..1064, &|p| !black(p)), 0, "the foot under the numbers");
-    assert!(count(60..1084, 1067..1337, &white) > 20_000, "the logo");
-    assert_eq!(count(1114..5300, 1067..1337, &|p| !black(p)), 0, "twin: nothing beside the logo");
+    assert!(count(60..1084, 1067..1337, &white) > 20_000, "the signature");
+    assert_eq!(count(1114..5300, 1067..1337, &|p| !black(p)), 0, "twin: nothing beside the signature");
     assert_eq!(count(0..5360, 1344..1398, &|p| !black(p)), 0, "twin: the margin under it");
 
     // Export on the gallery's five photos opens on separate photos; Export As lays them on one sheet,

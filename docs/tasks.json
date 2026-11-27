@@ -14650,5 +14650,12 @@
     "status": "done",
     "title": "CLAUDE.md: a notched slider's knob stands on its notches, twelve scans made ahead",
     "detail": "The working notes follow #4102: the knob rests on each notch under a drag and at a key, and the scans made ahead cover one notch either side of the six fields."
+  },
+  {
+    "id": 4103,
+    "type": "ui",
+    "title": "The contact sheet signs #madewithoni where it bore ONI's logo",
+    "status": "done",
+    "detail": "Owner's call: the sheet's signature is the text #madewithoni, his own words, never translated, set in the brand's display face (Zalando Sans Expanded Black), a tile wide against the band's left edge and centred in its height, in the logo's ink, on screen as in the file. Whether it shows and where are unchanged. The logo's SVG no longer reaches the sheet, and oni-app no longer depends on resvg. Checks: together::logo::tests::the_signature_spans_the_first_column_centred_in_the_band_and_nothing_else_is_drawn (twins: black ink lights nothing; a narrow sheet sets it smaller), export_sheet's five photos."
   }
 ]

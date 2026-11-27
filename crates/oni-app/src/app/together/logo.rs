@@ -1,25 +1,21 @@
-//! The logo's band across the sheet's bottom: the logo a column wide at its left, at full scale.
+//! The signature's band across the sheet's bottom: #madewithoni a column wide at its left, at full scale.
 
 use super::*;
-use super::plate::Plate;
-use resvg::{tiny_skia, usvg};
+use super::plate::{Face, Plate};
+use swash::scale::ScaleContext;
 
-const LOGO_SVG: &[u8] = include_bytes!("../../../../oni-ui/ui/icons/oni-logo.svg");
+/// The owner's own words, never translated, set in the brand's face.
+const SIGNATURE: &str = "#madewithoni";
 
-/// The band on a clear plate `width` wide and `BAND` tall: the logo a tile wide, no wider than
+/// The band on a clear plate `width` wide and `BAND` tall: the signature a tile wide, no wider than
 /// the plate, against its left edge and centred in its height, in `ink`.
 pub(in crate::app) fn drawn(width: usize, ink: [f32; 3]) -> Plate {
     let mut plate = Plate::clear(width, BAND);
-    let Ok(tree) = usvg::Tree::from_data(LOGO_SVG, &usvg::Options::default()) else { return plate };
-    let size = tree.size();
-    let scale = (TILE.min(width) as f32 / size.width()).min(BAND as f32 / size.height());
-    let (w, h) = ((size.width() * scale).ceil() as u32, (size.height() * scale).ceil() as u32);
-    let Some(mut pixmap) = tiny_skia::Pixmap::new(w, h) else { return plate };
-    resvg::render(&tree, tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
-    let top = (BAND as i64 - i64::from(h)) / 2;
-    for (i, p) in pixmap.pixels().iter().enumerate() {
-        plate.cover((i % w as usize) as i64, top + (i / w as usize) as i64, f32::from(p.alpha()) / 255.0, ink);
-    }
+    let Some(face) = Face::display() else { return plate };
+    let wide = face.advance(SIGNATURE, 1.0);
+    let size = (TILE.min(width) as f32 / wide).min(BAND as f32);
+    let baseline = face.centred(0.0, BAND as f32, size);
+    plate.text_in(&face, (0.0, baseline), SIGNATURE, size, ink, &mut ScaleContext::new());
     plate
 }
 
@@ -34,17 +30,19 @@ mod tests {
     }
 
     #[test]
-    fn the_logo_spans_the_first_column_centred_in_the_band_and_nothing_else_is_drawn() {
+    fn the_signature_spans_the_first_column_centred_in_the_band_and_nothing_else_is_drawn() {
         let plate = drawn(5 * TILE + 4 * GAP, [1.0; 3]);
         let (columns, rows) = inked(&plate);
-        assert!(columns[0] < 4 && (TILE - 8..TILE).contains(columns.last().unwrap()), "the logo across the first column: {}..{}", columns[0], columns.last().unwrap());
-        assert!(rows[0] < 12 && *rows.last().unwrap() > BAND - 12, "the logo the band's height: rows {}..{}", rows[0], rows.last().unwrap());
+        let (left, right) = (columns[0], *columns.last().unwrap());
+        assert!(left < 16 && (TILE - 40..=TILE).contains(&right), "the signature across the first column: {left}..{right}");
+        let (top, bottom) = (rows[0], *rows.last().unwrap());
+        assert!(bottom - top < BAND / 2 && (top as i64 - (BAND - 1 - bottom) as i64).abs() < 30, "a line centred in the band: rows {top}..{bottom}");
         let white = plate.pixels.iter().filter(|p| p[3] > 0.9 && p[0] > 0.9 && p[2] > 0.9).count();
         assert!(white > 20_000, "in its ink: {white} pixels");
         // Twin: in black it lights none; a sheet narrower than a tile sets it across it, smaller.
         assert!(!drawn(TILE, [0.0; 3]).pixels.iter().any(|p| p[0] > 0.0));
         let narrow = drawn(TILE / 2, [1.0; 3]);
         let (columns, rows) = inked(&narrow);
-        assert!(*columns.last().unwrap() > TILE / 2 - 8 && rows.len() < BAND / 2 + 8, "{} wide, {} tall", columns.last().unwrap(), rows.len());
+        assert!(*columns.last().unwrap() > TILE / 2 - 40 && rows.len() < (bottom - top) / 2 + 8, "{} wide, {} tall", columns.last().unwrap(), rows.len());
     }
 }

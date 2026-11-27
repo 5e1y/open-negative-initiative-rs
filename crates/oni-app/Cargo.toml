@@ -54,9 +54,8 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls-no-p
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
-# A contact sheet's numbers and heading set into its file: the interface's face and the logo.
+# A contact sheet's numbers, heading and signature set into its file, in the interface's face and the brand's.
 swash = "0.2"
-resvg = { version = "0.48", default-features = false }
 # `Updates`: the appcast read, each archive's EdDSA signature checked before it is kept, Windows' unpacked.
 roxmltree = "0.21"
 ring = "0.17"
