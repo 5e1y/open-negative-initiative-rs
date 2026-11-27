@@ -4,6 +4,7 @@
 
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 /// The films, by the gift they show: their frames, then their holds and lengths.
 const FILMS: [(usize, &[u8], &str); 4] = [
@@ -12,8 +13,10 @@ const FILMS: [(usize, &[u8], &str); 4] = [
     (2, include_bytes!("../../../../oni-ui/ui/welcome/film-huge.webps"), include_str!("../../../../oni-ui/ui/welcome/film-huge.txt")),
     (3, include_bytes!("../../../../oni-ui/ui/welcome/film-wrapped.webps"), include_str!("../../../../oni-ui/ui/welcome/film-wrapped.txt")),
 ];
-/// How many frames are decoded ahead of the one shown: at 25 frames a second, a sixth of a second.
+/// How many frames are kept decoded from the one aimed at: at 25 frames a second, a sixth of a second.
 const AHEAD: usize = 4;
+/// What a frame is reckoned to cost to decode before one has been timed, in seconds.
+const FIRST_COST: f32 = 0.04;
 
 /// A film's frames as its file lays them: each one's place in the file, and from which second it shows.
 struct Cut {
@@ -67,16 +70,69 @@ fn decode(cut: &Cut, bytes: &[u8], i: usize) -> Option<SharedPixelBuffer<Rgba8Pi
     Some(buffer)
 }
 
-/// What the interface wants and what the decoder has ready: the frame wanted, none while the film is not on screen,
-/// and frames decoded from it on.
+/// The frames worth decoding when the film stands at `t` and a frame takes `cost` to decode: the one that will be
+/// due once it is decoded, then the next ones. Aimed at the frame due now, a decoder slower than the film would only
+/// ever finish frames already past.
+fn aimed(cut: &Cut, t: f32, cost: f32) -> Vec<usize> {
+    let first = cut.index(t + cost, false);
+    (0..=AHEAD.min(cut.frames.len() - 1)).map(|k| (first + k) % cut.frames.len()).collect()
+}
+
+/// How far frame `to` comes after frame `from`, the film looping.
+fn after(from: usize, to: usize, count: usize) -> usize {
+    (to + count - from) % count
+}
+
+/// Whether a decoded frame is worth keeping when `due` is due: one still to come up to the last frame aimed at, or the
+/// latest one past, which shows while the next come.
+fn kept(i: usize, due: usize, aimed: &[usize], past: Option<usize>, count: usize) -> bool {
+    let horizon = aimed.last().map_or(0, |last| after(due, *last, count));
+    after(due, i, count) <= horizon || Some(i) == past
+}
+
+/// The frame to show when `due` is due, among those decoded: it if it is ready, else the latest one already past it,
+/// so a slow decoder skips frames and the film keeps its time; none if every decoded frame is still to come.
+fn pick(decoded: impl Iterator<Item = usize>, due: usize, count: usize) -> Option<usize> {
+    decoded.filter(|i| after(*i, due, count) < count / 2).min_by_key(|i| after(*i, due, count))
+}
+
+/// What the screen asks: where the film stands and when it was asked, or the frame it holds still.
+#[derive(Clone, Copy)]
+enum Ask {
+    Playing(f32, Instant),
+    Still(usize),
+}
+
+/// What the interface asks and what the decoders have ready; none asked while the film is off screen.
 struct Slots {
-    wanted: Option<usize>,
+    ask: Option<Ask>,
     decoded: Vec<(usize, SharedPixelBuffer<Rgba8Pixel>)>,
-    /// Set once the reel is dropped, so its decoder ends.
+    /// The frames being decoded, and what one has lately cost, in seconds.
+    busy: Vec<usize>,
+    cost: f32,
+    /// Set once the reel is dropped, so its decoders end.
     over: bool,
 }
 
-/// A film ready to play: the frame it shows, and a decoder thread that keeps the next few ready.
+impl Slots {
+    /// The frames to decode now, those aimed at, and the frames decoded worth keeping.
+    fn wanted(&self, cut: &Cut) -> (Vec<usize>, Vec<usize>) {
+        let n = cut.frames.len();
+        match self.ask {
+            None => (Vec::new(), Vec::new()),
+            Some(Ask::Still(i)) => (vec![i], vec![i]),
+            Some(Ask::Playing(t, at)) => {
+                let now = t + at.elapsed().as_secs_f32();
+                let (due, aimed) = (cut.index(now, false), aimed(cut, now, self.cost));
+                let past = pick(self.decoded.iter().map(|(i, _)| *i), due, n);
+                let keep = self.decoded.iter().map(|(i, _)| *i).filter(|i| kept(*i, due, &aimed, past, n)).collect();
+                (aimed, keep)
+            }
+        }
+    }
+}
+
+/// A film ready to play: the frame it shows, and decoders on threads of their own that keep the next few ready.
 pub struct Reel {
     pub gift: usize,
     cut: Arc<Cut>,
@@ -85,74 +141,81 @@ pub struct Reel {
     resting: bool,
 }
 
-/// Every film that reads, each with its decoder thread; one that cannot be read is left out.
+/// Every film that reads, each with its decoders; one that cannot be read is left out.
 pub fn reels() -> Vec<Reel> {
     FILMS.iter().filter_map(|(gift, bytes, list)| Reel::start(Cut::read(*gift, bytes, list)?, bytes)).collect()
 }
 
-/// The frames the decoder keeps ready from `wanted` on, the film looping.
-fn window(wanted: usize, count: usize) -> impl Iterator<Item = usize> {
-    (0..=AHEAD.min(count - 1)).map(move |k| (wanted + k) % count)
+/// A film's decoders: a few, so a frame's decoding on a slower processor still keeps up, never all the cores.
+fn decoders() -> usize {
+    std::thread::available_parallelism().map_or(1, |n| n.get()).saturating_sub(2).clamp(1, 3)
+}
+
+/// One decoder: it takes the first frame wanted that no one has ready or under way, decodes it, times it.
+fn decoding(cut: &Cut, bytes: &[u8], shared: &(Mutex<Slots>, Condvar)) {
+    let (lock, wake) = shared;
+    let frame = cut.starts.get(1).map_or(0.04, |s| s - cut.starts[0]).max(0.01);
+    loop {
+        let next = {
+            let Ok(mut s) = lock.lock() else { return };
+            loop {
+                if s.over {
+                    return;
+                }
+                let (aimed, keep) = s.wanted(cut);
+                s.decoded.retain(|(i, _)| keep.contains(i));
+                if let Some(i) = aimed.into_iter().find(|i| s.decoded.iter().all(|(d, _)| d != i) && !s.busy.contains(i)) {
+                    s.busy.push(i);
+                    break i;
+                }
+                // The film moves on by itself: look again within half a frame.
+                let Ok((waited, _)) = wake.wait_timeout(s, Duration::from_secs_f32(frame / 2.0)) else { return };
+                s = waited;
+            }
+        };
+        let began = Instant::now();
+        let decoded = decode(cut, bytes, next);
+        let Ok(mut s) = lock.lock() else { return };
+        s.busy.retain(|i| *i != next);
+        s.cost = 0.7 * s.cost + 0.3 * began.elapsed().as_secs_f32();
+        // Kept while it is still to come or the latest one past: a slow decoder's frame is shown late, never dropped.
+        let Some(frame) = decoded else { return };
+        s.decoded.push((next, frame));
+        let (_, keep) = s.wanted(cut);
+        s.decoded.retain(|(i, _)| keep.contains(i));
+    }
 }
 
 impl Reel {
     fn start(cut: Cut, bytes: &'static [u8]) -> Option<Reel> {
         let cut = Arc::new(cut);
-        let slots = Arc::new((Mutex::new(Slots { wanted: None, decoded: Vec::new(), over: false }), Condvar::new()));
-        let (film, shared) = (cut.clone(), slots.clone());
-        std::thread::Builder::new()
-            .name("welcome film".into())
-            .spawn(move || {
-                let (lock, wake) = &*shared;
-                let count = film.frames.len();
-                loop {
-                    let next = {
-                        let Ok(mut s) = lock.lock() else { return };
-                        loop {
-                            if s.over {
-                                return;
-                            }
-                            let ahead: Vec<usize> = s.wanted.map(|w| window(w, count).collect()).unwrap_or_default();
-                            s.decoded.retain(|(i, _)| ahead.contains(i));
-                            if let Some(i) = ahead.into_iter().find(|i| s.decoded.iter().all(|(d, _)| d != i)) {
-                                break i;
-                            }
-                            let Ok(waited) = wake.wait(s) else { return };
-                            s = waited;
-                        }
-                    };
-                    let Some(frame) = decode(&film, bytes, next) else { return };
-                    let Ok(mut s) = lock.lock() else { return };
-                    if s.wanted.is_some_and(|w| window(w, count).any(|i| i == next)) {
-                        s.decoded.push((next, frame));
-                    }
-                }
-            })
-            .ok()?;
+        let slots = Arc::new((Mutex::new(Slots { ask: None, decoded: Vec::new(), busy: Vec::new(), cost: FIRST_COST, over: false }), Condvar::new()));
+        for _ in 0..decoders() {
+            let (film, shared) = (cut.clone(), slots.clone());
+            std::thread::Builder::new().name("welcome film".into()).spawn(move || decoding(&film, bytes, &shared)).ok()?;
+        }
         Some(Reel { gift: cut.gift, cut, slots, shown: None, resting: true })
     }
 
-    /// The frame at `t` seconds into the film when it differs from the one last given; none while the same one
-    /// shows or the wanted one is still decoding, so the screen keeps the last.
+    /// The frame to show at `t` seconds into the film when it differs from the one last given: the frame due if it is
+    /// decoded, else the latest one past; none while nothing newer is ready. It never waits on a decoder.
     pub fn at(&mut self, t: f32, still: bool) -> Option<Image> {
-        let want = self.cut.index(t, still);
         self.resting = false;
-        if self.shown == Some(want) {
-            return None;
-        }
         let (lock, wake) = &*self.slots;
         let mut s = lock.lock().ok()?;
-        if s.wanted != Some(want) {
-            s.wanted = Some(want);
-            wake.notify_one();
+        let count = self.cut.frames.len();
+        let due = self.cut.index(t, still);
+        s.ask = Some(if still { Ask::Still(due) } else { Ask::Playing(t, Instant::now()) });
+        wake.notify_all();
+        let chosen = pick(s.decoded.iter().map(|(i, _)| *i), due, count)?;
+        if self.shown.is_some_and(|shown| shown == chosen || after(chosen, shown, count) < count / 2) {
+            return None;
         }
-        let frame = s.decoded.iter().find(|(i, _)| *i == want)?.1.clone();
-        self.shown = Some(want);
+        let frame = s.decoded.iter().find(|(i, _)| *i == chosen)?.1.clone();
+        self.shown = Some(chosen);
         Some(Image::from_rgba8(frame))
     }
-}
 
-impl Reel {
     /// The next `at` gives its frame even if it is the one last given, which another film has since replaced.
     pub fn again(&mut self) {
         self.shown = None;
@@ -166,9 +229,9 @@ impl Reel {
         self.shown = None;
         let (lock, wake) = &*self.slots;
         if let Ok(mut s) = lock.lock() {
-            (s.wanted, s.decoded) = (None, Vec::new());
+            (s.ask, s.decoded) = (None, Vec::new());
         }
-        wake.notify_one();
+        wake.notify_all();
     }
 }
 
@@ -178,66 +241,9 @@ impl Drop for Reel {
         if let Ok(mut s) = lock.lock() {
             s.over = true;
         }
-        wake.notify_one();
+        wake.notify_all();
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn every_film_reads_and_each_frame_decodes_at_its_size() {
-        for (gift, bytes, list) in FILMS {
-            let cut = Cut::read(gift, bytes, list).expect("the film's list matches its frames");
-            assert!(cut.length > 4.0 && cut.frames.len() > 20, "gift {gift}: {} s, {} frames", cut.length, cut.frames.len());
-            for i in [0, cut.frames.len() / 2, cut.frames.len() - 1] {
-                assert!(decode(&cut, bytes, i).is_some(), "gift {gift}: frame {i}");
-            }
-            // Twin: a list that leaves a frame out does not match the file.
-            let short: String = list.lines().take(list.lines().count() - 1).map(|l| format!("{l}\n")).collect();
-            assert!(Cut::read(gift, bytes, &short).is_none());
-        }
-    }
-
-    #[test]
-    fn a_film_plays_at_120_hz_without_a_late_frame_and_holds_a_few_frames() {
-        for mut reel in reels() {
-            let tick = std::time::Duration::from_micros(8333);
-            // Its first frames, decoded as its words come, before it plays.
-            reel.at(0.0, false);
-            std::thread::sleep(std::time::Duration::from_millis(300));
-            let began = std::time::Instant::now();
-            let (mut late, mut changes, mut last) = (0, 0, usize::MAX);
-            for n in 1.. {
-                let t = began.elapsed().as_secs_f32();
-                if t > 2.5 {
-                    break;
-                }
-                let want = reel.cut.index(t, false);
-                reel.at(t, false);
-                // A frame is late when the tick that first wants it cannot show it.
-                if want != last {
-                    (changes, last) = (changes + 1, want);
-                    late += usize::from(reel.shown != Some(want));
-                }
-                let held = reel.slots.0.lock().unwrap().decoded.len();
-                assert!(held <= AHEAD + 1, "at most {} frames decoded at once: {held}", AHEAD + 1);
-                std::thread::sleep((began + tick * n).saturating_duration_since(std::time::Instant::now()));
-            }
-            eprintln!("films: gift {}: {late} of {changes} frames late", reel.gift);
-            assert!(changes > 20, "the film moved on: {changes} frames");
-            // A loaded machine may miss a frame or two; a decoder that does not keep ahead misses nearly all.
-            assert!(late <= changes / 20, "gift {}: {late} of {changes} frames came late", reel.gift);
-            // Off screen it keeps nothing decoded.
-            reel.rest();
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            assert!(reel.slots.0.lock().unwrap().decoded.is_empty(), "a film off screen holds no frame");
-        }
-        let mut reel = reels().into_iter().next().expect("a film");
-        // Twin: a still film gives its longest-held frame and then nothing new.
-        let still = reel.cut.index(0.0, true);
-        reel.again();
-        assert!(reel.at(0.0, true).is_some() || reel.shown != Some(still));
-    }
-}
+mod tests;

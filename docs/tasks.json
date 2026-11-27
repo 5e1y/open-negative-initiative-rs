@@ -14412,5 +14412,12 @@
     "title": "One way to hold a read on a FIFO, shared by the two checks that do",
     "status": "done",
     "detail": "oni_fixtures::fifo makes a FIFO and gives it: once a reader opens it, the check acts, writes the bytes and closes, then hands the reader its end of the file until the read is over, the macOS quirk of #4083 named there alone. The superseded-read check and the window check on a mask loading while its roll is left both hold their read through it; the window check's two loads now hand the end of the file until the load has landed. The window check green, the unit check 100 runs in 100, oni-app's 585 tests green."
+  },
+  {
+    "id": 3975,
+    "type": "fix",
+    "title": "The welcome's films keep their time on any processor: decoders aim where the film will be, skip what they cannot reach, never hold the interface; the check replays the player on a clock of its own",
+    "status": "done",
+    "detail": "A frame of 1600 by 1000 costs 20 to 36 ms to decode here (WebP, pure Rust), against 40 ms a frame: a machine loaded with the whole check, or a processor three or four times slower, could not keep up, and the decoder, aimed at the frame due now, finished only frames already past, so the screen froze on an old frame. Now a film has up to three decoders (the cores less two), each takes the first frame wanted that none has ready or under way, aimed at the frame due once it is decoded (the cost timed as it goes); a frame finished late is kept if it is the latest past, so the screen skips frames and the film keeps its time; the interface only reads what is ready, never waits. The check replays the player on a virtual clock with a chosen cost: at 30 ms a frame no frame late; four times slower, two or three frames behind at most, skipping; twin, aimed at the frame due now, nearly every frame shown already past. Checks: reels (four, none on the wall clock but a liveness one: the interface answered within 5 ms), passing three times beside a release build; welcome_reel (both); clippy."
   }
 ]
