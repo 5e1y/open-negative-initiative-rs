@@ -176,7 +176,7 @@ impl Stage {
 
     /// The seconds this GPU takes over a million pixels of the opened huge gift, the stage's heaviest picture: the
     /// least of a few, each awaited, so a busy moment counts for nothing.
-    pub fn pace(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, door: Option<&crate::render::Door>) -> f32 {
+    pub(crate) fn pace(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, door: Option<&crate::render::Door>) -> f32 {
         let (width, height) = (960, 600);
         let target = Stage::target(device, width, height);
         let frame = direction::frame(&direction::Cue::at(Some(2), Some(30.0)));

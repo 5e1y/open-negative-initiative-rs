@@ -43,7 +43,7 @@ fn main() {
         let engine = Engine::shared(&device);
         let mut e = engine.lock().unwrap();
         let mut at = Instant::now();
-        let mut step = |name: &str, at: &mut Instant| {
+        let step = |name: &str, at: &mut Instant| {
             println!("{pass:>4} {name:<34} {:>7.1} ms", at.elapsed().as_secs_f64() * 1e3);
             *at = Instant::now();
         };
