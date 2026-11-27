@@ -14244,5 +14244,12 @@
     "title": "The library index's reads in a file of their own",
     "status": "done",
     "detail": "index.rs stood at 394 lines. Its reading section (all, in_trash, trashed_frames, row, with_fingerprint, shown, count) and the row decoder go to index/reading.rs as an impl block of the same type, moved line for line; forget.rs still reads the decoder through index. index.rs keeps the entry, the schema and the writes (297 lines). oni-library's tests green."
+  },
+  {
+    "id": 4076,
+    "type": "refactor",
+    "title": "The archive's folding and medals in files of their own",
+    "status": "done",
+    "detail": "oni-app's library.rs stood at 393 lines. The tree's folding (unfold_to, unfold_every, expanded, unfold, keep_folded, folded, toggle and the folder walk) goes to library/folding.rs as an impl block of Archive, the medal's caption, podium place and its inverse to library/medals.rs, re-exported where they were; moved line for line (284 lines left). oni-app's 581 unit tests green."
   }
 ]
