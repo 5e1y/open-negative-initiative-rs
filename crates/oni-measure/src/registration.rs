@@ -3,7 +3,7 @@
 
 use oni_settings::frame::{Fit, Registration, RgbPasses};
 
-/// `RGBRegistration.floor`: a cell's correlation peak under it says nothing.
+/// A cell's correlation peak under it says nothing.
 pub const FLOOR: f64 = 0.3;
 /// `shiftSide`: the preview's side, where a shift lands within 0.2 px of the full-resolution reading
 /// once the roll's magnification is known.

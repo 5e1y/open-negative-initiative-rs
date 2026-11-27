@@ -209,7 +209,7 @@ mod tests {
         set(names)
     }
 
-    /// `PresetParameters.selfCheck`: nothing may be shown under no name.
+    /// Nothing may be shown under no name.
     #[test]
     fn every_row_is_shown_under_one_interface_name() {
         let mut shown: Vec<&str> = entries().flat_map(|e| e.rows.iter().copied()).collect();

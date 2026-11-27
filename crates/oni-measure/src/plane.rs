@@ -60,7 +60,7 @@ impl Plane {
         self
     }
 
-    /// `Pipeline.counted`: every component held to 0…1, as the measuring path bounds a reading.
+    /// Every component held to 0…1, as the measuring path bounds a reading.
     pub fn counted(mut self) -> Plane {
         for p in &mut self.pixels {
             for v in p.iter_mut() {

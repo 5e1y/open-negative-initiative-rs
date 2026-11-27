@@ -14258,5 +14258,12 @@
     "title": "The render's correction checks in a file of their own",
     "status": "done",
     "detail": "render/tests.rs stood at 399 lines. The custom flat-field reached by its id and the dust patch healing its stroke go to render/corrections_tests.rs, a test module beside kept_tests and the others, moved line for line (327 lines left). oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4078,
+    "type": "refactor",
+    "title": "Doc comments in decode, library, measure and core name no Swift type any more",
+    "status": "done",
+    "detail": "Fifty-one doc comments opened on the Swift function they once ported (RawDecode.isRaw, RGBPasses.grouped, FilterBalance.outcome, Pipeline.measurementWindows, InfoSidebar.selfCheck and the like); each now opens on what the item is or does, and one that only named a Swift self-check went. Comments only; the four crates check clean."
   }
 ]

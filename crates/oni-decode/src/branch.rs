@@ -3,7 +3,7 @@
 use crate::{container, plain};
 use std::path::Path;
 
-/// The branch a file decodes through, as `RawDecode.alone` sorts it.
+/// The branch a file decodes through.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Branch {
     /// A camera mosaic, through LibRaw.
@@ -21,7 +21,7 @@ const RAW_EXTENSIONS: &[&str] = &[
     "rwl", "rwz", "sr2", "srf", "srw", "x3f",
 ];
 
-/// `RawDecode.isRaw`: the extension, consulted only when the bytes claim nothing.
+/// Whether the extension names a camera RAW, consulted only when the bytes claim nothing.
 pub fn is_raw(path: &Path) -> bool {
     path.extension().and_then(|e| e.to_str()).is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
 }
@@ -51,12 +51,12 @@ pub fn unsupported_format(path: &Path) -> Option<String> {
     (route(path) == Branch::Plain).then(|| plain::unsupported(path)).flatten()
 }
 
-/// `RawDecode.decodesViaMosaic`, which the settings' migration shares with the decode.
+/// Whether `path` decodes through LibRaw's mosaic, which the settings' migration shares with the decode.
 pub fn decodes_via_mosaic(path: &Path) -> bool {
     route(path) == Branch::Mosaic
 }
 
-/// `RawDecode.isLowPrecision`: 8 bits per channel or fewer, a warning and never a refusal, since
+/// Whether a file holds 8 bits per channel or fewer: a warning and never a refusal, since
 /// the density inversion bands low-code shadows. A RAW name is never low.
 pub fn is_low_precision(path: &Path) -> bool {
     if container::probe(path) == Some(container::Kind::LinearRgb)

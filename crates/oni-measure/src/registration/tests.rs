@@ -38,7 +38,7 @@ fn worst(cells: &[Cell]) -> f64 {
     cells.iter().map(|c| c.dx.abs().max(c.dy.abs())).fold(0.0, f64::max)
 }
 
-/// `RGBRegistration.selfCheck`: a pass magnified and shifted by known amounts reads them back,
+/// A pass magnified and shifted by known amounts reads them back,
 /// laid back by the fit it lands on the green, and an untouched pass reads as identity.
 #[test]
 fn a_pass_s_magnification_turn_and_shift_read_back_off_its_edges() {

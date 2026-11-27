@@ -28,7 +28,7 @@ pub struct Measured {
     pub counts: Vec<[f32; 3]>,
 }
 
-/// `RollReference.measured`: a frame's Classic through `reading`, which renders it at given gains.
+/// A frame's Classic through `reading`, which renders it at given gains.
 pub fn measured(path: &str, settings: &PipelineSettings, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Measured> {
     let stops = settings.gains.stops;
     let mode = settings.mode;
@@ -95,7 +95,7 @@ fn trimmed_median(sorted: &[f32]) -> f32 {
     if m % 2 == 1 { kept[m / 2] } else { (kept[m / 2 - 1] + kept[m / 2]) / 2.0 }
 }
 
-/// `RollReference.combined`: gains on the median, each end's chroma on the trimmed median and its
+/// Gains on the median, each end's chroma on the trimmed median and its
 /// depth on `DEPTH` (beyond Swift); a picked base is every channel's black, moved to the roll's gains.
 pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]>) -> Option<RollReference> {
     if frames.is_empty() {

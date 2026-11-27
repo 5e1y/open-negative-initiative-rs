@@ -19,7 +19,7 @@ pub struct Picture {
     pub pixels: Vec<[f32; 4]>,
 }
 
-/// `ContactSheet.tile`: the head of the chain on a frame, `Pipeline.framed` alone, reduced to `side`.
+/// The head of the chain on a frame, framed and nothing more, reduced to `side`.
 pub fn tile(r: &mut Reader, copy: Copy, s: &PipelineSettings, side: f64) -> Option<Picture> {
     let e = copy.source.extent();
     let full = copy.full_width.unwrap_or(f64::from(e.w));

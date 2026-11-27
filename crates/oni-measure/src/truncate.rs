@@ -1,4 +1,4 @@
-//! `PipelineSettings.truncated(before:)`: the frame as it enters a stage, everything downstream at rest, the one
+//! The frame as it enters a stage, everything downstream at rest, the one
 //! recipe every reading is taken through.
 
 use oni_settings::axis::graduation;

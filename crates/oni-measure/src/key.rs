@@ -25,7 +25,7 @@ fn at_gains(s: &PipelineSettings, stops: [f32; 3]) -> PipelineSettings {
     probe
 }
 
-/// `RollReference.measured`: the frame's Classic, read in front of the levels.
+/// The frame's Classic as its roll measures it, read in front of the levels.
 pub fn roll_measured(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Measured> {
     roll::measured(path, s, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
@@ -37,7 +37,7 @@ pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Optio
     read.cells.iter().any(crate::slide_gains::usable).then_some(read.histogram)
 }
 
-/// `FilterBalance.shades`: each channel's sixth-power mean under given filters, over the kept pixels.
+/// Each channel's sixth-power mean under given filters, over the kept pixels.
 pub fn shades(r: &mut Reader, copy: Copy, s: &PipelineSettings, filters: [f32; 3], keeping: fn([f32; 3]) -> bool) -> Option<[f32; 3]> {
     let mut t = s.clone();
     filtered(&mut t, filters);
@@ -45,7 +45,7 @@ pub fn shades(r: &mut Reader, copy: Copy, s: &PipelineSettings, filters: [f32; 3
     minkowski(&pixels)
 }
 
-/// `FilterBalance.filters`: Newton on the frame as it renders, Lighting at rest but for its filters.
+/// The balance's filters by Newton on the frame as it renders, Lighting at rest but for its filters.
 pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f32; 3]) -> bool) -> Option<[f32; 3]> {
     if s.is_monochrome() {
         return Some([0.0; 3]);
@@ -54,7 +54,7 @@ pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f3
     filter_balance::filters(false, |f| shades(r, copy, &base, f, keeping))
 }
 
-/// `FilterBalance.outcome`: a negative on no roll is first measured as a roll of one; a slide is read as
+/// The balance's outcome: a negative on no roll is first measured as a roll of one; a slide is read as
 /// it stands, never given a roll (owner's call), and a digital photo on its film's own reference.
 pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
     let (reference, referenced) = match &s.roll_reference {
@@ -116,7 +116,7 @@ pub fn balance_fingerprint(s: &PipelineSettings, facts: &str) -> String {
     fnv(format!("{}\n{facts}\n{:?}", env!("ONI_READING_CODE"), balance_inputs(s)).as_bytes())
 }
 
-/// `AutomaticKey.outcome`: on a sheet standing on its roll, each frame read alone through its own
+/// The automatic key's outcome: on a sheet standing on its roll, each frame read alone through its own
 /// window and the mean laid, as a press over the whole roll averaged would.
 pub fn outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
     let (Some(grid), Some(_)) = (&s.sheet, &s.roll_reference) else {
@@ -140,7 +140,7 @@ pub fn outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> 
     balance::averaged(&found).into_iter().next()
 }
 
-/// `EditorScene.base`'s frame: the start it is measured from, stripped of its framing, gains and dust.
+/// The bare film's frame: the start it is measured from, stripped of its framing, gains and dust.
 pub fn bare(start: &PipelineSettings) -> PipelineSettings {
     let mut bare = start.clone();
     bare.geometry = Geometry::default();
@@ -149,7 +149,7 @@ pub fn bare(start: &PipelineSettings) -> PipelineSettings {
     bare
 }
 
-/// `EditorScene.base`: the bare film under the pick, read before the levels.
+/// The bare film under the pick, read before the levels.
 fn base(r: &mut Reader, copy: Copy, start: &PipelineSettings, unit: Point, radius: f64) -> Option<[f32; 3]> {
     let graduated = r.plane(copy, &bare(start), Stage::Levels)?;
     pipette::read(&graduated, unit, radius).map(|x| x.fractions)
@@ -166,7 +166,7 @@ pub struct Decoded {
 /// Decodes a file as its settings ask: primaries converted, the encoding of a file naming no profile.
 pub type Decode = dyn Fn(&Path, &PipelineSettings) -> Result<Decoded, String> + Send + Sync;
 
-/// `Negative.previewSide`, the copy the measuring one is reduced from.
+/// The long side of the preview, the copy the measuring one is reduced from.
 pub const PREVIEW_SIDE: f64 = 2000.0;
 
 /// What a decode reads besides the path, the file's own state included, so a measuring copy is
@@ -216,7 +216,7 @@ impl Measurer {
         })
     }
 
-    /// `RawDecode.measuring(url)`: the preview, then the measuring copy, each edge rebuilt.
+    /// The preview, then the measuring copy, each edge rebuilt.
     fn copy(graph: &mut Graph, pipeline: &mut Pipeline, d: &Decoded) -> Option<Source> {
         let source = graph.upload(d.width, d.height, &d.pixels).ok()?;
         let long = f64::from(d.width.max(d.height));

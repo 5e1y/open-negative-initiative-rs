@@ -39,7 +39,7 @@ fn by_extension(path: &Path) -> bool {
         .is_some_and(|e| PACKAGE_EXTENSIONS.contains(&e.as_str()))
 }
 
-/// `URLResourceValues.isPackage`: a declared package extension or the bundle bit, as the Photo
+/// A declared package extension or the bundle bit, as the Photo
 /// Booth library carries with no extension. Reads the disk on macOS.
 pub fn is_package(path: &Path) -> bool {
     #[cfg(target_os = "macos")]

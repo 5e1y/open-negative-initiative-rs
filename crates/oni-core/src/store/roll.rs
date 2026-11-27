@@ -16,12 +16,12 @@ use std::path::Path;
 /// One frame a measure wrote: its path, its settings before, its settings on the roll.
 pub type WrittenFrame = (String, PipelineSettings, PipelineSettings);
 
-/// `RGBPasses.joined`: a pass under its lead takes the lead's framing with its name.
+/// A pass under its lead takes the lead's framing with its name.
 pub fn joined(pass: &PipelineSettings, lead: &str, framing: Geometry) -> PipelineSettings {
     PipelineSettings { pass_of: Some(lead.to_string()), geometry: framing, ..pass.clone() }
 }
 
-/// `RGBPasses.split`: back to unconverted on the lead's framing, `None` keeping the pass's own.
+/// Back to unconverted on the lead's framing, `None` keeping the pass's own.
 pub fn split(pass: &PipelineSettings, framing: Option<Geometry>) -> PipelineSettings {
     let mut out = parameters::unconverted(pass);
     if let Some(framing) = framing {

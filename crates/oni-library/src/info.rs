@@ -14,7 +14,7 @@ pub fn roll_of<'a>(entry: &'a Entry, markers: &'a HashMap<String, Film>) -> Opti
     markers.get(&crate::paths::parent(&entry.path)).or(entry.film.as_ref())
 }
 
-/// `InfoSidebar.stocks(among:)`: each stock of the photos' rolls with its count of photos, by
+/// Each stock of the photos' rolls with its count of photos, by
 /// display name; a photo with no stock, or one the catalogue does not know, gives no row.
 pub fn stocks(entries: &[Entry], markers: &HashMap<String, Film>) -> Vec<(FilmStockKind, usize)> {
     let mut counts: HashMap<&str, usize> = HashMap::new();
@@ -26,7 +26,7 @@ pub fn stocks(entries: &[Entry], markers: &HashMap<String, Film>) -> Vec<(FilmSt
     rows
 }
 
-/// `DateFields.made`: typed by hand, clamped rather than refused, so a day past the month's end
+/// A date typed by hand, clamped rather than refused, so a day past the month's end
 /// lands on its last day; a month outside 1 to 12 is refused. The local midnight of that day.
 pub fn made(year: i32, month: u32, day: i32) -> Option<Date> {
     if !(1..=12).contains(&month) {
@@ -75,7 +75,6 @@ mod tests {
         e
     }
 
-    /// `InfoSidebar.selfCheck`, its stock half.
     #[test]
     fn a_projects_stocks_are_counted_by_photo_and_a_photo_with_none_gives_no_row() {
         let none = HashMap::new();
@@ -102,7 +101,7 @@ mod tests {
         assert_ne!(sidecars, read);
     }
 
-    /// `InfoSidebar.selfCheck`, its date half: the clamp reads the real calendar.
+    /// The clamp reads the real calendar.
     #[test]
     fn a_typed_date_clamps_to_its_months_last_day_and_an_impossible_month_is_refused() {
         assert_eq!(made(2026, 4, 15).map(ymd), Some((2026, 4, 15)), "a real date passes through untouched");

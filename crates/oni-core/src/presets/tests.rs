@@ -83,7 +83,7 @@ fn names_and_files_are_formed_as_the_shelf_expects() {
     assert_eq!(file_name(&long).len(), 64 + 1 + 8 + 5, "the stem stops at 64");
 }
 
-/// `PresetTint.selfCheck`: every card's text is readable.
+/// Every card's text is readable.
 #[test]
 fn every_tint_carries_a_readable_ink() {
     let worst = Tint::ALL.iter().map(|t| t.contrast()).fold(f64::MAX, f64::min);

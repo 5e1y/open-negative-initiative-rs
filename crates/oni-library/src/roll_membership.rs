@@ -95,7 +95,7 @@ pub fn beside(anchors: &[String], paths: &[String]) -> Vec<String> {
     paths.iter().filter(|p| folders.contains(&paths::parent(p))).cloned().collect()
 }
 
-/// `RollSettings.resetReach`: the rolls `picked` stands on and every frame naming one of them beside it.
+/// The rolls `picked` stands on and every frame naming one of them beside it.
 pub fn reset_reach(picked: &[String], library: &[String]) -> ResetReach {
     let mut reach = ResetReach::default();
     for path in picked {

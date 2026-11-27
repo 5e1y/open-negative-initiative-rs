@@ -10,10 +10,10 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Mutex;
 
-/// `RGBPasses.readSide`: the long side a pass is decoded at to read its shares.
+/// The long side a pass is decoded at to read its shares.
 pub const READ_SIDE: f64 = 360.0;
 
-/// `RGBPasses.shares`: a pass's light per channel over their sum, all a click on RGB Passes reads;
+/// A pass's light per channel over their sum, all a click on RGB Passes reads;
 /// `None` for a black or non-finite pass.
 pub fn shares(pixels: &[[f32; 4]]) -> Option<[f64; 3]> {
     if pixels.is_empty() {
@@ -37,7 +37,7 @@ pub struct Grouped {
     pub passes: RgbPasses,
 }
 
-/// `RGBPasses.Grouping`: the frames, the files left over, and the leads whose passes lie further
+/// The frames, the files left over, and the leads whose passes lie further
 /// apart than the frame lies from its neighbours.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Grouping {
@@ -46,7 +46,7 @@ pub struct Grouping {
     pub stretched: HashSet<String>,
 }
 
-/// `RGBPasses.grouped`: three consecutive files per frame from `offset`, the first being the lead;
+/// Three consecutive files per frame from `offset`, the first being the lead;
 /// a triplet whose files are not in one folder is left out, its passes being found beside the lead.
 pub fn grouped(files: &[(String, Option<Date>)], order: PassOrder, offset: usize) -> Grouping {
     let mut grouping = Grouping::default();
@@ -172,7 +172,7 @@ pub fn expanded(paths: &[String]) -> Vec<String> {
     out
 }
 
-/// `RGBPasses.framings`: each lead's two other passes on the lead's framing, so a split keeps the crop
+/// Each lead's two other passes on the lead's framing, so a split keeps the crop
 /// drawn; `mosaic` says how a lead decodes, which a sidecar of an earlier format is read by.
 pub fn framings(paths: &[String], mosaic: &dyn Fn(&Path) -> bool) -> std::collections::HashMap<String, oni_settings::frame::Geometry> {
     let mut out = std::collections::HashMap::new();
@@ -197,7 +197,7 @@ mod tests {
         [0.0, 2.0, 4.0, 30.0, 50.0, 70.0, 75.0].iter().enumerate().map(|(i, s)| (format!("/rgb/f{i}.ARW"), Some(Date::since_reference_date(t0 + s)))).collect()
     }
 
-    /// `RGBPasses.selfCheck`'s grouping: seven files in capture order B G R.
+    /// Seven files in capture order B G R.
     #[test]
     fn seven_files_make_two_frames_led_by_their_first_pass_and_a_stretched_one_is_said() {
         let files = seven();

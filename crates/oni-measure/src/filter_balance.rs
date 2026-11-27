@@ -15,7 +15,7 @@ pub const READ_SIDE: f64 = 480.0;
 pub const STEP: f32 = 0.02;
 pub const ITERATIONS: usize = 8;
 
-/// `Print.filters(temperature:tint:)`: the three exposures the two axes write.
+/// The three exposures the two axes write.
 pub fn axes_to_filters(temperature: f32, tint: f32) -> [f32; 3] {
     let (a, b) = (Print::TEMPERATURE_AXIS, Print::TINT_AXIS);
     [temperature * a[0] + tint * b[0], temperature * a[1] + tint * b[1], temperature * a[2] + tint * b[2]]

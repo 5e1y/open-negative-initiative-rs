@@ -13,7 +13,7 @@ use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::cg;
 use oni_settings::PipelineSettings;
 
-/// `Negative.measureSide`: the long side of the copy every measurement reads.
+/// The long side of the copy every measurement reads.
 pub const MEASURE_SIDE: f64 = 1400.0;
 
 /// A frame's measuring copy on the graph, and the full-resolution width its crop is quantised on.
@@ -59,7 +59,7 @@ pub fn on_graph(extent: Rect, r: &cg::Rect) -> Rect {
 }
 
 impl Reader<'_> {
-    /// `Pipeline.measured`: the recipe in front of `before`, output clip and ground left off.
+    /// The recipe in front of `before`, output clip and ground left off.
     pub fn image(&mut self, copy: Copy, s: &PipelineSettings, before: Stage) -> Option<Image> {
         let request = Request { full_width: copy.full_width, measuring: true, ..Request::default() };
         let t = truncated(s, before);
@@ -67,7 +67,7 @@ impl Reader<'_> {
         self.pipeline.image(self.graph, copy.source, &t, &request, &inputs).ok()
     }
 
-    /// `Pipeline.framed`: the head of the chain, with the mask and patches the frame names.
+    /// The head of the chain, with the mask and patches the frame names.
     pub fn framed(&mut self, source: &Source, s: &PipelineSettings, scale: f64) -> Option<Image> {
         let inputs = laid(&mut self.laying, self.graph, s);
         self.pipeline.framed(self.graph, Image::new(source), s, scale, &inputs).ok()
@@ -85,7 +85,7 @@ impl Reader<'_> {
         Some(Plane::new(e.w as usize, e.h as usize, pixels))
     }
 
-    /// `Pipeline.reading`: the one door every balance reader takes, through the frame's windows.
+    /// The one door every balance reader takes, through the frame's windows.
     pub fn reading(&mut self, copy: Copy, s: &PipelineSettings, before: Stage) -> Reading {
         let Some(read) = self.plane(copy, s, before).map(Plane::counted) else { return Reading::default() };
         let mut windows = measurement_windows(&read.extent(), s);
@@ -95,7 +95,7 @@ impl Reader<'_> {
         blocks::reading(&read, &windows, blocks::BINS)
     }
 
-    /// `FilterBalance.pixels`: ONI's render with no legacy print's look, whose print the filters weighed are written in,
+    /// The balance's pixels: ONI's render with no legacy print's look, whose print the filters weighed are written in,
     /// through its windows at `READ_SIDE`, one linear pixel each; a transparent one is a sheet's gutter, left out.
     pub fn balance_pixels(&mut self, copy: Copy, s: &PipelineSettings) -> Option<Vec<[f32; 3]>> {
         let image = self.image(copy, &PipelineSettings { legacy_print: None, ..s.clone() }, Stage::ManualCurves)?;
@@ -122,7 +122,7 @@ impl Reader<'_> {
         Some(raw.into_iter().filter(|p| p[3] > 0.5).map(|p| [p[0], p[1], p[2]]).collect())
     }
 
-    /// `RawDecode.measuring(from:)`: a preview reduced to the measuring side, its edge rebuilt.
+    /// A preview reduced to the measuring side, its edge rebuilt.
     pub fn measuring(&mut self, preview: &Source) -> Option<Source> {
         let e = preview.extent();
         let side = f64::from(e.w.max(e.h));

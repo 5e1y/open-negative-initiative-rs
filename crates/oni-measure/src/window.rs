@@ -1,5 +1,5 @@
 //! Where a measurement reads, in Core Image's frame: x right, y up, an extent's lower-left corner
-//! its origin. `Pipeline.measurementWindows` and a sheet's cells; the window's rule is `oni_settings::geometry`'s.
+//! its origin: a frame's measurement windows and a sheet's cells; the window's rule is `oni_settings::geometry`'s.
 
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::ContactSheetGrid;
@@ -33,13 +33,13 @@ pub fn union(a: &Rect, b: &Rect) -> Rect {
     Rect::new(x0, y0, max_x(a).max(max_x(b)) - x0, max_y(a).max(max_y(b)) - y0)
 }
 
-/// `CGRect.integral`: the smallest rectangle of whole pixels holding `r`.
+/// The smallest rectangle of whole pixels holding `r`.
 pub fn integral(r: &Rect) -> Rect {
     let (x0, y0) = (r.x.floor(), r.y.floor());
     Rect::new(x0, y0, max_x(r).ceil() - x0, max_y(r).ceil() - y0)
 }
 
-/// `ContactSheet.Grid.whole`: rounded inward, so no partly covered pixel on a border is counted.
+/// Rounded inward, so no partly covered pixel on a border is counted.
 pub fn whole(r: &Rect) -> Rect {
     let (x, y) = (r.x.ceil(), r.y.ceil());
     Rect::new(x, y, max_x(r).floor() - x, max_y(r).floor() - y)
@@ -54,12 +54,12 @@ pub fn contains(outer: &Rect, inner: &Rect) -> bool {
     inner.x >= outer.x && inner.y >= outer.y && max_x(inner) <= max_x(outer) && max_y(inner) <= max_y(outer)
 }
 
-/// `CGRect.contains(CGPoint)`: the low edges in, the high edges out.
+/// The low edges in, the high edges out.
 pub fn contains_point(r: &Rect, p: Point) -> bool {
     p.x >= r.x && p.x < max_x(r) && p.y >= r.y && p.y < max_y(r)
 }
 
-/// `Pipeline.measurementWindows`: the drawn window, else the picture clear of its edges; empty is the whole.
+/// The drawn window, else the picture clear of its edges; empty is the whole.
 pub fn measurement_windows(extent: &Rect, s: &PipelineSettings) -> Vec<Rect> {
     let untouched = s.geometry.measure_window.is_none();
     let Some(seen) = s.geometry.measure_window_in_crop().or(untouched.then(|| proposal(Rect::UNIT, false))) else {
@@ -74,7 +74,7 @@ pub fn measurement_windows(extent: &Rect, s: &PipelineSettings) -> Vec<Rect> {
     if drawn.width > 0.0 && drawn.height > 0.0 { vec![drawn] } else { Vec::new() }
 }
 
-/// `ContactSheet.Grid.reads`: each frame's own window where the sheet carries one per frame, else its cell.
+/// Each frame's own window where the sheet carries one per frame, else its cell.
 pub fn sheet_reads(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
     let Some(windows) = grid.windows.as_ref().filter(|w| w.len() as i64 == grid.frames) else {
         return sheet_cells(grid, extent);
@@ -89,7 +89,7 @@ pub fn sheet_reads(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
         .collect()
 }
 
-/// `ContactSheet.Grid.cells`: the tiles as laid, the first row at the top. A sidecar's grid without
+/// The tiles as laid, the first row at the top. A sidecar's grid without
 /// rows or columns lays nothing, and frames past its last cell fall below the extent.
 pub fn sheet_cells(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
     if grid.columns <= 0 || grid.rows <= 0 {

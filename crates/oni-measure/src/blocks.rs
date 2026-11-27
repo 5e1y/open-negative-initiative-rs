@@ -107,7 +107,7 @@ pub fn ranked(values: &mut [f32]) -> (f32, f32, f32) {
     (low, m, high)
 }
 
-/// `Blocks.medians`: the window's box read once, then each row of cells on its own core.
+/// The window's box read once, then each row of cells on its own core.
 pub fn medians(counted: &Plane, grid: &Grid) -> Cells {
     let rect = integral(&grid.window);
     let (width, height, raw) = counted.bitmap(&rect);
@@ -184,7 +184,7 @@ pub fn histogram(rgb: &[[f32; 3]], luma: &[f32], bins: usize) -> Histogram {
     Histogram { rgb: counts, luma: trace, ends: None }
 }
 
-/// `Blocks.reading`: one grid over the windows' bounds, read in one pass, the cells a window wholly
+/// One grid over the windows' bounds, read in one pass, the cells a window wholly
 /// holds kept, so a sheet's gutters and borders never vote.
 pub fn reading(counted: &Plane, windows: &[Rect], bins: usize) -> Reading {
     let Some(first) = windows.first() else { return Reading::default() };

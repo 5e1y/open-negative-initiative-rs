@@ -81,7 +81,7 @@ pub fn written(reference: &RollReference, settings: &PipelineSettings) -> Pipeli
     out
 }
 
-/// `EditorScene.unbalanced`: no balance key named, the gains and per-channel windows at rest.
+/// No balance key named, the gains and per-channel windows at rest.
 pub fn unbalanced(settings: &PipelineSettings) -> bool {
     let rest = PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
     settings.balance_method.is_none()
