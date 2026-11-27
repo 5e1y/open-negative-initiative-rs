@@ -14202,5 +14202,12 @@
     "title": "The system's calls in one file a platform, and the support folder beside the caches",
     "status": "done",
     "detail": "system.rs stood at 398 lines, two short of its ceiling. Its three platform modules (macOS, Windows, the rest) go to system/macos.rs, windows.rs and other.rs, moved line for line and outdented one level (no string spans a line, checked), each chosen by the same cfg; system.rs falls to 227 lines. The support folder's path and the app's folder name leave timing.rs, the log, for system.rs, beside caches() and local_support() whose platform logic they share; their five callers name system. The Windows file is not compiled on this Mac. oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4071,
+    "type": "refactor",
+    "title": "A roll folder's disk checks in a file of their own",
+    "status": "done",
+    "detail": "roll_folder/tests.rs stood at 398 lines. The exFAT disk image, its AppleDouble twins and the locked-file retry go to roll_folder/tests/disks.rs, moved line for line; the moves, triplets, stray sidecars and redo stay (281 lines). oni-library's tests green."
   }
 ]
