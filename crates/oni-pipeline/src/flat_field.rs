@@ -7,7 +7,7 @@ use oni_render::{Affine, ColorMatrix, FlatField as FlatFieldArgs};
 use oni_settings::ConversionMode;
 use oni_settings::frame::{FlatField, FlatFieldMask};
 
-/// `FlatField.colourReach`: the exponent a full travel moves a channel's correction by.
+/// The exponent a full travel moves a channel's correction by.
 pub const COLOUR_REACH: f32 = 0.5;
 
 const VALOI: &[u8] = include_bytes!("../resources/flat-fields/valoi-easy35-v1.png");
@@ -43,7 +43,7 @@ pub fn valoi() -> Mask {
     Mask { width: info.width, height: info.height, pixels, peaks, per_channel: false }
 }
 
-/// `FlatField.exponents`: the sense follows the mode, as the gains' does.
+/// The sense follows the mode, as the gains' does.
 pub fn exponents(f: &FlatField, mode: ConversionMode) -> [f32; 3] {
     let sense = if mode.inverts_gain_sense() { 1.0 } else { -1.0 };
     let t = sense * COLOUR_REACH * f.temperature;
@@ -60,7 +60,7 @@ pub fn shipped(f: &FlatField) -> bool {
     f.mask == FlatFieldMask::ValoiEasy35V1
 }
 
-/// `FlatField.stretched`: `mask` scaled onto `extent`, read bilinearly with its edge repeated,
+/// `mask` scaled onto `extent`, read bilinearly with its edge repeated,
 /// divided by its peaks: green on all three unless the mask is per channel.
 pub fn fitted(mask: Image, peaks: [f32; 3], per_channel: bool, extent: Rect) -> Image {
     let m = mask.extent();

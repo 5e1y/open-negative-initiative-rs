@@ -2,7 +2,7 @@
 
 use super::*;
 
-/// `Vignette.midpoint`: flat inside this share of the half-diagonal.
+/// Flat inside this share of the half-diagonal.
 pub const VIGNETTE_MIDPOINT: f32 = 0.3;
 
 /// `vignette(s, centre, halfSide, dose, hunt)`, in Core Image coordinates; `dose` is (stops, midpoint).

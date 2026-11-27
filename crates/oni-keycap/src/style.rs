@@ -24,7 +24,7 @@ impl Rgba {
         Self { r: r as f64 / 255.0, g: g as f64 / 255.0, b: b as f64 / 255.0, a: a as f64 / 255.0 }
     }
 
-    /// `RGBA.shaded`: each channel times the shade, clipped at white; alpha untouched.
+    /// Each channel times the shade, clipped at white; alpha untouched.
     pub fn shaded(self, shade: f64) -> Self {
         Self { r: (self.r * shade).min(1.0), g: (self.g * shade).min(1.0), b: (self.b * shade).min(1.0), a: self.a }
     }
@@ -189,7 +189,7 @@ pub struct Rect {
 }
 
 impl KeycapStyle {
-    /// `KeycapStyle.hardened`: the frozen look every app key starts from.
+    /// The frozen look every app key starts from.
     pub fn hardened() -> Self {
         Self::default()
     }
@@ -257,7 +257,7 @@ fn fit(runs: f64, extent: f64) -> f64 {
     if runs > allowed && runs > 0.0 { allowed / runs } else { 1.0 }
 }
 
-/// `Keycap.Variant`: every length scaled, the legend and the glyph stroke set rather than scaled.
+/// Every length scaled, the legend and the glyph stroke set rather than scaled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Variant {
     Large,

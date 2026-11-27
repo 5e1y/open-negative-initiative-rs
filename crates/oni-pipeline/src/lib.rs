@@ -1,4 +1,4 @@
-//! `Pipeline.apply`: a frame's settings to its working-space image, every stage in the Swift app's
+//! A frame's settings to its working-space image, every stage in its
 //! order, as one render-graph recipe that stays on the GPU until a region of it is read.
 
 mod baked;
@@ -137,7 +137,7 @@ impl Pipeline {
         Ok((region, graph.render(&image, region, cache)?))
     }
 
-    /// `Pipeline.framed`: the scan healed, stage 0 with the lens's map, a positive read as a negative last.
+    /// The scan healed, stage 0 with the lens's map, a positive read as a negative last.
     pub fn framed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let healed = self.healed(graph, image, s, scale, inputs)?;
         let e = healed.extent();
@@ -236,7 +236,7 @@ impl Pipeline {
                 Some(c) if f.mask == FlatFieldMask::Custom && f.custom.as_deref() == Some(c.id.as_str()) => {
                     (c.mask.clone(), c.peaks, c.per_channel)
                 }
-                // The frame's own mask is gone: the stage is left out, as the Swift app leaves it.
+                // The frame's own mask is gone: the stage is left out.
                 _ => return Ok(image),
             }
         };
@@ -270,7 +270,7 @@ impl Pipeline {
         Ok((code.clone().then_reading(stages::color_cube(n), &[table]), share))
     }
 
-    /// `ScannerRender.oniFinish`: the legacy print's machine's look on ONI's render in display code, then TEMP's warmth.
+    /// The legacy print's machine's look on ONI's render in display code, then TEMP's warmth.
     fn oni_finish(&mut self, graph: &mut Graph, image: Image, legacy: &LegacyPrint) -> Result<Image> {
         let frontier = legacy.machine == LegacyMachine::Frontier;
         // The Frontier's look stands where ONI's does, on the same render in plain display code.
@@ -360,14 +360,14 @@ fn saturation(curve: &SaturationCurve) -> Option<stages::PerPixel> {
     finishing::saturation(curve).map(|k| stages::saturation(&k))
 }
 
-/// `Pipeline.applyDetail`: the rows pass, then the columns reading it beside the source.
+/// The rows pass, then the columns reading it beside the source.
 fn detail(image: Image, k: Option<oni_render::Detail>) -> Image {
     let Some(k) = k else { return image };
     let rows = image.clone().then(DetailRows(k));
     image.then_reading(DetailColumns(k), &[rows])
 }
 
-/// `Pipeline.applyTexture`: three blurs and three kernels on the luma, each kernel but the last read
+/// Three blurs and three kernels on the luma, each kernel but the last read
 /// by the next blur's taps, so seven passes instead of ten.
 pub fn texture(image: Image, s: &PipelineSettings, reference: f64) -> Image {
     let Some((narrow, wide, gain)) = finishing::texture(&s.texture, reference) else { return image };

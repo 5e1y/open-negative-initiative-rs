@@ -14,10 +14,10 @@ pub struct Detail {
     pub halo: f32,
 }
 
-/// `Pipeline.blurFloor`: a radius at or under it leaves its half of the stage out.
+/// A radius at or under it leaves its half of the stage out.
 pub const BLUR_FLOOR: f64 = 0.1614;
 
-/// `Pipeline.detailReach`: the taps each side a blur of deviation `sigma` reads, out to 3.5 deviations.
+/// The taps each side a blur of deviation `sigma` reads, out to 3.5 deviations.
 pub fn detail_reach(sigma: f64) -> i32 {
     (3.5 * sigma).ceil() as i32
 }

@@ -2,7 +2,7 @@
 
 use super::*;
 
-/// `RollReference.colourFactor`: the spans each channel's points reach over the roll's, on their
+/// The spans each channel's points reach over the roll's, on their
 /// geometric mean; 1 on no roll.
 pub fn colour_factor(s: &PipelineSettings) -> f32 {
     factor_reaching(s, s.print.channel_points(s.is_monochrome()))
@@ -21,7 +21,7 @@ fn factor_reaching(s: &PipelineSettings, points: [(f32, f32); 3]) -> f32 {
     product.powf(1.0 / 3.0).clamp(oni_settings::frame::RollReference::FACTOR_RANGE.0, oni_settings::frame::RollReference::FACTOR_RANGE.1)
 }
 
-/// `ChromaDecompression.weights`: the windows' colour and the film's own the kernel carries; a colour
+/// The windows' colour and the film's own the kernel carries; a colour
 /// negative on no measured roll, a digital photo's included, takes its dose.
 pub fn decompression_weights(s: &PipelineSettings) -> (f32, f32) {
     let (windows, film) = weighted(s, colour_factor(s));

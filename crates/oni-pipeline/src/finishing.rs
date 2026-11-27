@@ -55,7 +55,7 @@ const SAUCE_DOUBLE: [(f64, f64); 5] = [(0.0, 0.0), (0.056, 0.222), (0.284, 0.522
 /// `SaturationCurve.sauceRange`'s top.
 pub const SAUCE_TOP: f32 = 1.5;
 
-/// `SaturationCurve.sauce`: the full curve rises from neutral up to 1, then travels toward the double.
+/// The full curve rises from neutral up to 1, then travels toward the double.
 pub fn sauce(amount: f32) -> SaturationCurve {
     let a = f64::from(amount.clamp(0.0, 2.0));
     let points = SAUCE_FULL
@@ -77,7 +77,7 @@ fn separation(a: f32, b: f32) -> f32 {
     Spectrogram::separation(a, b)
 }
 
-/// `Spectrogram.rawWeight`: a band's weight at a hue before the eight are normalised.
+/// A band's weight at a hue before the eight are normalised.
 fn raw_weight(band: Band, hue: f32) -> f32 {
     let i = band.index();
     let mut d = hue - band.centre();
@@ -96,7 +96,7 @@ fn raw_weight(band: Band, hue: f32) -> f32 {
     raw * raw * (3.0 - 2.0 * raw)
 }
 
-/// `Spectrogram.authority`: how much of itself a band owns at its centre once the eight are normalised.
+/// How much of itself a band owns at its centre once the eight are normalised.
 pub fn authority(band: Band) -> f32 {
     let total: f32 = Band::ALL.iter().map(|b| raw_weight(*b, band.centre())).sum();
     let mine = raw_weight(band, band.centre());

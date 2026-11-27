@@ -1,4 +1,4 @@
-//! `Pipeline.chain`: the frame's recipe from the scan to the output clip, on its legacy print where it lays one. A
+//! The frame's recipe from the scan to the output clip, on its legacy print where it lays one. A
 //! digital photo's scene is shot on its virtual film and scanned first, on the scan's own grid; that scan, kept once
 //! made, is read on as a scanned negative's is.
 

@@ -22,7 +22,7 @@ use crate::virtual_film::{VirtualFilm, VirtualStock};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-/// Every setting, its serialised names the Swift app's. Optional fields are omitted when absent.
+/// Every setting, under the serialised names the sidecars already on disk carry. Optional fields are omitted when absent.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PipelineSettings {
@@ -166,7 +166,7 @@ impl Default for PipelineSettings {
 }
 
 impl PipelineSettings {
-    /// `Parameters.rest`: the state a photograph is imported in, on no paper; a digital photo on the neutral film, with
+    /// The state a photograph is imported in, on no paper; a digital photo on the neutral film, with
     /// its grain.
     pub fn rest(mode: ConversionMode, mosaic: bool) -> PipelineSettings {
         let mut block = PipelineSettings { mode, decoded_from_mosaic: mosaic, ..PipelineSettings::default() };

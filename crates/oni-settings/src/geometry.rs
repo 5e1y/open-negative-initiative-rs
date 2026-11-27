@@ -1,4 +1,4 @@
-//! `Geometry`'s gestures as Swift's model holds them: mirror, rotate, the remembered framing, the
+//! `Geometry`'s gestures: mirror, rotate, the remembered framing, the
 //! measuring window, the straighten re-fit and the aspect ratio. The crop is in fractions of the
 //! upright oriented box, origin bottom left, as Core Image reads it.
 
@@ -36,7 +36,7 @@ fn intersection(a: Rect, b: Rect) -> Rect {
     Rect { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
 }
 
-/// `Geometry.Framing`: a ratio and its orientation remembered for the next photo; a free frame is none.
+/// A ratio and its orientation remembered for the next photo; a free frame is none.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Framing {
     pub ratio: AspectRatio,

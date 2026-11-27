@@ -14370,5 +14370,12 @@
     "title": "The app's doc comments name no Swift type any more",
     "status": "done",
     "detail": "A hundred and thirty comments across oni-app's source (the scroll and track, thumbnails, flat-fields, export, roll tab, tree, gallery, picking, updates and the like; the welcome, help, stage, Wrapped, year and the render engine left to their streams) opened on the Swift function they once ported (AppFolders.caches, GalleryEngine.key(stroke:), DSScroll.idleWindow, Thumbnails.selfCheck and the like); each now opens on what the item is or does. Comments only; oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4080,
+    "type": "refactor",
+    "title": "The pipeline's, render's, settings' and keycap's doc comments name no Swift type any more",
+    "status": "done",
+    "detail": "Twenty-five doc comments in oni-pipeline (chain, finishing, flat-field, detail, texture, the scanner's legacy look), oni-render, oni-settings (spectrogram, saturation, vignette, geometry, parameters) and oni-keycap opened on the Swift function they once ported; each now opens on what the item is or does. Four more said the Swift app did it so (the pipeline's order, a mask gone, the settings' serialised names, Geometry's gestures): they now give the reason alone, the names being those the sidecars on disk carry. Comments only; the crates check clean."
   }
 ]

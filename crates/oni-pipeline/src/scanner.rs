@@ -10,7 +10,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-/// `ScannerRender.lift`: the warmth looks' moves stored raised by it, since a cube clips under zero.
+/// The warmth looks' moves stored raised by it, since a cube clips under zero.
 pub const LIFT: f32 = 0.5;
 
 #[derive(Deserialize)]
@@ -225,10 +225,10 @@ pub fn on_legacy_print(s: &PipelineSettings) -> Option<PipelineSettings> {
     Some(out)
 }
 
-/// `ScannerRender.checkGrey`: a mid grey's densities on a colour negative, its orange mask included.
+/// A mid grey's densities on a colour negative, its orange mask included.
 pub const CHECK_GREY: [f32; 3] = [0.99, 1.37, 1.67];
 
-/// `ScannerRender.checkRoll`: a roll balanced as a measured one is, the grey on its median, on the Frontier's legacy print.
+/// A roll balanced as a measured one is, the grey on its median, on the Frontier's legacy print.
 pub fn check_roll() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });

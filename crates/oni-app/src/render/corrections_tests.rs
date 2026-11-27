@@ -2,7 +2,7 @@
 use super::*;
 
 /// A frame naming a custom flat-field is divided by that mask, read from the support folder;
-/// one naming a mask that is gone renders as with none, as the Swift app leaves the stage out.
+/// one naming a mask that is gone renders as with none.
 #[test]
 fn a_custom_flat_field_reaches_the_render_by_its_id() {
     let Ok(device) = Device::open() else {
