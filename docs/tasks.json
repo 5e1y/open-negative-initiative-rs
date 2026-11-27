@@ -14167,5 +14167,12 @@
     "title": "The container's checks in two files: the files they write and the checks themselves",
     "status": "done",
     "detail": "tests/swift_checks.rs had stood past the 400-line ceiling (460, grandfathered). The hand-written DNG and TIFF, the grain, the chroma energy, the Lanczos reduction and the resampled mean go to tests/swift_checks/files.rs, a module of the same binary, moved line for line (visibility widened to the parent); the two checks and their own helpers stay (233 lines). Its ceiling entry goes. The two checks green."
+  },
+  {
+    "id": 4066,
+    "type": "refactor",
+    "title": "The registration's tests in a file of their own",
+    "status": "done",
+    "detail": "registration.rs had stood past the 400-line ceiling (432, grandfathered). Its inline tests module goes to registration/tests.rs, moved line for line and outdented one level; the registration itself is untouched (329 lines). Its ceiling entry goes. oni-measure's 38 tests green."
   }
 ]
