@@ -115,7 +115,7 @@ impl Ctl {
         }
     }
 
-    /// `NavigatorRow.onTapGesture`: a click opens its folder, out of reach too, where the gallery
+    /// A click opens its folder, out of reach too, where the gallery
     /// says its state; the second of a double click opens nothing more. A heading folds its section.
     pub(super) fn navigator_row_clicked(self: &Rc<Self>, i: usize) {
         if self.state.borrow().nav.rows.get(i).is_some_and(|p| walk::is_heading(p)) {

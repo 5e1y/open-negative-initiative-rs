@@ -73,7 +73,7 @@ pub fn arrow(text: &str, shift: bool, option: bool) -> Option<(Handle, Size)> {
     Some((if option { Handle::BottomRight } else { Handle::Body }, (dx * step, dy * step)))
 }
 
-/// `FrameOverlay.apply`: the frame at the gesture's start moved by a translation in points over a
+/// The frame at the gesture's start moved by a translation in points over a
 /// displayed frame of `frame` points, y down on screen and up in the fractions.
 pub fn apply(handle: Handle, from: Rect, frame: Size, translation: Size) -> Rect {
     if frame.0 <= 0.0 || frame.1 <= 0.0 {
@@ -104,7 +104,7 @@ pub fn apply(handle: Handle, from: Rect, frame: Size, translation: Size) -> Rect
     c
 }
 
-/// `CropOverlay.constrain`: the ratio about the point opposite the hand, then the fit under rotation.
+/// The ratio about the point opposite the hand, then the fit under rotation.
 pub fn constrained_crop(geometry: &Geometry, handle: Handle, proposed: Rect, image: Size) -> Geometry {
     let mut g = *geometry;
     g.crop = proposed;

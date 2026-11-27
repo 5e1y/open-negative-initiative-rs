@@ -1,4 +1,4 @@
-//! `MetalImageView.encodeMeasure`: the picture just rendered, point-sampled to `SIDE` on its long
+//! The picture just rendered, point-sampled to `SIDE` on its long
 //! side, clipped to the screen's gamut and counted back in linear Rec. 2020, its luminance beside.
 
 use crate::display::Screen;

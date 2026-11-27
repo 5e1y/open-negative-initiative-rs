@@ -56,7 +56,7 @@ impl Ctl {
         self.publish_roll_tab();
     }
 
-    /// `FlatFieldBlock.load`: a picture of the empty panel chosen, decoded off this thread, then
+    /// A picture of the empty panel chosen, decoded off this thread, then
     /// named as the roll's mask, its Amount kept.
     pub(in crate::app) fn load_roll_mask(self: &Rc<Self>) {
         if self.state.borrow().prepare.loading_mask {

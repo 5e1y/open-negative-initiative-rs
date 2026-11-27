@@ -27,7 +27,7 @@ fn run<T>(work: impl std::future::Future<Output = Result<T, String>>) -> Result<
     tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| e.to_string())?.block_on(work)
 }
 
-/// `URLSession.data(from:)`: the page's body as text, on the calling thread.
+/// The page's body as text, on the calling thread.
 pub fn text(url: &str) -> Result<String, String> {
     run(async {
         let response = client()?.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
@@ -70,7 +70,7 @@ fn landing(url: &str, folder: &Path) -> PathBuf {
     oni_library::file_names::inside(folder, &name).unwrap_or_else(|| folder.join("download"))
 }
 
-/// `URLSession.download(from:)`: the file written into `folder` under the link's own name.
+/// The file written into `folder` under the link's own name.
 pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
     let path = landing(url, folder);
     let bytes = run(async {

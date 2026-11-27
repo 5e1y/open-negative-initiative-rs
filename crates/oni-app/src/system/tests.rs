@@ -50,7 +50,7 @@ fn windows_keeps_rebuildable_files_off_the_roaming_profile() {
     assert_eq!(local_of(&support, false, roaming, local), support);
 }
 
-/// `AppFolders.selfCheck`: a check's folders are stand-ins named after its run, and the
+/// A check's folders are stand-ins named after its run, and the
 /// platform's own folders are named in the two routes alone.
 #[test]
 fn a_checks_folders_are_its_own_and_the_platforms_have_one_route() {

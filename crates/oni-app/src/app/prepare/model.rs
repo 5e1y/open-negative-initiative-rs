@@ -53,25 +53,25 @@ impl Frame {
     }
 }
 
-/// `RollFrame.measured`: the frames ticked and not flagged.
+/// The frames ticked and not flagged.
 pub fn measured(frames: &[Frame]) -> Vec<&Frame> {
     frames.iter().filter(|f| f.ticked && !f.flagged).collect()
 }
 
-/// `RollFrame.aspect`: the scan's width over height after its quarter turns.
+/// The scan's width over height after its quarter turns.
 pub fn aspect(scan: Option<(usize, usize)>, geometry: &Geometry) -> Option<f64> {
     let (w, h) = scan?;
     let (tw, th) = geometry.oriented_size((w as f64, h as f64));
     (th > 0.0).then(|| tw / th)
 }
 
-/// `RollPicking.ownRoll`: the picked frame, those measured with its roll, and those never measured.
+/// The picked frame, those measured with its roll, and those never measured.
 pub fn own_roll(picked: &str, folder: &[String], reference: impl Fn(&str) -> Option<Id>) -> Vec<String> {
     let own = reference(picked);
     folder.iter().filter(|p| *p == picked || reference(p).is_none_or(|r| Some(r) == own)).cloned().collect()
 }
 
-/// `RollPicking.flagging`: a click toggles the flag, and flagging brings an unticked frame back in.
+/// A click toggles the flag, and flagging brings an unticked frame back in.
 pub fn flagging(frames: &mut [Frame], index: usize) {
     let Some(f) = frames.get_mut(index) else { return };
     f.flagged = !f.flagged;
@@ -80,7 +80,7 @@ pub fn flagging(frames: &mut [Frame], index: usize) {
     }
 }
 
-/// `RollFrameView.fitted`: a box of `aspect` centred in `size`.
+/// A box of `aspect` centred in `size`.
 pub fn fitted(aspect: f64, size: (f64, f64)) -> (f64, f64, f64, f64) {
     if size.0 <= 0.0 || size.1 <= 0.0 || aspect <= 0.0 {
         return (0.0, 0.0, 0.0, 0.0);
@@ -90,7 +90,7 @@ pub fn fitted(aspect: f64, size: (f64, f64)) -> (f64, f64, f64, f64) {
     ((size.0 - w) / 2.0, (size.1 - h) / 2.0, w, h)
 }
 
-/// `RollBaseSurface.fitted`: an image of `image` pixels scaled whole into `size`, centred.
+/// An image of `image` pixels scaled whole into `size`, centred.
 pub fn fitted_image(image: (f64, f64), size: (f64, f64)) -> (f64, f64, f64, f64) {
     if image.0 <= 0.0 || image.1 <= 0.0 || size.0 <= 0.0 || size.1 <= 0.0 {
         return (0.0, 0.0, 0.0, 0.0);
@@ -149,7 +149,7 @@ pub struct LoupeLaid {
     pub picked: bool,
 }
 
-/// `RollBaseSurface.loupe`: the pointer's pixel held at the centre past an edge too, nearest
+/// The pointer's pixel held at the centre past an edge too, nearest
 /// neighbour over at least 64 source pixels, 32 on the display copy, or twice the disc.
 pub fn loupe(pointer: (f64, f64), rect: (f64, f64, f64, f64), display_width: usize, source: (usize, usize), whole: bool, radius: f64, picked: Option<((f64, f64), f64)>) -> LoupeLaid {
     let side = 160.0;

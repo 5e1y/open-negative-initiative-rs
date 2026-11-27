@@ -210,7 +210,7 @@ pub fn scrolled(x: f64, width: f64, levels: &Levels, channel: LevelsChannel, mod
     best
 }
 
-/// `DSTrack.x`: the knob's centre at its share of the inset width.
+/// The knob's centre at its share of the inset width.
 pub fn knob_x(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: ConversionMode, width: f64) -> f64 {
     f64::from(place(grip, levels, channel, mode).clamp(0.0, 1.0)) * width
 }

@@ -75,7 +75,7 @@ impl Step {
     }
 }
 
-/// `RollPanel.neighbour`: one step either way past the skipped ones, held at either end.
+/// One step either way past the skipped ones, held at either end.
 pub fn neighbour(step: Step, way: i32, capture: Capture, film: ConversionMode) -> Step {
     let at = |i: i32| usize::try_from(i).ok().and_then(|i| Step::ALL.get(i).copied());
     let mut next = at(step.index() as i32 + way).unwrap_or(step);
@@ -87,7 +87,7 @@ pub fn neighbour(step: Step, way: i32, capture: Capture, film: ConversionMode) -
     if next.skipped(capture, film) { step } else { next }
 }
 
-/// `RollPanel.stepFilled`: the step holds its value, a flat-field set or a base picked.
+/// The step holds its value, a flat-field set or a base picked.
 pub fn filled(step: Step, flat: &FlatField, base: bool) -> bool {
     match step {
         Step::FlatField => !flat.is_neutral(),

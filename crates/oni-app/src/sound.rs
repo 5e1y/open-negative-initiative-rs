@@ -4,7 +4,7 @@
 use std::cell::Cell;
 use std::hash::{BuildHasher, RandomState};
 
-/// `KeycapStyle.hardened`: the pitch's wander either way, and the loudness.
+/// The pitch's wander either way, and the loudness.
 pub const PITCH_JITTER_CENTS: f64 = 120.0;
 pub const VOLUME: f32 = 0.5;
 

@@ -49,7 +49,7 @@ impl Ctl {
             if !moved && view_key == f.requests.requested_view {
                 return;
             }
-            // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
+            // While framing the crop is removed, so a crop drag keeps the pixels.
             let mut live = s.live_settings();
             if cropping {
                 live.geometry = live.geometry.without_crop();

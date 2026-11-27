@@ -137,7 +137,7 @@ impl Ctl {
         }
     }
 
-    /// `DS.Motion.settle`: a value arriving from elsewhere springs the knob; the canvas takes it at once.
+    /// A value arriving from elsewhere springs the knob; the canvas takes it at once.
     pub(super) fn spring(self: &Rc<Self>, f: Field, to: f32) {
         let now = Instant::now();
         let moving = {

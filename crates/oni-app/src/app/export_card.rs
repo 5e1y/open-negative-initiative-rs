@@ -143,7 +143,7 @@ pub struct Card {
     pub papers: paper_sheet::Sheet,
 }
 
-/// `AppFolders.colorSyncProfiles`: the user's own profile folder.
+/// The user's own profile folder.
 fn user_profiles(support: &Path) -> PathBuf {
     if cfg!(target_os = "macos")
         && let Some(home) = std::env::var_os("HOME")
@@ -289,7 +289,7 @@ impl Card {
         }
     }
 
-    /// `ExportSpaceField.options`: titles kept distinct, a shared description gaining its file name.
+    /// Titles kept distinct, a shared description gaining its file name.
     fn profile_titles(&self, chosen: &OutputProfile) -> (Vec<OutputProfile>, Vec<String>) {
         let listed = export::listed_profiles(&self.installed, chosen);
         let titles = export::profile_titles(&listed);

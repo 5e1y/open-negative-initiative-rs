@@ -335,7 +335,7 @@ impl Notches {
     }
 }
 
-/// `FrameRate.describe`'s centile: the sample at `count × q`, never interpolated.
+/// The sample at `count × q`, never interpolated.
 struct Centiles {
     p50: Duration,
     p99: Duration,

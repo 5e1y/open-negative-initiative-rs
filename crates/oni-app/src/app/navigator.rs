@@ -36,7 +36,7 @@ pub const FOLDED: &str = "navigatorFoldedSections";
 pub const UNFOLDED: &str = "navigatorUnfolded";
 pub const UNFOLDED_FAVOURITES: &str = "navigatorUnfoldedFavourites";
 pub const EDITOR_HEIGHT: &str = "navigatorEditorHeight";
-/// `DS.Control.navigatorEditorRest`: the rows' height beside a photograph until one is dragged.
+/// The rows' height beside a photograph until one is dragged.
 pub const EDITOR_REST: f64 = 200.0;
 /// The threads reading listings at once, as a detached task each would on a small pool.
 const LISTERS: usize = 4;

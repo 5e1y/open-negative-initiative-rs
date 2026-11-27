@@ -22,7 +22,7 @@ impl Ctl {
         }
     }
 
-    /// `CatcherView.keepAlive`: the hand raised at the first event, lowered once events stop.
+    /// The hand raised at the first event, lowered once events stop.
     pub(super) fn scroll_kept_alive(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();

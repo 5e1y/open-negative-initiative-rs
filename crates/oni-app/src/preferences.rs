@@ -4,7 +4,7 @@
 use serde_json::{Map, Value};
 use std::path::{Path, PathBuf};
 
-/// `EditorScene.openedKey`: the folder the archive showed when the app last opened one.
+/// The folder the archive showed when the app last opened one.
 pub const OPENED_FOLDER: &str = "openedFolder";
 /// `@AppStorage("galleryColumns")`: the gallery's tile size, a rung of its ladder.
 pub const GALLERY_COLUMNS: &str = "galleryColumns";

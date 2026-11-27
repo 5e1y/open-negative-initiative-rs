@@ -62,7 +62,7 @@ impl Ctl {
         self.space_changed();
     }
 
-    /// `ExportSpaceField.apply`: Custom lands on the last profile, else the first usable, else waits.
+    /// Custom lands on the last profile, else the first usable, else waits.
     pub(super) fn space_tab(self: &Rc<Self>, tab: usize) {
         if let Some(space) = Space::BUILT_IN.get(tab) {
             return self.set_space(space.clone());

@@ -27,7 +27,7 @@ pub fn read(path: &str) -> Option<PassRead> {
     Some(PassRead { path: path.to_string(), share, picture: Bitmap { rgba, width: w, height: h } })
 }
 
-/// `RGBRegistration.planes`: the three passes of a frame, each its own band, decoded alone.
+/// The three passes of a frame, each its own band, decoded alone.
 pub fn planes(lead: &str, passes: &RgbPasses, side: Option<f64>) -> Option<[Plane; 3]> {
     let folder = oni_library::paths::parent(lead);
     let band = |c: Channel| {

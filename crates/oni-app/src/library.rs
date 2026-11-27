@@ -32,11 +32,11 @@ pub struct Row {
     pub kind: i32,
     pub expandable: bool,
     pub expanded: bool,
-    /// `TreeRowChrome.defaultStock`: a roll's stock, picked or its mode's generic one.
+    /// A roll's stock, picked or its mode's generic one.
     pub stock: Option<&'static str>,
 }
 
-/// `TreeRowChrome.defaultStock`: the stock a hand picked for the roll, else its first photo's mode's.
+/// The stock a hand picked for the roll, else its first photo's mode's.
 pub fn default_stock(group: &FilmGroup) -> &'static str {
     roll_stock(group.film.as_ref(), group.entries.first())
 }
@@ -214,7 +214,7 @@ impl Archive {
             {
                 return;
             }
-            // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
+            // A photo's whole file name, a folder's own name, extensions kept.
             rows.push(match laid {
                 archive_tree::Laid::Photo(e, number) => Row {
                     id: NodeId::Photo(e.path.clone()),

@@ -90,7 +90,7 @@ impl Ctl {
         self.publish_prepare();
     }
 
-    /// `RollPanel.click`: the flat-field's pick, or the scan the base step shows.
+    /// The flat-field's pick, or the scan the base step shows.
     pub(in crate::app) fn cell_clicked(self: &Rc<Self>, i: usize) {
         {
             let r = &mut self.state.borrow_mut().prepare;

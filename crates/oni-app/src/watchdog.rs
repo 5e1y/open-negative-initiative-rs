@@ -113,7 +113,7 @@ pub fn main_thread_frames(report: &str) -> Vec<String> {
     frames
 }
 
-/// `Footprint.bytes`: what the system charges the process, swap included, as Activity Monitor shows.
+/// What the system charges the process, swap included, as Activity Monitor shows.
 fn footprint() -> Option<u64> {
     #[cfg(target_os = "macos")]
     {

@@ -39,7 +39,7 @@ impl Ctl {
                 self.publish_settings();
             }
             Act::BiggerBrush | Act::SmallerBrush if self.painting() => {
-                // `EditorScene.biggerBrush`: four pixels a key, inside the brush's range.
+                // Four pixels a key, inside the brush's range.
                 let by = if action == Act::BiggerBrush { 4.0 } else { -4.0 };
                 let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
                 {
@@ -164,7 +164,7 @@ impl Ctl {
         }
     }
 
-    /// `QuitGuard.applicationShouldTerminate`: the sidecar written before the window goes; a write
+    /// The sidecar written before the window goes; a write
     /// that fails asks first, Cancel keeping the app open to free space or reconnect the volume.
     pub(super) fn close_requested(self: &Rc<Self>) -> slint::CloseRequestResponse {
         // A roll in preparation keeps its current step, which otherwise only a step change writes.

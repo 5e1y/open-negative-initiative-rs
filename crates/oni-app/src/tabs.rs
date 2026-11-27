@@ -3,7 +3,7 @@
 
 use crate::PanelTab;
 
-/// `PanelTab.leaving(toward:)`: a way out never lands back on the crop or the dust tool.
+/// A way out never lands back on the crop or the dust tool.
 pub fn leaving(wanted: PanelTab) -> PanelTab {
     if matches!(wanted, PanelTab::Crop | PanelTab::Dedust) { PanelTab::Color } else { wanted }
 }

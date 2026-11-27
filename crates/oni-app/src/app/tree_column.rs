@@ -112,7 +112,7 @@ impl Ctl {
             (row.x, row.y, row.width, row.height) = (frame.x, frame.y, frame.width, frame.height);
             row.thumb = photos[i];
             let Some(path) = paths.get(i).cloned().flatten().filter(|_| row.thumb) else { continue };
-            // `TreeLayers.caption`: a thumbnail is captioned by its stem, a name row by the whole name.
+            // A thumbnail is captioned by its stem, a name row by the whole name.
             row.title = stem(&path).into();
             let fingerprint = s.fingerprints.get(&path).cloned();
             if let Some(f) = flags.get(&path) {
@@ -233,7 +233,7 @@ impl Ctl {
         self.scroll_column(which, top);
     }
 
-    /// `TreeEngine.reveal(_:)`: the row's middle at the column's, held inside the content.
+    /// The row's middle at the column's, held inside the content.
     pub(super) fn centre_row(&self, which: Which, i: usize) {
         let top = {
             let s = self.state.borrow();

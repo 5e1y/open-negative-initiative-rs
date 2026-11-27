@@ -7,9 +7,9 @@ pub struct Options {
     /// Slint draws the window on the engine's device and takes the canvas texture as it is; on its
     /// software renderer the canvas is read back.
     pub canvas: bool,
-    /// `AppFolders.support`: the phone link's keys, the preferences, the thumbnails.
+    /// The phone link's keys, the preferences, the thumbnails.
     pub support: PathBuf,
-    /// `AppFolders.caches`: the index, which the system may purge.
+    /// The index, which the system may purge.
     pub caches: PathBuf,
     pub picker: Picker,
     pub discard: Discard,
@@ -24,7 +24,7 @@ pub struct Options {
     pub require_roll: bool,
     /// The update feed's reader; none looks nowhere, as the checks run.
     pub updates: Option<Updater>,
-    /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
+    /// The general pasteboard in the app, a board of the process's own for a check.
     pub pasteboard: Box<dyn crate::pasteboard::Board>,
     /// Names the volume a path lies on: the system's in the app, a check's own for its folders.
     pub identify: oni_library::places::Identify,

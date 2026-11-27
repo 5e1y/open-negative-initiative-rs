@@ -45,7 +45,7 @@ impl<T: Clone + Eq + Hash> TreePick<T> {
         false
     }
 
-    /// `ListPicking.extended`: the rows between the anchor and the one clicked, added to the pick;
+    /// The rows between the anchor and the one clicked, added to the pick;
     /// none while the anchor is not shown.
     fn extended(&self, id: &T, order: &[T]) -> Option<HashSet<T>> {
         let anchor = self.anchor.as_ref()?;

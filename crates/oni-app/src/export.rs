@@ -21,7 +21,7 @@ pub use renders::*;
 /// Rows the full-resolution render reads back at a time, so a frame never needs every stage at once.
 const BAND_ROWS: u32 = 1024;
 
-/// `Export.Target`: a photo and the settings it is written with.
+/// A photo and the settings it is written with.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Target {
     pub path: PathBuf,
@@ -56,7 +56,7 @@ pub mod label {
     }
 }
 
-/// `Geometry.croppedPixelSize`: the frame's size with its quarter turns and crop applied, rounded.
+/// The frame's size with its quarter turns and crop applied, rounded.
 pub fn cropped_size(full: (f64, f64), settings: &PipelineSettings) -> (f64, f64) {
     settings.geometry.kept_pixels(full)
 }
@@ -66,7 +66,7 @@ pub fn bits(format: Format) -> &'static str {
     if format == Format::Tiff16 { tr("16 bits per channel") } else { tr("8 bits per channel") }
 }
 
-/// `ExportPanel.weight`: one frame's estimate times the count.
+/// One frame's estimate times the count.
 pub fn weight(estimate: Option<u64>, count: usize) -> String {
     let Some(estimate) = estimate.filter(|e| *e > 0) else { return tr("estimating…").into() };
     let total = estimate as f64 * count.max(1) as f64;
@@ -112,7 +112,7 @@ pub fn size_texts(full: Option<(f64, f64)>, resize: Resize) -> (String, String) 
     }
 }
 
-/// `SizeFields.commit`: the field typed decides the edge the ceiling rides.
+/// The field typed decides the edge the ceiling rides.
 pub fn typed_size(width: &str, height: &str, shown: (&str, &str), full: (f64, f64)) -> Option<Resize> {
     let digits = |s: &str| s.chars().filter(|c| c.is_ascii_digit()).collect::<String>().parse::<i64>().unwrap_or(0);
     if width != shown.0 {
@@ -132,7 +132,7 @@ pub fn listed_profiles(installed: &[OutputProfile], chosen: &OutputProfile) -> V
     std::iter::once(chosen.clone()).chain(installed.iter().cloned()).collect()
 }
 
-/// `ExportSpaceField.options`: a menu needs distinct titles, so a shared description gains its
+/// A menu needs distinct titles, so a shared description gains its
 /// file name, and a shared file name its folder.
 pub fn profile_titles(listed: &[OutputProfile]) -> Vec<String> {
     let file = |p: &OutputProfile| Path::new(&p.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();

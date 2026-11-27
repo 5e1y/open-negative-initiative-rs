@@ -13,9 +13,9 @@ use std::path::Path;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
-/// `RollPreviews.tileSide`: a tile's long side, in pixels.
+/// A tile's long side, in pixels.
 pub const TILE_SIDE: f64 = 360.0;
-/// `RollPreviews.gridPause`: the rest before the tiles follow a new look, or the card a new frame.
+/// The rest before the tiles follow a new look, or the card a new frame.
 pub const GRID_PAUSE: Duration = Duration::from_millis(250);
 
 /// What the frames are shown on: the roll's film and its flat-field, none while neutral.
@@ -45,7 +45,7 @@ pub enum Out {
     Full(String, Option<Bitmap>),
 }
 
-/// `RollPreviews.rendered`: the frame carried onto the roll's film at rest, its flat-field the roll's
+/// The frame carried onto the roll's film at rest, its flat-field the roll's
 /// when one is set, per-pixel stages only.
 pub fn rendered(base: &PipelineSettings, look: &Look) -> PipelineSettings {
     let mut s = base.carried(look.film);

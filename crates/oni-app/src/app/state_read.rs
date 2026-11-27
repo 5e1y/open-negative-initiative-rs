@@ -82,7 +82,7 @@ impl State {
         &self.store
     }
 
-    /// `Diagnostics.witness`: what the window showed, written beside a block.
+    /// What the window showed, written beside a block.
     pub fn witness(&self) -> String {
         match self.open_path() {
             Some(path) => format!("editing photo {}", crate::anonymity::token(path)),

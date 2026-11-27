@@ -14,7 +14,7 @@ impl Ctl {
         crate::picking::select_all(&keys, &s.picks.selection, focus.as_ref()) == s.picks.selection
     }
 
-    /// `GalleryEngine.key(stroke:)`: the arrows, Return, Space and ⌘A, while the gallery shows.
+    /// The arrows, Return, Space and ⌘A, while the gallery shows.
     pub(in crate::app) fn grid_key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let key = match text {
             "\u{F702}" if !command => GridKey::Left,

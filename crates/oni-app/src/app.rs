@@ -80,9 +80,9 @@ const MIN_WAIT: Duration = Duration::from_millis(2);
 /// `DS.Control.cropHint` and `DS.Space.md`: the crop badge's margin inside the view and its rise above the frame.
 const BADGE_MARGIN: f64 = 32.0;
 const BADGE_RISE: f64 = 16.0;
-/// `DSScroll.idleWindow`: a pause this long ends a straightening gesture.
+/// A pause this long ends a straightening gesture.
 const STRAIGHTEN_IDLE: Duration = Duration::from_millis(160);
-/// `Sidecar.writeDelay`: the hand rests this long before the sidecar is written.
+/// The hand rests this long before the sidecar is written.
 pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 
 mod board;

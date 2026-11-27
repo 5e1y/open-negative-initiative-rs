@@ -125,7 +125,7 @@ impl Ctl {
         self.publish_roll_tab();
     }
 
-    /// `FlatFieldBlock.load`: a picture of the empty panel chosen, decoded off this thread, then
+    /// A picture of the empty panel chosen, decoded off this thread, then
     /// named as the frame's mask.
     fn load_mask(self: &Rc<Self>) {
         if self.state.borrow().masking.loading {
@@ -319,7 +319,7 @@ impl Ctl {
 
     // MARK: - The sliders remembered
 
-    /// `FlatField.remember`: a hand's change of Amount, Temperature or Tint kept for the next frame.
+    /// A hand's change of Amount, Temperature or Tint kept for the next frame.
     pub(super) fn remember_flat_field(&self, was: &FlatField) {
         let mut s = self.state.borrow_mut();
         let now = s.store.settings().flat_field.clone();

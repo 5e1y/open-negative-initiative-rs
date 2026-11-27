@@ -262,7 +262,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 /// The window's events and the watchdog, from the starter on; what needs the shell waits for it.
 fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer {
-    // `Diagnostics.startWatchdog`: the interface thread beats, a thread of its own watches it.
+    // The interface thread beats, a thread of its own watches it.
     let beat = slint::Timer::default();
     let watched = shell.clone();
     beat.start(slint::TimerMode::Repeated, oni_app::watchdog::BEAT, move || {

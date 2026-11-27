@@ -32,7 +32,7 @@ impl Ctl {
         self.write(Command::Write(Box::new(next)));
     }
 
-    /// `GeometryPanel.angleBinding`: re-fitted from the gesture's own starting frame, so the
+    /// Re-fitted from the gesture's own starting frame, so the
     /// intermediate angles leave no ratchet; a pause or a frame moved elsewhere starts a new one.
     pub(super) fn straighten(self: &Rc<Self>, angle: f32) {
         let Some(image) = self.image_size() else { return };

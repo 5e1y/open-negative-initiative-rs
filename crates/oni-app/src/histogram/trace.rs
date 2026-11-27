@@ -3,7 +3,7 @@
 
 use oni_measure::histogram::Histogram;
 
-/// `HistogramScale.exponent`: low counts brought back up without a log's empty-bin lift.
+/// Low counts brought back up without a log's empty-bin lift.
 const EXPONENT: f32 = 0.42;
 /// SwiftUI's `.red`, `.green` and `.blue` in the dark appearance.
 const CHANNELS: [[f32; 3]; 3] = [[1.0, 0.271, 0.227], [0.196, 0.843, 0.294], [0.039, 0.518, 1.0]];
@@ -35,7 +35,7 @@ pub fn coarsened(values: &[f32], target: usize) -> Vec<f32> {
     values.chunks(group).map(|g| g.iter().sum()).collect()
 }
 
-/// `HistogramScale.heights`: 0 to 1, the peak sought off the two bins at each end.
+/// 0 to 1, the peak sought off the two bins at each end.
 pub fn heights(counts: &[f32]) -> Vec<f32> {
     let n = counts.len();
     let interior = if n > 4 { &counts[2..n - 2] } else { counts };

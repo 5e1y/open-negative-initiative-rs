@@ -11,7 +11,7 @@ impl Ctl {
         s.open_path().map(str::to_string).or_else(|| s.picks.anchor.clone())
     }
 
-    /// `TreeEngine.reveal`: the column centred on the photo it follows.
+    /// The column centred on the photo it follows.
     pub(super) fn centre_tree(&self) {
         if self.unfold_archive() {
             self.publish_tree();

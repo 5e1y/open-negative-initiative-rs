@@ -38,7 +38,7 @@ pub struct CellLine {
     pub left: usize,
 }
 
-/// `CellMenu.targets`: the selection when the pointed photo is in it, else the photo alone.
+/// The selection when the pointed photo is in it, else the photo alone.
 pub fn cell_scope(path: &str, selection: &HashSet<String>) -> HashSet<String> {
     if selection.contains(path) { selection.clone() } else { HashSet::from([path.to_owned()]) }
 }

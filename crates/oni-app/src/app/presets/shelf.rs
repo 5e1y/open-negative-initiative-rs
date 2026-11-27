@@ -101,7 +101,7 @@ impl Ctl {
         }
     }
 
-    /// `Propagation.load()`: the screen is what is on disk.
+    /// The screen is what is on disk.
     pub(in crate::app) fn reload_presets(&self) {
         let support = self.state.borrow().support.clone();
         let held = presets::load_shelf(&support);

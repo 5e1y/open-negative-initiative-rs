@@ -107,7 +107,7 @@ impl Ctl {
         system::reveal(&folder);
     }
 
-    /// `PresetDialogs.request(updating: true)`: the stored settings replaced, the rest kept.
+    /// The stored settings replaced, the rest kept.
     pub(super) fn ask_update_preset(self: &Rc<Self>, id: Id) {
         let Some(p) = self.held(id) else { return };
         self.ask(

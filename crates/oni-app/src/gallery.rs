@@ -18,7 +18,7 @@ pub struct Metrics {
 }
 
 impl Metrics {
-    /// `GalleryEngine.metrics`: no caption reserved, as the sidebar names every photo and text
+    /// No caption reserved, as the sidebar names every photo and text
     /// layout costs at hundreds of cells.
     pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 0.0, caption_gap: 0.0, least: 60.0 };
 }
@@ -27,7 +27,7 @@ impl Metrics {
 /// right, to fewer and larger tiles; the gallery opens on the largest, where a 1100 pt window fills its card.
 pub const COLUMN_STEPS: [usize; 3] = [12, 6, 4];
 
-/// `GalleryView.columnStep`: one rung away, clamped, a count off a rung first snapping to the nearest.
+/// One rung away, clamped, a count off a rung first snapping to the nearest.
 pub fn column_step(count: usize, by: i32) -> usize {
     let here = (0..COLUMN_STEPS.len()).min_by_key(|&i| COLUMN_STEPS[i].abs_diff(count)).unwrap_or(0);
     COLUMN_STEPS[(here as i32 + by).clamp(0, COLUMN_STEPS.len() as i32 - 1) as usize]

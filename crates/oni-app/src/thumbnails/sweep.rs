@@ -1,4 +1,4 @@
-//! `Thumbnails.removeDead`: the files no row claims, taken out of the durable folder once a launch,
+//! The files no row claims, taken out of the durable folder once a launch,
 //! off the interface thread; a disk away keeps its rows, hence its tiles.
 
 use super::directory;

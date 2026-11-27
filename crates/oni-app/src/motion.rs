@@ -1,4 +1,4 @@
-//! `DS.Motion.Spec`: the app's springs, evaluated analytically so a Slint property follows the same
+//! The app's springs, evaluated analytically so a Slint property follows the same
 //! curve SwiftUI draws instead of an easing that only resembles it; `Sprung`, a knob riding `settle`.
 
 use std::time::Instant;
@@ -15,7 +15,7 @@ impl Spring {
     /// A displacement the eye follows, critically damped.
     pub const TRAVEL: Spring = Spring { response: 0.52, damping: 1.0 };
 
-    /// `Spec.value(at:)`: 0 at the start, 1 at rest.
+    /// 0 at the start, 1 at rest.
     pub fn value(&self, t: f64) -> f64 {
         let omega = 2.0 * std::f64::consts::PI / self.response;
         let zeta = self.damping;

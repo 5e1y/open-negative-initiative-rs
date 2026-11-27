@@ -206,7 +206,7 @@ impl Ctl {
         e.on_confirmed(move |replace| p.confirmed(replace));
         let p = me.clone();
         e.on_job_stop(move || p.stop_job());
-        // `PaperCorrection.automatic`: the paper's own white, read off its profile alone.
+        // The paper's own white, read off its profile alone.
         let p = me.clone();
         e.on_auto_paper(move || {
             let Some(paper) = p.export.borrow().settings.space().paper().cloned() else { return };

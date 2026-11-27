@@ -62,7 +62,7 @@ pub enum Step {
     Rows(i32),
 }
 
-/// `GalleryView.destination`: rows group by band, so a flat jump of `columns` never crosses a
+/// Rows group by band, so a flat jump of `columns` never crosses a
 /// boundary unseen, and a short row lands on its last cell.
 pub fn destination(index: usize, step: Step, blocks: &[usize], columns: usize) -> usize {
     let blocks: Vec<usize> = blocks.iter().copied().filter(|b| *b > 0).collect();
@@ -133,7 +133,7 @@ pub fn space_target(cursor: Option<&str>, selection: &HashSet<String>, shown: &[
     shown.iter().find(|p| selection.contains(*p)).or_else(|| shown.first()).cloned()
 }
 
-/// `GalleryEngine.completedGroups`: the groups holding the selection, else the focused one if it
+/// The groups holding the selection, else the focused one if it
 /// is shown holding something, else the last group.
 pub fn completed_groups<G: Clone + Eq + Hash>(groups: &[(G, Vec<String>)], selection: &HashSet<String>, focus: Option<&G>) -> HashSet<G> {
     let non_empty: Vec<&(G, Vec<String>)> = groups.iter().filter(|(_, e)| !e.is_empty()).collect();
@@ -175,13 +175,13 @@ pub fn column_select_all(groups: &[(String, Vec<String>)], selection: &HashSet<S
     next
 }
 
-/// `GalleryView.named`: a blank or unchanged name is refused rather than stored.
+/// A blank or unchanged name is refused rather than stored.
 pub fn named(draft: &str, was: &str) -> Option<String> {
     let wanted = draft.trim();
     (!wanted.is_empty() && wanted != was).then(|| wanted.to_owned())
 }
 
-/// `CellMenu.label`: a verb with its count once it reaches more than one photo.
+/// A verb with its count once it reaches more than one photo.
 pub fn menu_label(verb: &str, count: usize) -> String {
     if count > 1 { tr!("{verb} ({count} photos)", verb = verb, count = count) } else { verb.to_owned() }
 }

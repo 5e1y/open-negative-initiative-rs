@@ -284,7 +284,7 @@ mod tests {
 
     const WHEEL: Wheel = Wheel { side: 308.0 };
 
-    /// `SpectrogramPanel.selfCheck`: the wheel is grabbed, never jumped to.
+    /// The wheel is grabbed, never jumped to.
     #[test]
     fn the_colour_wheel_is_grabbed_never_jumped_to() {
         let wheel = Spectrogram::default();

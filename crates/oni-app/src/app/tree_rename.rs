@@ -131,13 +131,13 @@ impl Ctl {
     }
 }
 
-/// `GalleryView.named`: the draft trimmed, `None` when empty or the name it was.
+/// The draft trimmed, `None` when empty or the name it was.
 pub fn named<'a>(draft: &'a str, was: &str) -> Option<&'a str> {
     let wanted = draft.trim();
     (!wanted.is_empty() && wanted != was).then_some(wanted)
 }
 
-/// `TreeEngine.requestLanded`: the request turns into the row's field once the column beside the
+/// The request turns into the row's field once the column beside the
 /// photo holds that folder's row; until then it waits, as Swift's binding does.
 pub(super) fn land(request: &mut Option<String>, renaming: &mut Option<String>, shown: &[NodeId], beside_photo: bool) {
     let Some(wanted) = request.as_ref().filter(|_| beside_photo) else { return };

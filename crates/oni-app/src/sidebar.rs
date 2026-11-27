@@ -59,7 +59,7 @@ pub struct Frame {
 /// `TreeEngineLayout.photoRatio`.
 const PHOTO_RATIO: f32 = 3.0 / 2.0;
 
-/// `TreeEngineLayout.frames`: a photo shares its line with its neighbours at the same depth, up to `columns`,
+/// A photo shares its line with its neighbours at the same depth, up to `columns`,
 /// the line spanning the width as any other row does, so their edges line up; the frames and the whole height.
 pub fn frames(photo: &[bool], depth: &[usize], width: f32, columns: usize, m: Metrics) -> (Vec<Frame>, f32) {
     let across = columns.max(1);
@@ -86,12 +86,12 @@ pub fn frames(photo: &[bool], depth: &[usize], width: f32, columns: usize, m: Me
     (frames, m.row.max(y + m.small))
 }
 
-/// `TreeEngine.reveal`: the scroll that centres `frame` in a viewport `height` tall, held inside the column.
+/// The scroll that centres `frame` in a viewport `height` tall, held inside the column.
 pub fn centred(frame: Frame, height: f32, total: f32) -> f32 {
     (frame.y - height / 2.0 + frame.height / 2.0).clamp(0.0, (total - height).max(0.0))
 }
 
-/// `TreeEngineLayout.row(at:)`: the row whose frame holds the point; the gaps between thumbnails hold none.
+/// The row whose frame holds the point; the gaps between thumbnails hold none.
 pub fn row_at(x: f32, y: f32, frames: &[Frame]) -> Option<usize> {
     let first = frames.partition_point(|f| f.y + f.height <= y);
     let mut i = first;
@@ -105,7 +105,7 @@ pub fn row_at(x: f32, y: f32, frames: &[Frame]) -> Option<usize> {
     None
 }
 
-/// `PinnedRow.pinned`: the open row whose children pass under the column's top, held there, and
+/// The open row whose children pass under the column's top, held there, and
 /// how far the row after its children pushes it up (zero or less); none while it is in view.
 pub fn pinned(top: f32, frames: &[Frame], total: f32, depths: &[usize], open: &[bool], row: f32) -> Option<(usize, f32)> {
     let first = frames.partition_point(|f| f.y + f.height <= top);
@@ -134,7 +134,7 @@ pub enum DropTarget {
     Before(usize),
 }
 
-/// `TreeDropTarget.resolve`: a name row reorders on its top and bottom strips, a thumbnail on its
+/// A name row reorders on its top and bottom strips, a thumbnail on its
 /// left and right thirds, else the drop joins the row; past a thumbnail, only before the next of its run.
 pub fn drop_target(x: f32, y: f32, frames: &[Frame], photos: &[bool], depths: &[usize], reorders: bool, strip: f32) -> Option<DropTarget> {
     let i = row_at(x, y, frames)?;

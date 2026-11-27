@@ -78,7 +78,7 @@ fn a_loaded_picture_joins_the_list_under_its_files_name_once() {
     let _ = std::fs::remove_dir_all(&support);
 }
 
-/// `RGBPasses.selfCheck`'s triplet: the lead taken as a mask is marked made of passes, under an
+/// The lead taken as a mask is marked made of passes, under an
 /// id of its own; the same file alone is a white-light mask.
 #[test]
 fn a_triplets_lead_is_a_mask_of_passes_under_an_id_of_its_own() {

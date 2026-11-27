@@ -1,4 +1,4 @@
-//! `CorrectionRenderer.generate`: a dust correction's patch, copied from the place on the frame whose
+//! A dust correction's patch, copied from the place on the frame whose
 //! surroundings match the stroke's best, its tone matched by a bias varying across it. The search
 //! runs in Core Image's frame, y up, as Swift's kernels do; rectangles come in and go out y down.
 

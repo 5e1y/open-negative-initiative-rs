@@ -1,4 +1,4 @@
-//! `Thumbnails.criterionChecks`: a thumbnail runs opposite to its negative, carries the settings and
+//! A thumbnail runs opposite to its negative, carries the settings and
 //! an image, on a thin and a dense manufactured negative; a flat plate is refused.
 
 use crate::display::{Params, Screen};
@@ -104,7 +104,7 @@ fn a_thumbnail_runs_opposite_to_its_negative_on_a_thin_and_a_dense_one_and_a_pla
     assert!(plate.iter().any(|m| !m), "a flat plate passes every criterion: {plate:?}");
 }
 
-/// `Thumbnails.selfCheck(source:)`: the same four criteria on a frame of the reference roll; the
+/// The same four criteria on a frame of the reference roll; the
 /// inversion's bar is frame-dependent, DSC_6440 reading −0.86 against Swift's −0.90.
 #[test]
 fn a_thumbnail_of_the_reference_roll_runs_opposite_to_its_negative() {

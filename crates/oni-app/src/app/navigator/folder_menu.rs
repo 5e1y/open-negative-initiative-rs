@@ -78,7 +78,7 @@ impl State {
 }
 
 impl Ctl {
-    /// `NavigatorRow.contextMenu`: the folder menu on the row's folder.
+    /// The folder menu on the row's folder.
     pub(super) fn navigator_row_menu(&self, i: usize) -> bool {
         let Some(w) = self.window() else { return false };
         let lines = {
@@ -155,7 +155,7 @@ impl Ctl {
         }
     }
 
-    /// `FolderNavigator.commit`: an empty or unchanged name puts the row back as it was.
+    /// An empty or unchanged name puts the row back as it was.
     pub(super) fn rename_committed(self: &Rc<Self>, i: usize, draft: &str) {
         let path = {
             let mut s = self.state.borrow_mut();

@@ -31,7 +31,7 @@ pub(super) fn progress(done: usize, total: usize) -> String {
 mod tests {
     use super::*;
 
-    /// `AutoBalanceChoice.selfCheck`: every word carries the count, the two keys apart.
+    /// Every word carries the count, the two keys apart.
     #[test]
     fn every_wording_carries_the_count() {
         let (title, detail) = asked(12);

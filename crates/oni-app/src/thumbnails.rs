@@ -7,14 +7,14 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-/// `Thumbnails.side`: the long side in pixels, the only size produced or held.
+/// The long side in pixels, the only size produced or held.
 pub const SIDE: usize = 320;
 /// `Thumbnails.renderVersion`, out of every name: a thumbnail is written once, and only an edit or
 /// the pass redraws it.
 pub const RENDER_VERSION: u32 = 11;
-/// `Thumbnails.refreshDelay`: longer than the sidecar's write delay, or the redraw races the write.
+/// Longer than the sidecar's write delay, or the redraw races the write.
 pub const REFRESH_DELAY: Duration = Duration::from_millis(2000);
-/// `Thumbnails.compression`: not told from 0.8 at a tile's size, and 37 % lighter.
+/// Not told from 0.8 at a tile's size, and 37 % lighter.
 pub const COMPRESSION: f64 = 0.6;
 /// Tiles held in memory: 273 KB each at 320 x 213, so about 270 MB, which an 8 GB Mac can spare;
 /// one past it is read again from its JPEG.
@@ -22,7 +22,7 @@ pub const MEMORY_LIMIT: usize = 1000;
 /// `Library.waitingMark`'s photos are not read yet and have no file.
 pub const PENDING: &str = oni_library::library::WAITING_MARK;
 
-/// `Thumbnails.directory`: durable, not the purgeable caches, or a large library redraws for hours;
+/// Durable, not the purgeable caches, or a large library redraws for hours;
 /// kept off a Windows profile that roams.
 pub fn directory(support: &Path) -> PathBuf {
     crate::system::local_support(support).join("Thumbnails")
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn a_thumbnails_file_is_its_photos_fingerprint_and_nothing_else() {
-        // `Thumbnails.selfCheck`: a date, a size or the version in the name would redraw a library on every edit.
+        // A date, a size or the version in the name would redraw a library on every edit.
         let name = file_name("4096-2026:06:18 14:32:10");
         assert_eq!(name, "4096-2026_3a06_3a18 14_3a32_3a10.jpg");
         assert_ne!(file_name("9999-2026:06:18 15:00:00"), name);
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn the_redraw_waits_past_the_sidecars_write() {
-        // `DSGesture.selfCheck`: a redraw sooner than the write renders settings the disk does not hold yet.
+        // A redraw sooner than the write renders settings the disk does not hold yet.
         assert!(REFRESH_DELAY > crate::app::WRITE_DELAY, "{REFRESH_DELAY:?} against {:?}", crate::app::WRITE_DELAY);
         assert_eq!((SIDE, REFRESH_DELAY, crate::app::WRITE_DELAY), (320, Duration::from_millis(2000), Duration::from_millis(400)));
         // Twin: a refresh shorter than the write is refused by the same comparison.

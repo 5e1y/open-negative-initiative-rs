@@ -11,7 +11,7 @@ pub const PREFIX: &str = "sectionFold.";
 /// The editors' blocks, which hold their fold in `Editors`; each opens folded by default.
 const EDITORS: [&str; 4] = ["Curves", "Per-Channel Levels", "Colour Mixer", "Saturation Curve"];
 
-/// `DSSection.folded`: an empty or absent value is the default; any other but "folded" is open.
+/// An empty or absent value is the default; any other but "folded" is open.
 pub fn folded(stored: Option<&str>, by_default: bool) -> bool {
     match stored {
         None | Some("") => by_default,

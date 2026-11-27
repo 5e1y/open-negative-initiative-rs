@@ -127,7 +127,7 @@ impl Ctl {
         r.window_gesture = Some((handle, r.window, (b.2, b.3)));
     }
 
-    /// `MeasureWindowOverlay.bounded`: the window kept inside the whole scan, never under 5 %.
+    /// The window kept inside the whole scan, never under 5 %.
     pub(in crate::app) fn window_dragged(self: &Rc<Self>, dx: f64, dy: f64) {
         {
             let r = &mut self.state.borrow_mut().prepare;

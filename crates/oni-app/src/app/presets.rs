@@ -84,7 +84,7 @@ fn colour(c: [f64; 3]) -> Color {
     Color::from_rgb_u8(byte(c[0]), byte(c[1]), byte(c[2]))
 }
 
-/// `PresetTint.ink`: black on the light tints, white on the dark.
+/// Black on the light tints, white on the dark.
 fn ink(tint: Tint) -> Color {
     if tint.wants_dark_ink() { Color::from_rgb_u8(0, 0, 0) } else { Color::from_rgb_u8(255, 255, 255) }
 }

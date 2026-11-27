@@ -107,7 +107,7 @@ fn a_roll_turned_digital_falls_back_on_its_film_step() {
     assert_eq!(slides.step, Step::Window);
 }
 
-/// `RollFrameView.selfCheck`: a quarter-turned, cropped frame shows in its render's shape.
+/// A quarter-turned, cropped frame shows in its render's shape.
 #[test]
 fn a_quarter_turned_frame_shows_in_its_own_scans_shape() {
     let g = Geometry { quarter_turns: 1, crop: Rect::new(0.1, 0.2, 0.7, 0.5), ..Geometry::default() };

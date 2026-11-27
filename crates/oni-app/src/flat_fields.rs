@@ -52,7 +52,7 @@ pub(crate) fn file(support: &Path, id: &str) -> PathBuf {
     folder(support).join(format!("{id}.tiff"))
 }
 
-/// `CustomFlatFields.presets`: where a photograph taken as a mask goes once it leaves the library.
+/// Where a photograph taken as a mask goes once it leaves the library.
 pub fn presets(support: &Path) -> PathBuf {
     support.join("FlatField Presets")
 }
@@ -83,7 +83,7 @@ pub fn id_of(source: &[u8], passes: Option<&RgbPasses>) -> String {
     hash.finalize()[..8].iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// `RGBPasses.named(by:)`: the passes a lead's sidecar names; a sidecar naming none is not parsed.
+/// The passes a lead's sidecar names; a sidecar naming none is not parsed.
 pub fn passes_named_by(lead: &Path) -> Option<RgbPasses> {
     let data = std::fs::read(sidecar::url_for(lead)).ok()?;
     let key = b"\"rgbPasses\"";
@@ -93,7 +93,7 @@ pub fn passes_named_by(lead: &Path) -> Option<RgbPasses> {
     sidecar::read(lead, oni_decode::decodes_via_mosaic(lead)).ok()?.settings.rgb_passes
 }
 
-/// `CustomFlatFields.load`: decoded once by `decode` at the preview's side and kept as a half-float
+/// Decoded once by `decode` at the preview's side and kept as a half-float
 /// TIFF in working light under its content id; a file loaded before returns its entry. Disk and decode work.
 pub fn load(support: &Path, source: &Path, decode: impl FnOnce(&Path) -> Option<Picture>) -> Result<Entry, Failure> {
     let bytes = std::fs::read(source).map_err(|_| Failure::Undecodable)?;
@@ -165,7 +165,7 @@ impl<'a> Moving<'a> {
     }
 }
 
-/// `Library.moveOut`: the original moved into `folder` under a free name, its sidecar sent to the
+/// The original moved into `folder` under a free name, its sidecar sent to the
 /// system Trash and its index row cleared; the one case where the app moves an original, once confirmed.
 pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>, how: &Moving) -> Option<PathBuf> {
     let url = Path::new(path);
@@ -236,7 +236,7 @@ fn same_content(a: &Path, b: &Path) -> std::io::Result<bool> {
     }
 }
 
-/// `FlatField.preferenceKey`: the three sliders as a hand last left them, kept across sessions,
+/// The three sliders as a hand last left them, kept across sessions,
 /// since a rig is dialled once and every frame scanned on it wants the same dose and colour.
 pub const SLIDERS_KEY: &str = "flatFieldSliders";
 
@@ -262,7 +262,7 @@ pub fn with_remembered(f: &FlatField, kept: Option<[f64; 3]>) -> FlatField {
     FlatField { temperature: (kept[1] as f32).clamp(low, high), tint: (kept[2] as f32).clamp(low, high), ..f.clone() }
 }
 
-/// `CustomFlatFields.source`: the mask read with no colour conversion, the stored values already
+/// The mask read with no colour conversion, the stored values already
 /// the working space's, and its peaks, `CIAreaMaximum` over the whole mask; `None` once the file is gone.
 pub fn read(support: &Path, id: &str) -> Option<Mask> {
     let (width, height, pixels) = read_tiff(&file(support, id))?;

@@ -6,7 +6,7 @@ use oni_i18n::tr;
 /// The editor's RAWs decoded whole as they open (the Settings' choice); off, at LibRaw's half size.
 pub static FULL_DECODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-/// `Negative.previewSide`: the long side every editor render and thumbnail starts from.
+/// The long side every editor render and thumbnail starts from.
 pub const PREVIEW_SIDE: usize = 2000;
 
 /// Scene-linear Rec. 2020, row-major, alpha 1.
@@ -106,7 +106,7 @@ fn mosaic(path: &Path, side: usize, reading: &Reading) -> Result<Decoded, String
     Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None, seed: seed(path) })
 }
 
-/// `RawDecode.alone(longestSide:)`: one file, never its passes, no longer than `side` (`None`: whole).
+/// One file, never its passes, no longer than `side` (`None`: whole).
 pub fn decode_alone(path: &Path, side: Option<f64>) -> Result<Decoded, String> {
     let reading = Reading::default();
     let mut d = match oni_decode::route(path) {
@@ -157,7 +157,7 @@ pub fn shrunk(l: &Linear, side: f64) -> Linear {
     Linear { width: w, height: h, pixels }
 }
 
-/// `RGBPasses.composed`: red from the red pass, green from the green, blue from the blue, on the
+/// Red from the red pass, green from the green, blue from the blue, on the
 /// green pass's extent, the red and blue laid by their registration; a missing pass fails the frame.
 pub(crate) fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl Fn(&Path) -> Result<Decoded, String>) -> Result<Decoded, String> {
     let beside = |name: &str| lead.parent().map_or_else(|| PathBuf::from(name), |f| f.join(name));

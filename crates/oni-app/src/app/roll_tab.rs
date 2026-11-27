@@ -58,7 +58,7 @@ pub(super) enum MaskLine {
     Custom(String),
 }
 
-/// `FlatFieldBlock.options`: none, the shipped mask while it is the frame's, a missing one, then each loaded.
+/// None, the shipped mask while it is the frame's, a missing one, then each loaded.
 pub(super) fn mask_options(flat: &FlatField, entries: &[crate::flat_fields::Entry]) -> Vec<(MaskLine, String)> {
     let mut list = vec![(MaskLine::None, tr("None selected").to_string())];
     if flat.mask == FlatFieldMask::ValoiEasy35V1 {
@@ -78,7 +78,7 @@ pub(super) fn chosen(flat: &FlatField) -> MaskLine {
     }
 }
 
-/// `FlatFieldBlock.choice`: the shipped mask, none yet chosen, or a loaded one.
+/// The shipped mask, none yet chosen, or a loaded one.
 pub(super) fn chose(flat: &FlatField, line: MaskLine) -> FlatField {
     let mut next = flat.clone();
     match line {
@@ -95,7 +95,7 @@ pub(super) fn chose(flat: &FlatField, line: MaskLine) -> FlatField {
     next
 }
 
-/// `FlatFieldBlock.on`: on takes a custom mask yet to be chosen at the whole amount; off keeps the rest.
+/// On takes a custom mask yet to be chosen at the whole amount; off keeps the rest.
 pub fn toggled(flat: &FlatField, on: bool) -> FlatField {
     let mut next = flat.clone();
     if on {

@@ -88,7 +88,7 @@ pub(crate) struct Roll {
     step: Step,
     at: usize,
     flat_pick: Option<String>,
-    /// `FlatFieldBlock.loading`: a picture chosen by Load… being decoded as a mask.
+    /// A picture chosen by Load… being decoded as a mask.
     loading_mask: bool,
     base_frame: usize,
     progress: Option<(usize, usize)>,

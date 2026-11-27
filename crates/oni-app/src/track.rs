@@ -4,21 +4,21 @@
 use std::ops::RangeInclusive;
 use std::time::{Duration, Instant};
 
-/// `DSTrack.fineFactor`: travel per point while Option is held.
+/// Travel per point while Option is held.
 pub const FINE: f32 = 0.2;
 /// The fastest a dragged value reaches the store, one display frame at 120 Hz: the render slot,
 /// one render in flight and the latest waiting, paces the image by each render's landing.
 pub const HAND_INTERVAL: Duration = Duration::from_micros(8_333);
 /// Slint's and AppKit's default double-click interval.
 pub const DOUBLE_CLICK: Duration = Duration::from_millis(500);
-/// `DSScroll.trackpadTravel`: points of travel per point of trackpad glide.
+/// Points of travel per point of trackpad glide.
 pub const TRACKPAD_TRAVEL: f32 = 0.25;
-/// `DSScroll.wheelLine`: points of travel per line of a wheel.
+/// Points of travel per line of a wheel.
 pub const WHEEL_LINE: f32 = 10.0;
-/// `DSScroll.idleWindow`: neither device reports a real end, so this long without an event ends a scroll.
+/// Neither device reports a real end, so this long without an event ends a scroll.
 pub const SCROLL_IDLE: Duration = Duration::from_millis(160);
 
-/// `DSScroll.travel(along:precise:)`: a touch surface's points damped, a wheel's lines spread.
+/// A touch surface's points damped, a wheel's lines spread.
 pub fn scroll_travel(along: f32, precise: bool) -> f32 {
     along * if precise { TRACKPAD_TRAVEL } else { WHEEL_LINE }
 }
@@ -31,7 +31,7 @@ pub enum Bend {
     Centre(f32),
 }
 
-/// `DSSlider.position(of:in:centre:)`: where `value` stands on the track, from 0 to 1.
+/// Where `value` stands on the track, from 0 to 1.
 pub fn position(value: f32, range: &RangeInclusive<f32>, bend: Bend) -> f32 {
     let (low, high) = (*range.start(), *range.end());
     if high <= low {
@@ -185,7 +185,7 @@ mod scroll_tests {
         assert_eq!(SCROLL_IDLE.as_secs_f64(), 0.16);
     }
 
-    /// `DSScroll.selfCheck`: the drag follows the pointer point for point, the scroll a quarter of
+    /// The drag follows the pointer point for point, the scroll a quarter of
     /// it, and a wheel notch is 2 to 5 % of a block's track, `panelWidth - 2 × Space.md`.
     #[test]
     fn the_drag_is_not_damped_and_a_notch_is_a_few_percent_of_the_track() {

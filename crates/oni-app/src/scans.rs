@@ -1,4 +1,4 @@
-//! `Thumbnails.scan`: a frame not yet converted shows the scan as the file holds it, a RAW's own
+//! A frame not yet converted shows the scan as the file holds it, a RAW's own
 //! preview turned upright, never the pipeline's render: about 10 ms against a decode's 400.
 
 use crate::display::{Params, Screen};
@@ -6,7 +6,7 @@ use crate::render;
 use crate::thumbnails::{SIDE, jpeg};
 use std::path::Path;
 
-/// `Thumbnails.isConverted`: the settings differ from the frame taken back to unconverted, or its
+/// The settings differ from the frame taken back to unconverted, or its
 /// framing was touched, which the scan's own preview would drop (beyond Swift).
 pub fn is_converted(settings: &oni_settings::PipelineSettings) -> bool {
     !settings.geometry.is_neutral() || *settings != oni_core::parameters::unconverted(settings)
@@ -98,7 +98,7 @@ mod tests {
         assert!(is_converted(&moved), "twin: an edit converts it");
     }
 
-    /// `Thumbnails.scanChecks`: a frame measured on its roll shows the render and reset its scan
+    /// A frame measured on its roll shows the render and reset its scan
     /// again; a crop alone shows the render, which the scan's preview would show uncropped (owner's call).
     #[test]
     fn a_measured_frame_shows_the_render_and_a_crop_alone_its_framing() {

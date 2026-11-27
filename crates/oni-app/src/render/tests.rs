@@ -188,7 +188,7 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     assert!((placed.height - 187.5).abs() < 1.0, "{placed:?}");
 }
 
-/// `Loupe.selfCheck`: the loupe shows the exported file's pixels over its region; cropped before
+/// The loupe shows the exported file's pixels over its region; cropped before
 /// the pipeline, the blurs read invented rows along the border and the same region diverges.
 #[test]
 fn the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not() {

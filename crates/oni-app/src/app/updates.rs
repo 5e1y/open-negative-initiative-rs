@@ -69,7 +69,7 @@ impl Updates {
 }
 
 impl Ctl {
-    /// `Updates.start()`: idempotent, so the first scheduled check is armed once.
+    /// Idempotent, so the first scheduled check is armed once.
     pub(super) fn start_updates(self: &Rc<Self>) {
         let automatic = self.state.borrow().updates.updater.as_ref().is_some_and(|u| u.automatic);
         if automatic && self.state.borrow().updates.timer.is_none() {

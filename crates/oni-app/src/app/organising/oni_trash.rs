@@ -189,7 +189,7 @@ impl Ctl {
         self.restore(&all);
     }
 
-    /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it; a destructive key
+    /// The sheet over the window until a key answers it; a destructive key
     /// is red and takes no Return, and quitting's alert keeps Cancel the default.
     pub(in crate::app) fn ask(&self, title: &str, message: &str, key: &str, destructive: bool, pending: Pending) {
         let quitting = matches!(pending, Pending::QuitAnyway);
