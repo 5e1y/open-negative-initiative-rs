@@ -14209,5 +14209,12 @@
     "title": "A roll folder's disk checks in a file of their own",
     "status": "done",
     "detail": "roll_folder/tests.rs stood at 398 lines. The exFAT disk image, its AppleDouble twins and the locked-file retry go to roll_folder/tests/disks.rs, moved line for line; the moves, triplets, stray sidecars and redo stay (281 lines). oni-library's tests green."
+  },
+  {
+    "id": 4072,
+    "type": "refactor",
+    "title": "LocalSend's transfers stopped halfway in a file of their own",
+    "status": "done",
+    "detail": "tests/transfer.rs stood at 398 lines. The half upload and the three checks on a transfer cancelled by the sender, dropped by it and cancelled by the receiver go to tests/transfer/cancelling.rs, a module of the same binary; transfer.rs keeps the rest (338 lines). The 19 transfer checks green."
   }
 ]
