@@ -43,8 +43,15 @@ fn printed(stock: VirtualStock) -> Vec<[f32; 4]> {
     (-8..=8).map(|h| GREY * 2f32.powf(h as f32 / 2.0)).map(|v| cpu::stage47(cpu::virtual_negative([v, v, v, 1.0], &baked.kernel, &baked.table), &k)).collect()
 }
 
+// The catalogue is the process's one: the two readings install it in turn, never side by side.
 #[test]
-fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
+fn a_persons_stock_and_paper_files_are_read_as_they_are() {
+    films();
+    papers();
+}
+
+/// A person's stock added, edited, refused and removed as its file is.
+fn films() {
     let dir = scratch("stock-files-films");
     let mut loader = Loader::new(dir.clone());
     let first = loader.reload().expect("the first read builds");
@@ -96,8 +103,8 @@ fn a_persons_stock_is_added_edited_refused_and_removed_as_its_file_is() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-#[test]
-fn a_persons_paper_is_listed_and_bakes() {
+/// A person's paper listed and baked, a fit that is no fit refused.
+fn papers() {
     let dir = scratch("stock-files-papers");
     let mut v = shipped("kodak-royal-digital.json");
     v["key"] = "kodak-royal-digital-mine".into();

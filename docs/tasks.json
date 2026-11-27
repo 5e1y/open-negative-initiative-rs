@@ -14573,5 +14573,12 @@
     "title": "WRAPPED 26 is a keycap of the design system with a holographic face, and the bar never passes the window's edge for it",
     "status": "done",
     "detail": "The owner wanted the year's key as a keycap, and saw the bar run off a small screen because of it. Reproduced: in the editor at the narrowest window the bar's last key ended at 1,095 pt of the 1,084 the bar's end allows, already in English: the plate of #3912 was a component of its own, counted in the bar's widths at its full size and never folded. The key is now the design system's keycap, the same body, relief and travel as EDIT beside it (Button, `foil`): its face alone is the welcome gifts' holographic foil (ds/holo.slint, HoloFace, the wordmark in the Holo global), the inks sliding and the sheen crossing under the hand as before, hover and press the keycap's own. It stands in the bar as its other keycaps do, a glyph over its word (year_key.slint), and enters the bar's fold rule: its word is the first to go, kept only where every word of the bar has its room beside it, then the flat keys' words, then the gallery's keycaps'; bare, it is a square holographic keycap, counted in the widths that decide each fold. A check measures it on the narrowest window and on a 13-inch screen, in English, French and Spanish, in the editor, in the gallery and while a roll is prepared: the bar's last key ends inside the window in the eighteen cases; twin: on a window half the narrowest the same measure sees it past the edge. The check reads the three languages on the compiled interface with Slint's element information (SLINT_EMIT_DEBUG_INFO=1 cargo test --profile app -p oni-app --test window -- toolbar_fit); on a test build it reads English alone, as the bar's other checks do. Known: in Spanish, through the season, the gallery's keycaps wear their glyphs alone at the narrowest window, the year's key taking 72 pt of the bar."
+  },
+  {
+    "id": 4094,
+    "type": "fix",
+    "title": "The person's stock files are read by one check, the catalogue being the process's one",
+    "status": "done",
+    "detail": "stock_files' two checks each installed the process's one stock catalogue, so run side by side one could replace the other's between its install and its asserts: a person's paper went missing from the list (#4052). They are now two readings one check makes in turn. Under twelve busy cores the two checks failed 9 runs in 60, the one check 0 in 60; calm, both 40 in 40."
   }
 ]
