@@ -14237,5 +14237,12 @@
     "title": "The archive's tree tests in a file of their own",
     "status": "done",
     "detail": "library/tests.rs stood at the 400-line ceiling. Its two checks on the tree laid again from the rows (the same rows keep the tree and a medal moves its row alone; a tree cut off the thread) go to library/tests/tree.rs, moved line for line; the shared synthetic survey stays, filtered.rs reads it (349 lines). oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4075,
+    "type": "refactor",
+    "title": "The library index's reads in a file of their own",
+    "status": "done",
+    "detail": "index.rs stood at 394 lines. Its reading section (all, in_trash, trashed_frames, row, with_fingerprint, shown, count) and the row decoder go to index/reading.rs as an impl block of the same type, moved line for line; forget.rs still reads the decoder through index. index.rs keeps the entry, the schema and the writes (297 lines). oni-library's tests green."
   }
 ]
