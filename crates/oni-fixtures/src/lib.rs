@@ -2,6 +2,8 @@
 //! Beside them, the empty scratch folder a check writes in.
 
 pub mod dng;
+#[cfg(unix)]
+pub mod fifo;
 pub mod tiff;
 
 use std::path::PathBuf;

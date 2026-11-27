@@ -243,11 +243,15 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     #[cfg(unix)]
     {
         let pipe = root.join("Rig/slow.tif");
-        assert!(std::process::Command::new("mkfifo").arg(&pipe).status().unwrap().success());
+        oni_fixtures::fifo::make(&pipe);
         let panel = std::fs::read(&panel_file).unwrap();
+        // The panel's bytes handed once the load opens the pipe; the flag returned says its read is over.
         let give = |pipe: &Path| {
             let (pipe, panel) = (pipe.to_path_buf(), panel.clone());
-            std::thread::spawn(move || std::fs::write(pipe, panel).unwrap());
+            let ended = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let over = ended.clone();
+            std::thread::spawn(move || oni_fixtures::fifo::give(&pipe, &panel, || {}, || over.load(std::sync::atomic::Ordering::SeqCst)));
+            ended
         };
         prepare("R1");
         *chosen.borrow_mut() = Some(pipe.clone());
@@ -259,14 +263,16 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
         p.invoke_mask_chosen(line("None selected"));
         rig.pump();
         assert!(!p.get_flat_masked());
-        give(&pipe);
+        let ended = give(&pipe);
         rig.until("the late mask landed", Duration::from_secs(30), || !p.get_loading_flat());
+        ended.store(true, std::sync::atomic::Ordering::SeqCst);
         rig.settle();
         assert!(!p.get_flat_masked(), "R1's mask never lands on R2");
         // Twin: the same load with R2 still shown names the panel as its mask.
         p.invoke_load_flat();
-        give(&pipe);
+        let ended = give(&pipe);
         rig.until("the mask landed", Duration::from_secs(30), || !p.get_loading_flat());
+        ended.store(true, std::sync::atomic::Ordering::SeqCst);
         assert!(p.get_flat_masked() && p.get_mask_title() == "panel");
     }
 }

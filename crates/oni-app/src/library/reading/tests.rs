@@ -1,5 +1,4 @@
 use super::*;
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -46,7 +45,7 @@ impl Held {
             let mut piped = |_: Vec<Entry>, _: bool, _: &Arc<Survey>| {
                 if std::mem::take(&mut first) {
                     std::fs::remove_file(&pipe_at).unwrap();
-                    assert!(std::process::Command::new("mkfifo").arg(&pipe_at).status().unwrap().success());
+                    oni_fixtures::fifo::make(&pipe_at);
                 }
             };
             read_rows(&folder, &index, &place, &|| alive.load(Ordering::SeqCst), &mut piped);
@@ -55,17 +54,7 @@ impl Held {
         while !std::fs::symlink_metadata(&side).is_ok_and(|m| m.file_type().is_fifo()) {
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
-        // Opening the pipe to write waits for the read to open it: the read is past any check before it.
-        let mut pipe = std::fs::File::options().write(true).open(&side).unwrap();
-        meanwhile();
-        pipe.write_all(b"{}").unwrap();
-        drop(pipe);
-        // macOS can leave a FIFO's reader waiting after its last writer closed (5 in 3000 runs): each
-        // further open and close for writing, read too so it never blocks, hands it the end of the file.
-        while !reading.is_finished() {
-            drop(std::fs::File::options().read(true).write(true).open(&side));
-            std::thread::sleep(std::time::Duration::from_millis(20));
-        }
+        oni_fixtures::fifo::give(&side, b"{}", meanwhile, || reading.is_finished());
         reading.join().unwrap();
     }
 }

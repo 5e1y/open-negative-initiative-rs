@@ -14405,5 +14405,12 @@
     "status": "done",
     "title": "The welcome stage's pace is the crate's own, as the door it passes",
     "detail": "`Stage::pace` takes the crate-private render door since #3893: it is called inside the crate alone, so it is `pub(crate)` and `Door` stays private; `open_cost`'s step closure holds no `mut`. `scripts/lint` green."
+  },
+  {
+    "id": 4084,
+    "type": "refactor",
+    "title": "One way to hold a read on a FIFO, shared by the two checks that do",
+    "status": "done",
+    "detail": "oni_fixtures::fifo makes a FIFO and gives it: once a reader opens it, the check acts, writes the bytes and closes, then hands the reader its end of the file until the read is over, the macOS quirk of #4083 named there alone. The superseded-read check and the window check on a mask loading while its roll is left both hold their read through it; the window check's two loads now hand the end of the file until the load has landed. The window check green, the unit check 100 runs in 100, oni-app's 585 tests green."
   }
 ]
