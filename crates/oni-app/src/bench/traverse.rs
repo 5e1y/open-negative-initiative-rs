@@ -55,6 +55,13 @@ pub(super) fn traverse(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             return;
         }
         held.stop();
+        // Where the window's longest wait between two frames fell, in the session's clock, to read beside the log.
+        let frames = drawn.borrow().borrow().clone();
+        let worst = frames.windows(2).max_by_key(|p| p[1].0 - p[0].0).map(|p| (p[0].0, p[1].0 - p[0].0));
+        if let Some((at, gap)) = worst {
+            let (gap, at) = (gap.as_secs_f64() * 1000.0, at.saturating_duration_since(began.get()).as_secs_f64());
+            crate::timing::line(&format!("bench, traverse: the longest frame gap, {gap:.0} ms, began {at:.3} s after the double click"));
+        }
         let s = ctl.state.borrow();
         let report = format!(
             "bench, traverse: {}\n{}\n  {}",

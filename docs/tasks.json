@@ -14608,5 +14608,12 @@
     "title": "A sharp render is timed from the rest that asks it",
     "status": "done",
     "detail": "The render thread re-asks the last job drawn on a digital photo's preview scan once the hand has rested 150 ms, and that job kept the instant its first draw was asked: its log line read 160 ms end to end, and #4095's line a 155 ms wait behind no task, both for a pause the thread makes on purpose. The sharp job now takes the instant the rest ends. On the traverse bench the 155 ms waits are gone from the log; the frames the window draws are unchanged. oni-app's 590 unit tests and clippy green."
+  },
+  {
+    "id": 4099,
+    "type": "feature",
+    "title": "The traverse bench says when the window's longest frame gap began",
+    "status": "done",
+    "detail": "One line, the longest gap between two frames the window drew and its start counted from the double click, to read beside the session's log."
   }
 ]
