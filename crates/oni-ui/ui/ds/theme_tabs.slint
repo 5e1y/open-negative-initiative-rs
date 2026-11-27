@@ -54,8 +54,11 @@ export global MedalStyle {
     out property <float> reached: 0.3;
     out property <float> lip: 1.5;
     out property <float> figure: 0.6;
-    // A medal given lands from `landing` of its side and settles within the curtain's 140 ms.
+    // A medal given lands from `landing` of its side within the curtain's 140 ms, a glint crossing its
+    // foil as it strikes; one taken off sinks to `leaving` of its side as it fades, in the same time.
     out property <float> landing: 1.3;
+    out property <float> glint: 0.45;
+    out property <float> leaving: 0.6;
     out property <duration> settle: DS.motion-curtain-duration;
     in-out property <float> press: 0.86;
     // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.

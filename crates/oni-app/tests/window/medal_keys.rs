@@ -33,7 +33,7 @@ fn inside((x0, y0, x1, y1): Area, (x, y): (f32, f32)) -> bool {
     x >= x0 && x < x1 && y >= y0 && y < y1
 }
 
-/// The medals drawn in a box, left to right: each coin's side as it stands now.
+/// The medals drawn in a box, left to right: each coin's side as it stands now, a faded one left out.
 fn coins(w: &MainWindow, area: Area) -> Vec<f32> {
     let mut found: Vec<(f32, f32)> = w
         .root_element()
@@ -44,7 +44,8 @@ fn coins(w: &MainWindow, area: Area) -> Vec<f32> {
         .into_iter()
         .filter_map(|e| {
             let (at, size) = (e.absolute_position(), e.size());
-            inside(area, (at.x + size.width / 2.0, at.y + size.height / 2.0)).then_some((at.x, size.width))
+            let drawn = e.computed_opacity() > 0.01;
+            (drawn && inside(area, (at.x + size.width / 2.0, at.y + size.height / 2.0))).then_some((at.x, size.width))
         })
         .collect();
     found.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -196,4 +197,26 @@ pub(crate) fn the_tile_under_the_hand_takes_a_medal_and_a_medal_laid_lands() {
     let bar_landed = widest(rig, w, bar_area(w), || medal_of(w, "B") == 1);
     eprintln!("the bar's gold laid on B: {bar_landed:.1} pt");
     assert!(bar_landed > bar_widest + 1.0, "the bar's medal laid by the key lands: {bar_landed:.1} pt");
+    settled(rig);
+
+    // The key 0 on B: its gold sinks and fades on its tile within the settle, then is gone.
+    lay(rig, "0");
+    let start = Instant::now();
+    while start.elapsed() < Duration::from_millis(SLOWED as u64 * 70) {
+        rig.pump();
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    let leaving = coins(w, b);
+    settled(rig);
+    eprintln!("B's gold taken off: {leaving:?} halfway, its side {side}");
+    assert_eq!(medal_of(w, "B"), 0, "the key 0 takes the medal off");
+    assert!(leaving.len() == 1 && leaving[0] < side - 0.5 && leaving[0] > side * 0.5, "the medal taken off sinks as it leaves: {leaving:?}");
+    assert!(coins(w, b).is_empty(), "and is gone once settled");
+    // Twin: under Reduce Motion a medal taken off is gone at once.
+    lay(rig, "1");
+    settled(rig);
+    w.global::<Motion>().set_reduced(true);
+    lay(rig, "0");
+    assert!(coins(w, b).is_empty(), "under Reduce Motion the medal taken off is gone at once");
+    w.global::<Motion>().set_reduced(false);
 }

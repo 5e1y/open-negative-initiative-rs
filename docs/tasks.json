@@ -14552,5 +14552,12 @@
     "title": "The disk-image probe becomes the unplugged window check",
     "status": "done",
     "detail": "tests/window/unplugged.rs attaches its own disk image under /Volumes (hdiutil, detached however the check ends), runs on the system's volumes, and asserts each step: the disk said away at once, an edit kept and written once back without leaving the photo, the gallery's 'Not Connected' banner, a photo opened while away saying its disk is not connected (twin: never 'its disk is here'), then opening by itself once back."
+  },
+  {
+    "id": 4024,
+    "type": "ui",
+    "status": "done",
+    "title": "A medal laid, turned or taken off moves the same way wherever it shows",
+    "detail": "Owner: rework the medal animations a little, everywhere a medal shows. One Medal component carries it on the tile, the filmstrip's tile, the tile's keys under the hand and the status bar's keys: laid or turned by a hand, it lands from 1.3 of its side on the lively spring with a glint over its foil, settled within the curtain's 140 ms; taken off, it sinks to 0.6 of its side and fades in the same time instead of vanishing; a key passing between given and the shade turns its light. A scroll or a selection moves nothing; Reduce Motion lays and takes off at once."
   }
 ]

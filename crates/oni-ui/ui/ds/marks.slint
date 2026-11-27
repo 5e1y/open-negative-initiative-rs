@@ -1,7 +1,7 @@
 // The marks laid over a picture, a control or the canvas: a disc, a medal, a selection's ring, a
 // guide's ring and a stroke's trace.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, Motion, TileStyle, MedalStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, Motion, TileStyle, MedalStyle, Ease } from "theme.slint";
 
 // A disc of one ink: a medal, a lamp, a switch's thumb, a tab's swatch or mark, a bullet.
 export component Dot inherits Rectangle {
@@ -33,22 +33,32 @@ export component Medal inherits Rectangle {
     // hand, `reached`, its face lifts.
     in property <bool> blank;
     in property <bool> reached;
-    // Whom it is given to: given on the same holder, a hand laid it, so it lands; given as the holder
-    // changes, a scroll's or a selection's, it stands still.
+    // Whom it is given to: given or taken off on the same holder, a hand did it, so it lands or leaves;
+    // as the holder changes, a scroll's or a selection's, it stands still.
     in property <string> holder;
     property <bool> given: !root.blank && root.rank > 0;
     property <string> worn: root.given ? root.holder + "\n" + root.rank : root.holder;
     property <string> held;
-    // Its side, from `MedalStyle.landing` the instant it lands to 1 once it settles.
+    property <int> held-rank;
+    // The place a hand just took off, struck as it leaves and faded out once there, until the next change.
+    property <int> leaving-rank;
+    property <int> struck: root.rank > 0 ? root.rank : root.leaving-rank;
+    // Its side, from `MedalStyle.landing` the instant it lands to 1 once it settles, down to
+    // `MedalStyle.leaving` as it leaves; the glint over its light fades as it settles.
     property <float> drop: 1;
+    property <float> glint;
+    property <float> fade: 1;
     property <bool> dropping;
     property <length> side: root.size * root.drop;
-    property <float> light: root.given ? 1 : root.reached ? MedalStyle.reached : MedalStyle.shade;
+    // A key's medal passing between given and the shade turns its light rather than jumping.
+    property <float> lit: root.given || root.leaving-rank > 0 ? 1 : root.reached ? MedalStyle.reached : MedalStyle.shade;
+    animate lit { duration: Motion.reduced ? 0ms : MedalStyle.settle; easing: Ease.firm; }
+    property <float> light: root.lit + root.glint;
     // The ruled ring's line, 0.4 pt at the 12 pt size.
     property <length> rule: root.side * 0.4 / 12;
-    property <color> deep: MedalStyle.deeps[root.rank];
-    property <color> body: MedalStyle.bodies[root.rank];
-    property <color> bright: MedalStyle.brights[root.rank];
+    property <color> deep: MedalStyle.deeps[root.struck];
+    property <color> body: MedalStyle.bodies[root.struck];
+    property <color> bright: MedalStyle.brights[root.struck];
     // The ramp at `t` (deep to body over 0..1, body to bright over 1..1.6), then DSFoil's 1/1.15 gamma.
     pure function ch(d: float, b: float, l: float, t: float) -> float {
         255 * pow(clamp((t < 1 ? d + (b - d) * t : b + (l - b) * (t - 1) / 0.6) / 255, 0, 1), 1 / 1.15)
@@ -62,20 +72,38 @@ export component Medal inherits Rectangle {
     pure function at(a: float) -> color {
         root.tone(root.light * (0.70 + MedalStyle.foil-spin * pow(abs(cos((a - 328.5) * 1deg)), 4)))
     }
-    init => { self.held = root.holder; }
+    init => {
+        self.held = root.holder;
+        self.held-rank = root.given ? root.rank : 0;
+    }
     changed worn => {
-        if (root.given && root.holder == self.held && !Motion.reduced) {
-            self.dropping = false;
+        let by-hand = root.holder == self.held && !Motion.reduced;
+        self.dropping = false;
+        self.leaving-rank = 0;
+        self.drop = 1;
+        self.glint = 0;
+        self.fade = 1;
+        if (by-hand && root.given) {
             self.drop = MedalStyle.landing;
+            self.glint = MedalStyle.glint;
             self.dropping = true;
             self.drop = 1;
+            self.glint = 0;
+        } else if (by-hand && !root.blank && root.rank == 0 && self.held-rank > 0) {
+            self.leaving-rank = self.held-rank;
+            self.dropping = true;
+            self.drop = MedalStyle.leaving;
+            self.fade = 0;
         }
         self.held = root.holder;
+        self.held-rank = root.given ? root.rank : 0;
     }
-    animate drop { duration: self.dropping ? MedalStyle.settle : 0ms; easing: ease-out-back; }
+    animate drop, glint { duration: self.dropping ? MedalStyle.settle : 0ms; easing: Ease.lively; }
+    animate fade { duration: self.dropping ? MedalStyle.settle : 0ms; easing: Ease.firm; }
     width: root.size;
     height: root.size;
-    visible: root.rank > 0;
+    visible: root.struck > 0;
+    opacity: root.struck == 0 ? 0 : root.fade;
     coin := Rectangle {
         x: (root.size - root.side) / 2;
         y: self.x;
@@ -119,8 +147,8 @@ export component Medal inherits Rectangle {
             }
             // The place sunk as the key that lays it: given, its foot's wall catches the lamp a rule
             // below; in the shade, that lit wall alone shows.
-            Figure { y: root.rule; text: root.rank; font-size: root.side * MedalStyle.figure; color: root.given ? root.tone(MedalStyle.lip) : transparent; }
-            Figure { text: root.rank; font-size: root.side * MedalStyle.figure; color: root.given ? MedalStyle.struck : root.tone(MedalStyle.lip); }
+            Figure { y: root.rule; text: root.struck; font-size: root.side * MedalStyle.figure; color: root.given || root.leaving-rank > 0 ? root.tone(MedalStyle.lip) : transparent; }
+            Figure { text: root.struck; font-size: root.side * MedalStyle.figure; color: root.given || root.leaving-rank > 0 ? MedalStyle.struck : root.tone(MedalStyle.lip); }
         }
     }
 }
