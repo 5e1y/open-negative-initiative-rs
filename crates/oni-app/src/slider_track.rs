@@ -2,22 +2,60 @@
 
 use crate::fields::Field;
 use crate::track;
-use std::ops::RangeInclusive;
+use std::ops::{Deref, RangeInclusive};
+
+/// The range a field's track spans, in the shown sense, and the levels it notches on, stored values lowest first.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Track {
+    pub range: RangeInclusive<f32>,
+    pub levels: Option<Vec<f32>>,
+}
+
+impl From<RangeInclusive<f32>> for Track {
+    fn from(range: RangeInclusive<f32>) -> Track {
+        Track { range, levels: None }
+    }
+}
+
+impl Deref for Track {
+    type Target = RangeInclusive<f32>;
+    fn deref(&self) -> &RangeInclusive<f32> {
+        &self.range
+    }
+}
+
+impl Track {
+    /// The notch nearest a stored value, and the notches' count.
+    fn notch(&self, stored: f32) -> Option<(usize, usize)> {
+        let levels = self.levels.as_deref().filter(|l| !l.is_empty())?;
+        Some((oni_settings::effect_levels::nearest(levels, stored), levels.len()))
+    }
+}
 
 /// An arrow's step, or a number typed over the readout: `by` units of its last digit from the figure shown,
 /// laid on that digit's grid, held on the track.
-pub fn stepped(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>) -> f32 {
+pub fn stepped(f: Field, stored: f32, by: i32, track: &Track) -> f32 {
     stepped_on(f, stored, by, track, None)
 }
 
-/// `stepped` on a photo whose scan's long side is `long` full-resolution pixels, the digit its readout shows.
-pub fn stepped_on(f: Field, stored: f32, by: i32, track: &RangeInclusive<f32>, long: Option<f64>) -> f32 {
+/// `stepped` on a photo whose scan's long side is `long` full-resolution pixels, the digit its readout shows; on a
+/// notched track, any step is one notch its way.
+pub fn stepped_on(f: Field, stored: f32, by: i32, track: &Track, long: Option<f64>) -> f32 {
+    if let (Some((at, n)), Some(levels)) = (track.notch(stored), track.levels.as_ref()) {
+        return levels[(at as i32 + by.signum()).clamp(0, n as i32 - 1) as usize];
+    }
     let (readout, figure) = f.figure(stored, long);
     // Counted in units of the digit the readout writes, rounded as it writes it: a tie to the even one.
     let per_unit = readout.scaled(1.0) * 10f64.powi(readout.places() as i32);
     let digit = (f64::from(figure) * per_unit).round_ties_even();
     let shown = f.unfigured(((digit + f64::from(by)) / per_unit) as f32, long);
     f.shown(shown.clamp(*track.start(), *track.end()))
+}
+
+/// A number typed over the readout, `by` units of its last digit: on a notched track, the notch nearest it.
+pub fn typed_on(f: Field, stored: f32, by: i32, track: &Track, long: Option<f64>) -> f32 {
+    let typed = stepped_on(f, stored, by, &Track::from(track.range.clone()), long);
+    track.levels.as_deref().map_or(typed, |l| oni_settings::effect_levels::snapped(l, typed))
 }
 
 /// A number as a readout or a hand writes it, and its places after the point: `+`, `-` or U+2212
@@ -89,25 +127,50 @@ where
     window.global::<crate::Readouts>().on_pressed(|readout, steps| pressed(&readout, steps).into());
 }
 
-pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
+pub(crate) fn track_range(f: Field) -> Track {
     let (low, high) = f.track();
-    low..=high
+    Track::from(low..=high)
 }
 
 /// The track a field spans on these settings: `Knob::range`, a monochrome frame's or a plain file's
-/// own, in the shown sense.
-pub fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> RangeInclusive<f32> {
+/// own, in the shown sense, and the levels it notches on, evenly spaced along it.
+pub fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> Track {
     let (low, high) = f.knob().range(s).unwrap_or(f.spec().range);
-    if f.spec().inverted { -high..=-low } else { low..=high }
+    Track { range: if f.spec().inverted { -high..=-low } else { low..=high }, levels: f.levels(s) }
 }
 
 /// `position` and `stored_at` on a settings' own track.
-pub fn position_on(f: Field, stored: f32, track: &RangeInclusive<f32>) -> f32 {
-    track::position(f.shown(stored), track, f.spec().bend)
+pub fn position_on(f: Field, stored: f32, track: &Track) -> f32 {
+    match track.notch(stored) {
+        Some((at, n)) => if n > 1 { at as f32 / (n - 1) as f32 } else { 0.0 },
+        None => track::position(f.shown(stored), track, f.spec().bend),
+    }
 }
 
-pub fn stored_on(f: Field, at: f32, track: &RangeInclusive<f32>) -> f32 {
-    f.shown(track::value(at, track, f.spec().bend))
+pub fn stored_on(f: Field, at: f32, track: &Track) -> f32 {
+    match track.levels.as_deref().filter(|l| !l.is_empty()) {
+        Some(levels) => levels[(track::clamped(at) * (levels.len() - 1) as f32).round() as usize],
+        None => f.shown(track::value(at, track, f.spec().bend)),
+    }
+}
+
+/// How many notches each field's track has on these settings, by its index; none on an even track.
+pub fn notches(s: &oni_settings::PipelineSettings) -> Vec<i32> {
+    Field::ALL.iter().map(|f| f.levels(s).map_or(0, |l| l.len() as i32)).collect()
+}
+
+/// The notch a stored value lies on, on these settings; none on an even track.
+pub fn notch_of(f: Field, s: &oni_settings::PipelineSettings, stored: f32) -> Option<usize> {
+    track_on(f, s).notch(stored).map(|(at, _)| at)
+}
+
+/// A field's readout on these settings: on a notched track, its number then its notch's name.
+pub fn readout_named(f: Field, s: &oni_settings::PipelineSettings, stored: f32, readout: String) -> String {
+    let track = track_on(f, s);
+    match track.notch(stored).and_then(|(at, _)| f.level_name(s, at)) {
+        Some(name) => format!("{readout} · {name}"),
+        None => readout,
+    }
 }
 
 /// Where each field rests on its track on these settings, by its index: its tick, which a double click
@@ -117,7 +180,7 @@ pub fn rests(s: &oni_settings::PipelineSettings) -> Vec<f32> {
 }
 
 /// `stored_on`, but rest itself where a drag holds on rest's place, as the double click lands it.
-pub fn landed(f: Field, at: f32, track: &RangeInclusive<f32>, rest: f32) -> f32 {
+pub fn landed(f: Field, at: f32, track: &Track, rest: f32) -> f32 {
     if (at - position_on(f, rest, track)).abs() < 1e-5 { rest } else { stored_on(f, at, track) }
 }
 
@@ -287,6 +350,41 @@ mod tests {
     }
 
     #[test]
+    fn a_digital_photos_film_effects_walk_their_levels_one_notch_a_step() {
+        use oni_settings::effect_levels::{GRAIN_AMOUNT, HALATION_SIZE};
+        let s = PipelineSettings::rest(ConversionMode::Digital, true).picking(oni_settings::VirtualStock::of("kodak-portra-800"));
+        let (grain, track) = (Field::GrainAmount, track_on(Field::GrainAmount, &s));
+        assert_eq!(track.levels.as_deref(), Some(&GRAIN_AMOUNT[..]));
+        // Each level at its own place, evenly along the track, and back.
+        for (i, v) in GRAIN_AMOUNT.iter().enumerate() {
+            let at = position_on(grain, *v, &track);
+            assert!((at - i as f32 / 5.0).abs() < 1e-6 && stored_on(grain, at, &track) == *v, "{v} at {at}");
+        }
+        // A key's press, the value editor's step and an arrow's are each one notch; held at the ends.
+        assert_eq!(stepped_on(grain, 0.1719, 3, &track, None), 0.2545);
+        assert_eq!(stepped_on(grain, 0.1719, -1, &track, None), 0.11);
+        assert_eq!(stepped_on(grain, 0.5708, 10, &track, None), 0.5708);
+        // A drag between two notches lands on the nearer.
+        assert_eq!(stored_on(grain, 0.52, &track), 0.2545);
+        // A number typed lands on the level nearest it: 30 % is Medium's 25 %, 33 % Strong's 38 %.
+        let typed = |text: &str| typed_on(grain, 0.11, typed_steps(&grain.readout(0.11), text), &track, None);
+        assert_eq!((typed("30"), typed("33")), (0.2545, 0.3783));
+        // The readout names its notch, the rest's tick on one of them.
+        assert_eq!(readout_named(grain, &s, 0.2545, grain.readout(0.2545)), "25% · Medium");
+        let halation = track_on(Field::HalationSize, &s);
+        assert_eq!(halation.levels.as_deref(), Some(&HALATION_SIZE[..]));
+        assert_eq!(rests(&s)[Field::HalationSize.index() as usize], 0.5);
+        assert_eq!(notches(&s)[Field::GrainAmount.index() as usize], 6);
+        // Twin: a scanned negative's sliders keep their even tracks and their digit's steps.
+        let scan = PipelineSettings::rest(ConversionMode::Negative, true);
+        assert_eq!(track_on(Field::Exposure, &scan).levels, None);
+        assert_eq!(notches(&scan).iter().sum::<i32>(), 0);
+        assert_eq!(stepped_on(Field::Exposure, 0.5, 3, &track_on(Field::Exposure, &scan), None), 0.53);
+        // Twin: the same step on an even track moves a digit, never a whole notch.
+        assert_ne!(stepped_on(grain, 0.1719, 3, &track_range(grain), None), 0.2545);
+    }
+
+    #[test]
     fn a_monochrome_frame_spans_its_own_contrast_and_a_value_round_trips() {
         let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
         let colour = PipelineSettings::rest(ConversionMode::Negative, true);
@@ -301,4 +399,3 @@ mod tests {
         assert!((stored_on(Field::BlackPoint, position_on(Field::BlackPoint, -0.1, &black), &black) + 0.1).abs() < 1e-5);
     }
 }
-

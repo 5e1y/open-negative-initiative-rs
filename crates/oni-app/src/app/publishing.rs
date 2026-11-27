@@ -64,6 +64,14 @@ impl Ctl {
             let marked = store::channel_marked(s.store.settings());
             (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), crate::slider_track::rests(s.store.settings()), marked)
         };
+        let notches = crate::slider_track::notches(self.state.borrow().store.settings());
+        let laid = g.get_notches();
+        let renotched: Vec<Field> = Field::ALL.into_iter().filter(|f| laid.row_data(f.index() as usize) != notches.get(f.index() as usize).copied()).collect();
+        if !renotched.is_empty() {
+            g.set_notches(ModelRc::new(VecModel::from(notches)));
+            // A track that gains or loses its notches names them, or no more, though its value stays.
+            self.publish_readouts(renotched);
+        }
         for (b, on) in modified {
             set_modified(&g, b, on);
         }

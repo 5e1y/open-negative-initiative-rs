@@ -25,7 +25,7 @@ impl Grain {
     /// The width a real Portra 800 scan's grain is matched at, every film's for now.
     pub const SIZE_REST: f32 = 30.0;
     /// The Grain a digital photo opens with (owner's call): the grain of a real Portra 800 scan.
-    pub const DIGITAL_AMOUNT: f32 = 0.25;
+    pub const DIGITAL_AMOUNT: f32 = 0.2545;
     /// The film frame's long side, in micrometres, which the scan's long side stands for: a 135 frame's.
     pub const FRAME_LONG: f64 = 36_000.0;
 

@@ -85,13 +85,15 @@ pub(crate) fn a_press_on_grains_rail_lays_the_grain_and_renders_it() {
     // Grain size reads in the photo's own full-resolution pixels.
     let long = ctl.state.borrow().scan_long().expect("the decode landed");
     println!("a scan {long} px long: Grain size {}", g.get_grain_size_readout());
-    assert_eq!(g.get_grain_size_readout().to_string(), format!("{:.1} px", oni_settings::blocks::Grain::pixels(rest.size, long)), "on a scan {long} long");
+    let readout = g.get_grain_size_readout().to_string();
+    assert!(readout.starts_with(&format!("{:.1} px · ", oni_settings::blocks::Grain::pixels(rest.size, long))), "{readout} on a scan {long} long");
     let renders = ctl.state.borrow().renders();
     press_rail(rig, w, "Grain", 0.8);
     rig.until("the grain rendered", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
     rig.settle();
     let laid = grain();
-    assert!((laid.amount - 0.8).abs() < 0.03, "the press lays Grain at its place on the rail: {laid:?}");
+    // The rail's notch nearest the press: the fifth of six.
+    assert_eq!(laid.amount, oni_settings::effect_levels::GRAIN_AMOUNT[4], "the press lays Grain on the notch under it: {laid:?}");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the press reached Grain alone, its size at rest.
     assert_eq!(laid.size, rest.size, "Grain size moved: {laid:?}");
@@ -145,9 +147,7 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
         press_rail(rig, w, "Halation size", 0.95);
     });
     let laid = halation();
-    let (top, size) = (oni_settings::blocks::Halation::AMOUNT_RANGE.1, oni_settings::blocks::Halation::SIZE_RANGE);
-    let on_track = |v: f32, (low, high): (f32, f32)| (v - low) / (high - low);
-    assert!((on_track(laid.amount, (0.0, top)) - 0.95).abs() < 0.03 && (on_track(laid.size, size) - 0.95).abs() < 0.03, "the presses lay Halation and its size: {laid:?}");
+    assert_eq!((laid.amount, laid.size), (0.92, 400.0), "the presses lay Halation and its size on their top notches: {laid:?}");
     assert!(g.get_film_effects_modified(), "the block's Reset shows");
     // Twin: the presses reached Halation alone, the grain at rest.
     assert_eq!(ctl.state.borrow().store().settings().grain.amount, oni_settings::blocks::Grain::DIGITAL_AMOUNT);
@@ -155,13 +155,14 @@ pub(crate) fn a_press_on_halations_rail_makes_a_highlight_glow_red() {
     let glow = ring();
     assert!(glow > unlit + 4.0, "the window glows, {unlit} then {glow}");
     // A faint dose still glows, less: no threshold leaves a light dark.
-    rendered(rig, "the faint halation rendered", &|| press_rail(rig, w, "Halation", 0.15));
+    rendered(rig, "the faint halation rendered", &|| press_rail(rig, w, "Halation", 0.3));
     let faint = ring();
     println!("the ring's red: {unlit:.1} unlit, {glow:.1} at a dose of {:.3}, {faint:.1} at {:.3}", laid.amount, halation().amount);
     assert!(faint > unlit + 0.5 && faint < glow - 2.0, "a fainter dose glows less: {unlit}, {faint}, {glow}");
     // Bloom lays the film's own blur, its readout on the film.
     rendered(rig, "the film's blur rendered", &|| press_rail(rig, w, "Bloom", 0.95));
-    assert!(ctl.state.borrow().store().settings().bloom.size > 15.0, "Bloom's press lays the blur");
+    let settings = ctl.state.borrow().store().settings().clone();
+    assert_eq!(settings.bloom.size, oni_settings::effect_levels::bloom(settings.film().expect("a film").stock)[3], "Bloom's press lays its widest notch");
     at_full_size(rig, &ctl);
     println!("shot {}", rig.shot("film-effects-halation-100").display());
 }

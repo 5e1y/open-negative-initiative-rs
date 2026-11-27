@@ -59,6 +59,11 @@ pub trait Renderer: Send {
     fn provisional(&mut self) -> bool {
         false
     }
+
+    /// A digital photo's preview scan on `settings` made ahead of the hand; whether one was made.
+    fn preload(&mut self, _negative: &Negative, _settings: &PipelineSettings) -> bool {
+        false
+    }
 }
 
 impl Renderer for Shared {
@@ -74,6 +79,10 @@ impl Renderer for Shared {
 
     fn provisional(&mut self) -> bool {
         self.lock().is_ok_and(|e| e.provisional())
+    }
+
+    fn preload(&mut self, negative: &Negative, settings: &PipelineSettings) -> bool {
+        self.lock().ok().and_then(|mut e| e.preload(negative, settings).ok()).unwrap_or(false)
     }
 
     fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool, wanted: [bool; 2]) -> Option<InputHistograms> {

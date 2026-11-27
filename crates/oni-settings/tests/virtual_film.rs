@@ -60,9 +60,10 @@ fn a_digital_photo_of_format_37_opens_on_its_film_its_edits_kept_and_its_white_d
     assert_eq!((s.gains.stops, s.levels, s.dye_set), (reference.stops, reference.levels(), VirtualStock::of("kodak-portra-800").dye_set()));
     assert!((s.print.exposure - 0.2).abs() < 1e-6, "Lighting's move kept on the negative's rest, on its curve: {}", s.print.exposure);
     assert_eq!((s.print.contrast, s.print.shadows, s.density, s.print.filters()), (0.2, -0.1, 0.15, [0.0; 3]));
-    let grain = oni_settings::blocks::Grain { size: migrate::grain_size::microns(0.5, 1.0), ..before.grain };
-    // The halation keeps its place on its tracks.
-    let halation = oni_settings::blocks::Halation { amount: 0.3 * oni_settings::blocks::Halation::AMOUNT_RANGE.1, size: migrate::halation::microns(0.5) };
+    use oni_settings::effect_levels::{snapped, GRAIN_AMOUNT, GRAIN_SIZE, HALATION_AMOUNT, HALATION_SIZE};
+    // Grain and halation keep their places on their tracks, then land on their nearest levels.
+    let grain = oni_settings::blocks::Grain { amount: snapped(&GRAIN_AMOUNT, before.grain.amount), size: snapped(&GRAIN_SIZE, migrate::grain_size::microns(0.5, 1.0)) };
+    let halation = oni_settings::blocks::Halation { amount: snapped(&HALATION_AMOUNT, 0.3 * oni_settings::blocks::Halation::AMOUNT_RANGE.1), size: snapped(&HALATION_SIZE, migrate::halation::microns(0.5)) };
     assert_eq!((&s.manual_curves, s.spectrogram, s.secret_sauce, s.vignette, s.grain, s.halation), (&before.manual_curves, before.spectrogram, 0.3, before.vignette, grain, halation));
     assert_eq!((s.lens_correction, s.geometry, &s.corrections), (before.lens_correction, before.geometry, &before.corrections));
     assert_eq!((doc.label, doc.exif_line.camera.as_deref()), (Medal::Gold, Some("Lumix")));
@@ -91,7 +92,8 @@ fn a_filmed_photo_of_format_37_keeps_its_hand_moves_on_the_stocks_reference() {
     });
     let s = read(&doc).settings;
     let reference = VirtualStock::of("kodak-portra-800").reference();
-    assert_eq!(s.film().map(|f| f.exposure), Some(0.7));
+    // The shooting exposure lands on its nearest third of a stop.
+    assert_eq!(s.film().map(|f| f.exposure), Some(2.0 / 3.0));
     for c in 0..3 {
         assert!((s.gains.stops[c] - reference.stops[c] - 0.1).abs() < 1e-6, "{:?}", s.gains.stops);
     }

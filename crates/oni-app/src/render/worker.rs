@@ -86,21 +86,41 @@ impl Worker {
                 let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings, [bool; 2])> = None;
                 // A held job drawn on a digital photo's preview scan, rendered again sharp once the hand rests.
                 let mut sharpen: Option<Job> = None;
+                // A digital photo's last settings drawn, the film's field its hand moved last, and the notches beside
+                // it whose scans are made one by one while no job waits.
+                let mut drawn_last: Option<(PathBuf, PipelineSettings)> = None;
+                let mut moved: Option<(crate::fields::Field, bool)> = None;
+                let mut ahead: Option<(Arc<Negative>, Vec<PipelineSettings>)> = None;
                 loop {
                     let (job, sharpening) = loop {
-                        match shared.take((resting.is_some() || sharpen.is_some()).then_some(REST)) {
+                        let idle = (resting.is_some() || sharpen.is_some()).then_some(REST).or(ahead.as_ref().map(|_| Duration::ZERO));
+                        match shared.take(idle) {
                             Taken::Value(job) => break (job, false),
                             Taken::Closed => return,
                             Taken::TimedOut if sharpen.is_some() => break (Job { held: false, ..sharpen.take().expect("a job to sharpen") }, true),
-                            Taken::TimedOut => {
+                            Taken::TimedOut if resting.is_some() => {
                                 if let Some((path, negative, settings, wanted)) = resting.take()
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false, wanted)
                                 {
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
                             }
+                            Taken::TimedOut => {
+                                if let Some((negative, notches)) = ahead.as_mut()
+                                    && !notches.is_empty()
+                                {
+                                    let next = notches.remove(0);
+                                    if renderer.preload(negative, &next) {
+                                        renderer.ran();
+                                    }
+                                }
+                                if ahead.as_ref().is_some_and(|(_, n)| n.is_empty()) {
+                                    ahead = None;
+                                }
+                            }
                         }
                     };
+                    ahead = None;
                     let started = Instant::now();
                     // A digital photo's full scan is made only once the hand or the pointer rests: the job that
                     // sharpens the last one drawn on the preview's scan alone makes it.
@@ -144,6 +164,15 @@ impl Worker {
                     }
                     if drawn {
                         resting = (job.held && wanted).then(|| (job.path.clone(), job.negative.clone(), job.settings.clone(), job.inputs));
+                        match &drawn_last {
+                            Some((path, before)) if *path == job.path => moved = super::ahead::touched(before, &job.settings).or(moved),
+                            _ => moved = None,
+                        }
+                        drawn_last = Some((job.path.clone(), job.settings.clone()));
+                        // At rest, the scans of the notches beside the hand's are made before it asks for them.
+                        if !job.held && job.settings.film().is_some() {
+                            ahead = Some((job.negative.clone(), super::ahead::neighbours(&job.settings, moved)));
+                        }
                         if renderer.provisional() {
                             sharpen = Some(job);
                         }

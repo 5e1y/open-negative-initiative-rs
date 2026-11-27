@@ -10,6 +10,7 @@ pub mod curves;
 pub mod date;
 pub mod document;
 pub mod dyes;
+pub mod effect_levels;
 pub mod exif;
 pub mod fields;
 pub mod film;

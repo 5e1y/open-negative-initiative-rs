@@ -41,6 +41,9 @@ export global SliderStyle {
     in-out property <duration> settle: DS.motion-settle-response * 1s;
     // A slider's rest, ticked on its rail.
     out property <color> rest-ink: DS.palette-text-secondary;
+    // A level's tick, fainter and shorter than rest's, which stands on one of them.
+    out property <color> notch-ink: DS.palette-text-secondary.transparentize(50%);
+    out property <length> notch-height: SliderStyle.knob-height / 4;
     out property <float> ramp-start: 0.45;
     out property <float> ramp-end: 0.9;
     // A bipolar rail carries hues when an end's HSV saturation passes this; the scanner's greys stay under 0.1.

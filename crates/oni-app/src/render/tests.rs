@@ -325,3 +325,36 @@ fn a_failed_render_names_its_frame() {
     // Twin: the frame opened since is not the one that failed, so the landing drops it.
     assert_ne!(failed, PathBuf::from("B.tif"));
 }
+
+/// A frame's picture as `resident` leaves it, read back.
+fn shown(e: &mut Engine, negative: &Negative, settings: &PipelineSettings) -> Vec<[f32; 4]> {
+    let (picture, _) = e.resident(negative, settings, None).unwrap();
+    let r = picture.extent();
+    e.parts().0.render(&oni_graph::Image::new(&picture), r, None).unwrap()
+}
+
+#[test]
+fn a_notch_made_ahead_renders_as_the_notch_made_on_its_own() {
+    let Ok(device) = Device::open() else { return eprintln!("no adapter: the scans ahead are not exercised") };
+    let (w, h) = (48usize, 32usize);
+    let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: (0..w * h).map(|i| { let v = (i % w) as f32 / w as f32; [v, 0.6 * v, 0.3, 1.0] }).collect() }, full_width: w as f64, undeclared: None, seed: [3, 5] };
+    let rest = PipelineSettings::rest(oni_settings::ConversionMode::Digital, true).picking(oni_settings::VirtualStock::of("kodak-portra-800"));
+    let next = crate::fields::Field::GrainAmount.knob().set(&rest, 0.3783);
+    let mut engine = Engine::on(&device);
+    let negative = engine.prepare(decoded()).unwrap();
+    let at_rest = shown(&mut engine, &negative, &rest);
+    assert!(engine.preload(&negative, &next).unwrap(), "the notch beside is made ahead");
+    assert!(!engine.preload(&negative, &next).unwrap(), "and once");
+    let ahead = shown(&mut engine, &negative, &next);
+    let mut fresh = Engine::on(&device);
+    let alone = fresh.prepare(decoded()).unwrap();
+    assert_eq!(ahead, shown(&mut fresh, &alone, &next), "the scan made ahead is the one a render makes");
+    // Twin: the notch moves the picture, so the two are no rest read twice.
+    assert_ne!(ahead, at_rest);
+    // Back to rest, its scan is still kept: nothing to make.
+    assert!(!engine.preload(&negative, &rest).unwrap());
+    // Another photo's scans go: its rest is made anew.
+    let other = engine.prepare(Decoded { seed: [7, 1], ..decoded() }).unwrap();
+    let _ = shown(&mut engine, &other, &rest);
+    assert!(engine.preload(&other, &next).unwrap());
+}

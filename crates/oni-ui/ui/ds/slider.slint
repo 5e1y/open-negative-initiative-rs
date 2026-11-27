@@ -53,11 +53,13 @@ export component Slider inherits VerticalLayout {
     // click on the rail or on the name, whose tooltip `help` is, brings the slider back to it.
     in property <float> rest: -1;
     in property <string> help: @tr("Double-click to bring it back to rest");
+    // Levels laid evenly along the track, ticked on the rail, which every step walks one by one; none below 2.
+    in property <int> notches;
     // What a key's press moves, in the readout's unit: `SliderStyle.press` of the value editor's steps.
-    out property <string> press-reads: Readouts.pressed(root.readout, SliderStyle.press);
+    out property <string> press-reads: root.notches > 1 ? "" : Readouts.pressed(root.readout, SliderStyle.press);
     // The minus and plus keys' tooltips: the slider, the way and the step.
-    in property <string> minus-help: root.press-reads == "" ? @tr("{} −: lower", root.label) : @tr("{} −: lower by {}", root.label, root.press-reads);
-    in property <string> plus-help: root.press-reads == "" ? @tr("{} +: higher", root.label) : @tr("{} +: higher by {}", root.label, root.press-reads);
+    in property <string> minus-help: root.notches > 1 ? @tr("{} −: one level lower", root.label) : root.press-reads == "" ? @tr("{} −: lower", root.label) : @tr("{} −: lower by {}", root.label, root.press-reads);
+    in property <string> plus-help: root.notches > 1 ? @tr("{} +: one level higher", root.label) : root.press-reads == "" ? @tr("{} +: higher", root.label) : @tr("{} +: higher by {}", root.label, root.press-reads);
     // Rust answers whether this press is the second of a double click.
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
@@ -186,6 +188,7 @@ export component Slider inherits VerticalLayout {
                     low: root.low;
                     high: root.high;
                     rest: root.rest;
+                    notches: root.notches;
                     deep: root.handled;
                     vivid: root.handled || root.on-line || (root.enabled && root.near) || root.keyed || root.stepping || area.scrolling;
                 }

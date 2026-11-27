@@ -14265,5 +14265,33 @@
     "title": "Doc comments in decode, library, measure and core name no Swift type any more",
     "status": "done",
     "detail": "Fifty-one doc comments opened on the Swift function they once ported (RawDecode.isRaw, RGBPasses.grouped, FilterBalance.outcome, Pipeline.measurementWindows, InfoSidebar.selfCheck and the like); each now opens on what the item is or does, and one that only named a Swift self-check went. Comments only; the four crates check clean."
+  },
+  {
+    "id": 3884,
+    "type": "feature",
+    "status": "done",
+    "title": "A digital photo's film effects and shooting exposure in named levels",
+    "detail": "Grain amount (none and the files' five rests), grain size (19 to 48 µm), halation dose (0, 10, 31, 92 %) and width (100, 200, 400 µm), bloom (none, the sheet's width ×1, ×1.5, ×2, or 2.5 / 3.4 / 4.5 µm where the sheet gives no MTF) and shooting exposure in thirds from −2 to +2 stops (`oni_settings::effect_levels`). Each slider notches on its levels, ticked on its rail, the film's rest the tall tick; a key, an arrow or the value editor steps one notch, a drag lands on the nearer, a number typed on the nearest; the readout names its notch. The digital grain rest 0.25 becomes 0.2545, its level."
+  },
+  {
+    "id": 3885,
+    "type": "data-safety",
+    "status": "done",
+    "title": "Sidecar format 82: a digital photo's film effects land on their nearest levels",
+    "detail": "`migrate::effect_levels`, the chain's last step: every effect and the shooting exposure of a photo on a virtual film snapped once to its nearest level; a scanned negative and a value already on a level unchanged. Corpus goldens 37-digital 001 and 002 move (grain 0.35 to 0.3783, exposure 0.6 to 2/3). The person's own stock files are read before the support folder's presets are brought, so a preset on one lands on its own levels; the format-78 step keeps comparing with the 0.25 those files hold."
+  },
+  {
+    "id": 3886,
+    "type": "performance",
+    "status": "done",
+    "title": "The scans of the notches beside the hand's made ahead",
+    "detail": "At rest on a digital photo, the render thread makes, while no job waits, the preview scans one notch either side of the film's field moved last (the way it moved first), then of shooting exposure and grain: four kept at most (`AHEAD`, about 85 MB on a 47 Mpx photo), the same `Pipeline::scan` a render makes, one at a time, a job arriving first; another photo's dropped as it opens. The scan left stays ahead, so going back is made too."
+  },
+  {
+    "id": 3887,
+    "type": "performance",
+    "status": "done",
+    "title": "A colour negative film and a slide prewarmed at launch",
+    "detail": "The neutral film reads no spectrum, so the first photo opened on Portra 800 compiled its exposure and coupler kernels on its first render, 275 ms on a 47 Mpx RW2 (339 ms first scan against 64 ms once compiled): the prewarm lays Portra 800 at rest and busy, and Ektachrome E100."
   }
 ]

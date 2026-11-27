@@ -17,6 +17,7 @@ mod originals;
 mod tiles;
 pub use tiles::Laid;
 mod view;
+pub(crate) use view::AHEAD;
 
 /// A frame's preview, resident on the GPU, and the full frame it was reduced from.
 pub struct Negative {

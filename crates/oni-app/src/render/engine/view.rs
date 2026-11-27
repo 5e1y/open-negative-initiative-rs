@@ -9,6 +9,8 @@ impl Engine {
     /// the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         self.fitted.provisional = false;
+        // Another photo's scans made ahead go as it opens.
+        self.fitted.ahead_of(Image::new(&negative.preview).key());
         let (image, region, placed) = self.composed(negative, settings, view)?;
         // A pan keeps the recipe: the last render's pixels the new region still covers are copied, the rest rendered.
         let key = image.key();
@@ -148,8 +150,14 @@ impl Engine {
         let preview = match &self.fitted.scan {
             Some((key, kept)) if *key == image.key() => kept.clone(),
             _ => {
-                let made = self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?;
-                self.fitted.scan = Some((image.key(), made.clone()));
+                let made = match self.fitted.ahead.iter().position(|(k, _)| *k == image.key()) {
+                    Some(i) => self.fitted.ahead.remove(i).1,
+                    None => self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?,
+                };
+                // The scan left stays ahead, so the hand going back finds it made.
+                if let Some(left) = self.fitted.scan.replace((image.key(), made.clone())) {
+                    self.fitted.keep_ahead(left);
+                }
                 // A film's settings moved: the full scan kept is no longer this film's.
                 self.fitted.full_scan = None;
                 made
@@ -171,6 +179,25 @@ impl Engine {
         let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
         self.fitted.full_scan = Some((image.key(), made.clone()));
         Ok((preview, Some(made)))
+    }
+
+    /// A digital photo's preview scan on `settings` made ahead of the hand, as a render would make it; false where
+    /// it is already made or the photo is no digital one.
+    pub fn preload(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<bool, String> {
+        if settings.film().is_none() {
+            return Ok(false);
+        }
+        let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        let inputs = inputs_of(&self.patches, &self.custom, settings, negative.seed, Some(&negative.preview));
+        let image = self.pipeline.scan(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        let key = image.key();
+        self.fitted.ahead_of(Image::new(&negative.preview).key());
+        if self.fitted.scan.as_ref().is_some_and(|(k, _)| *k == key) || self.fitted.ahead.iter().any(|(k, _)| *k == key) {
+            return Ok(false);
+        }
+        let made = self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?;
+        self.fitted.keep_ahead((key, made));
+        Ok(true)
     }
 
     /// Whether the next render holds a digital photo's full scan back for a rest; a render's own when none runs it.
@@ -311,8 +338,33 @@ pub(crate) struct Fitting {
     full_scan: Option<(u64, Source)>,
     /// The preview scan's stages a film notch leaves as they are, a band each, so the notch reruns only what follows.
     scan_stages: Vec<oni_graph::Cache>,
+    /// Preview scans made ahead for the notches beside the hand's, the photo's whose preview key is `ahead_for`.
+    ahead: Vec<(u64, Source)>,
+    ahead_for: Option<u64>,
     held: bool,
     provisional: bool,
+}
+
+/// The preview scans kept ahead: four of a 47 Mpx photo hold about 85 MB.
+pub(crate) const AHEAD: usize = 4;
+
+impl Fitting {
+    /// The scans ahead dropped when they are another photo's.
+    fn ahead_of(&mut self, photo: u64) {
+        if self.ahead_for != Some(photo) {
+            self.ahead.clear();
+            self.ahead_for = Some(photo);
+        }
+    }
+
+    /// A scan kept ahead, the oldest let go past `AHEAD`.
+    fn keep_ahead(&mut self, scan: (u64, Source)) {
+        self.ahead.retain(|(k, _)| *k != scan.0);
+        if self.ahead.len() == AHEAD {
+            self.ahead.remove(0);
+        }
+        self.ahead.push(scan);
+    }
 }
 
 #[cfg(test)]

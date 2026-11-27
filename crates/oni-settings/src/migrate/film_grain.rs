@@ -5,10 +5,13 @@ use super::chain::FILM_GRAIN_VERSION;
 use crate::PipelineSettings;
 use crate::blocks::Grain;
 
+/// A new photo's grain Amount before format 78, which these files were written with.
+const FORMER_AMOUNT: f32 = 0.25;
+
 /// The settings with the grain of their film where theirs rests; a scan's are left, its mode rendering none.
 pub fn caught_up(version: i64, mut settings: PipelineSettings) -> PipelineSettings {
     let Some(film) = settings.film().filter(|_| version < FILM_GRAIN_VERSION) else { return settings };
-    if settings.grain == (Grain { amount: Grain::DIGITAL_AMOUNT, size: Grain::SIZE_REST }) {
+    if settings.grain == (Grain { amount: FORMER_AMOUNT, size: Grain::SIZE_REST }) {
         settings.grain = film.stock.effects().grain;
     }
     settings
@@ -24,8 +27,11 @@ mod tests {
         let older = FILM_GRAIN_VERSION - 1;
         let stock = VirtualStock::of("kodak-portra-400");
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
-        s.grain = Grain { amount: Grain::DIGITAL_AMOUNT, size: Grain::SIZE_REST };
+        s.grain = Grain { amount: 0.25, size: Grain::SIZE_REST };
         assert_eq!(caught_up(older, s.clone()).grain, stock.effects().grain);
+        // Twin: today's rest, which no file of that format holds, is a hand's.
+        let today = Grain { amount: Grain::DIGITAL_AMOUNT, ..s.grain };
+        assert_eq!(caught_up(older, PipelineSettings { grain: today, ..s.clone() }).grain, today);
         // Twins: a hand's grain stays, and a document of this format is read as it is.
         s.grain.size = 41.0;
         assert_eq!(caught_up(older, s.clone()).grain, s.grain);

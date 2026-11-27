@@ -420,12 +420,20 @@ msgid "Double-click to bring it back to rest"
 msgstr "Double-cliquez pour revenir au repos"
 
 #: crates/oni-ui/ui/ds/slider.slint
+msgid "{} −: one level lower"
+msgstr "{} − : un niveau plus bas"
+
+#: crates/oni-ui/ui/ds/slider.slint
 msgid "{} −: lower"
 msgstr "{} − : plus bas"
 
 #: crates/oni-ui/ui/ds/slider.slint
 msgid "{} −: lower by {}"
 msgstr "{} − : plus bas de {}"
+
+#: crates/oni-ui/ui/ds/slider.slint
+msgid "{} +: one level higher"
+msgstr "{} + : un niveau plus haut"
 
 #: crates/oni-ui/ui/ds/slider.slint
 msgid "{} +: higher"
@@ -1544,8 +1552,8 @@ msgid "Film Effects"
 msgstr "Effets film"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Grain is made of grains on the developed film, each its own: every layer has its own grains, each grain reading the film where it lies, so detail finer than a grain goes and the edges follow the grains. Grain sets how far each grain strays from the film around it, the same at every tone, the inversion alone shaping it from the shadows to the highlights; Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. The grains stay on the photo as it is cropped, turned or zoomed.\n\nHalation is the light the film's base sends back into its layers, the red one's most: the brighter a light, the more of it glows, so a mid tone barely moves and a clipped lamp glows. Halation sets the glow's dose, Halation size its width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame.\n\nA film lays its own values when it is chosen; each slider stays free."
-msgstr "Le grain est fait de grains sur le film développé, chacun le sien : chaque couche a ses propres grains, chaque grain lisant le film là où il se trouve, si bien que le détail plus fin qu’un grain disparaît et que les bords suivent les grains. Grain règle de combien chaque grain s’écarte du film qui l’entoure, pareil à tous les tons, l’inversion seule le façonnant des ombres aux hautes lumières ; Taille du grain est la largeur d’un grain sur une image 24 × 36, affichée en pixels de la photo à pleine résolution, si bien que le même grain se pose pareil à toute résolution. Les grains restent sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo est la lumière que le support du film renvoie dans ses couches, la rouge surtout : plus une lumière est vive, plus elle luit, si bien qu’un mi-ton bouge à peine et qu’une lampe écrêtée brille. Halo règle la dose de la lueur, Taille du halo sa largeur sur une image 24 × 36.\n\nDiffusion est le flou propre du film, la lumière que son émulsion diffuse avant le développement, sa largeur sur une image 24 × 36.\n\nUne pellicule pose ses propres valeurs quand on la choisit ; chaque curseur reste libre."
+msgid "Grain is made of grains on the developed film, each its own: every layer has its own grains, each grain reading the film where it lies, so detail finer than a grain goes and the edges follow the grains. Grain sets how far each grain strays from the film around it, the same at every tone, the inversion alone shaping it from the shadows to the highlights; Grain size is a grain's width on a 35 mm frame, shown in the photo's own full-resolution pixels, so the same grain lies alike on every resolution. The grains stay on the photo as it is cropped, turned or zoomed.\n\nHalation is the light the film's base sends back into its red layer: every light glows in proportion to its exposure over a long tail, so a bright frame takes a light pink veil and its lamps a wide glow. Halation sets the glow's dose, Halation size its width on a 35 mm frame.\n\nBloom is the film's own blur, the light its emulsion spreads before development, its width on a 35 mm frame: its data sheet's where it gives one.\n\nEach slider steps through named levels, ticked on its rail; a film lays its own when it is chosen, and the tick marks it."
+msgstr "Le grain est fait de grains sur le film développé, chacun le sien : chaque couche a ses propres grains, chaque grain lisant le film là où il se trouve, si bien que le détail plus fin qu’un grain disparaît et que les bords suivent les grains. Grain règle de combien chaque grain s’écarte du film qui l’entoure, pareil à tous les tons, l’inversion seule le façonnant des ombres aux hautes lumières ; Taille du grain est la largeur d’un grain sur une image 24 × 36, affichée en pixels de la photo à pleine résolution, si bien que le même grain se pose pareil à toute résolution. Les grains restent sur la photo quand on la recadre, la tourne ou zoome.\n\nHalo est la lumière que le support du film renvoie dans sa couche rouge : chaque lumière luit à proportion de son exposition, sur une longue traîne, si bien qu’une image claire prend un léger voile rose et ses lampes une large lueur. Halo règle la dose de la lueur, Taille du halo sa largeur sur une image 24 × 36.\n\nDiffusion est le flou propre du film, la lumière que son émulsion diffuse avant le développement, sa largeur sur une image 24 × 36 : celle de sa fiche technique quand elle la donne.\n\nChaque curseur avance par niveaux nommés, marqués sur son rail ; une pellicule pose les siens quand on la choisit, et le repère les marque."
 
 #: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Grain"
@@ -4876,6 +4884,102 @@ msgstr "Froid"
 #: crates/oni-app/src/fields/readout.rs
 msgid "Warm"
 msgstr "Chaud"
+
+#: crates/oni-app/src/fields.rs
+msgid "No grain"
+msgstr "Aucun grain"
+
+#: crates/oni-app/src/fields.rs
+msgid "Very light"
+msgstr "Très léger"
+
+#: crates/oni-app/src/fields.rs
+msgid "Light"
+msgstr "Léger"
+
+#: crates/oni-app/src/fields.rs
+msgid "Medium"
+msgstr "Moyen"
+
+#: crates/oni-app/src/fields.rs
+msgid "Strong"
+msgstr "Fort"
+
+#: crates/oni-app/src/fields.rs
+msgid "Very strong"
+msgstr "Très fort"
+
+#: crates/oni-app/src/fields.rs
+msgid "Very fine"
+msgstr "Très fin"
+
+#: crates/oni-app/src/fields.rs
+msgid "Fine"
+msgstr "Fin"
+
+#: crates/oni-app/src/fields.rs
+msgid "Coarse"
+msgstr "Gros"
+
+#: crates/oni-app/src/fields.rs
+msgid "Very coarse"
+msgstr "Très gros"
+
+#: crates/oni-app/src/fields.rs
+msgid "No halation"
+msgstr "Aucun halo"
+
+#: crates/oni-app/src/fields.rs
+msgid "Low"
+msgstr "Faible"
+
+#: crates/oni-app/src/fields.rs
+msgid "Moderate"
+msgstr "Modéré"
+
+#: crates/oni-app/src/fields.rs
+msgid "High"
+msgstr "Fort"
+
+#: crates/oni-app/src/fields.rs
+msgid "Narrow"
+msgstr "Étroit"
+
+#: crates/oni-app/src/fields.rs
+msgid "Average"
+msgstr "Moyen"
+
+#: crates/oni-app/src/fields.rs
+msgid "Wide"
+msgstr "Large"
+
+#: crates/oni-app/src/fields.rs
+msgid "No bloom"
+msgstr "Aucune diffusion"
+
+#: crates/oni-app/src/fields.rs
+msgid "Data sheet"
+msgstr "Fiche"
+
+#: crates/oni-app/src/fields.rs
+msgid "Data sheet ×1.5"
+msgstr "Fiche ×1,5"
+
+#: crates/oni-app/src/fields.rs
+msgid "Data sheet ×2"
+msgstr "Fiche ×2"
+
+#: crates/oni-app/src/fields.rs
+msgid "Fine, no data sheet"
+msgstr "Fine, hors fiche"
+
+#: crates/oni-app/src/fields.rs
+msgid "Medium, no data sheet"
+msgstr "Moyenne, hors fiche"
+
+#: crates/oni-app/src/fields.rs
+msgid "Wide, no data sheet"
+msgstr "Large, hors fiche"
 
 #: crates/oni-app/src/flat_fields.rs
 msgid "This file could not be decoded as a picture."

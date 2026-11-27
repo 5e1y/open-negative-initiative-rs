@@ -285,6 +285,38 @@ impl Field {
         self.knob().get(&rest)
     }
 
+    /// The values this field notches on these settings, lowest first: a digital photo's film effects and its
+    /// shooting exposure, so each scan a notch lays can be made before the hand asks for it; none elsewhere.
+    pub fn levels(self, settings: &oni_settings::PipelineSettings) -> Option<Vec<f32>> {
+        use oni_settings::effect_levels as l;
+        let film = settings.film()?;
+        Some(match self {
+            Field::GrainAmount => l::GRAIN_AMOUNT.to_vec(),
+            Field::GrainSize => l::GRAIN_SIZE.to_vec(),
+            Field::HalationAmount => l::HALATION_AMOUNT.to_vec(),
+            Field::HalationSize => l::HALATION_SIZE.to_vec(),
+            Field::Bloom => l::bloom(film.stock).to_vec(),
+            Field::FilmExposure => l::exposure(),
+            _ => return None,
+        })
+    }
+
+    /// The name of the `rank`th of this field's levels on these settings, which its readout writes after its number.
+    pub fn level_name(self, settings: &oni_settings::PipelineSettings, rank: usize) -> Option<String> {
+        use oni_i18n::{marked, tr};
+        let sheeted = settings.film().is_some_and(|f| f.stock.effects().bloom.size > 0.0);
+        let names: &[&str] = match self {
+            Field::GrainAmount => &[marked("No grain"), marked("Very light"), marked("Light"), marked("Medium"), marked("Strong"), marked("Very strong")],
+            Field::GrainSize => &[marked("Very fine"), marked("Fine"), marked("Medium"), marked("Coarse"), marked("Very coarse")],
+            Field::HalationAmount => &[marked("No halation"), marked("Low"), marked("Moderate"), marked("High")],
+            Field::HalationSize => &[marked("Narrow"), marked("Average"), marked("Wide")],
+            Field::Bloom if sheeted => &[marked("No bloom"), marked("Data sheet"), marked("Data sheet ×1.5"), marked("Data sheet ×2")],
+            Field::Bloom => &[marked("No bloom"), marked("Fine, no data sheet"), marked("Medium, no data sheet"), marked("Wide, no data sheet")],
+            _ => return None,
+        };
+        names.get(rank).map(|n| tr(n).to_string())
+    }
+
     /// What the track shows for a stored value: flipped where the track runs the other way.
     pub fn shown(self, stored: f32) -> f32 {
         if self.spec().inverted { -stored } else { stored }

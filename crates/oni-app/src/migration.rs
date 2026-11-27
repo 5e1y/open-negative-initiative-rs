@@ -53,6 +53,10 @@ pub fn brought(support: &Path, plist: Option<&Path>) -> Brought {
         timing::line("support folder: its ledger comes from a newer build, left as it is");
         return Brought::default();
     };
+    // The person's own stock files first: a preset's film effects land on the levels of the film its file defines.
+    if let Some(first) = oni_pipeline::stocks::Loader::new(support.join(crate::app::stock_files::FOLDER)).reload() {
+        oni_settings::stocks::install(first.catalogue);
+    }
     let presets = oni_core::presets::brought(&oni_core::presets::directory(support));
     if presets > 0 {
         timing::line(&format!("support folder: {presets} presets brought to this format"));
@@ -122,3 +126,28 @@ fn said(imported: &std::io::Result<Imported>) -> String {
 mod sweep_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod stock_order_tests {
+    use super::*;
+
+    #[test]
+    fn the_persons_own_films_are_in_use_before_a_preset_is_brought() {
+        let support = std::env::temp_dir().join(format!("oni-migration-stocks-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&support);
+        std::fs::create_dir_all(support.join(crate::app::stock_files::FOLDER)).unwrap();
+        let mut file: serde_json::Value = serde_json::from_str(include_str!("../../oni-settings/stocks/kodak-portra400.json")).unwrap();
+        file["key"] = "a-persons-film".into();
+        file["film"]["key"] = "a-persons-film-x".into();
+        file["film"]["aliases"] = serde_json::json!([]);
+        file["film"]["effects"]["bloom"] = 6.0.into();
+        file.as_object_mut().unwrap().remove("developments");
+        std::fs::write(support.join(crate::app::stock_files::FOLDER).join("a-persons-film.json"), file.to_string()).unwrap();
+        let film = oni_settings::VirtualStock::of("a-persons-film-x");
+        // Twin: before the support folder is brought, the film is no file's and its bloom is the default film's.
+        assert_ne!(film.effects().bloom.size, 6.0);
+        let _ = brought(&support, None);
+        assert_eq!(film.effects().bloom.size, 6.0, "a preset on it lands on its own levels");
+        let _ = std::fs::remove_dir_all(&support);
+    }
+}

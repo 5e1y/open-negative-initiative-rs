@@ -70,6 +70,11 @@ fn variants() -> Vec<PipelineSettings> {
     variants.push(digital_busy());
     variants.push(PipelineSettings::rest(ConversionMode::Digital, true));
     variants.push(digital_legacy_busy());
+    // The neutral film reads no spectrum: a colour negative's exposure and couplers, and a slide's projection, are others.
+    let digital = PipelineSettings::rest(ConversionMode::Digital, true);
+    variants.push(digital_busy().picking(oni_settings::VirtualStock::default()));
+    variants.push(digital.picking(oni_settings::VirtualStock::default()));
+    variants.push(digital.picking(oni_settings::VirtualStock::SLIDE));
     variants
 }
 

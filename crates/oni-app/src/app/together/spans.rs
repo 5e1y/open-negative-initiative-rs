@@ -25,11 +25,15 @@ impl Ctl {
 
     /// `f`'s readout at `v` on the open frame, the span of the frames shown with it moved along.
     pub(in crate::app) fn readout_at(&self, f: Field, v: f32) -> String {
-        let (span, long) = {
-            let s = self.state.borrow();
-            (s.together.as_ref().and_then(|g| g.spans.get(f.index() as usize).copied()), s.scan_long())
-        };
-        span.map_or_else(|| f.readout_on(v, long), |(lo, hi)| f.span_readout_on(v + lo, v + hi, long))
+        let s = self.state.borrow();
+        let (span, long) = (s.together.as_ref().and_then(|g| g.spans.get(f.index() as usize).copied()), s.scan_long());
+        let settings = s.store.settings();
+        match span {
+            // Frames together on one notch read it named, as a frame alone does.
+            Some((lo, hi)) if crate::slider_track::notch_of(f, settings, v + lo) != crate::slider_track::notch_of(f, settings, v + hi) => f.span_readout_on(v + lo, v + hi, long),
+            Some((lo, hi)) => crate::slider_track::readout_named(f, settings, v, f.span_readout_on(v + lo, v + hi, long)),
+            None => crate::slider_track::readout_named(f, settings, v, f.readout_on(v, long)),
+        }
     }
 
     /// The readouts whose span moved written again, a slider under the hand writing its own.

@@ -22,6 +22,7 @@ mod engine;
 mod view;
 mod previews;
 mod worker;
+mod ahead;
 mod histogram;
 pub use door::graph;
 pub(crate) use door::app_gpu;

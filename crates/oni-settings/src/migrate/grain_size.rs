@@ -103,7 +103,9 @@ mod tests {
         (document["version"], document["settings"]["grain"]["size"]) = (json!(GRAIN_ON_FILM_VERSION - 1), json!(0.5));
         let (read, held) = super::super::reading(&serde_json::to_vec(&document).unwrap(), &super::super::Facts::bare(true), false).unwrap();
         assert_eq!(held, Some(Refusal::ScanUnknown), "the step waits for the file");
-        assert!((read.document.settings.grain.size - microns(0.5, 1.0)).abs() < 1e-4, "{}", read.document.settings.grain.size);
+        // Read in micrometres, then laid on the nearest of today's levels.
+        let size = crate::effect_levels::snapped(&crate::effect_levels::GRAIN_SIZE, microns(0.5, 1.0));
+        assert!((read.document.settings.grain.size - size).abs() < 1e-4, "{}", read.document.settings.grain.size);
         // Twin: the former share read as micrometres is refused by the same judge.
         assert!((0.5 - microns(0.5, 1.0)).abs() >= 1e-4);
     }

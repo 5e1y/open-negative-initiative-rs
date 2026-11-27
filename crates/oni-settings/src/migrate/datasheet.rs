@@ -133,6 +133,8 @@ mod tests {
         let on_mixed = |stock: VirtualStock| {
             let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
             (s.gains.stops, s.levels) = (mixed(stock).stops, mixed(stock).levels());
+            // The grain a new photo rested on before format 78, as such a file holds it.
+            s.grain.amount = 0.25;
             s
         };
         // Each lands as a photo the hand put on its film, format 75 laying the film's effects.

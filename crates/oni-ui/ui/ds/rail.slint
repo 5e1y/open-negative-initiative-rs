@@ -18,6 +18,8 @@ export component Rail inherits Rectangle {
     in property <length> overhang;
     // The value a reset brings back, ticked across the rail; none below 0.
     in property <float> rest: -1;
+    // Levels laid evenly along the rail, each ticked shorter than rest's; none below 2.
+    in property <int> notches;
     // The lit stretch's glow, a progress bar's phosphor.
     in property <length> glow;
     // Under the hand, the hollow sinks to a well's whole shade, as the knob's edge darkens.
@@ -74,6 +76,13 @@ export component Rail inherits Rectangle {
         ground: transparent;
         radius: SliderStyle.track-radius;
         shade: root.shade;
+    }
+    for i in root.notches > 1 ? root.notches : 0: Rectangle {
+        x: root.overhang + i / (root.notches - 1) * root.travel - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: Stroke.line;
+        height: SliderStyle.notch-height;
+        background: SliderStyle.notch-ink;
     }
     if root.rest >= 0: Rectangle {
         x: root.overhang + root.rest * root.travel - self.width / 2;

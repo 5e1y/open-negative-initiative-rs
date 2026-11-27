@@ -320,12 +320,12 @@ settings: PipelineSettings {
         halo: 0.5,
     },
     grain: Grain {
-        amount: 0.35,
-        size: 31.68,
+        amount: 0.3783,
+        size: 30.0,
     },
     halation: Halation {
-        amount: 0.2,
-        size: 72.0,
+        amount: 0.1,
+        size: 100.0,
     },
     bloom: Bloom {
         size: 3.4,

@@ -18,7 +18,7 @@ settings: PipelineSettings {
     virtual_film: Some(
         VirtualFilm {
             stock: kodak-portra-800,
-            exposure: 0.6,
+            exposure: 0.6666667,
         },
     ),
     film: None,

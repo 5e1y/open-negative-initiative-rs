@@ -96,7 +96,7 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
-mod stock_files;
+pub(crate) mod stock_files;
 mod stock_picker;
 pub(crate) use stock_picker::{StockTarget, offers_paper};
 mod updates;
