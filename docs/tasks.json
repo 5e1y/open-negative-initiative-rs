@@ -14230,5 +14230,12 @@
     "title": "The welcome's screens glide as one list, up going on and down going back, a press always setting off at once; every sentence names its subject and what the person gets",
     "status": "done",
     "detail": "Owner's notes: between gifts the screens no longer fade. They are one list one under the other: the screen left glides up and the next comes up from below (the reverse going back), on the design system's glide over 0.7 s, the message included as the list's last screen; the screen leaving keeps its words, its film's last frame or its wrapped gift's tag, and the stage's picture glides with the screen whose gift it draws. A press while the screens glide sets off at once from where they stand; with reduced motion the screens cut. The texts are rewritten, English first then French and Spanish written for themselves: each names its subject and what the person gets, no image that means nothing ('ONI's interface comes alive', 'Your cameras and lenses in ONI', 'Pick a film in the editor: ONI develops your photo the way that film would…', 'Open the Gift'). Checks: welcome_reel (halfway the list stands between two screens and the next gift comes from below; Up mid-glide goes back at once from where it stood), welcome_card (both; the 90 centred cases with the new texts), a_welcome_seen_plays_again_from_its_first_gift, design_system, help; catalogue; clippy."
+  },
+  {
+    "id": 4074,
+    "type": "refactor",
+    "title": "The archive's tree tests in a file of their own",
+    "status": "done",
+    "detail": "library/tests.rs stood at the 400-line ceiling. Its two checks on the tree laid again from the rows (the same rows keep the tree and a medal moves its row alone; a tree cut off the thread) go to library/tests/tree.rs, moved line for line; the shared synthetic survey stays, filtered.rs reads it (349 lines). oni-app's 581 unit tests green."
   }
 ]
