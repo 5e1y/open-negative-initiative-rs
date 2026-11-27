@@ -14216,5 +14216,12 @@
     "title": "LocalSend's transfers stopped halfway in a file of their own",
     "status": "done",
     "detail": "tests/transfer.rs stood at 398 lines. The half upload and the three checks on a transfer cancelled by the sender, dropped by it and cancelled by the receiver go to tests/transfer/cancelling.rs, a module of the same binary; transfer.rs keeps the rest (338 lines). The 19 transfer checks green."
+  },
+  {
+    "id": 4073,
+    "type": "check",
+    "title": "The width ceiling at 68",
+    "status": "done",
+    "detail": "The halation's long tail (#3883) took one more line under 200 characters; the count only falls."
   }
 ]
