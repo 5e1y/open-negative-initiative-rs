@@ -14496,5 +14496,12 @@
     "title": "Twenty-one lines past 200 characters broken, the width ceiling at 37",
     "status": "done",
     "detail": "The engine's initialiser, the display's count signature, the cost pass's read buffer, the launch's options, the shell's brush and dust, the benches' report lines, and in the window checks the toolbar's keys and ends, a project's fingerprints, a sheet's ratio, the slides', loupe's and headless folder reads, the menu finder, the pointer's press and release, the pinned column's wait and an export's jobs: each split at its items or along its chain, no expression changed, the struct bases kept without a comma. Lines past 200 characters: 58 to 37; oni-app checks clean, its 587 unit tests green."
+  },
+  {
+    "id": 4254,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: the version's picture stays 3.4 s at every launch",
+    "detail": "The working notes follow #3895 and #3896: the starter stays until the kernels are compiled and 3.4 s have passed, and prepares the default film and the photo opened last meanwhile."
   }
 ]

@@ -176,6 +176,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
   panicked on an assert, killing the render thread when the canvas waited on the GPU in slices as others submitted. The copy goes with wgpu 31.
 - **femtovg redraws the whole window at every frame**: the columns and the bar carry `cache-rendering-hint`, or a
   pan redraws every row of the tree. A gesture renders the view lighter, sharp once the hand rests (`SETTLE`).
+- **The version's picture stays 3.4 s at every launch a person makes** (owner's call, 2026-11-27): a launch is the picture's showing, so
+  the starter gives way once the kernels are compiled and `starter::HELD` has passed, longer only after an update while the kernels
+  compile (6 to 8 s on an M2 Max); meanwhile it prepares, off the interface thread, the default film and the photo opened last, decoded,
+  laid and scanned (`launch_ahead`), none of it holding the starter. A bench holds no picture and the window checks launch no starter.
 
 ## Build
 
