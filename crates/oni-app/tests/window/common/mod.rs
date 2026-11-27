@@ -24,7 +24,7 @@ pub struct Headless {
     pub frozen: Rc<Cell<Option<Duration>>>,
 }
 
-struct Proxy(Arc<Mutex<Vec<Queued>>>);
+pub(crate) struct Proxy(pub(crate) Arc<Mutex<Vec<Queued>>>);
 
 impl EventLoopProxy for Proxy {
     fn quit_event_loop(&self) -> Result<(), slint::EventLoopError> {
@@ -194,6 +194,7 @@ pub fn rig() -> Rig {
 
 mod clock;
 mod launch;
+pub mod studio;
 pub use launch::*;
 
 pub use oni_fixtures::tiff::{graded_tiff, linear_tiff, pixels_tiff, plain_tiff};

@@ -4244,6 +4244,7 @@ dependencies = [
  "i-slint-core",
  "i-slint-renderer-femtovg",
  "image",
+ "image-webp",
  "jpeg-decoder",
  "jpeg-encoder",
  "kamadak-exif",

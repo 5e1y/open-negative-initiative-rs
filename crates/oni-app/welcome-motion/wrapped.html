@@ -6,7 +6,7 @@
 <script type="module">
 // The mystery gift's film: the year on film as the Wrapped plays it. Each scene comes in under a camera that holds
 // the whole card, then comes close on what it tells; a cut to the next, and the last gives way to the first.
-import { S, tl, cut, play, look, dissolve, film } from '/takes.js';
+import { S, tl, cut, play, look, dissolve, shoot } from '/takes.js';
 
 // The card, in the window's points: whole, and its lower half, where each scene says what it tells.
 const card = { x: 438, y: 62, w: 402, h: 714 };
@@ -25,7 +25,7 @@ for (const scene of ['wrapped-1', 'wrapped-3', 'wrapped-6', 'wrapped-9']) {
 dissolve('wrapped-1', 0, t, 0.5);
 look(whole, t, 0.5, 'power2.inOut');
 t += 0.6;
-film(t);
+shoot(t);
 </script>
 </body>
 </html>

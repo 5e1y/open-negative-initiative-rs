@@ -6,7 +6,7 @@
 <script type="module">
 // The second gift's film: the Kit filled from The Lens DB. Close on the Kit, the hand opens Search Gear, a body is
 // typed letter by letter, added, and Done lays it in the Kit; then the Kit as it was, where the film began.
-import { S, tl, point, about, cut, play, look, reach, press, dissolve, film } from '/takes.js';
+import { S, tl, point, about, cut, play, look, reach, press, dissolve, shoot } from '/takes.js';
 
 const kit = about({ x: point('search').x - 80, y: point('search').y + 120 }, 600);
 const sheet = about({ x: point('field').x + 30, y: point('field').y + 90 }, 640);
@@ -49,7 +49,7 @@ t += 1.0;
 // The Kit as it was, where the film began.
 dissolve('kit', 0, t, 0.5);
 t += 0.6;
-film(t);
+shoot(t);
 </script>
 </body>
 </html>

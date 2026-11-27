@@ -207,7 +207,7 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         reel.play(2.4, 0.2);
         // Its film plays in the demo's place, a frame of it decoded.
         assert_eq!(help.get_reel_gift(), gift as i32, "gift {gift}: its own film");
-        assert!(help.get_reel().size().width == 800, "gift {gift}: a frame of its film shown");
+        assert!(help.get_reel().size().width == 1600, "gift {gift}: a frame of its film shown, at two pixels a point");
         reel.keep();
         if gift == 3 {
             // The Wrapped opened from its gift, then closed: the welcome goes on to its message.

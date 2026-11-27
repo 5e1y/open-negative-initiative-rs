@@ -14293,5 +14293,12 @@
     "status": "done",
     "title": "A colour negative film and a slide prewarmed at launch",
     "detail": "The neutral film reads no spectrum, so the first photo opened on Portra 800 compiled its exposure and coupler kernels on its first render, 275 ms on a 47 Mpx RW2 (339 ms first scan against 64 ms once compiled): the prewarm lays Portra 800 at rest and busy, and Ektachrome E100."
+  },
+  {
+    "id": 3972,
+    "type": "feature",
+    "title": "The welcome's films shot through the app's own renderer at two pixels a point, a WebP a frame, never shown wider than their pixels; the first gift's film shows the app's new motions",
+    "status": "done",
+    "detail": "Owner's notes: tabs, sliders and their edges came out wrong in the films, and the films were soft and stretched. The takes were drawn by the checks' software renderer, which lays some layers as squares (a light box behind the picked tab, a notch at the tabs' end): they are now drawn by the app's own renderer, FemtoVG on wgpu, into a texture read back (`tests/window/common/studio.rs`), at three pixels a point, kept with every pixel's colour (4:4:4); the composer resamples each frame finely into a canvas at two pixels a point, so a one-pixel edge neither smears nor shimmers as the camera moves. Each frame is a WebP (82 held, 65 moving), decoded in pure Rust (`image-webp`), 37 MB for the four films at 1600 by 1000 against 62 in JPEG; a film is never shown wider than 800 points, one of its pixels to a Retina pixel, centred in its room past that. Only the screen's film keeps frames decoded, five at most (32 MB), the others none. The first gift's film shows the photo flying from the gallery into the editor, the next and previous photos by their arrow keys, the photo carried onto the export's preview. Checks: reels (each of the four films at 120 Hz, no frame late, at most five frames held, none off screen; twin: with no frame ahead nearly every frame is late), welcome_reel (each film's frame at 1600 pixels), welcome_card (both; the 90 centred cases with the narrower film), a_welcome_seen_plays_again_from_its_first_gift, design_system, help; architecture; clippy."
   }
 ]

@@ -2,7 +2,8 @@
 # The welcome's pictures and films made again from the app itself, after the render, the stage or the interface
 # changes: the photo on each film (`welcome_stills`), each gift's still, the takes of the real app on a held clock
 # (`welcome_films`), then each film composed over them and filmed frame by frame in headless Chrome
-# (`crates/oni-app/welcome-motion`). Needs Node 22, Python 3 with Pillow and fontTools, and Chrome.
+# (`crates/oni-app/welcome-motion`) at two pixels a point, a WebP a frame. Needs Node 22, Python 3 with Pillow
+# (WebP) and fontTools, and Chrome.
 # Usage: scripts/welcome-assets RAW, the demo RAW with its .json sidecar beside it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,7 +25,7 @@ ONI_BACKGROUND=1 ONI_ONE=welcome_films::the_welcome_films_are_shot_in_the_real_a
 python3 "$motion/fonts.py" crates/oni-ui/fonts "$scratch/fonts"
 (cd "$motion" && npm ci --silent)
 for film in huge interface collection wrapped; do
-    node "$motion/film.mjs" "$film" "$scratch/frames-$film" renders="$scratch/renders" takes="$scratch/takes" \
+    SCALE=2 node "$motion/film.mjs" "$film" "$scratch/frames-$film" renders="$scratch/renders" takes="$scratch/takes" \
         fonts="$scratch/fonts" stocks="$PWD/crates/oni-settings/stocks"
     python3 "$motion/fold.py" "$scratch/frames-$film" "$out/film-$film"
 done

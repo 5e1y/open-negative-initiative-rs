@@ -25,12 +25,14 @@ const chrome = process.env.CHROME || (process.platform === 'darwin' ? '/Applicat
 const browser = await puppeteer.launch({ executablePath: chrome, headless: true, protocolTimeout: 120000, args: ['--force-color-profile=srgb', '--hide-scrollbars'] });
 const page = await browser.newPage();
 page.on('console', (m) => m.type() === 'error' && console.error(`${name}: ${m.text()}`));
+page.on('pageerror', (e) => console.error(`${name}: ${e.message}`));
 // `SCALE` films each frame at that many pixels a point, for a screen of more pixels.
 await page.setViewport({ width: 800, height: 500, deviceScaleFactor: Number(process.env.SCALE || 1) });
 await page.goto(`http://127.0.0.1:${server.address().port}/${name}.html`, { waitUntil: 'load' });
-const fonts = await page.evaluate(async () => { await document.fonts.ready; return [...document.fonts].filter((f) => f.status !== 'loaded').length; });
+// Every face loaded before the first frame, even one no element shows yet.
+const fonts = await page.evaluate(async () => { await Promise.all([...document.fonts].map((f) => f.load().catch(() => {}))); return [...document.fonts].filter((f) => f.status !== 'loaded').length; });
 if (fonts) throw new Error(`${name}: ${fonts} fonts did not load`);
-await page.waitForFunction(() => window.READY, { timeout: 60000 });
+await page.waitForFunction(() => window.READY !== undefined, { timeout: 60000 });
 await page.evaluate(async () => { await window.READY; });
 const length = await page.evaluate(() => window.LENGTH);
 fs.rmSync(out, { recursive: true, force: true });

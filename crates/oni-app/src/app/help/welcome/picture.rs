@@ -1,6 +1,7 @@
 //! The welcome's picture: the screens where the clock has them, the gift drawn by the GPU into the texture the sheet
 //! shows, at most one picture in flight, and the screen's film from the moment its words come.
 
+use super::super::reels::Reel;
 use super::screens::{gift_of, slot};
 use crate::app::Ctl;
 use crate::stage::direction;
@@ -99,7 +100,10 @@ impl Ctl {
         help.set_words_at(gift_of(play.page).map_or(0.0, |i| if still { 0.0 } else { unwrap::title(i) }));
         help.set_may_go_on(play.may_go_on(now, still));
         // The screen's film, from the moment its words come.
-        let reel = gift_of(play.page).and_then(|i| play.reels.iter_mut().find(|r| r.gift == i).map(|r| (r, i)));
+        // Only the screen's film keeps frames decoded; the others hold none.
+        let current = gift_of(play.page);
+        play.reels.iter_mut().filter(|r| Some(r.gift) != current).for_each(Reel::rest);
+        let reel = current.and_then(|i| play.reels.iter_mut().find(|r| r.gift == i).map(|r| (r, i)));
         let showing = help.get_reel_gift();
         // The film left keeps its last frame on the screen gliding away.
         if showing >= 0 && reel.as_ref().is_none_or(|(_, i)| *i as i32 != showing) {

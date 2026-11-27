@@ -32,6 +32,8 @@ export global StageStyle {
     out property <color> frame-edge: #ffffff1f;
     // A gift's film, its height over its width.
     out property <float> window-shape: 0.625;
+    // A film's widest: its own pixels at two a point, never stretched past them on a Retina screen.
+    out property <length> film-most: 800px;
     // How far the wheel or the trackpad must move before a screen gives way.
     out property <length> wheel: 4px;
     // The rail of screens at the window's right edge.

@@ -46,7 +46,7 @@ export component WelcomeSheet inherits Sheet {
     property <length> edge: 2 * Space.l;
     property <length> column: min(WelcomeStyle.words-width, root.width * WelcomeStyle.words-share);
     property <length> title-size: min(WelcomeStyle.headline, root.column / WelcomeStyle.headline-measure);
-    property <length> demo-width: min(root.width - 2 * root.edge - StageStyle.gap - root.column, (root.height - 2 * footer-room.height) / StageStyle.window-shape);
+    property <length> demo-width: min(StageStyle.film-most, root.width - 2 * root.edge - StageStyle.gap - root.column, (root.height - 2 * footer-room.height) / StageStyle.window-shape);
     property <length> left: (root.width - root.demo-width - StageStyle.gap - root.column) / 2;
     property <length> right: root.left + root.demo-width + StageStyle.gap;
     // The words' block is centred in the window less the keys' band above and below it, never in that band.

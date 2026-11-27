@@ -1,35 +1,45 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"></head>
+<head><meta charset="utf-8">
+<style>@font-face { font-family: ONI; src: url(/fonts/ONISans-SemiBold.ttf); font-weight: 600; }</style>
+</head>
 <body>
 <script src="/gsap/gsap.min.js"></script>
 <script type="module">
-// The first gift's film: the interface as it moves. The camera comes close on what the hand does, then draws back
-// as the app answers: a photo of the gallery flies into the editor, the editor's photo onto the export's preview,
-// then the gallery comes back, where the film began.
-import { S, tl, point, about, cut, play, look, reach, press, dissolve, film } from '/takes.js';
+// The first gift's film: the interface as it moves. A photo of the gallery flies into the editor, the next and the
+// previous photos slide in by their arrow keys, Export carries the photo onto its preview, then the gallery again.
+import { S, tl, point, about, cut, play, look, reach, press, keyed, dissolve, shoot } from '/takes.js';
 
 const near = about(point('tile'), 620);
 const whole = { x: 0, y: 0, w: 1280 };
+const photo = about({ x: 560, y: 380 }, 900);
 S.cam = { ...near };
 cut('gallery-again', 0);
-let t = 0.5;
+let t = 0.4;
 // Double-click on a photo of the gallery, and it flies into the editor.
-reach(point('tile'), t, 0.7);
-t += 0.7;
+reach(point('tile'), t, 0.6);
+t += 0.6;
 press(t);
 press(t + 0.16);
 t += 0.2;
 const open = play('open', t);
-look(whole, t, 1.1);
-tl.to(S.hand, { x: '+=90', y: '+=260', duration: 0.6, ease: 'power3.in' }, t + 0.1);
+look(photo, t, 1.0);
+tl.to(S.hand, { x: '+=90', y: '+=420', duration: 0.6, ease: 'power3.in' }, t + 0.1);
 t += open;
 cut('editor', t);
-t += 0.5;
+t += 0.45;
+// The next photo by its arrow key, and back.
+for (const [glyph, take] of [['\u2192', 'next'], ['\u2190', 'previous']]) {
+  keyed(glyph, t);
+  t += 0.05;
+  t += play(take, t);
+  cut(`${take}-rendered`, t);
+  t += 0.35;
+}
 // Export: the photo moves onto the export's preview.
-look(about(point('export'), 640), t, 0.8);
-reach(point('export'), t + 0.2, 0.6);
-t += 0.85;
+look(about(point('export'), 640), t, 0.7);
+reach(point('export'), t + 0.15, 0.55);
+t += 0.75;
 press(t);
 t += 0.1;
 const out = play('export', t);
@@ -37,12 +47,12 @@ look(whole, t, 1.0);
 tl.to(S.hand, { x: '+=120', y: '+=700', duration: 0.6, ease: 'power3.in' }, t + 0.1);
 t += out;
 cut('exporting', t);
-t += 0.7;
+t += 0.6;
 // Back to the gallery, where the film began.
 dissolve('gallery-again', 0, t, 0.6);
 look(near, t - 0.1, 0.8);
 t += 0.9;
-film(t);
+shoot(t);
 </script>
 </body>
 </html>

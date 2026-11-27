@@ -141,13 +141,14 @@ fn film_frame(gift: usize) -> slint::Image {
     let name = ["interface", "collection", "huge", "wrapped"][gift];
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui/welcome");
     let list = std::fs::read_to_string(dir.join(format!("film-{name}.txt"))).unwrap();
-    let bytes = std::fs::read(dir.join(format!("film-{name}.jpgs"))).unwrap();
+    let bytes = std::fs::read(dir.join(format!("film-{name}.webps"))).unwrap();
     let lengths: Vec<usize> = list.lines().skip(1).map(|l| l.split(' ').nth(1).unwrap().parse().unwrap()).collect();
     let at: usize = lengths[..lengths.len() / 2].iter().sum();
-    let mut decoder = jpeg_decoder::Decoder::new(&bytes[at..at + lengths[lengths.len() / 2]]);
-    let rgb = decoder.decode().unwrap();
-    let info = decoder.info().unwrap();
-    slint::Image::from_rgb8(slint::SharedPixelBuffer::clone_from_slice(&rgb, info.width.into(), info.height.into()))
+    let mut decoder = image_webp::WebPDecoder::new(std::io::Cursor::new(&bytes[at..at + lengths[lengths.len() / 2]])).unwrap();
+    let (width, height) = decoder.dimensions();
+    let mut rgb = vec![0; decoder.output_buffer_size().unwrap()];
+    decoder.read_image(&mut rgb).unwrap();
+    slint::Image::from_rgb8(slint::SharedPixelBuffer::clone_from_slice(&rgb, width, height))
 }
 
 /// The rectangle every text and key shown in a column starting at `left` takes, above `below`: a screen's block of
