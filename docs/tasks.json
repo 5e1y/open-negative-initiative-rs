@@ -14160,5 +14160,12 @@
     "title": "The graph's checks in two files: one render on one grid, and past it",
     "status": "done",
     "detail": "tests/graph.rs had stood past the 400-line ceiling (404, grandfathered). Its four last checks (an enlargement, graphs on a shared device, the anchored reduction, images laid out on one sheet) go to tests/graph/grids.rs, a module of the same binary, moved line for line; graph.rs keeps the helpers and eight checks (292 lines). Its ceiling entry goes. The 12 checks green."
+  },
+  {
+    "id": 4065,
+    "type": "refactor",
+    "title": "The container's checks in two files: the files they write and the checks themselves",
+    "status": "done",
+    "detail": "tests/swift_checks.rs had stood past the 400-line ceiling (460, grandfathered). The hand-written DNG and TIFF, the grain, the chroma energy, the Lanczos reduction and the resampled mean go to tests/swift_checks/files.rs, a module of the same binary, moved line for line (visibility widened to the parent); the two checks and their own helpers stay (233 lines). Its ceiling entry goes. The two checks green."
   }
 ]
