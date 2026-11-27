@@ -7,7 +7,6 @@ use crate::render::{self, Shared};
 use crate::{MaskDialog, PanelState};
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
-use oni_settings::sidecar;
 use oni_i18n::{marked, tr};
 use slint::ComponentHandle;
 use std::path::Path;
@@ -45,9 +44,7 @@ impl Masking {
 
 /// The mask's decode, through the photographs' own path and the reading its sidecar asks for.
 pub(super) fn picture(engine: &Shared, path: &Path) -> Option<Picture> {
-    let mosaic = oni_decode::decodes_via_mosaic(path);
-    let reading = sidecar::read(path, mosaic).map(|l| render::Reading::of(&l.settings)).unwrap_or_default();
-    let decoded = render::decode(path, reading).ok()?;
+    let decoded = render::decode(path, render::sidecar_reading(path)).ok()?;
     let linear = engine.lock().ok()?.preview_pixels(decoded).ok()?;
     Some((linear.width, linear.height, linear.pixels))
 }

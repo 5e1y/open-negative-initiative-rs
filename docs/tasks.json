@@ -14622,5 +14622,19 @@
     "status": "done",
     "title": "CLAUDE.md: the faces, the black canvas, the WRAPPED key, the welcome's stage and overture, the decode on selection",
     "detail": "The working notes follow #3892, #3912, #3913, #3954, #3976, #4011 and #4022, each sentence written on the code as it stands."
+  },
+  {
+    "id": 4100,
+    "type": "fix",
+    "title": "A photo decoded ahead is decoded under the reading its opening asks, so a slide's neighbours and selection serve its opening",
+    "status": "done",
+    "detail": "The neighbours of an open photo and the photo a selection settles on were decoded ahead under the rest's reading, whatever their sidecar asked: a slide (balanced at the slide's own light, its own key in the disk cache) or a lead of three passes was decoded ahead for nothing and its opening ran LibRaw again. Each is now decoded under the reading its sidecar asks, a new photo's its roll's (render::sidecar_reading), the one reading the open frame, the masks and the roll's previews read. The open's preview now says in the log how long its decode and its laying on the GPU took, so a slow opening names its part. Check: render::decode::tests::a_decode_ahead_reads_a_slide_as_its_opening_does (twin: the rest's reading is another decode of a slide)."
+  },
+  {
+    "id": 4101,
+    "type": "fix",
+    "title": "A bench given a folder opens its first photo once read: the add carries the ask, which its landing no longer overwrites",
+    "status": "done",
+    "detail": "ONI_BENCH with a folder named at launch opened none: the bench's ask to open the first photo once read was set at once, then the add, looked at behind, set the opening it found, none for a folder, over it, so a bench drew no frame. The add now carries the ask (Added::opening_first, Shell::add_opening_first), and a file named keeps its own opening. Check: app::archive_view::adding::tests::a_path_handed_over_opens_its_folder_or_nothing (twin: a photo named keeps its own opening)."
   }
 ]

@@ -35,6 +35,13 @@ fn seed(path: &Path) -> [u32; 2] {
 
 pub use oni_settings::Reading;
 
+/// The reading `path`'s sidecar asks for, a new photo's its roll's: what its opening decodes under, so a decode ahead
+/// is the one its opening reads back.
+pub fn sidecar_reading(path: &Path) -> Reading {
+    let mosaic = oni_decode::decodes_via_mosaic(path);
+    oni_settings::sidecar::read(path, mosaic).map(|l| Reading::of(&l.settings)).unwrap_or_default()
+}
+
 /// `RawDecode.linear` on its preview: a lead's three passes composed, any other file alone.
 pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match reading.passes.clone() {
@@ -254,5 +261,21 @@ mod tests {
         let (slide, negative) = (read(oni_settings::ConversionMode::Positive), read(oni_settings::ConversionMode::Negative));
         assert!(slide.slide && slide != negative, "the open frame's reading moves, which decodes it again");
         assert!(!negative.slide && !read(oni_settings::ConversionMode::Monochrome).slide, "twin: B&W reads a negative's RAW");
+    }
+
+    #[test]
+    fn a_decode_ahead_reads_a_slide_as_its_opening_does() {
+        let dir = std::env::temp_dir().join(format!("oni-sidecar-reading-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let slide = dir.join("slide.RW2");
+        std::fs::write(&slide, b"").unwrap();
+        let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        oni_settings::sidecar::write(&settings, &slide, Default::default()).unwrap();
+        let read = sidecar_reading(&slide);
+        assert_eq!(read, Reading::of(&settings), "the reading its opening decodes under");
+        // Twin: the rest's reading, which a decode ahead once took, is another decode of a slide.
+        assert_ne!(read, Reading::default());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

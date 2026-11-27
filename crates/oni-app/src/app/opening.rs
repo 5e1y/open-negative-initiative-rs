@@ -108,7 +108,8 @@ impl Ctl {
         }
     }
 
-    /// `paths`' RAWs decoded into the disk cache in turn, behind the hand's own; asked again, the former paths are dropped.
+    /// `paths`' RAWs decoded into the disk cache in turn, behind the hand's own, each under the reading its opening asks;
+    /// asked again, the former paths are dropped.
     fn decode_ahead(&self, paths: Vec<String>) {
         let near: Vec<String> = paths.into_iter().filter(|p| oni_decode::route(Path::new(p.as_str())) == oni_decode::Branch::Mosaic).collect();
         let mine = self.state.borrow().asks.near.next();
@@ -118,7 +119,8 @@ impl Ctl {
                 if !mine.current() {
                     return;
                 }
-                let _ = render::decode(Path::new(&p), render::Reading::default());
+                let path = Path::new(&p);
+                let _ = render::decode(path, render::sidecar_reading(path));
             }
         });
     }
@@ -146,7 +148,13 @@ impl Ctl {
         let engine = self.engine.clone();
         let ticket = crate::decode_gate::PREVIEW.ask();
         std::thread::spawn(move || {
-            let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_keeping(&engine, &path, converted.clone())) else { return };
+            let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_timed(&engine, &path, converted.clone())) else { return };
+            let ms = |d: std::time::Duration| d.as_secs_f64() * 1000.0;
+            let prepared = prepared.map(|(prepared, [read, laid])| {
+                let photo = crate::anonymity::token(&path);
+                crate::timing::line(&format!("the open's preview {photo}: decoded in {:.0} ms, laid on the GPU in {:.0} ms", ms(read), ms(laid)));
+                prepared
+            });
             with_shell(move |c| c.opening_decoded(&path, &converted, prepared));
         });
     }

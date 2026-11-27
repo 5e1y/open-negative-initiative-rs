@@ -38,9 +38,16 @@ pub(super) fn prepared(engine: &Shared, path: &str, reading: render::Reading) ->
 
 /// `prepared`, with the full resolution when the decode read it whole.
 pub(super) fn prepared_keeping(engine: &Shared, path: &str, reading: render::Reading) -> Result<(Arc<Negative>, Option<oni_graph::Source>), String> {
+    prepared_timed(engine, path, reading).map(|(prepared, _)| prepared)
+}
+
+/// `prepared_keeping`, with how long the decode and its laying on the GPU each took.
+pub(super) fn prepared_timed(engine: &Shared, path: &str, reading: render::Reading) -> Result<((Arc<Negative>, Option<oni_graph::Source>), [Duration; 2]), String> {
+    let asked = Instant::now();
     let decoded = render::decode(Path::new(path), reading)?;
+    let read = asked.elapsed();
     let (negative, full) = engine.prepare_keeping(decoded)?;
-    Ok((Arc::new(negative), full))
+    Ok(((Arc::new(negative), full), [read, asked.elapsed() - read]))
 }
 
 /// The renderer's thread for thumbnails: an edit's redraw first, then the pass's next photo, each
