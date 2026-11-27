@@ -14342,5 +14342,12 @@
     "status": "done",
     "title": "The shooting exposure's and the film effects' window checks read their notches",
     "detail": "A press at three quarters of the shooting exposure's rail lays the tenth of thirteen thirds, a stop over; Grain's and Grain size's keys and value editor step one named notch (#3884)."
+  },
+  {
+    "id": 4253,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: a colour negative's fitted curves and couplers, and the film effects in notches",
+    "detail": "The working notes follow #3884 to #3891: effect levels made ahead, and the 46 colour negatives' curves and couplers fitted on the owner's reference or their family's mean, the sheet keeping the sensitivities and the D-min."
   }
 ]

@@ -60,15 +60,16 @@ the code; a costly trap keeps its constraint and its number in two lines.
   (5000 K on a RAW), reaches layers balanced for the stock's own light (Portra 800: D55, Vision3 500T: tungsten), so a tungsten film turns a daylight scene
   blue as a real one does and the Source tab's Filtration takes the cast away (owner's call, 2026-11-26); the Film block names both lights. It is exposed
   through Otsu 2018's spectra of real objects (`irradiance_xy_otsu2018.npy`; slides and black and white films keep spektrafilm's table) and developed on
-  its data sheet's Status M curves, its layers inhibiting one another through `couplers`, each film's own matrix derived from its sheet alone
-  (`scripts/derive-couplers.py`), over its bare film's Status M D-min (`film::status`): its negative is those densities, each channel its own layer,
-  written less the veil its reading adds, no dye spectrum, lamp, sensor or matrix between (model S, owner's call, 2026-11-26). That negative is read by the
-  negative pipeline unchanged, its reference derived on it: each channel's black on the bare film, no light, and its white on the sensor's saturation, the
-  decode's 5000 K neutral at the white level, `2^0.48`; a neutral exposes the film's three layers at the same log exposure and the scene's chromaticity is
-  read as it is, no layer offset and no gamut compressed (owner's call, 2026-11-26): each channel's two points are its black on the bare film and its white
-  where a neutral at the sensor's saturation reads, nothing measured on the photos. A paper is a print laid over it, never its reader. The film of no
-  character is the neutral one. spektrafilm's full chain, on its own profiles, stays a benchmark outside the app (`examples/film_compare.rs`,
-  `docs/research/colour-diagnosis`).
+  its `curves`, its layers inhibiting one another through `couplers` (a negative term strengthens a layer), both fitted on a reference the owner chose for
+  16 films (kept out of the repository, the files holding the result) and the family's mean for the 30 others (`scripts/stocks-from-family.py`), the sheet
+  staying the source of the sensitivities and the D-min (owner's call, 2026-11-27), over its bare film's Status M D-min (`film::status`): its negative is
+  those densities, each channel its own layer, written less the veil its reading adds, no dye spectrum, lamp, sensor or matrix between (model S, owner's
+  call, 2026-11-26). That negative is read by the negative pipeline unchanged, its reference derived on it: each channel's black on the bare film, no
+  light, and its white on the sensor's saturation, the decode's 5000 K neutral at the white level, `2^0.48`; a neutral exposes the film's three layers at
+  the same log exposure and the scene's chromaticity is read as it is, no layer offset and no gamut compressed (owner's call, 2026-11-26): each channel's
+  two points are its black on the bare film and its white where a neutral at the sensor's saturation reads, nothing measured on the photos. A paper is a
+  print laid over it, never its reader. The film of no character is the neutral one. spektrafilm's full chain, on its own profiles, stays a benchmark
+  outside the app (`examples/film_compare.rs`, `docs/research/colour-diagnosis`).
 - **A digital photo's virtual negative is a scan made once** (owner's call, 2026-11-26): its scene shot on its film (shooting
   exposure, halation, bloom, curves, grain) is rendered on the scan's grid before any crop or turn (`Pipeline::scan`) and kept in
   `rgba16float` as a decode is, at the editor's resolution, at full definition only once the view reads past it (100 %, export),
@@ -92,12 +93,18 @@ the code; a costly trap keeps its constraint and its number in two lines.
   red alone, so a bright frame takes a light pink veil and its lights a wide glow; the dose is `halation::DOSE_PER_AMOUNT` (0.05 / 0.31) of
   the amount the files and the slider hold; each film's file gives its rests (halation, Bloom from its MTF, grain amount and size), the
   sliders free on top. A slide's lies on its positive; a scanned negative takes none.
+- **A digital photo's film effects are notched** (owner's call, 2026-11-27): grain, halation, bloom and the shooting exposure step through
+  named levels (`oni_settings::effect_levels`), each film's rests among them, ticked on the rail; a key, an arrow or the value editor moves
+  one notch, a drag lands on the nearer, a number typed on the nearest. At rest the render thread makes the preview scans one notch either
+  side of the field the hand moved last, then of exposure and grain, while no job waits (`render::ahead`, four kept, about 85 MB on a 47
+  Mpx photo), so the notch beside lands in the next frame. Format 82 lays an older photo's values on their nearest levels, the person's own
+  stock files read first.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each profile from the
   official sheet's curves into its stock's file; no spektrafilm profile ships. A slide's bake follows spektrafilm's model (its dyes, couplers); a
-  colour negative's is its sheet's Status M curves and its own couplers; a paper's profile is its sheet's Status A curves, D-min included, and its
-  dyes' Status A crosstalk. ONI Standard is one more paper, never a default (owner's calls, 2026-11-24): a neutral paper, one curve on the three
-  layers, pure dyes, no D-min, the logistic in density the six data-sheet papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s −
-  0.354)))` over the window share (`scripts/oni-standard-paper.py`).
+  colour negative's is its fitted curves and couplers over its sheet's sensitivities and D-min, the sheet's printed curves kept in its profile; a
+  paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk. ONI Standard is one more paper, never a default
+  (owner's calls, 2026-11-24): a neutral paper, one curve on the three layers, pure dyes, no D-min, the logistic in density the six data-sheet
+  papers' mean fits within 0.12 L* rms, `D(s) = 2.484 / (1 + exp(5.587 (s − 0.354)))` over the window share (`scripts/oni-standard-paper.py`).
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
   canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
