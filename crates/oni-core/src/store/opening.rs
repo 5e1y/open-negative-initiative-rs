@@ -124,6 +124,17 @@ impl EditorStore {
         self.history.follow(moves);
     }
 
+    /// Whether the open frame holds edits its sidecar has not taken, as a refused write leaves them, beside the very
+    /// original it opened on: another file at its path, a disk of the same name, never takes them.
+    pub fn unwritten(&self) -> bool {
+        self.open.as_ref().is_some_and(|o| {
+            o.writable
+                && o.persisted.as_ref() != Some(&self.settings)
+                && sidecar::should_write(&self.settings, Path::new(&o.path))
+                && o.stamp.is_some_and(|opened| stamp(&o.path) == Some(opened))
+        })
+    }
+
     /// The frames left with edits no write took yet, oldest first.
     pub fn unsaved(&self) -> &[Unsaved] {
         &self.unsaved
@@ -160,8 +171,13 @@ impl EditorStore {
             self.settle(now);
         }
         let open = self.open.as_ref()?;
-        let failure =
-            sidecar::flush(&self.settings, Some(Path::new(&open.path)), open.persisted.as_ref(), open.writable);
+        // Another file at the original's path, a disk of the same name, never takes the frame's settings.
+        let another = open.stamp.is_some() && stamp(&open.path).is_some_and(|now| Some(now) != open.stamp);
+        let failure = if another {
+            (open.persisted.as_ref() != Some(&self.settings)).then(|| tr(ANOTHER).to_string())
+        } else {
+            sidecar::flush(&self.settings, Some(Path::new(&open.path)), open.persisted.as_ref(), open.writable)
+        };
         if failure.is_none() && open.writable && sidecar::should_write(&self.settings, Path::new(&open.path)) {
             self.open.as_mut().expect("open frame").persisted = Some(self.settings.clone());
         }

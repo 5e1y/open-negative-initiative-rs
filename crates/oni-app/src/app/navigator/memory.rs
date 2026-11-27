@@ -166,21 +166,23 @@ impl Ctl {
             let opened = s.opened().map(str::to_owned);
             let refused = opened.as_ref().is_some_and(|o| answering.contains(o) && s.survey().unreadable.contains(o));
             let reread = refused || opened.as_ref().is_some_and(|o| on(&arrived, o));
-            (moved, left, reread, !arrived.is_empty())
+            (moved, left, reread, arrived)
         };
         self.list_wanted();
         if reread {
             self.read_again();
-        } else if arrived {
+        } else if !arrived.is_empty() {
             self.probe_presence();
         }
         if !left.is_empty() {
             self.lay_grid();
+            self.open_photo_left(&left);
         }
-        if arrived {
+        if !arrived.is_empty() {
             self.rewatch_anew();
             // A disk the sweep could not reach is brought once it is back.
             self.start_migration(None);
+            self.open_photo_back(&arrived);
         }
         self.publish_navigator();
         if moved {

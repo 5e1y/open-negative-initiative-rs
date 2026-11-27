@@ -173,6 +173,7 @@ impl Ctl {
             return slint::CloseRequestResponse::HideWindow;
         }
         let failure = self.state.borrow_mut().store.flush();
+        let failure = failure.map(|message| self.open_absence(message));
         // Edits kept from a refused write are lost on quitting too, so they ask the same.
         let kept = self.state.borrow().store.unsaved().first().map(|u| u.message.clone());
         let Some(message) = failure.or(kept) else { return self.quit_exporting() };

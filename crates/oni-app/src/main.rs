@@ -136,7 +136,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let shell: Standing = Rc::default();
     let failed: Rc<RefCell<Option<slint::PlatformError>>> = Rc::default();
     let hz: Rc<RefCell<Option<slint::Timer>>> = Rc::default();
-    let _watching = watch(&window, &shell, &engine);
+    watch(&window, &shell, &engine);
     let steps = vec![
         starter::step(marked("Reading the library"), {
             let support = support.clone();

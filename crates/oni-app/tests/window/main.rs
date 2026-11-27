@@ -186,7 +186,9 @@ mod updates;
 mod visible;
 mod whole_roll;
 mod wrapped;
+mod unplugged;
 mod virtual_film;
+mod watchdog;
 
 
 fn main() {

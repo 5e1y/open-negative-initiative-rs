@@ -3742,6 +3742,10 @@ msgid "“{name}” cannot be shown"
 msgstr "« {name} » ne peut pas s’afficher"
 
 #: crates/oni-app/src/app/opening/missing.rs
+msgid "Its disk “{volume}” is not connected; edits are written once it is back."
+msgstr "Son disque « {volume} » n’est pas branché ; les retouches seront écrites dès son retour."
+
+#: crates/oni-app/src/app/opening/missing.rs
 msgid "Its disk “{volume}” is not connected."
 msgstr "Son disque « {volume} » n’est pas branché."
 

@@ -3,15 +3,15 @@
 use super::*;
 
 /// The window's events and the watchdog, from the starter on; what needs the shell waits for it.
-pub(super) fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> slint::Timer {
-    // The interface thread beats, a thread of its own watches it.
-    let beat = slint::Timer::default();
+pub(super) fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) {
+    // A thread of its own asks the interface thread to answer, which says what it shows.
     let watched = shell.clone();
-    beat.start(slint::TimerMode::Repeated, oni_app::watchdog::BEAT, move || {
-        let witness = watched.try_borrow().ok().and_then(|s| s.as_ref().map(|s| s.ctl.state.borrow().witness()));
-        oni_app::watchdog::beat(Instant::now(), witness.unwrap_or_else(|| "the starter".into()));
+    oni_app::watchdog::witness(move || {
+        let witness = watched.try_borrow().ok().and_then(|s| s.as_ref().and_then(|s| s.ctl.state.try_borrow().ok().map(|s| s.witness())));
+        witness.unwrap_or_else(|| "the starter".into())
     });
-    oni_app::watchdog::start();
+    // Asked from the event loop's first turn on: the launch before it runs no loop to answer in.
+    slint::Timer::single_shot(std::time::Duration::ZERO, oni_app::watchdog::start);
     let room = window.as_weak();
     window.global::<oni_app::Bar>().on_room_pressed(move || {
         if let Some(w) = room.upgrade() {
@@ -96,5 +96,4 @@ pub(super) fn watch(window: &MainWindow, shell: &Standing, engine: &Shared) -> s
         }
         EventResult::Propagate
     });
-    beat
 }

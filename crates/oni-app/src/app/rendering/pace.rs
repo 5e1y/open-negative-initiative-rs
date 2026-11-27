@@ -115,7 +115,7 @@ impl Ctl {
             me.journal_settled();
             me.publish_saved();
             match failure {
-                Some(message) => me.say(&message),
+                Some(message) => me.say(&me.open_refusal(message)),
                 None => me.schedule_redraw(),
             }
             me.balance_at_rest();
@@ -126,7 +126,7 @@ impl Ctl {
     pub(crate) fn flush(&self) {
         let failure = self.state.borrow_mut().store.flush();
         if let Some(message) = failure {
-            self.say(&message);
+            self.say(&self.open_refusal(message));
         }
     }
 

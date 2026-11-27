@@ -14531,5 +14531,26 @@
     "title": "⌘0 and Compare light as soon as the open photo is decoded",
     "status": "done",
     "detail": "The menus read whether the open photo is decoded (Fit, Compare), but nothing published them when its decode landed: a render republished them only when the zoom's reach moved, so a photo landing where the last one lay (the next of the same size), or a first render before the canvas was measured, left ⌘0 dark until another gesture published the menus. The window check the_menus_name_what_they_do_and_the_gestures_reach_every_target failed under load on it. The decode is now laid in through one method, install_negative, for a preview already decoded and a fresh decode alike, which publishes the menus with it. The check's assertion is split in three, each naming what it read, and walks to the next photo of the same size: there ⌘0 is lit once it has rendered; twin, without the publication the check fails 3 times in 3; with it, 24 runs in 24 green, twelve at once under load, and oni-app's 589 unit tests and clippy green."
+  },
+  {
+    "id": 4300,
+    "type": "fix",
+    "title": "The watchdog asks the interface thread to answer instead of waiting on a timer of its own",
+    "status": "done",
+    "detail": "BLOCKED meant a Slint timer had not run for 0.35 s, which also happens while the main thread rests under App Nap or sits in the system's modal loop of a save panel: 45 false blocks in 160 s on a hidden idle window, one during an export's folder picker. A thread of its own now asks the interface thread to answer through the main dispatch queue (macOS; Slint's event loop elsewhere), served whenever the thread is free, the system's modal loops included, never while code holds it; a request unanswered past 0.35 s is a block. Window check watchdog: at rest in its run loop and in the modal panel's mode, no block; twin, held by code, one block. Unit test: answered requests ten seconds apart are no block; twin, one unanswered is one block, ended once answered."
+  },
+  {
+    "id": 4301,
+    "type": "fix",
+    "title": "A photo's disk pulled out is said away, its edits written as soon as it is back, its card lifted",
+    "status": "done",
+    "detail": "Measured on a disk image: the open photo's disk leaving said nothing; an edit then said 'its disk may be disconnected. Nothing was saved.' though the edit is kept; back, the open photo's edit waited for another gesture, and a photo whose card said its disk is not connected kept that card. The open photo's disk leaving now says 'Its disk X is not connected; edits are written once it is back' (French and Spanish), and so does a refused write of it, on the status bar and at quitting; back, a photo under its card opens again and the open photo's unwritten edits are written, beside the very original it opened on only (its size and date), never another file of a disk of the same name. The probe's 'its disk is here' and 'no image reader takes it' came from the check's computer knowing no volume: with /Volumes the gallery's banner, the card and the kept edits were already right. Window check unplugged on a disk image, with twins; store test unwritten, twin another file at the path."
+  },
+  {
+    "id": 4302,
+    "type": "test",
+    "title": "The disk-image probe becomes the unplugged window check",
+    "status": "done",
+    "detail": "tests/window/unplugged.rs attaches its own disk image under /Volumes (hdiutil, detached however the check ends), runs on the system's volumes, and asserts each step: the disk said away at once, an edit kept and written once back without leaving the photo, the gallery's 'Not Connected' banner, a photo opened while away saying its disk is not connected (twin: never 'its disk is here'), then opening by itself once back."
   }
 ]

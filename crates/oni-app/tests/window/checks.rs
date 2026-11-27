@@ -15,6 +15,8 @@ macro_rules! check {
 
 /// Each check by the name the runner prints and filters on.
 pub(crate) const CHECKS: &[(&str, fn())] = &[
+    check!(unplugged::a_photo_disk_pulled_out_is_said_away_and_its_edits_land_once_it_is_back),
+    check!(watchdog::an_interface_thread_at_rest_or_in_a_modal_loop_answers_and_one_held_is_a_block),
     check!(motion_open::the_photo_opened_in_the_editor_shows_once_the_tile_has_landed),
     check!(motion_open::the_photo_opened_on_prepare_shows_once_the_tile_has_landed),
     check!(motion_open::a_roll_opened_from_the_gallery_lands_on_its_sheet_as_a_wave),

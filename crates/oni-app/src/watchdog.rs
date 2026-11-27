@@ -1,11 +1,12 @@
-//! `Diagnostics`' watchdog: the interface thread beats every 0.1 s, a thread of its own writes a
-//! block past 0.35 s to the log while it lasts, the footprint beside it, and the console counts them;
-//! a block past `LONG_BLOCK` writes where the interface thread waits, read by the system's `sample`.
+//! `Diagnostics`' watchdog: a thread of its own asks the interface thread to answer every 0.1 s, a request
+//! unanswered past 0.35 s is a block written to the log while it lasts, the footprint beside it, and the console
+//! counts them; a block past `LONG_BLOCK` writes where the interface thread waits, read by the system's `sample`.
 
+use std::cell::RefCell;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-/// `Diagnostics.stallFloor` and `beat`.
+/// `Diagnostics.stallFloor` and how often the interface thread is asked.
 pub const STALL_FLOOR: Duration = Duration::from_millis(350);
 pub const BEAT: Duration = Duration::from_millis(100);
 /// A block this long is no slow frame but a wait that may never end: its stack is worth the log.
@@ -13,30 +14,47 @@ pub const LONG_BLOCK: Duration = Duration::from_secs(5);
 
 #[derive(Default)]
 struct Store {
-    last_seen: Option<Instant>,
+    /// When the request still unanswered was asked.
+    asked: Option<Instant>,
+    /// How long the last answered request waited.
+    waited: Duration,
     witness: String,
     reporting: bool,
     sampled: bool,
     stalls: usize,
 }
 
-static STORE: Mutex<Store> = Mutex::new(Store { last_seen: None, witness: String::new(), reporting: false, sampled: false, stalls: 0 });
+static STORE: Mutex<Store> =
+    Mutex::new(Store { asked: None, waited: Duration::ZERO, witness: String::new(), reporting: false, sampled: false, stalls: 0 });
 
-/// `mainThreadBeat`: the interface thread says it answers, and what it was showing.
-pub fn beat(at: Instant, witness: String) {
+thread_local! {
+    /// What the interface shows, read by the thread that answers: the interface thread alone sets it.
+    static WITNESS: RefCell<Option<Box<dyn Fn() -> String>>> = const { RefCell::new(None) };
+}
+
+/// What the interface thread says it shows as it answers, set on that thread.
+pub fn witness(said: impl Fn() -> String + 'static) {
+    WITNESS.with(|w| *w.borrow_mut() = Some(Box::new(said)));
+}
+
+/// The interface thread answers the request waiting, if any, with what it shows.
+pub fn answer(at: Instant, witness: String) {
     if let Ok(mut s) = STORE.lock() {
-        s.last_seen = Some(at);
+        if let Some(asked) = s.asked.take() {
+            s.waited = at.saturating_duration_since(asked);
+        }
         s.witness = witness;
     }
 }
 
-/// One beat of the watchdog: a block begun or ended is written to the log; how long the interface
-/// thread has been silent while blocked.
-pub fn check(now: Instant) -> Option<Duration> {
-    let (since, seen, began, ended, long) = {
+/// One turn of the watchdog at `now`: a block begun or ended is written to the log, a new request handed to `ask`
+/// when none waits; how long the interface thread has left a request unanswered while blocked.
+pub fn check(now: Instant, ask: impl FnOnce()) -> Option<Duration> {
+    let (since, seen, began, ended, long, asking) = {
         let mut s = STORE.lock().ok()?;
-        let since = now.saturating_duration_since(s.last_seen?);
-        let blocked = since > STALL_FLOOR;
+        let waiting = s.asked.map(|asked| now.saturating_duration_since(asked));
+        let blocked = waiting.is_some_and(|w| w > STALL_FLOOR);
+        let since = waiting.unwrap_or(s.waited);
         let (began, ended) = (blocked && !s.reporting, !blocked && s.reporting);
         if began {
             s.stalls += 1;
@@ -45,8 +63,15 @@ pub fn check(now: Instant) -> Option<Duration> {
         let long = blocked && since > LONG_BLOCK && !s.sampled;
         s.sampled |= long;
         s.reporting = blocked;
-        (since, s.witness.clone(), began, ended, long)
+        let asking = s.asked.is_none();
+        if asking {
+            s.asked = Some(now);
+        }
+        (since, s.witness.clone(), began, ended, long, asking)
     };
+    if asking {
+        ask();
+    }
     if long {
         let _ = std::thread::Builder::new().name("watchdog sample".into()).spawn(|| {
             let frames = waiting_frames();
@@ -60,7 +85,7 @@ pub fn check(now: Instant) -> Option<Duration> {
     } else if ended {
         crate::timing::line(&format!("recovered · the interface thread answers again after {:.2} s · footprint {mb}", since.as_secs_f64()));
     }
-    (since > STALL_FLOOR).then_some(since)
+    (since > STALL_FLOOR && !ended).then_some(since)
 }
 
 /// The blocks counted this session.
@@ -73,9 +98,40 @@ pub fn start() {
     let _ = std::thread::Builder::new().name("watchdog".into()).spawn(|| {
         loop {
             std::thread::sleep(BEAT);
-            check(Instant::now());
+            check(Instant::now(), ask_interface);
         }
     });
+}
+
+/// The interface thread asked through the main dispatch queue, served whenever the thread is free, the system's modal
+/// loops included, and never while code holds it: a timer stops in those loops and sleeps under App Nap.
+#[cfg(target_os = "macos")]
+fn ask_interface() {
+    #[repr(C)]
+    struct Queue {
+        _opaque: [u8; 0],
+    }
+    unsafe extern "C" {
+        static _dispatch_main_q: Queue;
+        fn dispatch_async_f(queue: *const Queue, context: *mut std::ffi::c_void, work: extern "C" fn(*mut std::ffi::c_void));
+    }
+    extern "C" fn answered(_: *mut std::ffi::c_void) {
+        answered_here();
+    }
+    // SAFETY: the main queue lives as long as the process, and `answered` reads nothing through its context.
+    unsafe { dispatch_async_f(&raw const _dispatch_main_q, std::ptr::null_mut(), answered) };
+}
+
+/// The interface thread asked through Slint's event loop.
+#[cfg(not(target_os = "macos"))]
+fn ask_interface() {
+    let _ = slint::invoke_from_event_loop(answered_here);
+}
+
+/// The answer, on the interface thread.
+fn answered_here() {
+    let witness = WITNESS.with(|w| w.borrow().as_ref().map_or_else(|| "the starter".to_string(), |said| said()));
+    answer(Instant::now(), witness);
 }
 
 /// The interface thread's frames as the system's `sample` reads them over a second, innermost first: each
@@ -138,19 +194,26 @@ fn footprint() -> Option<u64> {
 mod tests {
     use super::*;
 
-    /// A silence past the floor is one block written once, its end written once; the twin, a
-    /// silence under the floor, is none. One test, as the store is the process's own.
+    /// A request unanswered past the floor is one block written once, its end written once; the twin, a request
+    /// answered within the floor, is none, however long no timer ran. One test, as the store is the process's own.
     #[test]
-    fn a_silence_past_the_floor_counts_one_block() {
+    fn a_request_unanswered_past_the_floor_counts_one_block() {
         let t0 = Instant::now();
-        beat(t0, "the gallery".into());
+        let at = |ms: u64| t0 + Duration::from_millis(ms);
+        answer(t0, "the gallery".into());
         let before = blocks();
-        assert_eq!(check(t0 + Duration::from_millis(200)), None, "twin: 0.2 s is not a block");
-        assert!(check(t0 + Duration::from_millis(500)).is_some());
-        assert!(check(t0 + Duration::from_millis(900)).is_some(), "still the same block");
+        // Asked and answered at once, ten seconds apart: a thread at rest answers, it is not blocked.
+        for second in 0..10 {
+            assert_eq!(check(at(1000 * second), || answer(at(1000 * second + 5), "the gallery".into())), None, "twin: an answer in time");
+        }
+        assert_eq!(blocks(), before, "an answering thread is no block");
+        let asked = at(20_000);
+        assert_eq!(check(asked, || {}), None, "asked, not yet late");
+        assert!(check(asked + Duration::from_millis(500), || panic!("one request at a time")).is_some());
+        assert!(check(asked + Duration::from_millis(900), || {}).is_some(), "still the same block");
         assert_eq!(blocks(), before + 1, "one block, however long it lasts");
-        beat(t0 + Duration::from_millis(950), "the editor".into());
-        assert_eq!(check(t0 + Duration::from_millis(1000)), None, "recovered");
+        answer(asked + Duration::from_millis(950), "the editor".into());
+        assert_eq!(check(asked + Duration::from_millis(1000), || {}), None, "recovered");
         assert!(footprint().is_none_or(|b| b > 1_000_000), "a footprint in bytes");
     }
 

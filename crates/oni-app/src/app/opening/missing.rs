@@ -70,6 +70,11 @@ pub(crate) fn said(cause: &Cause, name: &str) -> (String, String) {
     }
 }
 
+/// What the open photo's edits wait on while its disk is away.
+pub(in crate::app) fn kept_away(volume: &str) -> String {
+    tr!("Its disk “{volume}” is not connected; edits are written once it is back.", volume = volume)
+}
+
 /// Why a sidecar refused the edits of `path`: the disk's reason in the hand's words when it is
 /// one of the absences, else the disk's own message.
 fn refusal(computer: &Computer, path: &str, message: &str) -> String {
@@ -93,6 +98,65 @@ impl Ctl {
         a.on_back(move || p.act(Act::ToggleMode));
         let p = me.clone();
         window.global::<crate::Unsaved>().on_answered(move |i| p.unsaved_answered(i));
+    }
+
+    /// Why the open photo's sidecar refused `message`'s write, in the hand's words while its disk is away.
+    pub(in crate::app) fn open_refusal(&self, message: String) -> String {
+        let s = self.state.borrow();
+        match s.store.path().and_then(|p| absence::absence(&s.nav.computer, Path::new(p))) {
+            Some(Absence::Unplugged { volume }) => kept_away(&volume),
+            _ => message,
+        }
+    }
+
+    /// `open_refusal`'s cause alone, the disk's reason with no word of what waits for it.
+    pub(in crate::app) fn open_absence(&self, message: String) -> String {
+        let s = self.state.borrow();
+        s.store.path().map_or(message.clone(), |p| refusal(&s.nav.computer, p, &message))
+    }
+
+    /// The disk of the photo the editor shows gone: said at once, the photo left as shown.
+    pub(in crate::app) fn open_photo_left(&self, left: &[String]) {
+        let Some(w) = self.window() else { return };
+        if w.global::<crate::App>().get_gallery() || !w.global::<crate::Absent>().get_title().is_empty() {
+            return;
+        }
+        let away = {
+            let s = self.state.borrow();
+            let path = s.store.path().filter(|p| left.iter().any(|v| paths::holds(v, p)));
+            path.and_then(|p| absence::absence(&s.nav.computer, Path::new(p)))
+        };
+        if let Some(Absence::Unplugged { volume }) = away {
+            self.say(&tr!("Its disk “{volume}” is not connected.", volume = volume));
+        }
+    }
+
+    /// The disk of the photo the editor shows back: a photo its card kept off the canvas opens again, edits a refused
+    /// write kept are written, at once unless a gesture moves files.
+    pub(in crate::app) fn open_photo_back(self: &Rc<Self>, arrived: &[String]) {
+        let Some(path) = self.state.borrow().store.path().filter(|p| arrived.iter().any(|v| paths::holds(v, p))).map(str::to_string) else {
+            return;
+        };
+        let Some(w) = self.window() else { return };
+        if w.global::<crate::App>().get_gallery() {
+            return;
+        }
+        if !w.global::<crate::Absent>().get_title().is_empty() {
+            return self.open_photo(&path);
+        }
+        if !self.state.borrow().store.unwritten() {
+            return;
+        }
+        if self.state.borrow().org.disk_busy.is_some() {
+            return self.schedule_write();
+        }
+        let failure = self.state.borrow_mut().store.flush();
+        self.journal_settled();
+        self.publish_saved();
+        match failure {
+            None => self.say(tr("The kept edits are saved.")),
+            Some(message) => self.say(&self.open_refusal(message)),
+        }
     }
 
     /// The open frame's original cannot be seen, so its sliders take no hand.

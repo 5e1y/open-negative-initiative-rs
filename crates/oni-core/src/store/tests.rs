@@ -11,6 +11,7 @@ mod one_history;
 mod one_path;
 mod slides;
 mod together;
+mod unwritten;
 
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
