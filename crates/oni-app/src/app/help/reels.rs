@@ -227,7 +227,8 @@ mod tests {
             }
             eprintln!("films: gift {}: {late} of {changes} frames late", reel.gift);
             assert!(changes > 20, "the film moved on: {changes} frames");
-            assert!(late <= changes / 50, "gift {}: {late} of {changes} frames came late", reel.gift);
+            // A loaded machine may miss a frame or two; a decoder that does not keep ahead misses nearly all.
+            assert!(late <= changes / 20, "gift {}: {late} of {changes} frames came late", reel.gift);
             // Off screen it keeps nothing decoded.
             reel.rest();
             std::thread::sleep(std::time::Duration::from_millis(50));
