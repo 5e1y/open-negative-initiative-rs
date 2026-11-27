@@ -8,7 +8,7 @@ impl State {
         self.order.iter().enumerate().filter(|(_, p)| self.picks.selection.contains(*p)).map(|(i, _)| i).collect()
     }
 
-    /// `TreeEngine.marked`: the selection the gallery shares, and the ring (`TreeEngine.swift:247`).
+    /// Whether `path` is marked in the tree: the selection the gallery shares, and the ring.
     pub(super) fn tree_marks(&self, path: &str) -> bool {
         self.picks.selection.contains(path) || self.picks.anchor.as_deref() == Some(path)
     }

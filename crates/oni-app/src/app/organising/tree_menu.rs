@@ -5,7 +5,7 @@ use super::*;
 use oni_library::archive_tree::NodeId as ArchiveNode;
 
 impl Ctl {
-    /// `filmContextMenu` (`EditorScene+Gallery.swift:112`): a folder alone takes the navigator's
+    /// The folders' tree's menu: a folder alone takes the navigator's
     /// folder menu; photos alone take the cell menu; the rest shows in the Finder.
     pub(in crate::app) fn row_menu(self: &Rc<Self>, i: usize) -> bool {
         let can_paste = self.can_paste();
@@ -30,7 +30,7 @@ impl Ctl {
         self.open_menu(items, path)
     }
 
-    /// `projectContextMenu` (`EditorScene+Rolls.swift:179`): photos and rolls alone take the cell
+    /// The projects' tree's menu: photos and rolls alone take the cell
     /// menu on their photos; a project alone, Rename… and Delete Project; several open nothing.
     pub(in crate::app) fn project_row_menu(self: &Rc<Self>, i: usize) -> bool {
         let can_paste = self.can_paste();

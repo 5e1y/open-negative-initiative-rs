@@ -23,7 +23,7 @@ impl Ctl {
         self.publish_tree();
     }
 
-    /// `click` then `openFromTree` (`EditorScene+Lab.swift:110`): a photo row opens its photo, a
+    /// A photo row opens its photo, a
     /// group's row beside a photo its first one; the column stays where the hand is. With ⌘ or ⇧
     /// the row joins the tree's pick, whose photos become the selection (`pickInColumn`).
     pub(super) fn row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
@@ -106,7 +106,7 @@ impl Ctl {
         }
     }
 
-    /// `clickEmpty` (`TreeEngine.swift:427`, `EditorScene+Removal.swift:581`): a click on no row
+    /// A click on no row
     /// drops the tree's pick, the selection and the ring; the photo open stays open.
     pub(super) fn tree_empty_clicked(self: &Rc<Self>) {
         self.exit_tree_editing();

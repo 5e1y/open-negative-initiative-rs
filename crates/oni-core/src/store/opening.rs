@@ -37,8 +37,8 @@ impl EditorStore {
         self.open_adjusted(path, |_| {})
     }
 
-    /// `open`, the settings read handed to `adjust` before its steps start on them, as Swift lays the
-    /// remembered flat-field sliders (`EditorScene+Actions.swift:71-72`).
+    /// `open`, the settings read handed to `adjust` before its steps start on them, as the remembered
+    /// flat-field sliders are laid.
     pub fn open_adjusted(&mut self, path: &str, adjust: impl FnOnce(&mut PipelineSettings)) -> Result<(), sidecar::Error> {
         self.leave();
         // A sidecar is absent for a new photo, or when its disk is gone: the original's absence says

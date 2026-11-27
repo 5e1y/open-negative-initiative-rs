@@ -14188,5 +14188,12 @@
     "title": "The editors' tests in two files: the curves and levels, the wheel, saturation and bands",
     "status": "done",
     "detail": "editors/tests.rs had stood past the 400-line ceiling (466 grandfathered, 451 then). The colour wheel's, the saturation's, the band sliders', the block reset's and the wheel focus's seven tests go to editors/tests/wheel.rs, moved line for line; the helpers, the curves', the levels' and the settle delay's stay (290 lines). Its ceiling entry goes. oni-app's 581 unit tests green."
+  },
+  {
+    "id": 4069,
+    "type": "refactor",
+    "title": "Comments cite no Swift file any more",
+    "status": "done",
+    "detail": "Seventeen comments in the tree's code (tree_pick, sidebar, project_drop, tree_clicks, state_read, tree_column, tree_reveal, tree_menu) and the store (commands, opening) named the Swift function or file:line they once ported; each now says what it does and why alone, and two test comments that restated their test's name went. Comments only."
   }
 ]

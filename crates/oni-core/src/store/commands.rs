@@ -31,7 +31,7 @@ impl EditorStore {
     }
 
     /// The hand lifts and the step waits `SETTLE_DELAY` past the last change, so a press landing
-    /// sooner, a double click's second, joins it (`EditorScene+Effects.swift:59-62`).
+    /// sooner, a double click's second, joins it.
     pub fn release_deferred(&mut self) {
         let now = self.now();
         self.release_deferred_at(now);

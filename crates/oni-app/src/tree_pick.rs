@@ -1,4 +1,4 @@
-//! `TreeEngine`'s own picks (`TreeEngine.swift:401-419`): ⌘ and ⇧ gather rows apart from the ring,
+//! The tree's own picks: ⌘ and ⇧ gather rows apart from the ring,
 //! and a right click acts on the whole pick when it lands inside it, else on its own row.
 
 use oni_library::archive_tree::NodeId;

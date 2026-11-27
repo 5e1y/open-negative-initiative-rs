@@ -1,4 +1,4 @@
-//! The library column's two trees as `TreeEngine` lays them (`TreeEngine.swift:93-98,332-380`): a
+//! The library column's two trees as they are laid out: a
 //! photo as a name or a thumbnail by `SidebarLayout`, the open row held under the top while its children pass.
 
 use super::*;
@@ -6,7 +6,7 @@ use super::organising::reach;
 use crate::TreePin;
 use crate::sidebar::{self, Frame, Layout, Metrics};
 
-/// `sidebarLayout.editor` and `sidebarLayout.gallery` (`OpenNegativeApp.swift:253-254`).
+/// The keys under which the editor's and the gallery's column layouts are remembered.
 const EDITOR_LAYOUT: &str = "sidebarLayout.editor";
 const GALLERY_LAYOUT: &str = "sidebarLayout.gallery";
 

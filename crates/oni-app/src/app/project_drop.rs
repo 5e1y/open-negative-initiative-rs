@@ -1,4 +1,4 @@
-//! A drag in the projects' tree (`TreeEngine.swift:234-244,458-552`, `EditorScene+Rolls.swift:202-271`):
+//! A drag in the projects' tree:
 //! the pick or the row pressed, onto a project to join it or between two rows, to the projects file alone.
 
 use super::organising::DRAG_DISTANCE;
@@ -190,8 +190,7 @@ impl Ctl {
         w.global::<Library>().set_project_drag(mark);
     }
 
-    /// `clickEmpty` then `clickEmptyProjects` (`TreeEngine.swift:427`, `EditorScene+Rolls.swift:300`):
-    /// a click on no row drops the tree's pick, the selection and the project's ring.
+    /// A click on no row drops the tree's pick, the selection and the project's ring.
     pub(super) fn project_empty_clicked(self: &Rc<Self>) {
         self.exit_tree_editing();
         {

@@ -38,7 +38,7 @@ impl State {
 }
 
 impl Ctl {
-    /// `expandAncestors` on the ring's move (`EditorScene+Stages.swift:121`): the folders above the
+    /// On the ring's move, the folders above the
     /// photo the column follows unfold; answers whether a row was added.
     pub(super) fn unfold_archive(&self) -> bool {
         let target = self.tree_target();
@@ -53,14 +53,14 @@ impl Ctl {
         }
     }
 
-    /// `centreSelected` (`EditorScene+Removal.swift:300`): the key unfolds the photo's folders
+    /// The key unfolds the photo's folders
     /// again, one a hand folded included, then centres it.
     pub(super) fn centre_key(&self) {
         self.state.borrow_mut().reveal.archive = None;
         self.centre_tree();
     }
 
-    /// The ring's move on the projects (`EditorScene+Stages.swift:124`): the photo rings under the
+    /// The ring's move on the projects: the photo rings under the
     /// first project holding it, which unfolds, unless it is ringed already under one.
     pub(super) fn reveal_project(&self) {
         let found = {

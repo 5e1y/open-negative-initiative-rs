@@ -171,7 +171,6 @@ mod tests {
         Frame { x, y, width, height }
     }
 
-    /// `TreeDropTarget.selfCheck` (`Checks/UI/ListPicking+Checks.swift:35`).
     #[test]
     fn a_drop_over_the_tree_lands_where_its_strips_say() {
         // A folder, two photos of one run, a deeper photo, then a last folder.
@@ -189,7 +188,6 @@ mod tests {
         assert_eq!(at(170.0, 50.0, &[1; 5], true), Some(Before(3)));
     }
 
-    /// `rowViewSelfCheck`'s reading and pinning (`Checks/UI/TreeEngine+Checks.swift:39-74`).
     #[test]
     fn a_row_is_read_off_its_frame_and_an_open_roll_holds_the_top_over_its_photos() {
         let (frames, total) = frames(&[false, true, true, true, false], &[0, 1, 1, 1, 0], 200.0, 2, M);
