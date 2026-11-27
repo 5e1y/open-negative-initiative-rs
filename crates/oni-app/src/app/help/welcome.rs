@@ -31,6 +31,11 @@ impl Ctl {
         let p = me.clone();
         help.on_welcome_sized(move |width, height, foot, middle| p.welcome_set(|play| (play.size, play.foot, play.middle) = ((width, height), foot, middle)));
         let p = me.clone();
+        help.on_overture_skip(move || {
+            p.welcome_set(|play| play.overture = false);
+            p.welcome_frame();
+        });
+        let p = me.clone();
         help.on_message_on(move || {
             p.welcome_set(|play| play.told = play.told.or(Some(play.now())));
             p.welcome_frame();
@@ -141,6 +146,7 @@ impl Ctl {
                 foot: 0.0,
                 middle: 0.5,
                 told: None,
+                overture: !w.global::<crate::Motion>().get_reduced(),
                 flying: Arc::new(AtomicBool::new(false)),
                 reels: reels::reels(),
                 _timer: timer,

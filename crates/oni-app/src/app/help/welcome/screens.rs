@@ -66,6 +66,8 @@ pub(in crate::app) struct Playing {
     pub(super) middle: f32,
     /// When the message was asked past its announcement, on the welcome's clock.
     pub(super) told: Option<f32>,
+    /// Whether the overture, 1.6 turning into 2.0, still plays over the first screen.
+    pub(super) overture: bool,
     /// Whether the GPU is still drawing the last picture handed to it.
     pub(super) flying: Arc<AtomicBool>,
     /// The gifts' films, each decoded as it plays off this thread.

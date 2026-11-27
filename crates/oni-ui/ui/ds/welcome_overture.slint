@@ -1,0 +1,115 @@
+// The welcome's overture: the 1.6 interface's ground and face, "ONI 1.6", turned into the 2.0 welcome's, "ONI 2.0",
+// then gliding up off the first gift as the screens do. Its time is the welcome's clock; any press skips it.
+import { WelcomeStyle } from "welcome.slint";
+import { StageStyle, Beat } from "welcome_stage.slint";
+import "../../fonts/ONI16Mark.ttf";
+
+export global OvertureStyle {
+    // The 1.6 interface as it was, its ground and its face, held here and never read from the live tokens.
+    out property <color> ground-1-6: #282828;
+    out property <string> old-family: "ONI 1.6 Mark";
+    out property <length> mark: 96px;
+    // Its beats, in seconds: the old ground comes, the turn begins and ends, the overture glides away and is gone.
+    out property <float> lit: 0.15;
+    out property <float> turning: 0.9;
+    out property <float> turn: 0.7;
+    out property <float> leaving: 2.0;
+    out property <float> leave: 0.6;
+}
+
+export component Overture inherits Rectangle {
+    // Seconds since the welcome opened; below 0, no overture.
+    in property <float> t: -1;
+    callback skipped();
+    // Told once its last beat is past, so the welcome stops drawing it.
+    callback ended();
+    property <float> come: Beat.glide(root.t, OvertureStyle.lit, 0.3);
+    property <float> turned: Beat.glide(root.t, OvertureStyle.turning, OvertureStyle.turn);
+    // The word tracks out over the turn's first half; the new face takes it at the same width.
+    property <float> widen: Beat.glide(root.t, OvertureStyle.turning, OvertureStyle.turn / 2);
+    property <bool> new-face: root.t >= OvertureStyle.turning + OvertureStyle.turn / 2;
+    // The figures roll as an odometer's, weighted, the old ones up and out, the new ones up in.
+    property <float> roll: Beat.at(root.t, OvertureStyle.turning + 0.15, OvertureStyle.turn);
+    property <float> gone: Beat.glide(root.t, OvertureStyle.leaving, OvertureStyle.leave);
+    visible: root.t >= 0 && root.t < OvertureStyle.leaving + OvertureStyle.leave;
+    changed t => {
+        if (root.t >= OvertureStyle.leaving + OvertureStyle.leave) { root.ended(); }
+    }
+    TouchArea {
+        clicked => { root.skipped(); }
+    }
+    plate := Rectangle {
+        y: -root.gone * root.height;
+        width: root.width;
+        height: root.height;
+        background: StageStyle.ground;
+        Rectangle {
+            background: OvertureStyle.ground-1-6;
+            opacity: root.come * (1 - root.turned);
+        }
+        // Each word and figure measured in both faces, unseen, for the widths the turn moves between.
+        old-word := Text { opacity: 0; text: @tr("ONI"); font-family: OvertureStyle.old-family; font-size: OvertureStyle.mark; }
+        new-word := Text { opacity: 0; text: @tr("ONI"); font-family: WelcomeStyle.headline-family; font-weight: WelcomeStyle.headline-weight; font-size: OvertureStyle.mark; }
+        old-figures := Text { opacity: 0; text: "1.6"; font-family: OvertureStyle.old-family; font-size: OvertureStyle.mark; }
+        new-figures := Text { opacity: 0; text: "2.0"; font-family: WelcomeStyle.headline-family; font-weight: WelcomeStyle.headline-weight; font-size: OvertureStyle.mark; }
+        // The old word tracks out until it is exactly as wide as the new face's, which takes it there: one width, two faces.
+        property <length> word-width: root.new-face ? new-word.preferred-width : old-word.preferred-width + (new-word.preferred-width - old-word.preferred-width) * root.widen;
+        property <length> tracking: (new-word.preferred-width - old-word.preferred-width) / 2 * root.widen;
+        property <length> figures-width: old-figures.preferred-width + (new-figures.preferred-width - old-figures.preferred-width) * root.roll;
+        property <length> gap: OvertureStyle.mark * 0.3;
+        property <length> line: max(old-word.preferred-height, new-word.preferred-height);
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2 + (1 - root.come) * StageStyle.rise;
+            width: plate.word-width + plate.gap + plate.figures-width;
+            height: plate.line;
+            opacity: root.come;
+            // The word: the old face stretched toward the new one's width, then the new face settling into its own.
+            Rectangle {
+                x: 0;
+                width: plate.word-width;
+                if !root.new-face: Text {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    text: @tr("ONI");
+                    font-family: OvertureStyle.old-family;
+                    font-size: OvertureStyle.mark;
+                    color: StageStyle.ink;
+                    letter-spacing: plate.tracking;
+                }
+                if root.new-face: Text {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    text: @tr("ONI");
+                    font-family: WelcomeStyle.headline-family;
+                    font-weight: WelcomeStyle.headline-weight;
+                    font-size: OvertureStyle.mark;
+                    color: StageStyle.ink;
+                }
+            }
+            // The figures, rolling inside their own window.
+            Rectangle {
+                x: plate.word-width + plate.gap;
+                width: plate.figures-width;
+                clip: true;
+                Text {
+                    x: 0;
+                    y: (parent.height - self.height) / 2 - root.roll * parent.height;
+                    text: "1.6";
+                    font-family: OvertureStyle.old-family;
+                    font-size: OvertureStyle.mark;
+                    color: StageStyle.ink;
+                }
+                Text {
+                    x: 0;
+                    y: (parent.height - self.height) / 2 + (1 - root.roll) * parent.height;
+                    text: "2.0";
+                    font-family: WelcomeStyle.headline-family;
+                    font-weight: WelcomeStyle.headline-weight;
+                    font-size: OvertureStyle.mark;
+                    color: StageStyle.ink;
+                }
+            }
+        }
+    }
+}

@@ -2,6 +2,7 @@
 // opened by a click or Return, then its demo on the left and its words on the right; the message comes last.
 import { Space, Label, TextRole, Tone, Button, Sheet, SheetFooter } from "ds/ds.slint";
 import { WelcomeStyle, Headline } from "ds/ds.slint";
+import { Overture } from "ds/ds.slint";
 import { StageStyle, Beat, StagePicture, StageLine, StageNote, StageText, DemoFrame, DemoReel, StageRail } from "ds/ds.slint";
 import { Help } from "help.slint";
 import { Kit, KitLink } from "gear_state.slint";
@@ -53,6 +54,7 @@ export component WelcomeSheet inherits Sheet {
     property <length> words-room: root.height - 2 * footer-room.height;
     // On: the gift opened if it is still wrapped, else the next screen; the last screen's key enters the app.
     function onward() {
+        if (Help.overture-time >= 0) { Help.overture-skip(); return; }
         if (root.last && Help.message-turn < 1) { Help.message-on(); } else if (root.last) { Help.welcome-closed(); } else if (!root.opened) { Help.welcome-open(); } else { Help.welcome-go(1); }
     }
     function sized() { Help.welcome-sized(root.width, root.height, footer-room.height, (root.left + root.demo-width / 2) / root.width); }
@@ -62,7 +64,7 @@ export component WelcomeSheet inherits Sheet {
     changed demo-width => { root.sized(); }
     dismissed => { Help.welcome-closed(); }
     returned => { root.onward(); }
-    paged(by) => { Help.welcome-go(by); }
+    paged(by) => { if (Help.overture-time >= 0) { Help.overture-skip(); } else { Help.welcome-go(by); } }
     StagePicture {
         source: Help.stage;
         revision: Help.stage-revision;
@@ -228,6 +230,14 @@ export component WelcomeSheet inherits Sheet {
                 backed => { Help.welcome-go(-1); }
                 committed => { root.onward(); }
             }
+        }
+        // The overture, over every screen and key until it has played: 1.6 turning into 2.0; a press skips it.
+        Overture {
+            width: root.width;
+            height: root.height;
+            t: Help.overture-time;
+            skipped => { Help.overture-skip(); }
+            ended => { Help.overture-skip(); }
         }
     }
 }

@@ -27,6 +27,9 @@ export global Help {
     in property <float> stage-offset;
     // How far the message has turned from its announcement to what it says, 0 to 1; asking for it turns it at once.
     in property <float> message-turn;
+    // Seconds into the welcome's overture, 1.6 turning into 2.0; below 0 once it has played or been skipped.
+    in property <float> overture-time: -1;
+    callback overture-skip();
     callback message-on();
     // The stage the GPU draws, its revision bumped at each picture drawn into the same texture; while it is not
     // drawn (not yet, or not on this GPU), each gift's still in its place.

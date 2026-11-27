@@ -180,6 +180,15 @@ pub(crate) fn the_welcome_is_unwrapped_screen_by_screen() {
         shell.ctl.welcome_hold(Some(0.0));
         help.get_stage_live() && help.get_stage().size().width > 0
     });
+    // The overture on the welcome's own clock: the dark, the 1.6 ground and face, the turn to 2.0, the glide away.
+    for at in [0.05, 0.4, 0.95, 1.15, 1.3, 1.5, 1.9, 2.3] {
+        reel.step(at - reel.clock);
+        assert!(help.get_overture_time() >= 0.0, "the overture plays at {at} s");
+        reel.keep();
+    }
+    reel.cut("overture");
+    reel.step(2.8 - reel.clock);
+    assert_eq!(help.get_overture_time(), -1.0, "played, it gives the welcome back");
     for page in 1..=4 {
         let gift = page as usize - 1;
         reel.play(0.6, 0.2);
@@ -284,6 +293,14 @@ pub(crate) fn a_welcome_seen_plays_again_from_its_first_gift() {
         rig.settle();
         assert!(help.get_welcome_shown(), "round {round}: the menu shows the welcome");
         assert_eq!((help.get_welcome_page(), help.get_welcome_unwrapped()), (1, 0), "round {round}: on its first gift, every gift wrapped");
+        // Its overture plays, and a click anywhere skips it, the welcome left as it stands: no gift opened, no step.
+        assert!(help.get_overture_time() >= 0.0, "round {round}: the overture plays");
+        let middle = slint::LogicalPosition::new(720.0, 450.0);
+        rig.window.dispatch_event(slint::platform::WindowEvent::PointerPressed { position: middle, button: slint::platform::PointerEventButton::Left });
+        rig.window.dispatch_event(slint::platform::WindowEvent::PointerReleased { position: middle, button: slint::platform::PointerEventButton::Left });
+        rig.pump();
+        assert_eq!(help.get_overture_time(), -1.0, "round {round}: a click skips the overture");
+        assert_eq!((help.get_welcome_page(), help.get_welcome_unwrapped(), help.get_opened_time()), (1, 0, -1.0), "round {round}: twin, the click opened nothing");
         // Opened, then left at its end: seen, and nothing of its gifts kept for the next showing.
         help.invoke_welcome_open();
         assert_ne!(help.get_welcome_unwrapped(), 0, "round {round}: twin, the gift opened shows opened");

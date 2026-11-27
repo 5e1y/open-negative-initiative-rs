@@ -14503,5 +14503,12 @@
     "status": "done",
     "title": "CLAUDE.md: the version's picture stays 3.4 s at every launch",
     "detail": "The working notes follow #3895 and #3896: the starter stays until the kernels are compiled and 3.4 s have passed, and prepares the default film and the photo opened last meanwhile."
+  },
+  {
+    "id": 3976,
+    "type": "feature",
+    "title": "The welcome opens on an overture: ONI 1.6 on the 1.6 interface's grey turns into ONI 2.0 on the welcome's black, then glides off the first gift",
+    "status": "done",
+    "detail": "Owner's call: at every opening of the welcome, its menu's included, the screen is dark, then 'ONI 1.6' in the face 1.6 set its words in (Inter, pinned bold and cut to those glyphs under a family of its own, ONI 1.6 Mark, 1.9 KB, scripts/welcome-overture-font.py, not loaded anywhere else) on 1.6's ground (#282828, held as the scene's constant, never read from the live tokens). The turn is a transformation: the word tracks out until it is exactly as wide as Zalando Sans Expanded Black's, which takes it there, while the figures roll as an odometer's, 1.6 up and out, 2.0 up in, and the grey goes out to the welcome's black; 'ONI 2.0' holds, then the overture glides up off the first gift as the screens do. 2.6 s on the welcome's clock; a click, a key or Return skips it at once and does nothing else; with reduced motion it does not play. Checks: welcome_reel (the overture at eight instants on a held clock, its sheet kept, then the welcome given back), a_welcome_seen_plays_again_from_its_first_gift (the overture plays at each showing from the menu; a click skips it; twin: the click opened no gift and moved no screen), welcome_card (both), design_system, help; catalogue."
   }
 ]
