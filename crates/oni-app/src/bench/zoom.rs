@@ -3,9 +3,12 @@
 
 use super::*;
 
-/// Sixty pan steps of 6 points, a trackpad's glide, once at 100 %.
+/// Sixty pan steps of 6 points at 100 %, in strokes.
 pub(super) const PANS: usize = 60;
 pub(super) const PAN_STEP: f32 = 6.0;
+/// The pan's strokes: twelve steps, then 24 ticks of rest, 200 ms, past `viewport::SETTLE`.
+const STROKE_STEPS: usize = 12;
+const STROKE: usize = 36;
 /// What full resolution may take to arrive, decode included.
 pub(super) const FULL: Duration = Duration::from_secs(20);
 /// Rungs walked up from 100 %, then down to fit, each held past the view's settle so it renders sharp.
@@ -106,9 +109,13 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             Zoomed::Panning { step, from } => {
                 drop(s);
                 let step = step + 1;
-                let x = 200.0 - step as f32 * PAN_STEP;
-                c.invoke_dragged(x, 200.0 - step as f32 * PAN_STEP / 2.0);
-                if step < PANS {
+                // A trackpad's glide in strokes, the hand resting past the view's settle between them.
+                let (stroke, at) = (step / STROKE, step % STROKE);
+                if at < STROKE_STEPS {
+                    let moved = (stroke * STROKE_STEPS + at) as f32;
+                    c.invoke_dragged(200.0 - moved * PAN_STEP, 200.0 - moved * PAN_STEP / 2.0);
+                }
+                if step < PANS / STROKE_STEPS * STROKE {
                     phase.set(Zoomed::Panning { step, from });
                 } else {
                     phase.set(Zoomed::Ladder { rung: 0, at: Instant::now(), from });

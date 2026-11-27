@@ -14594,5 +14594,12 @@
     "title": "The watchdog counts no block while the interface thread rests in its event loop",
     "status": "done",
     "detail": "The owner's log held 362 blocks in a session, 359 of them while the window was occluded, the stacks at rest in the run loop (mach_msg2_trap, __CFRunLoopDoTimer) and recoveries up to 35 s: the request posted on the main queue measured how late the system woke a napped, idle thread, not the app's work. A run-loop observer in the common modes now tells the watchdog when the interface thread is about to wait, which answers the request waiting, and when it wakes, which times a request still waiting from the wake; a request unanswered past the floor is a block only while the thread works, and check() answers a duration only for a block. The check gains the resting cases and its twin, a busy thread past the floor counted once woken. Not yet seen on the owner's app: two three-minute runs, hidden from launch, gave no block before or after; his next session's log is the proof."
+  },
+  {
+    "id": 4097,
+    "type": "feature",
+    "title": "The pan benches pan as a hand does: in strokes, and across the whole frame from the double click",
+    "status": "done",
+    "detail": "ONI_BENCH=zoom's pan at 100 % now goes in strokes of twelve steps, each followed by 200 ms of rest past the view's settle, as a trackpad is moved. ONI_BENCH=traverse is new: a double click to 100 % and at once 480 steps of 12 points, never resting, turning back on each axis wherever the view stops moving, so the pan crosses the whole frame and reaches parts never shown; it reports the renders, their cadence and every frame the window drew. A first traverse ran straight into the frame's edge and read the stopped pan as a three-second freeze. Measured on c5e698f5 at the screen's size: a 47 Mpx RW2 (70 MB), 496 frames in 4.9 s, p99 16.9 ms, one gap of 225 ms where a view waited 157 ms with no task of the render thread's own, beside the full resolution laid on the GPU (111 ms) and neighbours' thumbnails; a Nikon NEF (24 Mpx), 513 frames in 4.5 s, worst 16.8 ms."
   }
 ]

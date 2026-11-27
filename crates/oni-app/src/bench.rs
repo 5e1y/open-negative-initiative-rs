@@ -5,6 +5,7 @@
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
 //! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
 //! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, then walks the ladder to fit;
+//! `ONI_BENCH=traverse` double-clicks to 100 % and at once pans across the whole frame;
 //! `ONI_BENCH=compare` turns Compare on at 100 % (`ONI_AT`), pans by drag and by trackpad, pinches, drags
 //! Exposure and the split, each move timed to the photon of both sides;
 //! `ONI_BENCH=crop` frames through the Crop tab's keys and the canvas's handles, then undoes it all;
@@ -56,8 +57,9 @@ mod screens;
 mod wave;
 mod wrapped;
 mod holo;
+mod traverse;
 pub mod chain;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
+use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -138,6 +140,7 @@ pub enum Mode {
     Settled,
     Long,
     Zoom,
+    Traverse,
     Compare,
     AutoDust,
     Crop,
@@ -177,6 +180,7 @@ pub fn requested() -> Option<Mode> {
         "settled" => Some(Mode::Settled),
         "long" => Some(Mode::Long),
         "zoom" => Some(Mode::Zoom),
+        "traverse" => Some(Mode::Traverse),
         "compare" => Some(Mode::Compare),
         "crop" => Some(Mode::Crop),
         "dedust" => Some(Mode::Dedust),
@@ -212,6 +216,9 @@ enum Phase {
 pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     if mode == Mode::Zoom {
         return zoom(ctl, done);
+    }
+    if mode == Mode::Traverse {
+        return traverse(ctl, done);
     }
     if mode == Mode::Midzoom {
         return midzoom(ctl, done);
