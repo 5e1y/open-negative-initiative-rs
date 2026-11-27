@@ -99,17 +99,22 @@ struct Layers {
 
 /// A colour film's three layers developed through `couplers`: a reversal film's dyes from its first developer's
 /// negative, a negative's own sheet's Status M densities over its bare film's, each channel its own layer (owner's call).
-fn colour(profile: Profile, couplers: M3, reversal: bool) -> Layers {
+fn colour(profile: Profile, couplers: M3, reversal: bool, curves: Option<&[[f64; 3]]>) -> Result<Layers, String> {
     let sensitivity = bake::sensitivity(&profile);
     if reversal {
         let (before, after) = bake::curves_falling(&profile.log_exposure, &profile.density_curves, &couplers);
-        return Layers { sensitivity, log_exposure: profile.log_exposure, before, after, couplers, spectra: SHEET_SPECTRA, veil: 0.0 };
+        return Ok(Layers { sensitivity, log_exposure: profile.log_exposure, before, after, couplers, spectra: SHEET_SPECTRA, veil: 0.0 });
     }
-    let (before, inhibited) = bake::curves_through(&profile.log_exposure, &profile.sheet_density_curves, &couplers);
+    let curves = curves.unwrap_or(&profile.sheet_density_curves);
+    if curves.len() != profile.log_exposure.len() || !curves.iter().flatten().all(|v| v.is_finite()) {
+        return Err("its fitted curves are not one finite density a layer on each of its profile's log exposures".into());
+    }
+    let (log_exposure, curves) = bake::reaching(&profile.log_exposure, curves, &couplers);
+    let (before, inhibited) = bake::curves_through(&log_exposure, &curves, &couplers);
     let base = status::read(&profile.base_density);
     let after = inhibited.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect();
     let veil = density_axis::pedestal(CEILING);
-    Layers { sensitivity, log_exposure: profile.log_exposure, before, after, couplers, spectra: NEGATIVE_SPECTRA, veil }
+    Ok(Layers { sensitivity, log_exposure, before, after, couplers, spectra: NEGATIVE_SPECTRA, veil })
 }
 
 /// A black and white negative: its one layer on the three channels, no coupler.
@@ -127,11 +132,11 @@ fn silver(profile: Silver) -> Layers {
 }
 
 /// A film's layers as its profile holds them, a colour one's developed through `couplers`, or why the profile does not read.
-fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3) -> Result<Layers, String> {
+fn layers(profile: &str, is_silver: bool, reversal: bool, couplers: M3, curves: Option<&[[f64; 3]]>) -> Result<Layers, String> {
     if is_silver {
         return Ok(silver(Silver::read(profile.as_bytes())?));
     }
-    Ok(colour(Profile::read(profile.as_bytes())?, couplers, reversal))
+    colour(Profile::read(profile.as_bytes())?, couplers, reversal, curves)
 }
 
 /// The coupler matrix a film develops through: its file's own, else the common one.
@@ -141,7 +146,7 @@ pub fn couplers(entry: &VirtualEntry) -> M3 {
 
 /// `entry` baked through `couplers` in place of its own, its reference derived again.
 pub fn bake_through(entry: &VirtualEntry, couplers: M3) -> Result<Stock, String> {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers)?;
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers, entry.curves.as_deref())?;
     Ok(stock_of(layers, entry))
 }
 
@@ -191,7 +196,7 @@ fn baked(layers: &Layers, balance: Balance) -> (VirtualNegative, Vec<[f32; 4]>) 
 }
 
 fn bake(entry: &VirtualEntry) -> Stock {
-    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry)).expect("a stock's profile reads once its file is taken");
+    let layers = layers(&entry.profile, entry.silver, entry.reversal, couplers(entry), entry.curves.as_deref()).expect("a stock's profile reads once its file is taken");
     stock_of(layers, entry)
 }
 
@@ -205,11 +210,11 @@ pub fn stock(stock: VirtualStock) -> &'static Stock {
 
 /// The reference a film's `profile` derives at `balance`, what its file leaving it out takes; or why the profile does
 /// not read or bakes no finite reference.
-pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3) -> Result<StockReference, String> {
+pub fn derive(profile: &str, balance: Balance, is_silver: bool, reversal: bool, couplers: M3, curves: Option<&[[f64; 3]]>) -> Result<StockReference, String> {
     if light_of(balance).is_none() {
         return Err("a data sheet's film is balanced for daylight or tungsten".into());
     }
-    let layers = layers(profile, is_silver, reversal, couplers)?;
+    let layers = layers(profile, is_silver, reversal, couplers, curves)?;
     if bake::folds(&layers.log_exposure, &layers.before, &layers.couplers) {
         return Err("its couplers inhibit a layer faster than its exposure rises, folding its curve back".into());
     }

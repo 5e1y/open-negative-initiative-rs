@@ -18,7 +18,7 @@ fn main() {
             let (reversal, couplers) = (f.kind == FilmType::ColourSlide, b.couplers.unwrap_or(film::bake::COUPLERS));
             let r = match b.neutral {
                 true => film::derive_neutral(b.profile.get()),
-                false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
+                false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers, b.curves.as_deref()),
             }
             .unwrap_or_else(|e| panic!("{path}: {e}"));
             films.insert(b.key.clone(), json!({"stops": r.stops, "black": r.black, "white": r.white}));

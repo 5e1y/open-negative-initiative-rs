@@ -160,6 +160,23 @@ pub fn curves_through(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<[
     (normal, (0..le.len()).map(|i| [before[0][i], before[1][i], before[2][i]]).collect())
 }
 
+/// `le` and `density` laid on a grid of `le`'s step reaching every exposure `couplers` move a layer to, each curve held
+/// flat past its own ends: a coupler that strengthens a layer lifts its exposure past the sheet's last log H.
+pub fn reaching(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<f64>, Vec<[f64; 3]>) {
+    let n = le.len();
+    let low: [f64; 3] = std::array::from_fn(|c| density.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
+    let shifted = |i: usize, c: usize| le[i] - (0..3).map(|k| (density[i][k] - low[k]) * couplers[k][c]).sum::<f64>();
+    let (lo, hi) = (0..n).flat_map(|i| (0..3).map(move |c| (i, c))).fold((le[0], le[n - 1]), |(lo, hi), (i, c)| (lo.min(shifted(i, c)), hi.max(shifted(i, c))));
+    if lo >= le[0] && hi <= le[n - 1] {
+        return (le.to_vec(), density.to_vec());
+    }
+    let step = (le[n - 1] - le[0]) / (n - 1) as f64;
+    let (below, above) = (((le[0] - lo) / step).ceil() as usize, ((hi - le[n - 1]) / step).ceil() as usize);
+    let grid: Vec<f64> = (0..below + n + above).map(|i| le[0] + (i as f64 - below as f64) * step).collect();
+    let curves = grid.iter().map(|&e| std::array::from_fn(|c| interpolate(e, le, density, c))).collect();
+    (grid, curves)
+}
+
 /// A reversal film's curves through `couplers`: its first developer's negative image, the dyes' fall from their densest,
 /// inhibits as a negative's density does, and the dyes left are read where the inhibited exposure lands a grey on the sheet.
 pub fn curves_falling(le: &[f64], density: &[[f64; 3]], couplers: &M3) -> (Vec<[f64; 3]>, Vec<[f64; 3]>) {

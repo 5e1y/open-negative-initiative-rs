@@ -191,7 +191,7 @@ fn checked(file: &File) -> Result<Vec<oni_settings::virtual_film::StockReference
                     let reversal = f.kind == FilmType::ColourSlide;
                     let derived = match b.neutral {
                         true => film::derive_neutral(b.profile.get()),
-                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers),
+                        false => film::derive(b.profile.get(), b.balance, silver, reversal, couplers, b.curves.as_deref()),
                     };
                     derived.map_err(|e| format!("the film \"{}\": {e}", b.key))
                 })

@@ -87,6 +87,13 @@ pub struct FilmBlock {
     /// one where left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub couplers: Option<[[f64; 3]; 3]>,
+    /// Each layer's density above its least on its profile's `log_exposure`, fitted with `couplers` on a reference; its
+    /// sheet's printed curves where left out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub curves: Option<Vec<[f64; 3]>>,
+    /// Where `couplers` and `curves` come from, the sheet staying its sensitivities' and its D-min's source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fit: Option<String>,
     /// The rests a digital photo's film effects take on this film; one left out is the effect's own rest.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effects: Option<Effects>,

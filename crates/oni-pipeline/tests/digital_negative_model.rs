@@ -61,13 +61,15 @@ fn the_bare_film_reads_its_sheets_status_m_d_min() {
 }
 
 #[test]
-fn a_neutral_lands_on_the_sheets_curves_through_the_layers_inhibition() {
+fn a_neutral_lands_on_the_films_curves_through_the_layers_inhibition() {
     let entry = PORTRA.entry();
     let profile = Profile::read(entry.profile.as_bytes()).unwrap();
     let base = film::status::read(&profile.base_density);
     let le = &profile.log_exposure;
-    let low: [f64; 3] = std::array::from_fn(|c| profile.sheet_density_curves.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
-    let sheet = |log: f64, c: usize| base[c] + bake::interpolate(log, le, &profile.sheet_density_curves, c) - low[c];
+    // The curves its file fits with its couplers, its sheet's where it fits none.
+    let curves: Vec<[f64; 3]> = entry.curves.as_deref().map_or_else(|| profile.sheet_density_curves.clone(), <[_]>::to_vec);
+    let low: [f64; 3] = std::array::from_fn(|c| curves.iter().map(|d| d[c]).fold(f64::INFINITY, f64::min));
+    let sheet = |log: f64, c: usize| base[c] + bake::interpolate(log, le, &curves, c) - low[c];
     let st = film::stock(PORTRA);
     let couplers = film::couplers(&entry);
     println!("Portra 800's couplers {couplers:?}");
@@ -81,7 +83,7 @@ fn a_neutral_lands_on_the_sheets_curves_through_the_layers_inhibition() {
             worst = worst.max((-read.log10() - sheet(log, c)).abs());
         }
     }
-    println!("a neutral's widest gap to the sheet {worst:.2e}");
+    println!("a neutral's widest gap to the film's curves {worst:.2e}");
     assert!(worst < 2e-3, "{worst}");
     // Twin: the same couplers laid on curves never corrected for them pull a neutral off the sheet.
     let k = st.kernel.couplers;
@@ -90,7 +92,7 @@ fn a_neutral_lands_on_the_sheets_curves_through_the_layers_inhibition() {
         let first: [f64; 3] = std::array::from_fn(|c| sheet(log, c) - base[c]);
         (0..3).map(|c| {
             let inhibited = log - (0..3).map(|m| first[m] * f64::from(k[m][c])).sum::<f64>();
-            (base[c] + bake::interpolate(inhibited, le, &profile.sheet_density_curves, c) - low[c] - sheet(log, c)).abs()
+            (base[c] + bake::interpolate(inhibited, le, &curves, c) - low[c] - sheet(log, c)).abs()
         }).fold(0.0, f64::max)
     }).fold(0.0, f64::max);
     assert!(couplers.iter().flatten().any(|v| *v > 0.0) && off > 0.02, "twin: {off}");

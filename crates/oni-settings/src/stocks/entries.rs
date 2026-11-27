@@ -31,6 +31,8 @@ pub struct VirtualEntry {
     pub neutral: bool,
     /// Its own DIR coupler matrix, the common one where none.
     pub couplers: Option<[[f64; 3]; 3]>,
+    /// Its layers' curves fitted with its couplers, its sheet's where none.
+    pub curves: Option<Arc<[[f64; 3]]>>,
     /// The rests a digital photo's film effects take on it.
     pub effects: FilmEffects,
     /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.

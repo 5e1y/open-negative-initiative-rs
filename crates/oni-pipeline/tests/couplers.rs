@@ -27,3 +27,26 @@ fn a_films_own_couplers_move_its_colours_and_leave_its_grey() {
     assert!(apart(grey) < 2e-3, "the grey moved {}", apart(grey));
     assert!(apart(red) > 2e-2, "the red did not move: the check sees nothing");
 }
+
+#[test]
+fn a_coupler_that_strengthens_a_layer_keeps_a_neutral_on_its_curve_past_the_sheets_last_exposure() {
+    use oni_pipeline::film::bake::{curves_through, interpolate, reaching};
+    let le: Vec<f64> = (0..101).map(|i| -2.0 + f64::from(i) * 0.04).collect();
+    let density: Vec<[f64; 3]> = le.iter().map(|&e| { let d = 2.5 / (1.0 + (-1.8 * e).exp()); [d, d, d] }).collect();
+    // Green strengthens red: red's inhibited exposure rises past the sheet's last.
+    let k = [[0.0, 0.1, 0.1], [-1.3, 0.0, 0.1], [0.6, 0.15, 0.0]];
+    let developed = |grid: &[f64], curves: &[[f64; 3]], e: f64| {
+        let (first, inhibited) = curves_through(grid, curves, &k);
+        let d0: [f64; 3] = std::array::from_fn(|c| interpolate(e, grid, &first, c));
+        interpolate(e - (0..3).map(|m| d0[m] * k[m][0]).sum::<f64>(), grid, &inhibited, 0)
+    };
+    let low = density[0][0];
+    let gap = |grid: &[f64], curves: &[[f64; 3]]| le.iter().map(|&e| (developed(grid, curves, e) - (interpolate(e, &le, &density, 0) - low)).abs()).fold(0.0, f64::max);
+    let (grid, curves) = reaching(&le, &density, &k);
+    assert!(gap(&grid, &curves) < 2e-3, "{}", gap(&grid, &curves));
+    // Twin: on the sheet's own grid the red stops at its last node.
+    assert!(gap(&le, &density) > 0.1, "{}", gap(&le, &density));
+    // Couplers that only inhibit keep the sheet's grid, bit for bit.
+    let inhibiting = [[0.0, 0.1, 0.1], [0.2, 0.0, 0.1], [0.1, 0.15, 0.0]];
+    assert_eq!(reaching(&le, &density, &inhibiting), (le.clone(), density.clone()));
+}

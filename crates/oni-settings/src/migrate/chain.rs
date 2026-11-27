@@ -156,6 +156,9 @@ pub const MODEL_S_VERSION: i64 = 81;
 /// The version a digital photo's film effects and shooting exposure came to take named levels: a value off them lands
 /// on the nearest.
 pub const EFFECT_LEVELS_VERSION: i64 = 82;
+/// The version a colour negative's virtual film came to develop on curves and couplers fitted on the owner's reference:
+/// a digital photo's gains and windows move onto its stock's new reference.
+pub const REFITTED_VERSION: i64 = 83;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

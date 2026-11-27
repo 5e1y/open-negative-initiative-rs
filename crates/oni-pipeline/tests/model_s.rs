@@ -1,7 +1,5 @@
-//! The colour negative's virtual film against the colorimetry's model S step by step (`data/model-s-reference.json`,
-//! made off the app from the data sheets, the shipped spectra and the same CIE tables): each layer's log exposure, its
-//! density over the bare film and each channel's share of its two points, on thirteen colours. Its twin: the same film
-//! developed with no inhibition between its layers misses them.
+//! The colour negative's virtual film against the colorimetry's model S (`data/model-s-reference.json`) step by step, baked
+//! on the model's own sheet curves and couplers; its twin, the same film with no inhibition between its layers, misses it.
 
 use oni_pipeline::{conversion, film};
 use oni_render::cpu;
@@ -55,10 +53,13 @@ fn every_film_develops_and_reads_as_the_model_does() {
             "kodak-ektar100" => "kodak-ektar-100",
             other => Box::leak(other.to_string().into_boxed_str()),
         };
-        let stock = film::stock(VirtualStock::of(key));
-        let k = stock.kernel.couplers;
+        // The film baked on the model's own inputs, its sheet's curves and the couplers the model derives from them, as
+        // its file may fit others on a reference.
         let held: Vec<f64> = model["K"].as_array().unwrap().iter().flat_map(|r| r.as_array().unwrap().iter().map(|v| v.as_f64().unwrap())).collect();
-        assert!((0..9).all(|i| (f64::from(k[i / 3][i % 3]) - held[i]).abs() < 1e-6), "{key}: its file's couplers {k:?}, the model's {held:?}");
+        let modelled: [[f64; 3]; 3] = std::array::from_fn(|r| std::array::from_fn(|c| held[r * 3 + c]));
+        let entry = oni_settings::stocks::VirtualEntry { curves: None, ..VirtualStock::of(key).entry() };
+        let baked = film::bake_through(&entry, modelled).unwrap();
+        let stock = &baked;
         let veil = f64::from(stock.kernel.veil);
         let bare = stock.shot([0.0, 0.0, 0.0, 1.0], 0.0).map(|t| -((f64::from(t) + veil) / (1.0 + veil)).log10());
         assert!(worst([bare[0], bare[1], bare[2]], v3(&model["D_min_status_M"])) < DENSITY, "{key}: D-min {bare:?}");
@@ -66,7 +67,6 @@ fn every_film_develops_and_reads_as_the_model_does() {
         println!("{key}: widest gaps to the model, log H {:.1e}, density {:.1e}, share {:.1e}", gap[0], gap[1], gap[2]);
         assert!(gap[0] < LOG_H && gap[1] < DENSITY && gap[2] < SHARE, "{key}: {gap:?}");
         // Twin: the same film with no inhibition between its layers misses the model's colours.
-        let entry = VirtualStock::of(key).entry();
         let free = film::bake_through(&entry, [[0.0; 3]; 3]).unwrap();
         let off = gaps(key, model, &free);
         assert!(off[1] > 10.0 * DENSITY, "twin {key}: {off:?}");

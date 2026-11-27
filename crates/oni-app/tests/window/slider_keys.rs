@@ -238,8 +238,21 @@ pub(crate) fn every_slider_has_its_keys_and_a_press_is_three_shown_units() {
 
     // One slider of each block and tab: Lighting, Colour, Effects, Film Effects, Details, Roll, Crop's dial,
     // De-dust's brush.
-    for name in ["Exposure", "Tint", "Vignette", "Grain", "Grain size"] {
+    for name in ["Exposure", "Tint", "Vignette"] {
         steps_three(rig, w, name);
+    }
+    // A film effect walks its named levels: each key, and the value editor's own step, one notch.
+    for (name, rest, up) in [("Grain", "Medium", "Strong"), ("Grain size", "Medium", "Coarse")] {
+        assert!(value(w, name).ends_with(rest), "{name} at rest: {}", value(w, name));
+        common::click(rig, w, common::slider_key(w, name, true).middle());
+        rig.settle();
+        assert!(value(w, name).ends_with(up), "{name}'s + key, one notch: {}", value(w, name));
+        common::click(rig, w, common::slider_key(w, name, false).middle());
+        rig.settle();
+        assert!(value(w, name).ends_with(rest), "{name}'s − key, one notch back: {}", value(w, name));
+        // Twin: the value editor's own + reaches the same notch, never a digit of the readout.
+        assert!(edited(rig, w, name).abs() > 1.0, "{name}'s value editor steps a notch");
+        assert!(value(w, name).ends_with(up), "{}", value(w, name));
     }
     for (t, name) in [(PanelTab::Details, "Texture"), (PanelTab::Roll, "Distortion"), (PanelTab::Crop, "Angle"), (PanelTab::Dedust, "Brush size")] {
         tab(rig, w, t);

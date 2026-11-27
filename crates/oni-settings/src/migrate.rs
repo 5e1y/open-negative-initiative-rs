@@ -34,6 +34,7 @@ pub mod paper_gaze;
 pub mod scanner;
 pub mod two_points;
 pub mod model_s;
+pub mod refitted;
 pub mod effect_levels;
 pub mod halation;
 pub mod film_effects;
@@ -327,7 +328,7 @@ fn typed_steps(
     let s = unmixed::caught_up(version, datasheet::caught_up(version, print_lift::caught_up(version, s, former), raw));
     let s = sensor_white::caught_up(version, digital_scan::caught_up(version, layer_densities::caught_up(version, s)));
     let s = film_effects::caught_up(version, halation::caught_up(version, paper_gaze::caught_up(version, s), raw));
-    let s = model_s::caught_up(version, two_points::caught_up(version, scanner::caught_up(version, film_grain::caught_up(version, s))));
+    let s = refitted::caught_up(version, model_s::caught_up(version, two_points::caught_up(version, scanner::caught_up(version, film_grain::caught_up(version, s)))));
     let s = optional_paper::caught_up(version, departure::caught_up(version, lighting_on_negative::caught_up(version, s)), raw);
     effect_levels::caught_up(version, s)
 }

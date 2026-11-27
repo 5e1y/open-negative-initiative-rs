@@ -41,7 +41,8 @@ pub(crate) fn a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference(
 
     rendered("the film's exposure rendered", &|| press_rail(rig, w, "Shooting exposure", 0.75));
     let exposed = settings();
-    assert!((exposed.film().unwrap().exposure - 2.0).abs() < 0.25, "a press at three quarters gives about two stops: {:?}", exposed.film());
+    // Thirds of a stop from two under to two over: three quarters of the rail is the tenth notch of thirteen, a stop over.
+    assert_eq!(exposed.film().unwrap().exposure, 1.0, "a press at three quarters lays its notch: {:?}", exposed.film());
     let reference = oni_settings::VirtualStock::NEUTRAL.reference();
     assert_eq!((exposed.gains.stops, exposed.levels), (reference.stops, reference.levels()), "the exposure alone moved");
     assert!(w.global::<Store>().get_film_modified(), "the block's Reset shows");

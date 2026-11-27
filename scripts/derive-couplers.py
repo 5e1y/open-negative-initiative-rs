@@ -4,7 +4,8 @@
 # tungsten film); developed on the sheet's Status M curves with K (six terms between layers, 0 to 1.5, a neutral kept on
 # the sheet); each channel read between D-min and a neutral at the sensor's saturation; the pure inversion. K minimises the
 # Oklab (a, b) error of the final positive against the scene's colour at the model's own lightness (the scene's light times
-# the ratio the model gives a neutral of the same luminance). With --write, each file's `film.couplers` takes its K.
+# the ratio the model gives a neutral of the same luminance). With --write, each file's `film.couplers` takes its K: a start for a
+# new colour negative with no reference, the shipped ones fitted otherwise (`crates/oni-settings/stocks/README.md`).
 import sys, json, glob, os, warnings; warnings.filterwarnings('ignore')
 import numpy as np, colour
 from scipy.optimize import least_squares

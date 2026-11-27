@@ -14314,5 +14314,33 @@
     "title": "The Collection's gift keeps the owner's title, The Lens DB in it; the huge gift's sentence says what the person gets",
     "status": "done",
     "detail": "The rewrite had replaced the owner's own title, 'Import your photo kit into ONI, with The Lens DB', which names the partner whose integration it is: it is back, and its sentence no longer repeats it ('Search The Lens DB's catalogue for your bodies and lenses and add them to your Kit: ONI writes them into every photo you export.'). The huge gift's sentence had a pronoun of no clear subject and named a source no longer whole: 'Pick a film in the editor: ONI renders your digital photo as if you had shot it on that film.' French and Spanish written alike. Checks: welcome_card (both; the 90 centred cases with these texts), welcome_reel; catalogue."
+  },
+  {
+    "id": 3888,
+    "type": "change",
+    "status": "done",
+    "title": "The colour negatives' couplers and curves fitted on the owner's references",
+    "detail": "The 46 colour negatives develop on `film.curves`, fitted with `film.couplers` (free in sign, within ±1.5): 16 on references the owner chose, kept out of the repository, their files holding the result; 30 on their family's mean couplers (photo or cine) with their sheet's greys made neutral and their contrast brought to those films' (`scripts/stocks-from-family.py` and its table redo them bit for bit). The sheet's printed curves stay in the profile, the source of a scanned negative's silver reading and of `datasheet-profiles.py`; `fit` says where each film's come from; every reference derived again. Only digital photos move: no scanned negative nor its legacy print."
+  },
+  {
+    "id": 3889,
+    "type": "fix",
+    "status": "done",
+    "title": "A coupler that strengthens a layer no longer stops its curve at the sheet's last exposure",
+    "detail": "Green strengthening red (−1.33 on Portra 800) lifts red's inhibited exposure past the sheet's last log H, where the kernel's table held it: red stopped at 1.42 D from 0.7 stop past the saturation, so a shooting exposure over cast the highlights cyan. The curves are laid on a grid of the sheet's step reaching every exposure the couplers move a layer to (`bake::reaching`), a film whose couplers only inhibit keeping its grid bit for bit."
+  },
+  {
+    "id": 3890,
+    "type": "data-safety",
+    "status": "done",
+    "title": "Sidecar format 83: a digital photo on a refitted film moves onto its new reference",
+    "detail": "`migrate::refitted`: a document of format 81 or 82 on one of the 48 films whose reference moved lands on the new one, every hand's move on the gains and windows kept; older documents reach it through the earlier steps. Corpus goldens 37-digital 001 and 002 and the two digital legacy prints move."
+  },
+  {
+    "id": 3891,
+    "type": "test",
+    "status": "done",
+    "title": "The shooting exposure's and the film effects' window checks read their notches",
+    "detail": "A press at three quarters of the shooting exposure's rail lays the tenth of thirteen thirds, a stop over; Grain's and Grain size's keys and value editor step one named notch (#3884)."
   }
 ]

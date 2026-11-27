@@ -58,6 +58,8 @@ struct Reference {
     n: usize,
     to_film: bake::M3,
     curves: (Vec<[f64; 3]>, Vec<[f64; 3]>),
+    /// The log exposures `curves` lie on: the sheet's, reaching every exposure the couplers move a layer to.
+    le: Vec<f64>,
     couplers: bake::M3,
 }
 
@@ -69,16 +71,18 @@ impl Reference {
         let light = bake::light_table(&spectra, &bake::sensitivity(&profile));
         let light = bake::balanced(light, spectra.nodes, &bake::to_film(white), f64::from(GREY));
         let (couplers, reversal) = (film::couplers(&stock.entry()), stock.entry().reversal);
-        // A slide develops its dyes; a negative its sheet's Status M curves over its bare film's D-min.
-        let curves = match reversal {
-            true => bake::curves_falling(&profile.log_exposure, &profile.density_curves, &couplers),
+        // A slide develops its dyes; a negative its curves, its file's fitted ones or its sheet's, over its bare film's D-min.
+        let (curves, le) = match reversal {
+            true => (bake::curves_falling(&profile.log_exposure, &profile.density_curves, &couplers), profile.log_exposure.clone()),
             false => {
-                let (first, inhibited) = bake::curves_through(&profile.log_exposure, &profile.sheet_density_curves, &couplers);
+                let own = stock.entry().curves.as_deref().map_or_else(|| profile.sheet_density_curves.clone(), <[_]>::to_vec);
+                let (le, own) = bake::reaching(&profile.log_exposure, &own, &couplers);
+                let (first, inhibited) = bake::curves_through(&le, &own, &couplers);
                 let base = film::status::read(&profile.base_density);
-                (first, inhibited.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect())
+                ((first, inhibited.iter().map(|d| std::array::from_fn(|c| d[c] + base[c])).collect()), le)
             }
         };
-        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, profile, couplers }
+        Reference { light, n: spectra.nodes, to_film: bake::to_film(white), curves, le, profile, couplers }
     }
 
     /// The film's log exposure per channel for a scene pixel, at `stops`.
@@ -91,7 +95,7 @@ impl Reference {
 
     /// The dyes' densities the negative develops.
     fn developed(&self, rgb: [f64; 3], stops: f64) -> [f64; 3] {
-        let le = &self.profile.log_exposure;
+        let le = &self.le;
         let log = self.log_raw(rgb, stops);
         let first: [f64; 3] = std::array::from_fn(|c| bake::interpolate(log[c], le, &self.curves.0, c));
         let inhibited: [f64; 3] = std::array::from_fn(|m| log[m] - (0..3).map(|k| first[k] * self.couplers[k][m]).sum::<f64>());
@@ -206,7 +210,7 @@ fn grey_on(kind: VirtualStock) -> f64 {
     assert!((0..3).all(|c| log[c].abs() < 0.05), "{kind:?}: {log:?}");
     let over = reference.log_raw([f64::from(GREY); 3], 1.0);
     assert!((0..3).all(|c| over[c].abs() > 0.2), "{kind:?}: {over:?}");
-    let le = &reference.profile.log_exposure;
+    let le = &reference.le;
     // A negative's sheet lies over its bare film's D-min.
     let base = if kind.entry().reversal { [0.0; 3] } else { film::status::read(&reference.profile.base_density) };
     // The gap to the data sheet of a grey ramp developed through `second`, the curve the couplers act on.
@@ -218,7 +222,7 @@ fn grey_on(kind: VirtualStock) -> f64 {
             for m in 0..3 {
                 let inhibited = log[m] - (0..3).map(|k| first[k] * reference.couplers[k][m]).sum::<f64>();
                 // A negative's sheet is its first curve; a reversal film's, the dyes its curves leave.
-                let sheet = if kind.entry().reversal { bake::interpolate(log[m], le, &reference.profile.density_curves, m) } else { first[m] + base[m] };
+                let sheet = if kind.entry().reversal { bake::interpolate(log[m], &reference.profile.log_exposure, &reference.profile.density_curves, m) } else { first[m] + base[m] };
                 gap = gap.max((bake::interpolate(inhibited, le, second, m) - sheet).abs());
             }
         }
@@ -361,5 +365,6 @@ fn a_tungsten_film_prints_a_daylight_grey_blue_and_the_filtration_takes_it_away(
     }
     let after = widest(&mut at, &tungsten);
     println!("the filtration {:?}: the ramp's widest channel gap {before:.3} before, {after:.4} after", tungsten.gains.stops);
-    assert!(after < 0.01 && before > 0.1, "{before} {after}");
+    // What stays is the film's own crossover along its grey axis, fitted on its reference: 0.041 on 500T.
+    assert!(after < 0.05 && before > 0.1, "{before} {after}");
 }

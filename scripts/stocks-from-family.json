@@ -1,0 +1,513 @@
+{
+ "about": "Colour negatives' couplers and curves: the films listed under with_reference were fitted on references the owner chose, kept out of the repository, their files holding the result; those under without_reference take their family's mean couplers and their sheet's greys made neutral, then a contrast pass to their sisters' level, which scripts/stocks-from-family.py redoes from this file and the with_reference stock files.",
+ "e_sat": 0.8794449507524541,
+ "k_decimals": 3,
+ "ramp_stops": [
+  -6,
+  3,
+  0.25
+ ],
+ "sisters_level": {
+  "ciné": {
+   "slope": 0.11393333333333333,
+   "mid_lightness": 0.6715666666666668
+  },
+  "photo fujifilm": {
+   "slope": 0.12525,
+   "mid_lightness": 0.7081500000000001
+  },
+  "photo kodak": {
+   "slope": 0.13163750000000002,
+   "mid_lightness": 0.694675
+  }
+ },
+ "left_out_of_level": [
+  "kodak-vision3-250d"
+ ],
+ "with_reference": {
+  "fujifilm-c200": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.04,
+     -0.0953
+    ],
+    [
+     -0.0344,
+     -0.1204
+    ],
+    [
+     -0.0338,
+     -0.0682
+    ]
+   ]
+  },
+  "fujifilm-pro400h": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0434,
+     -0.06
+    ],
+    [
+     -0.037,
+     -0.11
+    ],
+    [
+     -0.0191,
+     -0.0367
+    ]
+   ]
+  },
+  "fujifilm-superia1600": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0485,
+     -0.1652
+    ],
+    [
+     -0.0436,
+     -0.0704
+    ],
+    [
+     -0.0303,
+     -0.1442
+    ]
+   ]
+  },
+  "fujifilm-superia200": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0462,
+     -0.0741
+    ],
+    [
+     -0.0475,
+     -0.1391
+    ],
+    [
+     -0.0292,
+     -0.0902
+    ]
+   ]
+  },
+  "kodak-ektar100": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0651,
+     -0.2336
+    ],
+    [
+     -0.053,
+     -0.2732
+    ],
+    [
+     -0.032,
+     -0.1411
+    ]
+   ]
+  },
+  "kodak-gold200": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0535,
+     -0.162
+    ],
+    [
+     -0.0469,
+     -0.1986
+    ],
+    [
+     -0.03,
+     -0.1013
+    ]
+   ]
+  },
+  "kodak-portra160": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0593,
+     -0.1339
+    ],
+    [
+     -0.0568,
+     -0.2548
+    ],
+    [
+     -0.0308,
+     -0.1355
+    ]
+   ]
+  },
+  "kodak-portra160nc": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0532,
+     -0.1413
+    ],
+    [
+     -0.0554,
+     -0.2466
+    ],
+    [
+     -0.0319,
+     -0.1058
+    ]
+   ]
+  },
+  "kodak-portra160vc": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.049,
+     -0.0923
+    ],
+    [
+     -0.0517,
+     -0.2411
+    ],
+    [
+     -0.0336,
+     -0.1144
+    ]
+   ]
+  },
+  "kodak-portra400": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0626,
+     -0.2278
+    ],
+    [
+     -0.0522,
+     -0.2507
+    ],
+    [
+     -0.0282,
+     -0.1514
+    ]
+   ]
+  },
+  "kodak-portra800": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0556,
+     -0.1506
+    ],
+    [
+     -0.0439,
+     -0.1598
+    ],
+    [
+     -0.0244,
+     -0.0964
+    ]
+   ]
+  },
+  "kodak-ultramax400": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0495,
+     -0.1029
+    ],
+    [
+     -0.0356,
+     -0.1111
+    ],
+    [
+     -0.0166,
+     -0.0404
+    ]
+   ]
+  },
+  "kodak-vision3-200t": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0252,
+     0.0256
+    ],
+    [
+     -0.0237,
+     -0.0296
+    ],
+    [
+     -0.004,
+     0.0485
+    ]
+   ]
+  },
+  "kodak-vision3-250d": {
+   "k_bound": 1.25,
+   "bend_m_c": [
+    [
+     -0.0702,
+     -0.0587
+    ],
+    [
+     -0.0439,
+     -0.1567
+    ],
+    [
+     -0.035,
+     -0.1294
+    ]
+   ]
+  },
+  "kodak-vision3-500t": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0274,
+     -0.0049
+    ],
+    [
+     -0.0272,
+     -0.0527
+    ],
+    [
+     -0.0101,
+     0.0195
+    ]
+   ]
+  },
+  "kodak-vision3-50d": {
+   "k_bound": 1.5,
+   "bend_m_c": [
+    [
+     -0.0309,
+     -0.0455
+    ],
+    [
+     -0.0245,
+     -0.061
+    ],
+    [
+     -0.01,
+     0.0415
+    ]
+   ]
+  }
+ },
+ "without_reference": {
+  "fujifilm-160nc": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.00611791120534373,
+    0.23643008573056412
+   ]
+  },
+  "fujifilm-160nl": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.04575427992363602,
+    0.2254678773595941
+   ]
+  },
+  "fujifilm-160npc": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.027011515818341228,
+    0.2691018307980093
+   ]
+  },
+  "fujifilm-160ns": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    -0.0021737087574292156,
+    0.18585611024065268
+   ]
+  },
+  "fujifilm-200": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.060970677389674155,
+    0.23123164910497848
+   ]
+  },
+  "fujifilm-400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.033012508719454874,
+    0.3108550215547449
+   ]
+  },
+  "fujifilm-fujicolor100": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.06409260000260392,
+    0.19678573517941583
+   ]
+  },
+  "fujifilm-natura1600": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.07664832489537962,
+    0.13204537689879609
+   ]
+  },
+  "fujifilm-new-pro400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.047948134255743395,
+    0.22294317351949133
+   ]
+  },
+  "fujifilm-nexia-a200": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.03610333113119226,
+    0.23127791850656207
+   ]
+  },
+  "fujifilm-nexia-zoom-master800": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.08948768833848185,
+    0.10049535034000019
+   ]
+  },
+  "fujifilm-nexia400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.06708695738559867,
+    0.16581075660135042
+   ]
+  },
+  "fujifilm-pro160c": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.048909427607548704,
+    0.21888982999572604
+   ]
+  },
+  "fujifilm-pro160nc": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.04792003884290042,
+    0.23254280993691878
+   ]
+  },
+  "fujifilm-pro160nh": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.04315721338751312,
+    0.26502700542574686
+   ]
+  },
+  "fujifilm-pro160ns": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.037507084375199,
+    0.2788969784939638
+   ]
+  },
+  "fujifilm-pro160s": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.034373474813043564,
+    0.2443075267746692
+   ]
+  },
+  "fujifilm-pro800": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.04426435046686157,
+    0.25522792117666837
+   ]
+  },
+  "fujifilm-pro800z": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.05869964994085319,
+    0.15698769100888554
+   ]
+  },
+  "fujifilm-reala-ace": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.06231163176111952,
+    0.18283436143070436
+   ]
+  },
+  "fujifilm-superia-premium400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.05714690578270593,
+    0.23475791432964319
+   ]
+  },
+  "fujifilm-superia-reala": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.10377433432781795,
+    -0.025213541651717825
+   ]
+  },
+  "fujifilm-superia-venus400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.061227601099064805,
+    0.1907821927862224
+   ]
+  },
+  "fujifilm-superia-venus800": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.062245880945389145,
+    0.16396526600207673
+   ]
+  },
+  "fujifilm-superia-xtra400": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.0447784316284326,
+    0.21785504579492165
+   ]
+  },
+  "fujifilm-superia-xtra800": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.06890703634959816,
+    0.17449938812358748
+   ]
+  },
+  "fujifilm-superia100": {
+   "sisters": "photo fujifilm",
+   "contrast_m_c": [
+    0.1359019314968877,
+    -0.17715888940342234
+   ]
+  },
+  "kodak-portra400nc": {
+   "sisters": "photo kodak",
+   "contrast_m_c": [
+    -0.0041874296680576165,
+    0.37222492355166215
+   ]
+  },
+  "kodak-portra400vc": {
+   "sisters": "photo kodak",
+   "contrast_m_c": [
+    -0.0003558748342436956,
+    0.36678840844481303
+   ]
+  },
+  "kodak-verita200d": {
+   "sisters": "ciné",
+   "contrast_m_c": [
+    -0.031220004763402875,
+    -0.0955198545562951
+   ]
+  }
+ }
+}

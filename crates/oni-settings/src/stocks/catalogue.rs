@@ -238,6 +238,7 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             reversal: f.kind == FilmType::ColourSlide,
                             neutral: b.neutral,
                             couplers: b.couplers,
+                            curves: b.curves.as_deref().map(Arc::from),
                             effects: b.effects.unwrap_or_default().rests(),
                             look: b.look.clone(),
                             revision,
