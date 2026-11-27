@@ -98,7 +98,10 @@ impl Worker {
                         match shared.take(idle) {
                             Taken::Value(job) => break (job, false),
                             Taken::Closed => return,
-                            Taken::TimedOut if sharpen.is_some() => break (Job { held: false, ..sharpen.take().expect("a job to sharpen") }, true),
+                            // The sharp render is asked as the hand rests: its wait and its time to the screen run from then.
+                            Taken::TimedOut if sharpen.is_some() => {
+                                break (Job { held: false, asked: Instant::now(), ..sharpen.take().expect("a job to sharpen") }, true);
+                            }
                             Taken::TimedOut if resting.is_some() => {
                                 if let Some((path, negative, settings, wanted)) = resting.take()
                                     && let Some(inputs) = busy.run("the input histograms at rest", || renderer.inputs(&negative, &settings, false, wanted))
