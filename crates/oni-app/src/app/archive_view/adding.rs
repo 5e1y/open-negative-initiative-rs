@@ -21,6 +21,16 @@ pub enum Added {
     Package { package: String },
 }
 
+impl Added {
+    /// A folder opened with no photo named opens its first once read, as a bench asks.
+    pub fn opening_first(self) -> Added {
+        match self {
+            Added::Open { folder, opening: None, left, wide } => Added::Open { folder, opening: Some(String::new()), left, wide },
+            other => other,
+        }
+    }
+}
+
 /// The first item's folder, the item itself when a folder, and the first photo among them. Reads the disk.
 pub fn looked(items: &[PathBuf], computer: &Computer) -> Option<Added> {
     let first = items.first()?;
@@ -51,16 +61,21 @@ impl Ctl {
     /// `add(_:)`: the items looked at behind, then their folder opened, or why it is not said.
     /// Nothing is copied or moved.
     pub(in crate::app) fn add(self: &Rc<Self>, items: &[PathBuf]) {
-        self.add_as(items, false);
+        self.add_as(items, false, false);
     }
 
-    fn add_as(self: &Rc<Self>, items: &[PathBuf], star: bool) {
+    /// `add`, a folder's first photo opened once read when no photo is named.
+    pub(in crate::app) fn add_opening_first(self: &Rc<Self>, items: &[PathBuf]) {
+        self.add_as(items, false, true);
+    }
+
+    fn add_as(self: &Rc<Self>, items: &[PathBuf], star: bool, first: bool) {
         if items.is_empty() {
             return;
         }
         let (items, computer) = (items.to_vec(), self.state.borrow().nav.computer.clone());
         let _ = std::thread::Builder::new().name("adding".into()).spawn(move || {
-            let added = looked(&items, &computer);
+            let added = looked(&items, &computer).map(|a| if first { a.opening_first() } else { a });
             with_shell(move |c| c.added(added, star));
         });
     }
@@ -158,7 +173,7 @@ impl Ctl {
         let chosen = picker();
         self.state.borrow_mut().picker = picker;
         if let Some(folder) = chosen {
-            self.add_as(&[folder], star);
+            self.add_as(&[folder], star, false);
         } else if !system::HAS_PICKER {
             self.say(tr("This system has no folder picker: pass the folder on the command line"));
         }
@@ -185,6 +200,10 @@ mod tests {
         let scans = Added::Open { folder: p("Home/Scans"), opening: Some(p("Home/Scans/A.tif")), left: 0, wide: false };
         assert_eq!(looked(&[root.join("Home/Scans/A.tif")], &computer), Some(scans));
         assert_eq!(looked(&[root.join("Home/Scans")], &computer), Some(Added::Open { folder: p("Home/Scans"), opening: None, left: 0, wide: false }));
+        // A bench's folder opens its first photo once read; twin: a photo named keeps its own opening.
+        let first = looked(&[root.join("Home/Scans")], &computer).map(Added::opening_first);
+        assert_eq!(first, Some(Added::Open { folder: p("Home/Scans"), opening: Some(String::new()), left: 0, wide: false }));
+        assert_eq!(looked(&[root.join("Home/Scans/A.tif")], &computer).map(Added::opening_first), looked(&[root.join("Home/Scans/A.tif")], &computer));
         // A path mistyped: nothing, never the home it would have climbed to.
         let typo = paths::normal(&root.join("Home/Scnas").to_string_lossy()).into_owned();
         assert_eq!(looked(&[root.join("Home/Scnas")], &computer), Some(Added::Refused { path: typo, state: Presence::Missing }));

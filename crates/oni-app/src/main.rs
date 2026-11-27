@@ -197,16 +197,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 let standing = shell.borrow();
                 let Some(shell) = standing.as_ref() else { return };
                 // A path named opens it or nothing; the reference roll opens only where a check or a bench names it.
+                // A bench opens its folder's first photo once read: a path named is looked at behind, so the add carries it.
+                let bench = bench::requested().is_some();
                 match std::env::args_os().nth(1).map(PathBuf::from) {
                     _ if oni_app::wrapped::alone() => {}
+                    Some(path) if bench => shell.add_opening_first(&path),
                     Some(path) => shell.add(&path),
                     None if shell.open_remembered() => {}
-                    None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench::requested().is_some() => {
-                        shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR))
-                    }
+                    None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench => shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR)),
                     None => {}
                 }
-                if bench::requested().is_some() {
+                if bench && std::env::args_os().nth(1).is_none() {
                     shell.open_first_when_read();
                 }
             }

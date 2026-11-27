@@ -273,6 +273,11 @@ impl Shell {
         self.ctl.add(&[path.to_path_buf()]);
     }
 
+    /// `add`, a folder named opening its first photo once read, for the bench; a file named opens itself.
+    pub fn add_opening_first(&self, path: &Path) {
+        self.ctl.add_opening_first(&[path.to_path_buf()]);
+    }
+
     /// The launch's folder: the one last opened, else the first root of `roots.json`, else none.
     pub fn open_remembered(&self) -> bool {
         self.ctl.open_remembered()
@@ -283,8 +288,7 @@ impl Shell {
         self.ctl.prepare_ahead();
     }
 
-    /// The opened folder's first photo in the editor once read, for the bench; a file named at
-    /// launch keeps its own opening.
+    /// The opened folder's first photo in the editor once read, for the bench.
     pub fn open_first_when_read(&self) {
         self.ctl.state.borrow_mut().opening.get_or_insert_with(String::new);
     }
