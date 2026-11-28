@@ -14823,5 +14823,12 @@
     "title": "Two checks that described before: the menus' twin on ⌘G, and a favourite's spelling that held only under /var",
     "status": "done",
     "detail": "menus::every_menu_shortcut_is_claimed_once caught a clash by writing New Roll's ⇧⌘G as the mode's ⌘G, which #4106 removed: its twin now writes Reset's ⇧⌘R as Refresh's ⌘R. disk_turns::a_favourite_in_another_spelling_opens_in_the_archives made its other spelling by prefixing /private, true only of a scratch under /var: it now links to its scratch and spells the favourite through the link, which the disk resolves wherever the scratch lies (checked with TMPDIR under /Volumes and under /var)."
+  },
+  {
+    "id": 4603,
+    "type": "fix",
+    "title": "The healer holds no dead method: the plain mean goes to its tests, the rectangle's emptiness goes",
+    "status": "done",
+    "detail": "After #4600 the tone match reads every mean through `Region::summed`: `Region::mean` was read by the tests alone and `Rect::is_empty` by nothing, so clippy refused oni-app and the workspace went unlinted. The tests carry the plain mean they compare against; `is_empty` is gone. Checks: scripts/lint green, heal::tests, the De-dust window checks."
   }
 ]
