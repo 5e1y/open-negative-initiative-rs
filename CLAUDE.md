@@ -103,9 +103,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **Every film stock and paper is its maker's data sheet** (owner's call, 2026-11-22): `scripts/datasheet-profiles.py` writes each profile from the
   official sheet's curves into its stock's file; no spektrafilm profile ships. A slide's bake follows spektrafilm's model (its dyes, couplers); a
   colour negative's is its fitted curves and couplers over its sheet's sensitivities and D-min, the sheet's printed curves kept in its profile; a
-  paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk.
+  paper's profile is its sheet's Status A curves, D-min included, and its dyes' Status A crosstalk, the source of the look
+  `scripts/paper-looks.py` bakes into its file.
 - **Every film stock and paper is one file** (owner's call, 2026-11-23): `crates/oni-settings/stocks/<key>.json` holds its identity,
-  canister, dyes, virtual film, reference and profile (a paper's profile, the SP-3000's fit), built into the binary; the person's own
+  canister, dyes, virtual film, reference and profile (a paper's profile and its baked look), built into the binary; the person's own
   in the support folder's `Stocks` add stocks or stand in for one by key, watched while the app runs (`stocks/README.md`). The code
   names no stock but the defaults (the neutral film, Portra 800, the generic C-41 set, Ektachrome E100 for slides)
   and, in a migration, the papers that left (`migrate::papers_redone`); a key no file defines is kept as stored and renders on the
@@ -118,10 +119,13 @@ the code; a costly trap keeps its constraint and its number in two lines.
   past log H -1.50 and -2.16, take red's points there.
 - **A black and white virtual film is the colour negative's kernel on one layer**: its sensitivity on the three channels, no
   coupler, its silver neutral in one scanned band; its photo is then read as a monochrome roll's (`PipelineSettings::is_monochrome`).
-- **The Frontier is a paper** (owner's call, 2026-11-22): the Fujifilm Frontier SP-3000 prints in the paper list, its measured table
-  fitted as a paper (the scanner's matrix and three curves, pure dyes, `docs/research/frontier/frontier_print_fit.py`); a photo once
-  edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
-- **A paper is its curves** (owner's calls, 2026-11-23 and 24): each layer develops its dye on its own curve (contrast, shape, the
+- **The Frontier is a paper** (owner's calls, 2026-11-22 and 28): the Fujifilm Frontier SP-3000 prints in the paper list, its look baked
+  from its measured table (`frontier.cube`): its greys the table's neutral line from its black to its white, exactly, and a crosstalk
+  fitted on the 1,440 nodes its measurements constrain, nothing extrapolated past them (`docs/research/frontier/frontier-paper.md`); a
+  photo once edited on the removed Scanner face keeps its render on a legacy print (its keys and D+0.5 M+2 Y-2 rest).
+- **A paper is its curves** (owner's calls, 2026-11-23 and 24): a paper is a look at the chain's end (owner's call, 2026-11-28), three
+  curves from the window's share to each layer's dye amount, the dyes' crosstalk, the light, then its ends, every number baked in its
+  file by `scripts/paper-looks.py` and nothing solved in the app. Each layer develops its dye on its own curve (contrast, shape, the
   layers' drift, D-min and Dmax), each channel reads the dyes through the paper's Status A crosstalk (its sheet's dyes, a grey
   exactly on the sheet's curves), and each density absorbs its own Rec. 2020 channel alone. The dyes' full
   spectral absorptions cost a third of a scan's chroma and turned reds and skins yellow: a scan hands a paper no masked separation;
@@ -135,14 +139,16 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **A paper named lays Prepare's window on its useful range** (owner's calls, 2026-11-22 to 24): no ONI print, no enlarger switch
   and no colour compensation but on a legacy print; the bare film exposes the paper's black end (0.9 Dmax on its
   neutral) and the window's white its white end (D-min + 0.04, ISO 6846),
-  whatever the frame: no grey placed, no time solved (`paper::placing`). Each layer's offset, the paper's own filtration, is solved
-  once by least squares so equal shares print neutral along the whole range. The picked black never lifts and lies on pure black,
+  whatever the frame: no grey placed, no time solved. Each layer's offset, the paper's own filtration, is baked
+  once by least squares so equal shares print neutral along the whole range (`scripts/paper-looks.py`). The picked black never lifts and lies on pure black,
   the window's white on pure white (Print lift keeps the paper's own); Lighting but Exposure moves the whites freely. A legacy print
-  laid keeps its own curve and takes no paper; laying it takes the paper away.
+  laid keeps its own curve and takes no paper; laying it takes the paper away. Brightness moves every share by its stops over the paper's
+  `latitude`, the log exposure the window spans, as the enlarger's light did.
 - **Lighting acts on the negative in every pipe** (owner's call, 2026-11-22): each slider moves the layers' log exposure, read back
   through the stock's curves, and the film is developed again (`negative`); the inversion shows it, or the enlarger prints it at its rest. A
   digital photo's scan is read through the model's own curves (three coupled layers, a black and white film's one uncoupled); a scan is read on
-  its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself.
+  its stock's mean layer scaled to its own grey, so its neutral stays neutral. A legacy print reads its machine's entry itself. Its
+  moves turn about the share the pure inversion shows as a scene grey, the sRGB code of 0.184; a legacy print about its own curve's grey.
 - **Exposure holds Prepare's black and white** (owner's call, 2026-11-24): on the negative, in the chain before any print, it gains every
   tone share's odds `u / (1 − u)` by what the film's own stop lays on the grey's, the same on the three channels: the bare film and
   the window's densest stay, each end's tones scale about it as by a gain, any travel monotone. A projected slide keeps its own.

@@ -14790,5 +14790,12 @@
     "title": "Two window checks' unused import of Key, left by ⌘G's removal, which the lint refused",
     "status": "done",
     "detail": "migration.rs and upgrade.rs no longer press ⌘G and kept `use slint::platform::Key`; scripts/lint denies warnings. Check: scripts/lint."
+  },
+  {
+    "id": 4259,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: a paper is a look baked in its file, the Frontier one of them",
+    "detail": "The working notes follow #4403 and #4404: three curves, a crosstalk and the light baked by scripts/paper-looks.py, the Frontier's from its measured table, Lighting's pivot on the inversion's scene grey."
   }
 ]
