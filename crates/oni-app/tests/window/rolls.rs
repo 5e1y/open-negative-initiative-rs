@@ -114,7 +114,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
         assert_eq!(settings_of(&canonical(name)).roll_reference.map(|r| r.id), Some(id), "{name} joined the roll");
     }
     assert_eq!((panel.get_roll_measured(), panel.get_roll_unmeasured()), (4, 0));
-    rig.chord(slint::platform::Key::Control, "g");
+    rig.key("\u{1b}");
     rest();
     ctl.act(oni_app::Act::Undo);
     rig.pump();

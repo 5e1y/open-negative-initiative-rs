@@ -324,8 +324,7 @@ export component Toolbar inherits Surface {
             text: root.back ? @tr("BACK") : @tr("EDIT");
             icon: root.back ? Icons.back : Icons.edit;
             fixed-width: max(edit-sizing.preferred-width, back-sizing.preferred-width);
-            help: Preparing.shown ? @tr("Gallery (Esc or {})", KeyWords.command + "G")
-                : Bar.editing ? @tr("Gallery (Esc or {})", KeyWords.command + "G") : @tr("Editor (Return or {})", KeyWords.command + "G");
+            help: Preparing.shown || Bar.editing ? @tr("Gallery (Esc)") : @tr("Editor (Return)");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
         // The zone holds the widest set of keys with its words, and the widest compact one at least, alone

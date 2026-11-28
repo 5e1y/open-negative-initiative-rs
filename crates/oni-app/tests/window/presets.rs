@@ -188,7 +188,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     assert!(!presets.get_saving(), "Copy asks no more");
 
     // To the gallery, B and C picked, a click on the card applies to both as one gallery step.
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     lib.invoke_tile_clicked(1, false, false);
     lib.invoke_tile_clicked(2, true, false);

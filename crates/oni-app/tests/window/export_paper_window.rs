@@ -145,11 +145,11 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let stops = || ctl.state.borrow().store().settings().paper_correction.stops;
 
     // The app opens on the gallery, the RAW's recalibration notice closed: the first photo is ringed
-    // and taken into the editor by ⌘G.
+    // and taken into the editor by Return.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
-    rig.chord(slint::platform::Key::Control, "g");
+    rig.key("\r");
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens");
     rig.until("the first render", LONG, || renders() >= 1);
     quiet(&rig, renders);

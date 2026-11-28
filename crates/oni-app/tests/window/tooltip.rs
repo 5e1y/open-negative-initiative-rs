@@ -44,7 +44,7 @@ pub(crate) fn a_tooltip_hides_on_a_press_and_with_the_help_it_showed() {
     moved(rig, x, y);
     assert!(showing(&tip, "Editor ("), "{}", tip.get_text());
 
-    // The help changed under the hand without a press, by the menu's ⌘G: the old tip goes.
+    // The help changed under the hand without a press, by the menu's mode item: the old tip goes.
     ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     assert!(!tip.get_shown(), "a key whose help changed hides the tip it showed");

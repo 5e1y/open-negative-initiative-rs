@@ -180,8 +180,8 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     println!("shot {}", rig.shot("editor-roll").display());
     w.global::<PanelState>().set_tab(PanelTab::Color);
 
-    rig.chord(slint::platform::Key::Control, "g");
-    assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
+    rig.key("\u{1b}");
+    assert!(w.global::<App>().get_gallery(), "Escape opens the gallery");
     // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it; a contact sheet is no frame.
     let frame = |p: &std::path::Path| oni_settings::sidecar::read(p, true).map_or(true, |l| l.settings.sheet.is_none());
     let n = std::fs::read_dir(&folder)

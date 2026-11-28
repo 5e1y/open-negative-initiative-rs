@@ -79,8 +79,8 @@ pub(crate) fn a_swift_roll_opened_and_left_rewrites_no_sidecar() {
         assert!(!w.global::<App>().get_gallery(), "{}: a double click opens the editor", folder.display());
         rig.until("the frame rendered", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
         settle(rig, WRITE_DELAY + Duration::from_millis(600));
-        rig.chord(Key::Control, "g");
-        assert!(w.global::<App>().get_gallery(), "⌘G goes back to the gallery");
+        rig.key("\u{1b}");
+        assert!(w.global::<App>().get_gallery(), "Escape goes back to the gallery");
         settle(rig, WRITE_DELAY + Duration::from_millis(600));
         for (file, was) in files.iter().zip(&before) {
             seen += 1;

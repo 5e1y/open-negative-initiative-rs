@@ -126,7 +126,7 @@ export component MainWindow inherits AppWindow {
             if Pairing.available: MenuItem { title: @tr("Pair Phone…"); activated => { App.menu(Act.pair-phone); } }
             MenuItem { title: @tr("Settings…"); shortcut: @keys(Control + ","); activated => { App.menu(Act.settings); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu(Act.toggle-mode); } }
+            MenuItem { title: Menus.titles.mode; enabled: Menus.live.toggle-mode; activated => { App.menu(Act.toggle-mode); } }
             MenuItem { title: Menus.titles.export; shortcut: @keys(Control + "e"); enabled: Menus.live.export; activated => { App.menu(Act.export); } }
             MenuSeparator { }
             MenuItem { title: @tr("Refresh"); shortcut: @keys(Control + "r"); enabled: Menus.live.refresh; activated => { App.menu(Act.refresh); } }

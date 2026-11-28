@@ -2620,12 +2620,12 @@ msgid "EDIT"
 msgstr "MODIFIER"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Gallery (Esc or {})"
-msgstr "Galerie (Échap ou {})"
+msgid "Gallery (Esc)"
+msgstr "Galerie (Échap)"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Editor (Return or {})"
-msgstr "Éditeur (Entrée ou {})"
+msgid "Editor (Return)"
+msgstr "Éditeur (Entrée)"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "UPDATING"

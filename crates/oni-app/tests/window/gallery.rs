@@ -87,7 +87,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.click("B", &[]);
     assert!(!w.global::<App>().get_gallery());
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("B.tif").as_str()));
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     assert!(w.global::<App>().get_gallery());
     hand.rest();
 
@@ -106,7 +106,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("C.tif").as_str()), "Return opens the cursor, C");
     assert_eq!(hand.lit_rows(), ["A", "B", "C", "D"], "⌘A's four open together and stay the selection");
     rig.until("the four together", std::time::Duration::from_secs(30), || w.global::<oni_app::Canvas>().get_status().as_str() == "4 frames together");
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     hand.rest();
 
     // The status bar's medal picker: one photo toggles its own medal off, several keep it.
@@ -334,7 +334,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.settle();
     println!("shot {}", rig.shot("gallery-organised").display());
 
-    // ⌘G hides the sidebar with no focus leaving its fields: what they hold is written first.
+    // The mode's turn hides the sidebar with no focus leaving its fields: what they hold is written first.
     lib.set_camera_body("Nikon F3".into());
     lib.invoke_title_edited("Roll 9".into());
     rig.pump();

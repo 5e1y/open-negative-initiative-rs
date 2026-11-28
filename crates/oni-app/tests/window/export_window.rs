@@ -153,13 +153,13 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     w.global::<oni_app::Upgraded>().set_shown(true);
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
-    // Twin: under a sheet ⌘G opens nothing.
-    rig.chord(slint::platform::Key::Control, "g");
-    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "⌘G reached behind the sheet");
-    // Once it is closed, the first photo ringed is taken into the editor by ⌘G.
+    // Twin: under a sheet Return opens nothing.
+    rig.key("\r");
+    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "Return reached behind the sheet");
+    // Once it is closed, the first photo ringed is taken into the editor by Return.
     w.global::<oni_app::Upgraded>().set_shown(false);
     rig.pump();
-    rig.chord(slint::platform::Key::Control, "g");
+    rig.key("\r");
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens: {:?}", ctl.state.borrow().open_path());
     rig.until("the first render", LONG, || ctl.state.borrow().renders() >= 1);
     let first = ctl.state.borrow().open_path().unwrap().to_string();

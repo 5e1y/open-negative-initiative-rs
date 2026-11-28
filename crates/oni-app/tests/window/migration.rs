@@ -75,7 +75,7 @@ pub(crate) fn an_earlier_library_is_brought_while_the_person_works() {
     hand.rig.pump();
     assert!(!w.global::<App>().get_gallery(), "a double click opens the editor");
     w.global::<oni_app::Store>().invoke_step(oni_app::fields::Field::Exposure.index(), 1);
-    hand.rig.chord(Key::Control, "g");
+    hand.rig.key("\u{1b}");
     assert!(w.global::<App>().get_gallery(), "back to the gallery");
     let edited = || said(&std::fs::read(sidecar::url_for(Path::new(&paths[0]))).unwrap()).0 != said(&before[0]).0;
     hand.rig.until("the edit written", Duration::from_secs(10), edited);
@@ -134,7 +134,7 @@ pub(crate) fn an_original_the_opening_downloads_opens_editable() {
     opened("Roll/A.tif");
     assert!(w.global::<oni_app::Canvas>().get_read_only());
     assert_eq!(std::fs::read(&a).unwrap(), before);
-    hand.rig.chord(Key::Control, "g");
+    hand.rig.key("\u{1b}");
     // Downloaded by its decode: read again, brought, and editable.
     hand.rig.pump();
     let b = sidecar::url_for(Path::new(&hand.at("Roll/B.tif")));

@@ -59,7 +59,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(p.get_heading().as_str(), "Select the Film Type");
     assert!(!p.get_has_tutorial(), "the film step offers no demo");
     assert!(p.get_skipped().row_data(1).unwrap(), "a scanner's roll skips the flat-field");
-    assert!(!menus.get_live().toggle_mode && !menus.get_live().measure_roll, "⌘G and the item itself stay dark meanwhile");
+    assert!(!menus.get_live().toggle_mode && !menus.get_live().measure_roll, "the mode's item stays dark meanwhile");
     let live = menus.get_live();
     let behind = [live.export, live.framing, live.correction, live.mirror, live.smaller, live.larger, live.remove, live.undo, live.redo, live.reset];
     let more = [live.copy_settings, live.paste_settings, live.paste_to_roll, live.medal, live.new_roll, live.save_preset, live.apply_preset];

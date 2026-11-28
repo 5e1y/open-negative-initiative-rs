@@ -1,5 +1,5 @@
 //! Navigation inside a project of photos from two folders, as on the archive: the gallery's
-//! arrows, ⌘G and the editor's walk follow the project's order, roll by roll, and stay inside it.
+//! arrows, Return and the editor's walk follow the project's order, roll by roll, and stay inside it.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::{App, Library};
@@ -132,11 +132,11 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
     rig.chord(Key::Shift, &SharedString::from(Key::RightArrow));
     assert_eq!(hand.selected(), ["A03", "B04"], "⇧→ extends to B04");
 
-    // ⌘G opens the ringed photo, and the editor's → walks Trip, never Roll A.
+    // Return opens the ringed photo, and the editor's → walks Trip, never Roll A.
     hand.pick("A03");
-    rig.chord(Key::Control, "g");
+    rig.key("\r");
     assert!(!hand.gallery());
-    assert_eq!(hand.open(), "A03", "⌘G opens the ringed A03");
+    assert_eq!(hand.open(), "A03", "Return opens the ringed A03");
     assert_eq!(hand.frame(), "Frame 2 of 4", "the status counts A03 in Trip");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "B04", "→ walks to Trip's next, B04 in Roll B");
@@ -149,7 +149,7 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
     assert_eq!(hand.open(), "B04", "↑ walks back as ←");
 
     // Back to the gallery, the photo walked to is the selection.
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     assert!(hand.gallery());
     assert_eq!(hand.selected(), ["B04"], "the gallery comes back on the photo walked to");
     hand.arrow(Key::RightArrow);
@@ -163,12 +163,12 @@ pub(crate) fn a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_th
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.selected(), ["A04"], "twin: → on the archive lands on the folder's next");
     hand.arrow(Key::LeftArrow);
-    rig.chord(Key::Control, "g");
+    rig.key("\r");
     assert_eq!(hand.open(), "A03");
     assert_eq!(hand.frame(), "Frame 4 of 6", "twin: the status counts A03 in Roll A");
     hand.arrow(Key::RightArrow);
     assert_eq!(hand.open(), "A04", "twin: → in the editor walks the folder, not Trip");
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     assert_eq!(hand.selected(), ["A04"]);
 
     drop(shell);

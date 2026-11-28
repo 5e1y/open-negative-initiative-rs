@@ -14671,5 +14671,12 @@
     "title": "⌘C and ⌘V copy and paste the settings; Return opens the editor and Escape leaves it, Space beside a photo fits it",
     "status": "done",
     "detail": "Owner's calls (release repository issue 16): ⌘C and ⌘V copy and paste the settings, the same command and targets as ⇧⌘C and ⇧⌘V, which still work; the menus, the bar's tooltips and the cell menu show ⌘C and ⌘V (Ctrl on Windows, by the same table). A field holding the keyboard keeps its own copy and paste: the menu items stand only while the photos hold it, as ⌘Z's. Space no longer opens the editor nor leaves it: in the gallery Return alone opens it, Escape and ⌘G leave it; beside a photo a bare Space fits the picture to the window (Zoom to Fit, ⌘0), once while held, De-dust keeping Space for the hand that pans. The mode key's tooltips name Return and Escape (Editor (Return or ⌘G), Gallery (Esc or ⌘G)); picking's SpaceKey is OpenKey. No command lost its only key: ⌘G, Return and Escape go between the gallery and the editor, ⌘0 fits. Space keeps its other uses: De-dust's pan, the year on film's pause, a folder row's fold in the tree. Checks: gestures (⌘C, ⌘V, twin ⇧⌘V), editor_routes (Space fits beside a photo; in the gallery Space opens nothing, Return the editor, Escape leaves it), field_undo (⌘C in a field copies no settings; twin: the photos holding the keyboard, it does), organise::cells (the cell menu's chords match the menu bar's)."
+  },
+  {
+    "id": 4106,
+    "type": "ui",
+    "title": "⌘G no longer goes between the gallery and the editor: Return opens, Escape leaves",
+    "status": "done",
+    "detail": "Owner's call: ⌘G (Ctrl+G on Windows) leaves the mode's menu item, which keeps its place with no key; Return opens the editor from the gallery and Escape leaves it, the only keys between them. The mode key's tooltips say Editor (Return) and Gallery (Esc), in French and Spanish too. ⌘G served nothing else; ⇧⌘G (New Roll) and ⌥⇧⌘G (Ungroup) stay. The window checks that went between the screens by ⌘G go by Return and Escape. Check: editor_routes (⌘G leaves neither screen; twin: the mode's own command still goes between them)."
   }
 ]

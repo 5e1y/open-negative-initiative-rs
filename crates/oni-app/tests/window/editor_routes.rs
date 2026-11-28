@@ -167,8 +167,13 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(w.global::<App>().get_gallery(), "Space opens no editor");
     rig.key("\r");
     assert!(!w.global::<App>().get_gallery(), "Return opens the editor");
-    rig.key("\u{1b}");
-    assert!(w.global::<App>().get_gallery());
+    // ⌘G no longer goes between them (owner's call); twin: the mode's own command still does.
+    rig.chord(Key::Control, "g");
+    assert!(!w.global::<App>().get_gallery(), "⌘G left the editor");
+    ctl.act(oni_app::Act::ToggleMode);
+    assert!(w.global::<App>().get_gallery(), "the mode's command reaches the gallery");
+    rig.chord(Key::Control, "g");
+    assert!(w.global::<App>().get_gallery(), "⌘G opened the editor");
 
     // A preset naming the balance key balances two photos Each, asking nothing.
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));

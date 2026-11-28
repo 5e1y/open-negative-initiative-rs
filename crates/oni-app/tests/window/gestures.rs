@@ -56,11 +56,11 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!((t.mode.as_str(), t.smaller.as_str(), t.larger.as_str()), ("Editor", "Smaller Thumbnails", "Larger Thumbnails"));
     assert_eq!((t.undo.as_str(), t.filter.as_str(), t.paste.as_str()), ("Undo", "Filter: All Photos", "Paste Settings"));
     assert!(menus.get_live().toggle_mode && !menus.get_live().medal && !menus.get_live().copy_settings);
-    // ⌘G takes the ringed photo into the editor, where the titles change face.
+    // Return takes the ringed photo into the editor, where the titles change face.
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     assert!(menus.get_live().toggle_mode && menus.get_live().medal);
-    rig.chord(Key::Control, "g");
+    rig.key("\r");
     assert_eq!(ctl.state.borrow().open_path(), Some(a.to_str().unwrap()));
     let t = menus.get_titles();
     assert_eq!((t.mode.as_str(), t.smaller.as_str(), t.library.as_str()), ("Gallery", "Zoom Out", "Hide the Library"));
@@ -142,7 +142,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "⌘C's copy sheet asks what it carries first");
     rig.key("\n");
     assert!(menus.get_live().paste_to_roll, "twin: Return copies");
-    rig.chord(Key::Control, "g");
+    rig.key("\u{1b}");
     assert!(w.global::<App>().get_gallery());
     lib.invoke_tile_clicked(1, false, false);
     lib.invoke_tile_clicked(2, true, false);

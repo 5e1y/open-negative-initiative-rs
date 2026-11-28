@@ -110,7 +110,7 @@ pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_langu
         }
         let end = right_end(rig, w, NARROWEST, height);
         assert!(end <= NARROWEST - END + 0.5, "{language:?}, the editor: the last key ends at {end} pt");
-        rig.chord(slint::platform::Key::Control, "g");
+        rig.key("\u{1b}");
         let end = right_end(rig, w, NARROWEST, height);
         println!("shot {}", rig.shot(&format!("bar-narrowest-gallery-{}", language.key())).display());
         assert!(end <= NARROWEST - END + 0.5, "{language:?}, the gallery: the last key ends at {end} pt");
@@ -123,7 +123,7 @@ pub(crate) fn the_bars_last_key_stays_inside_the_narrowest_window_in_every_langu
         assert!(!worded(), "twin, {language:?}: a point narrower the words would pass the edge, and give way");
         // The gallery's main actions keep their words at the narrowest window in every language.
         assert!(least <= NARROWEST, "{language:?}: the gallery's keycaps need {least} pt to keep their words");
-        rig.chord(slint::platform::Key::Control, "g");
+        rig.key("\r");
     }
     oni_app::language::speak(Some(oni_i18n::Language::English));
 }
@@ -144,10 +144,10 @@ pub(crate) fn the_bar_with_the_years_key_stays_inside_the_window_in_every_langua
     let preparing = w.global::<oni_app::Preparing>();
     let keyed = || !common::placed(w, Role::Button, "WRAPPED 26").is_empty();
     assert!(!keyed(), "the editor's bar holds no year's key");
-    rig.chord(slint::platform::Key::Control, "g");
+    rig.key("\u{1b}");
     rig.settle();
     assert!(keyed(), "the year's key stands in December's gallery");
-    rig.chord(slint::platform::Key::Control, "g");
+    rig.key("\r");
     rig.settle();
     let mut ends = Vec::new();
     for language in [oni_i18n::Language::English, oni_i18n::Language::French, oni_i18n::Language::Spanish] {
@@ -161,7 +161,7 @@ pub(crate) fn the_bar_with_the_years_key_stays_inside_the_window_in_every_langua
             let editor = right_end(rig, w, width, height);
             assert!(!keyed(), "{language:?}, {width} pt: the editor's bar holds no year's key");
             println!("shot {}", rig.shot(&format!("bar-year-editor-{}-{width}", language.key())).display());
-            rig.chord(slint::platform::Key::Control, "g");
+            rig.key("\u{1b}");
             let gallery = right_end(rig, w, width, height);
             assert!(keyed(), "{language:?}, {width} pt: the year's key stands in the gallery's bar");
             println!("shot {}", rig.shot(&format!("bar-year-gallery-{}-{width}", language.key())).display());
@@ -170,7 +170,7 @@ pub(crate) fn the_bar_with_the_years_key_stays_inside_the_window_in_every_langua
             let prepare = right_end(rig, w, width, height);
             ctl.act(oni_app::Act::LeaveRoll);
             rig.settle();
-            rig.chord(slint::platform::Key::Control, "g");
+            rig.key("\r");
             rig.settle();
             ends.push((language.key(), width, editor, gallery, prepare));
         }
@@ -225,7 +225,7 @@ pub(crate) fn undo_and_redo_head_the_centre_past_a_rule_in_the_editor_and_the_ga
         assert!((folded.0 - bar_gap).abs() < 0.5 && (folded.1 - bar_gap).abs() < 0.5, "{screen}: folded, the bar's gap alone: {folded:?}");
         assert!(worded.0 > folded.0 + bar_gap - 0.5 && worded.1 > folded.1 + bar_gap - 0.5, "{screen}: worded, a rule in each gap: {worded:?}");
         println!("shot {}", rig.shot(&format!("bar-history-{}", screen.replace(' ', "-"))).display());
-        rig.chord(slint::platform::Key::Control, "g");
+        rig.key(if screen == "the editor" { "\u{1b}" } else { "\r" });
         rig.settle();
     }
 }
