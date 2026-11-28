@@ -6,7 +6,7 @@ use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
 use oni_app::fields::Field;
 use oni_app::{MainWindow, PanelState, PanelTab, Store};
 use oni_settings::PaperStock;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use std::time::Duration;
 
 const LABEL: &str = "Colour compression";
@@ -45,9 +45,9 @@ pub(crate) fn colour_compression_lies_under_a_papers_name_on_its_dose_and_takes_
     assert!(name.y < slider.y && slider.y < lift.y, "the paper, its compression, then Print lift");
     let shown = |v: f32| format!("{:.0}%", 100.0 * v);
     assert_eq!((settings().print.colour_compression, slider_value(w)), (None, shown(scale.rest())));
-    // The knob stands on its dose along 0 to the paper's reach.
+    // The knob stands on its dose along the scale's 0 to 60 %, the same rail for every paper.
     let fraction = store.get_colour_compression_fraction();
-    assert!((fraction - scale.rest() / scale.reach()).abs() < 0.02, "{fraction}");
+    assert!((fraction - scale.rest() / oni_settings::tone::Print::COMPRESSION_RANGE.1).abs() < 0.02, "{fraction}");
     rig.settle();
     println!("shot {}", rig.shot("paper-block-colour-compression").display());
 
@@ -66,6 +66,27 @@ pub(crate) fn colour_compression_lies_under_a_papers_name_on_its_dose_and_takes_
     store.invoke_rest(Field::ColourCompression.index());
     rig.pump();
     assert_eq!((settings().colour_compression(), slider_value(w)), (scale.rest(), shown(scale.rest())));
+    // One scale for every paper: Edge's rail spans the same 0 to 60 %, veiled past its reach, where the knob stops.
+    let edge = PaperStock::of("kodak-ektacolor-edge");
+    let reach = edge.compression().expect("a scale").reach();
+    panel.invoke_paper_chosen(chosen(edge));
+    rig.settle();
+    let scale = oni_settings::tone::Print::COMPRESSION_RANGE.1;
+    let beyond = || store.get_beyond().row_data(Field::ColourCompression.index() as usize).unwrap_or(0.0);
+    assert!((beyond() - (1.0 - reach / scale)).abs() < 1e-3, "{}", beyond());
+    store.invoke_typed(Field::ColourCompression.index(), 300);
+    rig.settle();
+    assert_eq!(settings().print.colour_compression, Some(reach));
+    assert!((store.get_colour_compression_fraction() - reach / scale).abs() < 0.02, "{}", store.get_colour_compression_fraction());
+    println!("shot {}", rig.shot("paper-block-compression-edge").display());
+    // Twin: on DP II the same rail lets the knob pass Edge's reach.
+    let dpii = PaperStock::of("fujifilm-crystal-archive-digital-dpii");
+    panel.invoke_paper_chosen(chosen(dpii));
+    rig.settle();
+    store.invoke_typed(Field::ColourCompression.index(), 300);
+    rig.settle();
+    assert!(settings().colour_compression() > reach + 0.1 && beyond() < 0.05, "{} {}", settings().colour_compression(), beyond());
+    println!("shot {}", rig.shot("paper-block-compression-dpii").display());
     // Twin: back on no paper, the slider leaves.
     panel.invoke_paper_chosen(0);
     rig.settle();

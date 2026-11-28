@@ -135,7 +135,7 @@ pub(crate) fn track_range(f: Field) -> Track {
 /// The track a field spans on these settings: `Knob::range`, a monochrome frame's or a plain file's
 /// own, in the shown sense, and the levels it notches on, evenly spaced along it.
 pub fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> Track {
-    let (low, high) = f.knob().range(s).unwrap_or(f.spec().range);
+    let (low, high) = f.travel(s);
     Track { range: if f.spec().inverted { -high..=-low } else { low..=high }, levels: f.levels(s) }
 }
 
@@ -177,6 +177,12 @@ pub fn readout_named(f: Field, s: &oni_settings::PipelineSettings, stored: f32, 
 /// and its block's reset land on alike.
 pub fn rests(s: &oni_settings::PipelineSettings) -> Vec<f32> {
     Field::ALL.iter().map(|f| position_on(*f, f.base(s), &track_on(*f, s))).collect()
+}
+
+/// The share of each field's track past what its knob reaches on these settings, by its index: 0 where it reaches its end.
+pub fn beyond(s: &oni_settings::PipelineSettings) -> Vec<f32> {
+    let past = |f: Field| f.knob().range(s).filter(|_| !f.spec().inverted).map_or(0.0, |(_, high)| 1.0 - position_on(f, high, &track_on(f, s)));
+    Field::ALL.iter().map(|f| past(*f).max(0.0)).collect()
 }
 
 /// `stored_on`, but rest itself where a drag holds on rest's place, as the double click lands it.

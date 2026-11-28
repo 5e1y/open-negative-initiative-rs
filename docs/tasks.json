@@ -14918,15 +14918,10 @@
     "detail": "The working notes follow #4104 and #4119: no holographic face, no key in the editor."
   },
   {
-    "id": 4408,
-    "type": "change",
-    "title": "Colour compression on one absolute scale, each paper at its own dose, up to 2.5 times its crosstalk where its white allows",
-    "status": "done",
-    "detail": "Owner's calls (\"le repos est à 0 %… chaque papier a sa dose de compression, comme pour le système de grain\", \"jusqu'à 2,5\"). The slider reads the share of a ring of twelve saturated colours' Oklab chroma the print takes from the pure dyes' print, the same scale on every paper: 0 % pure dyes. Each paper's file bakes its scale (look.compression: strengths of its crosstalk by 0.05 and the share each takes, scripts/paper-looks.py), its own dose at strength 1 marked on the track: Crystal Archive DP II and Pearl 29.1 %, Photo Book 24.4 %, Ektacolor Edge 23.4 %, Royal Digital 23.0 %, Endura Premier 22.7 %, Metallic 22.3 %, the Frontier 14.5 %. Its reach is 2.5 times its crosstalk (59.0, 50.5, 48.6, 48.3, 26.5 %) but on Ektacolor Edge (1.45, 33.1 %) and Royal Digital (1.5, 33.5 %): their sheets' greys near the white hold 0.007 D of blue against 0.05 of red and green, which the cyan and magenta dyes' side reads alone pass past those strengths, so a grey there would need a negative yellow; the reach stops where every layer still falls with the share and holds no dye under -0.005. Stored as that share, none its paper's own dose (rest bit-exact, strength 1); a paper picked lays its own dose as a picked film lays its own effects, the paper in use picked again writing nothing. Sidecar format 86: a format 85 strength becomes its paper's share (compression::caught_up), the same strength printing within 1e-5. Checks: colour_compression (pipeline, settings, migrate, window), corpus goldens with the newer fixture at 87.",
     "id": 4508,
     "type": "perf",
-    "status": "done",
     "title": "A source evaluated from a recipe keys as that recipe where a chain reads it: a digital photo's scans are no longer made again at each rest of the hand, halation on",
+    "status": "done",
     "detail": "Owner: strong stutter panning a digital photo, gone with the halation off, weaker with the grain off. Cause: a materialised source took a new identity at each evaluation, and every chain reading it keyed on that identity. The halation's glow plate is kept in one slot; at each rest the scans made ahead of the hand (#4102) on the neighbouring notches drew their own glow there, the current one was drawn again with a new identity, so the current preview scan's key changed, the full scan was dropped and made again, about 300 ms of GPU the next view waited behind. A source now carries the key of the recipe, region and precision it was evaluated from (graph::rendering::recipe_key), and a chain reading it keys on that; its id stays unique for the canvas that takes each texture once. Measured with ONI_BENCH=traverse and ONI_TRAVERSE_RESTS=1 on a 47 Mpx RW2 on Portra 800, grain, bloom and halation at the film's rests, the full definition decoded: before, at each of 5 rests the preview then the full scan were made again and a view waited about 300 ms; after, the full scan is made once (one wait of 322 ms, as with the halation off, 308 ms) and no later rest waits. The pixels are untouched: only cache keys change, so ΔE is 0. Check: oni-graph key (a recipe evaluated again keys alike where it is read, each evaluation its own texture; twins: another parameter, its half-float evaluation, the same pixels uploaded key apart); it fails on the former identity."
   },
   {
@@ -14949,5 +14944,12 @@
     "title": "WRAPPED 26's word folds with the gallery's keycaps'",
     "status": "done",
     "detail": "The owner's call: the year's key keeps its word as long as the other keycaps keep theirs (Edit, Prepare Roll, Add Folder…) and folds at the same notch, no rank of its own: its worded width counts in the bar's widths and its word follows the keycaps' bare state. toolbar_fit checks in three languages, at 1,440 points and at the smallest window, that its word shows exactly when Prepare Roll's does, the bar inside the window."
+  },
+  {
+    "id": 4409,
+    "type": "change",
+    "title": "Colour compression on one fixed rail for every paper, 0 to 60 %, each paper resting where its spectral print or its table compresses",
+    "status": "done",
+    "detail": "Owner's calls (\"1 slider de compression pour tous les papiers… échelle FIXE, comme le grain\"). The slider's rail is the same on every paper, 0 % (pure dyes) to 60 % of a ring of saturated colours' Oklab chroma taken (Print::COMPRESSION_RANGE), each paper's rest ticked on it and its reach closing a veil past it (the design system's rail gains `beyond`, published per field as rests are; Field::travel lays the whole scale). Each paper's rest is measured on its own print, not its fit: a data sheet's through its dyes' spectra under D50 (Crystal Archive DP II and Pearl 32.2 %, Photo Book 28.7 %, Ektacolor Edge 27.3 %, Endura Premier 27.1 %, Royal Digital 27.0 %, Metallic 26.4 %), the Frontier's on its measured table (19.0 %); scripts/paper-looks.py bakes each crosstalk at the strength whose print takes that share (1.12 to 1.21 times the broad band, 1.45 times the Frontier's fit; ΔE median to its table 1.89, p90 5.25), so the rest stays strength 1 and bit-exact, and the scale runs by 0.05 of it until 60 %, a step taking no more chroma, or a layer rising or holding dye under -0.005: DP II and Pearl reach 59.1 %, Endura 52.6, Photo Book 52.6, Metallic 52.2, the Frontier 40.1, Royal 33.0, Edge 32.2. No format change: the stored share keeps its meaning. Checks: colour_compression (settings, pipeline, window: one rail on Edge and DP II, Edge's knob held at its reach, its twin passing it on DP II), paper (a cyan keeps 0.49 to 0.6 of its pure dyes' chroma at rest)."
   }
 ]

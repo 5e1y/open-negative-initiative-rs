@@ -214,8 +214,9 @@ fn at_zero(v: &f32) -> bool {
 impl Print {
     pub const EXPOSURE_RANGE: (f32, f32) = (-4.0, 4.0);
     pub const BRIGHTNESS_RANGE: (f32, f32) = (-4.0, 4.0);
-    /// Colour compression's widest travel, the share of chroma taken; each paper's file bakes its own reach within it.
-    pub const COMPRESSION_RANGE: (f32, f32) = (0.0, 1.0);
+    /// Colour compression's scale, the share of a ring of saturated colours' chroma taken, the same for every paper, as
+    /// a grain's Amount; each paper's file bakes its own rest and reach on it.
+    pub const COMPRESSION_RANGE: (f32, f32) = (0.0, 0.6);
     pub const FILTER_RANGE: (f32, f32) = (-1.5, 1.5);
     pub const TEMPERATURE_AXIS: V3 = [0.5, 0.0, -0.5];
     pub const TINT_AXIS: V3 = [1.0 / 3.0, -2.0 / 3.0, 1.0 / 3.0];

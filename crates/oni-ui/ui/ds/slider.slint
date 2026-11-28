@@ -52,6 +52,9 @@ export component Slider inherits VerticalLayout {
     // Rest as a fraction of the travel, none below 0: the rail ticks it, a drag holds on it, and a double
     // click on the rail or on the name, whose tooltip `help` is, brings the slider back to it.
     in property <float> rest: -1;
+    // The share of the travel past what the value can reach, veiled on the rail: one scale for every case, as a
+    // grain's Amount, its own reach marked within it.
+    in property <float> beyond;
     in property <string> help: @tr("Double-click to bring it back to rest");
     // Levels laid evenly along the track, ticked on the rail, which every step walks one by one; none below 2.
     in property <int> notches;
@@ -189,6 +192,7 @@ export component Slider inherits VerticalLayout {
                     low: root.low;
                     high: root.high;
                     rest: root.rest;
+                    beyond: root.beyond;
                     notches: root.notches;
                     deep: root.handled;
                     vivid: root.handled || root.on-line || (root.enabled && root.near) || root.keyed || root.stepping || area.scrolling;

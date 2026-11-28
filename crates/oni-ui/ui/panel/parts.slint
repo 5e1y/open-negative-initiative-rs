@@ -7,6 +7,7 @@ import { PanelState } from "state.slint";
 
 export component StoreSlider inherits Slider {
     rest: Store.rests[self.field];
+    beyond: Store.beyond[self.field];
     notches: Store.notches[self.field];
     reset => { Store.rest(self.field); }
     press(f, fine) => { return Store.press(f, fine); }

@@ -198,6 +198,8 @@ export global Store {
     // Each field's rest as a fraction of its track, by its index: the double click's value, which a
     // slider ticks and holds a drag on; it moves only with the frame.
     in property <[float]> rests;
+    // The share of each field's track past what its knob reaches on the photo, by its index: a paper's colour compression.
+    in property <[float]> beyond;
     // Each field's notches by its index, its levels evenly along its track; none on an even track.
     in property <[int]> notches;
     callback press(int, bool) -> bool;

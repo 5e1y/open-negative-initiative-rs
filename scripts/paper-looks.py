@@ -29,16 +29,17 @@ NODES, LOW, HIGH = 256, -0.5, 1.5
 SHARES = np.linspace(LOW, HIGH, NODES)
 # The useful range on a paper's neutral and the window shares a grey is weighed at.
 WHITE_OVER_DMIN, BLACK_OF_DMAX, SAMPLES = 0.04, 0.9, 33
-# The broad-band crosstalk's strength: 1 prints the 3x3 that best stands for the dyes' spectral print, 0 pure dyes.
-BROAD_BAND = 1.0
 XYZ_TO_2020 = [[1.7166512, -0.3556708, -0.2533663], [-0.6666844, 1.6164812, 0.0157685], [0.0176399, -0.0427706, 0.9421031]]
 SRGB_TO_2020 = [[0.627404, 0.329283, 0.043313], [0.069097, 0.919540, 0.011362], [0.016391, 0.088013, 0.895595]]
 IDENTITY = np.eye(3).tolist()
-# Colour compression's reach in strengths of the paper's own crosstalk: the last, by STEP and up to CEILING, before a layer
-# rises with the share or falls under no dye by HELD, or the crosstalk nears singular. Its scale is the share of a ring
-# of saturated colours' Oklab chroma the print takes from the pure dyes' print, RING's twelve hues 0.3 off a mid grey.
-CEILING, STEP, HELD = 2.5, 0.05, 5e-3
+# Colour compression's scale, one for every paper: the share of a ring of saturated colours' Oklab chroma a print takes
+# from its pure dyes' print, RING's twelve hues 0.3 off a mid grey, up to MAXIMUM. A paper's rest is the share its own
+# print takes, through its dyes' spectra or on its measured table; its scale runs by STEP of its crosstalk's strength
+# until MAXIMUM, until a step takes no more chroma, a layer rises with the share or falls under no dye by HELD, or the
+# crosstalk nears singular.
+MAXIMUM, STEP, HELD = 0.6, 0.05, 5e-3
 RING = np.radians(np.arange(0, 360, 30))
+RING_SHARES = np.stack([0.5 + 0.3 * np.cos(RING + d) for d in (0.0, -2 * np.pi / 3, 2 * np.pi / 3)], -1)
 
 
 class Sheet:
@@ -156,16 +157,51 @@ def broad_band(sheet, amounts, dyes):
     return mix / np.diag(mix), {"median": round(float(np.median(errors)), 3), "p90": round(float(np.percentile(errors, 90)), 3)}
 
 
+def ring_chroma(light):
+    """The ring's mean Oklab chroma under `light`, a print's light of the window's shares, laid between its ends."""
+    black, white = light(np.zeros(3)), light(np.ones(3))
+    lab = oklab((light(RING_SHARES) - black) / (white - black))
+    return float(np.hypot(lab[:, 1], lab[:, 2]).mean())
+
+
+def look_light(curves, mix, floor, primaries):
+    return lambda s: (10.0 ** -(floor + np.stack([np.interp(s[..., c], SHARES, curves[:, c]) for c in range(3)], -1) @ mix.T)) @ primaries.T
+
+
+def strength_of(curves, mix, floor, primaries, removed):
+    """The strength of `mix` at which the print takes `removed` of the ring's chroma from its pure dyes', by bisection."""
+    own = np.diag(np.diag(mix))
+    at = lambda k: ring_chroma(look_light(compressed(curves, mix, k), own + k * (mix - own), floor, primaries))
+    pure, (low, high) = at(0.0), (0.0, 8.0)
+    for _ in range(50):
+        mid = 0.5 * (low + high)
+        low, high = (mid, high) if 1.0 - at(mid) / pure < removed else (low, mid)
+    return 0.5 * (low + high), pure
+
+
+def at_strength(curves, mix, k):
+    """`curves` and `mix` with the crosstalk at strength `k` of its side reads, a grey's densities kept."""
+    own = np.diag(np.diag(mix))
+    return compressed(curves, mix, k), own + k * (mix - own)
+
+
 def sheet_look(data, dyes):
     sheet = Sheet(data)
     offsets, black, latitude = sheet.placed()
     log = black + offsets - latitude * SHARES[:, None]
     amounts = sheet.amounts(log)
     band, figures = broad_band(sheet, amounts, dyes)
-    mix = np.eye(3) + BROAD_BAND * (band - np.eye(3))
-    # A grey keeps the sheet's densities through the broad band, each layer's amount never rising with the share.
-    curves = np.minimum.accumulate((amounts @ sheet.crosstalk.T) @ np.linalg.inv(mix).T, axis=0)
-    print(f"  broad band against the dyes' spectral print: {figures}")
+    # The broad band at the strength whose print takes as much of the ring's chroma as the spectral print does.
+    grey = amounts @ sheet.crosstalk.T
+    weights, clear = eye(), np.nan_to_num(dyes)
+    spectral = lambda s: 10.0 ** -sheet.floor * ((10.0 ** -(np.stack([np.interp(s[..., c], SHARES, amounts[:, c]) for c in range(3)], -1) @ clear.T)) @ weights)
+    band_curves = grey @ np.linalg.inv(band).T
+    pure = ring_chroma(look_light(grey, np.eye(3), sheet.floor, np.eye(3)))
+    rest, _ = strength_of(band_curves, band, sheet.floor, np.eye(3), 1.0 - ring_chroma(spectral) / pure)
+    mix = np.eye(3) + rest * (band - np.eye(3))
+    # A grey keeps the sheet's densities through the crosstalk, each layer's amount never rising with the share.
+    curves = np.minimum.accumulate(grey @ np.linalg.inv(mix).T, axis=0)
+    print(f"  broad band against the dyes' spectral print: {figures}; the spectral print takes {1 - ring_chroma(spectral) / pure:.3f}, at strength {rest:.3f}")
     return {
         "axis": [LOW, HIGH],
         "curves": [[round(float(v), 7) for v in row] for row in curves],
@@ -279,7 +315,14 @@ def frontier_look():
     s_nodes, want = shares(nodes), oklab(measured(nodes))
     residual = lambda p: (oklab(printed(p.reshape(3, 3), s_nodes)[0]) - want).ravel() * 100
     p = fitted(residual, np.eye(3).ravel(), 80)
-    mix = p.reshape(3, 3) / p.reshape(3, 3)[1, 1]
+    fit = p.reshape(3, 3) / p.reshape(3, 3)[1, 1]
+    # The fitted crosstalk at the strength whose print takes as much of the ring's chroma as the table does.
+    fit_curves = printed(fit, s_nodes)[1]
+    table_light = lambda s: decoded(table.code(densities(s).reshape(-1, 3))).reshape(np.shape(s)) @ to_2020.T
+    removed = 1.0 - ring_chroma(table_light) / ring_chroma(look_light(*at_strength(fit_curves, fit, 0.0), np.zeros(3), to_2020))
+    rest, _ = strength_of(fit_curves, fit, np.zeros(3), to_2020, removed)
+    mix = np.diag(np.diag(fit)) + rest * (fit - np.diag(np.diag(fit)))
+    print(f"Frontier: its table takes {removed:.3f} of the ring's chroma, its fitted crosstalk at strength {rest:.3f}")
     got, curves = printed(mix, s_nodes)
     errors = np.linalg.norm(oklab(got) - want, axis=1) * 100
     figures = {"nodes": int(len(nodes)), "median": round(float(np.median(errors)), 3), "p90": round(float(np.percentile(errors, 90)), 3), "max": round(float(errors.max()), 3)}
@@ -316,35 +359,26 @@ def compressed(curves, mix, k):
     return curves + curves @ (np.linalg.inv(own + k * (mix - own)) @ side).T
 
 
-def compression_reach(curves, mix):
+def compression(look):
+    """The strengths the slider runs through, by STEP from the pure dyes, and the share of the ring's chroma each takes:
+    the slider's absolute scale, the paper's rest at strength 1, up to MAXIMUM or the last strength its curves hold."""
+    curves, mix = np.array(look["curves"]), np.array(look["crosstalk"])
+    floor, primaries = np.array(look["floor"]), np.array(look["primaries"])
     own = np.diag(np.diag(mix))
-    reach = 0.0
-    for k in np.arange(STEP, CEILING + 1e-9, STEP):
+    chroma = lambda k: ring_chroma(look_light(*(at_strength(curves, mix, k) if k != 1.0 else (curves, mix)), floor, primaries))
+    pure = chroma(0.0)
+    strengths, removed = [0.0], [0.0]
+    while removed[-1] < MAXIMUM:
+        k = round(strengths[-1] + STEP, 2)
         a = compressed(curves, mix, k)
         if np.diff(a, axis=0).max() > HELD or a.min() < -HELD or np.linalg.det(own + k * (mix - own)) <= 0.05:
             break
-        reach = k
-    return round(float(reach), 2)
-
-
-def compression(look):
-    """The strengths the slider runs through, by STEP from the pure dyes to the reach, and the share of the ring's chroma
-    each takes: the slider's absolute scale, the paper's rest at strength 1."""
-    curves, mix = np.array(look["curves"]), np.array(look["crosstalk"])
-    floor, primaries = np.array(look["floor"]), np.array(look["primaries"])
-    ring = np.stack([0.5 + 0.3 * np.cos(RING + d) for d in (0.0, -2 * np.pi / 3, 2 * np.pi / 3)], -1)
-
-    def chroma(k):
-        a = curves if k == 1.0 else compressed(curves, mix, k)
-        m = mix if k == 1.0 else np.diag(np.diag(mix)) + k * (mix - np.diag(np.diag(mix)))
-        light = lambda s: (10.0 ** -(floor + np.stack([np.interp(s[..., c], SHARES, a[:, c]) for c in range(3)], -1) @ m.T)) @ primaries.T
-        black, white = light(np.zeros(3)), light(np.ones(3))
-        lab = oklab((light(ring) - black) / (white - black))
-        return float(np.hypot(lab[:, 1], lab[:, 2]).mean())
-
-    strengths = [round(float(k), 2) for k in np.arange(0.0, compression_reach(curves, mix) + 1e-9, STEP)]
-    pure = chroma(0.0)
-    return {"strengths": strengths, "removed": [round(1.0 - chroma(k) / pure, 6) if k else 0.0 for k in strengths]}
+        taken = round(1.0 - chroma(k) / pure, 6)
+        if taken <= removed[-1]:
+            break
+        strengths.append(k)
+        removed.append(taken)
+    return {"strengths": strengths, "removed": removed}
 
 
 def write(path, paper):

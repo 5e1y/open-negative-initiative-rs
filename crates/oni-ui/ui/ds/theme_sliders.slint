@@ -41,6 +41,8 @@ export global SliderStyle {
     in-out property <duration> settle: DS.motion-settle-response * 1s;
     // A slider's rest, ticked on its rail.
     out property <color> rest-ink: DS.palette-text-secondary;
+    // The rail past what a value can reach, veiled toward the panel's black.
+    out property <color> beyond: #000000a6;
     // A level's tick, fainter and shorter than rest's, which stands on one of them.
     out property <color> notch-ink: DS.palette-text-secondary.transparentize(50%);
     out property <length> notch-height: SliderStyle.knob-height / 4;

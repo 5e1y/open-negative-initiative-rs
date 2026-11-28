@@ -14,7 +14,7 @@ The measured table, `crates/oni-pipeline/resources/scanner/frontier.cube`: 27³ 
 
 ## Figures
 
-On the constrained nodes, against the table (`frontier_paper::the_look_stays_on_the_measured_table_where_the_measurements_constrain_it`): ΔE median 1.99, p90 4.73, max 9.7. With no crosstalk, the greys alone: median 2.72, p90 5.81. No separable look goes much under 1.6 of median (`analyse-table-frontier.md`): what is left is hue, the turns the machine lays by sector, which three curves and a 3 × 3 cannot carry.
+On the constrained nodes, against the table (`frontier_paper::the_look_stays_on_the_measured_table_where_the_measurements_constrain_it`): ΔE median 1.89, p90 5.25, max 10.5, its fitted crosstalk at 1.45 times its strength so the look takes the 19 % of a ring of saturated colours' chroma the table takes (colour compression's rest). With no crosstalk, the greys alone: median 2.72, p90 5.81. No separable look goes much under 1.6 of median (`analyse-table-frontier.md`): what is left is hue, the turns the machine lays by sector, which three curves and a 3 × 3 cannot carry.
 
 On the owner's billiard session (six scans, `planche-3` of 2026-11-28): ΔE median 1.5 to the table, p90 2.4 to 5.1; a saturated blue table leaves the constrained zone on 19 % of its pixels, where the table is itself its former fit's extrapolation.
 

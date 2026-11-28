@@ -63,11 +63,12 @@ impl Ctl {
         let told = if shared.abs() < 0.005 { String::new() } else { oni_i18n::tr!("C, M and Y move the light by {stops}", stops = self.readout_at(Field::Cyan, shared)) };
         g.set_filters_shared(told.into());
         let beside = self.beside().blocks;
-        let (modified, rests, marked) = {
+        let (modified, rests, beyond, marked) = {
             let s = self.state.borrow();
             let shown = |i: usize| (Block::ALL[i], beside[i] || store::is_modified(s.store.settings(), Block::ALL[i]));
             let marked = store::channel_marked(s.store.settings());
-            (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), crate::slider_track::rests(s.store.settings()), marked)
+            let tracks = (crate::slider_track::rests(s.store.settings()), crate::slider_track::beyond(s.store.settings()));
+            (std::array::from_fn::<_, { Block::ALL.len() }, _>(shown), tracks.0, tracks.1, marked)
         };
         let notches = crate::slider_track::notches(self.state.borrow().store.settings());
         let laid = g.get_notches();
@@ -87,6 +88,10 @@ impl Ctl {
         let shown = g.get_rests();
         if shown.row_count() != rests.len() || rests.iter().enumerate().any(|(i, r)| shown.row_data(i) != Some(*r)) {
             g.set_rests(ModelRc::new(VecModel::from(rests)));
+        }
+        let out = g.get_beyond();
+        if out.row_count() != beyond.len() || beyond.iter().enumerate().any(|(i, b)| out.row_data(i) != Some(*b)) {
+            g.set_beyond(ModelRc::new(VecModel::from(beyond)));
         }
         let reread = edited && {
             let s = self.state.borrow();

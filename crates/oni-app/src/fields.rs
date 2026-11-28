@@ -374,6 +374,15 @@ impl Field {
         }
     }
 
+    /// The travel the track lays on these settings: colour compression's whole scale on every paper, as a grain's
+    /// Amount, its paper's reach within it; elsewhere the knob's own range.
+    pub fn travel(self, settings: &oni_settings::PipelineSettings) -> (f32, f32) {
+        match self {
+            Field::ColourCompression => self.spec().range,
+            _ => self.knob().range(settings).unwrap_or(self.spec().range),
+        }
+    }
+
     /// The range the track spans, in the shown sense.
     pub fn track(self) -> (f32, f32) {
         let spec = self.spec();

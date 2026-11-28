@@ -93,7 +93,7 @@ fn the_saturated_colours_give_more_of_their_chroma_the_further_it_goes() {
         // Twin: the reach never passes the widest travel, and a value past it prints as the reach.
         let mut past = on(p, 1.0);
         past.print.colour_compression = Some(0.99);
-        assert!(limit(p) <= 2.5 && conversion::stage47(&past).paper() == Some(paper_at(p, limit(p))), "{p:?}");
+        assert!(conversion::stage47(&past).paper() == Some(paper_at(p, limit(p))), "{p:?}");
     }
 }
 

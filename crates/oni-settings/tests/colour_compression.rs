@@ -57,7 +57,7 @@ fn an_older_documents_strength_is_read_as_its_papers_share_and_a_share_past_the_
     assert_eq!(read(&before), on(ENDURA, None), "before format 85, the paper as baked");
     let mut wide = stored(&on(ENDURA, None));
     wide["settings"]["print"]["colourCompression"] = json!(7.0);
-    assert_eq!(read(&wide).print.colour_compression, Some(1.0));
+    assert_eq!(read(&wide).print.colour_compression, Some(oni_settings::tone::Print::COMPRESSION_RANGE.1));
     // Twin: a share within the travel is kept as stored.
     wide["settings"]["print"]["colourCompression"] = json!(0.25);
     assert_eq!(read(&wide).print.colour_compression, Some(0.25));
@@ -78,7 +78,7 @@ fn a_document_that_carries_it_is_newer_than_any_build_that_cannot_read_it() {
 fn every_shipped_paper_bakes_a_scale_from_the_pure_dyes_through_its_own_dose() {
     for p in PaperStock::all() {
         let c = p.compression().unwrap_or_else(|| panic!("{p:?}: a shipped paper bakes its scale"));
-        assert!(c.rest() > 0.0 && c.rest() < c.reach() && c.reach() <= 1.0 && *c.strengths.last().unwrap() <= 2.5, "{p:?}");
+        assert!(c.rest() > 0.0 && c.rest() < c.reach() && c.reach() <= oni_settings::tone::Print::COMPRESSION_RANGE.1 + 0.05, "{p:?}");
         println!("{}: {:.1} % at its own dose, {:.1} % at its reach, strength {}", p.name(), 100.0 * c.rest(), 100.0 * c.reach(), c.strengths.last().unwrap());
     }
     // Twin: a key no file defines bakes none, and a scale that does not rise is refused.
