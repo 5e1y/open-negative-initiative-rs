@@ -54,9 +54,6 @@ fn season_title(today: (i32, u32)) -> String {
     season(today).map(|year| format!("WRAPPED {:02}", year.rem_euclid(100))).unwrap_or_default()
 }
 
-/// The wordmark a holographic face is embossed with, as the welcome's gifts are.
-const MOTIF: &str = "OPEN NEGATIVE INITIATIVE";
-
 #[derive(Default)]
 pub struct Year {
     /// Each photo's settings at its last settled edit.
@@ -172,7 +169,6 @@ impl Ctl {
         let p = me.clone();
         w.on_open(move || p.act(crate::Act::Wrapped));
         w.set_title(season_title(today()).into());
-        window.global::<crate::Holo>().set_wordmark(MOTIF.into());
         let p = me.clone();
         w.on_save_all(move || p.save_wrapped(None));
         let p = me.clone();

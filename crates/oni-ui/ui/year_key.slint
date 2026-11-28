@@ -1,5 +1,5 @@
-// The year on film's key at the bar's left end: a keycap of the interface's grey as the bar's others, its glyph
-// over its word inked in the welcome gifts' holographic foil. Its word is the first the bar lets go of.
+// The year on film's key beside the mode's key: a keycap of the interface's grey as the bar's others, its glyph over
+// its word in their ink. Its word is the first the bar lets go of.
 import { Icons, Button } from "ds/ds.slint";
 import { Wrapped } from "wrapped.slint";
 
@@ -9,7 +9,6 @@ export component YearKey inherits Button {
     in-bar: true;
     has-icon: true;
     keycap: true;
-    foil: true;
     icon: Icons.film;
     text: root.worded ? Wrapped.title : "";
     help: Wrapped.title;

@@ -261,7 +261,8 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
     assert!(!wrapped.get_shown(), "shown above already, or not December");
 
     // The gallery's bar holds the year's key through December and the January after it, which tells the year
-    // just ended: a plate of holographic foil, and a click on it shows the year; the editor's holds none.
+    // just ended: a keycap of the bar's grey in its ink, just right of Edit, and a click on it shows the year; the
+    // editor's holds none.
     assert!(w.global::<oni_app::App>().get_gallery());
     let plate = || {
         use i_slint_backend_testing::{AccessibleRole, ElementHandle};
@@ -273,19 +274,27 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_story() {
         assert_eq!(wrapped.get_title().as_str(), "WRAPPED 26", "{today:?}");
         assert!(plate().is_some() && key_inside(w, "WRAPPED 26"), "{today:?}: the key stands in the bar");
     }
+    // Edit at the bar's left end, the year's key next to it, and every other key to their right.
+    let keys = common::placed_all(w, i_slint_backend_testing::AccessibleRole::Button);
+    let at = |label: &str| common::placed(w, i_slint_backend_testing::AccessibleRole::Button, label).first().map(|k| k.x);
+    let (edit, year) = (at("EDIT").expect("Edit in the bar"), at("WRAPPED 26").expect("the year's key"));
+    let bar = keys.iter().filter(|k| k.y < 60.0).map(|k| k.x).fold(f32::MAX, f32::min);
+    assert!((edit - bar).abs() < 0.5 && edit < year, "Edit first at {edit}, the year's key next at {year}, the bar from {bar}");
+    let between = keys.iter().filter(|k| k.y < 60.0 && k.x > edit + 0.5 && k.x < year - 0.5).count();
+    assert_eq!(between, 0, "no key between Edit and the year's");
     // The plate at rest, under the hand and pressed.
     let held = |mode: &str| {
         use slint::platform::{PointerEventButton, WindowEvent};
         let key = plate().unwrap();
         let (at, size) = (key.absolute_position(), key.size());
         let position = slint::LogicalPosition::new(at.x + size.width * 0.7, at.y + size.height / 2.0);
-        println!("shot {}", rig.shot(&format!("holo-{mode}-rest")).display());
+        println!("shot {}", rig.shot(&format!("year-key-{mode}-rest")).display());
         w.window().dispatch_event(WindowEvent::PointerMoved { position });
         rig.settle();
-        println!("shot {}", rig.shot(&format!("holo-{mode}-hover")).display());
+        println!("shot {}", rig.shot(&format!("year-key-{mode}-hover")).display());
         w.window().dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
         rig.settle();
-        println!("shot {}", rig.shot(&format!("holo-{mode}-pressed")).display());
+        println!("shot {}", rig.shot(&format!("year-key-{mode}-pressed")).display());
         w.window().dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
     };
     held("gallery");

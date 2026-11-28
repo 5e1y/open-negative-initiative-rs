@@ -60,7 +60,6 @@ mod answers;
 mod screens;
 mod wave;
 mod wrapped;
-mod holo;
 mod traverse;
 pub mod chain;
 use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*,

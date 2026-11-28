@@ -317,8 +317,6 @@ export component Toolbar inherits Surface {
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
         cross-axis-alignment: center;
-        // The year on film's key first, through its season, at the bar's left end (owner's call).
-        if root.year: YearKey { worded: root.year-worded; }
         // The mode key names its action, EDIT or BACK, as wide as the wider so the bar holds still; while a
         // roll is prepared it leaves it, as Cancel does, except while it measures.
         mode := Cap {
@@ -329,6 +327,8 @@ export component Toolbar inherits Surface {
             help: Preparing.shown || Bar.editing ? @tr("Gallery (Esc)") : @tr("Editor (Return)");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
+        // The year on film's key beside it, through its season, in the gallery alone (owner's call).
+        if root.year: YearKey { worded: root.year-worded; }
         // The zone holds the widest set of keys with its words, and the widest compact one at least, alone
         // giving way; the set shown sits on the window's centre if it can, its faces narrowing first.
         Rectangle {

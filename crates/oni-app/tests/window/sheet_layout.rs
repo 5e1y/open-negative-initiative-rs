@@ -141,7 +141,7 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
         }), (w / 2.0 - 180.0, w / 2.0 + 180.0)),
         ("the report", Box::new(|on| help.set_report_shown(on)), (w / 2.0 - 210.0, w / 2.0 + 210.0)),
         ("the settings", Box::new(|on| settings.set_shown(on)), (w / 2.0 + 200.0, w / 2.0 + 316.0)),
-        ("the stock picker", Box::new(|on| stocks.set_shown(on)), (w / 2.0 + 100.0, w / 2.0 + 400.0)),
+        ("the stock picker", Box::new(|on| stocks.set_shown(on)), (w / 2.0 + 400.0, w / 2.0 + 520.0)),
     ];
     for (name, show, band) in &sheets {
         rig.window.set_size(PhysicalSize::new(w as u32, h as u32));

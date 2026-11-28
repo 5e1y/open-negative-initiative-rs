@@ -125,8 +125,6 @@ export component Button inherits Rectangle {
     in property <bool> square;
     // The glyph's own ink in place of the kind's, as the favourite star's.
     in property <color> glyph-ink: transparent;
-    // A keycap of the interface's grey whose glyph and word shine in holographic foil.
-    in property <bool> foil;
     // A key whose state shows apart from it while on, as a canvas tool's tab under its bar key: no lit face.
     in property <bool> on-apart;
     // A glyph drawn at this size instead of the key's, as a help mark's or a row's star.
@@ -276,7 +274,6 @@ export component Button inherits Rectangle {
             weight: root.weight;
             tracking: root.tracking;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad : 0px;
-            foil: root.foil;
         }
     }
     // Out of reach, the key still tells its help under the hand, so it can say why; it takes no press.
