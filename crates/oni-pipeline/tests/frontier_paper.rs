@@ -1,5 +1,6 @@
-//! The Frontier SP-3000 as a paper: its print is the measured table, its rest neutral along the window with no offset of
-//! the machine's, Lighting on the negative as on every paper, the GPU its reference. Each verdict has a twin.
+//! The Frontier SP-3000 as a paper like any other, its look baked from its measured table (`scripts/paper-looks.py`): its
+//! greys the table's neutral line from its black to its white, its colours within reach of the table on the nodes the
+//! measurements constrain, Lighting on the negative as on every paper, the GPU its reference. Each verdict has a twin.
 
 mod common;
 #[path = "paper/frames.rs"]
@@ -29,23 +30,57 @@ fn paper_of(s: &PipelineSettings) -> Paper {
     conversion::stage47(s).paper().expect("a negative on the Frontier")
 }
 
-/// The print at the table's own time and no filtration, each share its density: the table's coordinates read as `x`.
-fn bare(s: &PipelineSettings) -> Paper {
-    let Some(oni_settings::stocks::Print::Frontier(fit)) = FRONTIER.entry().map(|e| e.print) else { panic!("the Frontier's fit") };
-    let neutral = oni_pipeline::paper::frontier::read(&fit).expect("the fit reads").neutral;
-    Paper { scale: 10f32.powf(neutral), filters: [1.0; 3], span: 1.0, bend: 1.0, ..paper_of(s) }
+#[derive(serde::Deserialize)]
+struct Look {
+    provenance: Provenance,
 }
 
-/// Median and p90 ΔE (Oklab × 100, display-clipped) of `p` against the measured cube on its constrained nodes.
+#[derive(serde::Deserialize)]
+struct Provenance {
+    neutral: Neutral,
+}
+
+/// The table's neutral line the bake laid the window on: each channel's density along green's, and the white's green.
+#[derive(serde::Deserialize)]
+struct Neutral {
+    white: f64,
+    green: Vec<f64>,
+    red: Vec<f64>,
+    blue: Vec<f64>,
+}
+
+fn neutral() -> Neutral {
+    serde_json::from_str::<Look>(&FRONTIER.entry().expect("shipped").look).expect("the Frontier's look").provenance.neutral
+}
+
+/// The window's shares a node of the table holds: each channel's density read back along its own branch of the neutral
+/// line, held at its ends, over the white's green.
+fn shares_of(n: &Neutral, x: [f64; 3]) -> [f32; 3] {
+    std::array::from_fn(|c| {
+        let branch = [&n.red, &n.green, &n.blue][c];
+        let mut pairs: Vec<(f64, f64)> = branch.iter().zip(&n.green).map(|(d, g)| (*d, *g)).collect();
+        pairs.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let k = pairs.partition_point(|p| p.0 <= x[c]).clamp(1, pairs.len() - 1) - 1;
+        let t = ((x[c] - pairs[k].0) / (pairs[k + 1].0 - pairs[k].0)).clamp(0.0, 1.0);
+        ((pairs[k].1 + t * (pairs[k + 1].1 - pairs[k].1)) / n.white) as f32
+    })
+}
+
+/// Median and p90 ΔE (Oklab × 100, display-clipped) of `p` at rest against the measured table on its constrained nodes,
+/// the table's light laid between the same ends.
 fn against_table(p: &Paper) -> (f64, f64) {
+    let n = neutral();
     let to709 = |v: [f32; 3]| -> [f64; 3] {
         let m = [[1.660_49, -0.587_641, -0.072_850], [-0.124_550, 1.132_9, -0.008_349], [-0.018_150, -0.100_579, 1.118_73]];
         std::array::from_fn(|r| (0..3).map(|c| m[r][c] * f64::from(v[c])).sum::<f64>().clamp(0.0, 1.0))
     };
+    let decoded = |v: f64| if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) };
     let e: Vec<f64> = constrained()
         .iter()
         .map(|(x, code)| {
-            let (got, want) = (measure::oklab(to709(p.printed(x.map(|v| v as f32)))), measure::lab_of(*code));
+            let srgb = code.map(|v| decoded(v.clamp(0.0, 1.0)) as f32);
+            let table = p.ended(std::array::from_fn(|r| (0..3).map(|c| p.primaries[r][c] * srgb[c]).sum::<f32>()));
+            let (got, want) = (measure::oklab(to709(p.shown(shares_of(&n, *x)))), measure::oklab(to709(table)));
             100.0 * (0..3).map(|c| (got[c] - want[c]).powi(2)).sum::<f64>().sqrt()
         })
         .collect();
@@ -53,19 +88,16 @@ fn against_table(p: &Paper) -> (f64, f64) {
 }
 
 #[test]
-fn the_print_reproduces_the_measured_table() {
-    let p = bare(&frames()[0].1);
+fn the_look_stays_on_the_measured_table_where_the_measurements_constrain_it() {
+    let p = paper_of(&frames()[0].1);
     let (med, p90) = against_table(&p);
-    println!("the Frontier's print against its table on the constrained nodes: ΔE median {med:.3}, p90 {p90:.3}");
-    assert!(med < 1.9 && p90 < 5.1, "{med} {p90}");
-    // Twin: each layer's curve linearised between its ends misses the table by far.
-    let straight: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
-        let t = i as f32 / (PAPER_CURVE_NODES - 1) as f32;
-        std::array::from_fn(|c| p.curves[0][c] + t * (p.curves[PAPER_CURVE_NODES - 1][c] - p.curves[0][c]))
-    })));
-    let (med, p90) = against_table(&Paper { curves: straight, ..p });
-    println!("twin, the curves linearised: ΔE median {med:.3}, p90 {p90:.3}");
-    assert!(med > 1.9 && p90 > 5.1, "{med} {p90}");
+    println!("the Frontier's look against its table on the constrained nodes: ΔE median {med:.3}, p90 {p90:.3}");
+    assert!(med < 2.1 && p90 < 5.0, "{med} {p90}");
+    // Twin: the dyes unmixed, each channel its own grey, misses the table further.
+    let greys: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| p.dyed(p.amounts([p.curve_low + p.curve_step * i as f32; 3])))));
+    let (med, p90) = against_table(&Paper { curves: greys, crosstalk: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ..p });
+    println!("twin, no crosstalk: ΔE median {med:.3}, p90 {p90:.3}");
+    assert!(med > 2.5, "{med} {p90}");
 }
 
 /// How far from neutral `p`'s neutral shares print between pure ends, the most of any channel's cube root of its light
@@ -82,12 +114,16 @@ fn strays(p: &Paper) -> f32 {
 fn the_rest_prints_a_grey_neutral_along_the_window_with_no_offset_of_the_machines() {
     for (label, s) in frames() {
         let p = conversion::stage47(&s).paper().expect(label);
-        let filtration = conversion::printing(&s).unwrap().filtration;
-        println!("{label}: a grey strays {:.4} from neutral, filtration {filtration:?} CC, pick {:?}, white {:?}", strays(&p), p.pick, p.white);
+        assert!(conversion::printing(&s).unwrap().filtration.is_none(), "{label}: a machine's print, no enlarger");
+        println!("{label}: a grey strays {:.4} from neutral, pick {:?}, white {:?}", strays(&p), p.pick, p.white);
         assert!(strays(&p) < 0.03, "{label}: {}", strays(&p));
         // Twin: a tenth of a log more on red tints the greys.
         if label != "black and white" {
-            let redder = Paper { filters: [p.filters[0] * 10f32.powf(0.1), p.filters[1], p.filters[2]], ..p };
+            let shifted: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+                let t = p.curve_low + p.curve_step * i as f32;
+                [p.amounts([t + 0.1 / p.latitude; 3])[0], p.curves[i][1], p.curves[i][2]]
+            })));
+            let redder = Paper { curves: shifted, ..p };
             let pure = |q: &Paper| Paper { pick: q.printed([0.0; 3]), white: q.printed([1.0; 3]), ..*q };
             println!("  twin, a tenth of a log redder: {:.4}", strays(&pure(&redder)));
             assert!(strays(&pure(&redder)) > 0.05, "{label}: {}", strays(&pure(&redder)));
@@ -118,7 +154,7 @@ fn lighting_moves_the_negative_it_prints_and_the_enlarger_stays_at_rest() {
             // Black and white reads no filter.
             let filtered = name == "warmer" && label == "black and white";
             assert!(k.negative.is_some() != filtered, "{label}, {name}: Lighting lays its move on the negative");
-            assert_eq!((p.scale, p.filters), (rest.scale, rest.filters), "{label}, {name}: the enlarger at its rest");
+            assert_eq!((p.curve_low, p.latitude, p.crosstalk), (rest.curve_low, rest.latitude, rest.crosstalk), "{label}, {name}: the paper at its rest");
             let is = cpu::stage47(grey_scan(&s), &k);
             println!("{label}, {name}: the grey's luma {:.4} from {:.4}, red over blue {:.3} from {:.3}", luma(is), luma(was), is[0] / is[2], was[0] / was[2]);
             match name {

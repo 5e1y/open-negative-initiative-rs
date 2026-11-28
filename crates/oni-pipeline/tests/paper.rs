@@ -33,66 +33,59 @@ fn sheet_of(paper: PaperStock) -> Sheet {
     serde_json::from_str::<File>(&paper::source(paper).expect("a profiled paper")).expect("it reads").data
 }
 
-/// `np.interp` of the curve of channel `c` at `e`, held at either end.
-fn interp(sheet: &Sheet, c: usize, e: f64) -> f64 {
-    let le = &sheet.log_exposure;
-    let k = le.partition_point(|v| *v <= e).clamp(1, le.len() - 1) - 1;
-    let t = ((e - le[k]) / (le[k + 1] - le[k])).clamp(0.0, 1.0);
-    sheet.density_curves[k][c] + t * (sheet.density_curves[k + 1][c] - sheet.density_curves[k][c])
-}
-
-/// The print of a negative holding `density` over its bare film on each channel, in doubles off the profile: each
-/// layer exposed by its own channel through the time and its filter, its dye amount the one the sheet's grey unmixes
-/// to over the D-min at each node, held where it would fall, at that exposure; each channel reading the dyes through
-/// the crosstalk, then a pure dye.
-fn read_off(sheet: &Sheet, filters: [f64; 3], scale: f64, density: [f64; 3]) -> ([f64; 3], [f64; 3], [f64; 3]) {
-    let log: [f64; 3] = std::array::from_fn(|c| (scale * filters[c]).log10() - density[c]);
+/// The sheet's dye amounts over its D-min at each node, its grey unmixed through its crosstalk, held where they would fall.
+fn sheet_amounts(sheet: &Sheet) -> Vec<[f64; 3]> {
     let floor = sheet.density_curves[0];
     let unmix = bake::inverse(&sheet.crosstalk);
     let mut nodes: Vec<[f64; 3]> = sheet.density_curves.iter().map(|d| bake::apply(&unmix, std::array::from_fn(|c| d[c] - floor[c]))).collect();
     for i in 1..nodes.len() {
         nodes[i] = std::array::from_fn(|c| nodes[i][c].max(nodes[i - 1][c]));
     }
-    let held = Sheet { log_exposure: sheet.log_exposure.clone(), density_curves: nodes, crosstalk: sheet.crosstalk };
-    let amounts: [f64; 3] = std::array::from_fn(|k| interp(&held, k, log[k]));
-    let developed: [f64; 3] = std::array::from_fn(|c| floor[c] + bake::apply(&sheet.crosstalk, amounts)[c]);
-    (log, developed, developed.map(|d| 10f64.powf(-d)))
+    nodes
 }
 
-/// Densities from a bare film to past a negative's densest, and every mix of the three.
-fn densities() -> Vec<[f32; 3]> {
-    let mut out = vec![[0.0; 3], [1.0; 3], [2.5, 0.2, 0.1], [0.1, 2.4, 0.3], [0.2, 0.3, 2.6]];
-    out.extend((0..15).map(|i| [0.13 + 0.17 * i as f32, 0.07 + 0.29 * ((i * 7) % 9) as f32, 0.21 + 0.23 * ((i * 4) % 11) as f32]));
-    out
+/// Layer `c`'s log exposure on the sheet where its amount reads `amount`, on its rising stretch.
+fn exposure_of(sheet: &Sheet, nodes: &[[f64; 3]], c: usize, amount: f64) -> f64 {
+    let k = nodes.partition_point(|n| n[c] <= amount).clamp(1, nodes.len() - 1) - 1;
+    let t = ((amount - nodes[k][c]) / (nodes[k + 1][c] - nodes[k][c])).clamp(0.0, 1.0);
+    sheet.log_exposure[k] + t * (sheet.log_exposure[k + 1] - sheet.log_exposure[k])
 }
 
 #[test]
-fn every_paper_prints_each_channels_density_on_its_own_layer_as_its_profile_reads() {
+fn every_data_sheets_look_is_its_sheets_curves_under_one_enlarger() {
     for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
         let s = PipelineSettings { print_paper: Some(paper), ..film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference()) };
         let k = conversion::stage47(&s).paper().expect("a negative on its paper");
-        let sheet = sheet_of(paper);
-        let (filters, scale) = (k.filters.map(f64::from), f64::from(k.scale));
-        let (mut log, mut density, mut light) = (0.0f64, 0.0f64, 0.0f64);
-        for d in densities() {
-            let (e, dev, v) = (k.exposed(d), k.developed(k.exposed(d)), k.viewed(k.developed(k.exposed(d))));
-            let (want_e, want_d, want_v) = read_off(&sheet, filters, scale, d.map(f64::from));
-            log = (0..3).map(|c| (f64::from(e[c]) - want_e[c]).abs()).fold(log, f64::max);
-            density = (0..3).map(|c| (f64::from(dev[c]) - want_d[c]).abs()).fold(density, f64::max);
-            light = (0..3).map(|c| (f64::from(v[c]) - want_v[c]).abs() / (0.01 + want_v[c].abs())).fold(light, f64::max);
-        }
-        println!("{}: log exposure within {log:.1e}, density {density:.1e}, light {light:.1e}", paper.name());
-        assert!(log < 2e-5 && density < 2e-4 && light < 2e-3, "{paper:?}");
-        // Twin: five CC more magenta expose the green-sensitive layer otherwise.
-        let magenta = [filters[0], filters[1] * 10f64.powf(-0.05), filters[2]];
-        let off = densities().into_iter().map(|d| (f64::from(k.exposed(d)[1]) - read_off(&sheet, magenta, scale, d.map(f64::from)).0[1]).abs()).fold(0.0, f64::max);
-        assert!(off > 1e-2, "{paper:?}: {off}");
-        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light.
-        let pure = densities().into_iter().map(|d| {
-            let (e, v) = (k.exposed(d), k.viewed(k.developed(k.exposed(d))));
-            (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-interp(&sheet, c, f64::from(e[c])))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
-        }).fold(0.0, f64::max);
-        assert!(pure > 2e-2, "{paper:?}: {pure}");
+        let (sheet, cc) = (sheet_of(paper), oni_pipeline::paper::sheet(paper).unwrap().filtration.expect("a data sheet's filtration"));
+        let nodes = sheet_amounts(&sheet);
+        let top: [f64; 3] = std::array::from_fn(|c| nodes[nodes.len() - 1][c]);
+        let rising = |c: usize, a: f32| f64::from(a) > 0.02 * top[c] && f64::from(a) < 0.98 * top[c];
+        // Each layer's amount along the window read back to its log exposure on the sheet where it rises: one enlarger
+        // lays every layer's exposure down by the latitude along the window, each apart from green's by its filtration.
+        let off = |latitude: f32| -> f64 {
+            let mut worst = 0.0f64;
+            let (a0, ta) = (k.amounts([0.5; 3]), 0.5f32);
+            for i in 0..=50 {
+                let t = i as f32 / 50.0;
+                let a = k.amounts([t; 3]);
+                for c in 0..3 {
+                    if !(rising(c, a[c]) && rising(c, a0[c])) {
+                        continue;
+                    }
+                    let fall = exposure_of(&sheet, &nodes, c, f64::from(a[c])) - exposure_of(&sheet, &nodes, c, f64::from(a0[c]));
+                    worst = worst.max((fall + f64::from(latitude) * f64::from(t - ta)).abs());
+                    if c != 1 && rising(1, a[1]) {
+                        let apart = exposure_of(&sheet, &nodes, c, f64::from(a[c])) - exposure_of(&sheet, &nodes, 1, f64::from(a[1]));
+                        worst = worst.max((apart - f64::from(cc[1] - cc[c]) / 100.0).abs());
+                    }
+                }
+            }
+            worst
+        };
+        println!("{}: its look on its sheet's curves within {:.1e} of log exposure, latitude {:.3}, filtration {cc:?} CC", paper.name(), off(k.latitude), k.latitude);
+        assert!(off(k.latitude) < 5e-3, "{paper:?}: {}", off(k.latitude));
+        // Twin: the same amounts read under a window a fifth wider.
+        assert!(off(1.2 * k.latitude) > 0.05, "{paper:?}");
     }
 }
 
@@ -106,36 +99,26 @@ fn chroma(v: [f32; 3]) -> f64 {
 }
 
 #[test]
-fn a_grey_prints_on_the_sheets_curves_and_a_colour_loses_what_the_dyes_crosstalk_takes() {
+fn a_grey_keeps_its_densities_and_a_colour_loses_what_the_dyes_crosstalk_takes() {
     let s = film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference());
     for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
         let k = conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper().expect("a negative on its paper");
-        let sheet = sheet_of(paper);
-        let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| sheet.density_curves[i].map(|v| v as f32))));
-        let pure = Paper { curves: densities, floor: [0.0; 3], crosstalk: paper::PURE_DYES.map(|r| r.map(|v| v as f32)), ..k };
-        // A grey, one log exposure on the three layers, prints the sheet's densities: within the 0.004 D of a held dip.
-        let off = |p: &Paper| (0..=400).map(|i| -2.0 + 4.0 * f64::from(i) / 400.0).map(|e| {
-            let d = p.developed([e as f32; 3]);
-            (0..3).map(|c| (f64::from(d[c]) - interp(&sheet, c, e)).abs()).fold(0.0, f64::max)
-        }).fold(0.0, f64::max);
-        let (held, unmixed) = (off(&k), off(&Paper { curves: densities, ..k }));
-        // A cyan: the cyan-forming layer two tenths of log exposure past the middle of its axis, the others there.
-        let mid = f64::from(k.curve_low) + 0.5 * f64::from(k.curve_step) * (PAPER_CURVE_NODES - 1) as f64;
-        let cyan = |p: &Paper| chroma(p.viewed(p.developed([0.2, 0.0, 0.0].map(|v| (v + mid) as f32))));
+        // The same greys through pure dyes: each channel's density along the window its own layer's.
+        let grey = |t: f32| k.dyed(k.amounts([t; 3]));
+        let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+            let d = grey(k.curve_low + k.curve_step * i as f32);
+            std::array::from_fn(|c| d[c] - k.floor[c])
+        })));
+        let pure = Paper { curves: densities, crosstalk: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ..k };
+        let held = (0..=40).map(|i| -0.2 + 1.4 * i as f32 / 40.0).map(|t| (0..3).map(|c| (pure.dyed(pure.amounts([t; 3]))[c] - grey(t)[c]).abs()).fold(0.0f32, f32::max)).fold(0.0f32, f32::max);
+        // A cyan: the red share two tenths over the others in the window's middle.
+        let cyan = |p: &Paper| chroma(p.viewed(p.dyed(p.amounts([0.7, 0.5, 0.5]))));
         let kept = cyan(&k) / cyan(&pure);
-        // What the crosstalk leaves of its red density over the others': the cyan dye's amount the grey's slopes unmix
-        // to, read in red less its mean reading in green and blue, over the sheet's own red rise.
-        let rise: [f64; 3] = std::array::from_fn(|c| interp(&sheet, c, mid + 0.2) - interp(&sheet, c, mid));
-        let a = &sheet.crosstalk;
-        let expected = bake::apply(&bake::inverse(a), rise)[0] * (a[0][0] - (a[1][0] + a[2][0]) / 2.0) / rise[0];
-        println!("{}: a grey within {held:.1e} D of its sheet, {unmixed:.2} D with no unmixing; a cyan keeps {kept:.3} of its pure dyes' chroma, {expected:.3} expected", paper.name());
-        assert!(held < 5e-3, "{paper:?}: {held}");
-        // Twin: the sheet's densities read as amounts lay the crosstalk on a grey twice.
-        assert!(unmixed > 0.05, "{paper:?}: {unmixed}");
-        // Within 0.06 of the density's share: chroma is not linear in density over two tenths of a log.
-        assert!((kept - expected).abs() < 0.06 && expected < 0.9, "{paper:?}: {kept} {expected}");
-        // Twin: pure dyes over no D-min, #3750's print, lay the sheet's own densities to the bit and keep the whole chroma.
-        assert!(pure.developed([0.3, -0.2, 0.1]) == pure.amounts([0.3, -0.2, 0.1]) && (1.0 - expected).abs() > 0.1);
+        println!("{}: a grey within {held:.1e} D through pure dyes; a cyan keeps {kept:.3} of its pure dyes' chroma", paper.name());
+        assert!(held < 1e-5 && kept < 0.95 && kept > 0.5, "{paper:?}: {held} {kept}");
+        // Twin: the greys' densities read as amounts lay the crosstalk on a grey twice.
+        let twice = Paper { curves: densities, ..k };
+        assert!((0..3).any(|c| (twice.dyed(twice.amounts([0.5; 3]))[c] - grey(0.5)[c]).abs() > 0.05), "{paper:?}");
     }
 }
 
@@ -240,7 +223,7 @@ fn the_gpu_prints_on_the_paper_as_its_reference_does() {
         let k = conversion::stage47(&s);
         let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
         let reference = mapped(&pixels, |p| cpu::stage47(p, &k));
-        let twin = Stage47 { shown: k.paper().map_or(k.shown, |p| Shown::Paper(Paper { scale: p.scale * 1.1, ..p })), ..k };
+        let twin = Stage47 { shown: k.paper().map_or(k.shown, |p| Shown::Paper(Paper { curve_low: p.curve_low + 1.1f32.log10() / p.latitude, ..p })), ..k };
         judge(&format!("paper, {label}"), &out, &reference, &mapped(&pixels, |p| cpu::stage47(p, &twin)));
     }
     // The paper's pass alone, on its own reading.
@@ -278,7 +261,7 @@ fn every_stock_rests_its_ends_on_every_paper() {
     let s = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     let k = conversion::stage47(&s);
     let rest = k.paper().unwrap();
-    let longer = Stage47 { shown: Shown::Paper(Paper { scale: rest.scale * 1.1, ..rest }), ..k };
+    let longer = Stage47 { shown: Shown::Paper(Paper { curve_low: rest.curve_low + 1.1f32.log10() / rest.latitude, ..rest }), ..k };
     let white = film::stock(VirtualStock::of("kodak-portra-800")).shot([1.0; 4], 0.0);
     assert!((cpu::stage47(white, &longer)[1] - cpu::stage47(white, &k)[1]).abs() > 1e-3);
 }

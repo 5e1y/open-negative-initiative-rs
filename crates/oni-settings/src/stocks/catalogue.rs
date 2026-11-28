@@ -253,12 +253,8 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                 }
             }
             File::Paper(p) => {
-                let print = match (&p.profile, &p.frontier) {
-                    (Some(profile), _) => Print::Profile(Arc::from(profile.get())),
-                    (None, Some(fit)) => Print::Frontier(Arc::from(fit.get())),
-                    (None, None) => return Err((at, "a paper holds a profile or a frontier fit".into())),
-                };
-                c.papers.push(PaperEntry { paper: PaperStock::of(intern(&p.key)), name: intern(&p.name), brand: intern(&p.brand), print, revision: l.hash });
+                let (look, profile) = (Arc::from(p.look.get()), p.profile.as_ref().map(|r| Arc::from(r.get())));
+                c.papers.push(PaperEntry { paper: PaperStock::of(intern(&p.key)), name: intern(&p.name), brand: intern(&p.brand), look, profile, revision: l.hash });
             }
         }
     }

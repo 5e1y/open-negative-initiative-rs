@@ -132,7 +132,7 @@ fn saturation_spreads_the_layers_and_the_paper_bounds_every_colour() {
         // within what its dyes print; the former print-side Saturation pushed twice as far, the twin, laid colours past them.
         let dyed = |p: &Paper| !p.luma && p.anchor == p.pick && p.white_anchor == p.white && rest.iter().all(|v| past_the_dyes(p, *v) < 1e-3);
         // The Frontier prints its fitted table, not its dyes' own light.
-        let fitted = s.paper().and_then(|p| oni_settings::stocks::current().paper(p).map(|e| matches!(e.print, oni_settings::stocks::Print::Frontier(_))));
+        let fitted = s.paper().map(|p| p.is_machine());
         if let Some(p) = conversion::stage47(&s).paper().filter(dyed).filter(|_| fitted != Some(true)) {
             println!("    {label}: read on its paper's dyes");
             checked += 1;

@@ -2,7 +2,7 @@
 //! with why, its version taken before staying in use; a film leaving out its reference takes its sheet's.
 
 use crate::film;
-use crate::paper::{self, frontier};
+use crate::paper;
 use oni_settings::stocks::file::{self, File, FilmBlock};
 use oni_settings::stocks::{self, Catalogue, Loaded, Origin, Refusal};
 use oni_settings::film::FilmType;
@@ -157,12 +157,7 @@ fn checked(file: &File) -> Result<Vec<oni_settings::virtual_film::StockReference
                 .collect()
         }
         File::Paper(p) => {
-            if let Some(profile) = &p.profile {
-                paper::validate(profile.get().as_bytes())?;
-            }
-            if let Some(fit) = &p.frontier {
-                frontier::read(fit.get())?;
-            }
+            paper::validate(p.look.get().as_bytes())?;
             Ok(Vec::new())
         }
     }

@@ -1,38 +1,36 @@
-//! Each frame's enlarger on the paper it names: the window laid on the paper's useful range, its bare film on the paper's
-//! black and its white on the paper's white, through the paper's own filtration (`placing`), no grey placed; Lighting then
-//! moves the negative it prints (`lighting`). The reference grey the Lighting sliders turn about is read here too.
+//! Each frame printed on the paper it names, its look as baked, its pick on black and its window's white on white;
+//! Lighting then moves the negative it prints (`lighting`). The reference grey the Lighting sliders turn about is read
+//! here too.
 
 use super::*;
 use oni_render::{Paper, Shown, Stage47, cpu};
+use oni_settings::PipelineSettings;
 use oni_settings::axis::pipeline::DMAX;
 use oni_settings::levels::LevelsChannel;
 use oni_settings::tone::Print;
 use std::sync::LazyLock;
 
-/// The halvings a solve's step may take before the solve stops where it stands.
-const HALVINGS: i32 = 30;
-
-/// A frame's paper and the enlarger's filtration it prints through, in CC: what the paper's block shows.
+/// A frame's paper and the enlarger's filtration its look was baked through, in CC, none on a machine's print: what the
+/// paper's block shows.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Printing {
     pub paper: Paper,
-    pub filtration: V3,
-}
-
-/// What a plain RAW's render at rest prints a scene grey at: where a legacy print lays the frame's reference grey.
-pub static GREY_PRINT: LazyLock<f32> = LazyLock::new(crate::film::plain_grey);
-
-pub(super) fn filters(cc: V3) -> V3 {
-    cc.map(|v| 10f32.powf(-v / CC_PER_DENSITY))
+    pub filtration: Option<V3>,
 }
 
 pub(super) fn luma(v: V3) -> f32 {
     oni_render::LUMA.iter().zip(v).map(|(w, x)| w * x).sum()
 }
 
-/// The share of every window Lighting's moves turn about: where the legacy print's curve at rest in `s`'s mode shows a
-/// plain RAW's grey.
+/// What a plain RAW's render at rest prints a scene grey at: where a legacy print lays the frame's reference grey.
+pub static GREY_PRINT: LazyLock<f32> = LazyLock::new(crate::film::plain_grey);
+
+/// The share of every window Lighting's moves turn about: where the pure inversion shows a scene grey, its sRGB code; on
+/// a legacy print, where its own curve at rest shows a plain RAW's grey, as the Scanner face turned it.
 pub fn grey_share(s: &PipelineSettings) -> f32 {
+    if s.legacy().is_none() {
+        return 1.055 * crate::film::GREY.powf(1.0 / 2.4) - 0.055;
+    }
     let rest = Print { exposure: crate::conversion::resting_print_stops(s.mode), ..Print::default() };
     bisected(0.0, 2.0, *GREY_PRINT, |t| rest.output(t, LevelsChannel::Linked))
 }
@@ -104,18 +102,6 @@ pub fn shares_of(s: &PipelineSettings, k: &Stage47, above: V3) -> V3 {
     cpu::windowed([light[0], light[1], light[2], 1.0], &read)
 }
 
-/// The share of a solve's step that lowers the miss from `now`, halving it from the whole: a steep paper's step past
-/// its root lands where its curve lies flat, from which no step returns.
-pub(super) fn damped(now: f32, miss_at: impl Fn(f32) -> f32) -> Option<f32> {
-    (0..HALVINGS).map(|i| 0.5f32.powi(i)).find(|t| miss_at(*t) < now)
-}
-
-/// The filtration in CC, its least at none, that brings one neutral density to each layer's log exposure `at`.
-pub fn filtration(at: V3) -> V3 {
-    let most = at.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    at.map(|e| (most - e) * CC_PER_DENSITY)
-}
-
 /// Whether the print keeps the paper's own ends: Print lift.
 pub fn lifted(s: &PipelineSettings) -> bool {
     s.print.print_lift
@@ -126,37 +112,29 @@ pub(crate) fn spanned(v: f32) -> f32 {
     if v.abs() < 1e-4 { 1e-4f32.copysign(v) } else { v }
 }
 
-/// The frame's paper at the window's shares: the window's bare film on the paper's black and its white on the paper's
-/// white through its own filtration, then Brightness and the ends on the print of the negative as Lighting develops
-/// it. None where the frame names no paper, and while the print is bypassed.
+/// The frame's paper at the window's shares: its look as baked, then Brightness and the ends on the print of the negative
+/// as Lighting develops it. None where the frame names no paper, and while the print is bypassed.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
-    let stock = s.paper().filter(|_| !s.print.bypassed)?;
-    let sheet = sheet(stock)?;
-    let placing = &sheet.placing;
-    let cc = filtration(placing.offsets);
-    let most = placing.offsets.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+    let sheet = sheet(s.paper().filter(|_| !s.print.bypassed)?)?;
     let at_rest = Paper {
-        span: placing.range,
-        bend: 1.0,
-        mix: sheet.mix,
-        filters: filters(cc),
-        scale: 10f32.powf(placing.black + most),
         curves: &sheet.curves,
         curve_low: sheet.curve_low,
         curve_step: sheet.curve_step,
         floor: sheet.floor,
         crosstalk: sheet.crosstalk,
+        primaries: sheet.primaries,
+        latitude: sheet.latitude,
+        brightness: 0.0,
+        pick_share: 0.0,
+        reach: 0.0,
         pick: [0.0; 3],
         white: [1.0; 3],
         anchor: [0.0; 3],
         white_anchor: [1.0; 3],
-        brightness: 0.0,
-        pick_log: 0.0,
-        reach: 0.0,
         luma: s.is_monochrome(),
     };
     // The window's white at rest is the light laid on white; Brightness's reach is sought up to it.
     let white = Paper { luma: false, ..at_rest }.printed([1.0; 3]);
     let (bare, densest) = film_ends(s);
-    Some(super::lighting::lit(&at_rest, std::array::from_fn(|c| densest[c] - bare[c]), 1.0, white, s, k, cc))
+    Some(super::lighting::lit(&at_rest, std::array::from_fn(|c| densest[c] - bare[c]), 1.0, white, s, k, sheet.filtration))
 }

@@ -65,7 +65,7 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
         assert!(read.is_none(), "{stock:?}: {read:?}");
     }
     for p in &papers {
-        assert!(paper::validate(paper::source(*p).expect("shipped").as_bytes()).is_ok(), "{p:?}");
+        assert!(paper::validate(p.entry().expect("shipped").look.as_bytes()).is_ok(), "{p:?}");
     }
     // Twin: a curve's first node turned into a number past any double, which no reading takes as a finite one.
     let spoiled = |json: &[u8], key: &str| {
@@ -79,8 +79,8 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
     assert!(film::profile::Profile::read(&spoiled(film_json.as_bytes(), "\"density_curves\"")).is_err());
     let silver_json = VirtualStock::of("ilford-hp5-plus").entry().profile;
     assert!(film::profile::Silver::read(&spoiled(silver_json.as_bytes(), "\"density_curve\"")).is_err());
-    let paper_json = paper::source(papers[0]).unwrap();
-    assert!(paper::validate(&spoiled(paper_json.as_bytes(), "\"density_curves\"")).is_err());
+    let paper_json = papers[0].entry().unwrap().look;
+    assert!(paper::validate(&spoiled(paper_json.as_bytes(), "\"curves\"")).is_err());
 }
 
 #[test]

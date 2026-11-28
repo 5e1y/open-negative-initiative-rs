@@ -237,7 +237,7 @@ impl Ctl {
             None => super::stock_picker::no_paper().to_string(),
         };
         panel.set_paper_title(title.into());
-        let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
+        let line = oni_pipeline::conversion::printing(settings).and_then(|p| p.filtration).map_or_else(String::new, filtration_line);
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;
         panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l)).into());

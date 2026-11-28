@@ -239,7 +239,7 @@ fn chroma(print: &[[f32; 3]], above: f64) -> (f64, usize) {
 /// The enlarger's time, in stops, that prints `scan`'s grey as bright as `target`, from the frame's rest `k`.
 fn timed_to(scan: &[V4], k: &Stage47, target: f32) -> Stage47 {
     let p = k.paper().unwrap();
-    let timed = |t: f32| Stage47 { shown: Shown::Paper(Paper { scale: p.scale * (-t).exp2(), ..p }), ..*k };
+    let timed = |t: f32| Stage47 { shown: Shown::Paper(Paper { curve_low: p.curve_low - t * std::f32::consts::LOG10_2 / p.latitude, ..p }), ..*k };
     let (mut low, mut high) = (-6.0f32, 6.0f32);
     for _ in 0..50 {
         let mid = 0.5 * (low + high);

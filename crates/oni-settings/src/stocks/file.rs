@@ -165,7 +165,8 @@ pub struct MeanSet {
     pub mean_of: Vec<String>,
 }
 
-/// A colour paper: a data sheet's profile, or the Frontier SP-3000's fit of its measured table.
+/// A colour paper: its look, baked by `scripts/paper-looks.py` from its data sheet's profile, which the file keeps, or
+/// from a machine measured (the Frontier SP-3000's table).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PaperFile {
@@ -178,9 +179,7 @@ pub struct PaperFile {
     pub brand: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<Box<RawValue>>,
-    /// The fit `docs/research/frontier/frontier_print_fit.py` writes, with its provenance.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub frontier: Option<Box<RawValue>>,
+    pub look: Box<RawValue>,
 }
 
 /// One file read: a stock or a paper.
@@ -266,12 +265,6 @@ impl File {
             File::Paper(p) => {
                 named(&p.key, &p.aliases, &p.name)?;
                 text("brand", &p.brand)?;
-                if p.profile.is_some() && p.frontier.is_some() {
-                    return Err("a paper holds a profile or a frontier fit, one of them".into());
-                }
-                if p.profile.is_none() && p.frontier.is_none() {
-                    return Err("a paper holds a profile or a frontier fit".into());
-                }
             }
         }
         Ok(self)

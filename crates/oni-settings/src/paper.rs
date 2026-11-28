@@ -1,7 +1,7 @@
 //! The papers a print may be made on: the colour papers each profiled from its maker's data sheet, and the Frontier
 //! SP-3000's print refitted from its measured table. A paper is a choice laid over the pure inversion, never a default.
 
-use crate::stocks::{PaperEntry, Print};
+use crate::stocks::PaperEntry;
 
 crate::stocks::keyed!(
     /// A paper by the key a sidecar stores, its file's (`crate::stocks`). A key no file defines is kept as stored and
@@ -36,7 +36,7 @@ impl PaperStock {
 
     /// A machine measured, the Frontier SP-3000, rather than a data sheet's profile.
     pub fn is_machine(self) -> bool {
-        self.entry().is_some_and(|e| matches!(e.print, Print::Frontier(_)))
+        self.entry().is_some_and(|e| e.profile.is_none())
     }
 }
 

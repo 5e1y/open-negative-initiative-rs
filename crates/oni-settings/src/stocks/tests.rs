@@ -155,10 +155,10 @@ fn a_file_says_what_it_describes() {
     let film = shipped_json().find(|(n, _)| *n == "kodak-portra800.json").unwrap().1;
     let paper = shipped_json().find(|(n, _)| *n == "fujifilm-frontier-sp-3000.json").unwrap().1;
     assert!(matches!(file::read(film), Ok(File::Film(f)) if f.developments.len() == 2));
-    assert!(matches!(file::read(paper), Ok(File::Paper(p)) if p.frontier.is_some() && p.profile.is_none()));
-    // Twin: a paper holding both a profile and a fit is refused.
-    let both = String::from_utf8_lossy(paper).replacen("\"frontier\":", "\"profile\": {}, \"frontier\":", 1);
-    assert!(file::read(both.as_bytes()).is_err());
+    assert!(matches!(file::read(paper), Ok(File::Paper(p)) if p.profile.is_none()));
+    // Twin: a paper with no look, or one holding a field no paper holds, is refused.
+    let lookless = String::from_utf8_lossy(paper).replacen("\"look\":", "\"seen\":", 1);
+    assert!(file::read(lookless.as_bytes()).is_err());
 }
 
 /// Every shipped film is offered, each colour negative stating its couplers as the scanner reads it uncoupled: a digital

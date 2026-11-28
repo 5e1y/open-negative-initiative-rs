@@ -31,7 +31,7 @@ fn every_lighting_slider_keeps_the_pick_where_the_rest_prints_it() {
         }
         // On the negative every move leaves the bare film at its fog; twin: an eighth of the enlarger's time lifts it,
         // unanchored, by a tenth of its light at least.
-        let timed = |p: Paper| unanchored(Stage47 { shown: Shown::Paper(Paper { scale: p.scale / 8.0, ..p }), ..conversion::stage47(&s) });
+        let timed = |p: Paper| unanchored(Stage47 { shown: Shown::Paper(timed(&p, -3.0)), ..conversion::stage47(&s) });
         let most = rest.iter().copied().fold(0.0f32, f32::max);
         assert!(lifted == 0 && worst(printed_on(&s, &timed(paper_of(&s)))[0], rest) > 0.1 * most, "{label}: {lifted} of {} moves lift the pick", SLIDERS.len());
     }
@@ -68,7 +68,12 @@ fn neutral(s: &PipelineSettings, t: f32) -> [f32; 3] {
 
 /// How far a tone's mean log exposure lies from the pick's toward the light on `p`.
 fn under_pick(p: &Paper, shares: [f32; 3]) -> f32 {
-    p.toward_light(p.pick_log, p.exposed(p.density(shares)))
+    p.toward_light(p.pick_share, shares)
+}
+
+/// `p` under the enlarger's light `stops` longer: every share read where the light that much stronger lays it.
+fn timed(p: &Paper, stops: f32) -> Paper {
+    Paper { curve_low: p.curve_low + stops * std::f32::consts::LOG10_2 / p.latitude, ..*p }
 }
 
 /// The light `p` prints for `shares` above its pick, its pick laid on black and its white the paper's.
@@ -80,10 +85,9 @@ fn on_black(p: &Paper, shares: [f32; 3]) -> f32 {
 
 /// What `p` shows of `shares` with the tone's mean log exposure from the pick moved by `f` in Brightness's place.
 fn shown_moved(p: &Paper, shares: [f32; 3], f: impl Fn(f32) -> f32) -> [f32; 3] {
-    let log = p.exposed(p.density(shares));
-    let x = p.toward_light(p.pick_log, log);
+    let x = p.toward_light(p.pick_share, shares);
     let moved = f(x) - x;
-    let light = p.viewed(p.developed(log.map(|v| v - moved)));
+    let light = p.viewed(p.dyed(p.amounts(shares.map(|t| t + moved / p.latitude))));
     let light = if p.luma { [0.2627 * light[0] + 0.678 * light[1] + 0.0593 * light[2]; 3] } else { light };
     p.ended(light)
 }
@@ -144,7 +148,7 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
             let p = paper_of(&t);
             let at_rest = Paper { brightness: 0.0, ..p };
             // The enlarger's time, as many stops: Exposure's move on the print.
-            let exposure = Paper { scale: p.scale * (-brightness).exp2(), brightness: 0.0, ..p };
+            let exposure = timed(&Paper { brightness: 0.0, ..p }, -brightness);
             // The pick and the tones beyond it print as at rest, to the bit.
             let mut beyond = 0;
             for i in 0..=100 {
@@ -202,7 +206,7 @@ fn brightness_holds_the_pick_spares_the_deep_shadows_and_moves_the_mids_as_expos
             }
             // Past the reach and what a darkening folds under it, each tone prints as Exposure's light would, the ends
             // kept.
-            let twice = Paper { scale: p.scale * (-2.0 * brightness).exp2(), brightness: 0.0, ..p };
+            let twice = timed(&Paper { brightness: 0.0, ..p }, -2.0 * brightness);
             for i in 0..=40 {
                 let a = neutral(&s, 0.5 + 1.5 * i as f32 / 40.0);
                 if under_pick(&p, a) < width + lift {

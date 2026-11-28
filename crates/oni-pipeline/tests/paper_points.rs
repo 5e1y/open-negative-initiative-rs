@@ -90,8 +90,8 @@ fn the_points_move_the_density_read_as_bare_film_and_as_the_densest() {
             let at_white: [f32; 3] = std::array::from_fn(|c| (1.0 - white[c]) * span[c]);
             let (b, w) = (apart(p.printed(sh(&s, n.toned(at_black))), base), apart(p.printed(sh(&s, n.toned(at_white))), densest));
             // The paper's light is read where it is exposed: the densest prints near the paper's white, its log exposure apart.
-            let exposure = |q: &Paper, a: [f32; 3]| q.exposed(q.density(sh(&s, n.toned(a))));
-            let rest_at = |a: [f32; 3]| rest.exposed(rest.density(sh(&s, a)));
+            let exposure = |q: &Paper, a: [f32; 3]| sh(&s, n.toned(a)).map(|t| -q.latitude * t);
+            let rest_at = |a: [f32; 3]| sh(&s, a).map(|t| -rest.latitude * t);
             let gap = |x: [f32; 3], y: [f32; 3]| (0..3).map(|c| (x[c] - y[c]).abs()).fold(0.0f32, f32::max);
             let (eb, ew) = (gap(exposure(&p, at_black), rest_at([0.0; 3])), gap(exposure(&p, at_white), rest_at(span)));
             println!("{frame}, {label}: points {black:?} {white:?}; their densities print within {b:.1e} and {w:.1e} of the rest's ends, exposed within {eb:.1e} and {ew:.1e}");

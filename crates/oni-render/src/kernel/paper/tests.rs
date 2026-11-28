@@ -5,22 +5,19 @@ static CURVES: std::sync::LazyLock<[V3; PAPER_CURVE_NODES]> =
 
 const IDENTITY: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 
-/// A unit window on each layer, a linear curve on each layer.
+/// A linear curve on each layer over the window's share, its pick and white apart, pure dyes on no D-min.
 fn narrow() -> Paper {
     Paper {
-        span: 1.0,
-        bend: 1.0,
-        mix: IDENTITY,
-        filters: [1.0; 3],
-        scale: 1.0,
-        brightness: 0.0,
-        pick_log: -0.5,
-        reach: 0.1,
         curves: &CURVES,
-        curve_low: -2.0,
+        curve_low: -0.5,
         curve_step: 0.01,
         floor: [0.0; 3],
         crosstalk: IDENTITY,
+        primaries: IDENTITY,
+        latitude: 1.0,
+        brightness: 0.0,
+        pick_share: 0.5,
+        reach: 0.1,
         pick: [0.01, 0.02, 0.03],
         white: [0.8, 0.85, 0.9],
         anchor: [0.01, 0.02, 0.03],
@@ -30,50 +27,18 @@ fn narrow() -> Paper {
 }
 
 #[test]
-fn each_layer_is_exposed_by_its_own_channels_density_and_a_filter_dims_its_own() {
+fn the_curves_hold_their_ends_and_run_between_their_nodes_on_the_windows_share() {
     let k = narrow();
-    let log = k.exposed([0.3, 0.6, 0.9]);
-    assert!((0..3).all(|c| (log[c] + [0.3, 0.6, 0.9][c]).abs() < 1e-6), "{log:?}");
-    // A yellow filter at 30 CC lowers the blue-sensitive layer's exposure by 0.3, the others not at all.
-    let yellow = Paper { filters: [1.0, 1.0, 10f32.powf(-0.3)], ..k }.exposed([0.3, 0.6, 0.9]);
-    assert!((yellow[2] - (log[2] - 0.3)).abs() < 1e-5 && (yellow[0] - log[0]).abs() < 1e-6, "{yellow:?}");
-    // Twin: the same filter read as a magenta one dims green instead.
-    let magenta = Paper { filters: [1.0, 10f32.powf(-0.3), 1.0], ..k }.exposed([0.3, 0.6, 0.9]);
-    assert!((magenta[2] - log[2]).abs() < 1e-6 && (magenta[1] - log[1]).abs() > 0.29);
-    // Twice the time lifts every layer's exposure by log10 2.
-    let longer = Paper { scale: 2.0, ..k }.exposed([0.3, 0.6, 0.9]);
-    assert!((0..3).all(|c| (longer[c] - log[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{longer:?}");
-}
-
-#[test]
-fn a_share_lies_back_on_the_mean_span_through_its_bend_and_the_mix_reads_the_three() {
-    let k = Paper { span: 1.4, bend: 0.8, ..narrow() };
-    let d = k.density([0.0, 0.5, 1.0]);
-    assert!(d[0] == 0.0 && (d[1] - 1.4 * 0.5f32.powf(0.8)).abs() < 1e-6 && (d[2] - 1.4).abs() < 1e-6, "{d:?}");
-    // Under none, the power turned over: odd about the bare film, so a share just under it reads just under none.
-    let under = k.density([-0.5, -1e-3, 1e-3]);
-    assert!((under[0] + 1.4 * 0.5f32.powf(0.8)).abs() < 1e-6 && under[1] < 0.0 && (under[1] + under[2]).abs() < 1e-7, "{under:?}");
-    // A mix whose rows sum to one keeps a neutral neutral and moves a colour.
-    let mixed = Paper { mix: [[0.8, 0.2, 0.0], [0.1, 0.8, 0.1], [0.0, 0.3, 0.7]], ..k };
-    let grey = mixed.density([0.4; 3]);
-    assert!((grey[0] - grey[1]).abs() < 1e-6 && (grey[1] - grey[2]).abs() < 1e-6, "{grey:?}");
-    let colour = mixed.density([0.9, 0.2, 0.2]);
-    assert!((colour[0] - k.density([0.9, 0.2, 0.2])[0]).abs() > 0.05, "{colour:?}");
-    // Twin: the bend at one lays each share straight on the span.
-    let straight = Paper { bend: 1.0, ..k }.density([0.5; 3]);
-    assert!((straight[0] - 0.7).abs() < 1e-6 && (straight[0] - d[1]).abs() > 0.1);
-}
-
-#[test]
-fn the_curves_hold_their_ends_and_run_between_their_nodes() {
-    let k = narrow();
-    assert_eq!(k.developed([-5.0, -5.0, -5.0]), [0.0; 3], "held under the first node");
-    let top = k.developed([5.0; 3]);
+    assert_eq!(k.amounts([-5.0, -5.0, -5.0]), [0.0; 3], "held under the first node");
+    let top = k.amounts([5.0; 3]);
     assert!((top[2] - 3.0 * 0.01 * (PAPER_CURVE_NODES - 1) as f32).abs() < 1e-4, "held past the last: {top:?}");
-    let mid = k.developed([-1.495; 3]);
+    let mid = k.amounts([0.005; 3]);
     assert!((mid[0] - 0.505).abs() < 1e-5 && (mid[2] - 1.515).abs() < 1e-4, "between two nodes: {mid:?}");
+    // Each layer reads its own channel's share alone.
+    let apart = k.amounts([0.0, 0.5, 1.0]);
+    assert!((apart[0] - 0.5).abs() < 1e-5 && (apart[1] - 2.0).abs() < 1e-4 && (apart[2] - 4.5).abs() < 1e-4, "{apart:?}");
     // Twin: the node below read alone misses the half step.
-    assert!((k.developed([-1.5; 3])[0] - 0.505).abs() > 4e-3);
+    assert!((k.amounts([0.0; 3])[0] - 0.505).abs() > 4e-3);
 }
 
 #[test]
@@ -192,26 +157,29 @@ fn brightness_fades_in_from_the_pick_and_moves_past_its_reach_as_exposure_does()
 }
 
 #[test]
-fn brightness_moves_the_three_layers_by_one_shift_as_far_as_their_mean_lies_under_the_pick() {
+fn brightness_moves_the_three_shares_by_one_shift_as_far_as_their_mean_lies_past_the_pick() {
     let k = Paper { brightness: 1.0, ..narrow() };
-    // Past the reach, the three layers a stop less exposed: log10 2 each.
-    let log = [-1.4, -1.2, -1.3];
-    let moved = k.brightened(log);
-    assert!((0..3).all(|c| (log[c] - moved[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{moved:?}");
+    // Past the reach, the three shares a stop of light toward the white: log10 2 of the latitude each.
+    let far = [1.1, 1.3, 1.2];
+    let moved = k.brightened(far);
+    assert!((0..3).all(|c| (moved[c] - far[c] - std::f32::consts::LOG10_2).abs() < 1e-6), "{moved:?}");
     // Within the reach, one shift on the three, their differences kept, a part of the stop.
-    let between = [-0.52, -0.58, -0.6];
+    let between = [0.62, 0.58, 0.6];
     let shifted = k.brightened(between);
-    let by: V3 = map(between, |c, v| v - shifted[c]);
+    let by: V3 = map(between, |c, v| shifted[c] - v);
     assert!(by[0] > 0.01 && (by[0] - by[1]).abs() < 1e-7 && (by[0] - by[2]).abs() < 1e-7, "{by:?}");
     assert!(by[0] < std::f32::consts::LOG10_2 - 0.01, "{by:?}");
+    // A wider latitude moves the shares less: a stop is less of its window.
+    let wide = Paper { latitude: 2.0, ..k }.brightened(far);
+    assert!((wide[0] - far[0] - 0.5 * std::f32::consts::LOG10_2).abs() < 1e-6, "{wide:?}");
     // The pick and the tones beyond it print where they did.
     let rest = narrow();
-    for shares in [[0.0; 3], [-0.2, -0.1, -0.3]] {
+    for shares in [[0.5; 3], [0.4, 0.3, 0.2]] {
         assert_eq!(k.shown(shares), rest.shown(shares), "{shares:?}");
     }
-    // Twin: each layer moved by its own distance under the pick lays different shifts on them.
-    let own: V3 = map(between, |_, v| v - (lifted(k.pick_log - v, std::f32::consts::LOG10_2, k.reach) - (k.pick_log - v)));
-    assert!((between[0] - own[0] - (between[2] - own[2])).abs() > 1e-3, "{own:?}");
+    // Twin: each share moved by its own distance past the pick lays different shifts on them.
+    let own: V3 = map(between, |_, v| v + lifted(v - k.pick_share, std::f32::consts::LOG10_2, k.reach) - (v - k.pick_share));
+    assert!((own[0] - between[0] - (own[2] - between[2])).abs() > 1e-3, "{own:?}");
 }
 
 #[test]
@@ -230,6 +198,10 @@ fn the_print_reads_each_dye_on_its_own_channel_and_a_black_and_white_print_its_l
     // Twin: a dye absorbing a tenth in its neighbour's channel darkens that channel too.
     let crossed = |d: V3| map(d, |c, v| 10f32.powf(-(v + 0.1 * d[(c + 1) % 3])));
     assert!((crossed([0.5, 1.3, 2.0])[0] - out[0]).abs() > 1e-3);
+    // The primaries lay each density's light in the working space; twin: the identity keeps it.
+    let turned = Paper { primaries: [[0.6, 0.3, 0.1], [0.1, 0.8, 0.1], [0.0, 0.1, 0.9]], ..k };
+    let mixed = turned.viewed([0.5, 1.0, 2.0]);
+    assert!((mixed[0] - (0.6 * out[0] + 0.3 * out[1] + 0.1 * out[2])).abs() < 1e-7 && (mixed[0] - out[0]).abs() > 0.05, "{mixed:?}");
     // A black and white print reads its luma on every channel.
     let mono = Paper { luma: true, ..k }.printed([0.3, 0.6, 0.9]);
     assert!(mono[0] == mono[1] && mono[1] == mono[2]);
@@ -244,15 +216,13 @@ fn each_channel_reads_its_own_dye_and_the_others_crosstalk_over_the_d_min() {
     let d = k.dyed(a);
     let want = [0.08 + 0.5 + 0.07 + 0.015, 0.1 + 0.055 + 1.0 + 0.135, 0.06 + 0.02 + 0.09 + 1.5];
     assert!((0..3).all(|c| (d[c] - want[c]).abs() < 1e-6), "{d:?}");
-    assert_eq!(k.developed([-1.0; 3]), k.dyed(k.amounts([-1.0; 3])));
     // Twin: the crosstalk turned, a row read as a column, reads other densities.
     let turned: [V3; 3] = std::array::from_fn(|r| std::array::from_fn(|c| crossed[c][r]));
     assert!((Paper { crosstalk: turned, ..k }.dyed(a)[0] - d[0]).abs() > 0.05);
     // Pure dyes on no D-min print the amounts as the densities, to the bit.
     let pure = narrow();
-    for log in [[-1.9, -1.2, -0.4], [-0.3, -1.0, 0.2], [3.0, -3.0, -1.5]] {
-        let amounts = pure.amounts(log);
-        assert_eq!(pure.developed(log), amounts, "{log:?}");
-        assert_eq!(pure.printed([0.2, 0.5, 0.9]), viewed(pure.developed(pure.exposed(pure.density([0.2, 0.5, 0.9])))));
+    for shares in [[-0.4, 0.2, 0.9], [0.3, 1.0, 1.4], [3.0, -3.0, 0.5]] {
+        assert_eq!(pure.dyed(pure.amounts(shares)), pure.amounts(shares), "{shares:?}");
+        assert_eq!(pure.printed(shares), viewed(pure.amounts(shares)));
     }
 }

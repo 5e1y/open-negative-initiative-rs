@@ -118,11 +118,11 @@ fn papers() {
     let mine = PaperStock::of("kodak-royal-digital-mine");
     assert!(PaperStock::all().contains(&mine) && mine.brand() == "Kodak");
     let (own, royal) = (paper::sheet(mine).expect("its own file"), paper::sheet(PaperStock::of("kodak-royal-digital")).expect("shipped"));
-    assert_eq!(own.curves, royal.curves, "the same profile bakes the same sheet");
-    // Twin: a fit that is no fit is refused.
+    assert_eq!(own.curves, royal.curves, "the same look reads the same sheet");
+    // Twin: a look that is no look is refused.
     let mut fit = shipped("fujifilm-frontier-sp-3000.json");
     fit["key"] = "frontier-mine".into();
-    fit["frontier"]["curves"][1] = Value::Array(vec![]);
+    fit["look"]["curves"][1] = Value::Array(vec![]);
     write(&dir, "fit.json", &fit);
     let refused = loader.reload().expect("read").refused;
     assert!(refused.iter().any(|r| r.refusal.name == "fit.json" && !r.earlier_kept), "{refused:?}");

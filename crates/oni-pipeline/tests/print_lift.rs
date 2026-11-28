@@ -36,10 +36,12 @@ fn without_print_lift_the_pick_lies_on_pure_black_and_the_windows_white_on_pure_
             let white = printed_on(&s, &k)[1];
             assert!(white.iter().all(|v| (v - 1.0).abs() < 1e-4), "{label}, Exposure {exposure}: {white:?}");
         }
-        // Twin: the paper's own white, past the window's, prints past pure white.
+        // Twin: a data sheet's own white, past the window's, prints past pure white; the Frontier's window ends on its
+        // table's white.
         let paper_white = lit_shown(&s, &k, past_the_white(&s));
         println!("{label}: the paper's own white at {paper_white:?}");
-        assert!(paper_white.iter().all(|v| *v > 1.01), "{label}: {paper_white:?}");
+        let sheet = s.paper().is_some_and(|p| !p.is_machine());
+        assert!(!sheet || paper_white.iter().all(|v| *v > 1.01), "{label}: {paper_white:?}");
         // Twin: the window's white held where the paper prints it, as with Print lift, prints under pure white.
         let held = Stage47 { shown: k.paper().map_or(k.shown, |p| Shown::Paper(Paper { white_anchor: p.white, ..p })), ..k };
         assert!(printed_on(&s, &held)[1].iter().all(|v| *v < 0.99), "{label}");
@@ -58,6 +60,8 @@ fn print_lift_keeps_the_papers_own_ends() {
         // Twin: off, the same frame's pick lies on pure black and its window's white on pure white, above the paper's own.
         let off = conversion::stage47(&moved(&s, |t| t.print.print_lift = false));
         assert!(pick.iter().all(|v| *v > 0.0) && printed_on(&s, &off)[0].iter().all(|v| v.abs() < 1e-6), "{label}: {pick:?}");
-        assert!((0..3).all(|c| printed_on(&s, &off)[1][c] > white[c] + 0.05), "{label}");
+        // A data sheet's own white lies under pure white; the Frontier's is its table's, near it.
+        let sheet = s.paper().is_some_and(|p| !p.is_machine());
+        assert!(!sheet || (0..3).all(|c| printed_on(&s, &off)[1][c] > white[c] + 0.05), "{label}");
     }
 }

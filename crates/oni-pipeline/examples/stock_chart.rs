@@ -37,7 +37,6 @@ fn main() {
     std::fs::create_dir_all(out).unwrap();
     let wanted: Option<Vec<String>> = args.get(2).map(|s| s.split(',').map(str::to_string).collect());
     let exposure: f32 = std::env::var("ONI_FILM_EXPOSURE").map_or(0.0, |v| v.parse().unwrap());
-    println!("plain grey {}", film::plain_grey());
     for stock in VirtualStock::sheets() {
         if wanted.as_ref().is_some_and(|w| !w.iter().any(|n| n == stock.key())) {
             continue;

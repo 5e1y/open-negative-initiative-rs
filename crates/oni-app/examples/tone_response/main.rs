@@ -99,7 +99,8 @@ fn measures(st: &[f32], l: &[f32], y: &[f32]) -> String {
     )
 }
 
-/// Stage 4-7 on the CPU, the paper's received density, log exposure and developed density per layer where one prints.
+/// Stage 4-7 on the CPU, the paper's received shares, the shares Brightness moves and developed density per layer where
+/// one prints.
 fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
     let k = conversion::stage47(s);
     let mut x = input;
@@ -108,9 +109,9 @@ fn traced(s: &PipelineSettings, input: V4) -> (Option<(V3, V3, V3)>, V4) {
     }
     let after = k.after_negative();
     let paper = after.paper().map(|p| {
-        let a = p.density(cpu::windowed(x, &after));
-        let e = p.brightened(p.exposed(a));
-        (a, e, p.developed(e))
+        let a = cpu::windowed(x, &after);
+        let e = p.brightened(a);
+        (a, e, p.dyed(p.amounts(e)))
     });
     (paper, cpu::stage47(input, &k))
 }
