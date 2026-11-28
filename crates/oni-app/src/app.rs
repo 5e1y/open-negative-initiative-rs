@@ -177,10 +177,8 @@ struct Slide {
     hand: Hand,
     /// Where the knob is drawn, as a fraction of the track.
     knob: Sprung,
-    /// The stored value last published, so a field holding several sliders publishes only the moved one.
-    published: Option<f32>,
-    /// The track's range last published: a range moved under a kept value, a paper's reach, lays the knob anew.
-    range: Option<(f32, f32)>,
+    /// The stored value and track range last published, so only a slider whose value or reach moved is published again.
+    published: Option<(f32, Option<(f32, f32)>)>,
     /// When the hand last moved the value, which the notch showing it is timed from.
     moved_at: Option<Instant>,
 }
