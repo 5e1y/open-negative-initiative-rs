@@ -1,7 +1,8 @@
 //! The photo's flight to and from a zoomed view: it lands where the canvas shows it at rest, zoom and pan included,
 //! grown past the frame and cut by the canvas, so the view never jumps once it has landed.
 
-use oni_app::{Act, Canvas, Library};
+use oni_app::fields::Field;
+use oni_app::{Act, Canvas, Library, Store};
 use slint::ComponentHandle;
 use slint::platform::software_renderer::Rgb565Pixel;
 use std::time::Duration;
@@ -26,7 +27,7 @@ fn edges((w, px): &(usize, Vec<Rgb565Pixel>), y: usize, (left, right): (usize, u
 }
 
 /// Whether two rows show the photo at one zoom and place: their stripes as wide within 5 %, the edge nearest the middle
-/// within half a stripe; the thumbnail that flies, a tenth of the render's pixels at 100 %, lies 30 px off its render.
+/// within a quarter of a stripe, the thumbnail that flies holding a tenth of the render's pixels at 100 %.
 fn together(a: &[usize], b: &[usize]) -> bool {
     let spacing = |e: &[usize]| {
         let mut d: Vec<usize> = e.windows(2).map(|p| p[1] - p[0]).collect();
@@ -39,7 +40,7 @@ fn together(a: &[usize], b: &[usize]) -> bool {
     let (sa, sb) = (spacing(a), spacing(b));
     let middle = (b[0] + b[b.len() - 1]) / 2;
     let nearest = |e: &[usize]| *e.iter().min_by_key(|x| x.abs_diff(middle)).unwrap_or(&0);
-    (sa / sb - 1.0).abs() <= 0.05 && (nearest(a).abs_diff(nearest(b)) as f64) <= sb / 2.0
+    (sa / sb - 1.0).abs() <= 0.05 && (nearest(a).abs_diff(nearest(b)) as f64) <= sb / 4.0
 }
 
 /// Shoots `name` at each of `STEPS`, the clock held from its start, and returns the frame drawn at `LAST`.
@@ -80,6 +81,19 @@ pub(crate) fn the_photo_flies_to_and_from_its_zoomed_view_and_lands_without_a_ju
         let (x, y) = (flight.get_canvas_x(), flight.get_canvas_y());
         ((y + canvas.get_height() * 0.4) as usize, ((x + 20.0) as usize, (x + canvas.get_width() - 20.0) as usize))
     };
+    // The photo converted, as every photo the editor shows once its roll is prepared: its tile is then its render, the
+    // picture that flies, where a frame never converted shows its scan.
+    let tile = || slint::Model::row_data(&lib.get_tiles(), 0).map(|t| t.picture.to_rgba8().map(|b| b.as_bytes().iter().map(|v| u64::from(*v)).sum::<u64>()));
+    let scanned = tile();
+    w.global::<Store>().invoke_step(Field::Exposure.index(), 1);
+    ctl.act(Act::ToggleMode);
+    rig.until("the tile of the photo converted", Duration::from_secs(60), || tile() != scanned);
+    rig.settle();
+    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_clicked(0, false, false);
+    rig.until("the view at 100 % again", Duration::from_secs(120), || ctl.state.borrow().placed().is_some_and(|p| !p.whole));
+    rig.settle();
     let (y, span) = row();
     let zoomed = edges(&rig.drawn(), y, span);
     assert!(zoomed.len() >= 2, "the view at 100 % shows the stripes: {zoomed:?}");
