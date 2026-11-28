@@ -174,7 +174,8 @@ export component Button inherits Rectangle {
     property <length> radius: root.mini ? ButtonStyle.small-radius : ButtonStyle.radius;
     property <length> pad: root.mini ? ButtonStyle.small-padding : root.stacked ? (root.keycap ? ButtonStyle.bar-cap-padding : ButtonStyle.bar-key-padding) : ButtonStyle.padding;
     property <length> glyph: root.glyph-size > 0 ? root.glyph-size : root.mini ? ButtonStyle.mini-glyph : ButtonStyle.icon;
-    property <length> legend: root.legend-size > 0 ? root.legend-size : root.mini && root.keycap ? ButtonStyle.mini-legend : ButtonStyle.legend;
+    property <length> legend: root.legend-size > 0 ? root.legend-size : root.keycap ? (root.mini ? ButtonStyle.mini-legend : ButtonStyle.legend)
+        : root.mini ? ButtonStyle.legend : ButtonStyle.word-legend;
     // Capitals, bold and spaced, are the keycap's: a flat key or a ghost shows its word as written.
     property <int> weight: root.keycap ? ButtonStyle.legend-weight : ButtonStyle.word-weight;
     property <length> tracking: root.keycap ? ButtonStyle.legend-tracking : 0px;

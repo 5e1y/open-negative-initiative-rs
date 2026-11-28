@@ -208,6 +208,8 @@ export global ButtonStyle {
     // capitals already open; a flat key's as written, semibold and set solid.
     out property <length> legend: Type.caption;
     out property <length> mini-legend: Type.micro;
+    // A flat key's word a step over a keycap's legend: Zalando Sans's lower case reads small at the caption's size.
+    out property <length> word-legend: Type.label;
     out property <int> legend-weight: 700;
     out property <length> legend-tracking: 0.2px;
     out property <int> word-weight: Type.strong;

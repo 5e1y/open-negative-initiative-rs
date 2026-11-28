@@ -14685,5 +14685,12 @@
     "title": "The export panel in the editor's sections, its EXIF open at rest and headed by the file's name, its header as high as every screen's",
     "status": "done",
     "detail": "Owner's calls: (1) the EXIF card beside each picture opens at rest, its cross folding it; (5) the file's name heads the card, and stands under its picture only while the card is folded; (3) Load a Profile… and Get Paper Profiles… show with a profile alone, Custom chosen or to choose, in the panel and in the chip's popover; (4) the panel's side margin is the editor's column's, SectionStyle.inset, its sections carrying it as the editor's do; (6) each export setting is a Section of the editor's (Export as, Presets, Format, Colour space, Compression, Size, HDR, open with no fold), and the facts at the panel's foot a small table drawn by its lines alone on no ground of its own (ds/facts.slint, Facts), Compression's block as tall for either format so a preset moves no block. (2) The header: measured on the real window at 1100 × 680, the gallery's and the editor's content started 59 pt down and the export's card 72 pt, the bar's room kept under the traffic lights and the card's own inset laid under it; under the bar's room the card now starts where every screen's content does, a window with no room keeping the inset at its top. Checks: export_columns (the EXIF open at rest, the name heading each card, the cross folding it; twin: folded, the name under its picture), export_panel (no profile keys off Custom; twin: back on a built-in space they go; every block in place across presets), every export window check, typeface."
+  },
+  {
+    "id": 4108,
+    "type": "ui",
+    "title": "A flat key's word a step larger: ButtonStyle.word-legend, the type scale's label",
+    "status": "done",
+    "detail": "Owner's call: since Zalando Sans the words of the flat keys read small. A flat key's word (not a keycap's, not a mini key's) now takes ButtonStyle.word-legend, Type.label (13 pt), a step over the keycaps' Type.caption (11 pt); the design system alone changes. The bar needs 1198 pt worded in English, 1329 in French, 1308 in Spanish, under a 13-inch screen's 1440; folded, its last key still ends at 1084 pt on the narrowest window in every language. Checks: toolbar_fit's four in English, French and Spanish on the app profile."
   }
 ]
