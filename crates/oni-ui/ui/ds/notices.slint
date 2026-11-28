@@ -1,13 +1,29 @@
 // The notices: the one that passes over the view the hand works in, and the banner that stays over its view.
 import { Space, Motion, ButtonStyle, SheetStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Raised, Lift, Gap } from "base.slint";
+import { Label, Icon, TextRole, Tone, Raised, Lift, Gap, Tones } from "base.slint";
 import { Button, ButtonKind, ButtonSize, ButtonGroup, GroupAlign } from "controls.slint";
 import { Reach, Reaches } from "reach.slint";
+
+// An invitation the hand may take or leave: its hashtag first and largest, its line, then its keys at the notice's size.
+component Invitation inherits VerticalLayout {
+    in property <string> tag;
+    in property <string> line;
+    in property <[string]> keys;
+    in property <length> words;
+    callback acted(int);
+    spacing: Space.xs;
+    Label { role: TextRole.heading; text: root.tag; }
+    Label { width: root.words; role: TextRole.note; tone: Tone.secondary; text: root.line; wrap: word-wrap; }
+    ButtonGroup { align: GroupAlign.start;
+        for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
+    }
+}
 
 // A transient notice: what a gesture could not do, or a step landed with its Undo, never stopping the hand.
 // At the bottom right of the view the hand works in, where a grid and a frame leave room, it slides in from
 // the edge and back out as it goes: by Dismiss, by its action, or after `SheetStyle.linger` unread, held
-// while the pointer rests on it.
+// while the pointer rests on it. Its keys stand at its foot, Dismiss then its action; an invitation rides above it
+// in a card of its own that leaves by itself, sooner.
 export component Toast inherits Rectangle {
     in property <string> title;
     in property <string> message;
@@ -22,14 +38,19 @@ export component Toast inherits Rectangle {
     in property <length> bottom;
     callback acted();
     callback closed();
-    // A quiet line under its words with keys of its own, as an invitation the hand may take or leave.
+    // An invitation the hand may take or leave, its hashtag above its line, with keys of its own.
+    in property <string> tag;
     in property <string> aside;
     in property <[string]> aside-keys;
     callback aside-acted(int);
     width: min(SheetStyle.notice-width, root.room - 2 * SheetStyle.margin);
-    height: card.height;
+    height: stack.preferred-height;
+    // The words' width, set by hand: a wrapped label is measured on one line otherwise, and the card cut short.
+    property <length> words: root.width - 2 * Tones.gap(Gap.s);
     property <float> come;
     property <bool> leaving;
+    property <bool> invited: root.aside != "" && !root.invite-gone;
+    property <bool> invite-gone;
     init => { root.come = 1; }
     animate come { duration: root.leaving ? Motion.overlay-out : Motion.overlay-in; easing: ease-out; }
     x: root.right - self.width - SheetStyle.margin + (1 - root.come) * SheetStyle.slide;
@@ -37,6 +58,7 @@ export component Toast inherits Rectangle {
     opacity: root.come;
     changed serial => {
         root.leaving = false;
+        root.invite-gone = false;
         root.come = 1;
         linger.restart();
     }
@@ -51,25 +73,42 @@ export component Toast inherits Rectangle {
         running: !hover.has-hover && !root.leaving;
         triggered => { root.leave(); }
     }
+    // The invitation's own card leaves by itself, the notice's card staying until its own time.
+    Timer {
+        interval: SheetStyle.linger / 2;
+        running: root.invited && !hover.has-hover && !root.leaving;
+        triggered => { root.invite-gone = true; }
+    }
     hover := TouchArea {
-        card := Raised {
-            lift: Lift.sheet;
-            pad: Gap.s;
-            gap: Gap.xs;
-            width: root.width;
-            Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
-            Label { role: TextRole.note; text: root.message; }
-            if root.aside != "": VerticalLayout {
-                spacing: Space.xs;
-                Label { role: TextRole.note; tone: Tone.secondary; text: root.aside; }
-                ButtonGroup { align: GroupAlign.start;
-                    for key[i] in root.aside-keys: Button { size: ButtonSize.mini; text: key; clicked => { root.aside-acted(i); } }
+        stack := VerticalLayout {
+            spacing: Space.s;
+            if root.invited: Raised {
+                lift: Lift.sheet;
+                pad: Gap.s;
+                width: root.width;
+                Invitation {
+                    tag: root.tag;
+                    line: root.aside;
+                    keys: root.aside-keys;
+                    words: root.words;
+                    acted(i) => { root.aside-acted(i); }
                 }
             }
-            // Dismiss beside its action, the accent key, at its foot.
-            ButtonGroup { align: GroupAlign.end;
-                Button { text: @tr("Dismiss"); clicked => { root.leave(); } }
-                if root.action != "": Button { text: root.action; kind: ButtonKind.accent; clicked => { root.acted(); } }
+            Raised {
+                lift: Lift.sheet;
+                pad: Gap.s;
+                gap: Gap.s;
+                width: root.width;
+                VerticalLayout {
+                    spacing: Space.xxs;
+                    Label { width: root.words; role: TextRole.section; text: root.title; wrap: word-wrap; }
+                    Label { width: root.words; role: TextRole.note; text: root.message; }
+                }
+                // Dismiss beside its action, the accent key, at its foot.
+                ButtonGroup { align: GroupAlign.end;
+                    Button { text: @tr("Dismiss"); clicked => { root.leave(); } }
+                    if root.action != "": Button { text: root.action; kind: ButtonKind.accent; clicked => { root.acted(); } }
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
-//! An export written ends on its notice with a quiet line inviting to post the photo with ONI's hashtag:
-//! its keys show under the words, Don't Show Again hides it for good, Settings brings it back.
+//! An export written ends on its notice with an invitation above it to post the photo with ONI's hashtag:
+//! its keys show under its line, Don't Show Again hides it for good, Settings brings it back.
 
 use oni_app::app::export_card::{self, job::End};
 use oni_app::app::{Options, Shell};
@@ -57,13 +57,14 @@ pub(crate) fn an_export_written_invites_to_share_until_told_not_to() {
     };
     let line = "Post your photos on Instagram with #madewithoni, we'd love to see them.";
 
-    // The notice says the photo exported, the invitation under its words, its keys beside it.
+    // The notice says the photo exported, the invitation above it, its keys under its line.
     export();
     assert!(told.get_shown() && told.get_invite(), "an export written invites to share");
     assert_eq!(told.get_tag(), "#madewithoni");
-    assert_eq!(common::placed(w, Role::Text, line).len(), 1, "the line shows under the notice");
-    for key in ["Copy #madewithoni", "Open Instagram", "Don't Show Again"] {
-        assert_eq!(common::placed(w, Role::Button, key).len(), 1, "{key} shows");
+    assert_eq!(common::placed(w, Role::Text, line).len(), 1, "the line shows above the notice");
+    for key in ["Copy", "Open Instagram", "Don't Show Again"] {
+        let low = common::placed(w, Role::Button, key).into_iter().filter(|k| k.y > 400.0).count();
+        assert_eq!(low, 1, "{key} shows in the notice");
     }
     rig.shot("export-invite");
 

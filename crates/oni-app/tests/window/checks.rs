@@ -96,6 +96,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(export_speed::a_parameter_change_on_a_batch_is_timed),
     check!(export_speed::an_export_is_timed_stage_by_stage),
     check!(export_invite::an_export_written_invites_to_share_until_told_not_to),
+    check!(export_notice::the_export_notice_carries_its_invitation_in_a_card_that_leaves_first),
     check!(export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
     check!(export_modal::the_export_surface_lets_nothing_reach_what_it_covers),
     check!(export_flow::an_export_closes_its_surface_and_counts_its_frames_in_the_status_bar),

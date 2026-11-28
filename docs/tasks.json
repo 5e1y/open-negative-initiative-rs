@@ -14886,5 +14886,12 @@
     "status": "done",
     "title": "ONI_BENCH=motion says how fast the interface thread answered beside each journey's frames: the gap thought a 300 ms freeze at the Roll pane was rest",
     "detail": "A gap between two frames reads alike whether the window had nothing new to draw or the interface thread was blocked. A thread of the bench now posts to the interface thread every 10 ms and each journey reports the longest wait; each pane picked logs its handler's time. Measured on the compiled app, the reference roll's test copy, the window visible: at the Roll pane the longest gap was 134 to 216 ms while the interface answered within 6 to 18 ms, and the handler took 0.1 ms; a stack sample over the gap shows the thread waiting for events 80 % of the time with no long work outside drawing. The long gaps move between panes from run to run (332 ms at Color, answered within 23 ms): the window rests, nothing freezes. The longest waits are 40 to 54 ms, opening a photo from the gallery or the export."
+  },
+  {
+    "id": 4118,
+    "type": "feature",
+    "title": "The export's invitation in a card of its own above its notice, leaving by itself",
+    "status": "done",
+    "detail": "The owner chose the second form of the planche: the Toast carries an invitation (#madewithoni in the display face, its line, then Copy, Open Instagram and Don't Show Again at the notice's own key size, in one row) in a card above the notice's, which leaves by itself at half the notice's linger (4 s, held while the pointer rests), the result keeping Dismiss and Show in Finder at its foot. Copy names the hashtag no more, its title standing just above. The notices' words take their width by hand, so a wrapped line is measured whole and no card is cut short at the view's foot. Checked by export_notice::the_export_notice_carries_its_invitation_in_a_card_that_leaves_first; the planche showed English, French and Spanish whole."
   }
 ]

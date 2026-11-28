@@ -11,8 +11,8 @@ export global Told {
     in property <int> serial;
     callback acted();
     callback closed();
-    // An export written: the notice invites, quietly, to post the photos with ONI's hashtag; its keys copy
-    // the hashtag, open ONI's Instagram, or hide the line for good (Settings brings it back).
+    // An export written: a card above the notice invites to post the photos with ONI's hashtag; its keys copy the
+    // hashtag, open ONI's Instagram, or hide the invitation for good (Settings brings it back).
     in property <bool> invite;
     in property <string> tag;
     in property <bool> copied;
@@ -28,8 +28,9 @@ export component ToldNotice inherits Toast {
     serial: Told.serial;
     acted => { Told.acted(); }
     closed => { Told.closed(); }
+    tag: Told.tag;
     aside: Told.invite ? @tr("Post your photos on Instagram with {}, we'd love to see them.", Told.tag) : "";
-    aside-keys: [Told.copied ? @tr("Copied") : @tr("Copy {}", Told.tag), @tr("Open Instagram"), @tr("Don't Show Again")];
+    aside-keys: [Told.copied ? @tr("Copied") : @tr("Copy"), @tr("Open Instagram"), @tr("Don't Show Again")];
     aside-acted(i) => {
         if (i == 0) { Told.copy-tag(); } else if (i == 1) { Told.instagram(); } else { Told.hide-invite(); }
     }

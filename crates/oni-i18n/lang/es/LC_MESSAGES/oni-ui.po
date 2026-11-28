@@ -915,7 +915,7 @@ msgstr "1 bloque registrado"
 msgid "{} blocks recorded"
 msgstr "{} bloques registrados"
 
-#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/told.slint crates/oni-ui/ui/toolbar.slint
 msgid "Copy"
 msgstr "Copiar"
 
@@ -2518,10 +2518,6 @@ msgstr "Publica tus fotos en Instagram con {}, nos encantaría verlas."
 #: crates/oni-ui/ui/told.slint
 msgid "Copied"
 msgstr "Copiado"
-
-#: crates/oni-ui/ui/told.slint
-msgid "Copy {}"
-msgstr "Copiar {}"
 
 #: crates/oni-ui/ui/told.slint
 msgid "Open Instagram"
