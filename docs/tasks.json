@@ -14734,5 +14734,12 @@
     "title": "No cube is a film: the LUT film, its reader and its look path removed; a photo on one lands on the neutral film",
     "status": "done",
     "detail": "Owner's call: no more cube. A `.cube` file in the Stocks folder is no longer read as a film (oni_settings::stocks::cube, the loader's look, look_key, VirtualStock::look, the entries' look, the chain's look path and its cube cache, the grain's look branches all gone; the stocks README's section with them). Format 84's migrate::cube_films lays a digital photo on a film keyed `lut-` on the neutral film, its gains and windows on that film's reference, its exposure, effects and every other edit kept. The measured Frontier table and the legacy print's cubes are no films and stay; the coupler-fit research example keeps its own cube reader for the owner's references. Checks: cube_films's test (twins: a shipped film and a document of 84 move nothing); the looks test leaves with its subject."
+  },
+  {
+    "id": 4258,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: ONI Standard, the legacy print on a paper and the default-paper migrations are gone",
+    "detail": "The working notes follow #4400 to #4402 (format 84): a paper is a sheet's paper, a legacy print takes none, and one migration names the papers that left."
   }
 ]
