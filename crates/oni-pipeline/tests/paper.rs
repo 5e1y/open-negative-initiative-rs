@@ -10,16 +10,12 @@ use common::{V4, graph, judge, mapped, noise, whole};
 use frames::*;
 use oni_graph::Image;
 use oni_pipeline::film::{self, bake};
-use oni_pipeline::paper::{self, GREY_PRINT};
-use oni_pipeline::{conversion, scanner, stages};
+use oni_pipeline::paper;
+use oni_pipeline::{conversion, stages};
 use oni_render::{Negative, PAPER_CURVE_NODES, Paper, Shown, Stage47, cpu};
 use oni_settings::tone::Print;
 use oni_settings::{LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 use serde::Deserialize;
-
-fn luma(v: [f32; 3]) -> f32 {
-    oni_render::LUMA.iter().zip(v).map(|(w, x)| w * x).sum()
-}
 
 /// A paper's profile as its file holds it, read apart from the bake.
 #[derive(Deserialize)]

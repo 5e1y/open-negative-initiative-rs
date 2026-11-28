@@ -339,7 +339,8 @@ fn main() {
         }
         run.image(&mut e, raw, &format!("{stem}-edited"), &edited);
         if std::env::var("PAPER").is_err() {
-            run.image(&mut e, raw, &format!("{stem}-edited-paper"), &PipelineSettings { print_paper: Some(edited.print_paper.unwrap_or_default()), ..edited.clone() });
+            let paper = edited.print_paper.unwrap_or(oni_settings::PaperStock::of("kodak-endura-premier"));
+            run.image(&mut e, raw, &format!("{stem}-edited-paper"), &PipelineSettings { print_paper: Some(paper), ..edited.clone() });
         }
     }
 }

@@ -159,7 +159,7 @@ fn read(bytes: &[u8]) -> Result<(Option<String>, Look), String> {
     if nodes.len() != size.pow(3) {
         return Err(format!("it holds {} nodes where a size of {size} needs {}", nodes.len(), size.pow(3)));
     }
-    Ok((title, Look { size, nodes: nodes.into() }))
+    Ok((title, Look { size, nodes }))
 }
 
 fn numbers(text: &str) -> Result<Vec<f32>, std::num::ParseFloatError> {
