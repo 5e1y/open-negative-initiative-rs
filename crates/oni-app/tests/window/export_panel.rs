@@ -206,7 +206,7 @@ fn presets_keep_the_rows_in_place(rig: &common::Rig, shell: &oni_app::app::Shell
     assert_eq!(picker(w), "No preset", "the rows as they opened equal no preset");
     let before = rows(w);
     let edited = |e: &Exporting| common::the(w, Role::Text, &e.get_edited_in());
-    let (said_p3, purpose_p3) = (e.get_edited_in(), common::the(w, Role::Text, &e.get_space_note()).height);
+    let (said_p3, purpose_p3) = (e.get_edited_in(), e.get_space_note());
 
     // Web by a click: JPEG, sRGB, 2048 on the long edge at 85 %, named at rest with its summary.
     choose(rig, w, "Web");
@@ -235,7 +235,7 @@ fn presets_keep_the_rows_in_place(rig: &common::Rig, shell: &oni_app::app::Shell
     // Twin: the format's row holds another control, Compression's in place of Quality's.
     assert!(common::placed(w, Role::Slider, "Quality").is_empty());
     assert_eq!(common::placed(w, Role::Checkbox, "ZIP, lossless").len(), 1);
-    assert_ne!(common::the(w, Role::Text, &e.get_space_note()).height, purpose_p3, "twin: Adobe RGB's purpose takes another height");
+    assert_ne!(e.get_space_note(), purpose_p3, "twin: Adobe RGB's purpose says another sentence in the same room");
     for line in ["Instagram", "Display"] {
         choose(rig, w, line);
         assert_eq!(rows(w), before, "{line} moved no row under the picker");

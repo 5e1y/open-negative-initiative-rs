@@ -72,7 +72,7 @@ export component MainWindow inherits AppWindow {
     out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
     out property <length> tabs-foot: ShellStyle.bar-height + PanelState.header + (App.panel-hidden ? Space.s : 0px);
     // The column holding the help marks, at the window's right, and where a mark's card tops beside it.
-    property <length> column-x: root.width - (Exporting.shown ? FormStyle.panel-width : ShellStyle.panel-width) - (root.beside-photo && App.panel-hidden ? Space.s : 0px);
+    property <length> column-x: root.width - ShellStyle.panel-width - (root.beside-photo && App.panel-hidden ? Space.s : 0px);
     property <length> card-top: root.beside-photo ? root.tabs-foot : (Exporting.shown ? 0px : ShellStyle.bar-height) + Space.s;
     // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer, only while it floats.
     out property <bool> revealed-library;
@@ -277,13 +277,13 @@ export component MainWindow inherits AppWindow {
                         Gallery { refocused => { root.refocus(); } }
                         CardCorners { width: parent.width; height: parent.height; }
                     }
-                    // On export the card floats in the ground, opened out of the editor's; under the bar's room it starts as all content.
+                    // On export the card floats in the ground, opened out of the editor's, flush with its column as the editor's.
                     if Exporting.shown: ExportCard {
                         property <length> top: Bar.traffic-lights > 0 ? 0px : ShellStyle.bar-height;
                         property <length> left: App.gallery || !App.library-hidden ? ShellStyle.library-width : 0px;
                         property <length> right: root.width - (App.gallery || !App.panel-hidden ? ShellStyle.panel-width : 0px);
                         property <length> head: min(self.top, CardStyle.inset);
-                        rest: { x: CardStyle.inset, y: self.head, width: parent.width - 2 * CardStyle.inset, height: parent.height - self.head - CardStyle.inset };
+                        rest: { x: CardStyle.inset, y: self.head, width: parent.width - CardStyle.inset, height: parent.height - self.head - CardStyle.inset };
                         beside: { x: self.left, y: self.top, width: self.right - self.left, height: parent.height - self.top - parent.status };
                         open: root.exporting;
                     }
@@ -340,7 +340,7 @@ export component MainWindow inherits AppWindow {
                 if App.gallery && !Exporting.shown && !Preparing.shown: Info { }
                 if Preparing.shown: RollPanel { }
                 if Exporting.shown: Rectangle {
-                    width: FormStyle.panel-width;
+                    width: ShellStyle.panel-width;
                     clip: root.exporting < 1;
                     ExportPanel { x: (1 - root.exporting) * self.width; height: parent.height; }
                 }

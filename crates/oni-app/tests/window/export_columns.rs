@@ -18,8 +18,6 @@ const NEAR: f32 = 16.0;
 const PAD: f32 = 8.0;
 /// `SectionStyle.inset`: the panel's sections off its edge, as the editor's.
 const SECTION: f32 = 16.0;
-/// `CardStyle.inset`: the card's room off the window's ground.
-const INSET: f32 = 8.0;
 /// `FieldStyle.across`, a field's padding on either side of its words.
 const ACROSS: f32 = 16.0;
 /// `Space.s`: the name's band around its field.
@@ -76,7 +74,7 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
     let picture = |k: usize| if w.global::<Exporting>().get_exif_shown() { caption(k).x } else { nth(w, Role::TextInput, "Name", k).x - BAND - ACROSS };
     let end = |k: usize| caption(k).x + caption(k).width;
     // The room's edge, up to the column's padding.
-    let room = presets.x - SECTION - INSET - GAP;
+    let room = presets.x - SECTION - GAP;
     // The picture in the middle of its slot, from `left` to the room's edge, its name and size under it.
     let centred = |k: usize, left: f32| picture(k) >= left - 0.5 && ((picture(k) - left) - (room - end(k))).abs() < 1.0;
 

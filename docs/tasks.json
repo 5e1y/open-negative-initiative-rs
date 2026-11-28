@@ -14692,5 +14692,12 @@
     "title": "A flat key's word a step larger: ButtonStyle.word-legend, the type scale's label",
     "status": "done",
     "detail": "Owner's call: since Zalando Sans the words of the flat keys read small. A flat key's word (not a keycap's, not a mini key's) now takes ButtonStyle.word-legend, Type.label (13 pt), a step over the keycaps' Type.caption (11 pt); the design system alone changes. The bar needs 1198 pt worded in English, 1329 in French, 1308 in Spanish, under a 13-inch screen's 1440; folded, its last key still ends at 1084 pt on the narrowest window in every language. Checks: toolbar_fit's four in English, French and Spanish on the app profile."
+  },
+  {
+    "id": 4109,
+    "type": "ui",
+    "title": "The export's column lies over the editor's: as wide, the card flush with it, its content as far in",
+    "status": "done",
+    "detail": "Owner's notes on the export after #4107: its column's left margin was off the editor's, a margin too many right of the previews' canvas. Measured, the export's column was FormStyle.panel-width, 400 pt, the editor's ShellStyle.panel-width, 340 pt, and the export's card kept its inset on its right, 8 pt short of the column the editor's card touches. The export's column now takes ShellStyle.panel-width and its card ends flush with it, as the editor's: on a 1280 pt window both columns start at 940 pt, 340 pt wide, their content 16 pt in, under the bar's room alike where the traffic lights keep it. Check: export_column::the_export_column_lies_over_the_editors (twin: the editor's panel hidden, its card reaches past the column's place); export_columns and export_panel follow the narrower column."
   }
 ]
