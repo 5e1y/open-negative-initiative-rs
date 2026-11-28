@@ -66,9 +66,8 @@ pub struct PaperEntry {
     pub look: Arc<str>,
     /// The data sheet's profile it was baked from, which its file keeps; none for a machine measured (the Frontier's).
     pub profile: Option<Arc<str>>,
-    /// The most colour compression its look's curves hold monotone and positive, baked in its look; none where its file
-    /// bakes none, which then prints as baked.
-    pub compression_limit: Option<f32>,
+    /// Its colour compression scale, baked in its look; none where its file bakes none, which then prints as baked.
+    pub compression: Option<Arc<crate::paper::CompressionScale>>,
     pub revision: u64,
 }
 

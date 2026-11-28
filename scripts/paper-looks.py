@@ -34,9 +34,11 @@ BROAD_BAND = 1.0
 XYZ_TO_2020 = [[1.7166512, -0.3556708, -0.2533663], [-0.6666844, 1.6164812, 0.0157685], [0.0176399, -0.0427706, 0.9421031]]
 SRGB_TO_2020 = [[0.627404, 0.329283, 0.043313], [0.069097, 0.919540, 0.011362], [0.016391, 0.088013, 0.895595]]
 IDENTITY = np.eye(3).tolist()
-# Colour compression's reach: the strength where a layer's amount first rises with the share by 1e-3 or falls under -5e-3,
-# its crosstalk near singular, sought by 0.01 up to 5, times MARGIN, floored to 0.05 and never past CEILING.
-MARGIN, CEILING = 0.8, 2.0
+# Colour compression's reach in strengths of the paper's own crosstalk: the last, by STEP and up to CEILING, before a layer
+# rises with the share or falls under no dye by HELD, or the crosstalk nears singular. Its scale is the share of a ring
+# of saturated colours' Oklab chroma the print takes from the pure dyes' print, RING's twelve hues 0.3 off a mid grey.
+CEILING, STEP, HELD = 2.5, 0.05, 5e-3
+RING = np.radians(np.arange(0, 360, 30))
 
 
 class Sheet:
@@ -314,14 +316,35 @@ def compressed(curves, mix, k):
     return curves + curves @ (np.linalg.inv(own + k * (mix - own)) @ side).T
 
 
-def compression_limit(look):
-    curves, mix = np.array(look["curves"]), np.array(look["crosstalk"])
+def compression_reach(curves, mix):
     own = np.diag(np.diag(mix))
-    for k in np.arange(0.0, 5.0001, 0.01):
+    reach = 0.0
+    for k in np.arange(STEP, CEILING + 1e-9, STEP):
         a = compressed(curves, mix, k)
-        if np.diff(a, axis=0).max() > 1e-3 or a.min() < -5e-3 or np.linalg.det(own + k * (mix - own)) <= 0.05:
-            return min(CEILING, np.floor(MARGIN * k / 0.05) * 0.05)
-    return CEILING
+        if np.diff(a, axis=0).max() > HELD or a.min() < -HELD or np.linalg.det(own + k * (mix - own)) <= 0.05:
+            break
+        reach = k
+    return round(float(reach), 2)
+
+
+def compression(look):
+    """The strengths the slider runs through, by STEP from the pure dyes to the reach, and the share of the ring's chroma
+    each takes: the slider's absolute scale, the paper's rest at strength 1."""
+    curves, mix = np.array(look["curves"]), np.array(look["crosstalk"])
+    floor, primaries = np.array(look["floor"]), np.array(look["primaries"])
+    ring = np.stack([0.5 + 0.3 * np.cos(RING + d) for d in (0.0, -2 * np.pi / 3, 2 * np.pi / 3)], -1)
+
+    def chroma(k):
+        a = curves if k == 1.0 else compressed(curves, mix, k)
+        m = mix if k == 1.0 else np.diag(np.diag(mix)) + k * (mix - np.diag(np.diag(mix)))
+        light = lambda s: (10.0 ** -(floor + np.stack([np.interp(s[..., c], SHARES, a[:, c]) for c in range(3)], -1) @ m.T)) @ primaries.T
+        black, white = light(np.zeros(3)), light(np.ones(3))
+        lab = oklab((light(ring) - black) / (white - black))
+        return float(np.hypot(lab[:, 1], lab[:, 2]).mean())
+
+    strengths = [round(float(k), 2) for k in np.arange(0.0, compression_reach(curves, mix) + 1e-9, STEP)]
+    pure = chroma(0.0)
+    return {"strengths": strengths, "removed": [round(1.0 - chroma(k) / pure, 6) if k else 0.0 for k in strengths]}
 
 
 def write(path, paper):
@@ -352,8 +375,10 @@ def main():
         else:
             paper.pop("frontier", None)
             paper["look"] = frontier_look()
-        paper["look"]["compression_limit"] = round(float(compression_limit(paper["look"])), 2)
-        print(f"  colour compression up to {paper['look']['compression_limit']}")
+        paper["look"].pop("compression_limit", None)
+        paper["look"]["compression"] = compression(paper["look"])
+        c = paper["look"]["compression"]
+        print(f"  colour compression: {c['removed'][c['strengths'].index(1.0)]:.3f} at rest, {c['removed'][-1]:.3f} at {c['strengths'][-1]}")
         write(path, paper)
 
 

@@ -180,7 +180,7 @@ impl Field {
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
             Field::FilmExposure => mode.is_digital(),
             Field::Brightness => settings.paper().is_some(),
-            Field::ColourCompression => settings.paper().is_some_and(|p| p.compression_limit().is_some()),
+            Field::ColourCompression => settings.paper().is_some_and(|p| p.compression().is_some()),
             _ => true,
         }
     }
@@ -267,7 +267,7 @@ impl Field {
             Field::Cyan => s("C", Print::FILTER_RANGE, Readout::Stops),
             Field::Magenta => s("M", Print::FILTER_RANGE, Readout::Stops),
             Field::Yellow => s("Y", Print::FILTER_RANGE, Readout::Stops),
-            // The share of the paper's own dyes' side reads, 100 % as baked; each paper's reach is its knob's range.
+            // The share of saturated colours' chroma the paper takes, 0 % its pure dyes; each paper's reach is its knob's range.
             Field::ColourCompression => s("Colour compression", Print::COMPRESSION_RANGE, Readout::Percent),
         }
     }
@@ -283,6 +283,10 @@ impl Field {
             let stops = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).or(film).unwrap_or([0.0; 3]);
             rest = settings.clone();
             rest.gains.stops = stops;
+        }
+        // A paper's colour compression rests on its own dose.
+        if self == Field::ColourCompression {
+            rest.print_paper = settings.print_paper;
         }
         // A digital photo's film effects rest where its own film lays them.
         if let Some(film) = settings.film().filter(|_| self.block() == Some(Block::FilmEffects)) {

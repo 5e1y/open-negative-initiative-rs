@@ -191,10 +191,27 @@ impl PipelineSettings {
         self.print_paper.filter(|p| self.takes_paper() && p.is_known())
     }
 
-    /// The colour compression its paper prints, the stored value within the reach that paper's file bakes, 1 where it bakes
-    /// none: what the slider shows and the render reads, the stored value kept for a paper that reaches it.
+    /// The colour compression its paper prints, the share of chroma it takes: the stored one within that paper's reach,
+    /// or its own dose; 0 where its file bakes no scale. What the slider shows, the stored value kept for a paper reaching it.
     pub fn colour_compression(&self) -> f32 {
-        self.paper().and_then(|p| p.compression_limit()).map_or(1.0, |limit| self.print.colour_compression.clamp(0.0, limit))
+        self.paper().and_then(|p| p.compression()).map_or(0.0, |c| self.print.colour_compression.map_or(c.rest(), |v| v.clamp(0.0, c.reach())))
+    }
+
+    /// The strength of its paper's crosstalk the render lays: 1, the paper as baked, at its own dose or with no scale.
+    pub fn compression_strength(&self) -> f32 {
+        let scale = self.paper().and_then(|p| p.compression());
+        scale.zip(self.print.colour_compression).map_or(1.0, |(c, v)| c.strength(v.clamp(0.0, c.reach())))
+    }
+
+    /// These settings as a hand picks `paper`: printed on it at its own dose, as a film picked lays its own effects; the
+    /// paper already in use writes nothing.
+    pub fn on_paper(&self, paper: Option<PaperStock>) -> PipelineSettings {
+        if paper == self.print_paper {
+            return self.clone();
+        }
+        let mut out = PipelineSettings { print_paper: paper, ..self.clone() };
+        out.print.colour_compression = None;
+        out
     }
 
     /// Whether the frame shows its pure inversion, the window's shares as they are: one a paper may print that prints on

@@ -14,6 +14,7 @@ use std::sync::{Arc, RwLock};
 
 pub mod before_1_0;
 pub mod chain;
+pub mod compression;
 pub mod datasheet;
 pub mod departure;
 pub mod digital_film;
@@ -321,7 +322,8 @@ fn typed_steps(
     let s = film_effects::caught_up(version, halation::caught_up(version, paper_gaze::caught_up(version, s), raw));
     let s = refitted::caught_up(version, model_s::caught_up(version, two_points::caught_up(version, scanner::caught_up(version, film_grain::caught_up(version, s)))));
     let s = departure::caught_up(version, lighting_on_negative::caught_up(version, s));
-    cube_films::caught_up(version, papers_redone::caught_up(version, effect_levels::caught_up(version, s)))
+    let s = cube_films::caught_up(version, papers_redone::caught_up(version, effect_levels::caught_up(version, s)));
+    compression::caught_up(version, s, raw)
 }
 
 fn stored(bytes: &[u8]) -> Result<Object, Refusal> {

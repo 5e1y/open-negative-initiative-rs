@@ -1,5 +1,5 @@
-//! Colour compression in the Paper section of the Colour tab: absent on no paper, laid under the paper's name on one, at
-//! 100 % at rest; a number typed is taken and renders anew, held to the paper's own reach, and a rest lays it back on 1.
+//! Colour compression in the Paper section of the Colour tab: absent on no paper, laid under the paper's name on one, on
+//! that paper's own dose; a number typed is taken and renders anew, held to the paper's reach, and a rest lays the dose back.
 
 use crate::common;
 use i_slint_backend_testing::{AccessibleRole as Role, ElementHandle};
@@ -16,7 +16,7 @@ fn slider_value(w: &MainWindow) -> String {
     found.next().expect("the slider shown").accessible_value().unwrap_or_default().to_string()
 }
 
-pub(crate) fn colour_compression_lies_under_a_papers_name_and_takes_a_typed_value_within_its_reach() {
+pub(crate) fn colour_compression_lies_under_a_papers_name_on_its_dose_and_takes_a_typed_share_within_its_reach() {
     let root = common::Root::new("colour-compression");
     common::plain_tiff(&root.scans().join("A.tif"), 960, 640, 0.35);
     let Some(app) = common::launch(root).size(1512, 1600).scale(1.0).show() else { return };
@@ -35,34 +35,37 @@ pub(crate) fn colour_compression_lies_under_a_papers_name_and_takes_a_typed_valu
     // No paper, no compression.
     assert!(settings().paper().is_none() && !panel.get_compression_shown());
     assert_eq!(count(), 0);
-    // Royal Digital picked: the slider under its name, above Print lift, at 100 %.
+    // Royal Digital picked: the slider under its name, above Print lift, on its own dose, the share of chroma it takes.
     let royal = PaperStock::of("kodak-royal-digital");
+    let scale = royal.compression().expect("a scale");
     panel.invoke_paper_chosen(chosen(royal));
     rig.settle();
     assert!(panel.get_compression_shown() && count() == 1);
     let (name, slider, lift) = (common::the(w, Role::Button, royal.name()), common::the(w, Role::Slider, LABEL), common::the(w, Role::Checkbox, "Print lift"));
     assert!(name.y < slider.y && slider.y < lift.y, "the paper, its compression, then Print lift");
-    assert_eq!((settings().print.colour_compression, slider_value(w)), (1.0, "100%".to_string()));
+    let shown = |v: f32| format!("{:.0}%", 100.0 * v);
+    assert_eq!((settings().print.colour_compression, slider_value(w)), (None, shown(scale.rest())));
+    // The knob stands on its dose along 0 to the paper's reach.
+    let fraction = store.get_colour_compression_fraction();
+    assert!((fraction - scale.rest() / scale.reach()).abs() < 0.02, "{fraction}");
     rig.settle();
     println!("shot {}", rig.shot("paper-block-colour-compression").display());
 
-    // The knob stands on 100 % of Royal Digital's 0 to 120 %, its rest.
-    let fraction = store.get_colour_compression_fraction();
-    assert!((fraction - 1.0 / 1.2).abs() < 0.02, "{fraction}");
-    // 50 typed down from 100: half the side reads, rendered anew.
+    // 10 typed off its dose: the hand's share, rendered anew.
     let renders = ctl.state.borrow().renders();
-    store.invoke_typed(Field::ColourCompression.index(), -50);
+    store.invoke_typed(Field::ColourCompression.index(), -10);
     rig.pump();
-    assert_eq!((settings().print.colour_compression, slider_value(w)), (0.5, "50%".to_string()));
+    let less = settings().print.colour_compression.expect("a share");
+    assert!((less - (scale.rest() - 0.1)).abs() < 0.006 && slider_value(w) == shown(less), "{less}");
     rig.until("the paper compressed less", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    // Past the paper's reach the value lands on it: Royal Digital's 120 %.
+    // Past the paper's reach the share lands on it.
     store.invoke_typed(Field::ColourCompression.index(), 300);
     rig.pump();
-    assert_eq!(settings().print.colour_compression, royal.compression_limit().unwrap());
-    // The rest lays it back on 1, the paper as baked.
+    assert_eq!(settings().print.colour_compression, Some(scale.reach()));
+    // The rest lays it back on its dose.
     store.invoke_rest(Field::ColourCompression.index());
     rig.pump();
-    assert_eq!((settings().print.colour_compression, slider_value(w)), (1.0, "100%".to_string()));
+    assert_eq!((settings().colour_compression(), slider_value(w)), (scale.rest(), shown(scale.rest())));
     // Twin: back on no paper, the slider leaves.
     panel.invoke_paper_chosen(0);
     rig.settle();

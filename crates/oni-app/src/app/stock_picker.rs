@@ -27,7 +27,7 @@ impl Lit {
     pub(super) fn picked(self, settings: &PipelineSettings, own: Option<&str>) -> PipelineSettings {
         match self {
             Lit::Stock(i) => stocks().get(i).map_or_else(|| settings.clone(), |kind| picked(settings, kind, own)),
-            Lit::Paper(paper) if offers_paper(settings) => PipelineSettings { print_paper: paper, ..settings.clone() },
+            Lit::Paper(paper) if offers_paper(settings) => settings.on_paper(paper),
             Lit::Paper(_) => settings.clone(),
         }
     }

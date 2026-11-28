@@ -118,7 +118,7 @@ pub(crate) fn spanned(v: f32) -> f32 {
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let paper = s.paper().filter(|_| !s.print.bypassed)?;
     let sheet = sheet(paper)?;
-    let (curves, crosstalk) = compressed(sheet, s.colour_compression());
+    let (curves, crosstalk) = compressed(sheet, s.compression_strength());
     let at_rest = Paper {
         curves,
         curve_low: sheet.curve_low,

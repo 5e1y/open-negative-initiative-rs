@@ -161,7 +161,7 @@ impl Knob {
             Knob::Exposure => Print::EXPOSURE_RANGE,
             Knob::Brightness => Print::BRIGHTNESS_RANGE,
             // Up to the reach its paper's file bakes; the rest alone where it bakes none.
-            Knob::ColourCompression => s.paper().and_then(|p| p.compression_limit()).map_or((1.0, 1.0), |limit| (0.0, limit)),
+            Knob::ColourCompression => (0.0, s.paper().and_then(|p| p.compression()).map_or(0.0, |c| c.reach())),
             Knob::Contrast if mono => Print::MONOCHROME_CONTRAST_RANGE,
             Knob::Contrast => Print::CONTRAST_RANGE,
             Knob::Shadows | Knob::Highlights => Print::QUARTER_RANGE,
@@ -267,7 +267,7 @@ impl Knob {
             Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
             Knob::Exposure => out.print.exposure = v,
             Knob::Brightness => out.print.brightness = v,
-            Knob::ColourCompression => out.print.colour_compression = v,
+            Knob::ColourCompression => out.print.colour_compression = Some(v),
             Knob::Contrast => out.print.contrast = v,
             Knob::Shadows => out.print.shadows = v,
             Knob::Highlights => out.print.highlights = v,

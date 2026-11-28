@@ -225,7 +225,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(paper::a_negative_shows_no_paper_then_prints_on_each_it_picks_and_a_slide_is_projected),
     check!(paper::a_digital_photo_names_no_paper_at_rest),
     check!(paper_menu::a_paper_under_the_pointer_shows_on_the_photo_unwritten),
-    check!(colour_compression::colour_compression_lies_under_a_papers_name_and_takes_a_typed_value_within_its_reach),
+    check!(colour_compression::colour_compression_lies_under_a_papers_name_on_its_dose_and_takes_a_typed_share_within_its_reach),
     check!(colour_compensation::the_switch_renders_again_and_lays_no_dashed_guide),
     check!(digital::digital_shows_a_negatives_blocks_on_its_film),
     check!(digital::a_digital_folders_sidebar_names_no_film_stock),

@@ -1,6 +1,6 @@
-//! A paper's colour compression in the sidecar: written only off its rest, read back, an older document's absent value
-//! read as the paper as baked, a stored value held to the widest travel, and a document carrying it newer than any build
-//! that cannot read it. Each verdict has a twin.
+//! A paper's colour compression in the sidecar, the share of chroma its paper takes: none its own dose and written only
+//! once moved, a picked paper at its own dose as a picked film at its effects', an older document's strength read as its
+//! paper's share, and a document carrying it newer than any build that cannot read it. Each verdict has a twin.
 
 use oni_settings::document::VERSION;
 use oni_settings::migrate::{self, chain};
@@ -15,66 +15,85 @@ fn read(document: &Value) -> PipelineSettings {
     migrate::document(&serde_json::to_vec(document).unwrap()).unwrap().document.settings
 }
 
-fn compressed(k: f32) -> PipelineSettings {
-    let mut s = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..PipelineSettings::rest(ConversionMode::Negative, true) };
-    s.print.colour_compression = k;
+const ENDURA: &str = "kodak-endura-premier";
+
+fn on(paper: &'static str, share: Option<f32>) -> PipelineSettings {
+    let mut s = PipelineSettings { print_paper: Some(PaperStock::of(paper)), ..PipelineSettings::rest(ConversionMode::Negative, true) };
+    s.print.colour_compression = share;
     s
 }
 
 #[test]
-fn colour_compression_is_written_only_off_its_rest_and_read_back() {
-    let print = &stored(&compressed(0.4))["settings"]["print"];
-    assert_eq!(print["colourCompression"], json!(0.4f32));
-    assert_eq!(read(&stored(&compressed(0.4))), compressed(0.4));
-    // Twin: at rest the key is left out, so a document at rest is written as before.
-    assert!(stored(&compressed(1.0))["settings"]["print"].get("colourCompression").is_none());
+fn a_share_is_written_once_moved_and_read_back_and_none_is_the_papers_own_dose() {
+    assert_eq!(stored(&on(ENDURA, Some(0.4)))["settings"]["print"]["colourCompression"], json!(0.4f32));
+    assert_eq!(read(&stored(&on(ENDURA, Some(0.4)))), on(ENDURA, Some(0.4)));
+    let scale = PaperStock::of(ENDURA).compression().unwrap();
+    assert_eq!((on(ENDURA, None).colour_compression(), on(ENDURA, None).compression_strength()), (scale.rest(), 1.0));
+    assert_eq!(on(ENDURA, Some(scale.rest())).compression_strength(), 1.0, "its own dose stored is its own strength, exactly");
+    // Twin: at its own dose the key is left out.
+    assert!(stored(&on(ENDURA, None))["settings"]["print"].get("colourCompression").is_none());
 }
 
 #[test]
-fn an_older_document_reads_the_paper_as_baked_and_a_value_past_the_travel_lands_on_its_stop() {
-    let mut older = stored(&compressed(1.0));
-    older["version"] = json!(chain::COLOUR_COMPRESSION_VERSION - 1);
-    assert_eq!(read(&older), compressed(1.0), "format 84: the paper as it printed");
-    let mut wide = stored(&compressed(1.0));
+fn a_picked_paper_takes_its_own_dose_and_the_paper_in_use_picked_again_writes_nothing() {
+    let moved = on(ENDURA, Some(0.4));
+    let royal = moved.on_paper(Some(PaperStock::of("kodak-royal-digital")));
+    assert_eq!((royal.print.colour_compression, royal.colour_compression()), (None, PaperStock::of("kodak-royal-digital").compression().unwrap().rest()));
+    // Twin: the paper in use picked again keeps the hand's share.
+    assert_eq!(moved.on_paper(Some(PaperStock::of(ENDURA))), moved);
+}
+
+#[test]
+fn an_older_documents_strength_is_read_as_its_papers_share_and_a_share_past_the_travel_lands_on_its_stop() {
+    let scale = PaperStock::of(ENDURA).compression().unwrap();
+    let mut older = stored(&on(ENDURA, None));
+    older["version"] = json!(chain::COLOUR_COMPRESSION_VERSION);
+    older["settings"]["print"]["colourCompression"] = json!(0.5);
+    let read_back = read(&older);
+    assert_eq!(read_back.print.colour_compression, Some(scale.removed_at(0.5)));
+    assert!((read_back.compression_strength() - 0.5).abs() < 1e-5, "the same strength prints");
+    let mut before = stored(&on(ENDURA, None));
+    before["version"] = json!(chain::PAPERS_REDONE_VERSION);
+    assert_eq!(read(&before), on(ENDURA, None), "before format 85, the paper as baked");
+    let mut wide = stored(&on(ENDURA, None));
     wide["settings"]["print"]["colourCompression"] = json!(7.0);
-    assert_eq!(read(&wide).print.colour_compression, oni_settings::tone::Print::COMPRESSION_RANGE.1);
-    // Twin: a value within the travel is kept as stored.
+    assert_eq!(read(&wide).print.colour_compression, Some(1.0));
+    // Twin: a share within the travel is kept as stored.
     wide["settings"]["print"]["colourCompression"] = json!(0.25);
-    assert_eq!(read(&wide).print.colour_compression, 0.25);
+    assert_eq!(read(&wide).print.colour_compression, Some(0.25));
 }
 
 #[test]
 fn a_document_that_carries_it_is_newer_than_any_build_that_cannot_read_it() {
-    let written = stored(&compressed(0.4));
-    assert!(written["version"].as_i64().unwrap() >= chain::COLOUR_COMPRESSION_VERSION && chain::COLOUR_COMPRESSION_VERSION > chain::PAPERS_REDONE_VERSION);
+    let written = stored(&on(ENDURA, Some(0.4)));
+    assert!(written["version"].as_i64().unwrap() >= chain::ABSOLUTE_COMPRESSION_VERSION && chain::ABSOLUTE_COMPRESSION_VERSION > chain::COLOUR_COMPRESSION_VERSION);
     let mut ahead = written.clone();
     ahead["version"] = json!(VERSION + 1);
     assert_eq!(migrate::document(&serde_json::to_vec(&ahead).unwrap()), Err(migrate::Refusal::Newer(VERSION + 1)));
     // Twin: today's reader reads its own version.
-    assert_eq!(read(&written), compressed(0.4));
+    assert_eq!(read(&written), on(ENDURA, Some(0.4)));
 }
 
 #[test]
-fn every_shipped_paper_bakes_a_reach_that_holds_the_rest() {
+fn every_shipped_paper_bakes_a_scale_from_the_pure_dyes_through_its_own_dose() {
     for p in PaperStock::all() {
-        let limit = p.compression_limit().unwrap_or_else(|| panic!("{p:?}: a shipped paper bakes its reach"));
-        assert!((1.0..=oni_settings::tone::Print::COMPRESSION_RANGE.1).contains(&limit), "{p:?}: {limit}");
+        let c = p.compression().unwrap_or_else(|| panic!("{p:?}: a shipped paper bakes its scale"));
+        assert!(c.rest() > 0.0 && c.rest() < c.reach() && c.reach() <= 1.0 && *c.strengths.last().unwrap() <= 2.5, "{p:?}");
+        println!("{}: {:.1} % at its own dose, {:.1} % at its reach, strength {}", p.name(), 100.0 * c.rest(), 100.0 * c.reach(), c.strengths.last().unwrap());
     }
-    // Twin: a key no file defines bakes none.
-    assert_eq!(PaperStock::of("oni-standard").compression_limit(), None);
+    // Twin: a key no file defines bakes none, and a scale that does not rise is refused.
+    assert!(PaperStock::of("oni-standard").compression().is_none());
+    assert!(oni_settings::paper::CompressionScale::new(vec![0.0, 1.0], vec![0.0, 0.0]).is_none());
 }
 
 #[test]
-fn a_value_past_a_papers_reach_prints_and_shows_that_reach_and_is_kept_for_a_paper_reaching_it() {
-    let mut s = compressed(1.4);
-    s.print_paper = Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii"));
-    assert_eq!(s.colour_compression(), 1.4);
-    // Royal Digital reaches 1.2: the print and the slider read 1.2, the stored 1.4 stays.
-    let royal = PipelineSettings { print_paper: Some(PaperStock::of("kodak-royal-digital")), ..s.clone() };
-    assert_eq!((royal.colour_compression(), royal.print.colour_compression), (1.2, 1.4));
-    assert_eq!(read(&stored(&royal)).print.colour_compression, 1.4);
-    // Twin: no paper prints none, and back on Crystal Archive the stored 1.4 prints again.
-    assert_eq!(PipelineSettings { print_paper: None, ..s.clone() }.colour_compression(), 1.0);
-    assert_eq!(PipelineSettings { print_paper: royal.print_paper, ..royal.clone() }.colour_compression(), 1.2);
-    assert_eq!(PipelineSettings { print_paper: s.print_paper, ..royal }.colour_compression(), 1.4);
+fn a_share_past_a_papers_reach_prints_and_shows_that_reach_and_is_kept() {
+    let s = on("fujifilm-crystal-archive-digital-dpii", Some(0.5));
+    assert_eq!(s.colour_compression(), 0.5);
+    let edge = PipelineSettings { print_paper: Some(PaperStock::of("kodak-ektacolor-edge")), ..s.clone() };
+    let reach = PaperStock::of("kodak-ektacolor-edge").compression().unwrap().reach();
+    assert_eq!((edge.colour_compression(), edge.print.colour_compression), (reach, Some(0.5)));
+    // Twin: no paper takes none, and back on Crystal Archive the stored share prints again.
+    assert_eq!(PipelineSettings { print_paper: None, ..s.clone() }.colour_compression(), 0.0);
+    assert_eq!(PipelineSettings { print_paper: s.print_paper, ..edge }.colour_compression(), 0.5);
 }

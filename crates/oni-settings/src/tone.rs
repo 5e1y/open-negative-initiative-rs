@@ -152,10 +152,10 @@ pub struct Print {
     /// shadows, the blacks held; none on ONI's print.
     #[serde(skip_serializing_if = "at_zero")]
     pub brightness: f32,
-    /// Colour compression: how much of each dye a paper's channels read beside their own, 1 the paper as baked, 0 each
-    /// channel its own dye alone; a grey prints the same at any value.
-    #[serde(rename = "colourCompression", skip_serializing_if = "at_one")]
-    pub colour_compression: f32,
+    /// Colour compression: the share of saturated colours' chroma a paper's dyes take, 0 each channel its own dye alone,
+    /// none the paper's own dose; a grey prints the same at any value.
+    #[serde(rename = "colourCompression", skip_serializing_if = "Option::is_none")]
+    pub colour_compression: Option<f32>,
     /// Print lift: a paper's print with its own ends, the frame's pick where the paper's rest prints it and the paper's
     /// white; off, the pick on pure black and that white on pure white, for a print shown on a screen.
     #[serde(rename = "printLift", skip_serializing_if = "is_off")]
@@ -187,7 +187,7 @@ impl Default for Print {
             channel_contrast: [0.0; 3],
             colour_compensation: true,
             brightness: 0.0,
-            colour_compression: 1.0,
+            colour_compression: None,
             print_lift: false,
             projected_blacks: false,
             bypassed: false,
@@ -211,15 +211,11 @@ fn at_zero(v: &f32) -> bool {
     *v == 0.0
 }
 
-fn at_one(v: &f32) -> bool {
-    *v == 1.0
-}
-
 impl Print {
     pub const EXPOSURE_RANGE: (f32, f32) = (-4.0, 4.0);
     pub const BRIGHTNESS_RANGE: (f32, f32) = (-4.0, 4.0);
-    /// Colour compression's widest travel; each paper's file bakes its own reach within it.
-    pub const COMPRESSION_RANGE: (f32, f32) = (0.0, 2.0);
+    /// Colour compression's widest travel, the share of chroma taken; each paper's file bakes its own reach within it.
+    pub const COMPRESSION_RANGE: (f32, f32) = (0.0, 1.0);
     pub const FILTER_RANGE: (f32, f32) = (-1.5, 1.5);
     pub const TEMPERATURE_AXIS: V3 = [0.5, 0.0, -0.5];
     pub const TINT_AXIS: V3 = [1.0 / 3.0, -2.0 / 3.0, 1.0 / 3.0];

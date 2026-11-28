@@ -14916,5 +14916,12 @@
     "status": "done",
     "title": "CLAUDE.md: the WRAPPED 26 key in the bar's ink, right of Edit, in the gallery alone",
     "detail": "The working notes follow #4104 and #4119: no holographic face, no key in the editor."
+  },
+  {
+    "id": 4408,
+    "type": "change",
+    "title": "Colour compression on one absolute scale, each paper at its own dose, up to 2.5 times its crosstalk where its white allows",
+    "status": "done",
+    "detail": "Owner's calls (\"le repos est à 0 %… chaque papier a sa dose de compression, comme pour le système de grain\", \"jusqu'à 2,5\"). The slider reads the share of a ring of twelve saturated colours' Oklab chroma the print takes from the pure dyes' print, the same scale on every paper: 0 % pure dyes. Each paper's file bakes its scale (look.compression: strengths of its crosstalk by 0.05 and the share each takes, scripts/paper-looks.py), its own dose at strength 1 marked on the track: Crystal Archive DP II and Pearl 29.1 %, Photo Book 24.4 %, Ektacolor Edge 23.4 %, Royal Digital 23.0 %, Endura Premier 22.7 %, Metallic 22.3 %, the Frontier 14.5 %. Its reach is 2.5 times its crosstalk (59.0, 50.5, 48.6, 48.3, 26.5 %) but on Ektacolor Edge (1.45, 33.1 %) and Royal Digital (1.5, 33.5 %): their sheets' greys near the white hold 0.007 D of blue against 0.05 of red and green, which the cyan and magenta dyes' side reads alone pass past those strengths, so a grey there would need a negative yellow; the reach stops where every layer still falls with the share and holds no dye under -0.005. Stored as that share, none its paper's own dose (rest bit-exact, strength 1); a paper picked lays its own dose as a picked film lays its own effects, the paper in use picked again writing nothing. Sidecar format 86: a format 85 strength becomes its paper's share (compression::caught_up), the same strength printing within 1e-5. Checks: colour_compression (pipeline, settings, migrate, window), corpus goldens with the newer fixture at 87."
   }
 ]
