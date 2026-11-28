@@ -283,9 +283,9 @@ conversion, such as the dark pick in Prepare the Roll, is never cut to save time
   metrics, or a sanitiser refuses the whole weight.
 - **The canvas is pure black** (owner's call, 2026-11-27): panel #1a1a1a, keycap #252525, tile #0c0c0c; on a near-black ground cast
   shadows vanish, so lit edges carry the relief (`Depth`: ambient 0.18, raise-light 0.06, raise-edge 0.08, well-lip 0.16).
-- **WRAPPED 26 is a season's key** (owner's call, 2026-11-27): through December and the January after it, the bar holds, before the
-  app's own keys, a design-system keycap with a holographic face (`Button` `foil`, `ds/holo.slint`) that opens the year on film, in
-  the gallery as in the editor; it counts in the bar's widths and folds like any key, so the bar never passes the window's edge.
+- **WRAPPED 26 is a season's key** (owner's calls, 2026-11-27 and 28): through December and the January after it, the gallery's bar
+  holds, just right of Edit, a keycap in the bar's own ink that opens the year on film, never in the editor; it counts in the bar's
+  widths and folds like any key, so the bar never passes the window's edge.
 - **The welcome is a stage the GPU draws** (`app/help/welcome`): four gifts of foil marched as signed distances in WGSL, one function
   of the cue (`stage::direction::frame`), so a check steps it on a held clock; its films are takes of the app's own renderer, WebP
   decoded on up to three threads aimed where the film will be, never holding the interface.

@@ -14909,5 +14909,12 @@
     "title": "The canvas's image placed in four statements: the bar's lint passes on canvas again",
     "status": "done",
     "detail": "#4504/#4505 set the canvas image's place as one tuple of four setters, which clippy's unnecessary_operation refuses with warnings denied, so scripts/lint failed at canvas f1d93d67. The four setters are written as statements; the place set is the same."
+  },
+  {
+    "id": 4261,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: the WRAPPED 26 key in the bar's ink, right of Edit, in the gallery alone",
+    "detail": "The working notes follow #4104 and #4119: no holographic face, no key in the editor."
   }
 ]
