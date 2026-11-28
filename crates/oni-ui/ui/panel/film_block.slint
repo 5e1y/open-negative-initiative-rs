@@ -1,28 +1,15 @@
-// A digital photo's Film block: the stock its scene is shot on, the scene's light and the film's own, and the film's
-// exposure, then, one disclosure deeper, the reference its negative is read on, which the stock alone writes.
-import { Field, Label, TextRole } from "../ds/ds.slint";
+// A digital photo's Film block: the stock its scene is shot on, the light it is balanced for on a seal beside its
+// name, and the film's exposure.
 import { StockHero } from "../stocks.slint";
 import { Store } from "../store.slint";
 import { PanelState } from "state.slint";
-import { StoreSlider, Block, SettingsRow } from "parts.slint";
+import { StoreSlider, Block } from "parts.slint";
 
 export component FilmBlock inherits Block {
-    // The stock's reference behind the settings key.
-    property <bool> settings;
     title: @tr("Film");
     block: 13;
     modified: Store.film-modified;
-    help: @tr("Shoots the photo on a film: its scene, in the light its decode balanced, exposes the film's three layers, balanced for the film's own light, so a tungsten film turns a daylight scene blue; they develop on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab, whose Filtration takes a cast away.\n\nShooting exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, the scene's light and the one the film is balanced for shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there.");
-    StockHero { stock: PanelState.stock; drops: true; }
-    // The scene's light and the stock's own, always in sight as a stock change moves the cast.
-    SettingsRow {
-        open <=> root.settings;
-        show-help: @tr("Show the film's reference");
-        hide-help: @tr("Hide the film's reference");
-        Label { role: TextRole.note; text: PanelState.film-white; vertical-alignment: center; wrap: word-wrap; }
-    }
+    help: @tr("Shoots the photo on a film: its scene, in the light its decode balanced, exposes the film's three layers, balanced for the film's own light, so a tungsten film turns a daylight scene blue; they develop on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab, whose Filtration takes a cast away.\n\nShooting exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, a seal beside its name naming the light it is balanced for, daylight or tungsten, and its negative read on that film's reference, which the Source tab's Filtration and Per-Channel Levels rest on.");
+    StockHero { stock: PanelState.stock; drops: true; balance: PanelState.film-balance; }
     StoreSlider { field: 52; label: @tr("Shooting exposure"); fraction: Store.film-exposure-fraction; readout: Store.film-exposure-readout; value-text: Store.film-exposure-value; }
-    if root.settings: Field { label: @tr("Gains"); Label { role: TextRole.note; text: PanelState.film-gains; } }
-    if root.settings: Field { label: @tr("Black"); Label { role: TextRole.note; text: PanelState.film-black; } }
-    if root.settings: Field { label: @tr("White"); Label { role: TextRole.note; text: PanelState.film-ends; } }
 }

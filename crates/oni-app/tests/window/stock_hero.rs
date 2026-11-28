@@ -245,6 +245,7 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
     rig.pump();
 
     // Each film picked shoots the photo on it, its own light in sight, as one step an Undo takes back.
+    let mut sealed = vec![];
     for &next in VirtualStock::all().iter().rev() {
         let (before, renders, undo) = (film().stock, ctl.state.borrow().renders(), menus.get_live().undo);
         drop_menu(rig, w);
@@ -253,8 +254,19 @@ pub(crate) fn a_digital_photos_film_is_picked_among_the_virtual_films() {
         // Each step reads the store and the panel, which land with the posts: no spring of the eighty to wait out.
         rig.pump();
         assert_eq!((film().stock, panel.get_stock().name.as_str()), (next, next.name()));
-        let light = next.white().map_or("The scene's own light".to_string(), |w| format!("balanced for {} K", (w.kelvin / 10.0).round() * 10.0));
-        assert!(panel.get_film_white().contains(&light), "{} names its light, {light}: {}", next.name(), panel.get_film_white());
+        // Its light on a seal beside its name, daylight's blue or tungsten's green; the neutral film's none.
+        let (balance, seal) = match next.balance() {
+            oni_settings::virtual_film::Balance::Daylight => (1, Some("Daylight")),
+            oni_settings::virtual_film::Balance::Tungsten => (2, Some("Tungsten")),
+            oni_settings::virtual_film::Balance::Scene => (0, None),
+        };
+        assert_eq!(panel.get_film_balance(), balance, "{} names its light", next.name());
+        assert!(seal.is_none_or(|s| !common::placed(w, i_slint_backend_testing::AccessibleRole::Text, s).is_empty()), "{}'s seal shown", next.name());
+        if let Some(word) = seal.filter(|_| !sealed.contains(&balance)) {
+            sealed.push(balance);
+            rig.settle();
+            println!("shot {}", rig.shot(&format!("film-seal-{}", word.to_lowercase())).display());
+        }
         if next == before {
             assert_eq!(menus.get_live().undo, undo, "the film it stands on writes no step");
             continue;

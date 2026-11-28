@@ -1,6 +1,6 @@
 // `StockPickerSheet`: Select Film Stock, the stocks grouped by brand, one click picking and closing; `StockHero`,
 // a stock shown large with its key to the sheet, or to the menu that shows each stock on the open photo.
-import { Space, StockStyle, SectionStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView, StockIcon, StockLine, StockMenu, Bounds } from "ds/ds.slint";
+import { Space, StockStyle, SectionStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView, StockIcon, StockLine, StockMenu, Bounds, Badge, BadgeTone, Metal } from "ds/ds.slint";
 
 // A stock as its hero shows it: its name, a line under it, empty for none, and its canister.
 export struct Canister { name: string, note: string, artwork: image, has-artwork: bool }
@@ -64,6 +64,8 @@ export component StockPickerSheet inherits Sheet {
 // or, `drops`, to the menu dropped under it, which the canister and the name open too.
 export component StockHero inherits VerticalLayout {
     in property <Canister> stock;
+    // The light a virtual film is balanced for, named on a holographic seal beside its name: 1 daylight, 2 tungsten.
+    in property <int> balance;
     in property <bool> enabled: true;
     in property <bool> drops;
     callback select();
@@ -83,7 +85,20 @@ export component StockHero inherits VerticalLayout {
                 alignment: center;
                 StockIcon { artwork: root.stock.artwork; has-artwork: root.stock.has-artwork; side: StockStyle.hero; }
             }
-            if root.stock.name != "": Label { text: root.stock.name; centred: true; wrap: word-wrap; }
+            if root.stock.name != "" && root.balance == 0: Label { text: root.stock.name; centred: true; wrap: word-wrap; }
+            if root.stock.name != "" && root.balance > 0: HorizontalLayout {
+                alignment: center;
+                spacing: Space.s;
+                Label { text: root.stock.name; vertical-alignment: center; }
+                VerticalLayout {
+                    alignment: center;
+                    Badge {
+                        tone: BadgeTone.seal;
+                        metal: root.balance == 1 ? Metal.holo-blue : Metal.holo-green;
+                        text: root.balance == 1 ? @tr("Daylight") : @tr("Tungsten");
+                    }
+                }
+            }
             if root.stock.note != "": Label { text: root.stock.note; role: TextRole.note; centred: true; }
         }
         TouchArea {

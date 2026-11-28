@@ -723,13 +723,13 @@ msgstr "Reemplazar"
 msgid "Rename"
 msgstr "Renombrar"
 
-#: crates/oni-app/src/app/filter_menu.rs crates/oni-ui/ui/export_fields.slint
-msgid "Camera"
-msgstr "Cámara"
-
 #: crates/oni-ui/ui/export_fields.slint
 msgid "Hide the EXIF"
 msgstr "Ocultar los EXIF"
+
+#: crates/oni-app/src/app/filter_menu.rs crates/oni-ui/ui/export_fields.slint
+msgid "Camera"
+msgstr "Cámara"
 
 #: crates/oni-ui/ui/export_fields.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Search on The Lens DB"
@@ -1824,32 +1824,12 @@ msgid "Film"
 msgstr "Película"
 
 #: crates/oni-ui/ui/panel/film_block.slint
-msgid "Shoots the photo on a film: its scene, in the light its decode balanced, exposes the film's three layers, balanced for the film's own light, so a tungsten film turns a daylight scene blue; they develop on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab, whose Filtration takes a cast away.\n\nShooting exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, the scene's light and the one the film is balanced for shown under it, and its negative read on that film's reference.\n\nThe settings key shows the reference the stock's data sets for the negative, as Prepare the Roll measures a roll's: the gains, each channel's black on the bare film, and its white where the photo's middle grey prints as it does on a plain RAW. The Source tab's Filtration and Per-Channel Levels rest there."
-msgstr "Toma la foto sobre una película: su escena, en la luz que su decodificación equilibró, expone las tres capas de la película, equilibradas para la luz propia de la película, de modo que una película de tungsteno vuelve azul una escena a la luz del día; se revelan sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo, con el filtrado, los niveles y los tintes de la pestaña Origen, cuyo Filtrado quita una dominante.\n\nLa exposición en la toma da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nSeleccionar emulsión enumera las películas: la que está bajo el puntero se muestra sobre la foto, sin escribir nada, y un clic toma la foto sobre ella, la luz de la escena y aquella para la que está equilibrada la película mostradas debajo, y su negativo leído sobre la referencia de esa película.\n\nLa tecla de ajustes muestra la referencia que los datos de la emulsión fijan para el negativo, como Preparar el rollo mide la de un rollo: las ganancias, el negro de cada canal sobre la película virgen, y su blanco donde el gris medio de la foto se imprime como en un RAW normal. El Filtrado y los Niveles por canal de la pestaña Origen descansan ahí."
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Show the film's reference"
-msgstr "Mostrar la referencia de la película"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Hide the film's reference"
-msgstr "Ocultar la referencia de la película"
+msgid "Shoots the photo on a film: its scene, in the light its decode balanced, exposes the film's three layers, balanced for the film's own light, so a tungsten film turns a daylight scene blue; they develop on their curves, and the negative is scanned on a light table, then read as any negative is, with the filtration, levels and dyes on the Source tab, whose Filtration takes a cast away.\n\nShooting exposure gives the film more light or less, as the camera's exposure would: more fills the shadows with detail and rounds off the highlights.\n\nSelect Film Stock lists the films: the one under the pointer shows on the photo, nothing written, and a click shoots the photo on it, a seal beside its name naming the light it is balanced for, daylight or tungsten, and its negative read on that film's reference, which the Source tab's Filtration and Per-Channel Levels rest on."
+msgstr "Toma la foto sobre una película: su escena, en la luz que su decodificación equilibró, expone las tres capas de la película, equilibradas para la luz propia de la película, de modo que una película de tungsteno vuelve azul una escena a la luz del día; se revelan sobre sus curvas, y el negativo se escanea sobre una mesa de luz, y luego se lee como cualquier negativo, con el filtrado, los niveles y los tintes de la pestaña Origen, cuyo Filtrado quita una dominante.\n\nLa exposición en la toma da a la película más o menos luz, como lo haría la exposición de la cámara: más llena las sombras de detalle y redondea las altas luces.\n\nSeleccionar emulsión enumera las películas: la que está bajo el puntero se muestra sobre la foto, sin escribir nada, y un clic toma la foto sobre ella, un sello junto a su nombre que nombra la luz para la que está equilibrada, luz de día o tungsteno, y su negativo leído sobre la referencia de esa película, sobre la que descansan el Filtrado y los Niveles por canal de la pestaña Origen."
 
 #: crates/oni-ui/ui/panel/film_block.slint
 msgid "Shooting exposure"
 msgstr "Exposición en la toma"
-
-#: crates/oni-ui/ui/panel/film_block.slint
-msgid "Gains"
-msgstr "Ganancias"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/film_block.slint
-msgid "Black"
-msgstr "Negro"
-
-#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/film_block.slint
-msgid "White"
-msgstr "Blanco"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Prepared Roll"
@@ -2498,6 +2478,14 @@ msgstr "Acerca de"
 #: crates/oni-ui/ui/stocks.slint
 msgid "Select Film Stock"
 msgstr "Seleccionar emulsión"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Daylight"
+msgstr "Luz de día"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Tungsten"
+msgstr "Tungsteno"
 
 #: crates/oni-ui/ui/told.slint
 msgid "Post your photos on Instagram with {}, we'd love to see them."
@@ -4514,24 +4502,12 @@ msgid "Missing mask"
 msgstr "Falta la máscara"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "The scene's own light, as its decode balanced it"
-msgstr "La luz propia de la escena, tal como la equilibró su decodificación"
-
-#: crates/oni-app/src/app/roll_tab.rs
 msgid "Enlarger filtration: C {c}, M {m}, Y {y}"
 msgstr "Filtrado de la ampliadora: C {c}, M {m}, Y {y}"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "D {d} · C {c} · M {m} · Y {y} · TEMP {w}"
 msgstr "D {d} · C {c} · M {m} · Y {y} · TEMP {w}"
-
-#: crates/oni-app/src/app/roll_tab.rs
-msgid "R {red} · G {green} · B {blue}"
-msgstr "R {red} · G {green} · B {blue}"
-
-#: crates/oni-app/src/app/roll_tab.rs
-msgid "A {scene} K scene on a film balanced for {film} K"
-msgstr "Una escena a {scene} K en una película equilibrada para {film} K"
 
 #: crates/oni-app/src/app/roll_tab.rs
 msgid "{film} under a {kelvin} K projector lamp"
@@ -4768,6 +4744,14 @@ msgstr "Estás intentando aplicar los ajustes de un rollo a otro: los resultados
 #: crates/oni-app/src/editors/levels.rs
 msgid "Midpoint"
 msgstr "Punto medio"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "Black"
+msgstr "Negro"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "White"
+msgstr "Blanco"
 
 #: crates/oni-app/src/editors/levels.rs
 msgid "Mid"

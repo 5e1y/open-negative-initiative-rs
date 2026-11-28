@@ -36,13 +36,13 @@ export global SealStyle {
 // `DSFoil.Metal`'s ramps (DSFoil.swift:13), by `Metal`: 0 gold, 1 holographic, 2 red.
 export global Foil {
     public pure function deep(m: int) -> color {
-        [rgb(92, 56, 13), rgb(51, 51, 61), rgb(77, 8, 10)][m]
+        [rgb(92, 56, 13), rgb(51, 51, 61), rgb(77, 8, 10), rgb(18, 38, 92), rgb(16, 72, 40)][m]
     }
     public pure function body(m: int) -> color {
-        [rgb(219, 166, 64), rgb(199, 204, 219), rgb(212, 43, 48)][m]
+        [rgb(219, 166, 64), rgb(199, 204, 219), rgb(212, 43, 48), rgb(118, 168, 255), rgb(112, 214, 146)][m]
     }
     public pure function bright(m: int) -> color {
-        [rgb(255, 230, 153), rgb(255, 255, 255), rgb(255, 179, 173)][m]
+        [rgb(255, 230, 153), rgb(255, 255, 255), rgb(255, 179, 173), rgb(222, 236, 255), rgb(220, 255, 228)][m]
     }
     // The light `t` scaled about the body by `seal-contrast`.
     public pure function lit(t: float) -> float { 0.7 + (t - 0.7) * SurfaceStyle.seal-contrast }

@@ -118,20 +118,14 @@ pub fn picked_film(s: &PipelineSettings, stock: VirtualStock) -> PipelineSetting
     }
 }
 
-/// The Film block's read-only lines: the scene's light and the stock's own, then the reference its negative is read on.
-pub fn film_lines(s: &PipelineSettings) -> [String; 4] {
-    let Some(film) = s.film() else { return Default::default() };
-    let r = film.stock.reference();
-    let stops = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x), 2, true, crate::fields::Unit::Stops));
-    let shares = |v: [f32; 3]| v.map(|x| crate::fields::number(f64::from(x) * 100.0, 1, false, crate::fields::Unit::Percent));
-    let channels = |[red, green, blue]: [String; 3]| oni_i18n::tr!("R {red} · G {green} · B {blue}", red = red, green = green, blue = blue);
-    let kelvin = |w: oni_settings::white::White| (w.kelvin / 10.0).round() * 10.0;
-    let scene = kelvin(oni_settings::white::of_uv(oni_settings::white::anchor(s.decoded_from_mosaic)));
-    let light = match film.stock.white() {
-        Some(white) => oni_i18n::tr!("A {scene} K scene on a film balanced for {film} K", scene = scene, film = kelvin(white)),
-        None => oni_i18n::tr("The scene's own light, as its decode balanced it").to_owned(),
-    };
-    [light, channels(stops(r.stops)), channels(shares(r.black)), channels(shares(r.white))]
+/// The light the photo's virtual film is balanced for, as the Film block's seal names it: 0 none of its own, 1 daylight,
+/// 2 tungsten.
+pub fn film_balance(s: &PipelineSettings) -> i32 {
+    match s.film().map(|f| f.stock.balance()) {
+        Some(oni_settings::virtual_film::Balance::Daylight) => 1,
+        Some(oni_settings::virtual_film::Balance::Tungsten) => 2,
+        _ => 0,
+    }
 }
 
 impl Ctl {
@@ -264,11 +258,7 @@ impl Ctl {
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.is_monochrome());
         panel.set_stock(self.open_canister());
-        let [white, gains, black, ends] = film_lines(&settings);
-        panel.set_film_white(white.into());
-        panel.set_film_gains(gains.into());
-        panel.set_film_black(black.into());
-        panel.set_film_ends(ends.into());
+        panel.set_film_balance(film_balance(&settings));
         panel.set_sheet(settings.sheet.is_some());
         let flat = &settings.flat_field;
         panel.set_flat_field_on(flat.mask != FlatFieldMask::None);

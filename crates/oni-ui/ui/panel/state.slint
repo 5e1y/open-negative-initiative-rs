@@ -120,11 +120,8 @@ export global PanelState {
     in property <bool> filtration-cmy;
     // The open photo's film: its roll's stock, a digital photo's virtual film; its key drops the stocks' menu.
     in property <Canister> stock;
-    // The scene's light and the stock's own, and the reference its negative is read on, written only by the stock.
-    in property <string> film-white;
-    in property <string> film-gains;
-    in property <string> film-black;
-    in property <string> film-ends;
+    // The light the open photo's virtual film is balanced for: 0 none of its own, 1 daylight, 2 tungsten.
+    in property <int> film-balance;
     callback auto-balance();
     callback tab-picked(PanelTab);
     in property <RollState> roll-state: RollState.prepared;

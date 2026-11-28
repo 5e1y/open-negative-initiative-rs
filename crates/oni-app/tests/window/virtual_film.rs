@@ -34,7 +34,8 @@ pub(crate) fn a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference(
     assert_eq!((film.stock, film.exposure), (oni_settings::VirtualStock::NEUTRAL, 0.0));
     assert_eq!(panel.get_stock().name.as_str(), "Neutral");
     assert!(shown(Role::Text, "Film") && shown(Role::Button, "Select Film Stock") && !shown(Role::Tab, "None"), "its stock and its key, no film None");
-    assert!(shown(Role::Text, &panel.get_film_white()) && panel.get_film_white().starts_with("The scene's own light"), "the film's light in sight: {}", panel.get_film_white());
+    // The neutral film keeps the scene's own light: no seal beside its name.
+    assert!(panel.get_film_balance() == 0 && !shown(Role::Text, "Daylight") && !shown(Role::Text, "Tungsten"), "a seal on the neutral film");
     assert!(shown(Role::Slider, "Shooting exposure") && !w.global::<Store>().get_film_modified(), "its exposure at rest");
     let on = frame();
     println!("shot {}", rig.shot("virtual-film-on").display());
@@ -48,11 +49,8 @@ pub(crate) fn a_digital_photo_opens_on_the_neutral_film_and_shows_its_reference(
     assert!(w.global::<Store>().get_film_modified(), "the block's Reset shows");
     assert_ne!(frame(), on);
 
-    assert!(!shown(Role::Text, "Gains"), "the reference behind the settings key");
-    common::click(rig, w, common::the(w, Role::Button, "Show the film's reference").middle());
-    rig.settle();
-    assert!(shown(Role::Text, "Gains") && shown(Role::Text, "Black"), "the reference behind the settings key");
-    println!("shot {}", rig.shot("virtual-film-reference").display());
+    // No settings key: the film's reference is the rest the Source tab's Filtration and Per-Channel Levels show.
+    assert!(!shown(Role::Button, "Show the film's reference"), "the Film block's settings key");
     // Twin: a film mode shows no Film block.
     panel.invoke_film_type_picked(0);
     rig.settle();

@@ -15,8 +15,8 @@ export global BadgeStyle {
 // step's number in its disc, a preset's monogram on its tint.
 export enum BadgeTone { warning, dark, seal, step, tint }
 
-// `DSFoil.Metal`: the foil a seal is struck in.
-export enum Metal { gold, holographic, red }
+// `DSFoil.Metal`: the foil a seal is struck in; the blue and the green holographic foils name a film's light.
+export enum Metal { gold, holographic, red, holo-blue, holo-green }
 
 // A short word on a capsule, a tag, a disc or a tint; a note shows on hover and marks it read. A seal
 // is `DSGoldSealView`: brushed foil lit from above, a rule inside its edge, a glint swept once on hover.
@@ -40,7 +40,8 @@ export component Badge inherits Rectangle {
     callback clicked();
     property <bool> hovered;
     property <float> sweep: -1;
-    property <int> foil: root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0;
+    property <int> foil: root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : root.metal == Metal.holo-blue ? 3 : root.metal == Metal.holo-green ? 4 : 0;
+    property <bool> holo: root.foil == 1 || root.foil >= 3;
     // `sealSweep` ease-in-out on the way in; back to the start at once, as Swift resets it.
     states [
         glint when root.seal && (root.glinting || root.hovered): {
@@ -76,13 +77,15 @@ export component Badge inherits Rectangle {
         border-radius: root.height / 2;
         background: root.foil == 1
             ? @linear-gradient(100deg, #dada6b 0%, #90ff90 18%, #6bdada 37%, #9090ff 55%, #da6bda 74%, #ff9090 92%, #f0aa78 100%)
+            : root.foil == 3 ? @linear-gradient(100deg, #6bdada 0%, #8fb4ff 22%, #6b86da 42%, #b294ff 62%, #78c8ff 82%, #9ad6ff 100%)
+            : root.foil == 4 ? @linear-gradient(100deg, #c8da6b 0%, #90ff9e 22%, #5fd09a 42%, #b4ff90 62%, #6bdac0 82%, #a8ffb0 100%)
             : @linear-gradient(180deg, Foil.at(root.foil, 1.25) 0%, Foil.at(root.foil, 1.0) 10%, Foil.at(root.foil, 0.85) 22%,
                 Foil.at(root.foil, 1.2) 38%, Foil.at(root.foil, 0.9) 52%, Foil.at(root.foil, 0.4) 70%,
                 Foil.at(root.foil, 0.25) 88%, Foil.at(root.foil, 0.1) 100%);
         drop-shadow-color: rgba(0, 0, 0, SealStyle.edge * SurfaceStyle.seal-shadow);
         drop-shadow-blur: SealStyle.edge-blur;
         drop-shadow-offset-y: SealStyle.edge-y;
-        if root.foil == 1: Rectangle {
+        if root.holo: Rectangle {
             border-radius: root.height / 2;
             background: @linear-gradient(180deg, Foil.over(1.25) 0%, Foil.over(1.0) 10%, Foil.over(0.85) 22%, Foil.over(1.2) 38%,
                 Foil.over(0.9) 52%, Foil.over(0.4) 70%, Foil.over(0.25) 88%, Foil.over(0.1) 100%);
