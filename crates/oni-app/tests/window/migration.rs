@@ -7,7 +7,6 @@ use oni_app::{App, Help, Told, Upgraded};
 use oni_settings::migrate::{self, Facts, Standing, reshape};
 use oni_settings::{ConversionMode, Document, Medal, PipelineSettings, sidecar};
 use slint::ComponentHandle;
-use slint::platform::Key;
 use std::path::Path;
 use std::time::Duration;
 

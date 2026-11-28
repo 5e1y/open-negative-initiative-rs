@@ -14783,5 +14783,12 @@
     "title": "Lighting turns about the share the pure inversion shows as a scene grey, a legacy print about its own curve's",
     "status": "done",
     "detail": "The reference grey Lighting's moves turn about was read on the legacy print's curve and GREY_PRINT for every frame. It is now where the pure inversion shows a scene grey, the sRGB code of 0.184 (0.4664 on every mode, 0.4698 before on a negative); a legacy print keeps its curve's, so a photo a released version edited on the Scanner face renders to the bit. Checks: legacy_print's fingerprints, paper_look's Lighting frames (within ΔE 0.15 of before), lighting_on_negative."
+  },
+  {
+    "id": 4405,
+    "type": "fix",
+    "title": "Two window checks' unused import of Key, left by ⌘G's removal, which the lint refused",
+    "status": "done",
+    "detail": "migration.rs and upgrade.rs no longer press ⌘G and kept `use slint::platform::Key`; scripts/lint denies warnings. Check: scripts/lint."
   }
 ]

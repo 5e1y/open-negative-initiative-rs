@@ -3,7 +3,6 @@
 
 use oni_app::app::{self, WRITE_DELAY};
 use oni_app::{App, Library};
-use slint::platform::Key;
 use slint::ComponentHandle;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
