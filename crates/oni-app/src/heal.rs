@@ -58,14 +58,8 @@ impl Region {
         std::array::from_fn(|k| (a[k] * (1.0 - fx) + b[k] * fx) * (1.0 - fy) + (c[k] * (1.0 - fx) + d[k] * fx) * fy)
     }
 
-    /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it and inside the frame, none
-    /// awaiting a patch, so a ring past the edge reads the frame's part alone; zeros there moved a patch by 0.017.
-    fn mean(&self, r: Rect) -> Option<[f32; 3]> {
-        let (sum, n) = self.summed(r, |_, _| true);
-        (n > 0.0).then(|| sum.map(|s| (s / n) as f32))
-    }
-
-    /// The sum and count of the pixels `mean` reads in `r` that `kept` keeps, by their centres.
+    /// `CIAreaAverage`'s sum and count over a rectangle, y up, of the pixels `kept` keeps: those whose centres fall inside
+    /// it and inside the frame, none awaiting a patch, so a ring past the edge reads the frame's part alone.
     fn summed(&self, r: Rect, kept: impl Fn(f64, f64) -> bool) -> ([f64; 3], f64) {
         let r = r.intersection(Rect { x: 0.0, y: 0.0, w: self.frame_width, h: self.frame_height });
         let (x0, x1) = ((r.x - 0.5).ceil() as i64, (r.x + r.w - 0.5).floor() as i64);
@@ -105,10 +99,6 @@ impl Rect {
         let (x0, y0) = (self.x.max(o.x), self.y.max(o.y));
         let (x1, y1) = ((self.x + self.w).min(o.x + o.w), (self.y + self.h).min(o.y + o.h));
         Rect { x: x0, y: y0, w: (x1 - x0).max(0.0), h: (y1 - y0).max(0.0) }
-    }
-
-    fn is_empty(self) -> bool {
-        self.w <= 0.0 || self.h <= 0.0
     }
 }
 

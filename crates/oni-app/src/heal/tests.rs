@@ -5,6 +5,14 @@ use super::*;
 use oni_settings::cg::Point;
 use oni_settings::id::Id;
 
+impl Region {
+    /// A rectangle's plain mean, the hole left in: what the tone match must not read.
+    pub(super) fn mean(&self, r: Rect) -> Option<[f32; 3]> {
+        let (sum, n) = self.summed(r, |_, _| true);
+        (n > 0.0).then(|| sum.map(|s| (s / n) as f32))
+    }
+}
+
 /// A textured frame whose neighbourhood of the dust is a copy of a block `known` away: the search
 /// must find that block, and the patch must carry its pixels, not the dust's.
 #[test]
