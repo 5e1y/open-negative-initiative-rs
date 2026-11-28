@@ -14874,5 +14874,12 @@
     "status": "done",
     "title": "A photo flies to and from its zoomed view: it lands where the canvas shows it at rest, zoom and pan included, grown past the frame and cut by the canvas",
     "detail": "Owner: opening a zoomed photo from the gallery, the photo took the whole screen then jumped to its zoom. The flight aimed at the canvas's frame, which on a zoomed view is only the part rendered, so the whole thumbnail was laid in it and the view jumped once the canvas showed its zoom; back to the gallery it left from the same fitted picture. The canvas now publishes where the whole photo lies (Canvas.image), past its edges when zoomed, for every placement, thumbnail or render; the flight lands there and leaves from there, and what shows of it travels from its starting place to the canvas's room, which cuts it. The full definition landing later is laid at the same place. Check: motion_zoom, eight instants each way shot on a held clock: the flight's last frame shows the stripes at the view's zoom and place, the view at rest the zoom it had before the gallery; twin, the photo fitted does not read as the zoomed view. On the former flight the last frame showed the whole photo fitted (stripes 45 px apart against 150)."
+  },
+  {
+    "id": 4117,
+    "type": "test",
+    "title": "The stock sheet's brand filter counts what its grid shows, a roll's line with it",
+    "status": "done",
+    "detail": "A roll on a line (Kodak Portra, stock not specified) shows that line's card beside the offered stocks, so the sheet lists 98 cards and its filter says Every Brand · 98 and Kodak · 27, against 97 and 26 once a precise stock is picked: both counts are the grid's. stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork now asserts the filter's counts equal the cards in both states."
   }
 ]

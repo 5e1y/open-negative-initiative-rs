@@ -80,6 +80,10 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     rig.pump();
     let cells = every_cell(&stocks);
     assert_eq!(cells.len(), oni_settings::film::offered_stocks().len() + 1, "the roll's line shown beside the offered stocks");
+    // The filter counts what the grid shows, the roll's line with it: every brand's, and Kodak's.
+    let brands: Vec<String> = stocks.get_brands().iter().map(|b| b.to_string()).collect();
+    let kodak = cells.iter().filter(|c| c.detail == "Kodak" || c.name.starts_with("Kodak ")).count();
+    assert!(brands[0].ends_with(&format!(" · {}", cells.len())) && brands.contains(&format!("Kodak · {kodak}")), "{brands:?}");
     let at = cells.iter().position(|c| c.name == "Kodak Portra").expect("the roll's line is shown");
     assert!(cells[at].picked && cells[at].has_artwork && cells[at].detail == "Stock not specified", "{:?}", cells[at].detail);
     assert_eq!(cells[at + 1].name, "Kodak Portra 160");
@@ -100,6 +104,8 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     let marked: Vec<String> = cells.iter().filter(|c| c.picked).map(|c| c.name.to_string()).collect();
     assert_eq!(marked, ["Kodak Portra 160"]);
     assert!(!cells.iter().any(|c| c.name == "Kodak Portra"), "twin: once a stock is picked the line is no longer shown");
+    let every = stocks.get_brands().row_data(0).unwrap();
+    assert!(every.ends_with(&format!(" · {}", cells.len())), "twin: the filter counts the line no more: {every}");
     rig.key("\u{1b}");
 }
 
