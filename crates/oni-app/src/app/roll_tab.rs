@@ -231,6 +231,7 @@ impl Ctl {
         panel.set_projector_note(note.into());
         panel.set_paper_offered(super::stock_picker::offers_paper(settings));
         panel.set_paper_shown(settings.paper().is_some());
+        panel.set_compression_shown(crate::fields::Field::ColourCompression.shown_in(settings));
         let title = match settings.print_paper {
             Some(paper) if paper.is_known() => paper.name().to_string(),
             Some(paper) => crate::stocks::missing(paper.key()),

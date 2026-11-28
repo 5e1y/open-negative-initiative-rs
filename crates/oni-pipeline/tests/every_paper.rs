@@ -97,10 +97,10 @@ fn a_papers_baked_filtration_holds_a_neutral_ramp_nearer_neutral_than_none() {
     let q = paper_of(&on(ROYAL));
     let sheet = paper::sheet(ROYAL).expect("a shipped paper");
     let cc = sheet.filtration.expect("a data sheet's filtration");
-    let unfiltered: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+    let unfiltered: [[f32; 3]; PAPER_CURVE_NODES] = std::array::from_fn(|i| {
         let t = q.curve_low + q.curve_step * i as f32;
         std::array::from_fn(|c| q.amounts([t - cc[c] / 100.0 / q.latitude; 3])[c])
-    })));
+    });
     let unfiltered = Paper { curves: unfiltered, ..q };
     let unfiltered = Paper { pick: unfiltered.printed([0.0; 3]), white: unfiltered.printed([1.0; 3]), ..unfiltered };
     let strays = |q: &Paper| (0..=32).map(|i| q.shown([i as f32 / 32.0; 3]).map(|v| v.max(0.0).cbrt())).map(|v| (v[0] - v[1]).abs().max((v[2] - v[1]).abs())).fold(0.0f32, f32::max);

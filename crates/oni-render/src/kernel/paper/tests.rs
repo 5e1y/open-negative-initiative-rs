@@ -8,7 +8,7 @@ const IDENTITY: [V3; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 /// A linear curve on each layer over the window's share, its pick and white apart, pure dyes on no D-min.
 fn narrow() -> Paper {
     Paper {
-        curves: &CURVES,
+        curves: *CURVES,
         curve_low: -0.5,
         curve_step: 0.01,
         floor: [0.0; 3],

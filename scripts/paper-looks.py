@@ -34,6 +34,9 @@ BROAD_BAND = 1.0
 XYZ_TO_2020 = [[1.7166512, -0.3556708, -0.2533663], [-0.6666844, 1.6164812, 0.0157685], [0.0176399, -0.0427706, 0.9421031]]
 SRGB_TO_2020 = [[0.627404, 0.329283, 0.043313], [0.069097, 0.919540, 0.011362], [0.016391, 0.088013, 0.895595]]
 IDENTITY = np.eye(3).tolist()
+# Colour compression's reach: the strength where a layer's amount first rises with the share by 1e-3 or falls under -5e-3,
+# its crosstalk near singular, sought by 0.01 up to 5, times MARGIN, floored to 0.05 and never past CEILING.
+MARGIN, CEILING = 0.8, 2.0
 
 
 class Sheet:
@@ -303,6 +306,24 @@ def frontier_look():
     return look
 
 
+def compressed(curves, mix, k):
+    """The curves at colour compression `k`, as the app lays them: each channel reading its own dye alone at 0, the
+    crosstalk as baked at 1, a grey's densities kept along the way."""
+    own = np.diag(np.diag(mix))
+    side = (1.0 - k) * (mix - own)
+    return curves + curves @ (np.linalg.inv(own + k * (mix - own)) @ side).T
+
+
+def compression_limit(look):
+    curves, mix = np.array(look["curves"]), np.array(look["crosstalk"])
+    own = np.diag(np.diag(mix))
+    for k in np.arange(0.0, 5.0001, 0.01):
+        a = compressed(curves, mix, k)
+        if np.diff(a, axis=0).max() > 1e-3 or a.min() < -5e-3 or np.linalg.det(own + k * (mix - own)) <= 0.05:
+            return min(CEILING, np.floor(MARGIN * k / 0.05) * 0.05)
+    return CEILING
+
+
 def write(path, paper):
     text = json.dumps(paper, indent=1, ensure_ascii=False) + "\n"
     path.write_text(text)
@@ -331,6 +352,8 @@ def main():
         else:
             paper.pop("frontier", None)
             paper["look"] = frontier_look()
+        paper["look"]["compression_limit"] = round(float(compression_limit(paper["look"])), 2)
+        print(f"  colour compression up to {paper['look']['compression_limit']}")
         write(path, paper)
 
 

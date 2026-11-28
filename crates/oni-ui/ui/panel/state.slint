@@ -89,6 +89,8 @@ export global PanelState {
     // paper's, and the enlarger's filtration.
     in property <bool> paper-offered;
     in property <bool> paper-shown;
+    // A paper whose file bakes how far its colours may be compressed.
+    in property <bool> compression-shown;
     in property <string> paper-title;
     in property <string> paper-filtration;
     // The papers' menu, laid by `paper-dropping` as it opens: its lines by maker and the one in use. The paper lit

@@ -14855,17 +14855,10 @@
     "detail": "The sheet shares The Lens DB's search pane (SearchPane): each word typed is sought in a stock's brand and name, and the filter beside the field, The Lens DB's Picker, holds Every Brand then each brand with how many stocks it lists. Each stock is the Kit's own card (PieceCard), now able to hold a picture at its left (the stock's canister), plain words for a name with no page, and its key's word (Select, no glyph); three cards a row, the stock in use on the selection's ground, Select picking and closing as a click on a cell did. Words and a brand that leave no stock say so (No film stock of this brand matches these words.), the sheet opening again on every stock, every brand and an empty field. StockCellView, left unused, leaves the design system. Checked by stocks::the_sheet_searches_its_stocks_within_the_brand_chosen, whose words are erased in the field itself, so the field and the grid never disagree."
   },
   {
-    "id": 4116,
-    "type": "feature",
-    "title": "The owner's eight paper boxes, each beside its paper file and drawn in the paper menu",
-    "status": "done",
-    "detail": "A paper's file takes a canister as a stock's does (an SVG beside it, checked as one), its entry and PaperStock::canister carry it, and the Colour tab's paper menu draws each paper's box at a line's side as the stock menu draws a canister (stocks::paper_icon, drawn once a side). The eight SVGs are copied byte for byte and their hashes join the owner's artworks; every_paper_draws_its_box proves each paper draws its own, an unknown key nothing. The Paper block's field shows no picture yet: a hero like the Film block's is a separate choice.",
-    "detail": "The working notes follow #4406: the 3 x 3 fitted on the print through the sheet's dye spectra, its strength one constant of the bake.",
-    "detail": "After #4600 the tone match reads every mean through `Region::summed`: `Region::mean` was read by the tests alone and `Rect::is_empty` by nothing, so clippy refused oni-app and the workspace went unlinted. The tests carry the plain mean they compare against; `is_empty` is gone. Checks: scripts/lint green, heal::tests, the De-dust window checks.",
     "id": 4504,
     "type": "ui",
-    "status": "done",
     "title": "The walk between two photos takes 200 ms instead of 420, one token of the design system (Motion.walk), timed from the loop's turn after the photo is opened",
+    "status": "done",
     "detail": "Owner: the animation between photos in the editor should be quicker. The walk read the window's travel pace, 420 ms on Ease.firm (Slint's spring with no give); it now reads Motion.walk, 200 ms on the same spring, the one value to retouch. A key always wins: the next walk begins from the picture shown, the one running dropped. The walk and the flight start their clock in the change handler that follows the work starting them, so the 20 to 100 ms the interface thread spends opening a photo no longer eats the start of a 200 ms walk."
   },
   {
@@ -14876,27 +14869,24 @@
     "detail": "Owner: opening a zoomed photo from the gallery, the photo took the whole screen then jumped to its zoom. The flight aimed at the canvas's frame, which on a zoomed view is only the part rendered, so the whole thumbnail was laid in it and the view jumped once the canvas showed its zoom; back to the gallery it left from the same fitted picture. The canvas now publishes where the whole photo lies (Canvas.image), past its edges when zoomed, for every placement, thumbnail or render; the flight lands there and leaves from there, and what shows of it travels from its starting place to the canvas's room, which cuts it. The full definition landing later is laid at the same place. Check: motion_zoom, eight instants each way shot on a held clock: the flight's last frame shows the stripes at the view's zoom and place, the view at rest the zoom it had before the gallery; twin, the photo fitted does not read as the zoomed view. On the former flight the last frame showed the whole photo fitted (stripes 45 px apart against 150)."
   },
   {
-    "id": 4117,
-    "type": "test",
-    "title": "The stock sheet's brand filter counts what its grid shows, a roll's line with it",
-    "status": "done",
-    "detail": "A roll on a line (Kodak Portra, stock not specified) shows that line's card beside the offered stocks, so the sheet lists 98 cards and its filter says Every Brand · 98 and Kodak · 27, against 97 and 26 once a precise stock is picked: both counts are the grid's. stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork now asserts the filter's counts equal the cards in both states.",
     "id": 4506,
     "type": "bench",
-    "status": "done",
     "title": "ONI_BENCH=motion says how fast the interface thread answered beside each journey's frames: the gap thought a 300 ms freeze at the Roll pane was rest",
+    "status": "done",
     "detail": "A gap between two frames reads alike whether the window had nothing new to draw or the interface thread was blocked. A thread of the bench now posts to the interface thread every 10 ms and each journey reports the longest wait; each pane picked logs its handler's time. Measured on the compiled app, the reference roll's test copy, the window visible: at the Roll pane the longest gap was 134 to 216 ms while the interface answered within 6 to 18 ms, and the handler took 0.1 ms; a stack sample over the gap shows the thread waiting for events 80 % of the time with no long work outside drawing. The long gaps move between panes from run to run (332 ms at Color, answered within 23 ms): the window rests, nothing freezes. The longest waits are 40 to 54 ms, opening a photo from the gallery or the export."
   },
   {
-    "id": 4118,
-    "type": "feature",
-    "title": "The export's invitation in a card of its own above its notice, leaving by itself",
-    "status": "done",
-    "detail": "The owner chose the second form of the planche: the Toast carries an invitation (#madewithoni in the display face, its line, then Copy, Open Instagram and Don't Show Again at the notice's own key size, in one row) in a card above the notice's, which leaves by itself at half the notice's linger (4 s, held while the pointer rests), the result keeping Dismiss and Show in Finder at its foot. Copy names the hashtag no more, its title standing just above. The notices' words take their width by hand, so a wrapped line is measured whole and no card is cut short at the view's foot. Checked by export_notice::the_export_notice_carries_its_invitation_in_a_card_that_leaves_first; the planche showed English, French and Spanish whole.",
     "id": 4507,
     "type": "check",
-    "status": "done",
     "title": "The zoomed flight's check flies a converted photo, whose tile is its render: its tones and its place land on the view at rest",
+    "status": "done",
     "detail": "A frame never converted shows its scan as its tile (workers::drawn), the negative as the file holds it, so the check's photo flew bright and landed dark; the editor shows no such frame beside a prepared roll, Prepare taking the screen and the flight left. The check now converts its photo first (an Exposure notch) and waits for the tile its render gives: the flight's tones run unbroken into the view at rest and its last frame's stripes lie within 1 % of the view's width and 15 px of its place, the 300 px thumbnail's own grain at 100 %; the bound is back to a quarter of a stripe."
+  },
+  {
+    "id": 4407,
+    "type": "feature",
+    "title": "Colour compression, under a paper's name: its dyes' side reads from none to its reach, a grey printing alike throughout",
+    "status": "done",
+    "detail": "Owner's go (\"Go pour le slider de compression\"). The crosstalk at strength k is its own-dye diagonal plus k times the rest; each curve is unmixed through it on the CPU so a grey prints the same at every k (within 1e-6 D), the paper as its file bakes it at 1 (no computation, so to the bit), each channel its own dye alone at 0 (saturated chroma about 1.5 times the rest's). Each paper's reach is baked in its file by scripts/paper-looks.py (look.compression_limit: 0.8 of the first strength where a layer rises with the share by 1e-3 or falls under -5e-3, floored to 0.05, at most 2): Crystal Archive DP II and Pearl 1.45, Ektacolor Edge 1.1, Royal Digital 1.2, Photo Book 1.95, Endura Premier, Metallic and the Frontier 2. The Frontier's fitted crosstalk takes the same writing. The slider shows the value its paper prints, the stored one kept for a paper reaching it; a track whose range moves under a kept value lays its knob anew. Sidecar format 85, colourCompression written off 1 only, an older photo reading 1. Cost on a 47 Mpx RAW: a frame's parameters 34 µs against 32, a Lighting notch at fit 3.7 ms either way. Checks: colour_compression (pipeline: to the bit at 1, greys at every k with a twin, pure dyes at 0, chroma falling with k, curves sound at the reach with a twin; settings: written off its rest, an older document, a value past the travel, a value past a paper's reach), the window check (absent on no paper, under the name, typed, held to the reach, rest), corpus goldens and the newer-than-this-build fixture moved to 86. Adversarial review: the readout read the stored value while the render clamped it, now one value; an uninvertible person's crosstalk no longer computed at 1."
   }
 ]

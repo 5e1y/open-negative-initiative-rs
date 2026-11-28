@@ -162,6 +162,8 @@ pub const REFITTED_VERSION: i64 = 83;
 /// The version the papers were redone, ONI Standard and every retired key gone, and a cube no film: a paper stays only where
 /// its photo chose it over the pure inversion and it still ships, a legacy print laid on its own curve, a cube's film neutral.
 pub const PAPERS_REDONE_VERSION: i64 = 84;
+/// The version a paper's print came to take a colour compression, absent the paper as baked: an older photo reads 1.
+pub const COLOUR_COMPRESSION_VERSION: i64 = 85;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {

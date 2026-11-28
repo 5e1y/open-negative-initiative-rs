@@ -63,6 +63,7 @@ impl Field {
             Field::Cyan => "cyan",
             Field::Magenta => "magenta",
             Field::Yellow => "yellow",
+            Field::ColourCompression => "colour-compression",
         }
     }
 }

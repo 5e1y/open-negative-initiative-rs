@@ -3,6 +3,7 @@
 //! here too.
 
 use super::*;
+use crate::film::bake;
 use oni_render::{Paper, Shown, Stage47, cpu};
 use oni_settings::PipelineSettings;
 use oni_settings::axis::pipeline::DMAX;
@@ -115,13 +116,15 @@ pub(crate) fn spanned(v: f32) -> f32 {
 /// The frame's paper at the window's shares: its look as baked, then Brightness and the ends on the print of the negative
 /// as Lighting develops it. None where the frame names no paper, and while the print is bypassed.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
-    let sheet = sheet(s.paper().filter(|_| !s.print.bypassed)?)?;
+    let paper = s.paper().filter(|_| !s.print.bypassed)?;
+    let sheet = sheet(paper)?;
+    let (curves, crosstalk) = compressed(sheet, s.colour_compression());
     let at_rest = Paper {
-        curves: &sheet.curves,
+        curves,
         curve_low: sheet.curve_low,
         curve_step: sheet.curve_step,
         floor: sheet.floor,
-        crosstalk: sheet.crosstalk,
+        crosstalk,
         primaries: sheet.primaries,
         latitude: sheet.latitude,
         brightness: 0.0,
@@ -137,4 +140,24 @@ pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let white = Paper { luma: false, ..at_rest }.printed([1.0; 3]);
     let (bare, densest) = film_ends(s);
     Some(super::lighting::lit(&at_rest, std::array::from_fn(|c| densest[c] - bare[c]), 1.0, white, s, k, sheet.filtration))
+}
+
+/// The look's curves and crosstalk at colour compression `k`: each channel reading its own dye alone at 0, the crosstalk
+/// as baked at 1, the curves unmixed so a grey keeps its densities.
+pub fn compressed(sheet: &Sheet, k: f32) -> ([V3; PAPER_CURVE_NODES], [V3; 3]) {
+    // At 1 the look is its file's, whatever its crosstalk, an uninvertible one included.
+    if k == 1.0 {
+        return (sheet.curves, sheet.crosstalk);
+    }
+    let (x, k) = (sheet.crosstalk.map(|r| r.map(f64::from)), f64::from(k));
+    let own = |r: usize, c: usize| if r == c { x[r][c] } else { 0.0 };
+    let mix: bake::M3 = std::array::from_fn(|r| std::array::from_fn(|c| own(r, c) + k * (x[r][c] - own(r, c))));
+    let side: bake::M3 = std::array::from_fn(|r| std::array::from_fn(|c| (1.0 - k) * (x[r][c] - own(r, c))));
+    let n = bake::mul(&bake::inverse(&mix), &side);
+    let curves = sheet.curves.map(|a| {
+        let a = a.map(f64::from);
+        let more = bake::apply(&n, a);
+        std::array::from_fn(|c| (a[c] + more[c]) as f32)
+    });
+    (curves, mix.map(|r| r.map(|v| v as f32)))
 }

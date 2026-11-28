@@ -179,6 +179,8 @@ struct Slide {
     knob: Sprung,
     /// The stored value last published, so a field holding several sliders publishes only the moved one.
     published: Option<f32>,
+    /// The track's range last published: a range moved under a kept value, a paper's reach, lays the knob anew.
+    range: Option<(f32, f32)>,
     /// When the hand last moved the value, which the notch showing it is timed from.
     moved_at: Option<Instant>,
 }

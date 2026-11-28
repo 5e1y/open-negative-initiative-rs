@@ -79,6 +79,8 @@ pub enum Field {
     Cyan,
     Magenta,
     Yellow,
+    /// How much of each dye a paper's channels read beside their own: the saturated colours tamed or set free.
+    ColourCompression,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -95,7 +97,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 57] = [
+    pub const ALL: [Field; 58] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -153,6 +155,7 @@ impl Field {
         Field::Cyan,
         Field::Magenta,
         Field::Yellow,
+        Field::ColourCompression,
     ];
 
     pub fn index(self) -> i32 {
@@ -177,6 +180,7 @@ impl Field {
             Field::Distortion | Field::FringeRed | Field::FringeBlue | Field::LensVignetting => mode.is_digital(),
             Field::FilmExposure => mode.is_digital(),
             Field::Brightness => settings.paper().is_some(),
+            Field::ColourCompression => settings.paper().is_some_and(|p| p.compression_limit().is_some()),
             _ => true,
         }
     }
@@ -263,6 +267,8 @@ impl Field {
             Field::Cyan => s("C", Print::FILTER_RANGE, Readout::Stops),
             Field::Magenta => s("M", Print::FILTER_RANGE, Readout::Stops),
             Field::Yellow => s("Y", Print::FILTER_RANGE, Readout::Stops),
+            // The share of the paper's own dyes' side reads, 100 % as baked; each paper's reach is its knob's range.
+            Field::ColourCompression => s("Colour compression", Print::COMPRESSION_RANGE, Readout::Percent),
         }
     }
 

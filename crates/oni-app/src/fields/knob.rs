@@ -55,6 +55,7 @@ impl Field {
             Field::Bloom => Knob::Bloom,
             Field::FilmExposure => Knob::FilmExposure,
             Field::Brightness => Knob::Brightness,
+            Field::ColourCompression => Knob::ColourCompression,
             Field::Cyan => Knob::Filtration(Channel::Red),
             Field::Magenta => Knob::Filtration(Channel::Green),
             Field::Yellow => Knob::Filtration(Channel::Blue),

@@ -110,10 +110,10 @@ fn a_grey_keeps_its_densities_and_a_colour_loses_what_the_dyes_crosstalk_takes()
         let k = conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper().expect("a negative on its paper");
         // The same greys through pure dyes: each channel's density along the window its own layer's.
         let grey = |t: f32| k.dyed(k.amounts([t; 3]));
-        let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+        let densities: [[f32; 3]; PAPER_CURVE_NODES] = std::array::from_fn(|i| {
             let d = grey(k.curve_low + k.curve_step * i as f32);
             std::array::from_fn(|c| d[c] - k.floor[c])
-        })));
+        });
         let pure = Paper { curves: densities, crosstalk: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ..k };
         let held = (0..=40).map(|i| -0.2 + 1.4 * i as f32 / 40.0).map(|t| (0..3).map(|c| (pure.dyed(pure.amounts([t; 3]))[c] - grey(t)[c]).abs()).fold(0.0f32, f32::max)).fold(0.0f32, f32::max);
         // A cyan: the red share two tenths over the others in the window's middle.

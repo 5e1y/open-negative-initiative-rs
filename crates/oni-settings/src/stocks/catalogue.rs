@@ -255,7 +255,8 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
             File::Paper(p) => {
                 let (look, profile) = (Arc::from(p.look.get()), p.profile.as_ref().map(|r| Arc::from(r.get())));
                 let (paper, canister) = (PaperStock::of(intern(&p.key)), p.canister.as_deref().map(intern));
-                c.papers.push(PaperEntry { paper, name: intern(&p.name), brand: intern(&p.brand), canister, look, profile, revision: l.hash });
+                let compression_limit = compression_limit(p.look.get());
+                c.papers.push(PaperEntry { paper, name: intern(&p.name), brand: intern(&p.brand), canister, look, profile, compression_limit, revision: l.hash });
             }
         }
     }
@@ -326,4 +327,14 @@ fn entry_key<'a>(file: &'a File, space: Space, key: &'a str) -> &'a str {
         _ => None,
     };
     found.unwrap_or(key)
+}
+
+/// A paper's colour compression reach as its look bakes it, kept only where it holds the rest, 1, within the widest travel.
+fn compression_limit(look: &str) -> Option<f32> {
+    #[derive(serde::Deserialize)]
+    struct Reach {
+        compression_limit: Option<f32>,
+    }
+    let (low, high) = crate::tone::Print::COMPRESSION_RANGE;
+    serde_json::from_str::<Reach>(look).ok()?.compression_limit.filter(|v| v.is_finite() && *v >= 1.0).map(|v| v.clamp(low, high))
 }

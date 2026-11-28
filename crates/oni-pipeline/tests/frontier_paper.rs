@@ -94,7 +94,7 @@ fn the_look_stays_on_the_measured_table_where_the_measurements_constrain_it() {
     println!("the Frontier's look against its table on the constrained nodes: ΔE median {med:.3}, p90 {p90:.3}");
     assert!(med < 2.1 && p90 < 5.0, "{med} {p90}");
     // Twin: the dyes unmixed, each channel its own grey, misses the table further.
-    let greys: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| p.dyed(p.amounts([p.curve_low + p.curve_step * i as f32; 3])))));
+    let greys: [[f32; 3]; PAPER_CURVE_NODES] = std::array::from_fn(|i| p.dyed(p.amounts([p.curve_low + p.curve_step * i as f32; 3])));
     let (med, p90) = against_table(&Paper { curves: greys, crosstalk: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ..p });
     println!("twin, no crosstalk: ΔE median {med:.3}, p90 {p90:.3}");
     assert!(med > 2.5, "{med} {p90}");
@@ -119,10 +119,10 @@ fn the_rest_prints_a_grey_neutral_along_the_window_with_no_offset_of_the_machine
         assert!(strays(&p) < 0.03, "{label}: {}", strays(&p));
         // Twin: a tenth of a log more on red tints the greys.
         if label != "black and white" {
-            let shifted: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+            let shifted: [[f32; 3]; PAPER_CURVE_NODES] = std::array::from_fn(|i| {
                 let t = p.curve_low + p.curve_step * i as f32;
                 [p.amounts([t + 0.1 / p.latitude; 3])[0], p.curves[i][1], p.curves[i][2]]
-            })));
+            });
             let redder = Paper { curves: shifted, ..p };
             let pure = |q: &Paper| Paper { pick: q.printed([0.0; 3]), white: q.printed([1.0; 3]), ..*q };
             println!("  twin, a tenth of a log redder: {:.4}", strays(&pure(&redder)));

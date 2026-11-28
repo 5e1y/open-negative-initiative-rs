@@ -191,6 +191,12 @@ impl PipelineSettings {
         self.print_paper.filter(|p| self.takes_paper() && p.is_known())
     }
 
+    /// The colour compression its paper prints, the stored value within the reach that paper's file bakes, 1 where it bakes
+    /// none: what the slider shows and the render reads, the stored value kept for a paper that reaches it.
+    pub fn colour_compression(&self) -> f32 {
+        self.paper().and_then(|p| p.compression_limit()).map_or(1.0, |limit| self.print.colour_compression.clamp(0.0, limit))
+    }
+
     /// Whether the frame shows its pure inversion, the window's shares as they are: one a paper may print that prints on
     /// none.
     pub fn shows_inversion(&self) -> bool {

@@ -27,10 +27,10 @@ fn on(p: PaperStock) -> Paper {
 fn through_status_a(k: &Paper, p: PaperStock) -> Paper {
     let x = serde_json::from_str::<Profile>(&oni_pipeline::paper::source(p).expect("a data sheet's paper")).unwrap().data.crosstalk;
     let unmix = bake::inverse(&x);
-    let curves: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| {
+    let curves: [[f32; 3]; PAPER_CURVE_NODES] = std::array::from_fn(|i| {
         let d = k.dyed(k.amounts([k.curve_low + k.curve_step * i as f32; 3]));
         bake::apply(&unmix, std::array::from_fn(|c| f64::from(d[c] - k.floor[c]))).map(|v| v as f32)
-    })));
+    });
     let q = Paper { curves, crosstalk: x.map(|r| r.map(|v| v as f32)), ..*k };
     Paper { pick: q.printed([0.0; 3]), white: q.printed([1.0; 3]), ..q }
 }

@@ -39,6 +39,11 @@ impl PaperStock {
         self.entry().and_then(|e| e.canister)
     }
 
+    /// The most colour compression its file's look bakes, within `Print::COMPRESSION_RANGE`; none where it bakes none.
+    pub fn compression_limit(self) -> Option<f32> {
+        self.entry()?.compression_limit
+    }
+
     /// A machine measured, the Frontier SP-3000, rather than a data sheet's profile.
     pub fn is_machine(self) -> bool {
         self.entry().is_some_and(|e| e.profile.is_none())

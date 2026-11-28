@@ -90,9 +90,13 @@ fn every_field_has_its_place_in_the_slint_store() {
 #[test]
 fn each_slider_spans_its_knobs_range_on_a_mosaic_negative() {
     let s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    for f in Field::ALL {
+    for f in Field::ALL.into_iter().filter(|f| *f != Field::ColourCompression) {
         assert_eq!(f.knob().range(&s), Some(f.spec().range), "{f:?}");
     }
+    // Colour compression spans its paper's reach, within the spec's widest travel; no paper, its rest alone.
+    let royal = oni_settings::PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-royal-digital")), ..s.clone() };
+    assert_eq!(Field::ColourCompression.knob().range(&royal), Some((0.0, 1.2)));
+    assert_eq!(Field::ColourCompression.knob().range(&s), Some((1.0, 1.0)));
     // Twin: on a plain file the ceiling's axis is another, which the spec does not claim to follow.
     let plain = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, false);
     assert_ne!(Field::DensityCeiling.knob().range(&plain), Some(Field::DensityCeiling.spec().range));

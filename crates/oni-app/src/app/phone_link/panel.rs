@@ -255,7 +255,7 @@ mod tests {
         assert_eq!(field(Param::DyeSeparation), None);
         // Twin: the phone has no slider for the crop's angle, a slide's gains temperature and tint,
         // a channel's own points, the film effects, the lens corrections, a channel's own tone, a virtual film's
-        // exposure nor a paper's Brightness.
+        // exposure nor a paper's Brightness and colour compression.
         let missing: Vec<Field> = Field::ALL.into_iter().filter(|f| !fields.contains(f)).collect();
         let points = [Field::RedWhitePoint, Field::GreenWhitePoint, Field::BlueWhitePoint, Field::RedBlackPoint, Field::GreenBlackPoint, Field::BlueBlackPoint];
         let effects = [Field::GrainAmount, Field::GrainSize, Field::HalationAmount, Field::HalationSize];
@@ -263,7 +263,7 @@ mod tests {
         let tone = [Field::RedMid, Field::GreenMid, Field::BlueMid, Field::RedContrast, Field::GreenContrast, Field::BlueContrast];
         let film = Field::ALL.into_iter().filter(|f| f.block() == Some(crate::fields::Block::Film)).collect::<Vec<_>>();
         let filtration = [Field::Cyan, Field::Magenta, Field::Yellow];
-        let later = [[Field::Bloom].as_slice(), &tone, &film, &[Field::Brightness], &filtration].concat();
+        let later = [[Field::Bloom].as_slice(), &tone, &film, &[Field::Brightness], &filtration, &[Field::ColourCompression]].concat();
         assert_eq!(missing, [[Field::Angle, Field::GainTemperature, Field::GainTint].as_slice(), &points, &effects, &lens, &later[..]].concat());
         // A digital photo's Roll tab is a negative's but for the flat-field, its colour a negative's print's.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);

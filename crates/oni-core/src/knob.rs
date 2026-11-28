@@ -58,6 +58,8 @@ pub enum Knob {
     Exposure,
     /// A paper's print lit as Exposure lights it, its blacks and first shadows held.
     Brightness,
+    /// A paper's channels reading each dye beside their own, 1 as baked, 0 each its own alone.
+    ColourCompression,
     Contrast,
     Shadows,
     Highlights,
@@ -112,6 +114,7 @@ impl Knob {
             Knob::Level(..) => Field::Levels,
             Knob::Exposure
             | Knob::Brightness
+            | Knob::ColourCompression
             | Knob::Contrast
             | Knob::Shadows
             | Knob::Highlights
@@ -157,6 +160,8 @@ impl Knob {
             Knob::Level(..) => return None,
             Knob::Exposure => Print::EXPOSURE_RANGE,
             Knob::Brightness => Print::BRIGHTNESS_RANGE,
+            // Up to the reach its paper's file bakes; the rest alone where it bakes none.
+            Knob::ColourCompression => s.paper().and_then(|p| p.compression_limit()).map_or((1.0, 1.0), |limit| (0.0, limit)),
             Knob::Contrast if mono => Print::MONOCHROME_CONTRAST_RANGE,
             Knob::Contrast => Print::CONTRAST_RANGE,
             Knob::Shadows | Knob::Highlights => Print::QUARTER_RANGE,
@@ -203,6 +208,7 @@ impl Knob {
             Knob::Level(c, h) => handle(levels(s, c), h),
             Knob::Exposure => p.exposure,
             Knob::Brightness => p.brightness,
+            Knob::ColourCompression => s.colour_compression(),
             Knob::Contrast => p.contrast,
             Knob::Shadows => p.shadows,
             Knob::Highlights => p.highlights,
@@ -261,6 +267,7 @@ impl Knob {
             Knob::Level(c, h) => set_handle(levels_mut(&mut out, c), h, v),
             Knob::Exposure => out.print.exposure = v,
             Knob::Brightness => out.print.brightness = v,
+            Knob::ColourCompression => out.print.colour_compression = v,
             Knob::Contrast => out.print.contrast = v,
             Knob::Shadows => out.print.shadows = v,
             Knob::Highlights => out.print.highlights = v,

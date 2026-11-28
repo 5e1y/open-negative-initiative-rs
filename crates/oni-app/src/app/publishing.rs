@@ -23,17 +23,20 @@ impl Ctl {
             let edited = revision != s.published_revision;
             s.published_revision = revision;
             let mut moved: Vec<Field> = store::changed(&mut s.store);
+            let ranges: Vec<_> = Field::ALL.iter().map(|f| f.knob().range(s.store.settings())).collect();
             if jump {
                 moved = Field::ALL.to_vec();
             }
+            let reranged: Vec<Field> = Field::ALL.into_iter().filter(|f| !moved.contains(f) && s.slides[f.index() as usize].range != ranges[f.index() as usize]).collect();
+            moved.extend(reranged);
             let mut out = Vec::new();
             for f in moved {
-                let v = store::get(&s.store, f);
+                let (v, range) = (store::get(&s.store, f), ranges[f.index() as usize]);
                 let slide = &mut s.slides[f.index() as usize];
-                if !jump && slide.published == Some(v) {
+                if !jump && slide.published == Some(v) && slide.range == range {
                     continue;
                 }
-                slide.published = Some(v);
+                (slide.published, slide.range) = (Some(v), range);
                 out.push((f, v, slide.live().is_some()));
             }
             (out, edited)

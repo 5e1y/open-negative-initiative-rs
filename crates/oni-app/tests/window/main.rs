@@ -22,6 +22,7 @@ mod flat_drag;
 mod dedust_turn;
 mod collection;
 mod colour_compensation;
+mod colour_compression;
 mod kit;
 mod welcome_films;
 mod kit_failures;

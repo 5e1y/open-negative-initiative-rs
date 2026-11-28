@@ -18,7 +18,7 @@ const LOG2_10: f32 = std::f32::consts::LOG2_10;
 pub struct Paper {
     /// Each layer's dye amount over the paper's D-min along the window's share from `curve_low` by `curve_step`, held at
     /// either end.
-    pub curves: &'static [V3; PAPER_CURVE_NODES],
+    pub curves: [V3; PAPER_CURVE_NODES],
     pub curve_low: f32,
     pub curve_step: f32,
     /// The paper's D-min, and what each channel reads of each dye's amount, a row a channel: its Status A crosstalk.
