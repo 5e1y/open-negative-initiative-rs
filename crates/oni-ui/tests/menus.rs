@@ -22,10 +22,10 @@ fn every_menu_shortcut_is_claimed_once() {
     let app = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/app.slint")).unwrap();
     assert!(claims(&app).len() > 20, "the menus' shortcuts are read: {:?}", claims(&app));
     assert!(clashes(&app).is_empty(), "claimed twice: {:?}", clashes(&app));
-    // Twin: the roll's ⌘⇧G written as the mode toggle's plain ⌘G is caught.
-    let collided = app.replace("@keys(Control + Shift + \"g\")", "@keys(Control + \"g\")");
+    // Twin: Reset's ⌘⇧R written as Refresh's plain ⌘R is caught.
+    let collided = app.replace("@keys(Control + Shift + \"r\")", "@keys(Control + \"r\")");
     assert_ne!(collided, app);
-    assert_eq!(clashes(&collided), ["Control+\"g\""]);
+    assert_eq!(clashes(&collided), ["Control+\"r\""]);
 }
 
 /// The menu lines whose shortcut is a bare key, and whether each answers only while the window's

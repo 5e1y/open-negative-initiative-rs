@@ -155,8 +155,11 @@ pub(crate) fn a_favourite_in_another_spelling_opens_in_the_archives() {
     }
     let d = disk("spelt", &["Home/Scans/Roll 8/A.tif"]);
     let roll = d.path("Home/Scans/Roll 8");
-    // The scratch lies under `/var`, which the disk resolves through `/private`.
-    let other = format!("/private{roll}");
+    // Another spelling of the scratch, wherever it lies: a link to it, which the disk resolves.
+    let link = d.root.with_file_name(format!("{}-link", d.root.file_name().unwrap().to_string_lossy()));
+    let _ = std::fs::remove_file(&link);
+    std::os::unix::fs::symlink(&d.root, &link).unwrap();
+    let other = format!("{}/Home/Scans/Roll 8", link.display());
     // Twin: that spelling is not the archive's, so a check comparing spellings can tell them apart.
     assert_ne!(paths::canonical(Path::new(&other)), other);
     let support = d.root.join("Support");
@@ -171,5 +174,6 @@ pub(crate) fn a_favourite_in_another_spelling_opens_in_the_archives() {
     rig.until("the favourite read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().photos() == 1);
     assert_eq!(ctl.state.borrow().opened(), Some(roll.as_str()));
     drop((ctl, shell));
+    let _ = std::fs::remove_file(&link);
     let _ = std::fs::remove_dir_all(&d.root);
 }
