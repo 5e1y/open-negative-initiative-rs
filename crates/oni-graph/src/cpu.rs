@@ -105,8 +105,8 @@ pub fn lanczos_shifted(input: &Plane, axis: Axis, scale: f64, shift: f64) -> Pla
         let mut weights = 0.0f32;
         for i in (centre - radius).ceil() as i32..=(centre + radius).floor() as i32 {
             let w = lanczos3((i as f32 - centre) * narrow);
-            let held = i >= origin && i < origin + from as i32;
-            let p = if !held { [0.0; 4] } else if axis == Axis::X { input.load(i, y) } else { input.load(x, i) };
+            let at = i.clamp(origin, origin + from as i32 - 1);
+            let p = if axis == Axis::X { input.load(at, y) } else { input.load(x, at) };
             for c in 0..4 {
                 sum[c] += w * p[c];
             }

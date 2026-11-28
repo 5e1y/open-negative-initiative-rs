@@ -17,9 +17,13 @@ fn instance(caches: &Path, support: &Path) -> PathBuf {
     caches.join("Instances").join(format!("{hash:016x}"))
 }
 
-/// A patch's file: its correction's id and the reading it was cut on, so another decode finds none.
+/// The healer's revision, in each patch's name: a patch an older healer made, kept past a quit that never purged it,
+/// is made again rather than laid.
+const HEALER: u32 = 2;
+
+/// A patch's file: its correction's id, the reading it was cut on and the healer that made it, so another decode finds none.
 pub fn file(caches: &Path, key: PatchKey) -> PathBuf {
-    caches.join("Corrections").join(format!("{}-{:016x}.tiff", key.id, key.reading))
+    caches.join("Corrections").join(format!("{}-{:016x}-h{HEALER}.tiff", key.id, key.reading))
 }
 
 /// Whether the patch of `c` under the frame's settings `s` is on disk.
@@ -71,7 +75,7 @@ mod tests {
         assert!(read(&caches, at).is_none(), "not generated yet");
         std::fs::create_dir_all(caches.join("Corrections")).unwrap();
         let path = file(&caches, at);
-        assert!(path.ends_with("Corrections/0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B-000000000000002a.tiff"), "{}", path.display());
+        assert!(path.ends_with("Corrections/0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B-000000000000002a-h2.tiff"), "{}", path.display());
         let out = std::fs::File::create(&path).unwrap();
         let pixels: Vec<f32> = (0..6).flat_map(|i| [i as f32 / 6.0, 0.5, 0.25, 1.0]).collect();
         tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(3, 2, &pixels).unwrap();
@@ -81,6 +85,9 @@ mod tests {
         // Twins: another correction's id, or the same one under another reading, finds nothing.
         assert!(read(&caches, key("11111111-2222-3333-4444-555555555555", 0x2a)).is_none());
         assert!(read(&caches, PatchKey { reading: 0x2b, ..at }).is_none());
+        // A patch an older healer made under the same key is not laid: the healer's revision names the file.
+        std::fs::rename(&path, caches.join("Corrections/0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B-000000000000002a.tiff")).unwrap();
+        assert!(read(&caches, at).is_none(), "an older healer's patch was read");
         let _ = std::fs::remove_dir_all(&caches);
     }
 

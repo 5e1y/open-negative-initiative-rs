@@ -14741,5 +14741,26 @@
     "status": "done",
     "title": "CLAUDE.md: ONI Standard, the legacy print on a paper and the default-paper migrations are gone",
     "detail": "The working notes follow #4400 to #4402 (format 84): a paper is a sheet's paper, a legacy print takes none, and one migration names the papers that left."
+  },
+  {
+    "id": 4600,
+    "type": "fix",
+    "title": "A dust patch takes its ground's tone: the bias is read on the band its feather shows, the hole's counterpart left out of the source too",
+    "status": "done",
+    "detail": "Owner's report on P1073622 (a hair on a light window between darker grounds): the patch looked brown and grew more visible zoomed out. Measured on the decoded scan, the patch stood +23/+29/+40 % (R/G/B) over the window under its stroke, so its print was 7 to 14 % darker and yellower. Two causes in the tone match (`heal::tone_field`): the destination's mean left the hole out while the source's kept its counterpart, so a speck on a light ground among darker ones took the gap; and the bias was read on a ring three holes wide whose structure (the window's frame) differs between the two places, its difference laid additively on a darker ground. The bias is now read on the patch's own rectangle, the band its feather shows about the hole, the hole's counterpart left out of the source as the hole is out of the destination, each mean counting the pixels it reads (a long stroke's parts still awaiting their patch are left out of the count, not taken out by their area). P1073622: the window under the stroke within 0.1/0.7/3.7 % of its ground on the scan, 0.1/0.3/1.6 % on the print, at every scale. On 180 strokes laid on clean ground of five real frames, where the scan is the answer: worst channel median 10.4 mD (was 12.1), p90 40.6 mD (was 68.3), mean bias about 0 (was +2 mD). Every patch already made changes where its ground differed from its surroundings; patches are made again at each launch. Checks: heal::tests::a_speck_on_a_light_band_takes_the_band_s_tone (twins: the wide ring's bias, the one-sided hole), heal::tests::a_part_of_a_long_stroke… (the band and its halves read as the frame with no hair; twin: nothing awaited reads the hair). Measures, not checks: render::engine::dedust_inquiry (ONI_DEDUST_INQUIRY_FILE, _FILES, _TOUR: a frame read at each stage and definition, random strokes on clean ground against the former match heal::inquiry::on_ring, the tour across kinds of photo and moves)."
+  },
+  {
+    "id": 4601,
+    "type": "fix",
+    "title": "The anchored Lanczos reads the edge's pixel past its input: a reduced dust patch keeps its tone at every zoom",
+    "status": "done",
+    "detail": "A patch is cut to its rectangle and reduced alone to the scale shown; `AnchoredLanczos` read clear past its input, so the reduced patch darkened over the kernel's reach from its edge, three output pixels: a small brush's whole patch at a quarter, a speck's at a sixteenth, laid through the mask as it was. Past its input it now reads the edge's pixel, as the plain `Lanczos` does (GPU kernel and its CPU reference alike); a partial last pixel reads its picture, not clear. Its only other reader, the held measuring copy the histograms read under a hand (`lanczos_anchored(MEASURE_SMALL)`), loses the same fade on its last row and column. Checks: oni-pipeline healing a_reduced_patch_reads_its_own_content_and_no_clear_past_it (brushes 5 and 20 px, 1 to 1/16; twin a patch 2 % off seen at every scale), oni-graph grids (ones stay ones to the last row; twin: ones laid under clear fade on their edge row)."
+  },
+  {
+    "id": 4602,
+    "type": "fix",
+    "title": "A patch's file names the healer that made it: one made before #4600 is made again, never laid",
+    "status": "done",
+    "detail": "Patches are purged at a clean quit only; one kept past a crash under the same key would be laid with its former tone. The file name carries the healer's revision (`patches::HEALER`, 2), so an older patch is not found and the stroke is healed again. Check: patches::tests (twin: the same key under the former name finds nothing)."
   }
 ]

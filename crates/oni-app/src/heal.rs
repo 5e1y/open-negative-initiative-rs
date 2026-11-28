@@ -61,16 +61,19 @@ impl Region {
     /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it and inside the frame, none
     /// awaiting a patch, so a ring past the edge reads the frame's part alone; zeros there moved a patch by 0.017.
     fn mean(&self, r: Rect) -> Option<[f32; 3]> {
+        let (sum, n) = self.summed(r, |_, _| true);
+        (n > 0.0).then(|| sum.map(|s| (s / n) as f32))
+    }
+
+    /// The sum and count of the pixels `mean` reads in `r` that `kept` keeps, by their centres.
+    fn summed(&self, r: Rect, kept: impl Fn(f64, f64) -> bool) -> ([f64; 3], f64) {
         let r = r.intersection(Rect { x: 0.0, y: 0.0, w: self.frame_width, h: self.frame_height });
         let (x0, x1) = ((r.x - 0.5).ceil() as i64, (r.x + r.w - 0.5).floor() as i64);
         let (y0, y1) = ((r.y - 0.5).ceil() as i64, (r.y + r.h - 0.5).floor() as i64);
-        if x1 < x0 || y1 < y0 {
-            return None;
-        }
         let (mut sum, mut n) = ([0.0f64; 3], 0.0f64);
         for row in y0..=y1 {
             for col in x0..=x1 {
-                if self.awaits(col, row) {
+                if self.awaits(col, row) || !kept(col as f64 + 0.5, row as f64 + 0.5) {
                     continue;
                 }
                 let p = self.texel(col, row);
@@ -80,7 +83,7 @@ impl Region {
                 n += 1.0;
             }
         }
-        (n > 0.0).then(|| sum.map(|s| (s / n) as f32))
+        (sum, n)
     }
 }
 
@@ -135,7 +138,7 @@ fn edge_clamped_half(desired: (f64, f64), centre: (f64, f64), e: Rect) -> (f64, 
     (desired.0.min(hw), desired.1.min(hh))
 }
 
-/// `contextRing`: the template the search and the tone match share, three holes wide.
+/// `contextRing`: the template the search matches, three holes wide.
 fn context_ring(centre: (f64, f64), hole: Rect, e: Rect) -> Rect {
     let desired = (hole.w.max(hole.h) * 3.0).min(e.w.min(e.h));
     let half = edge_clamped_half((desired / 2.0, desired / 2.0), centre, e);
@@ -233,20 +236,12 @@ fn fallback(f: &Frame) -> (f64, f64) {
     if f.tile.x + 2.0 * f.tile.w > f.extent.x + f.extent.w { (-f.tile.w, 0.0) } else { (f.tile.w, 0.0) }
 }
 
-/// `maskedMeanColor`: a rectangle's mean with the hole's share taken out, unless the hole fills it.
+/// `maskedMeanColor`: a rectangle's mean less the hole's pixels, counted as read, unless the hole fills it.
 fn masked_mean(src: &Region, r: Rect, hole: Rect) -> Option<[f32; 3]> {
-    let big = src.mean(r)?;
-    let inside = hole.intersection(r);
-    if inside.is_empty() {
-        return Some(big);
-    }
-    let Some(hole_mean) = src.mean(inside) else { return Some(big) };
-    let (big_area, hole_area) = ((r.w * r.h) as f32, (inside.w * inside.h) as f32);
-    let rest = big_area - hole_area;
-    if rest <= big_area * 0.3 {
-        return Some(big);
-    }
-    Some(std::array::from_fn(|k| (big[k] * big_area - hole_mean[k] * hole_area) / rest))
+    let outside = |x: f64, y: f64| x < hole.x || x >= hole.x + hole.w || y < hole.y || y >= hole.y + hole.h;
+    let ((all, n), (rest, m)) = (src.summed(r, |_, _| true), src.summed(r, outside));
+    let (sum, count) = if m <= n * 0.3 { (all, n) } else { (rest, m) };
+    (count > 0.0).then(|| sum.map(|s| (s / count) as f32))
 }
 
 /// `ToneField`: the bias the copy takes, its value at the stroke's centre and its slope each way, y up.
@@ -258,7 +253,10 @@ pub struct ToneField {
 }
 
 fn tone_field(src: &Region, destination: Rect, source: Rect, hole: Rect) -> ToneField {
-    let (Some(dm), Some(sm)) = (masked_mean(src, destination, hole), src.mean(source)) else { return ToneField::default() };
+    // The source's counterpart of the hole is left out as the hole is: else a speck on a light ground among
+    // darker surroundings compares the ground's mean without it to one with it, and the copy takes the gap.
+    let twin = Rect { x: hole.x + source.x - destination.x, y: hole.y + source.y - destination.y, ..hole };
+    let (Some(dm), Some(sm)) = (masked_mean(src, destination, hole), masked_mean(src, source, twin)) else { return ToneField::default() };
     let base: [f32; 3] = std::array::from_fn(|k| dm[k] - sm[k]);
     let left = |r: Rect| Rect { w: r.w / 2.0, ..r };
     let right = |r: Rect| Rect { x: r.x + r.w / 2.0, w: r.w / 2.0, ..r };
@@ -269,10 +267,10 @@ fn tone_field(src: &Region, destination: Rect, source: Rect, hole: Rect) -> Tone
         masked_mean(src, right(destination), hole),
         masked_mean(src, bottom(destination), hole),
         masked_mean(src, top(destination), hole),
-        src.mean(left(source)),
-        src.mean(right(source)),
-        src.mean(bottom(source)),
-        src.mean(top(source)),
+        masked_mean(src, left(source), twin),
+        masked_mean(src, right(source), twin),
+        masked_mean(src, bottom(source), twin),
+        masked_mean(src, top(source), twin),
     );
     let (Some(dl), Some(dr), Some(db), Some(dt), Some(sl), Some(sr), Some(sb), Some(st)) = means else {
         return ToneField { base, ..ToneField::default() };
@@ -302,13 +300,18 @@ pub struct Patch {
 /// `CorrectionRenderer.generate` on a frame `width` × `height` whose region `src` holds the search
 /// window and the patch's source, the framed frame with this correction left out.
 pub fn generate(src: &Region, c: &Correction, width: f64, height: f64) -> Patch {
+    // The tone is matched on the band the patch's feather shows about the hole, where its seam meets the ground.
+    copied(src, c, width, height, |band, source, hole| tone_field(src, band, source, hole))
+}
+
+/// The patch copied from where the search found it, biased by the field `matched` reads on its band and the source's.
+fn copied(src: &Region, c: &Correction, width: f64, height: f64, matched: impl Fn(Rect, Rect, Rect) -> ToneField) -> Patch {
     let ((dx, dy), fell_back) = search(src, c, width, height);
     let extent = [0.0, 0.0, width, height];
     let rect = corrections::patch_rect(c, extent);
     let field = frame(c, width, height).map_or(ToneField::default(), |f| {
-        let destination = context_ring(f.centre, f.hole, f.extent);
-        let source = Rect { x: destination.x + dx, y: destination.y + dy, ..destination };
-        tone_field(src, destination, source, f.hole)
+        let band = Rect::up(rect, height);
+        matched(band, Rect { x: band.x + dx, y: band.y + dy, ..band }, f.hole)
     });
     let centre = frame(c, width, height).map_or((0.0, 0.0), |f| f.centre);
     let (w, h) = (rect[2] as usize, rect[3] as usize);
@@ -368,3 +371,5 @@ pub fn next(corrections: &[Correction], pending: &[usize], width: f64, height: f
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) mod inquiry;

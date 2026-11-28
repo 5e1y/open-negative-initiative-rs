@@ -69,10 +69,17 @@ fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
         let part = g.render(&image, region, None).expect("region render");
         assert_eq!(part, cut(&gpu, image.extent(), region), "{region:?} differs from the full render");
     }
-    // The top row holds a sixth of a pixel of picture: it fades towards clear, as Core Image's does.
+    // The top row holds a sixth of a pixel of picture, read as it is: no clear is read past the input.
     let ones = g.upload(W, H, &vec![[1.0; 4]; (W * H) as usize]).expect("upload");
     let flat = g.render(&Image::new(&ones).lanczos_anchored(scale), image.extent(), None).expect("render");
-    assert!(flat[10][3] < 0.2 && (flat[16 * 50 + 10][3] - 1.0).abs() < 1e-4, "{:?} {:?}", flat[10], flat[16 * 50 + 10]);
+    assert!(flat.iter().all(|p| p.iter().all(|v| (v - 1.0).abs() < 1e-4)), "{:?} {:?}", flat[10], flat[16 * 50 + 10]);
+    // Twin: the same ones laid on clear, their edge row reads the clear about them and fades.
+    let mut laid = vec![[0.0; 4]; (W * (H + 40)) as usize];
+    laid[(W * 40) as usize..].fill([1.0; 4]);
+    let on_clear = g.upload(W, H + 40, &laid).expect("upload");
+    let faded = g.render(&Image::new(&on_clear).lanczos_anchored(scale), Rect::new(0, 0, 50, 40), None).expect("render");
+    let edge = (40.0 * scale) as usize;
+    assert!(faded[edge * 50 + 10][0] < 0.9, "the clear above the ones went unseen: {:?}", faded[edge * 50 + 10]);
     // Twin: anchored at the top instead, the rows land a fraction of a pixel away.
     let flipped = Plane::new(plane.extent, (0..200).rev().flat_map(|y| plane.pixels[y * 300..(y + 1) * 300].to_vec()).collect());
     let top = cpu::lanczos_anchored(&cpu::lanczos_anchored(&flipped, Axis::X, scale), Axis::Y, scale);

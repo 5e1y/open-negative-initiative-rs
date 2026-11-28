@@ -181,3 +181,32 @@ fn corrections_past_one_sheet_of_patches_are_laid_in_their_order() {
     assert!(error(&whole(&mut g, &part), &in_turn(&mut g, &frame, &half, 1.0)) < ULPS);
     assert_eq!(g.stats().copies, before, "a subset's patches were gathered again");
 }
+
+/// A speck on an even frame, its patch the frame's own tone: healed at any reduction the canvas shows, the speck's
+/// place reads the frame's tone, as the frame healed at full resolution and reduced does; the patch reads no clear past it.
+#[test]
+fn a_reduced_patch_reads_its_own_content_and_no_clear_past_it() {
+    let Some(mut g) = graph("a_reduced_patch_reads_its_own_content_and_no_clear_past_it") else { return };
+    let mut pipeline = Pipeline::new();
+    let tone = [0.02f32, 0.008, 0.005, 1.0];
+    let full = [0.0, 0.0, f64::from(FULL.0), f64::from(FULL.1)];
+    let mut worst = |radius: f64, scale: f64, gain: f32| {
+        let c = Correction { radius, ..Correction::new(vec![Point::new(0.5, 0.5), Point::new(0.503, 0.508)]) };
+        let r = corrections::patch_rect(&c, full);
+        let patch = g.upload(r[2] as u32, r[3] as u32, &vec![tone.map(|v| v * gain); (r[2] * r[3]) as usize]).expect("a patch");
+        let (w, h) = ((f64::from(FULL.0) * scale).round() as u32, (f64::from(FULL.1) * scale).round() as u32);
+        let frame = g.upload(w, h, &vec![tone; (w * h) as usize]).expect("the frame");
+        let inputs = Inputs { patches: [(c.id, &patch)].into_iter().collect(), ..Inputs::default() };
+        let healed = pipeline.patched(&mut g, Image::new(&frame), &settings(std::slice::from_ref(&c)), f64::from(w) / f64::from(FULL.0), &inputs).expect("the recipe");
+        whole(&mut g, &healed).iter().flat_map(|p| (0..3).map(move |k| (p[k] / tone[k] - 1.0).abs())).fold(0.0f32, f32::max)
+    };
+    // The smallest brush, whose patch a sixteenth's kernel spans many times over, and a speck's.
+    for radius in [5.0, 20.0] {
+        for scale in [1.0, 0.5, 0.25, 0.125, 0.0625] {
+            let (held, off) = (worst(radius, scale, 1.0), worst(radius, scale, 1.02));
+            println!("radius {radius} at {scale}: {held:.2e}; twin, a patch 2 % off: {off:.2e}");
+            assert!(held < 1e-4, "radius {radius} at {scale}: the patch moved the frame's tone by {held:.2e}");
+            assert!(off > 5e-3, "radius {radius} at {scale}: a patch 2 % off went unseen ({off:.2e})");
+        }
+    }
+}

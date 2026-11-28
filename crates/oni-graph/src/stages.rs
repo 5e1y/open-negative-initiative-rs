@@ -94,10 +94,8 @@ pub struct Lanczos {
 /// Lobes of the kernel, Core Image's `CILanczosScaleTransform` count.
 pub const LANCZOS_LOBES: f64 = 3.0;
 
-/// `CILanczosScaleTransform` along one axis: `ceil(from × scale)` pixels at the exact scale, anchored
-/// at Core Image's origin, the left and the bottom, and clear past the input, so a partial last pixel
-/// keeps only its share; a patch reduced otherwise lands up to half a pixel away, stretched. `shift`
-/// sets the input's leading edge (left, or bottom) that many output pixels in, so it lands sub-pixel exact.
+/// `CILanczosScaleTransform` along one axis, `ceil(from × scale)` pixels anchored at the left and the bottom, so a reduced
+/// patch lands where the full one lies; past its input it reads the edge's pixel, so a cut patch keeps its tone as it shrinks.
 #[derive(Clone, Copy, Debug)]
 pub struct AnchoredLanczos {
     pub axis: Axis,
@@ -167,9 +165,9 @@ fn pixel(p: vec2<i32>) -> vec4<f32> {
     var weights = 0.0;
     for (var i = i32(ceil(centre - radius)); i <= i32(floor(centre + radius)); i++) {
         let w = lanczos3((f32(i) - centre) * narrow);
-        let q = select(vec2<i32>(i, p.y), vec2<i32>(p.x, i), params.axis == 1u);
-        let held = i >= params.origin && i < params.origin + i32(params.from_len);
-        sum += w * select(vec4<f32>(0.0), load(q), held);
+        let at = clamp(i, params.origin, params.origin + i32(params.from_len) - 1);
+        let q = select(vec2<i32>(at, p.y), vec2<i32>(p.x, at), params.axis == 1u);
+        sum += w * load(q);
         weights += w;
     }
     return sum / weights;

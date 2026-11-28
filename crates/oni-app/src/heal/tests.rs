@@ -80,6 +80,36 @@ fn a_bias_lifts_the_copy_to_its_surroundings_tone() {
     assert!(flat.base[0].abs() < 1e-5);
 }
 
+/// A speck on a light band between darker grounds, a bar beside it that the copy's place lacks: the copy taken along
+/// the band takes the band's tone, its bias read where its feather shows, the hole's counterpart left out on both sides.
+#[test]
+fn a_speck_on_a_light_band_takes_the_band_s_tone() {
+    let (w, h) = (1200usize, 900usize);
+    let grain = textured(w, h, 2);
+    let pixels: Vec<[f32; 4]> = (0..w * h)
+        .map(|i| {
+            let (x, y) = (i % w, i / w);
+            let ground = if (400..510).contains(&y) { 0.015 } else if (660..680).contains(&x) { 0.06 } else { 0.035 };
+            let dust = (440..470).contains(&y) && (590..610).contains(&x);
+            let v = if dust { 0.005 } else { ground * (0.75 + 0.25 * grain[i][0] / 0.4) };
+            [v, v, v, 1.0]
+        })
+        .collect();
+    let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64, awaited: Vec::new() };
+    let c = Correction { radius: 20.0, ..Correction::new(vec![Point::new(600.0 / w as f64, 445.0 / h as f64), Point::new(600.0 / w as f64, 465.0 / h as f64)]) };
+    let f = frame(&c, w as f64, h as f64).expect("a stroke");
+    let shifted = |r: Rect| Rect { x: r.x - 300.0, ..r };
+    let band = Rect::up(corrections::patch_rect(&c, [0.0, 0.0, w as f64, h as f64]), h as f64);
+    let field = tone_field(&src, band, shifted(band), f.hole);
+    assert!(field.base[0].abs() < 0.015 * 0.02, "the copy along the band biased by {:?}", field.base);
+    // Twins: the wide ring reads the bar and the grounds, and the hole left out on one side alone reads its gap.
+    let ring = context_ring(f.centre, f.hole, f.extent);
+    let wide = tone_field(&src, ring, shifted(ring), f.hole);
+    assert!(wide.base[0].abs() > 0.015 * 0.05, "the wide ring's bias went unseen: {:?}", wide.base);
+    let one_sided = masked_mean(&src, ring, f.hole).unwrap()[0] - src.mean(shifted(ring)).unwrap()[0];
+    assert!(one_sided.abs() > 0.015 * 0.05, "the one-sided hole went unseen: {one_sided}");
+}
+
 /// White noise box-smoothed over `2r + 1` pixels by a summed table, at a photograph's contrast.
 fn textured(w: usize, h: usize, r: usize) -> Vec<[f32; 4]> {
     let hash = |x: usize, y: usize| {
@@ -325,6 +355,17 @@ fn a_part_of_a_long_stroke_neither_matches_nor_copies_the_parts_awaiting_their_p
     let hole = Rect { x: 568.0, y: 418.0, w: 64.0, h: 64.0 };
     let lit = masked_mean(&src, ring, hole).unwrap()[0];
     assert!((lit - 0.4).abs() < 0.02, "{lit}");
+    // The band the tone is read on, and its halves, which the other parts' hair crosses, read as the same frame with no
+    // hair, the hole's pixels counted as read; twin: with nothing awaited, the band reads the hair.
+    let clean = Region { pixels: textured(1200, 900, 6), awaited: Vec::new(), ..crossed().0 }.awaiting(rest.iter());
+    let band = Rect::up(corrections::patch_rect(&part, [0.0, 0.0, size.0, size.1]), size.1);
+    let hole = frame(&part, size.0, size.1).expect("a stroke").hole;
+    let unmarked = crossed().0;
+    for r in [band, Rect { w: band.w / 2.0, ..band }, Rect { x: band.x + band.w / 2.0, w: band.w / 2.0, ..band }] {
+        let (lit, truth) = (masked_mean(&src, r, hole).unwrap()[0], masked_mean(&clean, r, hole).unwrap()[0]);
+        assert!((lit - truth).abs() < 1e-6, "the band {r:?} reads {lit}, the frame with no hair {truth}");
+        assert!(truth - masked_mean(&unmarked, r, hole).unwrap()[0] > 0.01, "the hair on {r:?} went unseen");
+    }
     // Twin: with nothing awaited, the hair either side is the best match there is, and the copy is the hair.
     let (bare, part, _) = crossed();
     let copied = generate(&bare, &part, size.0, size.1);

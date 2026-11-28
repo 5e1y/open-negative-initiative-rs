@@ -8,6 +8,8 @@ mod inputs;
 mod kept;
 pub(crate) use kept::{inputs_of, patches_for};
 #[cfg(test)]
+mod dedust_inquiry;
+#[cfg(test)]
 pub(crate) use kept::INPUTS_KEPT;
 use kept::Kept;
 use oni_pipeline::corrections::PatchKey;
