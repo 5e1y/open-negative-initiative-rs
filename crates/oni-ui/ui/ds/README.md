@@ -16,7 +16,7 @@ and every screen picks it up.
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
 | `keyboard.slint` | The keyboard: `Keyboard` (who holds it, a sheet covering the window), `FocusRing`, `KeyScope` and `KeyMonitor` | By hand |
-| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `flight.slint` (a photo travelling between the screens), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `bar_face.slint` (a bar key's glyph over its word), `fields.slint`, `outside.slint` (the press beside a field or a menu, the window's size), `window.slint` (`AppWindow`), `menu.slint` (menus and their submenus), `picker.slint`, `containers.slint`, `footer.slint` (a sheet's last row), `notices.slint` (the notice that passes, the banner that stays), `collections.slint` (the tiles and their headings), `scroller.slint` (the scrolled surfaces and their knob), `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover), `flight.slint` (a photo travelling between the screens), `crt.slint` (the scanner's glass, `CrtStyle`'s phosphor: the measure's bank) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 ## Changing a token
@@ -107,12 +107,13 @@ oni-lab) draws a still key once and a pressed one once a frame.
   its caps flush on one face rounded as a key, as the panel's AUTO WHITE BALANCE with the crop's warning
   over it. Flat keys never stand on a plate.
 - **Footers**: every sheet and the prepare and export panels end on one `SheetFooter`: the key that
-  leaves (Cancel) at the left with what the sheet adds beside it, then apart at the right a step back and
+  leaves (Cancel) at the left with the keys the sheet adds beside it (`keys`, measured with the rest), then apart at the right a step back and
   the commit alone, the accent keycap, a flat key while it writes nothing (a failure's OK); beside a keycap
   commit, Cancel and the step back are keycaps on the ground's face. A key that removes (`remove`, a preset's
   Delete) stands alone at the left end, what the sheet adds then beside the commit. Too narrow for its keys
-  on one line, as a panel's in French or Spanish, the footer lays the commit on a line of its own under the
-  others, as wide as the room. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
+  on one line, as a panel's in French or Spanish, the footer lays the keys the sheet adds on a line of their own
+  above (one under another if they still overrun) and, when its own keys alone overrun, the commit on a line of its
+  own under the others, as wide as the room. Every DONE is that accent keycap, a tool's in the panel as a sheet's, the bar's export laying its
   accent down while a tool is open. A question's answers (`AskSheet`) keep their own row.
 
 ## Keyboard

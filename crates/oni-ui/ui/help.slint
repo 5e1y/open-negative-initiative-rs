@@ -111,7 +111,8 @@ export component ReportSheet inherits Sheet {
         committed => {
             if (Help.report-sent) { Help.report-closed(); } else { Help.report-send(); }
         }
-        Button { text: @tr("See Community Feedbacks"); clicked => { Help.community(); } }
+        keys: Help.report-sent ? [] : [{ text: @tr("See Community Feedbacks"), enabled: true }];
+        key-pressed => { Help.community(); }
     }
 }
 

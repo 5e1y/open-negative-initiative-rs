@@ -14935,5 +14935,19 @@
     "status": "done",
     "title": "ONI_TRAVERSE_RESTS=1 rests the hand half a second every 40 pan steps once the full definition is decoded; the log says each digital scan made",
     "detail": "The traverse bench never let the hand rest, so the sharp render made at each rest never ran: the owner's stutter did not show. ONI_TRAVERSE_RESTS=1 waits for the full definition, then rests half a second every 40 steps. Each digital photo's preview and full scan made writes its width and its encoding time, so a scan made again reads in the log."
+  },
+  {
+    "id": 4122,
+    "type": "fix",
+    "title": "A sheet's added keys are measured with its last row and take a line of their own when it cannot hold them",
+    "status": "done",
+    "detail": "The owner saw the feedback sheet's last row overrun in French: Cancel, See Community Feedbacks, then Send cut at the card's edge. SheetFooter measured its own keys to decide whether the commit takes its own line, but a sheet's added keys came in as children it could not measure, so since flat keys' words grew (#4108) the row overran unseen. The footer now takes them as data (`keys`, SheetKey: word, help, enabled, removes; `key-pressed`), measures them with the rest, and lays them on a line of their own above when the row cannot hold them, one under another if they still overrun; the feedback sheet, the phones' Forget Phones and the preset editor's Duplicate, Share and Copy Preset Code move to it. sheet_rows::every_sheets_keys_stand_whole_inside_its_card_in_every_language shows those sheets and a confirm at the smallest window in English, French and Spanish, every key whole inside its card, its twin that keys wider together than the card stand on more than one line; it failed on the feedback sheet in French and Spanish before the fix."
+  },
+  {
+    "id": 4123,
+    "type": "feature",
+    "title": "WRAPPED 26's word folds with the gallery's keycaps'",
+    "status": "done",
+    "detail": "The owner's call: the year's key keeps its word as long as the other keycaps keep theirs (Edit, Prepare Roll, Add Folder…) and folds at the same notch, no rank of its own: its worded width counts in the bar's widths and its word follows the keycaps' bare state. toolbar_fit checks in three languages, at 1,440 points and at the smallest window, that its word shows exactly when Prepare Roll's does, the bar inside the window."
   }
 ]

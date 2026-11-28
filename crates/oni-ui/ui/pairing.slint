@@ -43,11 +43,12 @@ export component PairingSheet inherits Sheet {
     SheetFooter {
         commit: @tr("DONE");
         committed => { Pairing.close(); }
-        if Pairing.can-forget: Button {
-            text: @tr("Forget Phones");
-            kind: ButtonKind.destructive;
-            help: @tr("Every paired phone is cut and pairs again from a new code.");
-            clicked => { Pairing.forget(); }
-        }
+        keys: Pairing.can-forget ? [{
+            text: @tr("Forget Phones"),
+            help: @tr("Every paired phone is cut and pairs again from a new code."),
+            enabled: true,
+            destructive: true,
+        }] : [];
+        key-pressed => { Pairing.forget(); }
     }
 }

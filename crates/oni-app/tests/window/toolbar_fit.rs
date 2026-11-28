@@ -164,6 +164,9 @@ pub(crate) fn the_bar_with_the_years_key_stays_inside_the_window_in_every_langua
             rig.key("\u{1b}");
             let gallery = right_end(rig, w, width, height);
             assert!(keyed(), "{language:?}, {width} pt: the year's key stands in the gallery's bar");
+            let worded = |text: &str| !common::placed(w, Role::Text, text).is_empty();
+            let (year, prepare_word) = (worded("WRAPPED 26"), worded(oni_i18n::tr("PREPARE ROLL")));
+            assert_eq!(year, prepare_word, "{language:?}, {width} pt: the year's word folds with the keycaps'");
             println!("shot {}", rig.shot(&format!("bar-year-gallery-{}-{width}", language.key())).display());
             ctl.act(oni_app::Act::PrepareRoll);
             rig.until("the roll's surface", std::time::Duration::from_secs(5), || preparing.get_shown());

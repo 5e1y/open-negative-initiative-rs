@@ -282,6 +282,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(mode_header::every_tool_title_is_whole_at_the_smallest_window),
     check!(mode_header::a_title_longer_than_the_panel_is_caught_cut),
     check!(sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),
+    check!(sheet_rows::every_sheets_keys_stand_whole_inside_its_card_in_every_language),
     check!(sheet_layout::the_settings_sheet_keeps_one_height_across_its_sections),
     check!(sheet_layout::a_footer_sets_cancel_apart_from_the_commit),
     check!(settings_rows::every_settings_key_stays_on_its_page_in_every_language),

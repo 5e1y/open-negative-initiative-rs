@@ -278,18 +278,15 @@ export component Toolbar inherits Surface {
     property <length> least: root.start + ShellStyle.bar-end + mode.preferred-width
         + max(compact-gallery-sizing.preferred-width, compact-sizing.min-width, compact-steps-sizing.min-width)
         + compact-own-sizing.preferred-width + ShellStyle.export-width + 3 * ShellStyle.bar-gap + root.year-room;
-    // The year on film's key through its season, in the gallery alone (owner's call): its room bare, and what its word adds.
+    // The year on film's key through its season, in the gallery alone (owner's call), its word counted with the
+    // keycaps' and folded with theirs.
     property <bool> year: Wrapped.title != "" && !Bar.editing && !Preparing.shown;
-    property <length> year-room: root.year ? bare-year-sizing.preferred-width + ShellStyle.bar-gap : 0px;
-    property <length> year-word: root.year ? year-sizing.preferred-width - bare-year-sizing.preferred-width : 0px;
+    property <length> year-room: root.year ? year-sizing.preferred-width + ShellStyle.bar-gap : 0px;
     // Settled once the bar is laid: the centre's and the app's keys stand in the bar's own layout, so
     // a binding would feed their widths back into the width that decides them.
     property <bool> compact;
     property <bool> bare;
-    // The year's word goes first: it stays only where every word of the bar has its room beside it.
-    property <bool> year-worded;
     function fit() {
-        root.year-worded = root.width >= root.full + root.year-word;
         root.compact = root.width < root.full;
         root.bare = root.width < root.least;
         Bar.needed = root.full;
@@ -299,7 +296,6 @@ export component Toolbar inherits Surface {
     changed width => { root.fit(); }
     changed full => { root.fit(); }
     changed least => { root.fit(); }
-    changed year-word => { root.fit(); }
     // A tool open on the canvas, the crop or De-dust: its DONE is the view's one primary.
     property <bool> tool: Bar.editing && (PanelState.tab == PanelTab.crop || PanelState.tab == PanelTab.dedust);
     // Out of the gallery, the mode key goes back to it.
@@ -328,7 +324,7 @@ export component Toolbar inherits Surface {
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
         // The year on film's key beside it, through its season, in the gallery alone (owner's call).
-        if root.year: YearKey { worded: root.year-worded; }
+        if root.year: YearKey { worded: !root.bare; }
         // The zone holds the widest set of keys with its words, and the widest compact one at least, alone
         // giving way; the set shown sits on the window's centre if it can, its faces narrowing first.
         Rectangle {
@@ -344,7 +340,6 @@ export component Toolbar inherits Surface {
             compact-steps-sizing := PrepareKeys { visible: false; compact: true; }
             own-sizing := Own { visible: false; }
             year-sizing := YearKey { visible: false; }
-            bare-year-sizing := YearKey { visible: false; worded: false; }
             compact-own-sizing := Own { visible: false; compact: true; }
             edit-sizing := Cap { visible: false; text: @tr("EDIT"); icon: Icons.edit; }
             back-sizing := Cap { visible: false; text: @tr("BACK"); icon: Icons.back; }

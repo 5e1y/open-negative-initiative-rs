@@ -332,9 +332,14 @@ export component PresetEditorSheet inherits Sheet {
             removed => { Presets.delete(); }
             commit: @tr("Done");
             committed => { Presets.done(); }
-            Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
-            Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
-            Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
+            keys: [
+                { text: @tr("Duplicate"), enabled: Presets.form-shown },
+                { text: @tr("Share…"), enabled: Presets.form-shown },
+                { text: @tr("Copy Preset Code"), enabled: Presets.form-shown, help: @tr("Copies the preset as one line of text, to paste in a message.") },
+            ];
+            key-pressed(i) => {
+                if (i == 0) { Presets.duplicate(); } else if (i == 1) { Presets.share(); } else { Presets.copy-code(); }
+            }
         }
     }
 }

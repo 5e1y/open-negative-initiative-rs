@@ -1,0 +1,131 @@
+import { Colour, ButtonStyle } from "theme.slint";
+import { Button, ButtonKind } from "controls.slint";
+
+// A flat key a sheet adds to its last row: its word, its help, whether it takes a press, and whether it removes.
+export struct SheetKey { text: string, help: string, enabled: bool, destructive: bool }
+
+// Every sheet's last row: the key that leaves at the left, the keys the sheet adds beside it, then apart at the right
+// a step back and the commit alone, the accent keycap unless it writes nothing. Too narrow for its keys on one line,
+// as a panel's in a longer language, the added keys take a line of their own above, one under another if they still
+// overrun, and the commit a line of its own under the rest when that alone overruns.
+export component SheetFooter inherits VerticalLayout {
+    in property <string> cancel;
+    in property <string> back;
+    in property <string> commit;
+    in property <bool> commit-enabled: true;
+    // The commit is its sheet's default key, holding the keyboard as it opens: never a panel's, under the
+    // sheets, nor one at the foot of a sheet read from its top, which the keyboard would scroll away.
+    in property <bool> default-commit: true;
+    // A commit that writes nothing, as a failure's OK: a flat key.
+    in property <bool> passes;
+    // A key that removes, as a preset's Delete: alone at the left end, the added keys then beside the commit, so it
+    // never shares a group with a key that keeps.
+    in property <string> remove;
+    in property <bool> remove-enabled: true;
+    in property <[SheetKey]> keys;
+    callback cancelled();
+    callback backed();
+    callback committed();
+    callback removed();
+    callback key-pressed(int);
+    // A choice whose commit is a keycap has its own keys keycaps on the ground's face, the keys a sheet adds flat.
+    property <bool> capped: root.commit != "" && !root.passes;
+    // The keys measured unseen and of no height: whether they fit never follows the lines they lay.
+    whole := HorizontalLayout {
+        visible: false;
+        height: 0px;
+        spacing: ButtonStyle.group-gap;
+        if root.remove != "": Button { text: root.remove; keycap: root.capped; }
+        if root.remove != "": Rectangle { width: 0px; }
+        if root.cancel != "": Button { text: root.cancel; keycap: root.capped; }
+        for key in root.keys: Button { text: key.text; }
+        Rectangle { width: 0px; }
+        if root.back != "": Button { text: root.back; keycap: root.capped; }
+        if root.commit != "": Button { text: root.commit; keycap: root.capped; }
+    }
+    added := HorizontalLayout {
+        visible: false;
+        height: 0px;
+        spacing: ButtonStyle.group-gap;
+        for key in root.keys: Button { text: key.text; }
+    }
+    ends := HorizontalLayout {
+        visible: false;
+        height: 0px;
+        spacing: ButtonStyle.group-gap;
+        if root.remove != "": Button { text: root.remove; keycap: root.capped; }
+        if root.remove != "": Rectangle { width: 0px; }
+        if root.cancel != "": Button { text: root.cancel; keycap: root.capped; }
+        Rectangle { width: 0px; }
+        if root.back != "": Button { text: root.back; keycap: root.capped; }
+        if root.commit != "": Button { text: root.commit; keycap: root.capped; }
+    }
+    property <bool> apart: root.keys.length > 0 && root.width < whole.preferred-width;
+    property <bool> column: root.apart && root.width < added.preferred-width;
+    property <bool> stacked: root.width < ends.preferred-width;
+    VerticalLayout {
+        spacing: ButtonStyle.group-gap;
+        if root.apart && !root.column: HorizontalLayout {
+            spacing: ButtonStyle.group-gap;
+            alignment: start;
+            for key[i] in root.keys: Button {
+                text: key.text;
+                help: key.help;
+                enabled: key.enabled;
+                kind: key.destructive ? ButtonKind.destructive : ButtonKind.plain;
+                clicked => { root.key-pressed(i); }
+            }
+        }
+        if root.column: VerticalLayout {
+            spacing: ButtonStyle.group-gap;
+            alignment: start;
+            for key[i] in root.keys: HorizontalLayout {
+                alignment: start;
+                Button {
+                    text: key.text;
+                    help: key.help;
+                    enabled: key.enabled;
+                    kind: key.destructive ? ButtonKind.destructive : ButtonKind.plain;
+                    clicked => { root.key-pressed(i); }
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: ButtonStyle.group-gap;
+            cross-axis-alignment: center;
+            if root.remove != "": Button { text: root.remove; kind: ButtonKind.destructive; keycap: root.capped; ground: Colour.ground; enabled: root.remove-enabled; clicked => { root.removed(); } }
+            if root.remove != "": Rectangle { horizontal-stretch: 1; }
+            if root.cancel != "": Button { text: root.cancel; keycap: root.capped; ground: Colour.ground; clicked => { root.cancelled(); } }
+            if !root.apart: HorizontalLayout {
+                spacing: ButtonStyle.group-gap;
+                for key[i] in root.keys: Button {
+                    text: key.text;
+                    help: key.help;
+                    enabled: key.enabled;
+                    kind: key.destructive ? ButtonKind.destructive : ButtonKind.plain;
+                    clicked => { root.key-pressed(i); }
+                }
+            }
+            // Two gaps at the least, so what leaves never reads as one group with what commits.
+            Rectangle { horizontal-stretch: root.remove == "" || root.apart ? 1 : 0; }
+            if root.back != "": Button { text: root.back; keycap: root.capped; ground: Colour.ground; clicked => { root.backed(); } }
+            if root.commit != "" && !root.stacked: Button {
+                text: root.commit;
+                keycap: root.capped;
+                kind: root.passes ? ButtonKind.plain : ButtonKind.accent;
+                enabled: root.commit-enabled;
+                default: root.default-commit;
+                clicked => { root.committed(); }
+            }
+        }
+        if root.commit != "" && root.stacked: Button {
+            text: root.commit;
+            keycap: root.capped;
+            kind: root.passes ? ButtonKind.plain : ButtonKind.accent;
+            fills: true;
+            enabled: root.commit-enabled;
+            default: root.default-commit;
+            clicked => { root.committed(); }
+        }
+    }
+}
