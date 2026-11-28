@@ -14839,5 +14839,12 @@
     "title": "A data sheet's paper reads its dyes through a broad band: the 3x3 that best stands for its dyes' spectral print, its greys still the sheet's",
     "status": "done",
     "detail": "Owner's call (\"ok go bandes larges\", option 4 of board 5; the compression of saturated colours may be tuned after). scripts/paper-looks.py fits, for each data sheet's paper, the 3x3 crosstalk that, a grey's densities kept, best stands for the print through its sheet's dye spectra under a D50 viewing light read by the 1931 observer (Levenberg-Marquardt in Oklab on the window's shares, ΔE median 1.1 to 1.3, p90 2.2 to 2.9 to the spectral print), writes it as the look's `crosstalk` and unmixes the sheet's Status A greys through it, so a grey prints as before (within 0.003 D) and the saturated colours give 16 to 17 % more of their chroma to the dyes' side absorptions. Each dye's unit is its own channel's density of 1 (the fit's scale is free, the curves taking it back), so one constant, BROAD_BAND (1 the fitted broad band, 0 pure dyes), scales its side reads alone, the curves staying monotone up to 2 to 2.5. The dye spectra stay in the emulsion dataset (scripts/datasheet-profiles.py's paper_dyes): no spectrum ships. No render code, sidecar or kernel changes, so a view and an export cost what they did; the Frontier, the legacy prints and the inversion without paper are unchanged. Checks: paper_look (a grey within 2e-7 of its Status A print, saturated colours keeping 0.83 to 0.84 of their Status A chroma; twin: the Status A crosstalk keeps all of it) replaces the frozen prints of before; paper's one-enlarger check reads a grey's densities unmixed through Status A. The app's render of Endura Premier and DP II on four billiard views lies ΔE median 0.000, max 0.03 and 0.11, from board 5's broad-band column (1.3 and 1.1 from its Status A column)."
+  },
+  {
+    "id": 4260,
+    "type": "docs",
+    "status": "done",
+    "title": "CLAUDE.md: a paper reads its dyes through a broad-band crosstalk",
+    "detail": "The working notes follow #4406: the 3 x 3 fitted on the print through the sheet's dye spectra, its strength one constant of the bake."
   }
 ]

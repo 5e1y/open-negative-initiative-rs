@@ -126,10 +126,11 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **A paper is its curves** (owner's calls, 2026-11-23 and 24): a paper is a look at the chain's end (owner's call, 2026-11-28), three
   curves from the window's share to each layer's dye amount, the dyes' crosstalk, the light, then its ends, every number baked in its
   file by `scripts/paper-looks.py` and nothing solved in the app. Each layer develops its dye on its own curve (contrast, shape, the
-  layers' drift, D-min and Dmax), each channel reads the dyes through the paper's Status A crosstalk (its sheet's dyes, a grey
-  exactly on the sheet's curves), and each density absorbs its own Rec. 2020 channel alone. The dyes' full
-  spectral absorptions cost a third of a scan's chroma and turned reds and skins yellow: a scan hands a paper no masked separation;
-  their Status A crosstalk alone takes 10 to 30 % of a colour's chroma, what the curves, measured on a grey, hold of every dye.
+  layers' drift, D-min and Dmax), each channel reads the dyes through a broad-band crosstalk (owner's call, 2026-11-28): the 3 × 3 that
+  best stands for the print through its sheet's dye spectra under a D50 viewing light, read by the 1931 observer, its curves unmixed
+  through it so a grey keeps the sheet's Status A densities; each density absorbs its own Rec. 2020 channel alone. One constant of the
+  bake, `BROAD_BAND` (1 the broad band as fitted, 0 pure dyes), sets its strength (`scripts/paper-looks.py`, which reads the dye
+  spectra in the emulsion dataset; no spectrum ships).
 - **The render is the pure inversion, a paper a choice laid over it** (owner's call, 2026-11-24): a negative already holds the log
   of the light, so each channel's density, read between Prepare's black on the bare film and its white on the roll's lights, is
   shown as it is, as a black and white negative's: the window's share the sRGB code of its light in the working space, no curve,
