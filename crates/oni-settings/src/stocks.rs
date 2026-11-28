@@ -1,7 +1,6 @@
 //! The film stocks and papers ONI knows, each one file (`file`): the shipped ones built from this crate's `stocks` folder,
 //! the person's own adding or standing in by key; their catalogue (`catalogue`) is swapped whole while the app runs.
 
-pub mod cube;
 pub mod file;
 mod catalogue;
 mod entries;
@@ -108,9 +107,18 @@ pub fn install(catalogue: Catalogue) -> Arc<Catalogue> {
 }
 
 /// A key type a sidecar stores: the key as written, read through the catalogue so a retired key reads as its entry's,
-/// copied freely and compared by its text. `$default` is the key a sidecar storing none reads.
+/// copied freely and compared by its text. `$default`, where given, is the key a sidecar storing none reads.
 macro_rules! keyed {
     ($(#[$doc:meta])* $name:ident, $space:ident, $default:literal) => {
+        $crate::stocks::keyed!($(#[$doc])* $name, $space);
+
+        impl Default for $name {
+            fn default() -> Self {
+                Self($default)
+            }
+        }
+    };
+    ($(#[$doc:meta])* $name:ident, $space:ident) => {
         $(#[$doc])*
         #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub struct $name(&'static str);
@@ -122,12 +130,6 @@ macro_rules! keyed {
 
             pub fn key(self) -> &'static str {
                 self.0
-            }
-        }
-
-        impl Default for $name {
-            fn default() -> Self {
-                Self($default)
             }
         }
 

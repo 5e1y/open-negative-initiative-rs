@@ -15,8 +15,8 @@ fn timed<T>(what: &str, f: impl FnOnce() -> T) -> (T, f64) {
 
 fn main() {
     timed("stock files read (the catalogue)", || oni_settings::stocks::current().films().len());
-    // The neutral film and a look bake no profile of their own.
-    let films: Vec<VirtualStock> = VirtualStock::all().into_iter().filter(|s| { let e = s.entry(); !e.neutral && e.look.is_none() }).collect();
+    // The neutral film bakes no profile of its own.
+    let films: Vec<VirtualStock> = VirtualStock::all().into_iter().filter(|s| !s.entry().neutral).collect();
     let (mut total, mut worst, mut bytes) = (0.0, (0.0, String::new()), 0usize);
     for s in &films {
         let at = Instant::now();
@@ -37,7 +37,7 @@ fn main() {
     timed("Ektachrome E100's projection", || film::projection::projected(VirtualStock::SLIDE).table.len());
     timed("Ektachrome E100's scans read back", || film::projection::scanned(VirtualStock::SLIDE).table.len());
     let papers = PaperStock::all();
-    let (_, p) = timed("every paper's sheet", || papers.iter().map(|q| paper::sheet(*q).curve_low).sum::<f32>());
+    let (_, p) = timed("every paper's sheet", || papers.iter().map(|q| paper::sheet(*q).map_or(0.0, |s| s.curve_low)).sum::<f32>());
     println!("{:<48} {:>8.1} ms each on average ({} papers)", "", p / papers.len() as f64, papers.len());
     timed("the Frontier's cube", || oni_pipeline::frontier_look::CUBE.cube_dimension);
 }

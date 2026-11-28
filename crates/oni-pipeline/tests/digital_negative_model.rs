@@ -1,6 +1,6 @@
 //! A colour negative's virtual film read as its data sheet: the GPU's film against its scalar reference, the bare film
 //! reading the sheet's Status M D-min, a neutral landing on the sheet's own curves through the layers' inhibition, a grey
-//! ramp lit at the film's white printing its ends neutral on ONI Standard. Each verdict has a twin.
+//! ramp lit at the film's white showing its ends neutral on no paper. Each verdict has a twin.
 
 mod common;
 #[path = "../examples/chart/mod.rs"]
@@ -98,13 +98,14 @@ fn a_neutral_lands_on_the_films_curves_through_the_layers_inhibition() {
     assert!(couplers.iter().flatten().any(|v| *v > 0.0) && off > 0.02, "twin: {off}");
 }
 
-/// A ramp of greys lit at the film's own white (Vision3 250D: D55), as a daylight scene reaches it, on ONI Standard: its
+/// A ramp of greys lit at the film's own white (Vision3 250D: D55), as a daylight scene reaches it, on no paper: its
 /// ends neutral, each channel's window from the bare film to a scene white, its mids the film's own crossover, nothing
-/// solved on greys (owner's call; the mids' C* is printed for the preset's owner to judge).
-const NEUTRAL_ENDS: f64 = 1.5;
+/// solved on greys (owner's call; the mids' C* is printed for the preset's owner to judge). No paper lays the ends on pure
+/// black and white: Vision3 250D's read 1.7, a RAW's 5000 K grey 2.7.
+const NEUTRAL_ENDS: f64 = 2.0;
 
 #[test]
-fn a_grey_ramp_lit_at_the_films_white_prints_its_ends_neutral_on_oni_standard() {
+fn a_grey_ramp_lit_at_the_films_white_shows_its_ends_neutral() {
     let white = oni_pipeline::conversion::scene_white(&PipelineSettings::rest(ConversionMode::Digital, true).on_stock(CINE)).unwrap();
     let rows = [white.r_vector, white.g_vector, white.b_vector].map(|r| [f64::from(r[0]), f64::from(r[1]), f64::from(r[2])]);
     let back = oni_settings::white::inverse(&rows);

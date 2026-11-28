@@ -14,9 +14,9 @@ fn sheet_stocks() -> Vec<VirtualStock> {
     VirtualStock::sheets()
 }
 
-/// Every paper but the Frontier, a machine measured, and ONI Standard, the data sheets' mean.
+/// Every paper but the Frontier, a machine measured.
 fn sheet_papers() -> Vec<PaperStock> {
-    PaperStock::all().into_iter().filter(|p| !p.is_machine() && *p != PaperStock::default()).collect()
+    PaperStock::all().into_iter().filter(|p| !p.is_machine()).collect()
 }
 
 fn finite(pixels: &[V4]) -> bool {
@@ -86,7 +86,7 @@ fn every_sheet_profile_reads_and_one_holding_a_number_not_finite_is_refused() {
 #[test]
 fn every_sheet_film_prints_finite_on_the_cpu_with_and_without_paper() {
     for stock in sheet_stocks() {
-        for paper in [None, Some(PaperStock::default())] {
+        for paper in [None, Some(PaperStock::of("kodak-endura-premier"))] {
             let out = printed(stock, &shot(stock, paper));
             assert!(finite(&out), "{stock:?} on {paper:?}");
         }

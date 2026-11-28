@@ -11,8 +11,8 @@ use oni_settings::{PaperStock, PipelineSettings};
 
 pub fn frames() -> [(&'static str, PipelineSettings); 5] {
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..prepared_negative() };
-    let standard = PipelineSettings { print_paper: Some(PaperStock::default()), ..prepared_negative() };
-    [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier), ("ONI Standard negative", standard)]
+    let endura = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..prepared_negative() };
+    [("negative", prepared_negative()), ("digital", digital()), ("black and white", mono()), ("Frontier negative", frontier), ("Endura Premier negative", endura)]
 }
 
 pub type Move = (&'static str, fn(&mut PipelineSettings));

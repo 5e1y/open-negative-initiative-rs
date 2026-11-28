@@ -2,10 +2,6 @@
  "oni": "paper",
  "format": 1,
  "key": "kodak-royal-digital",
- "aliases": [
-  "kodak-portra-endura",
-  "kodak-ektachrome-radiance-iii"
- ],
  "name": "Kodak Royal Digital",
  "brand": "Kodak",
  "profile": {

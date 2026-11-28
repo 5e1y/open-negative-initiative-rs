@@ -1,6 +1,6 @@
 //! Each paper laid under Prepare's window (owner's call): the window's black, the bare film, exposes the paper's black
 //! end of its useful range, 0.9 of its Dmax on its neutral, and the window's white its white end, its D-min and 0.04
-//! (ISO 6846), unless its file states that range; no grey is placed. Each layer's own offset in log exposure, its
+//! (ISO 6846); no grey is placed. Each layer's own offset in log exposure, its
 //! filtration, is the one that keeps a grey neutral along the whole range, each channel seen between its own ends.
 
 use super::{Sheet, V3};
@@ -69,8 +69,8 @@ pub fn useful_range(sheet: &Sheet, offsets: V3) -> [f32; 2] {
 
 /// How far a grey along the window strays from neutral with the layers at `offsets`: at each share, the red and blue
 /// channels' light between their own ends against green's, on a cube root as the eye weighs it.
-fn strays(sheet: &Sheet, offsets: V3, useful: Option<[f32; 2]>) -> Vec<f32> {
-    let [white, black] = useful.unwrap_or_else(|| useful_range(sheet, offsets));
+fn strays(sheet: &Sheet, offsets: V3) -> Vec<f32> {
+    let [white, black] = useful_range(sheet, offsets);
     let light = |s: f32| oni_render::viewed(density(sheet, exposed(black - s * (black - white), offsets)));
     let (dark, bright) = (light(0.0), light(1.0));
     (0..SAMPLES)
@@ -87,16 +87,16 @@ fn squared(v: &[f32]) -> f32 {
 }
 
 /// The paper laid under the window: red's and blue's offsets over green's by Gauss-Newton's damped steps, then the useful
-/// range they give, or `useful` where the file states it.
-pub fn placed(sheet: &Sheet, useful: Option<[f32; 2]>) -> Placing {
+/// range they give.
+pub fn placed(sheet: &Sheet) -> Placing {
     let at = |u: [f32; 2]| -> V3 { [u[0], 0.0, u[1]] };
     let mut u = [0.0f32; 2];
     for _ in 0..ITERATIONS {
-        let r = strays(sheet, at(u), useful);
+        let r = strays(sheet, at(u));
         let columns: [Vec<f32>; 2] = std::array::from_fn(|j| {
             let mut moved = u;
             moved[j] += PROBE;
-            strays(sheet, at(moved), useful).iter().zip(&r).map(|(m, h)| (m - h) / PROBE).collect()
+            strays(sheet, at(moved)).iter().zip(&r).map(|(m, h)| (m - h) / PROBE).collect()
         });
         let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>();
         let (a, b, d) = (dot(&columns[0], &columns[0]), dot(&columns[0], &columns[1]), dot(&columns[1], &columns[1]));
@@ -112,12 +112,12 @@ pub fn placed(sheet: &Sheet, useful: Option<[f32; 2]>) -> Placing {
             break;
         }
         let moved = |t: f32| [u[0] - t * step[0], u[1] - t * step[1]];
-        match super::printing::damped(squared(&r), |t| squared(&strays(sheet, at(moved(t)), useful))) {
+        match super::printing::damped(squared(&r), |t| squared(&strays(sheet, at(moved(t))))) {
             Some(t) => u = moved(t),
             None => break,
         }
     }
     let offsets = at(u);
-    let [white, black] = useful.unwrap_or_else(|| useful_range(sheet, offsets));
+    let [white, black] = useful_range(sheet, offsets);
     Placing { offsets, black, range: black - white }
 }

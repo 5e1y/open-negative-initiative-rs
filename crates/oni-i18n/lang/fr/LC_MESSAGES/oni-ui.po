@@ -4486,10 +4486,6 @@ msgid "Generic C-41"
 msgstr "C-41 générique"
 
 #: crates/oni-app/src/app/roll_tab.rs
-msgid "Scanner keys (legacy)"
-msgstr "Touches du Scanner (héritées)"
-
-#: crates/oni-app/src/app/roll_tab.rs
 msgid "Scanner ONI look (legacy)"
 msgstr "Rendu ONI du Scanner (hérité)"
 

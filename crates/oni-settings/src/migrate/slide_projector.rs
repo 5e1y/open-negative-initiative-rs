@@ -39,7 +39,7 @@ mod tests {
 
     /// A slide as a build of format 69 kept it: on a paper, Lighting and the colour tools moved.
     fn edited_slide() -> PipelineSettings {
-        let mut s = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Positive, true) };
+        let mut s = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..PipelineSettings::rest(ConversionMode::Positive, true) };
         (s.print.exposure, s.print.contrast, s.print.shadows, s.density, s.gains.stops) = (0.4, 0.1, -0.05, 0.2, [0.1, 0.0, -0.2]);
         s.print.set_filters([0.1, 0.0, -0.1]);
         s
@@ -50,13 +50,13 @@ mod tests {
         let older = SLIDE_PROJECTOR_VERSION - 1;
         let slide = edited_slide();
         let read_back = read(&stored(&slide, older));
-        assert_eq!(read_back, slide, "nothing moves, its paper kept as stored");
+        assert_eq!(read_back, PipelineSettings { print_paper: None, ..slide.clone() }, "nothing moves but the paper, a default then");
         assert!(read_back.projector().is_some() && read_back.paper().is_none() && !read_back.print.projected_blacks);
-        // A digital photo on a reversal film keeps the paper it named and prints on none; on a negative film, on its own.
+        // A digital photo on a reversal film prints on none; on a negative film, on its own.
         let digital = PipelineSettings::rest(ConversionMode::Digital, true);
-        let on_slide = PipelineSettings { print_paper: Some(PaperStock::default()), ..digital.on_stock(VirtualStock::of("fujifilm-velvia-50")) };
+        let on_slide = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..digital.on_stock(VirtualStock::of("fujifilm-velvia-50")) };
         let read_slide = read(&stored(&on_slide, older));
-        assert!(read_slide.print_paper.is_some() && read_slide.paper().is_none());
+        assert!(read_slide.print_paper.is_none() && read_slide.paper().is_none());
         assert_eq!(read(&stored(&digital, older)).paper(), digital.print_paper);
         // Round trip: written at this format, it reads back whole, Projected blacks included.
         let mut now = read_back.clone();
@@ -115,7 +115,7 @@ mod tests {
         let written = std::fs::read(crate::sidecar::url_for(&original)).unwrap();
         assert_eq!(super::super::standing(&written), super::super::Standing::Current);
         let read_back = crate::sidecar::read(&original, false).unwrap().settings;
-        assert_eq!(read_back, PipelineSettings { dye_set: DyeSet::of("fujifilm-velvia-100"), ..slide.clone() });
+        assert_eq!(read_back, PipelineSettings { dye_set: DyeSet::of("fujifilm-velvia-100"), print_paper: None, ..slide.clone() });
         // Twin: brought again, nothing moves.
         assert_eq!(super::super::file(&original, Some(false)), Ok(super::super::Outcome::Current));
         let _ = std::fs::remove_dir_all(&dir);

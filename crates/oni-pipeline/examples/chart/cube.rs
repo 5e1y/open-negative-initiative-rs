@@ -18,7 +18,7 @@ pub struct Cube {
 }
 impl Cube {
     pub fn read(path: &str) -> Cube {
-        let (_, look) = oni_settings::stocks::cube::read(&std::fs::read(path).unwrap()).unwrap();
+        let (_, look) = read(&std::fs::read(path).unwrap()).unwrap();
         Cube { n: look.size, nodes: look.nodes.iter().map(|p| [p[0] as f64, p[1] as f64, p[2] as f64]).collect() }
     }
     pub fn at(&self, c: V3) -> V3 {
@@ -118,4 +118,50 @@ pub fn judged(printed: &[V3], targets: &[V3]) -> [f64; 5] {
     let chroma = |v: &[V3]| v[..CHECKER].iter().map(|c| c[1].hypot(c[2])).sum::<f64>();
     let ramp = |v: &[V3]| v[colours..].iter().map(|c| c[1].hypot(c[2])).sum::<f64>() / RAMP.len() as f64;
     [mean(&|i| de2000(t[i], p[i])), mean(&|i| (t[i][0] - p[i][0]).abs()), chroma(&p) / chroma(&t), ramp(&p), ramp(&t)]
+}
+
+/// A reference's 3D LUT as a `.cube` file holds it, its nodes red fastest.
+struct Look {
+    size: usize,
+    nodes: Vec<[f32; 4]>,
+}
+
+/// The sides a cube may have: two nodes are a cube, past 128 a table outgrows a texture's side.
+const SIZES: std::ops::RangeInclusive<usize> = 2..=128;
+
+/// The title and the nodes `bytes` hold, or why they are refused: no size, a 1D table, a domain other than 0 to 1, a
+/// node missing, extra or not a number.
+fn read(bytes: &[u8]) -> Result<(Option<String>, Look), String> {
+    let text = std::str::from_utf8(bytes).map_err(|_| "it is not text".to_string())?;
+    let (mut title, mut size, mut nodes) = (None, None, Vec::new());
+    for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+        let (word, rest) = line.split_once(char::is_whitespace).unwrap_or((line, ""));
+        let rest = rest.trim();
+        match word {
+            "TITLE" => title = Some(rest.trim_matches('"').to_string()).filter(|t| !t.is_empty()),
+            "LUT_3D_SIZE" => size = Some(rest.parse::<usize>().ok().filter(|n| SIZES.contains(n)).ok_or_else(|| format!("its size \"{rest}\" is not 2 to 128"))?),
+            "LUT_1D_SIZE" => return Err("it is a 1D table, not a 3D one".into()),
+            "DOMAIN_MIN" | "DOMAIN_MAX" => {
+                let end = if word == "DOMAIN_MIN" { 0.0 } else { 1.0 };
+                if numbers(rest).ok().is_none_or(|v| v.len() != 3 || v.iter().any(|&x| x != end)) {
+                    return Err(format!("its {word} is not {end} {end} {end}"));
+                }
+            }
+            "LUT_3D_INPUT_RANGE" => return Err("its input range is not 0 to 1".into()),
+            _ => {
+                let v = numbers(line).map_err(|_| format!("the line \"{line}\" is neither a keyword nor a node"))?;
+                let [r, g, b] = v[..] else { return Err(format!("the node \"{line}\" holds {} numbers, not 3", v.len())) };
+                nodes.push([r, g, b, 1.0]);
+            }
+        }
+    }
+    let size = size.ok_or("it gives no LUT_3D_SIZE")?;
+    if nodes.len() != size.pow(3) {
+        return Err(format!("it holds {} nodes where a size of {size} needs {}", nodes.len(), size.pow(3)));
+    }
+    Ok((title, Look { size, nodes: nodes.into() }))
+}
+
+fn numbers(text: &str) -> Result<Vec<f32>, std::num::ParseFloatError> {
+    text.split_whitespace().map(|w| w.parse::<f32>().and_then(|x| if x.is_finite() { Ok(x) } else { "x".parse() })).collect()
 }

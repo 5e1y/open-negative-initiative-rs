@@ -56,10 +56,10 @@ fn a_photo_on_a_slide_film_is_projected_on_the_screen_and_never_printed() {
     assert!(s.print_paper.is_none() && s.projector() == Some(SLIDE), "a slide is projected, not printed");
     // A negative taken after it names no paper either, and one taken on a paper keeps it.
     assert!(s.on_stock(VirtualStock::of("kodak-portra-400")).print_paper.is_none());
-    let papered = PipelineSettings { print_paper: Some(Default::default()), ..PipelineSettings::rest(ConversionMode::Digital, true) };
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..PipelineSettings::rest(ConversionMode::Digital, true) };
     assert!(papered.on_stock(VirtualStock::of("kodak-portra-400")).print_paper.is_some() && papered.on_stock(SLIDE).print_paper.is_none());
     // A paper named on it is never printed on: the slide takes no paper.
-    let named = PipelineSettings { print_paper: Some(Default::default()), ..s.clone() };
+    let named = PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..s.clone() };
     assert!(named.paper().is_none() && !named.takes_paper() && conversion::stage47(&named).paper().is_none());
     let Some(mut g) = graph("a_photo_on_a_slide_film_is_projected_on_the_screen_and_never_printed") else { return };
     let (w, h) = (23, 11);

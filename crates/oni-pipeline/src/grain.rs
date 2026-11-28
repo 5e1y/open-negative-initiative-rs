@@ -19,7 +19,7 @@ pub const READ_ALONE: f32 = 0.739;
 /// as its projector sees the dyes; each channel its own layer on any other film, a colour negative read layer by layer.
 pub fn gaze(stock: VirtualStock) -> [[f32; 3]; 3] {
     let entry = stock.entry();
-    match entry.reversal && stock.look().is_none() {
+    match entry.reversal {
         true => film::projection::projected(stock).gaze,
         false => film::OWN_LAYERS,
     }
@@ -31,9 +31,9 @@ fn windows(stock: VirtualStock) -> [f32; 3] {
 }
 
 /// The negative `film` hands the chain, as its grain reads it: its bare film under its reading's pedestal and its
-/// layers' windows; none on a slide or a look, which hand it a positive.
+/// layers' windows; none on a slide, which hands it a positive.
 pub fn negative(film: &VirtualFilm) -> Option<GrainedNegative> {
-    if film.stock.entry().reversal || film.stock.look().is_some() {
+    if film.stock.entry().reversal {
         return None;
     }
     let veil = density_axis::pedestal(film::CEILING);
@@ -55,7 +55,7 @@ pub fn grain(s: &PipelineSettings, scan: Rect, scale: f64) -> Option<Grain> {
     let deviation = GRAIN_TOP * s.grain.amount;
     let silver = f.stock.is_silver();
     let entry = f.stock.entry();
-    let alone = !silver && !entry.reversal && !entry.neutral && f.stock.look().is_none();
+    let alone = !silver && !entry.reversal && !entry.neutral;
     let layers = match (silver, alone) {
         (true, _) => [deviation; 3],
         (false, true) => LAYER_GRAIN.map(|l| l * deviation * READ_ALONE),

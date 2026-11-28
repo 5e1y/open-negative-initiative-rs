@@ -13,10 +13,6 @@ Drop a `.json` file there to add a stock or a paper, and its canister's `.svg` b
 
 A file that does not read is refused with a notice saying why, and the version of it ONI last took stays in use. A file is refused when JSON does not parse, a field is missing or unknown (a misspelt one), its `format` is later than the app's, a key holds more than letters, digits and hyphens, a key or a retired key is another file's, it names dyes no file defines, its profile does not read or bake, or it stands for a shipped file yet drops a key that file defined (other stocks name it).
 
-## A look from a 3D LUT
-
-Drop a `.cube` file in the same folder and it is a film of its own for digital photos, listed under the brand LUT, named by its `TITLE` (else its file name) and stored as `lut-` and its file name in lower case. A photo on it is read through the cube in place of a negative: the film's exposure first, then the scene in display sRGB code, through the cube, back to linear light. On no paper that positive shows as it is; on a paper it prints through the internegative. Its grain is the default film's. A cube is refused when it gives no `LUT_3D_SIZE` from 2 to 128, is a 1D table, has a domain other than 0 to 1, or holds a node more or less than its size needs. ONI ships no look.
-
 A photo keeps the key it was edited on even while no file defines it: it renders on the default stock, or on no paper, meanwhile, its key shown marked missing, and finds its stock again when the file comes back.
 
 ## A film stock
@@ -76,7 +72,7 @@ A `colour-slide` stock's film is a reversal film: its profile's curves fall with
 }
 ```
 
-A paper holds a data sheet's `profile`, or, for the Frontier SP-3000, `frontier`: the fit of its measured table that `docs/research/frontier/frontier_print_fit.py` writes (`neutral`, `matrix` and each layer's `curves`), with its provenance. A paper is its curves: its profile's `data` holds `log_exposure`, 256 evenly spaced log H, and `density_curves`, each node's Status A red, green and blue densities as its sheet prints them, D-min included; each layer's density then absorbs its own channel alone. Prepare the Roll's window covers the paper's useful range, D-min + 0.04 to 0.9 Dmax on its neutral, unless `data` states it as `useful_range`, the log H of its white end then its black end: ONI Standard's, written by `scripts/oni-standard-paper.py`, is [0, 1], its curve laid on the window's share. The paper menu lists the papers by brand and name.
+A paper holds a data sheet's `profile`, or, for the Frontier SP-3000, `frontier`: the fit of its measured table that `docs/research/frontier/frontier_print_fit.py` writes (`neutral`, `matrix` and each layer's `curves`), with its provenance. A paper is its curves: its profile's `data` holds `log_exposure`, 256 evenly spaced log H, and `density_curves`, each node's Status A red, green and blue densities as its sheet prints them, D-min included; each layer's density then absorbs its own channel alone. Prepare the Roll's window covers the paper's useful range, D-min + 0.04 to 0.9 Dmax on its neutral. The paper menu lists the papers by brand and name.
 
 ## Writing the files
 

@@ -301,7 +301,7 @@ fn families() -> Vec<(&'static str, PipelineSettings)> {
     pro.texture.amount = 0.8;
     pro.secret_sauce = 1.2;
     pro.print.black_point = 0.05;
-    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..pro.clone() };
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..pro.clone() };
     let mut joint = pro.clone();
     joint.texture.amount = 0.0;
     let mut mono = pro.clone();

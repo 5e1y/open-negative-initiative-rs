@@ -23,7 +23,7 @@ use oni_settings::{LegacyMachine, LegacyPrint, PaperStock, PipelineSettings};
 
 /// Every pipe, each at the colour tools' rest, some with Lighting's other tools moved.
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut uncompensated = onis(prepared_negative());
+    let mut uncompensated = endura(prepared_negative());
     uncompensated.print.colour_compensation = false;
     let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
@@ -31,11 +31,11 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
-        ("ONI Standard, negative", onis(prepared_negative())),
-        ("ONI Standard, uncompensated", uncompensated),
+        ("Endura Premier, negative", endura(prepared_negative())),
+        ("Endura Premier, uncompensated", uncompensated),
         ("legacy print, Frontier", legacy),
-        ("ONI Standard, digital", onis(digital())),
-        ("ONI Standard, black and white", onis(mono())),
+        ("Endura Premier, digital", endura(digital())),
+        ("Endura Premier, black and white", endura(mono())),
         ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, negative, Brightness", bright),
@@ -237,11 +237,11 @@ fn a_black_and_white_print_takes_no_colour_tool() {
         u.spectrogram.set(Band::Red, 10.0, 0.5, 0.5);
         u.saturation = SaturationCurve { points: [0.0, 0.25, 0.5, 0.75, 1.0].map(|x| Point::new(x, 0.8)).to_vec() };
     };
-    for (label, s) in [("ONI's print", onis(mono())), ("paper", mono())] {
+    for (label, s) in [("Endura Premier", endura(mono())), ("paper", mono())] {
         assert!(conversion::stage47(&with(&s, tools)).negative.is_none(), "{label}");
     }
     // Twin: a colour negative takes them.
-    let n = conversion::stage47(&with(&onis(prepared_negative()), tools)).negative.expect("colour tools on the negative");
+    let n = conversion::stage47(&with(&endura(prepared_negative()), tools)).negative.expect("colour tools on the negative");
     assert!(n.spread > 1.0 && n.mixer.is_some() && n.curve.is_some());
 }
 
@@ -271,7 +271,7 @@ fn every_print_stays_monotone_along_a_colours_ramp() {
         }
     }
     // Twin: a slope under none on the negative turns the print over.
-    let s = with(&onis(digital()), |u| u.density = 0.5);
+    let s = with(&endura(digital()), |u| u.density = 0.5);
     let k = conversion::stage47(&s);
     let over = Stage47 { negative: k.negative.map(|n| Negative { slope: [-1.0; 3], ..n }), ..k };
     let y: Vec<f32> = scanned(&s, &ramps[0]).iter().map(|q| luma(rgb(cpu::stage47(*q, &over)))).collect();

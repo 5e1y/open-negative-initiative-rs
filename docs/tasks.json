@@ -14694,15 +14694,10 @@
     "detail": "Owner's call: since Zalando Sans the words of the flat keys read small. A flat key's word (not a keycap's, not a mini key's) now takes ButtonStyle.word-legend, Type.label (13 pt), a step over the keycaps' Type.caption (11 pt); the design system alone changes. The bar needs 1198 pt worded in English, 1329 in French, 1308 in Spanish, under a 13-inch screen's 1440; folded, its last key still ends at 1084 pt on the narrowest window in every language. Checks: toolbar_fit's four in English, French and Spanish on the app profile."
   },
   {
-    "id": 4109,
-    "type": "ui",
-    "title": "The export's column lies over the editor's: as wide, the card flush with it, its content as far in",
-    "status": "done",
-    "detail": "Owner's notes on the export after #4107: its column's left margin was off the editor's, a margin too many right of the previews' canvas. Measured, the export's column was FormStyle.panel-width, 400 pt, the editor's ShellStyle.panel-width, 340 pt, and the export's card kept its inset on its right, 8 pt short of the column the editor's card touches. The export's column now takes ShellStyle.panel-width and its card ends flush with it, as the editor's: on a 1280 pt window both columns start at 940 pt, 340 pt wide, their content 16 pt in, under the bar's room alike where the traffic lights keep it. Check: export_column::the_export_column_lies_over_the_editors (twin: the editor's panel hidden, its card reaches past the column's place); export_columns and export_panel follow the narrower column.",
     "id": 4500,
     "type": "bug",
-    "status": "done",
     "title": "Each walk beside a photo writes its line in the log: none and why, else its frames drawn, how far it had gone at the first, the renders landed meanwhile, what ended it; ONI_BENCH=walk walks the editor by its arrows",
+    "status": "done",
     "detail": "Owner: the animation between two photos still did not play after #4023, whose check was green. The log now says, for every change of photo beside the editor, whether the walk started (else why: from the gallery, the export, Reduce Motion, no picture on the canvas), the frames the window drew while it ran, the first one's delay after the key and how far the walk had gone in it, the renders that landed meanwhile and whether its pace ran or the next walk cut it; the photo is a token. ONI_BENCH=walk walks the real window by its arrows, slowly, in a burst and with the key held at macOS's fastest repeat, both ways. Measured on the reference roll's test copy before the fix: the first frame came 33 to 62 ms after the key, after the walk's 1 ms timers had already sent both sides to their end, in every slow walk: the start was never laid, so nothing moved."
   },
   {
@@ -14718,5 +14713,26 @@
     "title": "A virtual film's light on a holographic seal beside its name: blue Daylight, green Tungsten; the Film block's settings key and light line go",
     "status": "done",
     "detail": "Owner's call: in a digital photo's Film block the small settings key under the stock and the line under Select Film Stock leave; beside the stock's name a seal of holographic foil names the light its file balances it for, blue for daylight, green for tungsten, none on the neutral film, which keeps the scene's own light (Balance::Scene). The design system's Badge takes two foils for it (Metal.holo-blue, Metal.holo-green). The settings key showed the film's reference, read only: the gains, each channel's black and white; they stay in sight as the rests the Source tab's Filtration and Per-Channel Levels show and come back to, which the block's note now says. Checks: virtual_film (no seal and no settings key on the neutral film), stock_hero (each film picked names its light on its seal, the shots film-seal-daylight and film-seal-tungsten)."
+  },
+  {
+    "id": 4400,
+    "type": "refactor",
+    "title": "The papers' never-released sediment removed at its source: the legacy print on a paper, the internegative, ONI Standard and every retired paper key",
+    "status": "done",
+    "detail": "Owner's call: the papers are redone for 2.0, and nothing released named a paper (1.6.0 wrote format 22, papers arrived at 41). Removed: paper/legacy.rs and Sheet's grey and lifted (a legacy print's time on a paper), the warmth laid on a paper's print, paper/internegative.rs (a film's look copied onto Vision3 50D to print on a paper), ONI Standard's file and script and the useful_range a paper file could state for it, the paper keys' aliases and RETIRED_REVERSAL_KEY, PaperStock's default (a paper is never a default), the dead research (positive-paper, the Frontier Look Lab plan). A legacy print laid keeps its own curve and takes no paper (PipelineSettings::takes_paper), laying it takes the paper away; a key no file defines prints on no paper (paper::sheet returns none). The four legacy_print cases that named a paper, all of format 45, leave; the released corpus (formats 19 to 21) still renders to the bit. scanner_density stays, the Look Lab's bake still reads it. Checks: the paper, inversion, every_paper, legacy_print and migration tests, their ONI Standard cases moved to Endura Premier or to no paper; digital_negative_model's ends now on no paper (1.7 against a RAW's 2.7, ceiling 2.0)."
+  },
+  {
+    "id": 4401,
+    "type": "change",
+    "title": "Sidecar format 84: one migration in place of the four paper steps",
+    "status": "done",
+    "detail": "migrate::papers_redone replaces migrate::paper, print_lift, slide_paper and optional_paper. A document before format 84 keeps its paper only where it chose one over the pure inversion (format 73 on) and that paper still ships: ONI Standard and the six retired keys leave, a paper named before 73 (a format's default then) leaves, and a legacy print laid takes none; nothing else moves. True blacks, Paper blacks and Print on paper, retired switches, are read and dropped. The steps before it that read whether a photo printed on a paper (one_face, lighting_on_negative) keep reading it, so a legacy print's Exposure lands where it did. An adversarial review found the Exposure of a laid legacy print naming a paper (formats 46 to 60) moved 0.75 when those steps stopped asking; they ask again. Checks: the migration tests (slide_projector, datasheet, one_face, paper_ends, virtual_film, lighting_on_negative's papered twin, corpus with version-85 as the newer file)."
+  },
+  {
+    "id": 4402,
+    "type": "refactor",
+    "title": "No cube is a film: the LUT film, its reader and its look path removed; a photo on one lands on the neutral film",
+    "status": "done",
+    "detail": "Owner's call: no more cube. A `.cube` file in the Stocks folder is no longer read as a film (oni_settings::stocks::cube, the loader's look, look_key, VirtualStock::look, the entries' look, the chain's look path and its cube cache, the grain's look branches all gone; the stocks README's section with them). Format 84's migrate::cube_films lays a digital photo on a film keyed `lut-` on the neutral film, its gains and windows on that film's reference, its exposure, effects and every other edit kept. The measured Frontier table and the legacy print's cubes are no films and stay; the coupler-fit research example keeps its own cube reader for the owner's references. Checks: cube_films's test (twins: a shipped film and a document of 84 move nothing); the looks test leaves with its subject."
   }
 ]

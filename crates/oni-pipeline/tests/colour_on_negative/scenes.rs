@@ -78,8 +78,8 @@ pub fn colour_pipes() -> Vec<(&'static str, PipelineSettings)> {
     };
     let negative = shot_on();
     vec![
-        ("ONI Standard, digital", onis(digital())),
-        ("ONI Standard, negative", onis(negative.clone())),
+        ("Endura Premier, digital", endura(digital())),
+        ("Endura Premier, negative", endura(negative.clone())),
         ("projector, slide", slide()),
         ("paper, digital", digital()),
         ("paper, Frontier", PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() }),

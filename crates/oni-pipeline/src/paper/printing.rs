@@ -128,13 +128,10 @@ pub(crate) fn spanned(v: f32) -> f32 {
 
 /// The frame's paper at the window's shares: the window's bare film on the paper's black and its white on the paper's
 /// white through its own filtration, then Brightness and the ends on the print of the negative as Lighting develops
-/// it; a legacy print's own time. None where the frame names no paper, and while the print is bypassed.
+/// it. None where the frame names no paper, and while the print is bypassed.
 pub fn printing(s: &PipelineSettings, k: &Stage47) -> Option<Printing> {
     let stock = s.paper().filter(|_| !s.print.bypassed)?;
-    let sheet = sheet(stock);
-    if s.legacy().is_some() {
-        return Some(super::legacy::printing(s, k, sheet));
-    }
+    let sheet = sheet(stock)?;
     let placing = &sheet.placing;
     let cc = filtration(placing.offsets);
     let most = placing.offsets.iter().copied().fold(f32::NEG_INFINITY, f32::max);

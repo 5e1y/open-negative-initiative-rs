@@ -123,7 +123,7 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_pulls_the_filters_away() {
     // On no paper and on one: the dust lies past the window's white, which the stage holds nowhere and a paper prints on
     // its own white end.
     let narrow = settings(1.2);
-    let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..narrow.clone() };
+    let on_paper = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..narrow.clone() };
     for (label, s) in [("no paper", &narrow), ("a paper", &on_paper)] {
         let kept = key::filters(&mut r, copy, s, printable).unwrap();
         let blinded = key::filters(&mut r, copy, s, finite).unwrap();
@@ -192,7 +192,7 @@ fn on_a_paper_the_key_balances_the_papers_own_print() {
     let source = scene(&mut graph, &[(0, 96, [0.30, 0.22, 0.14]), (32, 64, [0.05, 0.035, 0.022]), (0, 32, [0.55, 0.42, 0.27])], None);
     let copy = Copy { source: &source, full_width: None };
     let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, laying: Laying::Nothing };
-    let paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Digital, false) };
+    let paper = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..PipelineSettings::rest(ConversionMode::Digital, false) };
     assert!(paper.paper().is_some(), "a digital photo on the paper it names");
     let found = key::filters(&mut r, copy, &paper, printable).expect("the cast photo reads");
     let balanced = parted(key::shades(&mut r, copy, &unlit(&paper), found, printable).unwrap());

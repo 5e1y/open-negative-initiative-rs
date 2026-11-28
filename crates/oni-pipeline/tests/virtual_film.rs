@@ -268,11 +268,11 @@ fn the_gpu_develops_the_negative_its_reference_does() {
     judge("virtual negative, channels swapped", &out, &reference, &mapped(&reference, |p| [p[2], p[1], p[0], p[3]]));
 }
 
-/// A digital photo at rest on ONI Standard's own black, its grain and neighbourhood stages off so a pixel prints alone.
+/// A digital photo at rest on Endura Premier's own black, its grain and neighbourhood stages off so a pixel prints alone.
 fn filmed() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800")).per_pixel_only();
     s.print.print_lift = true;
-    s.print_paper = Some(oni_settings::PaperStock::of("oni-standard"));
+    s.print_paper = Some(oni_settings::PaperStock::of("kodak-endura-premier"));
     s.grain.amount = 0.0;
     s
 }

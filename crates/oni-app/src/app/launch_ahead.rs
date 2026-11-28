@@ -36,8 +36,8 @@ fn ahead_of(engine: &render::Shared, previews: &Arc<Mutex<render::Previews>>, pa
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let Ok(read) = oni_settings::sidecar::read(Path::new(path), mosaic) else { return };
     let settings = read.settings;
-    // The neutral film and a look bake no profile of their own.
-    if let Some(film) = settings.film().filter(|f| { let e = f.stock.entry(); !e.neutral && e.look.is_none() }) {
+    // The neutral film bakes no profile of its own.
+    if let Some(film) = settings.film().filter(|f| !f.stock.entry().neutral) {
         let _ = oni_pipeline::film::stock(film.stock);
     }
     let reading = render::Reading::of(&settings);

@@ -192,11 +192,11 @@ fn keys(s: &PipelineSettings) -> [i64; 4] {
     s.legacy().map_or([0; 4], |l| [l.d, l.c, l.m, l.y])
 }
 
-/// The legacy print's keys as stops of gain, more density less light; where the Frontier's look's cube prints, its rest
-/// with them; none without a legacy print laid.
+/// The legacy print's keys as stops of gain, more density less light; on the Frontier's look, its rest with them; none
+/// without a legacy print laid.
 pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
     let clicks = MACHINE.offset(keys(s));
-    let rests = s.legacy().is_some_and(|l| l.machine == LegacyMachine::Frontier) && s.paper().is_none();
+    let rests = s.legacy().is_some_and(|l| l.machine == LegacyMachine::Frontier);
     let rest = if rests { frontier_rest() } else { [0.0; 3] };
     stops_of(std::array::from_fn(|c| clicks[c] + rest[c]), s)
 }

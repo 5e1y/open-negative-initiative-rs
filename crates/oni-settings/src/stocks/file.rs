@@ -97,9 +97,6 @@ pub struct FilmBlock {
     /// The rests a digital photo's film effects take on this film; one left out is the effect's own rest.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effects: Option<Effects>,
-    /// A `.cube` file's look, which a digital photo on this film is read through in place of its negative.
-    #[serde(skip)]
-    pub look: Option<super::cube::Look>,
 }
 
 /// A film's own effects, each on the film: lengths in micrometres of a 135 frame.

@@ -1,6 +1,6 @@
 //! `stock_chart <in.f32> <out> [stock profile,...]`: scene pixels (linear Rec. 2020, as a digital photo's decode holds
 //! them) through each virtual stock at rest on the CPU references: the scene lit at the stock's white, its dye amounts,
-//! its scan, its print on ONI Standard (`-paper`) and its pure inversion (`-oni`). Each as `w h` then f32 RGB.
+//! its scan, its print on Endura Premier (`-paper`) and its pure inversion (`-oni`). Each as `w h` then f32 RGB.
 
 use oni_pipeline::{conversion, film};
 use oni_render::cpu;
@@ -43,7 +43,7 @@ fn main() {
             continue;
         }
         let mut paper = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock);
-        paper.print_paper = Some(Default::default());
+        paper.print_paper = Some(oni_settings::PaperStock::of("kodak-endura-premier"));
         if let Some(f) = paper.virtual_film.as_mut() {
             f.exposure = exposure;
         }

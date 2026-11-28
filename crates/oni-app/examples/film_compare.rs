@@ -1,6 +1,6 @@
 //! `film_compare <raw> <out> [side]`: a digital photo rendered headless as the editor renders it, on its virtual
 //! Portra 800, with the scene the film reads and the film's scan; then the same photo with its chroma decompression at
-//! rest, to weigh it; then on its stock, a scan's on its roll's stock; then printed on ONI Standard (`paper`) and
+//! rest, to weigh it; then on its stock, a scan's on its roll's stock; then printed on Endura Premier (`paper`) and
 //! on no paper (`oni`), then on the paper on the Pro face, where Lighting reads its
 //! Exposure, a stop under, as it is and a stop over (`paper-under`, `paper-pro`, `paper-over`), and Temperature half its
 //! track either way (`paper-cool`, `paper-warm`), and Lighting's Black point and White point at +0.05 on the paper and on ONI's
@@ -48,7 +48,7 @@ fn main() {
     let marked = raw.parent().and_then(oni_settings::roll_folder::roll).and_then(|r| r.stock).and_then(|k| oni_settings::dyes::dye_set(&k));
     let stocked = PipelineSettings { dye_set: owner.film().map(|f| f.stock.dye_set()).or(marked).unwrap_or(owner.dye_set), ..owner.clone() };
     println!("stock {:?}", stocked.dye_set);
-    let papered = PipelineSettings { print_paper: Some(Default::default()), ..owner.clone() };
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..owner.clone() };
     let onis = PipelineSettings { print_paper: None, ..owner.clone() };
     let plain = [("rest", &owner), ("nodecomp", &undecompressed), ("stock", &stocked), ("paper", &papered), ("oni", &onis)]
         .map(|(t, s)| (t.to_string(), s.clone()));

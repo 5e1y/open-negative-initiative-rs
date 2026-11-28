@@ -328,7 +328,7 @@ fn main() {
         } else {
             vec![
                 ("inversion", at_rest.clone()),
-                ("standard", PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..at_rest.clone() }),
+                ("endura", PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..at_rest.clone() }),
                 ("royal", PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-royal-digital")), ..at_rest.clone() }),
             ]
         };

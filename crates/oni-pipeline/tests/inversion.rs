@@ -11,7 +11,7 @@ use oni_render::{Shown, cpu};
 use oni_settings::levels::Levels;
 use oni_settings::{ConversionMode, LegacyPrint, PaperStock, PipelineSettings, VirtualStock};
 
-const STANDARD: PaperStock = PaperStock::of("oni-standard");
+const PAPER: PaperStock = PaperStock::of("kodak-endura-premier");
 
 /// A prepared colour negative on a camera scan: each channel's own gain and window, in density, no paper named.
 fn prepared() -> PipelineSettings {
@@ -100,9 +100,9 @@ fn a_frame_naming_no_paper_shows_each_windows_share_as_the_srgb_code_of_its_ligh
     let (gamma, linear) = (through(|t| t.powf(2.2)), through(|t| t));
     assert!(gamma > 2.0 * off && linear > 0.2, "{gamma} {linear}");
     let other = |s: &PipelineSettings| worst(&shown, &mapped(&scans, |p| cpu::output_clip(cpu::stage47(p, &conversion::stage47(s)))));
-    let on_paper = other(&PipelineSettings { print_paper: Some(STANDARD), ..s.clone() });
+    let on_paper = other(&PipelineSettings { print_paper: Some(PAPER), ..s.clone() });
     let on_curve = other(&PipelineSettings { legacy_print: Some(LegacyPrint::default()), ..s.clone() });
-    println!("twins: gamma 2.2 {gamma:.2e}, linear {linear:.2}, ONI Standard {on_paper:.2}, a legacy print's curve {on_curve:.2}");
+    println!("twins: gamma 2.2 {gamma:.2e}, linear {linear:.2}, Endura Premier {on_paper:.2}, a legacy print's curve {on_curve:.2}");
     assert!(on_paper > 0.05 && on_curve > 0.05, "{on_paper} {on_curve}");
 }
 
@@ -116,7 +116,7 @@ fn the_graph_shows_the_pure_inversion_as_its_reference_does() {
     let pixels = &scans[..(w * h) as usize];
     let source = g.upload(w, h, pixels).unwrap();
     let out = whole(&mut g, &stages::converted(Image::new(&source), &k));
-    let on_paper = conversion::stage47(&PipelineSettings { print_paper: Some(STANDARD), ..s.clone() });
+    let on_paper = conversion::stage47(&PipelineSettings { print_paper: Some(PAPER), ..s.clone() });
     judge("the pure inversion", &out, &mapped(pixels, |p| cpu::stage47(p, &k)), &mapped(pixels, |p| cpu::stage47(p, &on_paper)));
     // Its kernel alone, on shares past both ends of the window; twin, a display gamma's power between them.
     let shares = common::noise(w, h, 7, -0.3, 1.4);
@@ -140,10 +140,15 @@ fn every_frame_a_paper_may_print_shows_its_inversion_until_it_names_one() {
         let rest = PipelineSettings::rest(mode, true);
         assert!(rest.print_paper.is_none() && shown(&rest) == Shown::Inversion, "{mode:?}");
         // A paper named prints, and a legacy print keeps its own curve.
-        let on_paper = PipelineSettings { print_paper: Some(STANDARD), ..rest.clone() };
+        let on_paper = PipelineSettings { print_paper: Some(PAPER), ..rest.clone() };
         assert!(matches!(shown(&on_paper), Shown::Paper(_)) && conversion::printing(&on_paper).is_some(), "{mode:?}");
         let legacy = PipelineSettings { legacy_print: Some(LegacyPrint::default()), ..rest.clone() };
         assert!(shown(&legacy) == Shown::Curve && conversion::stage47(&legacy).print_on == 1.0, "{mode:?}");
+        // A legacy print laid takes no paper, one named included; twin: unlaid, the paper prints.
+        let both = PipelineSettings { print_paper: Some(PAPER), ..legacy.clone() };
+        assert!(both.paper().is_none() && !both.takes_paper() && shown(&both) == Shown::Curve, "{mode:?}");
+        let unlaid = PipelineSettings { legacy_print: Some(LegacyPrint { laid: false, ..LegacyPrint::default() }), ..both };
+        assert!(matches!(shown(&unlaid), Shown::Paper(_)), "{mode:?}");
         // A measure upstream of the print reads the windows' shares as they are.
         let mut measured = rest.clone();
         measured.print.bypassed = true;
@@ -152,7 +157,7 @@ fn every_frame_a_paper_may_print_shows_its_inversion_until_it_names_one() {
         let mut ended = rest.clone();
         (ended.print.brightness, ended.print.print_lift) = (1.0, true);
         assert_eq!(conversion::stage47(&ended), conversion::stage47(&rest), "{mode:?}");
-        let ended_on_paper = PipelineSettings { print_paper: Some(STANDARD), ..ended };
+        let ended_on_paper = PipelineSettings { print_paper: Some(PAPER), ..ended };
         assert_ne!(conversion::stage47(&ended_on_paper), conversion::stage47(&on_paper), "{mode:?}");
     }
     // A slide is projected, and one shot on a reversal film too: neither shows the inversion, with or without a paper named.
@@ -160,7 +165,7 @@ fn every_frame_a_paper_may_print_shows_its_inversion_until_it_names_one() {
     let reversal = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::SLIDE);
     for s in [slide, reversal] {
         assert!(!s.takes_paper() && !s.shows_inversion() && shown(&s) == Shown::Curve);
-        assert!(shown(&PipelineSettings { print_paper: Some(STANDARD), ..s }) == Shown::Curve);
+        assert!(shown(&PipelineSettings { print_paper: Some(PAPER), ..s }) == Shown::Curve);
     }
     // A paper no file defines prints on no paper until its file is back, its key kept.
     let missing = PipelineSettings { print_paper: Some(PaperStock::of("a-paper-no-file-defines")), ..prepared() };

@@ -48,7 +48,7 @@ fn main() {
     for stock in VirtualStock::sheets() {
         let key = serde_json::to_string(&stock).unwrap();
         let baked = film::stock(stock);
-        for paper in [None, Some(PaperStock::default())] {
+        for paper in [None, Some(PaperStock::of("kodak-endura-premier"))] {
             let s = shot(stock, paper);
             let k = conversion::stage47(&s);
             let cpu: Vec<V4> = scenes().into_iter().map(|p| cpu::stage47(cpu::virtual_negative(p, &baked.kernel, &baked.table), &k)).collect();

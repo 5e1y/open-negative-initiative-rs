@@ -195,7 +195,7 @@ mod tests {
         assert_eq!((s.density, s.balance_filters, s.secret_sauce, s.vignette.stops), (0.0, None, 0.4, -0.5));
         assert_eq!(s.legacy_print, Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 3, c: -1, m: 0, y: 2, w: 1, laid: true }));
         // On a paper its print rests at the paper's rest, and keys at rest lay no legacy print.
-        let papered = PipelineSettings { print_paper: Some(PaperStock::default()), ..pro_edit() };
+        let papered = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..pro_edit() };
         let mut bare = scanner("scanner", "oni");
         bare.clicks = Clicks::default();
         let on_paper = caught_up(older, papered.clone(), &bare);

@@ -42,7 +42,7 @@ pub fn oklab(code: V3) -> V3 {
     let s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b).cbrt();
     [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s]
 }
-/// A digital photo's render on `stock` baked through `couplers`, at rest on ONI Standard, as a CPU chain;
+/// A digital photo's render on `stock` baked through `couplers`, at rest on no paper, as a CPU chain;
 /// a slide projected.
 pub struct Render {
     stock: film::Stock,
@@ -60,7 +60,6 @@ impl Render {
     pub fn of(key: &'static str, stock: film::Stock) -> Render {
         let v = VirtualStock::of(key);
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(v);
-        s.print_paper = Some(Default::default());
         s.gains.stops = stock.reference.stops;
         s.levels = stock.reference.levels();
         let to_2020 = matmul(&inv(&M2020), &SRGB_TO_XYZ);

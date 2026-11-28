@@ -356,7 +356,7 @@ fn every_slider_names_one_field_twice() {
 fn on_a_paper_a_filter_moved_moves_the_negative_and_leaves_the_enlargers_dial() {
     use oni_core::knob::{Channel, Knob};
     let rest = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Digital, true);
-    let s = oni_settings::PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..rest };
+    let s = oni_settings::PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..rest };
     let dial = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::printing(s).expect("on its paper").filtration;
     let own = |s: &oni_settings::PipelineSettings| oni_pipeline::conversion::stage47(s).negative.map_or([0.0; 3], |n| n.own_shift);
     for c in [Channel::Red, Channel::Green, Channel::Blue] {

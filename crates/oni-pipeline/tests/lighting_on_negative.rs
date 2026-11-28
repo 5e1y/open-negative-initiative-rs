@@ -29,7 +29,7 @@ fn pipes() -> Vec<(&'static str, PipelineSettings)> {
 }
 
 fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
-    let mut uncompensated = onis(prepared_negative());
+    let mut uncompensated = endura(prepared_negative());
     uncompensated.print.colour_compensation = false;
     let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
@@ -39,11 +39,11 @@ fn stored_pipes() -> Vec<(&'static str, PipelineSettings)> {
     (bright.print.brightness, bright.print.print_lift) = (0.7, false);
     let frontier = PipelineSettings { print_paper: Some(PaperStock::of("fujifilm-frontier-sp-3000")), ..digital() };
     vec![
-        ("ONI Standard, negative", onis(prepared_negative())),
-        ("ONI Standard, uncompensated", uncompensated),
+        ("Endura Premier, negative", endura(prepared_negative())),
+        ("Endura Premier, uncompensated", uncompensated),
         ("legacy print, Frontier at its entry", legacy),
-        ("ONI Standard, digital", onis(digital())),
-        ("ONI Standard, black and white", onis(mono())),
+        ("Endura Premier, digital", endura(digital())),
+        ("Endura Premier, black and white", endura(mono())),
         ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, negative, Brightness", bright),
@@ -250,8 +250,8 @@ fn timed_to(scan: &[V4], k: &Stage47, target: f32) -> Stage47 {
 
 #[test]
 fn brightening_on_the_negative_keeps_the_films_colour() {
-    let negative = PipelineSettings { print_paper: Some(PaperStock::default()), ..shot_on(VirtualStock::of("kodak-portra-400")) };
-    let photo = PipelineSettings { print_paper: Some(PaperStock::default()), ..digital() };
+    let negative = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..shot_on(VirtualStock::of("kodak-portra-400")) };
+    let photo = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..digital() };
     for (label, s, stock) in [("negative", negative, VirtualStock::of("kodak-portra-400")), ("digital", photo, VirtualStock::of("kodak-portra-800"))] {
         let scan = scanned(stock, 0.0);
         let rest = conversion::stage47(&s);

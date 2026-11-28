@@ -159,6 +159,9 @@ pub const EFFECT_LEVELS_VERSION: i64 = 82;
 /// The version a colour negative's virtual film came to develop on curves and couplers fitted on the owner's reference:
 /// a digital photo's gains and windows move onto its stock's new reference.
 pub const REFITTED_VERSION: i64 = 83;
+/// The version the papers were redone, ONI Standard and every retired key gone, and a cube no film: a paper stays only where
+/// its photo chose it over the pure inversion and it still ships, a legacy print laid on its own curve, a cube's film neutral.
+pub const PAPERS_REDONE_VERSION: i64 = 84;
 
 /// `document` aged to this format's names and units; `mosaic` is `None` for a document of no file.
 pub(super) fn aged(document: Object, version: i64, mosaic: Option<bool>) -> Object {
@@ -217,6 +220,7 @@ pub(crate) fn with_settings(mut document: Object, edit: impl FnOnce(&mut Object)
 pub(crate) fn papered(settings: &PipelineSettings) -> bool {
     settings.print_paper.is_some() && !settings.inverted_source
 }
+
 
 pub(crate) fn number(value: f32) -> Value {
     Value::from(f64::from(value))

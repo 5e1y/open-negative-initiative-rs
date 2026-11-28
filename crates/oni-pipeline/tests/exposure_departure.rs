@@ -30,14 +30,14 @@ fn slide() -> PipelineSettings {
 fn pipes() -> Vec<(&'static str, PipelineSettings)> {
     let mut legacy = unpapered(prepared_negative());
     legacy.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 1, c: 2, m: -1, y: 0, w: 3, laid: true });
-    let mut contrasted = onis(prepared_negative());
+    let mut contrasted = endura(prepared_negative());
     contrasted.print.contrast = 0.2;
     vec![
-        ("ONI Standard, negative", onis(prepared_negative())),
-        ("ONI Standard, negative, Contrast", contrasted),
+        ("Endura Premier, negative", endura(prepared_negative())),
+        ("Endura Premier, negative, Contrast", contrasted),
         ("legacy print, Frontier", legacy),
-        ("ONI Standard, digital", onis(digital())),
-        ("ONI Standard, black and white", onis(mono())),
+        ("Endura Premier, digital", endura(digital())),
+        ("Endura Premier, black and white", endura(mono())),
         ("projector, slide", slide()),
         ("paper, negative", prepared_negative()),
         ("paper, digital", digital()),

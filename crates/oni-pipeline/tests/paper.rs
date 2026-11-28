@@ -91,11 +91,7 @@ fn every_paper_prints_each_channels_density_on_its_own_layer_as_its_profile_read
         let magenta = [filters[0], filters[1] * 10f64.powf(-0.05), filters[2]];
         let off = densities().into_iter().map(|d| (f64::from(k.exposed(d)[1]) - read_off(&sheet, magenta, scale, d.map(f64::from)).0[1]).abs()).fold(0.0, f64::max);
         assert!(off > 1e-2, "{paper:?}: {off}");
-        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light; ONI
-        // Standard's dyes are pure.
-        if paper == PaperStock::default() {
-            continue;
-        }
+        // Twin: each layer on its channel's grey curve through pure dyes, the crosstalk left out, reads another light.
         let pure = densities().into_iter().map(|d| {
             let (e, v) = (k.exposed(d), k.viewed(k.developed(k.exposed(d))));
             (0..3).map(|c| (f64::from(v[c]) - 10f64.powf(-interp(&sheet, c, f64::from(e[c])))).abs() / (0.01 + f64::from(v[c]))).fold(0.0, f64::max)
@@ -116,8 +112,7 @@ fn chroma(v: [f32; 3]) -> f64 {
 #[test]
 fn a_grey_prints_on_the_sheets_curves_and_a_colour_loses_what_the_dyes_crosstalk_takes() {
     let s = film::on_reference(VirtualStock::of("kodak-portra-800"), &VirtualStock::of("kodak-portra-800").reference());
-    // ONI Standard's dyes are pure, no crosstalk to take.
-    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine() && *p != PaperStock::default()) {
+    for paper in PaperStock::all().into_iter().filter(|p| !p.is_machine()) {
         let k = conversion::stage47(&PipelineSettings { print_paper: Some(paper), ..s.clone() }).paper().expect("a negative on its paper");
         let sheet = sheet_of(paper);
         let densities: &'static [[f32; 3]; PAPER_CURVE_NODES] = Box::leak(Box::new(std::array::from_fn(|i| sheet.density_curves[i].map(|v| v as f32))));
@@ -190,25 +185,6 @@ fn the_print_is_the_papers_own_its_colour_density_included() {
     let (q, plain) = (pixels[7], Stage47 { negative: Some(Negative { spread: 1.0, ..n }), ..k });
     let (v, w) = (cpu::stage47(q, &k), cpu::stage47(q, &plain));
     assert!(n.spread > 1.0 && (v[0] / v[2]).ln().abs() > (w[0] / w[2]).ln().abs(), "{v:?} {w:?}");
-}
-
-#[test]
-fn a_legacy_print_on_a_paper_rests_at_its_rest_and_its_keys_move_the_enlarger() {
-    let mut s = prepared_negative();
-    s.legacy_print = Some(LegacyPrint::default());
-    let laid = scanner::on_legacy_print(&s).unwrap();
-    let grey = grey_scan(&s);
-    let k = conversion::stage47(&laid);
-    let rest = cpu::stage47(grey, &k);
-    let white = k.paper().unwrap().white;
-    assert!((0..3).all(|c| (rest[c] / white[c] * luma(white) - *GREY_PRINT).abs() < 2e-4), "{rest:?}");
-    // A cyan key prints cyaner, as on ONI's print: its red falls, its blue holds.
-    s.legacy_print = Some(LegacyPrint { c: 4, ..LegacyPrint::default() });
-    let keyed = cpu::stage47(grey, &conversion::stage47(&scanner::on_legacy_print(&s).unwrap()));
-    assert!(keyed[0] < rest[0] * 0.9 && (keyed[2] - rest[2]).abs() < 0.01, "{keyed:?} {rest:?}");
-    // Twin: the keys at rest, no key moves the enlarger.
-    s.legacy_print = Some(LegacyPrint::default());
-    assert_eq!(cpu::stage47(grey, &conversion::stage47(&scanner::on_legacy_print(&s).unwrap())), rest);
 }
 
 #[test]

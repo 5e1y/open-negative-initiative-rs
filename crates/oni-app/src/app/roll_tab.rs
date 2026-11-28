@@ -22,11 +22,10 @@ pub(super) fn filtration_line(cc: [f32; 3]) -> String {
 }
 
 /// A legacy print's name as its switch reads it: the machine's look over ONI's print, or on a paper the keys alone.
-pub(super) fn legacy_title(legacy: &LegacyPrint, on_paper: bool) -> &'static str {
-    match (on_paper, legacy.machine) {
-        (true, _) => tr("Scanner keys (legacy)"),
-        (false, LegacyMachine::Oni) => tr("Scanner ONI look (legacy)"),
-        (false, LegacyMachine::Frontier) => tr("Scanner Frontier look (legacy)"),
+pub(super) fn legacy_title(legacy: &LegacyPrint) -> &'static str {
+    match legacy.machine {
+        LegacyMachine::Oni => tr("Scanner ONI look (legacy)"),
+        LegacyMachine::Frontier => tr("Scanner Frontier look (legacy)"),
     }
 }
 
@@ -150,10 +149,14 @@ impl Ctl {
         let p = me.clone();
         panel.on_projected_blacks_toggled(move |on| p.write_settings(|s| s.print.projected_blacks = on));
         let p = me.clone();
+        // A legacy print laid keeps its own curve, so laying it takes the paper away.
         panel.on_legacy_toggled(move |on| {
             p.write_settings(|s| {
                 if let Some(l) = s.legacy_print.as_mut() {
                     l.laid = on;
+                }
+                if on && s.legacy_print.is_some() {
+                    s.print_paper = None;
                 }
             })
         });
@@ -237,9 +240,7 @@ impl Ctl {
         let line = oni_pipeline::conversion::printing(settings).map_or_else(String::new, |p| filtration_line(p.filtration));
         panel.set_paper_filtration(line.into());
         let legacy = settings.legacy_print;
-        // Named as the legacy print lays it, on the paper it names or its own curve, laid or not.
-        let on_paper = settings.print_paper.is_some() && settings.takes_paper();
-        panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l, on_paper)).into());
+        panel.set_legacy_title(legacy.map_or("", |l| legacy_title(&l)).into());
         panel.set_legacy_laid(legacy.is_some_and(|l| l.laid));
         panel.set_legacy_keys(legacy.as_ref().map_or_else(String::new, legacy_keys).into());
     }

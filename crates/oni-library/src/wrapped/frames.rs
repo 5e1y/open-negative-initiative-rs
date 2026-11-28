@@ -183,7 +183,7 @@ mod tests {
             Frame { roll: roll("Lisbon"), stock: Some("kodak-portra400".into()), medal: Medal::Gold, dust: 12, cropped: true, ..frame("/b", at(3, 2)) },
             Frame { roll: roll("Lisbon"), stock: Some("kodak-portra400".into()), body: Some("Nikon FM2".into()), ..frame("/a", at(3, 2)) },
             Frame { roll: roll("Winter"), stock: Some("ilford-hp5".into()), mode: ConversionMode::Monochrome, medal: Medal::Gold, dust: 3, ..frame("/c", at(11, 20)) },
-            Frame { mode: ConversionMode::Digital, stock: Some("kodak-portra400".into()), grain: 0.4, halation: 0.2, paper: Some("oni-standard".into()), ..frame("/d", at(7, 1)) },
+            Frame { mode: ConversionMode::Digital, stock: Some("kodak-portra400".into()), grain: 0.4, halation: 0.2, paper: Some("kodak-endura-premier".into()), ..frame("/d", at(7, 1)) },
             Frame { mode: ConversionMode::Positive, medal: Medal::Silver, straightened: true, body: Some(" ".into()), ..frame("/e", at(3, 9)) },
             Frame { medal: Medal::Gold, ..frame("/old", at(3, 2) - 400.0 * 86_400.0) },
         ]

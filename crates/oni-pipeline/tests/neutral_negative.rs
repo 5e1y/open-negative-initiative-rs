@@ -200,7 +200,7 @@ fn a_photo_on_the_neutral_film_renders_its_scene_through_the_pure_inversion() {
     assert!(conversion::scene_white(&s).is_none(), "its scene lit by no light of the film's");
     let scenes = scenes();
     let through = |k: &Stage47| -> Vec<V4> { scenes.iter().map(|p| cpu::stage47(film::shot(NEUTRAL, *p, 0.0), k)).collect() };
-    let on_paper = PipelineSettings { print_paper: Some(PaperStock::default()), ..s.clone() };
+    let on_paper = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..s.clone() };
     let (cpu_off, cpu_twin) = (off_the_scene(&scenes, &through(&k)), off_the_scene(&scenes, &through(&conversion::stage47(&on_paper))));
     println!("end to end on the CPU: {:.4} %, the twin on a paper {:.0} %", cpu_off * 100.0, cpu_twin * 100.0);
     assert!(cpu_off < 2e-3, "the CPU chain renders the scene {:.3} % off", cpu_off * 100.0);

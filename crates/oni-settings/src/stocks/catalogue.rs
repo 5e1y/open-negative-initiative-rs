@@ -240,7 +240,6 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
                             couplers: b.couplers,
                             curves: b.curves.as_deref().map(Arc::from),
                             effects: b.effects.unwrap_or_default().rests(),
-                            look: b.look.clone(),
                             revision,
                         });
                         if b.dyes == b.key {

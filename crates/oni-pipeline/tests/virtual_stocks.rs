@@ -1,4 +1,4 @@
-//! Every virtual stock at rest on its reference, printed on ONI Standard: a neutral scene lit at its white prints its white
+//! Every virtual stock at rest on its reference, printed on Endura Premier: a neutral scene lit at its white prints its white
 //! as Portra 800's, its sheet's crossovers under a ceiling. Each has a twin.
 
 mod common;
@@ -23,12 +23,12 @@ const WHITE_SPREAD: f32 = 0.1;
 const CHROMA: f32 = 25.0;
 const LIGHT_CHROMA: f32 = 9.0;
 
-/// A digital photo on `stock` at rest, its neighbourhood stages off, on ONI Standard's own black where its enlarger
+/// A digital photo on `stock` at rest, its neighbourhood stages off, on Endura Premier's own black where its enlarger
 /// rests; a slide is projected, no paper named.
 fn on(stock: VirtualStock) -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(stock).per_pixel_only();
     s.print.print_lift = true;
-    s.print_paper = s.takes_paper().then_some(PaperStock::of("oni-standard"));
+    s.print_paper = s.takes_paper().then_some(PaperStock::of("kodak-endura-premier"));
     s
 }
 

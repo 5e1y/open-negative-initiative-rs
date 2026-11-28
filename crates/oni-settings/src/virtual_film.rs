@@ -82,9 +82,9 @@ mod tests;
 
 impl VirtualEntry {
     /// A digital photo is offered it: a colour film whose file states its couplers, none for a negative the scanner
-    /// reads; a black and white or a neutral one, which have none; or a look.
+    /// reads; a black and white or a neutral one, which have none.
     pub fn offered(&self) -> bool {
-        self.silver || self.neutral || self.couplers.is_some() || self.look.is_some()
+        self.silver || self.neutral || self.couplers.is_some()
     }
 }
 
@@ -116,13 +116,6 @@ impl VirtualStock {
     /// The rests its file gives a photo's film effects.
     pub fn effects(self) -> FilmEffects {
         self.entry().effects
-    }
-
-    /// Its file's entry and the look its `.cube` file gives, where a file defines it with one.
-    pub fn look(self) -> Option<(VirtualEntry, crate::stocks::cube::Look)> {
-        let entry = crate::stocks::current().virtual_film(self)?.clone();
-        let look = entry.look.clone()?;
-        Some((entry, look))
     }
 
     /// A file defines it.

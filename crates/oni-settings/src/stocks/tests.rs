@@ -41,7 +41,7 @@ fn every_shipped_file_reads_and_round_trips() {
         assert_eq!(format!("{}.json", file.key()), name, "a file is named by its key");
         count += 1;
     }
-    assert_eq!(count, 112, "103 film stocks and 9 papers");
+    assert_eq!(count, 111, "103 film stocks and 8 papers");
     // Twin: a field dropped on the way is seen.
     let file = file::read(shipped_json().next().unwrap().1).unwrap();
     let mut lost = value(file.to_json().as_bytes());
@@ -75,12 +75,12 @@ fn a_broken_file_is_refused_with_why() {
 #[test]
 fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (files, canisters) = shipped();
-    assert_eq!((files.len(), canisters.len()), (112, 41), "every shipped file reads");
+    assert_eq!((files.len(), canisters.len()), (111, 41), "every shipped file reads");
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();
-    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (105, 80, 47, 9));
-    assert!(VirtualStock::default().is_known() && PaperStock::default().is_known());
+    assert_eq!((c.films().len(), c.virtuals().len(), c.dye_sets().len(), c.papers().len()), (105, 80, 47, 8));
+    assert!(VirtualStock::default().is_known() && PaperStock::of("kodak-endura-premier").is_known());
     assert!(DyeSet::default().is_generic() && c.dye_set(DyeSet::default()).is_some());
     assert_eq!(c.virtual_film(VirtualStock::of("kodak-portra-800-push-2")).map(|v| (v.catalogue, v.dyes)), Some(("kodak-portra800-push2", DyeSet::of("kodak-portra-800"))));
     for v in c.virtuals() {
@@ -92,8 +92,6 @@ fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     // Retired keys read as their entry's and are written under it.
     let twin: VirtualStock = serde_json::from_str("\"kodak-gold-200-datasheet\"").unwrap();
     assert_eq!(serde_json::to_string(&twin).unwrap(), "\"kodak-gold-200\"");
-    let paper: PaperStock = serde_json::from_str("\"kodak-portra-endura\"").unwrap();
-    assert_eq!(paper, PaperStock::of("kodak-royal-digital"));
     // Twin: an unknown key is kept as stored, never read as another.
     let lost: VirtualStock = serde_json::from_str("\"kodak-gold-900\"").unwrap();
     assert_eq!((lost.key(), lost.is_known(), lost.reference()), ("kodak-gold-900", false, VirtualStock::default().reference()));
@@ -177,6 +175,6 @@ fn every_shipped_film_is_offered_and_a_photo_on_one_stays() {
     for key in ["kodak-vision3-50d", "kodak-portra-400", "ilford-hp5-plus"] {
         assert_eq!(on(key).on_offered_film(), on(key), "{key}");
     }
-    let gone = PipelineSettings { virtual_film: Some(crate::VirtualFilm { stock: VirtualStock::of("lut-gone"), exposure: 0.0 }), ..on("kodak-portra-400") };
+    let gone = PipelineSettings { virtual_film: Some(crate::VirtualFilm { stock: VirtualStock::of("kodak-gold-900"), exposure: 0.0 }), ..on("kodak-portra-400") };
     assert_eq!(gone.clone().on_offered_film(), gone);
 }

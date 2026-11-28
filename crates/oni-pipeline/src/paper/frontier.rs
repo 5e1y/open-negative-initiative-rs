@@ -40,5 +40,5 @@ pub(super) fn sheet(fit: &Fit) -> Sheet {
     let step = (CURVE_RANGE[1] - CURVE_RANGE[0]) / (PAPER_CURVE_NODES - 1) as f32;
     let at = |i: usize| f64::from(CURVE_RANGE[0] + step * i as f32);
     let curves = std::array::from_fn(|i| std::array::from_fn(|c| density(fit, c, at(i)) as f32));
-    Sheet::new(curves, CURVE_RANGE[0], step, fit.matrix, super::PURE_DYES, None)
+    Sheet::new(curves, CURVE_RANGE[0], step, fit.matrix, super::PURE_DYES)
 }

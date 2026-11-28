@@ -62,25 +62,25 @@ pub(crate) fn a_negative_shows_no_paper_then_prints_on_each_it_picks_and_a_slide
     let inverted = histogram();
     rig.settle();
     println!("shot {}", rig.shot("colour-negative-on-no-paper").display());
-    // ONI Standard picked by its name: the negative prints on it, another picture, with Print lift, off at rest, the
+    // Endura Premier picked by its name: the negative prints on it, another picture, with Print lift, off at rest, the
     // enlarger's filtration and Lighting's Brightness.
     let renders = ctl.state.borrow().renders();
-    panel.invoke_paper_chosen(chosen(PaperStock::of("oni-standard")));
+    panel.invoke_paper_chosen(chosen(PaperStock::of("kodak-endura-premier")));
     rig.pump();
-    assert!(panel.get_paper_offered() && panel.get_paper_shown() && panel.get_paper_title() == "ONI Standard", "{}", panel.get_paper_title());
-    assert_eq!(settings().paper(), Some(PaperStock::of("oni-standard")));
-    rig.until("the frame printed on ONI Standard", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
-    rig.until("ONI Standard's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != inverted.as_ref()));
+    assert!(panel.get_paper_offered() && panel.get_paper_shown() && panel.get_paper_title() == "Kodak Endura Premier", "{}", panel.get_paper_title());
+    assert_eq!(settings().paper(), Some(PaperStock::of("kodak-endura-premier")));
+    rig.until("the frame printed on Endura Premier", Duration::from_secs(60), || ctl.state.borrow().renders() > renders);
+    rig.until("Endura Premier's own histogram", Duration::from_secs(60), || histogram().is_some_and(|h| Some(&h) != inverted.as_ref()));
     assert_eq!(switches(), (0, 0, 1));
     assert_eq!((count(Role::Slider, "Brightness"), count(Role::Checkbox, "Colour compensation")), (1, 0));
     assert!(!settings().print.print_lift && !panel.get_print_lift(), "pure ends at rest, the switch off");
     assert!(panel.get_paper_filtration().starts_with("Enlarger filtration: C "), "{}", panel.get_paper_filtration());
-    let (field, lift) = (common::the(w, Role::Button, "ONI Standard"), common::the(w, Role::Checkbox, "Print lift"));
+    let (field, lift) = (common::the(w, Role::Button, "Kodak Endura Premier"), common::the(w, Role::Checkbox, "Print lift"));
     let filtration = common::the(w, Role::Text, &panel.get_paper_filtration());
     assert!(field.y < lift.y && lift.y < filtration.y, "the paper, then its Print lift and its filtration");
     section_laid_after_more_color_settings(w);
     rig.settle();
-    println!("shot {}", rig.shot("colour-negative-on-oni-standard").display());
+    println!("shot {}", rig.shot("colour-negative-on-endura-premier").display());
     rig.until("the paper's histogram", Duration::from_secs(60), || ctl.state.borrow().shown_settings().is_some() && histogram().is_some());
     let renders = ctl.state.borrow().renders();
     let pure = histogram();

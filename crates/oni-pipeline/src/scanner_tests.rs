@@ -56,20 +56,20 @@ fn a_whole_unit_renders_as_a_count_did_and_a_half_step_lies_between() {
 }
 
 #[test]
-fn a_legacy_print_moves_the_gains_by_its_keys_and_the_frontier_s_rest_off_a_paper() {
+fn a_legacy_print_moves_the_gains_by_its_keys_and_the_frontier_s_rest() {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     s.legacy_print = Some(LegacyPrint { d: 2, ..LegacyPrint::default() });
     let oni = on_legacy_print(&s).unwrap();
     assert!(oni.gains.stops[0] < 0.0, "more density is less light on a negative");
     assert_eq!(PipelineSettings { gains: s.gains, ..oni.clone() }, s, "the gains alone move");
-    // The Frontier's look takes its rest in the gains with the keys; on a paper, the keys alone.
+    // The Frontier's look takes its rest in the gains with the keys, a paper named or not, as it takes none.
     s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, d: 2, ..LegacyPrint::default() });
     let frontier = on_legacy_print(&s).unwrap();
     let rest = stops_of(frontier_rest(), &s);
     assert!((0..3).all(|c| (frontier.gains.stops[c] - oni.gains.stops[c] - rest[c]).abs() < 1e-6), "{:?} {:?}", frontier.gains, oni.gains);
     assert!(rest.iter().any(|r| r.abs() > 0.01), "the rest moves the gains");
-    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::default()), ..s.clone() };
-    assert_eq!(on_legacy_print(&papered).unwrap().gains, oni.gains);
+    let papered = PipelineSettings { print_paper: Some(oni_settings::PaperStock::of("kodak-endura-premier")), ..s.clone() };
+    assert_eq!(on_legacy_print(&papered).unwrap().gains, frontier.gains);
     // Twin: no legacy print, or one not laid, leaves the settings to themselves.
     assert!(on_legacy_print(&PipelineSettings { legacy_print: None, ..s.clone() }).is_none());
     assert!(on_legacy_print(&PipelineSettings { legacy_print: Some(LegacyPrint { laid: false, ..s.legacy_print.unwrap() }), ..s }).is_none());

@@ -159,16 +159,15 @@ mod tests {
     }
 
     #[test]
-    fn every_retired_key_reads_as_its_data_sheet_stock_and_paper() {
+    fn every_retired_key_reads_as_its_data_sheet_stock() {
         let mut s = PipelineSettings::rest(ConversionMode::Digital, true);
         s.print_paper = Some(PaperStock::of("kodak-endura-premier"));
         let mut stored: Value = serde_json::from_slice(&stored(&s, DATASHEET_VERSION - 1, Some("kodak-ultramax-400-datasheet"))).unwrap();
         stored["settings"]["dyeSet"] = json!("kodak-ultramax-400-datasheet");
-        stored["settings"]["printPaper"] = json!("fujifilm-crystal-archive-type-ii");
         let read = read(&serde_json::to_vec(&stored).unwrap());
         assert_eq!(
-            (read.film().map(|f| f.stock), read.dye_set, read.print_paper),
-            (Some(VirtualStock::of("kodak-ultramax-400")), DyeSet::of("kodak-ultramax-400"), Some(PaperStock::of("fujifilm-crystal-archive-digital-dpii")))
+            (read.film().map(|f| f.stock), read.dye_set),
+            (Some(VirtualStock::of("kodak-ultramax-400")), DyeSet::of("kodak-ultramax-400"))
         );
         // Twin: a key no stock carries is kept as stored, never read as another, so its file brought back finds it.
         stored["settings"]["dyeSet"] = json!("kodak-ultramax-900-datasheet");

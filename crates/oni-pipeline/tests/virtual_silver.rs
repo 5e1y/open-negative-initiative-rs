@@ -165,7 +165,7 @@ fn a_photo_on_a_black_and_white_film_is_its_negative_read_as_a_monochrome_roll()
     let scene = noise(w, h, 3, 0.0, 1.2);
     let source = g.upload(w, h, &scene).unwrap();
     let mut pipeline = Pipeline::new();
-    for paper in [PaperStock::default(), PaperStock::of("kodak-royal-digital")] {
+    for paper in [PaperStock::of("kodak-endura-premier"), PaperStock::of("kodak-royal-digital")] {
         let s = PipelineSettings { print_paper: Some(paper), ..shot(VirtualStock::of("ilford-hp5-plus")) };
         assert!(s.is_monochrome() && s.mode == ConversionMode::Digital);
         let on = pipeline.render(&mut g, &source, &s, &Request::default(), &Default::default(), None).unwrap().1;

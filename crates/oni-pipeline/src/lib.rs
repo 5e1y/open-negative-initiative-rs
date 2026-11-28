@@ -85,7 +85,6 @@ pub struct Pipeline {
     /// Each virtual film's table and a colour negative's scan, uploaded once per graph and file content.
     films: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// Each look's nodes, uploaded once per graph and file content.
-    looks: HashMap<(oni_settings::VirtualStock, u64), (Source, usize)>,
     /// Each reversal film's projection table, uploaded once per graph and file content.
     projections: HashMap<(oni_settings::VirtualStock, u64), Source>,
     /// Each reversal film's table reading its scans back to its dyes, uploaded once per graph and file content.
@@ -166,21 +165,6 @@ impl Pipeline {
             out = out.then(stages::exposure(-s.capture_stops));
         }
         self.flat_field(graph, out, s, inputs)
-    }
-
-    /// A digital photo's scene read through its film's look in place of a negative: exposed at the film's stops, taken
-    /// to display sRGB code, through the cube and back to linear light, a positive; none on a film without a look.
-    pub fn looked(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Option<Image>> {
-        let Some((f, entry, look)) = s.film().and_then(|f| f.stock.look().map(|(e, l)| (f, e, l))) else { return Ok(None) };
-        let key = (f.stock, entry.revision);
-        if let Entry::Vacant(e) = self.looks.entry(key) {
-            let n = look.size as u32;
-            e.insert((graph.upload(n * n, n, &look.nodes)?, look.size));
-        }
-        let (table, n) = self.looks[&key].clone();
-        let code = stages::laid(image, vec![stages::exposure(f.exposure), stages::scanner_encode(1.0)]);
-        let read = code.then_reading(stages::color_cube(n), &[Image::new(&table)]);
-        Ok(Some(read.clone().then_reading(stages::scanner_output(0.0, 0.0), &[read])))
     }
 
     /// A scanned slide on the projector's screen: its scan read back to its stock's dyes, then shown as any slide is.
@@ -282,17 +266,6 @@ impl Pipeline {
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT), &[warmth]))
     }
 
-    /// The legacy print's TEMP on a paper's print, its warmth look laid on the print's plain display code; the print as
-    /// it is at no count.
-    fn warmed_paper(&mut self, graph: &mut Graph, image: Image, legacy: &LegacyPrint) -> Result<Image> {
-        if legacy.w == 0 {
-            return Ok(image);
-        }
-        let code = stages::laid(image, vec![stages::scanner_encode(1.0)]);
-        let (warmth, share) = self.warmed(graph, &code, legacy.w)?;
-        Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT), &[warmth]))
-    }
-
     fn curves(&mut self, graph: &mut Graph, image: Image, set: &CurveSet) -> Result<Image> {
         let Some(k) = finishing::curves(set) else { return Ok(image) };
         let (rgb, luma) = match self.luts.iter().find(|(s, _, _)| s == set) {
@@ -352,7 +325,7 @@ pub fn bake_ahead(s: &PipelineSettings) {
         negative::development(negative::Film::Slide(stock));
     }
     if let Some(paper) = s.paper().filter(|_| !s.print.bypassed) {
-        paper::sheet(paper);
+        let _ = paper::sheet(paper);
     }
 }
 

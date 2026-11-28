@@ -35,8 +35,6 @@ pub struct VirtualEntry {
     pub curves: Option<Arc<[[f64; 3]]>>,
     /// The rests a digital photo's film effects take on it.
     pub effects: FilmEffects,
-    /// The look a `.cube` file gives it: a digital photo on it is read through these nodes, not its negative.
-    pub look: Option<super::cube::Look>,
     /// Its file's content: a bake made of another is never served for it.
     pub revision: u64,
 }

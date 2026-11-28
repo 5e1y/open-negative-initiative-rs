@@ -179,9 +179,10 @@ impl PipelineSettings {
         block
     }
 
-    /// Whether a paper may print this frame: every one but a slide, scanned or shot on a reversal film, which is projected.
+    /// Whether a paper may print this frame: every one but a slide, scanned or shot on a reversal film, which is
+    /// projected, and a legacy print laid, which keeps its own curve.
     pub fn takes_paper(&self) -> bool {
-        !self.mode.is_slide() && self.projector().is_none()
+        !self.mode.is_slide() && self.projector().is_none() && self.legacy().is_none()
     }
 
     /// The paper the render prints on: the one the frame names, where it takes one and a file defines it (owner's call:
@@ -191,9 +192,9 @@ impl PipelineSettings {
     }
 
     /// Whether the frame shows its pure inversion, the window's shares as they are: one a paper may print that prints on
-    /// none, off a legacy print's own curve.
+    /// none.
     pub fn shows_inversion(&self) -> bool {
-        self.takes_paper() && self.legacy().is_none() && self.paper().is_none()
+        self.takes_paper() && self.paper().is_none()
     }
 
     /// The former Scanner face's print the render lays, while it is laid.

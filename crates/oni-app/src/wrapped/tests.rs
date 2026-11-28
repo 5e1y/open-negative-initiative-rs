@@ -18,7 +18,7 @@ fn full() -> Year {
         rolls: 14,
         longest_roll: Some(("Lisbon".into(), 38)),
         stocks: vec![("kodak-portra400".into(), 206), ("ilford-hp5".into(), 60), ("no-such-film".into(), 9)],
-        papers: vec![("oni-standard".into(), 30)],
+        papers: vec![("kodak-endura-premier".into(), 30)],
         bodies: vec![("Nikon FM2".into(), 310)],
         lenses: vec![("50mm f/1.8".into(), 250), ("28mm f/2.8".into(), 60)],
         gold: (0..11).map(|i| format!("/roll/G{i:02}.NEF")).collect(),
@@ -234,7 +234,7 @@ fn every_trait_has_its_name_its_line_and_its_reason() {
 fn a_camera_or_a_paper_on_a_handful_of_frames_is_no_headline() {
     let mut few = full();
     few.frames.bodies = vec![("Leica M6".into(), 1)];
-    few.frames.papers = vec![("oni-standard".into(), 3)];
+    few.frames.papers = vec![("kodak-endura-premier".into(), 3)];
     few.frames.grained = 3;
     few.darkroom.favourite_preset = None;
     let story = scenes(&few);

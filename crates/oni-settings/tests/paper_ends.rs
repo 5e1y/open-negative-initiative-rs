@@ -1,6 +1,6 @@
-//! A paper's Brightness and Print lift in the sidecar: written only when moved, an older document's True blacks read as
-//! the black it printed and its Paper blacks as Print lift, carried by a settings paste, and a document that carries them
-//! stamped past every build that cannot read them. Each verdict has a twin.
+//! A paper's Brightness and Print lift in the sidecar: written only when moved, an older document's retired switches
+//! dropped, carried by a settings paste, and a document that carries them stamped past every build that cannot read them.
+//! Each verdict has a twin.
 
 use oni_settings::document::VERSION;
 use oni_settings::migrate::{self, chain};
@@ -14,7 +14,7 @@ fn stored(settings: &PipelineSettings) -> Value {
 
 fn lit() -> PipelineSettings {
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-    s.print_paper = Some(PaperStock::default());
+    s.print_paper = Some(PaperStock::of("kodak-endura-premier"));
     (s.print.brightness, s.print.print_lift) = (0.75, true);
     s
 }
@@ -45,39 +45,19 @@ fn a_new_photo_names_no_paper_and_print_lift_rests_off() {
 }
 
 #[test]
-fn an_older_document_on_a_paper_keeps_the_black_it_printed() {
-    for version in [chain::PAPER_ENDS_VERSION, chain::ONE_FACE_VERSION, chain::PAPER_BLACKS_VERSION - 1] {
-        let mut older = stored(&PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Digital, true) });
+fn an_older_document_opens_its_retired_switches_dropped_and_its_paper_kept_only_where_chosen() {
+    for version in [chain::PAPER_ENDS_VERSION, chain::PAPER_BLACKS_VERSION, chain::PRINT_LIFT_VERSION - 1] {
+        let mut older = stored(&PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..PipelineSettings::rest(ConversionMode::Digital, true) });
         older["version"] = json!(version);
-        let s = read(&older);
-        assert!(s.print.brightness == 0.0 && s.print.print_lift, "format {version}: the paper's own black, as it printed");
-        // Twin: the same document with True blacks on keeps pure black, so the reader sees the retired key.
+        (older["settings"]["print"]["trueBlacks"], older["settings"]["print"]["paperBlacks"]) = (json!(true), json!(true));
         older["settings"]["print"]["brightness"] = json!(-0.5);
-        older["settings"]["print"]["trueBlacks"] = json!(true);
         let s = read(&older);
-        assert!(s.print.brightness == -0.5 && !s.print.print_lift, "format {version}");
+        assert!(s.print.brightness == -0.5 && !s.print.print_lift && s.print_paper.is_none(), "format {version}: a default paper then");
     }
-    // Twin: an older photo on ONI's print takes the rest, pure black once a paper prints it.
-    let mut onis = stored(&PipelineSettings::rest(ConversionMode::Negative, true));
-    onis["version"] = json!(chain::ONE_FACE_VERSION);
-    assert!(!read(&onis).print.print_lift);
-}
-
-#[test]
-fn an_older_documents_paper_blacks_is_print_lift() {
-    for version in [chain::PAPER_BLACKS_VERSION, chain::PRINT_LIFT_VERSION - 1] {
-        let mut older = stored(&PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Negative, true) });
-        older["version"] = json!(version);
-        older["settings"]["print"]["paperBlacks"] = json!(true);
-        assert!(read(&older).print.print_lift, "format {version}: the paper's own ends, as it printed");
-        // Twin: Paper blacks off, the paper's white comes to lie on pure white with its black.
-        older["settings"]["print"]["paperBlacks"] = json!(false);
-        assert!(!read(&older).print.print_lift, "format {version}");
-    }
-    // Twin: a document of this format reads its own key, the former one never.
-    let mut current = stored(&PipelineSettings { print_paper: Some(PaperStock::default()), ..PipelineSettings::rest(ConversionMode::Negative, true) });
-    current["settings"]["print"]["paperBlacks"] = json!(true);
-    assert!(!read(&current).print.print_lift);
+    // Twin: from format 73 a paper is a choice, and it stays.
+    let mut chosen = stored(&lit());
+    chosen["version"] = json!(chain::OPTIONAL_PAPER_VERSION);
+    assert_eq!(read(&chosen), lit());
 }
 
 #[test]

@@ -5,7 +5,6 @@
 use oni_settings::document::VERSION;
 use oni_settings::migrate::digital_film::FORMER_PORTRA_800;
 use oni_settings::migrate::{self, Facts, Refusal, chain};
-use oni_settings::tone::Print;
 use oni_settings::{ConversionMode, Document, Medal, PipelineSettings, VirtualStock};
 use serde_json::{Value, json};
 
@@ -134,7 +133,7 @@ fn a_film_writes_its_stock_by_key_and_a_build_before_refuses_the_file_as_newer()
 }
 
 /// A photo on any stock of 50 reads back on it, its film's key past every build that cannot read it, and a photo of
-/// 46 on Portra 800 keeps its print. Twin: a reader refuses a version past its own as newer, as a build of 46 refuses 50.
+/// 46 on Portra 800 keeps its edit. Twin: a reader refuses a version past its own as newer, as a build of 46 refuses 50.
 #[test]
 fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
     assert!(VERSION >= chain::VIRTUAL_STOCKS_VERSION && chain::VIRTUAL_STOCKS_VERSION > chain::ONE_FACE_VERSION);
@@ -144,13 +143,13 @@ fn a_photo_on_any_stock_is_written_past_every_build_that_cannot_read_its_key() {
         assert_eq!(stored["settings"]["virtualFilm"]["stock"], serde_json::to_value(stock).unwrap());
         assert_eq!(read(&stored).settings, s, "{stock:?}");
     }
-    // A photo of 46 on the default paper of then, grain off as every photo of then, keeps the paper's own black it printed
-    // and names no paper, its format's default left.
+    // A photo of 46 on the default paper of then, grain off as every photo of then, names no paper, its format's
+    // default left.
     let mut portra = PipelineSettings::rest(ConversionMode::Digital, true).on_stock(VirtualStock::of("kodak-portra-800"));
     portra.grain.amount = 0.0;
     // Its film effects at rest take the film's own.
     let rests = VirtualStock::of("kodak-portra-800").effects();
-    let kept = PipelineSettings { print: Print { print_lift: true, ..portra.print }, halation: rests.halation, bloom: rests.bloom, ..portra.clone() };
+    let kept = PipelineSettings { halation: rests.halation, bloom: rests.bloom, ..portra.clone() };
     portra.print_paper = Some(oni_settings::PaperStock::of("kodak-royal-digital"));
     // Stored then on spektrafilm's Portra 800, it lands on the data sheet's.
     let portra = migrate::datasheet::on_former(&portra, VirtualStock::of("kodak-portra-800"));

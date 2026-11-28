@@ -31,7 +31,7 @@ fn paper_of(s: &PipelineSettings) -> Paper {
 
 /// The print at the table's own time and no filtration, each share its density: the table's coordinates read as `x`.
 fn bare(s: &PipelineSettings) -> Paper {
-    let oni_settings::stocks::Print::Frontier(fit) = FRONTIER.entry().print else { panic!("the Frontier's fit") };
+    let Some(oni_settings::stocks::Print::Frontier(fit)) = FRONTIER.entry().map(|e| e.print) else { panic!("the Frontier's fit") };
     let neutral = oni_pipeline::paper::frontier::read(&fit).expect("the fit reads").neutral;
     Paper { scale: 10f32.powf(neutral), filters: [1.0; 3], span: 1.0, bend: 1.0, ..paper_of(s) }
 }
@@ -93,14 +93,13 @@ fn the_rest_prints_a_grey_neutral_along_the_window_with_no_offset_of_the_machine
             assert!(strays(&pure(&redder)) > 0.05, "{label}: {}", strays(&pure(&redder)));
         }
     }
-    // On a Frontier legacy print the paper takes the keys alone: the cube's resting offset is not laid.
+    // A Frontier legacy print laid takes no paper, the Frontier named included: the cube's rest rides in the gains.
     let mut s = on_frontier(prepared_negative());
     s.legacy_print = Some(LegacyPrint { machine: LegacyMachine::Frontier, ..LegacyPrint::default() });
     let laid = scanner::on_legacy_print(&s).unwrap();
-    assert_eq!(laid.gains.stops, s.gains.stops);
-    // Twin: on the cube's path the rest rides in the gains.
-    let cube = scanner::on_legacy_print(&PipelineSettings { print_paper: None, ..s.clone() }).unwrap();
-    assert!((0..3).any(|c| (cube.gains.stops[c] - s.gains.stops[c]).abs() > 1e-3), "{:?}", cube.gains.stops);
+    assert!(s.paper().is_none() && (0..3).any(|c| (laid.gains.stops[c] - s.gains.stops[c]).abs() > 1e-3), "{:?}", laid.gains.stops);
+    // Twin: naming no paper, the same gains.
+    assert_eq!(scanner::on_legacy_print(&PipelineSettings { print_paper: None, ..s.clone() }).unwrap().gains, laid.gains);
 }
 
 #[test]

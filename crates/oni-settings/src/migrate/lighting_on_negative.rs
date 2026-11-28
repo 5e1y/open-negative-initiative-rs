@@ -41,7 +41,7 @@ mod tests {
             assert_eq!(caught_up(LIGHTING_ON_NEGATIVE_VERSION, on_legacy(mode)), on_legacy(mode));
             let plain = PipelineSettings { legacy_print: None, ..on_legacy(mode) };
             assert_eq!(caught_up(older, plain.clone()), plain);
-            let papered = PipelineSettings { print_paper: Some(PaperStock::default()), ..on_legacy(mode) };
+            let papered = PipelineSettings { print_paper: Some(PaperStock::of("kodak-endura-premier")), ..on_legacy(mode) };
             assert_eq!(caught_up(older, papered.clone()), papered);
         }
     }
