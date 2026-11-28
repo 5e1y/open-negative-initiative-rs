@@ -1,6 +1,7 @@
 // A photo's flight between the screens: its picture lifts off where it stood, the gallery's tile, the editor's
 // canvas or the export's preview, and grows or shrinks into its place on the next, which shows around it.
-import { Motion, Ease } from "theme.slint";
+import { Motion } from "theme.slint";
+import { Sprung } from "sprung.slint";
 
 // Where a flight goes: the tile into the canvas, the canvas into its tile, the canvas into the export's
 // preview, the preview back onto the canvas.
@@ -33,6 +34,13 @@ export global Flight {
     in-out property <bool> slot-ready;
     // Landed, the picture fades over the place it reached, which shows again under it.
     in-out property <bool> landing;
+    // The animation clock now, the time the flight began on it, and whether it has reached its place.
+    out property <duration> now: animation-tick();
+    in property <duration> began;
+    in-out property <bool> arrived;
+    // How far it has gone, 0 to 1 on `Ease.weighted`, read off the clock until it arrives.
+    out property <float> gone: Flight.flying && !Flight.arrived && Motion.travel > 0ms ? Sprung.at(0.1, (animation-tick() - Flight.began) / Motion.travel) : 1;
+    out property <bool> ran: Flight.flying && !Flight.arrived && animation-tick() - Flight.began >= Motion.travel;
     out property <bool> covering: Flight.flying && !Flight.landing;
     // The canvas's photo and a tile's picture stand back while the flying one covers them.
     out property <bool> canvas-covered: Flight.covering && (Flight.route == FlightRoute.into-editor || Flight.route == FlightRoute.out-of-export);
@@ -60,25 +68,35 @@ export component FlightView {
     property <Place> to: Flight.route == FlightRoute.into-gallery ? (root.cell.width > 0 ? root.tile : root.canvas)
         : Flight.route == FlightRoute.into-export ? (Flight.slot.width > 0 ? Flight.slot : root.canvas)
         : root.canvas;
-    // Laid where it leaves, then off: from then each place it aims at springs it there, turned back midway
-    // when a gesture reverses the flight.
-    // Off once the window has drawn it where it leaves: a value set as the view is laid would not move.
-    property <bool> off;
-    Timer { interval: Motion.next-frame; running: !root.off; triggered => { root.off = true; } }
-    property <Place> at: root.off ? root.to : Flight.from;
+    // From where it leaves toward the place it aims at, which follows the next screen as it lays out.
+    property <float> gone: Flight.gone;
+    property <Place> at: {
+        x: Flight.from.x + (root.to.x - Flight.from.x) * root.gone,
+        y: Flight.from.y + (root.to.y - Flight.from.y) * root.gone,
+        width: Flight.from.width + (root.to.width - Flight.from.width) * root.gone,
+        height: Flight.from.height + (root.to.height - Flight.from.height) * root.gone,
+    };
+    property <bool> ran: Flight.ran;
+    changed ran => { if (root.ran) { Flight.arrived = true; } }
     property <int> serial: Flight.serial;
-    changed serial => { Flight.landing = false; root.arrived = false; travel.restart(); }
+    changed serial => { Flight.landing = false; }
     // On the export's preview it holds until the preview has landed under it.
-    property <bool> arrived;
-    changed arrived => { if (root.arrived && (Flight.route != FlightRoute.into-export || Flight.slot-ready)) { Flight.landing = true; } }
+    property <bool> arrived: Flight.arrived;
+    changed arrived => { if (root.arrived && (Flight.route != FlightRoute.into-export || Flight.slot-ready)) { root.land(); } }
     property <bool> slot-ready: Flight.slot-ready;
-    changed slot-ready => { if (root.arrived && root.slot-ready) { Flight.landing = true; } }
+    changed slot-ready => { if (root.arrived && root.slot-ready) { root.land(); } }
+    function land() {
+        if (root.handing > 0ms) {
+            Flight.landing = true;
+        } else {
+            Flight.flying = false;
+        }
+    }
     Image {
         x: root.at.x;
         y: root.at.y;
         width: root.at.width;
         height: root.at.height;
-        animate x, y, width, height { duration: Motion.travel; easing: Ease.weighted; }
         source: Flight.picture;
         image-fit: contain;
         opacity: Flight.landing ? 0 : 1;
@@ -87,8 +105,7 @@ export component FlightView {
     // Landed on the same picture, the canvas's or the tile's, it hands over at once, never two pictures
     // seen together; on the export's preview, another render, it fades over it.
     property <duration> handing: Flight.route == FlightRoute.into-export ? Motion.quick : 0ms;
-    travel := Timer { interval: Motion.travel; running: Flight.flying && !root.arrived; triggered => { root.arrived = true; } }
-    Timer { interval: max(Motion.next-frame, root.handing); running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
+    Timer { interval: root.handing; running: Flight.landing; triggered => { Flight.flying = false; Flight.landing = false; } }
 }
 
 // The editor walking to the next or the previous photo: the one left, its picture where the canvas showed
@@ -108,13 +125,8 @@ export global Walk {
     in property <duration> began;
     // How far the walk has gone, 0 to 1, a function of the clock alone: whenever the window draws, it draws the walk
     // where it is, never waiting on a frame to lay its start.
-    out property <float> gone: root.walking && Motion.travel > 0ms ? root.sprung((animation-tick() - root.began) / Motion.travel) : 1;
+    out property <float> gone: root.walking && Motion.travel > 0ms ? Sprung.at(0, (animation-tick() - root.began) / Motion.travel) : 1;
     out property <bool> ran: root.walking && animation-tick() - root.began >= Motion.travel;
-    // `Ease.firm` over the travel: Slint's spring with no give, critically damped at 2π over its pace.
-    pure function sprung(paced: float) -> float {
-        let at = 6.2831853 * max(paced, 0);
-        clamp(1 - (1 + at) * Math.exp(-at), 0, 1)
-    }
 }
 
 // Laid in the window's space over the canvas, taking no press.

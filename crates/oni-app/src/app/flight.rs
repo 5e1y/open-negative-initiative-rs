@@ -3,6 +3,7 @@
 //! flight and lands it where the next screen lays the photo, Rust names its picture and where it leaves.
 
 use super::*;
+use crate::travels::{self, Travel};
 use crate::{Flight, FlightRoute, Place, Walk};
 
 impl Ctl {
@@ -36,14 +37,15 @@ impl Ctl {
     /// next screen then showing as it lands.
     fn fly(&self, path: &str, route: FlightRoute, from: Place, tile: Option<(usize, Place)>) {
         let Some(w) = self.window() else { return };
+        let what = format!("{} of {}", flown(route), crate::anonymity::token(path));
         if w.global::<crate::Motion>().get_reduced() {
-            return;
+            return travels::refused(&format!("flight {what}"), "under Reduce Motion");
         }
         let picture = {
             let s = self.state.borrow();
             s.fingerprints.get(path).and_then(|f| s.thumbs.get(f))
         };
-        let Some(picture) = picture else { return };
+        let Some(picture) = picture else { return travels::refused(&format!("flight {what}"), "no thumbnail in memory") };
         let f = w.global::<Flight>();
         let (index, place) = tile.map_or((-1, Place::default()), |(i, p)| (i as i32, p));
         f.set_picture(picture);
@@ -51,14 +53,18 @@ impl Ctl {
         f.set_from(from);
         f.set_tile(index);
         f.set_tile_place(place);
+        f.set_began(f.get_now());
+        f.set_arrived(false);
         f.set_serial(f.get_serial() + 1);
         f.set_flying(true);
+        travels::started(Travel::Flight, f.get_serial(), format!("flight {} {what}", f.get_serial()));
     }
 
     /// The gallery's tile lifting into the canvas, started before the editor shows: only a tile on screen flies.
     pub(super) fn fly_into_editor(&self, path: &str) {
-        if let Some(tile) = self.tile_in_window(path) {
-            self.fly(path, FlightRoute::IntoEditor, tile.1.clone(), Some(tile));
+        match self.tile_in_window(path) {
+            Some(tile) => self.fly(path, FlightRoute::IntoEditor, tile.1.clone(), Some(tile)),
+            None => travels::refused(&format!("flight into the editor of {}", crate::anonymity::token(path)), "its tile not on screen"),
         }
     }
 
@@ -112,9 +118,9 @@ impl Ctl {
             None
         };
         if let Some(why) = refused {
-            return crate::walks::refused(to, why);
+            return travels::refused(&format!("walk to {}", crate::anonymity::token(to)), why);
         }
-        let Some(from) = self.canvas_in_window() else { return crate::walks::refused(to, "no picture on the canvas") };
+        let Some(from) = self.canvas_in_window() else { return travels::refused(&format!("walk to {}", crate::anonymity::token(to)), "no picture on the canvas") };
         let way = {
             let s = self.state.borrow();
             let Some(left) = s.open_path().filter(|p| *p != to) else { return };
@@ -133,7 +139,7 @@ impl Ctl {
         walk.set_began(walk.get_now());
         walk.set_serial(walk.get_serial() + 1);
         walk.set_walking(true);
-        crate::walks::started(walk.get_serial(), to, way);
+        travels::started(Travel::Walk, walk.get_serial(), format!("walk {} to {}, {}", walk.get_serial(), crate::anonymity::token(to), if way < 0 { "back" } else { "forward" }));
     }
 
     /// Prepare takes the screen, as a photo of a roll never prepared opens it once its roll is read: a photo
@@ -160,5 +166,15 @@ impl Ctl {
         p.set_opened_cell(paths.iter().position(|p| Some(p) == opened.as_ref()).map_or(-1, |i| i as i32));
         p.set_wave_from(slint::ModelRc::new(slint::VecModel::from(places)));
         p.set_wave(p.get_wave() + 1);
+    }
+}
+
+/// A route's words in the log.
+fn flown(route: FlightRoute) -> &'static str {
+    match route {
+        FlightRoute::IntoEditor => "into the editor",
+        FlightRoute::IntoGallery => "into the gallery",
+        FlightRoute::IntoExport => "into the export",
+        FlightRoute::OutOfExport => "out of the export",
     }
 }

@@ -135,8 +135,6 @@ export global Motion {
     out property <duration> wave-step: Motion.reduced ? 0ms : 14ms;
     // How many cells the wave staggers: the roll's later ones land with the last of them.
     out property <int> wave-cells: 40;
-    // The window's next frame: what moves from where it was just laid waits for it to be drawn there.
-    out property <duration> next-frame: 1ms;
     // A menu or a popover opening out of its anchor, quick enough that a line is read as it lands.
     out property <duration> pop: Motion.reduced ? 0ms : 160ms;
 }

@@ -1,6 +1,6 @@
 // Prepare the Roll's floor: the flags' sheet, the base's scan, the frame card with its window, or the
 // measure's screens; Rust holds every value and rule.
-import { Space, Ease, Place, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Pick, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
+import { Space, Sprung, Place, Card, CardCorners, Scroller, TileView, TileMarks, RingPlacement, Pager, EmptyState, Picture, Ground, Fit, Pick, Loupe, FrameOverlay, FrameStyle, CardStyle, RollStyle, Motion, Clicks } from "ds/ds.slint";
 import { Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
 import { Converting } from "dng.slint";
@@ -22,16 +22,19 @@ component FlagSheet inherits Scroller {
     changed width => { self.laid(); }
     init => { self.laid(); root.play(); }
     property <int> wave: Preparing.wave;
-    property <bool> waved: true;
+    // When the wave began on the animation clock, each cell's flight read off it after its own delay.
+    property <duration> began;
+    property <bool> waving;
     function play() {
         if (Preparing.wave != Preparing.wave-played) {
             Preparing.wave-played = Preparing.wave;
-            root.waved = false;
-            arrive.start();
+            root.began = animation-tick();
+            root.waving = Motion.travel > 0ms;
         }
     }
     changed wave => { root.play(); }
-    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); root.waved = true; } }
+    property <bool> waved: root.waving && animation-tick() - root.began >= Motion.travel + Motion.wave-cells * Motion.wave-step;
+    changed waved => { if (root.waved) { root.waving = false; } }
     grid := VerticalLayout {
         width: root.width;
         alignment: start;
@@ -44,16 +47,17 @@ component FlagSheet inherits Scroller {
                 property <int> at: row * RollStyle.sheet-columns + column;
                 property <Place> from: self.at < Preparing.wave-from.length ? Preparing.wave-from[self.at] : { x: 0, y: 0, width: 0, height: 0 };
                 property <bool> known: self.from.width > 0;
-                property <duration> delay: root.waved ? min(self.at, Motion.wave-cells) * Motion.wave-step : 0ms;
+                property <duration> delay: min(self.at, Motion.wave-cells) * Motion.wave-step;
+                // 0 where its tile stood in the gallery, 1 in its cell, on `Ease.weighted`.
+                property <float> gone: root.waving ? Sprung.at(0.1, (animation-tick() - root.began - self.delay) / Motion.travel) : 1;
                 width: (grid.width - 2 * Space.l - (RollStyle.sheet-columns - 1) * Space.m) / RollStyle.sheet-columns;
                 height: self.width * RollStyle.well-ratio;
                 if self.at < Preparing.cells.length: TileView {
-                    x: root.waved ? 0px : cell.known ? cell.from.x - cell.absolute-position.x : 0px;
-                    y: root.waved ? 0px : cell.known ? cell.from.y - cell.absolute-position.y : root.height - cell.absolute-position.y + root.absolute-position.y;
-                    width: root.waved || !cell.known ? parent.width : cell.from.width;
-                    picture-height: root.waved || !cell.known ? parent.height : cell.from.height;
-                    opacity: root.waved || cell.known ? 1 : 0;
-                    animate x, y, width, picture-height, opacity { duration: root.waved ? Motion.travel : 0ms; delay: cell.delay; easing: Ease.weighted; }
+                    x: cell.known ? (cell.from.x - cell.absolute-position.x) * (1 - cell.gone) : 0px;
+                    y: (cell.known ? cell.from.y - cell.absolute-position.y : root.height - cell.absolute-position.y + root.absolute-position.y) * (1 - cell.gone);
+                    width: cell.known ? cell.from.width + (parent.width - cell.from.width) * cell.gone : parent.width;
+                    picture-height: cell.known ? cell.from.height + (parent.height - cell.from.height) * cell.gone : parent.height;
+                    opacity: cell.known ? 1 : cell.gone;
                     marks: TileMarks.apart;
                     rounded: true;
                     ring: RingPlacement.outset;

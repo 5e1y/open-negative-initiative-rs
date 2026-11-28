@@ -1,0 +1,14 @@
+// A motion read off the animation clock from its start: every frame drawn shows it where it is, whenever the window
+// draws, so none waits on a frame to lay its start. Slint's `spring(bounce)` in place: 0 at the start, 1 at rest.
+export global Sprung {
+    // `paced`, the time since the start over the pace: Slint's frequency is 2π over the pace, its damping 1 − bounce.
+    public pure function at(bounce: float, paced: float) -> float {
+        let wt = 6.2831853 * max(paced, 0);
+        let zeta = 1 - bounce;
+        if (zeta >= 0.999) {
+            return 1 - (1 + wt) * Math.exp(-wt);
+        }
+        let damped = Math.sqrt(1 - zeta * zeta);
+        return 1 - Math.exp(-zeta * wt) * (Math.cos(damped * wt * 1rad) + zeta / damped * Math.sin(damped * wt * 1rad));
+    }
+}

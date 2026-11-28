@@ -42,7 +42,7 @@ pub fn watch(window: &MainWindow) -> Option<Timer> {
         if matches!(state, slint::RenderingState::AfterRendering) {
             drawn();
             if let Some(w) = drawing.upgrade() {
-                crate::walks::drawn(&w);
+                crate::travels::drawn(&w);
             }
         }
     }).is_err() {

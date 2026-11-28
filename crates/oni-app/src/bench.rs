@@ -77,7 +77,7 @@ pub(crate) fn frame_clock(ctl: &Rc<Ctl>) -> Rc<RefCell<Vec<(Instant, Duration)>>
                     log.borrow_mut().push((t, t.elapsed()));
                 }
                 if let Some(w) = drawing.upgrade() {
-                    crate::walks::drawn(&w);
+                    crate::travels::drawn(&w);
                 }
             }
             _ => {}

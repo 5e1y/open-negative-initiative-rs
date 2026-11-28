@@ -26,6 +26,8 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(motion::the_photo_flies_between_its_tile_and_the_canvas_and_reduce_motion_lays_it_at_once),
     check!(motion_walk::every_arrow_in_a_burst_walks_from_the_picture_the_canvas_shows),
     check!(motion_walk::a_walk_first_drawn_after_the_timers_ran_is_seen_from_its_start),
+    check!(motion_clock::the_flight_and_the_panes_are_drawn_on_their_way_after_the_timers_ran),
+    check!(motion_clock::prepare_s_step_and_wave_are_drawn_on_their_way_after_the_timers_ran),
     check!(one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner),
     check!(one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it),
     check!(one_face::settings_read_the_filters_as_c_m_and_y_each_band_either_way),

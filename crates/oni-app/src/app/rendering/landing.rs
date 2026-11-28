@@ -255,7 +255,7 @@ impl Ctl {
         c.set_frame_revision(c.get_frame_revision().wrapping_add(1));
         self.note_canvas(image.3.then_some(crate::bench::chain::Side::After));
         crate::hz::changed();
-        crate::walks::landed();
+        crate::travels::landed();
         if let Some(e) = refused {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
             static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

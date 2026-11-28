@@ -66,7 +66,7 @@ pub mod updates;
 pub mod update_install;
 pub mod viewport;
 pub mod web;
-pub mod walks;
+pub mod travels;
 pub mod watchdog;
 pub mod wrapped;
 

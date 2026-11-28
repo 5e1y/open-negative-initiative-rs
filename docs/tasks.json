@@ -14796,6 +14796,18 @@
     "type": "docs",
     "status": "done",
     "title": "CLAUDE.md: a paper is a look baked in its file, the Frontier one of them",
-    "detail": "The working notes follow #4403 and #4404: three curves, a crosstalk and the light baked by scripts/paper-looks.py, the Frontier's from its measured table, Lighting's pivot on the inversion's scene grey."
+    "detail": "The working notes follow #4403 and #4404: three curves, a crosstalk and the light baked by scripts/paper-looks.py, the Frontier's from its measured table, Lighting's pivot on the inversion's scene grey.",
+    "id": 4502,
+    "type": "bug",
+    "status": "done",
+    "title": "Each flight between the screens writes its line in the log beside the walks': none and why, else its frames drawn, how far it had gone at the first, the renders landed meanwhile",
+    "detail": "The walk's line (#4500) becomes the travels' (`travels`): a flight into the editor, into the gallery, into the export or out of it says whether it flew (else why: its tile not on screen, no thumbnail in memory, Reduce Motion), the frames drawn while it moved, the first one's delay and how far it had gone, the renders landed meanwhile; the photo is a token. Measured with ONI_BENCH=motion on the reference roll's test copy, the window visible at 2560 by 1410, on the former mechanism: into the editor, into the export and out of it, the first frame came 65 to 142 ms after the flight began, already at its end, the start never laid; into the gallery alone it left from its start."
+  },
+  {
+    "id": 4503,
+    "type": "bug",
+    "status": "done",
+    "title": "Every motion that laid its start and let it go on a 1 ms timer reads its progress off the animation clock: the flight between the screens, the panel's panes, Prepare's step and its wave",
+    "detail": "Same cause as the walk's (#4501): a timer standing for the window's next frame let each motion go before the real window, drawing on the display link after the event loop's timers, had laid its start, and Slint animates from the value last laid, so the motion jumped to its end. One mechanism now: `Sprung.at`, Slint's spring(bounce) computed in place over a pace, read off `animation-tick()` from the motion's start, set by Rust (the walk, the flight) or by the change that starts it (a pane, a step, the wave); each ends once its pace has run. The flight follows the place it aims at as the next screen lays out; a landing on the same picture hands over at once. `Motion.next-frame` is gone. Measured with ONI_BENCH=motion: the four flights first drawn at 0 to 1 % of their way, against three of four at their end before. Checks: motion_clock, each motion's first frame drawn only once the clock has passed 40 ms, as the real window draws: the flight into the editor, a pane, Prepare's wave and step still on their way (twin: two frames at rest differ in nothing). On the former mechanism the pane (0.03 of its region moved, 0.1 asked) and the wave (0.00) fail; the flight's first frame in the check is laid by the frozen rig, which is why the log line measures it on the real window."
   }
 ]
