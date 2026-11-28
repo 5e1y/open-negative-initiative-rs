@@ -383,12 +383,9 @@ def tailed(x, y, floor):
     return np.maximum(out, floor)
 
 
-def convert_paper(stock_id):
-    """A colour paper's profile: its sheet's Status A curves as printed, each on its own D-min, on log H less the
-    grey's, and its dyes' Status A crosstalk: what each channel reads of each dye at a unit amount. ONI prints each layer
-    through a pure dye on its own channel, so a paper's dye spectra and sensitivities are not kept."""
-    stock = STOCK[stock_id]
-    measured, inferred = [], []
+def paper_dyes(stock):
+    """A colour paper's three dye spectra on WAVELENGTHS, each a Status A density of 1 in its own channel, clear (NaN)
+    outside its sheet's measured range, and the chart they come from; `scripts/paper-looks.py` reads them too."""
     dye_chart = chart(stock, "spectral_dye_density")
     top = max(series(dye_chart, ch)[0][-1] for ch in ("cyan", "magenta", "yellow"))
     dyes = []
@@ -396,7 +393,16 @@ def convert_paper(stock_id):
         x, y = series(dye_chart, channel)
         logged = tailed(x, np.log10(np.maximum(y / y.max(), 1e-4)), -4.0)
         dyes.append(np.where((WAVELENGTHS >= 400.0) & (WAVELENGTHS <= top), 10.0 ** logged, np.nan))
-    dyes = unit(np.array(dyes).T, STATUS_A)
+    return unit(np.array(dyes).T, STATUS_A), dye_chart
+
+
+def convert_paper(stock_id):
+    """A colour paper's profile: its sheet's Status A curves as printed, each on its own D-min, on log H less the
+    grey's, and its dyes' Status A crosstalk: what each channel reads of each dye at a unit amount. Its dye spectra stay in
+    the dataset, where `scripts/paper-looks.py` reads them; its layers' sensitivities are not kept."""
+    stock = STOCK[stock_id]
+    measured, inferred = [], []
+    dyes, dye_chart = paper_dyes(stock)
     crosstalk = np.array([read(dyes[:, k], STATUS_A) for k in range(3)]).T
     measured.append(f"cyan, magenta and yellow dye shapes ({dye_chart['confidence']} confidence)")
     inferred.append("each dye past its sheet's points (hidden under another curve), falling at its end slope in log")

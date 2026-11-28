@@ -60,14 +60,19 @@ fn every_data_sheets_look_is_its_sheets_curves_under_one_enlarger() {
         let nodes = sheet_amounts(&sheet);
         let top: [f64; 3] = std::array::from_fn(|c| nodes[nodes.len() - 1][c]);
         let rising = |c: usize, a: f32| f64::from(a) > 0.02 * top[c] && f64::from(a) < 0.98 * top[c];
-        // Each layer's amount along the window read back to its log exposure on the sheet where it rises: one enlarger
-        // lays every layer's exposure down by the latitude along the window, each apart from green's by its filtration.
+        // Each grey's densities unmixed through the sheet's Status A crosstalk, read back to its log exposure on the sheet where
+        // it rises: one enlarger lays every layer down by the latitude along the window, each apart from green's by its filtration.
+        let unmix = bake::inverse(&sheet.crosstalk);
+        let held = |t: f32| -> [f32; 3] {
+            let d = k.dyed(k.amounts([t; 3]));
+            bake::apply(&unmix, std::array::from_fn(|c| f64::from(d[c] - k.floor[c]))).map(|v| v as f32)
+        };
         let off = |latitude: f32| -> f64 {
             let mut worst = 0.0f64;
-            let (a0, ta) = (k.amounts([0.5; 3]), 0.5f32);
+            let (a0, ta) = (held(0.5), 0.5f32);
             for i in 0..=50 {
                 let t = i as f32 / 50.0;
-                let a = k.amounts([t; 3]);
+                let a = held(t);
                 for c in 0..3 {
                     if !(rising(c, a[c]) && rising(c, a0[c])) {
                         continue;

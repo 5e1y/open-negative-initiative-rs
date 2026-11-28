@@ -4,12 +4,18 @@ layer's dye amount, the dyes' 3x3 crosstalk in density, its floor and the light'
 
 A data-sheet paper: its Status A curves unmixed through its crosstalk, laid under the window as the enlarger laid it, the
 bare film on 0.9 Dmax of its neutral and the window's white on D-min + 0.04 (ISO 6846), each layer offset by the filtration
-that prints a grey neutral along the window. The Frontier SP-3000: its measured table's neutral line from its black to its
+that prints a grey neutral along the window; its look's crosstalk is the broad-band 3x3 that best stands for the print
+through its dyes' spectra under D50 read by the 1931 observer, the curves unmixed through it so a grey keeps the sheet's
+densities. The Frontier SP-3000: its measured table's neutral line from its black to its
 white, greys exactly as it prints them, and a crosstalk fitted on the 1,440 nodes its measurements constrain.
 
-Run: scripts/paper-looks.py, which rewrites each paper file's `look` from its `profile`, or the Frontier's from its table.
+Run: scripts/paper-looks.py <emulsion-dataset>, which rewrites each paper file's `look` from its `profile` and its sheet's
+dye spectra (read by scripts/datasheet-profiles.py), or the Frontier's from its table.
 """
+import importlib.util
 import json
+import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +29,9 @@ NODES, LOW, HIGH = 256, -0.5, 1.5
 SHARES = np.linspace(LOW, HIGH, NODES)
 # The useful range on a paper's neutral and the window shares a grey is weighed at.
 WHITE_OVER_DMIN, BLACK_OF_DMAX, SAMPLES = 0.04, 0.9, 33
+# The broad-band crosstalk's strength: 1 prints the 3x3 that best stands for the dyes' spectral print, 0 pure dyes.
+BROAD_BAND = 1.0
+XYZ_TO_2020 = [[1.7166512, -0.3556708, -0.2533663], [-0.6666844, 1.6164812, 0.0157685], [0.0176399, -0.0427706, 0.9421031]]
 SRGB_TO_2020 = [[0.627404, 0.329283, 0.043313], [0.069097, 0.919540, 0.011362], [0.016391, 0.088013, 0.895595]]
 IDENTITY = np.eye(3).tolist()
 
@@ -87,14 +96,75 @@ class Sheet:
         return offsets, black, black - white
 
 
-def sheet_look(data):
+def cie(name):
+    """One of the app's CIE tables on 380 to 780 nm every 5 nm, as `film::cie` holds it."""
+    text = (ROOT / "crates/oni-pipeline/src/film/cie.rs").read_text()
+    body = re.search(r"pub const " + name + r": \[f64; WAVELENGTHS\] = \[(.*?)\];", text, re.S).group(1)
+    return np.array([float(v) for v in body.replace("\n", " ").split(",") if v.strip()])
+
+
+def eye():
+    """Each working channel's weight on each wavelength: the 1931 observer in Rec. 2020 under D50, the viewing light."""
+    weights = (np.stack([cie("X"), cie("Y"), cie("Z")], 1) @ np.array(XYZ_TO_2020).T) * cie("D50")[:, None]
+    return weights / weights.sum(0)
+
+
+def ended(light, black, top):
+    return np.where(light <= black, 0.0, (light - black) / (top - black))
+
+
+def fitted(residual, p, rounds):
+    """The parameters that minimise the residual's squares, by Levenberg-Marquardt from `p`."""
+    lam = 1.0
+    for _ in range(rounds):
+        r = residual(p)
+        J = np.stack([(residual(p + np.eye(len(p))[j] * 1e-4) - r) / 1e-4 for j in range(len(p))], 1)
+        JtJ, Jtr = J.T @ J, J.T @ r
+        while lam < 1e8:
+            step = np.linalg.solve(JtJ + lam * np.diag(np.diag(JtJ) + 1e-9), Jtr)
+            if residual(p - step) @ residual(p - step) < r @ r:
+                p, lam = p - step, lam / 3
+                break
+            lam *= 4
+        else:
+            break
+    return p
+
+
+def broad_band(sheet, amounts, dyes):
+    """The 3x3 crosstalk that, a grey's densities kept, best stands for the print through the dyes' spectra: Oklab
+    distance x 100 on the window's shares, the spectral print holding the sheet's Status A amounts, each print on its ends."""
+    weights, clear, grey = eye(), np.nan_to_num(dyes), amounts @ sheet.crosstalk.T
+    g = np.linspace(0, 1, 9)
+    s = np.stack(np.meshgrid(g, g, g, indexing="ij"), -1).reshape(-1, 3)
+    at = lambda curves, s: np.stack([np.interp(s[..., c], SHARES, curves[:, c]) for c in range(3)], -1)
+
+    def printed(light, curves):
+        return ended(light(at(curves, s)), light(at(curves, np.zeros(3))), light(at(curves, np.ones(3))))
+
+    want = oklab(printed(lambda a: 10.0 ** -sheet.floor * ((10.0 ** -(a @ clear.T)) @ weights), amounts))
+    mixed = lambda mix: printed(lambda a: 10.0 ** -(sheet.floor + a @ mix.T), grey @ np.linalg.inv(mix).T)
+    residual = lambda p: (oklab(mixed(p.reshape(3, 3))) - want).ravel() * 100
+    mix = fitted(residual, sheet.crosstalk.ravel(), 80).reshape(3, 3)
+    errors = np.linalg.norm(residual(mix.ravel()).reshape(-1, 3), axis=1)
+    # A dye's unit is free, its curve taking it back: each its own channel's density of 1, so BROAD_BAND scales its side reads alone.
+    return mix / np.diag(mix), {"median": round(float(np.median(errors)), 3), "p90": round(float(np.percentile(errors, 90)), 3)}
+
+
+def sheet_look(data, dyes):
     sheet = Sheet(data)
     offsets, black, latitude = sheet.placed()
     log = black + offsets - latitude * SHARES[:, None]
+    amounts = sheet.amounts(log)
+    band, figures = broad_band(sheet, amounts, dyes)
+    mix = np.eye(3) + BROAD_BAND * (band - np.eye(3))
+    # A grey keeps the sheet's densities through the broad band, each layer's amount never rising with the share.
+    curves = np.minimum.accumulate((amounts @ sheet.crosstalk.T) @ np.linalg.inv(mix).T, axis=0)
+    print(f"  broad band against the dyes' spectral print: {figures}")
     return {
         "axis": [LOW, HIGH],
-        "curves": [[round(float(v), 7) for v in row] for row in sheet.amounts(log)],
-        "crosstalk": sheet.crosstalk.tolist(),
+        "curves": [[round(float(v), 7) for v in row] for row in curves],
+        "crosstalk": [[round(float(v), 7) for v in row] for row in mix],
         "floor": sheet.floor.tolist(),
         "primaries": IDENTITY,
         "latitude": round(float(latitude), 7),
@@ -182,9 +252,6 @@ def frontier_look():
             out.append(np.interp(x[..., c], xs[order], greens[order]) / white)
         return np.stack(out, -1)
 
-    def ended(light, black, top):
-        return np.where(light <= black, 0.0, (light - black) / (top - black))
-
     grey = -np.log10(np.maximum(decoded(table.code(densities(np.repeat(SHARES[:, None], 3, 1)))).mean(1), 1e-6))
     # A grey never prints darker on a thinner window's share: the table's noise near its black is held.
     grey = np.minimum.accumulate(grey)
@@ -206,19 +273,7 @@ def frontier_look():
     nodes = nodes[table.constrained(nodes)]
     s_nodes, want = shares(nodes), oklab(measured(nodes))
     residual = lambda p: (oklab(printed(p.reshape(3, 3), s_nodes)[0]) - want).ravel() * 100
-    p, lam = np.eye(3).ravel(), 1.0
-    for _ in range(80):
-        r = residual(p)
-        J = np.stack([(residual(p + np.eye(9)[j] * 1e-4) - r) / 1e-4 for j in range(9)], 1)
-        JtJ, Jtr = J.T @ J, J.T @ r
-        while lam < 1e8:
-            step = np.linalg.solve(JtJ + lam * np.diag(np.diag(JtJ) + 1e-9), Jtr)
-            if residual(p - step) @ residual(p - step) < r @ r:
-                p, lam = p - step, lam / 3
-                break
-            lam *= 4
-        else:
-            break
+    p = fitted(residual, np.eye(3).ravel(), 80)
     mix = p.reshape(3, 3) / p.reshape(3, 3)[1, 1]
     got, curves = printed(mix, s_nodes)
     errors = np.linalg.norm(oklab(got) - want, axis=1) * 100
@@ -253,13 +308,25 @@ def write(path, paper):
     path.write_text(text)
 
 
+def datasheets(dataset):
+    """scripts/datasheet-profiles.py, reading the emulsion dataset at `dataset`."""
+    spec = importlib.util.spec_from_file_location("datasheet_profiles", ROOT / "scripts/datasheet-profiles.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.STOCK = {s["id"]: s for s in json.loads((Path(dataset) / "export/filmstocks.json").read_text())["stocks"]}
+    return module
+
+
 def main():
+    sheets = datasheets(sys.argv[1])
     for path in sorted(p for p in STOCKS.glob("*.json") if not p.name.startswith(".")):
         paper = json.loads(path.read_text())
         if paper.get("oni") != "paper":
             continue
         if "profile" in paper:
-            paper["look"] = sheet_look(paper["profile"]["data"])
+            print(f"{paper['name']}:")
+            dyes, _ = sheets.paper_dyes(sheets.STOCK[paper["profile"]["provenance"]["dataset_id"]])
+            paper["look"] = sheet_look(paper["profile"]["data"], dyes)
             print(f"{paper['name']}: latitude {paper['look']['latitude']:.3f}, filtration {paper['look']['filtration']} CC")
         else:
             paper.pop("frontier", None)
