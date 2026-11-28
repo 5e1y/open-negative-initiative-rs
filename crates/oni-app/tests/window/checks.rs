@@ -28,6 +28,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(motion_walk::a_walk_first_drawn_after_the_timers_ran_is_seen_from_its_start),
     check!(motion_clock::the_flight_and_the_panes_are_drawn_on_their_way_after_the_timers_ran),
     check!(motion_clock::prepare_s_step_and_wave_are_drawn_on_their_way_after_the_timers_ran),
+    check!(motion_zoom::the_photo_flies_to_and_from_its_zoomed_view_and_lands_without_a_jump),
     check!(one_face::the_colour_tab_lays_one_face_and_nothing_of_the_scanner),
     check!(one_face::a_photo_edited_on_the_scanner_opens_on_its_legacy_print_and_switches_it),
     check!(one_face::settings_read_the_filters_as_c_m_and_y_each_band_either_way),

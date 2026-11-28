@@ -57,7 +57,7 @@ pub(super) fn walk(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         match step.get() {
             Step::Loading => {
                 if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
-                    w.window().set_maximized(true);
+                    maximise(&w);
                     step.set(Step::Sizing { since: Instant::now() });
                 } else if started.elapsed() > LOADING {
                     finish("walk: no frame rendered".into());

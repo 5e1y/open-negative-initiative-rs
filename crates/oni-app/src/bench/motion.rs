@@ -26,8 +26,10 @@ const PANES: [crate::PanelTab; 3] = [crate::PanelTab::Details, crate::PanelTab::
 
 fn pick(w: &crate::MainWindow, tab: crate::PanelTab) {
     let panel = w.global::<crate::PanelState>();
+    let at = Instant::now();
     panel.set_tab(tab);
     panel.invoke_tab_picked(tab);
+    crate::timing::line(&format!("motion: pane {tab:?} picked in {:.1} ms on the interface thread", at.elapsed().as_secs_f64() * 1000.0));
 }
 
 pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -69,7 +71,7 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         match step.get() {
             Step::Loading => {
                 if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
-                    w.window().set_maximized(true);
+                    maximise(&w);
                     step.set(Step::Sizing { since: Instant::now() });
                 } else if started.elapsed() > LOADING {
                     finish("motion: no frame rendered".into());

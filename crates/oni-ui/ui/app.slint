@@ -375,7 +375,8 @@ export component MainWindow inherits AppWindow {
         // A photo travelling: between its tile and the canvas, or the one left as the editor walks.
         Travels {
             x: 0; y: 0; width: parent.width; height: parent.height; walk: root.beside-photo;
-            frame: { x: card.absolute-position.x + CardStyle.padding + Canvas.frame-x, y: card.absolute-position.y + CardStyle.padding + Canvas.frame-y, width: Canvas.frame-width, height: Canvas.frame-height };
+            frame: { x: card.absolute-position.x + CardStyle.padding + Canvas.image-x, y: card.absolute-position.y + CardStyle.padding + Canvas.image-y,
+                width: Canvas.image-width, height: Canvas.image-height };
             room: { x: card.absolute-position.x + CardStyle.padding, y: card.absolute-position.y + CardStyle.padding, width: Canvas.width, height: Canvas.height };
         }
         // The notice at the bottom right of the view the hand works in, above its status bar.

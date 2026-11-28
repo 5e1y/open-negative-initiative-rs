@@ -14859,6 +14859,20 @@
     "type": "feature",
     "title": "The owner's eight paper boxes, each beside its paper file and drawn in the paper menu",
     "status": "done",
-    "detail": "A paper's file takes a canister as a stock's does (an SVG beside it, checked as one), its entry and PaperStock::canister carry it, and the Colour tab's paper menu draws each paper's box at a line's side as the stock menu draws a canister (stocks::paper_icon, drawn once a side). The eight SVGs are copied byte for byte and their hashes join the owner's artworks; every_paper_draws_its_box proves each paper draws its own, an unknown key nothing. The Paper block's field shows no picture yet: a hero like the Film block's is a separate choice."
+    "detail": "A paper's file takes a canister as a stock's does (an SVG beside it, checked as one), its entry and PaperStock::canister carry it, and the Colour tab's paper menu draws each paper's box at a line's side as the stock menu draws a canister (stocks::paper_icon, drawn once a side). The eight SVGs are copied byte for byte and their hashes join the owner's artworks; every_paper_draws_its_box proves each paper draws its own, an unknown key nothing. The Paper block's field shows no picture yet: a hero like the Film block's is a separate choice.",
+    "detail": "The working notes follow #4406: the 3 x 3 fitted on the print through the sheet's dye spectra, its strength one constant of the bake.",
+    "detail": "After #4600 the tone match reads every mean through `Region::summed`: `Region::mean` was read by the tests alone and `Rect::is_empty` by nothing, so clippy refused oni-app and the workspace went unlinted. The tests carry the plain mean they compare against; `is_empty` is gone. Checks: scripts/lint green, heal::tests, the De-dust window checks.",
+    "id": 4504,
+    "type": "ui",
+    "status": "done",
+    "title": "The walk between two photos takes 200 ms instead of 420, one token of the design system (Motion.walk), timed from the loop's turn after the photo is opened",
+    "detail": "Owner: the animation between photos in the editor should be quicker. The walk read the window's travel pace, 420 ms on Ease.firm (Slint's spring with no give); it now reads Motion.walk, 200 ms on the same spring, the one value to retouch. A key always wins: the next walk begins from the picture shown, the one running dropped. The walk and the flight start their clock in the change handler that follows the work starting them, so the 20 to 100 ms the interface thread spends opening a photo no longer eats the start of a 200 ms walk."
+  },
+  {
+    "id": 4505,
+    "type": "bug",
+    "status": "done",
+    "title": "A photo flies to and from its zoomed view: it lands where the canvas shows it at rest, zoom and pan included, grown past the frame and cut by the canvas",
+    "detail": "Owner: opening a zoomed photo from the gallery, the photo took the whole screen then jumped to its zoom. The flight aimed at the canvas's frame, which on a zoomed view is only the part rendered, so the whole thumbnail was laid in it and the view jumped once the canvas showed its zoom; back to the gallery it left from the same fitted picture. The canvas now publishes where the whole photo lies (Canvas.image), past its edges when zoomed, for every placement, thumbnail or render; the flight lands there and leaves from there, and what shows of it travels from its starting place to the canvas's room, which cuts it. The full definition landing later is laid at the same place. Check: motion_zoom, eight instants each way shot on a held clock: the flight's last frame shows the stripes at the view's zoom and place, the view at rest the zoom it had before the gallery; twin, the photo fitted does not read as the zoomed view. On the former flight the last frame showed the whole photo fitted (stripes 45 px apart against 150)."
   }
 ]

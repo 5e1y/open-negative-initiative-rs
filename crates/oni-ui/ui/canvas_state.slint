@@ -36,6 +36,11 @@ export global Canvas {
     in property <length> frame-y;
     in property <length> frame-width;
     in property <length> frame-height;
+    // Where the whole photo lies on the canvas, past its edges when zoomed: where a flight lands and leaves.
+    in property <length> image-x;
+    in property <length> image-y;
+    in property <length> image-width;
+    in property <length> image-height;
     // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
     in property <float> split: -1;
     // Frames shown together: the sheet's black, each frame's number at the sheet's scale in its band.

@@ -21,7 +21,19 @@ impl Ctl {
         Some((i, Place { x: lib.get_grid_x() + frame.x, y: lib.get_grid_y() + frame.y - s.scroll, width: frame.width, height: s.layout.tile.1 }))
     }
 
-    /// Where the canvas shows the photo now, in the window's points; none before it has placed one.
+    /// Where the whole photo lies on the canvas now, in the window's points, past the canvas's edges when zoomed,
+    /// with the canvas's room, which shows a part of it; none before it has placed one.
+    fn photo_in_window(&self) -> Option<(Place, Place)> {
+        let w = self.window()?;
+        let (c, f) = (w.global::<Canvas>(), w.global::<Flight>());
+        let (x, y) = (f.get_canvas_x(), f.get_canvas_y());
+        let room = Place { x, y, width: c.get_width(), height: c.get_height() };
+        (c.get_image_width() > 0.0 && c.get_image_height() > 0.0).then(|| {
+            (Place { x: x + c.get_image_x(), y: y + c.get_image_y(), width: c.get_image_width(), height: c.get_image_height() }, room)
+        })
+    }
+
+    /// Where the canvas shows its picture now, in the window's points; none before it has placed one.
     fn canvas_in_window(&self) -> Option<Place> {
         let w = self.window()?;
         let (c, f) = (w.global::<Canvas>(), w.global::<Flight>());
@@ -35,7 +47,7 @@ impl Ctl {
 
     /// The flight of `path`'s thumbnail from `from`; none without a thumbnail or under Reduce Motion, the
     /// next screen then showing as it lands.
-    fn fly(&self, path: &str, route: FlightRoute, from: Place, tile: Option<(usize, Place)>) {
+    fn fly(&self, path: &str, route: FlightRoute, (from, from_clip): (Place, Place), tile: Option<(usize, Place)>) {
         let Some(w) = self.window() else { return };
         let what = format!("{} of {}", flown(route), crate::anonymity::token(path));
         if w.global::<crate::Motion>().get_reduced() {
@@ -51,9 +63,10 @@ impl Ctl {
         f.set_picture(picture);
         f.set_route(route);
         f.set_from(from);
+        f.set_from_clip(from_clip);
         f.set_tile(index);
         f.set_tile_place(place);
-        f.set_began(f.get_now());
+        f.set_timed(false);
         f.set_arrived(false);
         f.set_serial(f.get_serial() + 1);
         f.set_flying(true);
@@ -63,21 +76,21 @@ impl Ctl {
     /// The gallery's tile lifting into the canvas, started before the editor shows: only a tile on screen flies.
     pub(super) fn fly_into_editor(&self, path: &str) {
         match self.tile_in_window(path) {
-            Some(tile) => self.fly(path, FlightRoute::IntoEditor, tile.1.clone(), Some(tile)),
+            Some(tile) => self.fly(path, FlightRoute::IntoEditor, (tile.1.clone(), tile.1.clone()), Some(tile)),
             None => travels::refused(&format!("flight into the editor of {}", crate::anonymity::token(path)), "its tile not on screen"),
         }
     }
 
     /// The canvas's photo shrinking into its tile, whose place the grid lays as it shows (`aim_flight`).
     pub(super) fn fly_into_gallery(&self, path: &str) {
-        if let Some(from) = self.canvas_in_window() {
+        if let Some(from) = self.photo_in_window() {
             self.fly(path, FlightRoute::IntoGallery, from, None);
         }
     }
 
     /// The canvas's photo moving onto the export's lone preview, started before the export shows.
     pub(super) fn fly_into_export(&self, path: &str) {
-        if let Some(from) = self.canvas_in_window() {
+        if let Some(from) = self.photo_in_window() {
             self.fly(path, FlightRoute::IntoExport, from, None);
         }
     }
@@ -87,7 +100,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let from = w.global::<Flight>().get_slot();
         if from.width > 0.0 {
-            self.fly(path, FlightRoute::OutOfExport, from, None);
+            self.fly(path, FlightRoute::OutOfExport, (from.clone(), from), None);
         }
     }
 
@@ -136,7 +149,7 @@ impl Ctl {
         walk.set_clip_height(canvas.get_frame_clip_height());
         walk.set_from(from);
         walk.set_way(way);
-        walk.set_began(walk.get_now());
+        walk.set_timed(false);
         walk.set_serial(walk.get_serial() + 1);
         walk.set_walking(true);
         travels::started(Travel::Walk, walk.get_serial(), format!("walk {} to {}, {}", walk.get_serial(), crate::anonymity::token(to), if way < 0 { "back" } else { "forward" }));

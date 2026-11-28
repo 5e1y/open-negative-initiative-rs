@@ -155,6 +155,13 @@ impl Ctl {
         };
         resizing::laid_in(self.canvas_size());
         let c = w.global::<Canvas>();
+        if let Some(view) = self.canvas_size() {
+            let s = self.state.borrow();
+            let full = placed.map_or_else(|| super::placeholder::guessed_full((size.0 as f64, size.1 as f64), s.full_size()), |p| p.full);
+            let image = s.viewport.placement(full, view).image;
+            let [x, y, width, height] = [image.0, image.1, image.2, image.3].map(|v| (v / scale) as f32);
+            (c.set_image_x(x), c.set_image_y(y), c.set_image_width(width), c.set_image_height(height));
+        }
         // A render landing where the last one lay, as every notch's does, moves nothing to publish.
         let at = [rect.0, rect.1, rect.2, rect.3].map(|v| (v / scale) as f32);
         let unmoved = placed.is_some() && self.state.borrow().placed() == placed && at == [c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height()];

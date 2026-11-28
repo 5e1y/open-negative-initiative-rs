@@ -55,13 +55,15 @@ mod compare;
 mod stocks;
 mod motion;
 mod walk;
+mod maximise;
 mod screens;
 mod wave;
 mod wrapped;
 mod holo;
 mod traverse;
 pub mod chain;
-use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, walk::*, wrapped::*};
+use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*,
+    walk::*, maximise::*, wrapped::*};
 
 pub const NOTCHES: usize = 60;
 

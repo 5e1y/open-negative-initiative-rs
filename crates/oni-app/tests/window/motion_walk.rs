@@ -61,8 +61,8 @@ fn inner_light(rig: &common::Rig, (x, y, width, height): (f32, f32, f32, f32)) -
     sum as f32 / n.max(1) as f32
 }
 
-/// The walk as the real window draws it: its first frame comes once the loop has run its timers, 35 to 60 ms
-/// after the key on the reference roll, and must still show the walk near its start, then on its way.
+/// The walk as the real window draws it: its first frame comes once the loop has run its timers, and must still show
+/// the walk near its start, then on its way; each instant a share of the walk's pace, `Motion.walk`.
 pub(crate) fn a_walk_first_drawn_after_the_timers_ran_is_seen_from_its_start() {
     let root = common::Root::new("motion-walk-late");
     let folder = root.scans();
@@ -79,38 +79,40 @@ pub(crate) fn a_walk_first_drawn_after_the_timers_ran_is_seen_from_its_start() {
     let at = (flight.get_canvas_x() + canvas.get_frame_x(), flight.get_canvas_y() + canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
     let right: slint::SharedString = Key::RightArrow.into();
     let left = inner_light(rig, at);
-    // The walk to B, its first frame drawn 40 ms after the key, another 160 ms later; the clock held, no render lands,
-    // and at its end the canvas shows what the walk brought in.
+    let pace = w.global::<Motion>().get_walk() as u64;
+    let ms = |share: u64| Duration::from_millis(pace * share / 100);
+    // The walk to B, its first frame drawn a fifth of its pace after the key, another at half; the clock held, no
+    // render lands, and at its end the canvas shows what the walk brought in.
     rig.freeze();
     w.invoke_refocus();
     rig.key(&right);
-    rig.advance(Duration::from_millis(40));
+    rig.advance(ms(20));
     let early = inner_light(rig, at);
-    rig.shot("motion-walk-late-040");
-    rig.advance(Duration::from_millis(160));
+    rig.shot("motion-walk-late-early");
+    rig.advance(ms(30));
     let mid = inner_light(rig, at);
-    rig.shot("motion-walk-late-200");
+    rig.shot("motion-walk-late-mid");
     rig.advance(Duration::from_millis(1000));
     let walked = inner_light(rig, at);
-    println!("walk measured: left {left:.0}, 40 ms {early:.0}, 200 ms {mid:.0}, walked to {walked:.0}");
+    println!("walk measured: left {left:.0}, a fifth {early:.0}, half {mid:.0}, walked to {walked:.0}");
     assert!((walked - left).abs() > 60.0, "the two pictures differ: {left:.0} and {walked:.0}");
     let along = |v: f32| (v - left) / (walked - left);
     let on_its_way = |v: f32| (0.1..0.9).contains(&along(v));
-    assert!(along(early) < 0.25, "40 ms in, the picture left still covers the photo walked to: {:.2} of the way", along(early));
-    assert!(on_its_way(mid), "200 ms in, both photos show, on their way: {:.2}", along(mid));
+    assert!(along(early) < 0.25, "a fifth in, the picture left still covers the photo walked to: {:.2} of the way", along(early));
+    assert!(on_its_way(mid), "halfway, both photos show, on their way: {:.2}", along(mid));
     // Twin: a walk drawn at its end at once, the photo walked to alone, is not on its way.
     assert!(!on_its_way(walked), "the photo at rest reads as on its way");
     // A burst: the walk to D, starting while the one to C still runs, begins again from the picture the canvas shows.
     w.invoke_refocus();
     rig.key(&right);
-    rig.advance(Duration::from_millis(60));
+    rig.advance(ms(30));
     w.invoke_refocus();
     rig.key(&right);
-    rig.advance(Duration::from_millis(40));
+    rig.advance(ms(10));
     let restarted = inner_light(rig, at);
     rig.advance(Duration::from_millis(1000));
     let ended = inner_light(rig, at);
     rig.thaw();
-    println!("burst measured: 40 ms into the walk to D {restarted:.0}, its end {ended:.0}");
-    assert!((ended - restarted).abs() > 0.75 * (walked - left).abs(), "40 ms into the walk to D, the picture left still covers it");
+    println!("burst measured: a tenth into the walk to D {restarted:.0}, its end {ended:.0}");
+    assert!((ended - restarted).abs() > 0.75 * (walked - left).abs(), "a tenth into the walk to D, the picture left still covers it");
 }

@@ -22,6 +22,8 @@ export global Flight {
     in property <image> picture;
     in property <FlightRoute> route;
     in property <Place> from;
+    // What shows of it as it leaves: the canvas's room from a zoomed view, the place it leaves from else.
+    in property <Place> from-clip;
     // The gallery's tile the photo lands in and its place, which Rust lays as the grid shows; a place of no
     // width is not laid yet, the photo then holding where it is bound.
     in property <int> tile: -1;
@@ -34,13 +36,15 @@ export global Flight {
     in-out property <bool> slot-ready;
     // Landed, the picture fades over the place it reached, which shows again under it.
     in-out property <bool> landing;
-    // The animation clock now, the time the flight began on it, and whether it has reached its place.
+    // The animation clock now, the time the flight began on it once timed, and whether it has reached its place.
     out property <duration> now: animation-tick();
-    in property <duration> began;
+    in-out property <duration> began;
+    in-out property <bool> timed;
     in-out property <bool> arrived;
     // How far it has gone, 0 to 1 on `Ease.weighted`, read off the clock until it arrives.
-    out property <float> gone: Flight.flying && !Flight.arrived && Motion.travel > 0ms ? Sprung.at(0.1, (animation-tick() - Flight.began) / Motion.travel) : 1;
-    out property <bool> ran: Flight.flying && !Flight.arrived && animation-tick() - Flight.began >= Motion.travel;
+    out property <float> gone: !Flight.flying || Flight.arrived || Motion.travel <= 0ms ? 1
+        : !Flight.timed ? 0 : Sprung.at(0.1, (animation-tick() - Flight.began) / Motion.travel);
+    out property <bool> ran: Flight.flying && Flight.timed && !Flight.arrived && animation-tick() - Flight.began >= Motion.travel;
     out property <bool> covering: Flight.flying && !Flight.landing;
     // The canvas's photo and a tile's picture stand back while the flying one covers them.
     out property <bool> canvas-covered: Flight.covering && (Flight.route == FlightRoute.into-editor || Flight.route == FlightRoute.out-of-export);
@@ -50,7 +54,7 @@ export global Flight {
 
 // Laid in the window's space over the screens, taking no press: every gesture reaches what lies under it.
 export component FlightView {
-    // Where the canvas lays the photo, and the canvas's room for a photo it has not placed yet.
+    // Where the canvas lays the whole photo, past its edges when zoomed, and the canvas's room, which cuts it.
     in property <Place> frame;
     in property <Place> room;
     property <float> aspect: Flight.picture.height > 0 ? Flight.picture.width / Flight.picture.height : 1;
@@ -76,6 +80,15 @@ export component FlightView {
         width: Flight.from.width + (root.to.width - Flight.from.width) * root.gone,
         height: Flight.from.height + (root.to.height - Flight.from.height) * root.gone,
     };
+    // What shows of it travels from what showed where it left to what will show where it lands, the canvas cutting
+    // a zoomed view: the photo grows past the frame and lands on the view at rest.
+    property <Place> clip-to: Flight.route == FlightRoute.into-editor || Flight.route == FlightRoute.out-of-export ? root.room : root.to;
+    property <Place> window: {
+        x: Flight.from-clip.x + (root.clip-to.x - Flight.from-clip.x) * root.gone,
+        y: Flight.from-clip.y + (root.clip-to.y - Flight.from-clip.y) * root.gone,
+        width: Flight.from-clip.width + (root.clip-to.width - Flight.from-clip.width) * root.gone,
+        height: Flight.from-clip.height + (root.clip-to.height - Flight.from-clip.height) * root.gone,
+    };
     property <bool> ran: Flight.ran;
     changed ran => { if (root.ran) { Flight.arrived = true; } }
     property <int> serial: Flight.serial;
@@ -92,15 +105,22 @@ export component FlightView {
             Flight.flying = false;
         }
     }
-    Image {
-        x: root.at.x;
-        y: root.at.y;
-        width: root.at.width;
-        height: root.at.height;
-        source: Flight.picture;
-        image-fit: contain;
-        opacity: Flight.landing ? 0 : 1;
-        animate opacity { duration: root.handing; easing: ease-out; }
+    Rectangle {
+        x: root.window.x;
+        y: root.window.y;
+        width: root.window.width;
+        height: root.window.height;
+        clip: true;
+        Image {
+            x: root.at.x - root.window.x;
+            y: root.at.y - root.window.y;
+            width: root.at.width;
+            height: root.at.height;
+            source: Flight.picture;
+            image-fit: contain;
+            opacity: Flight.landing ? 0 : 1;
+            animate opacity { duration: root.handing; easing: ease-out; }
+        }
     }
     // Landed on the same picture, the canvas's or the tile's, it hands over at once, never two pictures
     // seen together; on the export's preview, another render, it fades over it.
@@ -120,13 +140,14 @@ export global Walk {
     in property <Place> from;
     // 1 walking forward, -1 back.
     in property <int> way: 1;
-    // The animation clock now, and the time the walk began on it.
+    // The animation clock now, and the time the walk began on it once timed.
     out property <duration> now: animation-tick();
-    in property <duration> began;
+    in-out property <duration> began;
+    in-out property <bool> timed;
     // How far the walk has gone, 0 to 1, a function of the clock alone: whenever the window draws, it draws the walk
     // where it is, never waiting on a frame to lay its start.
-    out property <float> gone: root.walking && Motion.travel > 0ms ? Sprung.at(0, (animation-tick() - root.began) / Motion.travel) : 1;
-    out property <bool> ran: root.walking && animation-tick() - root.began >= Motion.travel;
+    out property <float> gone: !root.walking || Motion.walk <= 0ms ? 1 : !root.timed ? 0 : Sprung.at(0, (animation-tick() - root.began) / Motion.walk);
+    out property <bool> ran: root.walking && root.timed && animation-tick() - root.began >= Motion.walk;
 }
 
 // Laid in the window's space over the canvas, taking no press.
@@ -151,6 +172,11 @@ export component Travels {
     in property <Place> room;
     if Flight.flying: FlightView { x: 0; y: 0; width: root.width; height: root.height; frame: root.frame; room: root.room; }
     if Walk.walking && root.walk: WalkView { x: 0; y: 0; width: root.width; height: root.height; }
+    // Each travel is timed from the loop's turn after the work that started it, so its first frame shows its start.
+    property <int> walked: Walk.serial;
+    changed walked => { Walk.began = Walk.now; Walk.timed = true; }
+    property <int> flown: Flight.serial;
+    changed flown => { Flight.began = Flight.now; Flight.timed = true; }
     // A walk ends once its pace has run: from then nothing reads the clock for it.
     property <bool> ran: Walk.ran;
     changed ran => { if (root.ran) { Walk.walking = false; } }

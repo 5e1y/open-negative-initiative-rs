@@ -47,7 +47,7 @@ pub(super) fn wave(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             // The first frame opened by itself is the roll's, never prepared: Prepare shows, and leaves.
             Step::Loading => {
                 if prepare.get_shown() {
-                    w.window().set_maximized(true);
+                    maximise(&w);
                     step.set(Step::Leaving { since: Instant::now() });
                 } else if started.elapsed() > LOADING {
                     finish("wave: Prepare never showed; open a roll never prepared".into());

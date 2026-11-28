@@ -129,6 +129,8 @@ export global Motion {
     out property <duration> travel: Motion.reduced ? 0ms : 420ms;
     // A panel's pane taken from the tab bar sliding in from the side the tabs were crossed, at the pill's pace.
     out property <duration> pane: Motion.reduced ? 0ms : TabsStyle.slide;
+    // The editor walking to the next or the previous photo, quick so the arrows never wait on it, on `Ease.firm`.
+    out property <duration> walk: Motion.reduced ? 0ms : 200ms;
     // How far a photo left steps aside as the editor walks to its neighbour, the next one coming from as far.
     out property <length> walk-step: Space.l;
     // The step between two cells of a roll landing on its sheet, one after the other as a wave.

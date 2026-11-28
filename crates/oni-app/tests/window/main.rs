@@ -66,6 +66,7 @@ mod first_frame;
 mod motion;
 mod motion_walk;
 mod motion_clock;
+mod motion_zoom;
 mod motion_open;
 mod typeface;
 mod freshness;
