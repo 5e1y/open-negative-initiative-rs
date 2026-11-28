@@ -41,6 +41,7 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let done = RefCell::new(Some(done));
     let started = Instant::now();
     let drawn = frame_clock(ctl);
+    let answered = answers::answers();
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, Duration::from_millis(20), move || {
@@ -65,7 +66,8 @@ pub(super) fn motion(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         };
         let journey = |name: &str| {
             let moving = if pass.get() == 0 { "laid at once" } else { "moving" };
-            lines.borrow_mut().push(format!("{name}, {moving}: {}", frames_since(&drawn.borrow(), since.get())));
+            let answer = answered.worst_since(since.get()).as_secs_f64() * 1000.0;
+            lines.borrow_mut().push(format!("{name}, {moving}: {}; the interface answered within {answer:.0} ms", frames_since(&drawn.borrow(), since.get())));
             since.set(Instant::now());
         };
         match step.get() {

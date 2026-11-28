@@ -56,6 +56,7 @@ mod stocks;
 mod motion;
 mod walk;
 mod maximise;
+mod answers;
 mod screens;
 mod wave;
 mod wrapped;
