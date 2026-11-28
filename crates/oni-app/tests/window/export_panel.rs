@@ -27,7 +27,6 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     let e = w.global::<Exporting>();
     ctl.act(oni_app::Act::Export);
     rig.settle();
-    let label = common::the(w, Role::Text, "Presets");
     // The space under the one name the canvas's chip opens on.
     common::the(w, Role::Text, "Colour space");
 
@@ -35,12 +34,12 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     // holds the tallest note it may say. A space naming its own profile shows no Profile select: the
     // keys stand a step under that room.
     let note = common::the(w, Role::Text, &e.get_space_note());
-    assert!(note.height > 1.5 * label.height, "the note wraps: {note:?}");
     assert!(common::placed(w, Role::Text, "Profile").is_empty(), "no Profile select where it cannot change");
-    let (keys, quality) = (common::the(w, Role::Button, "Load a Profile…"), common::the(w, Role::Slider, "Quality"));
-    assert!(gap(note, keys) >= STEP, "the keys at least one step under the note: {note:?} {keys:?}");
+    // The keys that load or fetch a profile stand with a profile alone (owner's call).
+    assert!(common::placed(w, Role::Button, "Load a Profile…").is_empty(), "profile keys outside Custom");
+    let quality = common::the(w, Role::Slider, "Quality");
     let edited = common::the(w, Role::Text, &e.get_edited_in());
-    assert_eq!(gap(keys, edited), STEP, "the edited-in note one step under the keys: {keys:?} {edited:?}");
+    assert!(gap(note, edited) >= 0.0, "the edited-in note under the space's: {note:?} {edited:?}");
     assert!(gap(edited, quality) >= STEP, "Quality at least one step under the note: {edited:?} {quality:?}");
 
     // The summary one fact a row, in the panel's words, at the panel's foot; twin: the subtitle, a
@@ -49,7 +48,10 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -400.0 });
     rig.settle();
     let rows = ["Pixels", "Bit depth", &e.get_weight_label()].map(|r| common::the(w, Role::Text, r));
-    assert!(rows.iter().all(|r| r.height == label.height), "the summary as large as a field's label: {rows:?}");
+    // A label's height, as the summary's facts are set: the space's note runs on two lines of it.
+    let label = rows[0];
+    assert!(note.height > 1.5 * label.height, "the note wraps: {note:?}");
+    assert!(rows.iter().all(|r| r.height == label.height), "the summary's facts one label tall each: {rows:?}");
     assert!(rows.windows(2).all(|p| p[1].y > p[0].y + p[0].height / 2.0), "each fact on a row of its own: {rows:?}");
     rig.window.dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: 400.0 });
     rig.settle();
@@ -61,9 +63,14 @@ pub(crate) fn the_export_panel_keeps_one_step_between_its_groups() {
     rig.settle();
     assert_eq!(common::placed(w, Role::Text, &e.get_space_note()).len(), 1, "Custom's note shows under the tabs");
     let profile = common::the(w, Role::Text, "Profile");
-    let moved = common::the(w, Role::Button, "Load a Profile…");
-    assert!(profile.y > note.y && moved.y > profile.y, "the Profile select between the note and the keys: {note:?} {profile:?} {moved:?}");
-    assert!(moved.y > keys.y, "twin: the select takes room the fixed profile left free: {keys:?} {moved:?}");
+    let keys = common::the(w, Role::Button, "Load a Profile…");
+    assert!(profile.y > note.y && keys.y > profile.y, "Custom: the Profile select under the note, its keys under it: {note:?} {profile:?} {keys:?}");
+    // Twin: back on a space naming its own profile, the keys go with the select.
+    e.invoke_space_picked(1);
+    rig.settle();
+    assert!(common::placed(w, Role::Button, "Load a Profile…").is_empty(), "the keys stayed off Custom");
+    e.invoke_space_picked(4);
+    rig.settle();
 
     // Each field's face shows on its ground; twin: on the canvas, where the fields stood, it would not.
     w.global::<Exporting>().set_exif_shown(true);
@@ -158,7 +165,7 @@ fn rows(w: &oni_app::MainWindow) -> Vec<(&'static str, f32)> {
     let rows = [
         (Role::Tab, "JPEG"),
         (Role::Tab, "Adobe RGB"),
-        (Role::Button, "Load a Profile…"),
+        (Role::Text, "Compression"),
         (Role::Text, "Size"),
         (Role::Checkbox, "Brighter on HDR screens"),
         (Role::Text, "Pixels"),

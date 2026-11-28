@@ -1,6 +1,6 @@
-//! The export's pictures first: each line's EXIF folded in a card that a key left of its picture opens for
-//! every line at once, each label over its field, the picture taking what the key and the card leave; the
-//! file's name under its picture whether the card is open or not.
+//! The export's pictures with each line's EXIF open at rest in a card headed by the file's name, which its cross
+//! folds and a key left of its picture opens again for every line at once, each label over its field, the picture
+//! taking what the key and the card leave; folded, the file's name under its picture.
 
 use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::Exporting;
@@ -16,6 +16,8 @@ const GAP: f32 = 24.0;
 const NEAR: f32 = 16.0;
 /// `Space.s`: the EXIF card's padding round its fields.
 const PAD: f32 = 8.0;
+/// `SectionStyle.inset`: the panel's sections off its edge, as the editor's.
+const SECTION: f32 = 16.0;
 /// `CardStyle.inset`: the card's room off the window's ground.
 const INSET: f32 = 8.0;
 /// `FieldStyle.across`, a field's padding on either side of its words.
@@ -69,16 +71,26 @@ pub(crate) fn the_exif_folds_beside_each_picture_and_the_name_stays_under_it() {
         assert_eq!(found.len(), 1, "line {k}'s caption under its preview: {found:?}");
         found[0]
     };
-    // A picture's left edge, read off its name's band under it, and its right edge off its size's end.
-    let picture = |k: usize| nth(w, Role::TextInput, "Name", k).x - BAND - ACROSS;
+    // A picture's left edge, read off its name's band under it while the card is folded, else off its size,
+    // which then starts the row; its right edge off its size's end.
+    let picture = |k: usize| if w.global::<Exporting>().get_exif_shown() { caption(k).x } else { nth(w, Role::TextInput, "Name", k).x - BAND - ACROSS };
     let end = |k: usize| caption(k).x + caption(k).width;
     // The room's edge, up to the column's padding.
-    let room = presets.x - GAP - INSET - GAP;
+    let room = presets.x - SECTION - INSET - GAP;
     // The picture in the middle of its slot, from `left` to the room's edge, its name and size under it.
     let centred = |k: usize, left: f32| picture(k) >= left - 0.5 && ((picture(k) - left) - (room - end(k))).abs() < 1.0;
 
-    // Closed as the screen opens: no EXIF, each picture right after its key, its name under it.
-    assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the EXIF closed until asked for");
+    // Open as the screen opens (owner's call): each line's card headed by the file's name, over its Camera.
+    assert!(w.global::<Exporting>().get_exif_shown(), "the EXIF open at rest");
+    for k in 0..2 {
+        let (name, camera) = (nth(w, Role::TextInput, "Name", k), nth(w, Role::TextInput, "Camera", k));
+        assert!(name.y + name.height <= camera.y && name.x < presets.x, "line {k}'s name heads its card: {name:?} {camera:?}");
+    }
+    println!("shot {}", rig.shot("export-columns-at-rest").display());
+    // Folded by a card's cross: no EXIF, each picture right after its key, its name under it.
+    common::click(rig, w, common::placed(w, Role::Button, "Hide the EXIF")[0].middle());
+    rig.settle();
+    assert!(common::placed(w, Role::TextInput, "Camera").is_empty(), "the cross folds the EXIF");
     let mut keys = common::placed(w, Role::Button, "Show the EXIF");
     keys.sort_by(|a, b| a.y.total_cmp(&b.y));
     assert_eq!(keys.len(), 2, "one EXIF key a line: {keys:?}");

@@ -214,11 +214,7 @@ export component MainWindow inherits AppWindow {
     // The photos' keyboard: a press beside a field or a control gives it back here.
     keys := KeyMonitor {
         // A key released while another window held the focus never comes: Space is let go with it.
-        changed has-focus => {
-            if (!self.has-focus) {
-                Canvas.space-held = false;
-            }
-        }
+        changed has-focus => { if (!self.has-focus) { Canvas.space-held = false; } }
         key-pressed(event) => {
             if (event.text == " " && Canvas.painting) {
                 Canvas.space-held = true;
@@ -281,12 +277,13 @@ export component MainWindow inherits AppWindow {
                         Gallery { refocused => { root.refocus(); } }
                         CardCorners { width: parent.width; height: parent.height; }
                     }
-                    // On export the card floats in the ground, all four corners showing, opened out of the editor's.
+                    // On export the card floats in the ground, opened out of the editor's; under the bar's room it starts as all content.
                     if Exporting.shown: ExportCard {
                         property <length> top: Bar.traffic-lights > 0 ? 0px : ShellStyle.bar-height;
                         property <length> left: App.gallery || !App.library-hidden ? ShellStyle.library-width : 0px;
                         property <length> right: root.width - (App.gallery || !App.panel-hidden ? ShellStyle.panel-width : 0px);
-                        rest: { x: CardStyle.inset, y: CardStyle.inset, width: parent.width - 2 * CardStyle.inset, height: parent.height - 2 * CardStyle.inset };
+                        property <length> head: min(self.top, CardStyle.inset);
+                        rest: { x: CardStyle.inset, y: self.head, width: parent.width - 2 * CardStyle.inset, height: parent.height - self.head - CardStyle.inset };
                         beside: { x: self.left, y: self.top, width: self.right - self.left, height: parent.height - self.top - parent.status };
                         open: root.exporting;
                     }

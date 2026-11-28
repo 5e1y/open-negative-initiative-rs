@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the colour space shared with the canvas's chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Flight, Place, Card, CardCorners, Icons, Space, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField, PreviewState } from "ds/ds.slint";
+import { Flight, Place, Card, CardCorners, Icons, Space, SectionStyle, Facts, ButtonStyle, Label, Engraved, Tone, TextRole, Button, ButtonKind, ButtonSize, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, LcdReadout, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, Picture, Ground, Fit, EdgePrint, SheetFooter, SteadyNote, KnownField, PreviewState } from "ds/ds.slint";
 import { FrameFields, FrameName } from "export_fields.slint";
 import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
 import { PresetPicker, PresetNameSheet } from "export_presets.slint";
@@ -113,7 +113,8 @@ export component ExportColumn inherits Scroller {
                         spacing: Space.m;
                         height: FormStyle.name-row;
                         cross-axis-alignment: center;
-                        FrameName { line: line; at: i; width: min(FormStyle.fields-width, picture.shown); }
+                        // The name heads the EXIF card while it shows, and stands here while it is folded.
+                        if !Exporting.exif-shown: FrameName { line: line; at: i; width: min(FormStyle.fields-width, picture.shown); }
                         // As tall before the size lands as after.
                         Label { horizontal-stretch: 1; height: FormStyle.caption; text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
                     }
@@ -165,8 +166,8 @@ component SpaceNote inherits SteadyNote {
     notes: Exporting.space-notes;
 }
 
-// `ExportSpaceField`'s profile, always laid so no preset moves a row: Custom's, the choice still to make,
-// or the built-in space's out of reach; then the keys that load or fetch one, and the chip's switch.
+// `ExportSpaceField`'s profile: Custom's, or the choice still to make; then the keys that load or fetch one, shown
+// with it alone (owner's call), and the chip's switch.
 component SpaceField inherits VerticalLayout {
     in property <bool> chip;
     // Asked before a key opens a window of its own, so a popover holding the field closes first.
@@ -195,35 +196,38 @@ component SpaceField inherits VerticalLayout {
         on: Exporting.colour-only;
         toggled(on) => { Exporting.colour-only-set(on); }
     }
-    ButtonGroup {
+    if Exporting.on-profile || Exporting.pending: ButtonGroup {
         align: GroupAlign.fill;
         Button { text: @tr("Load a Profile…"); fills: true; clicked => { root.dismiss(); Exporting.load-profile(); } }
         Button { text: @tr("Get Paper Profiles…"); fills: true; clicked => { root.dismiss(); Exporting.get-papers(); } }
     }
 }
 
-// `ExportPanel`: presets, rows, what the file will be, the two exits.
+// `ExportPanel`: presets, rows, what the file will be, the two exits; each setting a section of the editor's
+// column, inset as its sections are.
 export component ExportPanel inherits Surface {
     width: FormStyle.panel-width;
     VerticalLayout {
-        padding: Space.l;
-        spacing: Space.l;
+        VerticalLayout {
+            padding-left: SectionStyle.inset;
+            padding-right: SectionStyle.inset;
+            padding-top: SectionStyle.before;
+            padding-bottom: SectionStyle.after;
+            spacing: Space.xs;
+            Engraved { text: @tr("Export"); role: TextRole.title; }
+            Label { text: Exporting.subtitle; role: TextRole.note; }
+        }
         Scroller {
             vertical-stretch: 1;
             content-height: fields.preferred-height;
             fields := VerticalLayout {
                 width: parent.width;
                 alignment: start;
-                spacing: Space.m;
-                VerticalLayout {
-                    spacing: Space.xs;
-                    Engraved { text: @tr("Export"); role: TextRole.title; }
-                    Label { text: Exporting.subtitle; role: TextRole.note; }
-                }
                 // First, the one place the choice is made: every photo its own file, or all on one sheet.
-                if Exporting.count > 1: Field {
-                    label: @tr("Export as");
+                if Exporting.count > 1: Section {
+                    title: @tr("Export as");
                     help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row on black, numbered in orange by their place on their roll, the logo under them from five photos.");
+                    foldable: false;
                     Tabs {
                         tabs: [@tr("Separate Photos"), @tr("Contact Sheet")];
                         marked: [false, false];
@@ -233,13 +237,15 @@ export component ExportPanel inherits Surface {
                 }
                 // Shortcuts, not a choice to make: each writes every row below at once and locks none,
                 // and the picker names the one the rows equal.
-                Field {
-                    label: @tr("Presets");
+                Section {
+                    title: @tr("Presets");
                     help: @tr("Each fills every setting below at once, all of them still yours to change; the picker names the one the settings equal. Save as Preset… keeps the settings as they stand under a name of your own, which the list then renames or removes.");
+                    foldable: false;
                     PresetPicker { }
                 }
-                Field {
-                    label: @tr("Format");
+                Section {
+                    title: @tr("Format");
+                    foldable: false;
                     Tabs {
                         tabs: [@tr("TIFF 16-bit"), @tr("JPEG")];
                         marked: [false, false];
@@ -247,32 +253,46 @@ export component ExportPanel inherits Surface {
                         picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
                 }
-                if News.space != "": HorizontalLayout {
-                    alignment: start;
-                    Badge { tone: BadgeTone.seal; text: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
-                }
                 // No note stands in a block shown on a condition: Slint 1.18 sizes such a block with its
                 // wrapped words on one line, and what it draws past that runs over the next group.
-                Field {
-                    label: @tr("Colour space");
+                Section {
+                    title: @tr("Colour space");
                     help: @tr("Shared by the canvas and the export: the canvas shows the picture in this space and the export writes it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
+                    foldable: false;
+                    news: News.space;
+                    news-note: News.space-note;
+                    news-read => { News.read("space.1.3.1"); }
                     SpaceTabs { }
                     SpaceNote { }
+                    SpaceField { }
+                    SteadyNote { text: Exporting.edited-in; notes: Exporting.edited-notes; }
                 }
-                SpaceField { }
-                SteadyNote { text: Exporting.edited-in; notes: Exporting.edited-notes; }
-                // The format's own row, Compression's field as tall as Quality's slider, so a format
-                // changed by a preset moves no row under it.
-                if Exporting.format == 0: Field {
-                    label: @tr("Compression");
-                    Toggle { label: @tr("ZIP, lossless"); on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
+                // The format's own block, Compression's toggle as tall as Quality's slider, so a format
+                // changed by a preset moves no block under it.
+                Section {
+                    title: @tr("Compression");
+                    foldable: false;
+                    Rectangle {
+                        height: max(zip-size.preferred-height, quality-size.preferred-height);
+                        zip-size := Toggle { visible: false; label: @tr("ZIP, lossless"); }
+                        quality-size := QualitySlider { visible: false; }
+                        if Exporting.format == 0: Toggle {
+                            y: 0;
+                            width: parent.width;
+                            height: self.preferred-height;
+                            label: @tr("ZIP, lossless");
+                            on: Exporting.compress;
+                            toggled(on) => { Exporting.compress-set(on); }
+                        }
+                        if Exporting.format == 1: QualitySlider { y: 0; width: parent.width; height: self.preferred-height; }
+                    }
                 }
-                if Exporting.format == 1: QualitySlider { }
-                Field {
-                    label: @tr("Size");
+                Section {
+                    title: @tr("Size");
                     help: Exporting.sheet
                         ? @tr("Pixels of the whole sheet. Never enlarged; empty means full resolution.")
                         : @tr("Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution.");
+                    foldable: false;
                     HorizontalLayout {
                         spacing: Space.s;
                         alignment: start;
@@ -285,30 +305,38 @@ export component ExportPanel inherits Surface {
                         if Exporting.resized: Button { has-icon: true; square: true; icon: Icons.reset; help: @tr("Full Resolution"); clicked => { Exporting.full-size(); } }
                     }
                 }
-                Field {
-                    label: @tr("HDR");
+                Section {
+                    title: @tr("HDR");
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
+                    foldable: false;
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
-                // What the file will be, one fact a row, its figures on the glass the crop's kept size reads on.
-                VerticalLayout {
-                    spacing: FormStyle.row-gap;
-                    Field { layout: FieldLayout.spread; label: @tr("Pixels"); LcdReadout { text: Exporting.dims; } }
-                    Field { layout: FieldLayout.spread; label: @tr("Bit depth"); LcdReadout { text: Exporting.bits; } }
-                    Field { layout: FieldLayout.spread; label: Exporting.weight-label; LcdReadout { text: Exporting.weight; } }
+                // What the file will be, one fact a row of a small table drawn by its lines alone.
+                Section {
+                    foldable: false;
+                    Facts {
+                        facts: [
+                            { label: @tr("Pixels"), value: Exporting.dims },
+                            { label: @tr("Bit depth"), value: Exporting.bits },
+                            { label: Exporting.weight-label, value: Exporting.weight },
+                        ];
+                    }
                     if Exporting.low-precision != "": Label { role: TextRole.note; tone: Tone.warning; text: Exporting.low-precision; }
                     Label { role: TextRole.note; text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }
                 }
             }
         }
         // An export under way is stopped from its card.
-        SheetFooter {
-            default-commit: false;
-            cancel: @tr("Cancel");
-            commit: Exporting.exporting ? @tr("Exporting…") : Exporting.key-title;
-            commit-enabled: Exporting.can-export && !Exporting.exporting;
-            cancelled => { Exporting.cancel(); }
-            committed => { Exporting.export(); }
+        VerticalLayout {
+            padding: SectionStyle.inset;
+            SheetFooter {
+                default-commit: false;
+                cancel: @tr("Cancel");
+                commit: Exporting.exporting ? @tr("Exporting…") : Exporting.key-title;
+                commit-enabled: Exporting.can-export && !Exporting.exporting;
+                cancelled => { Exporting.cancel(); }
+                committed => { Exporting.export(); }
+            }
         }
     }
 }

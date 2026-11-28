@@ -1,0 +1,28 @@
+// `DSFacts`: a small table of facts, one a row, its name left and its value right; rounded, drawn by its
+// lines alone, on no ground of its own.
+import { Space, Stroke, Radius, Colour } from "theme.slint";
+import { Label, Tone, TextRole, Divider } from "base.slint";
+
+export struct Fact { label: string, value: string }
+
+export component Facts inherits Rectangle {
+    in property <[Fact]> facts;
+    border-radius: Radius.control;
+    border-width: Stroke.line;
+    border-color: Colour.separator;
+    VerticalLayout {
+        padding: Stroke.line;
+        for fact[i] in root.facts: VerticalLayout {
+            if i > 0: Divider { }
+            HorizontalLayout {
+                padding-left: Space.s;
+                padding-right: Space.s;
+                padding-top: Space.xs;
+                padding-bottom: Space.xs;
+                spacing: Space.s;
+                Label { text: fact.label; tone: Tone.secondary; horizontal-stretch: 1; }
+                Label { text: fact.value; role: TextRole.value; horizontal-stretch: 0; }
+            }
+        }
+    }
+}

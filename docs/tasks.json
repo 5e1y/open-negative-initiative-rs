@@ -14678,5 +14678,12 @@
     "title": "⌘G no longer goes between the gallery and the editor: Return opens, Escape leaves",
     "status": "done",
     "detail": "Owner's call: ⌘G (Ctrl+G on Windows) leaves the mode's menu item, which keeps its place with no key; Return opens the editor from the gallery and Escape leaves it, the only keys between them. The mode key's tooltips say Editor (Return) and Gallery (Esc), in French and Spanish too. ⌘G served nothing else; ⇧⌘G (New Roll) and ⌥⇧⌘G (Ungroup) stay. The window checks that went between the screens by ⌘G go by Return and Escape. Check: editor_routes (⌘G leaves neither screen; twin: the mode's own command still goes between them)."
+  },
+  {
+    "id": 4107,
+    "type": "ui",
+    "title": "The export panel in the editor's sections, its EXIF open at rest and headed by the file's name, its header as high as every screen's",
+    "status": "done",
+    "detail": "Owner's calls: (1) the EXIF card beside each picture opens at rest, its cross folding it; (5) the file's name heads the card, and stands under its picture only while the card is folded; (3) Load a Profile… and Get Paper Profiles… show with a profile alone, Custom chosen or to choose, in the panel and in the chip's popover; (4) the panel's side margin is the editor's column's, SectionStyle.inset, its sections carrying it as the editor's do; (6) each export setting is a Section of the editor's (Export as, Presets, Format, Colour space, Compression, Size, HDR, open with no fold), and the facts at the panel's foot a small table drawn by its lines alone on no ground of its own (ds/facts.slint, Facts), Compression's block as tall for either format so a preset moves no block. (2) The header: measured on the real window at 1100 × 680, the gallery's and the editor's content started 59 pt down and the export's card 72 pt, the bar's room kept under the traffic lights and the card's own inset laid under it; under the bar's room the card now starts where every screen's content does, a window with no room keeping the inset at its top. Checks: export_columns (the EXIF open at rest, the name heading each card, the cross folding it; twin: folded, the name under its picture), export_panel (no profile keys off Custom; twin: back on a built-in space they go; every block in place across presets), every export window check, typeface."
   }
 ]

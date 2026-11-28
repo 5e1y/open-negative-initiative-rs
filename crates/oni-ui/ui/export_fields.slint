@@ -4,9 +4,8 @@ import { Icons, Space, Label, Tone, Button, ButtonSize, TextField, Picker, Surfa
 import { ExportLine, Exporting } from "export_state.slint";
 import { Gear, Kit } from "gear_state.slint";
 
-// `FrameFields`: the EXIF the file will carry, each label over its field, one narrow column beside the
-// picture on the panel's ground: on the canvas's, no field's face would show. A long word ends cut. Its
-// cross, on its first label's line, folds the card away on every line.
+// `FrameFields`: the file's name, then the EXIF it will carry, each label over its field, one narrow column beside
+// the picture on the panel's ground. A long word ends cut. Its cross, on the first label's line, folds the card.
 export component FrameFields inherits VerticalLayout {
     in property <ExportLine> line;
     in property <int> at;
@@ -19,7 +18,7 @@ export component FrameFields inherits VerticalLayout {
             padding: Space.s;
             spacing: FormStyle.row-gap;
             HorizontalLayout {
-                Label { text: @tr("Camera"); tone: Tone.secondary; horizontal-stretch: 1; vertical-alignment: center; }
+                Label { text: @tr("Name"); tone: Tone.secondary; horizontal-stretch: 1; vertical-alignment: center; }
                 Button { has-icon: true; square: true;
                     size: ButtonSize.mini;
                     icon: Icons.close;
@@ -27,6 +26,15 @@ export component FrameFields inherits VerticalLayout {
                     clicked => { Exporting.exif-shown = false; }
                 }
             }
+            // The file's name first, its extension after it, as under the picture while the card is folded.
+            TextField {
+                name: @tr("Name");
+                value: root.line.name;
+                suffix: Exporting.extension;
+                enabled: root.line.ready;
+                edited(t) => { Exporting.edited(root.at, "name", t); }
+            }
+            Label { text: @tr("Camera"); tone: Tone.secondary; }
             KnownField {
                 name: @tr("Camera");
                 search-line: @tr("Search on The Lens DB");
@@ -98,8 +106,8 @@ export component FrameFields inherits VerticalLayout {
     }
 }
 
-// The file's name with its extension under its picture, shown with the EXIF or without, on a band of the
-// panel's ground as the EXIF's fields.
+// The file's name with its extension under its picture while the EXIF is folded, on a band of the panel's
+// ground as the EXIF's fields.
 export component FrameName inherits Surface {
     in property <ExportLine> line;
     in property <int> at;
