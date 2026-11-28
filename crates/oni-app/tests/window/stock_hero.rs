@@ -22,10 +22,9 @@ fn family(path: &Path) -> DyeSet {
 
 /// Every stock the sheet lists, by name.
 fn listed(stocks: &Stocks) -> Vec<String> {
-    let brands = stocks.get_brands();
-    (0..brands.row_count())
-        .filter_map(|i| brands.row_data(i))
-        .flat_map(|b| (0..b.rows.row_count()).filter_map(move |r| b.rows.row_data(r)))
+    let rows = stocks.get_rows();
+    (0..rows.row_count())
+        .filter_map(|r| rows.row_data(r))
         .flat_map(|r| (0..r.cells.row_count()).filter_map(move |c| r.cells.row_data(c)))
         .map(|c| c.name.to_string())
         .collect()

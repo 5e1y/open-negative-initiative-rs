@@ -1,0 +1,52 @@
+// A sheet's search, The Lens DB's and the film stocks' alike: the words typed at its top, a choice beside them where
+// it has one, then its answers scrolling under, on the header's margins so every edge lines up under its title.
+import { Space, TextField, Picker, Scroller, SheetStyle } from "ds/ds.slint";
+
+export component SearchPane inherits VerticalLayout {
+    in property <string> name;
+    in property <string> placeholder;
+    // The choice beside the words, none where it lists nothing.
+    in property <[string]> kinds;
+    in property <int> kind;
+    in property <string> kind-help;
+    callback searched(string);
+    callback kind-chosen(int);
+    VerticalLayout {
+        vertical-stretch: 0;
+        padding-left: SheetStyle.padding;
+        padding-right: SheetStyle.padding;
+        padding-top: Space.m;
+        HorizontalLayout {
+            spacing: Space.s;
+            TextField {
+                horizontal-stretch: 1;
+                name: root.name;
+                placeholder: root.placeholder;
+                edited(t) => { root.searched(t); }
+                accepted(t) => { root.searched(t); }
+                init => { self.take-focus(); }
+            }
+            if root.kinds.length > 0: Picker {
+                horizontal-stretch: 0;
+                value: root.kinds[root.kind];
+                entries: root.kinds;
+                current: root.kind;
+                help: root.kind-help;
+                chosen(i) => { root.kind-chosen(i); }
+            }
+        }
+    }
+    Scroller {
+        vertical-stretch: 1;
+        content-height: answers.preferred-height;
+        answers := VerticalLayout {
+            padding-top: Space.m;
+            padding-bottom: Space.m;
+            padding-left: SheetStyle.padding;
+            padding-right: SheetStyle.padding;
+            spacing: Space.s;
+            alignment: start;
+            @children
+        }
+    }
+}

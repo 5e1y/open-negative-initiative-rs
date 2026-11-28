@@ -4,6 +4,7 @@
  "key": "kodak-endura-premier",
  "name": "Kodak Endura Premier",
  "brand": "Kodak",
+ "canister": "kodak-endura-premier.svg",
  "profile": {
   "info": {
    "stock": "kodak_endura_premier",

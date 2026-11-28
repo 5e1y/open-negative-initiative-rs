@@ -1108,12 +1108,12 @@ msgid "Connect The Lens DB at the right to search its bodies and lenses and add 
 msgstr "Connectez The Lens DB à droite pour rechercher ses boîtiers et objectifs et les ajouter à votre Kit."
 
 #: crates/oni-ui/ui/kit.slint
-msgid "Bodies & Lenses"
-msgstr "Boîtiers et objectifs"
-
-#: crates/oni-ui/ui/kit.slint
 msgid "A brand, a body, a lens: Nikon FM2, Summicron 35…"
 msgstr "Une marque, un boîtier, un objectif : Nikon FM2, Summicron 35…"
+
+#: crates/oni-ui/ui/kit.slint
+msgid "Bodies & Lenses"
+msgstr "Boîtiers et objectifs"
 
 #: crates/oni-ui/ui/kit.slint
 msgid "Bodies, lenses or both"
@@ -2478,6 +2478,30 @@ msgstr "À propos"
 #: crates/oni-ui/ui/stocks.slint
 msgid "Select Film Stock"
 msgstr "Choisir l’émulsion"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Search Film Stocks"
+msgstr "Chercher une pellicule"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "A brand, a film: Portra 400, HP5…"
+msgstr "Une marque, une pellicule : Portra 400, HP5…"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Every brand or one"
+msgstr "Toutes les marques ou une seule"
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "No film stock matches these words."
+msgstr "Aucune pellicule ne correspond à ces mots."
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "No film stock of this brand matches these words."
+msgstr "Aucune pellicule de cette marque ne correspond à ces mots."
+
+#: crates/oni-ui/ui/stocks.slint
+msgid "Select"
+msgstr "Choisir"
 
 #: crates/oni-ui/ui/stocks.slint
 msgid "Daylight"
@@ -4654,6 +4678,10 @@ msgstr "{file} n’est pas pris tel quel, sa dernière version lisible reste en 
 #: crates/oni-app/src/app/stock_files.rs
 msgid "{file} is not used: {why}"
 msgstr "{file} n’est pas pris : {why}"
+
+#: crates/oni-app/src/app/stock_picker/sheet.rs
+msgid "Every Brand · {n}"
+msgstr "Toutes les marques · {n}"
 
 #: crates/oni-app/src/app/stock_picker.rs
 msgid "No paper"

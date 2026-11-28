@@ -293,6 +293,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(field_undo::undo_in_a_field_steps_its_typing_and_leaves_the_photos_history),
     check!(roll_card::a_folder_is_a_roll_its_first_field_marks_and_its_stock_writes_its_dyes),
     check!(stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
+    check!(stocks::the_sheet_searches_its_stocks_within_the_brand_chosen),
     check!(stock_hero::prepare_picks_the_stock_on_its_hero),
     check!(stock_hero::the_roll_tab_changes_the_rolls_stock_as_one_undoable_step),
     check!(stock_hero::a_digital_photos_film_is_picked_among_the_virtual_films),

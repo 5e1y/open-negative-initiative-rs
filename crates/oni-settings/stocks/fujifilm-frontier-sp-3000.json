@@ -4,6 +4,7 @@
  "key": "fujifilm-frontier-sp-3000",
  "name": "Fujifilm Frontier SP-3000",
  "brand": "Fujifilm",
+ "canister": "fujifilm-frontier-sp-3000.svg",
  "look": {
   "axis": [
    -0.5,

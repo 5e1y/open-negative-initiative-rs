@@ -4,6 +4,7 @@
  "key": "kodak-ektacolor-edge",
  "name": "Kodak Ektacolor Edge",
  "brand": "Kodak",
+ "canister": "kodak-ektacolor-edge.svg",
  "profile": {
   "info": {
    "stock": "kodak_ektacolor_edge",

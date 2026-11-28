@@ -4,6 +4,7 @@
  "key": "kodak-endura-premier-metallic",
  "name": "Kodak Endura Premier Metallic",
  "brand": "Kodak",
+ "canister": "kodak-endura-premier-metallic.svg",
  "profile": {
   "info": {
    "stock": "kodak_endura_premier_metallic",

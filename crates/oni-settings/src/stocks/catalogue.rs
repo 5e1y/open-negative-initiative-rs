@@ -254,7 +254,8 @@ fn assemble(files: &[Loaded]) -> Result<Catalogue, (usize, String)> {
             }
             File::Paper(p) => {
                 let (look, profile) = (Arc::from(p.look.get()), p.profile.as_ref().map(|r| Arc::from(r.get())));
-                c.papers.push(PaperEntry { paper: PaperStock::of(intern(&p.key)), name: intern(&p.name), brand: intern(&p.brand), look, profile, revision: l.hash });
+                let (paper, canister) = (PaperStock::of(intern(&p.key)), p.canister.as_deref().map(intern));
+                c.papers.push(PaperEntry { paper, name: intern(&p.name), brand: intern(&p.brand), canister, look, profile, revision: l.hash });
             }
         }
     }

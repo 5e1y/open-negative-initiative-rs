@@ -4,6 +4,7 @@
  "key": "kodak-royal-digital",
  "name": "Kodak Royal Digital",
  "brand": "Kodak",
+ "canister": "kodak-royal-digital.svg",
  "profile": {
   "info": {
    "stock": "kodak_royal_digital",

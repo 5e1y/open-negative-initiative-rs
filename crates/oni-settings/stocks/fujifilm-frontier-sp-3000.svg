@@ -1,0 +1,44 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="fujifilm-frontier-sp-3000">
+<path id="Body" d="M17 10C17 6.68629 19.6863 4 23 4H33C36.3137 4 39 6.68629 39 10V36H17V10Z" fill="#3FC9A0"/>
+<path id="Main frame" d="M21 9C21 7.89543 21.8954 7 23 7H33C34.1046 7 35 7.89543 35 9V34H21V9Z" fill="#F1EEE2"/>
+<g id="Graphics">
+<rect id="Rectangle 1" x="24" y="12" width="8" height="4" fill="#C9CDD2"/>
+<rect id="Rectangle 2" x="25" y="13" width="4" height="1" fill="#1A1A1A"/>
+<rect id="Rectangle 3" x="25" y="14" width="6" height="1" fill="#10A85A"/>
+</g>
+<g id="Carrier" filter="url(#filter0_i_scanner)">
+<path id="Deck" d="M6 37.5C6 36.6716 6.67157 36 7.5 36H40.5C41.3284 36 42 36.6716 42 37.5V42H6V37.5Z" fill="black"/>
+<path id="Base" d="M6 42H42V43C42 43.5523 41.5523 44 41 44H7C6.44772 44 6 43.5523 6 43V42Z" fill="#2B2B2B"/>
+</g>
+<rect id="Slot" x="8" y="38" width="16" height="1" fill="#5A5A5A"/>
+<g id="shading">
+<path id="Shading" opacity="0.2" d="M17 10C17 6.68629 19.6863 4 23 4H33C36.3137 4 39 6.68629 39 10V36H17V10Z" fill="url(#paint0_linear_scanner)"/>
+<path id="Shading_2" opacity="0.5" d="M6 37.5C6 36.6716 6.67157 36 7.5 36H40.5C41.3284 36 42 36.6716 42 37.5V43C42 43.5523 41.5523 44 41 44H7C6.44772 44 6 43.5523 6 43V37.5Z" fill="url(#paint1_linear_scanner)"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_i_scanner" x="6" y="36" width="36" height="8.5" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="0.5"/>
+<feGaussianBlur stdDeviation="0.25"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect1_innerShadow_box"/>
+</filter>
+<linearGradient id="paint0_linear_scanner" x1="17" y1="20" x2="39" y2="20" gradientUnits="userSpaceOnUse">
+<stop/>
+<stop offset="0.375" stop-color="white" stop-opacity="0.75"/>
+<stop offset="0.615385" stop-color="white" stop-opacity="0.75"/>
+<stop offset="1"/>
+</linearGradient>
+<linearGradient id="paint1_linear_scanner" x1="6" y1="40" x2="42" y2="40" gradientUnits="userSpaceOnUse">
+<stop/>
+<stop offset="0.375" stop-color="white" stop-opacity="0.75"/>
+<stop offset="0.615385" stop-color="white" stop-opacity="0.75"/>
+<stop offset="1"/>
+</linearGradient>
+</defs>
+</svg>

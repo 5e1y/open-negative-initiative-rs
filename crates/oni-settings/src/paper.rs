@@ -34,6 +34,11 @@ impl PaperStock {
         self.entry().map_or("", |e| e.brand)
     }
 
+    /// Its box's SVG beside its file, none where it has none or no file defines it.
+    pub fn canister(self) -> Option<&'static str> {
+        self.entry().and_then(|e| e.canister)
+    }
+
     /// A machine measured, the Frontier SP-3000, rather than a data sheet's profile.
     pub fn is_machine(self) -> bool {
         self.entry().is_some_and(|e| e.profile.is_none())

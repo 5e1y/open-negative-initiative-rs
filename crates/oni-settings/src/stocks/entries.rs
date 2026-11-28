@@ -60,6 +60,8 @@ pub struct PaperEntry {
     pub paper: PaperStock,
     pub name: &'static str,
     pub brand: &'static str,
+    /// Its box's SVG beside its file, drawn as a stock's canister is.
+    pub canister: Option<&'static str>,
     /// Its look as its file holds it, baked by `scripts/paper-looks.py`, which the pipeline reads.
     pub look: Arc<str>,
     /// The data sheet's profile it was baked from, which its file keeps; none for a machine measured (the Frontier's).

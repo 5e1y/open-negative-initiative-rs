@@ -4,6 +4,7 @@
  "key": "kodak-photo-book",
  "name": "Kodak Photo Book",
  "brand": "Kodak",
+ "canister": "kodak-photo-book.svg",
  "profile": {
   "info": {
    "stock": "kodak_photo_book",

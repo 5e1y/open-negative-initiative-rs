@@ -1,5 +1,5 @@
-// A film stock: its artwork in its own colours, at any size, the picker's cell with the name under it,
-// grown under the pointer and filled when picked, and the menu that lists the stocks, films or papers, under their key.
+// A film stock: its artwork in its own colours, at any size, and the menu that lists the stocks, films or papers,
+// under their key.
 import { Colour, Space, Radius, Motion, ButtonStyle, MenuStyle } from "theme.slint";
 import { StockStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Gap, Icon } from "base.slint";
@@ -16,50 +16,6 @@ export component StockIcon inherits Rectangle {
     width: root.side;
     height: root.side;
     if root.has-artwork: Image { width: root.side; height: root.side; source: root.artwork; }
-}
-
-export component StockCellView inherits Rectangle {
-    in property <image> artwork;
-    in property <bool> has-artwork;
-    in property <string> name;
-    // A line under its name, empty for none.
-    in property <string> note;
-    in property <bool> picked;
-    callback clicked();
-    border-radius: Radius.badge;
-    background: root.picked ? Colour.hover : Colour.ground.transparentize(1);
-    VerticalLayout {
-        padding: Space.xs;
-        spacing: Space.xs;
-        alignment: start;
-        // The grown icon's room is kept at rest, so a hover never moves the names.
-        Rectangle {
-            height: StockStyle.icon * StockStyle.grow;
-            StockIcon {
-                x: (parent.width - self.width) / 2;
-                y: (parent.height - self.height) / 2;
-                artwork: root.artwork;
-                has-artwork: root.has-artwork;
-                side: touch.has-hover ? StockStyle.icon * StockStyle.grow : StockStyle.icon;
-                animate side { duration: Motion.quick; }
-            }
-        }
-        Label {
-            text: root.name;
-            role: TextRole.value;
-            tone: root.picked ? Tone.primary : Tone.secondary;
-            centred: true;
-            wrap: word-wrap;
-        }
-        if root.note != "": Label {
-            text: root.note;
-            role: TextRole.caption;
-            tone: Tone.tertiary;
-            centred: true;
-            wrap: word-wrap;
-        }
-    }
-    touch := TouchArea { clicked => { root.clicked(); } }
 }
 
 // A line of the stock menu: a brand's name over its stocks, or a stock, `index` its place in the catalogue.

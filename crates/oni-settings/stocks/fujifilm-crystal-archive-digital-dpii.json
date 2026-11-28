@@ -4,6 +4,7 @@
  "key": "fujifilm-crystal-archive-digital-dpii",
  "name": "Fujifilm Crystal Archive Digital Type DP II",
  "brand": "Fujifilm",
+ "canister": "fujifilm-crystal-archive-digital-dpii.svg",
  "profile": {
   "info": {
    "stock": "fujifilm_crystal_archive_digital_paper_type_dpii",

@@ -2,6 +2,7 @@
 //! the stocks by brand with their artwork, a click picking the roll's stock, Done and Escape changing nothing,
 //! a roll on a line shown with its stock unstated until a precise one is picked.
 
+use i_slint_backend_testing::AccessibleRole as Role;
 use oni_app::{AppSettings, Library, Stocks};
 use oni_settings::Film;
 use slint::platform::WindowEvent;
@@ -37,13 +38,14 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     rig.pump();
     assert_eq!(lib.get_stock().note.as_str(), "Default, from this roll's Negative mode", "English again");
 
-    // The sheet: the brands in the catalogue's order, nothing marked.
+    // The sheet: every brand first in its filter, then the brands in the catalogue's order, nothing marked.
     lib.invoke_select_roll_type();
     rig.pump();
     assert!(stocks.get_shown());
     let brands = stocks.get_brands();
-    let names: Vec<String> = (0..brands.row_count()).filter_map(|i| brands.row_data(i)).map(|b| b.brand.to_string()).collect();
-    assert_eq!(&names[..3], ["Generic", "AgfaPhoto", "CineStill"]);
+    let names: Vec<String> = (0..brands.row_count()).filter_map(|i| brands.row_data(i)).map(|b| b.split(" · ").next().unwrap().to_string()).collect();
+    assert_eq!(&names[..4], ["Every Brand", "Generic", "AgfaPhoto", "CineStill"]);
+    assert_eq!(stocks.get_brand(), 0, "on every brand");
     let cells = every_cell(&stocks);
     // Every stock offered: no Foma 401, no line its stocks replace.
     assert_eq!(cells.len(), oni_settings::film::offered_stocks().len());
@@ -53,7 +55,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
         assert!(cells.iter().any(|c| c.name == name), "{name} listed");
     }
     assert!(!cells.iter().any(|c| c.name == "Kodak Portra" || c.name == "Fujifilm Fujicolor"), "a line its stocks replace is not offered");
-    assert!(cells.iter().all(|c| c.has_artwork && !c.picked && c.note.is_empty()));
+    assert!(cells.iter().all(|c| c.has_artwork && !c.picked && c.detail != "Stock not specified"));
     rig.settle();
     println!("shot {}", rig.shot("stock-picker").display());
 
@@ -79,7 +81,7 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
     let cells = every_cell(&stocks);
     assert_eq!(cells.len(), oni_settings::film::offered_stocks().len() + 1, "the roll's line shown beside the offered stocks");
     let at = cells.iter().position(|c| c.name == "Kodak Portra").expect("the roll's line is shown");
-    assert!(cells[at].picked && cells[at].has_artwork && cells[at].note == "Stock not specified", "{:?}", cells[at].note);
+    assert!(cells[at].picked && cells[at].has_artwork && cells[at].detail == "Stock not specified", "{:?}", cells[at].detail);
     assert_eq!(cells[at + 1].name, "Kodak Portra 160");
     assert_eq!(cells.iter().filter(|c| c.picked).count(), 1);
     // Scrolled down to Kodak, for the shot.
@@ -103,10 +105,73 @@ pub(crate) fn a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork() {
 
 /// Every cell the sheet shows, brand after brand.
 fn every_cell(stocks: &Stocks) -> Vec<oni_app::StockCell> {
-    let brands = stocks.get_brands();
-    (0..brands.row_count())
-        .filter_map(|i| brands.row_data(i))
-        .flat_map(|b| (0..b.rows.row_count()).filter_map(move |r| b.rows.row_data(r)))
+    let rows = stocks.get_rows();
+    (0..rows.row_count())
+        .filter_map(|r| rows.row_data(r))
         .flat_map(|r| (0..r.cells.row_count()).filter_map(move |c| r.cells.row_data(c)))
         .collect()
+}
+
+/// Select Film Stock searches as The Lens DB's sheet does: the words typed leave the stocks holding each of them in
+/// their brand or name, the brand filter beside them one brand's; words and a brand that leave none say so, and the sheet
+/// opens again on every stock.
+pub(crate) fn the_sheet_searches_its_stocks_within_the_brand_chosen() {
+    let root = common::Root::new("stock-sheet");
+    let folder = root.join("Scans");
+    common::linear_tiff(&folder.join("A.tif"), 96, 64, 0.6);
+    oni_library::folders::set_roll(Some(&Film::new("Roll 9")), &oni_library::paths::canonical(&folder)).unwrap();
+    let Some(app) = common::launch(root).show() else { return };
+    let common::App { rig, shell, .. } = &app;
+    let w = &shell.window;
+    app.read(&folder);
+    let (lib, stocks) = (w.global::<Library>(), w.global::<Stocks>());
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_select_roll_type();
+    rig.settle();
+    let all = every_cell(&stocks).len();
+    let brand = |name: &str| {
+        let brands = stocks.get_brands();
+        (0..brands.row_count()).find(|&i| brands.row_data(i).is_some_and(|b| b.starts_with(&format!("{name} · ")))).expect("the brand is listed") as i32
+    };
+    let empty = "No film stock of this brand matches these words.";
+    // The search field holds the keyboard as the sheet opens: the words typed reach it.
+    rig.key("kodak portra");
+    rig.pump();
+    let names: Vec<String> = every_cell(&stocks).iter().map(|c| c.name.to_string()).collect();
+    assert!(!names.is_empty() && names.iter().all(|n| n.contains("Portra")), "the Portras alone: {names:?}");
+    assert!(names.iter().any(|n| n == "Kodak Portra 400") && !names.iter().any(|n| n == "Fujifilm C200"), "twin: another film is left out: {names:?}");
+    assert!(common::placed(w, Role::Text, empty).is_empty(), "twin: no empty sheet's words while stocks show");
+    rig.settle();
+    println!("shot {}", rig.shot("stock-sheet-search").display());
+    // Ilford chosen with the words kept: none left, and the sheet says so; every brand again brings the Portras back.
+    stocks.invoke_brand_chosen(brand("Ilford"));
+    rig.pump();
+    assert!(every_cell(&stocks).is_empty() && stocks.get_brand() == brand("Ilford"), "the words find no Ilford");
+    assert_eq!(common::placed(w, Role::Text, empty).len(), 1, "the empty sheet says why");
+    rig.settle();
+    println!("shot {}", rig.shot("stock-sheet-empty").display());
+    stocks.invoke_brand_chosen(0);
+    rig.pump();
+    assert_eq!(every_cell(&stocks).len(), names.len(), "twin: every brand, the Portras again");
+    // Kodak chosen and the words erased in the field: every Kodak stock, as many as its line in the filter counts.
+    stocks.invoke_brand_chosen(brand("Kodak"));
+    for _ in "kodak portra".chars() {
+        rig.key("\u{8}");
+    }
+    rig.pump();
+    let kodak = stocks.get_brands().row_data(brand("Kodak") as usize).unwrap();
+    let cells = every_cell(&stocks);
+    assert!(cells.iter().all(|c| c.detail == "Kodak") && kodak.ends_with(&format!(" · {}", cells.len())), "{kodak}: {} cards", cells.len());
+    rig.settle();
+    println!("shot {}", rig.shot("stock-sheet-brand").display());
+    // Closed and opened again: every stock, every brand, the field empty for the next words.
+    rig.key("\u{1b}");
+    lib.invoke_select_roll_type();
+    rig.settle();
+    assert!(every_cell(&stocks).len() == all && stocks.get_brand() == 0, "the sheet opens on every stock");
+    rig.key("hp5");
+    rig.pump();
+    let found: Vec<String> = every_cell(&stocks).iter().map(|c| c.name.to_string()).collect();
+    assert!(!found.is_empty() && found.iter().all(|n| n.contains("HP5")), "the field emptied at the opening: {found:?}");
+    rig.key("\u{1b}");
 }

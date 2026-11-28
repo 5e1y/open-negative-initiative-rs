@@ -14846,5 +14846,19 @@
     "status": "done",
     "title": "CLAUDE.md: a paper reads its dyes through a broad-band crosstalk",
     "detail": "The working notes follow #4406: the 3 x 3 fitted on the print through the sheet's dye spectra, its strength one constant of the bake."
+  },
+  {
+    "id": 4115,
+    "type": "feature",
+    "title": "Select Film Stock as The Lens DB's sheet: its search, its brand filter beside it, the Kit's cards three a row",
+    "status": "done",
+    "detail": "The sheet shares The Lens DB's search pane (SearchPane): each word typed is sought in a stock's brand and name, and the filter beside the field, The Lens DB's Picker, holds Every Brand then each brand with how many stocks it lists. Each stock is the Kit's own card (PieceCard), now able to hold a picture at its left (the stock's canister), plain words for a name with no page, and its key's word (Select, no glyph); three cards a row, the stock in use on the selection's ground, Select picking and closing as a click on a cell did. Words and a brand that leave no stock say so (No film stock of this brand matches these words.), the sheet opening again on every stock, every brand and an empty field. StockCellView, left unused, leaves the design system. Checked by stocks::the_sheet_searches_its_stocks_within_the_brand_chosen, whose words are erased in the field itself, so the field and the grid never disagree."
+  },
+  {
+    "id": 4116,
+    "type": "feature",
+    "title": "The owner's eight paper boxes, each beside its paper file and drawn in the paper menu",
+    "status": "done",
+    "detail": "A paper's file takes a canister as a stock's does (an SVG beside it, checked as one), its entry and PaperStock::canister carry it, and the Colour tab's paper menu draws each paper's box at a line's side as the stock menu draws a canister (stocks::paper_icon, drawn once a side). The eight SVGs are copied byte for byte and their hashes join the owner's artworks; every_paper_draws_its_box proves each paper draws its own, an unknown key nothing. The Paper block's field shows no picture yet: a hero like the Film block's is a separate choice."
   }
 ]

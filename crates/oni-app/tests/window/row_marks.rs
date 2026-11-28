@@ -251,10 +251,9 @@ pub(crate) fn the_rows_lay_their_marks_on_one_edge_and_draw_their_rolls_canister
     lib.invoke_select_roll_type();
     rig.pump();
     let stocks = w.global::<Stocks>();
-    let brands = stocks.get_brands();
-    let names: Vec<String> = brands
+    let names: Vec<String> = stocks
+        .get_rows()
         .iter()
-        .flat_map(|b| b.rows.iter().collect::<Vec<_>>())
         .flat_map(|r| r.cells.iter().collect::<Vec<_>>())
         .map(|c| c.name.to_string())
         .collect();

@@ -272,6 +272,8 @@ pub struct State {
     stock_target: Option<StockTarget>,
     /// The stock the open sheet marks picked, which it is laid again on when the catalogue changes.
     stock_current: Option<String>,
+    /// The stock sheet's search and the brands it leaves out.
+    stock_find: stock_picker::find::Find,
     /// The person's stock files, watched while the shell stands.
     _stock_files: stock_files::Watching,
     /// The stock or the paper an editor's menu lights: kept out of the settings, so it writes nothing.

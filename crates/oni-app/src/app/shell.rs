@@ -109,6 +109,7 @@ impl Shell {
             quitting: false,
             stock_target: None,
             stock_current: None,
+            stock_find: Default::default(),
             _stock_files: stock_files::start(&options.support),
             lit: None,
             menu_baked: false,

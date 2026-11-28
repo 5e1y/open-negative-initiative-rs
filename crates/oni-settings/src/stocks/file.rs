@@ -177,6 +177,9 @@ pub struct PaperFile {
     pub aliases: Vec<String>,
     pub name: String,
     pub brand: String,
+    /// Its box's picture, an SVG beside the file, as a stock's canister; none draws nothing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canister: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<Box<RawValue>>,
     pub look: Box<RawValue>,
@@ -265,6 +268,9 @@ impl File {
             File::Paper(p) => {
                 named(&p.key, &p.aliases, &p.name)?;
                 text("brand", &p.brand)?;
+                if let Some(c) = &p.canister {
+                    canister(c)?;
+                }
             }
         }
         Ok(self)

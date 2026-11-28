@@ -4,11 +4,14 @@
 //! on the open photo unwritten.
 
 use super::Ctl;
-use crate::{Exporting, PanelState, StockBrand, StockCell, StockLine, StockRow, Stocks};
+use crate::{Exporting, PanelState, StockLine, Stocks};
 use oni_settings::film::{FilmStockKind, film_stock, stocks};
 use oni_settings::{PaperStock, PipelineSettings};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
+
+pub(super) mod find;
+mod sheet;
 
 /// What an editor's menu lights on the open photo, nothing written: a stock by its place in the catalogue, or a paper,
 /// none the photo's pure inversion.
@@ -84,6 +87,21 @@ impl Ctl {
         g.on_lit(move |i| p.light(Lit::stock(i)));
         let p = me.clone();
         g.on_picked(move |i| p.menu_picked(Lit::stock(i)));
+        let p = me.clone();
+        g.on_search(move |words| {
+            p.state.borrow_mut().stock_find.words = words.to_string();
+            p.lay_stock_picker();
+        });
+        let p = me.clone();
+        g.on_brand_chosen(move |i| {
+            let brand = {
+                let s = p.state.borrow();
+                let listed = crate::stocks::by_brand(s.stock_current.as_deref());
+                usize::try_from(i - 1).ok().and_then(|at| listed.get(at)).map(|(brand, _)| brand.to_string())
+            };
+            p.state.borrow_mut().stock_find.brand = brand;
+            p.lay_stock_picker();
+        });
         let panel = window.global::<PanelState>();
         let p = me.clone();
         panel.on_paper_dropping(move || p.lay_paper_menu());
@@ -125,11 +143,15 @@ impl Ctl {
     pub(super) fn lay_paper_menu(&self) {
         let Some(w) = self.window() else { return };
         let own = self.state.borrow().store.settings().print_paper;
+        let side = crate::stocks::row_side(&w);
         let papers = PaperStock::all();
         let mut lines = vec![StockLine { index: 0, name: no_paper().into(), ..Default::default() }];
         for (maker, listed) in crate::stocks::papers_by_maker() {
             lines.push(StockLine { index: -1, name: maker.into(), brand: true, ..Default::default() });
-            lines.extend(listed.into_iter().map(|i| StockLine { index: i as i32 + 1, name: papers[i].name().into(), ..Default::default() }));
+            lines.extend(listed.into_iter().map(|i| {
+                let artwork = crate::stocks::paper_icon(papers[i], side);
+                StockLine { index: i as i32 + 1, name: papers[i].name().into(), has_artwork: artwork.is_some(), artwork: artwork.unwrap_or_default(), brand: false }
+            }));
         }
         let line = |l: &StockLine| if l.index == 0 { None } else { Some(papers[l.index as usize - 1]) };
         let in_use = lines.iter().position(|l| !l.brand && line(l) == own).map_or(-1, |i| i as i32);
@@ -209,53 +231,6 @@ impl Ctl {
             None => {}
         }
         self.request_render();
-    }
-
-    /// The sheet on `current`, the stock picked marked.
-    pub(crate) fn open_stock_picker(&self, target: StockTarget, current: Option<&str>) {
-        let Some(w) = self.window() else { return };
-        let g = w.global::<Stocks>();
-        let columns = g.get_columns().max(1) as usize;
-        let listed = crate::stocks::by_brand(current);
-        let all = stocks();
-        let brands: Vec<StockBrand> = listed
-            .into_iter()
-            .map(|(brand, kinds)| {
-                let cells: Vec<StockCell> = kinds
-                    .into_iter()
-                    .map(|i| {
-                        let kind = all[i];
-                        let artwork = crate::stocks::icon(kind.id);
-                        StockCell {
-                            index: i as i32,
-                            name: crate::stocks::shown_name(&kind).into(),
-                            note: crate::stocks::unspecified(&kind).into(),
-                            has_artwork: artwork.is_some(),
-                            artwork: artwork.unwrap_or_default(),
-                            picked: current == Some(kind.id),
-                        }
-                    })
-                    .collect();
-                let rows: Vec<StockRow> = cells.chunks(columns).map(|c| StockRow { cells: ModelRc::new(VecModel::from(c.to_vec())) }).collect();
-                StockBrand { brand: brand.into(), rows: ModelRc::new(VecModel::from(rows)) }
-            })
-            .collect();
-        g.set_brands(ModelRc::new(VecModel::from(brands)));
-        let mut s = self.state.borrow_mut();
-        (s.stock_target, s.stock_current) = (Some(target), current.map(str::to_owned));
-        g.set_shown(true);
-    }
-
-    /// The sheet, where it is open, laid again on the catalogue in use, its target and pick kept.
-    pub(super) fn stock_picker_again(&self) {
-        let Some(w) = self.window() else { return };
-        let (target, current) = {
-            let s = self.state.borrow();
-            (s.stock_target, s.stock_current.clone())
-        };
-        if let (true, Some(target)) = (w.global::<Stocks>().get_shown(), target) {
-            self.open_stock_picker(target, current.as_deref());
-        }
     }
 
     /// Never a stock taken away: a roll was shot on some film, so Done only closes.

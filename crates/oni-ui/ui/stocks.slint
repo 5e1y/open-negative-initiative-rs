@@ -1,20 +1,28 @@
-// `StockPickerSheet`: Select Film Stock, the stocks grouped by brand, one click picking and closing; `StockHero`,
-// a stock shown large with its key to the sheet, or to the menu that shows each stock on the open photo.
-import { Space, StockStyle, SectionStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView, StockIcon, StockLine, StockMenu, Bounds, Badge, BadgeTone, Metal } from "ds/ds.slint";
+// `StockPickerSheet`: Select Film Stock as The Lens DB's sheet is laid, the stocks searched and filtered by brand, each a
+// card of the Kit's whose Select picks it and closes; `StockHero`, a stock shown large with its key to the sheet, or to
+// the menu that shows each stock on the open photo.
+import { Space, StockStyle, SectionStyle, Label, TextRole, Button, StockIcon, StockLine, StockMenu, Bounds } from "ds/ds.slint";
+import { Badge, BadgeTone, Metal, KitStyle, ShellStyle, SheetStyle, Sheet, SheetHeader } from "ds/ds.slint";
+import { KitMark } from "gear_state.slint";
+import { PieceCard } from "kit.slint";
+import { SearchPane } from "search_pane.slint";
 
 // A stock as its hero shows it: its name, a line under it, empty for none, and its canister.
 export struct Canister { name: string, note: string, artwork: image, has-artwork: bool }
 
-// `note`: what a line, its stock never named, says under its name.
-export struct StockCell { index: int, name: string, note: string, artwork: image, has-artwork: bool, picked: bool }
+// `detail`: its brand, or what a line, its stock never named, says.
+export struct StockCell { index: int, name: string, detail: string, artwork: image, has-artwork: bool, picked: bool }
 export struct StockRow { cells: [StockCell] }
-export struct StockBrand { brand: string, rows: [StockRow] }
 
 export global Stocks {
     in property <bool> shown;
-    in property <[StockBrand]> brands;
-    // Fewer than `GridItem(.adaptive)`'s ten, so a name reads whole until the final look lands.
-    in property <int> columns: 6;
+    in property <[StockRow]> rows;
+    in property <int> columns: 3;
+    // The brand filter beside the search: every brand first, then each with how many stocks it lists.
+    in property <[string]> brands;
+    in property <int> brand;
+    callback search(string);
+    callback brand-chosen(int);
     // The stock's place in the catalogue, -1 for Done.
     callback chosen(int);
     // The editor's menu, laid by `dropping` as it opens: its lines and the one in use. The stock lit shows on
@@ -29,32 +37,37 @@ export global Stocks {
 export component StockPickerSheet inherits Sheet {
     title: @tr("Select Film Stock");
     header: SheetHeader.bar;
-    card-width: StockStyle.width;
-    card-height: StockStyle.height;
+    card-width: KitStyle.sheet-width + ShellStyle.panel-width;
+    card-height: KitStyle.sheet-height;
     dismissed => { Stocks.chosen(-1); }
-    Scroller {
+    SearchPane {
         vertical-stretch: 1;
-        content-height: list.preferred-height;
-        list := VerticalLayout {
-            padding: Space.m;
-            spacing: Space.l;
+        name: @tr("Search Film Stocks");
+        placeholder: @tr("A brand, a film: Portra 400, HP5…");
+        kinds: Stocks.brands;
+        kind: Stocks.brand;
+        kind-help: @tr("Every brand or one");
+        searched(t) => { Stocks.search(t); }
+        kind-chosen(i) => { Stocks.brand-chosen(i); }
+        if Stocks.rows.length == 0: Label {
+            role: TextRole.note;
+            wrap: word-wrap;
+            text: Stocks.brand == 0 ? @tr("No film stock matches these words.") : @tr("No film stock of this brand matches these words.");
+        }
+        for row in Stocks.rows: HorizontalLayout {
+            spacing: Space.s;
             alignment: start;
-            for brand in Stocks.brands: VerticalLayout {
-                spacing: Space.s;
-                Label { text: brand.brand; tone: Tone.secondary; }
-                for row in brand.rows: HorizontalLayout {
-                    spacing: Space.s;
-                    alignment: start;
-                    for cell in row.cells: StockCellView {
-                        width: (StockStyle.width - 2 * Space.m - (Stocks.columns - 1) * Space.s) / Stocks.columns;
-                        artwork: cell.artwork;
-                        has-artwork: cell.has-artwork;
-                        name: cell.name;
-                        note: cell.note;
-                        picked: cell.picked;
-                        clicked => { Stocks.chosen(cell.index); }
-                    }
-                }
+            for cell in row.cells: PieceCard {
+                width: (root.card-width - 2 * SheetStyle.padding - (Stocks.columns - 1) * Space.s) / Stocks.columns;
+                adding: true;
+                linked: false;
+                take: @tr("Select");
+                take-glyph: false;
+                picked: cell.picked;
+                artwork: cell.artwork;
+                has-artwork: cell.has-artwork;
+                piece: { name: cell.name, detail: cell.detail, mark: KitMark.free, photos: -1 };
+                taken => { Stocks.chosen(cell.index); }
             }
         }
     }
