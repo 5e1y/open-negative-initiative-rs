@@ -37,9 +37,13 @@ fn drawn() {
 
 /// Counts every frame `window` draws, and each second publishes and logs the two rates.
 pub fn watch(window: &MainWindow) -> Option<Timer> {
-    if window.window().set_rendering_notifier(|state, _| {
+    let drawing = window.as_weak();
+    if window.window().set_rendering_notifier(move |state, _| {
         if matches!(state, slint::RenderingState::AfterRendering) {
             drawn();
+            if let Some(w) = drawing.upgrade() {
+                crate::walks::drawn(&w);
+            }
         }
     }).is_err() {
         return None;

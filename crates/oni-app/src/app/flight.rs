@@ -102,10 +102,19 @@ impl Ctl {
     /// aside, the way the walk goes in the gallery's order, whatever its thumbnail's state.
     pub(super) fn walk_from(&self, to: &str) {
         let Some(w) = self.window() else { return };
-        if w.global::<App>().get_gallery() || w.global::<crate::Exporting>().get_shown() || w.global::<crate::Motion>().get_reduced() {
-            return;
+        let refused = if w.global::<App>().get_gallery() {
+            Some("from the gallery")
+        } else if w.global::<crate::Exporting>().get_shown() {
+            Some("from the export")
+        } else if w.global::<crate::Motion>().get_reduced() {
+            Some("under Reduce Motion")
+        } else {
+            None
+        };
+        if let Some(why) = refused {
+            return crate::walks::refused(to, why);
         }
-        let Some(from) = self.canvas_in_window() else { return };
+        let Some(from) = self.canvas_in_window() else { return crate::walks::refused(to, "no picture on the canvas") };
         let way = {
             let s = self.state.borrow();
             let Some(left) = s.open_path().filter(|p| *p != to) else { return };
@@ -121,8 +130,10 @@ impl Ctl {
         walk.set_clip_height(canvas.get_frame_clip_height());
         walk.set_from(from);
         walk.set_way(way);
+        walk.set_began(walk.get_now());
         walk.set_serial(walk.get_serial() + 1);
         walk.set_walking(true);
+        crate::walks::started(walk.get_serial(), to, way);
     }
 
     /// Prepare takes the screen, as a photo of a roll never prepared opens it once its roll is read: a photo

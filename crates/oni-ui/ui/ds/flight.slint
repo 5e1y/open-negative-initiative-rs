@@ -103,16 +103,24 @@ export global Walk {
     in property <Place> from;
     // 1 walking forward, -1 back.
     in property <int> way: 1;
+    // The animation clock now, and the time the walk began on it.
+    out property <duration> now: animation-tick();
+    in property <duration> began;
+    // How far the walk has gone, 0 to 1, a function of the clock alone: whenever the window draws, it draws the walk
+    // where it is, never waiting on a frame to lay its start.
+    out property <float> gone: root.walking && Motion.travel > 0ms ? root.sprung((animation-tick() - root.began) / Motion.travel) : 1;
+    out property <bool> ran: root.walking && animation-tick() - root.began >= Motion.travel;
+    // `Ease.firm` over the travel: Slint's spring with no give, critically damped at 2π over its pace.
+    pure function sprung(paced: float) -> float {
+        let at = 6.2831853 * max(paced, 0);
+        clamp(1 - (1 + at) * Math.exp(-at), 0, 1)
+    }
 }
 
 // Laid in the window's space over the canvas, taking no press.
 export component WalkView {
-    property <bool> off;
-    Timer { interval: Motion.next-frame; running: !root.off; triggered => { root.off = true; } }
-    property <int> serial: Walk.serial;
-    changed serial => { root.off = false; }
     Image {
-        x: Walk.from.x - (root.off ? Walk.way * Motion.walk-step : 0px);
+        x: Walk.from.x - Walk.way * Motion.walk-step * Walk.gone;
         y: Walk.from.y;
         width: Walk.from.width;
         height: Walk.from.height;
@@ -120,10 +128,8 @@ export component WalkView {
         source-clip-width: Walk.clip-width > 0 ? Walk.clip-width : Walk.picture.width;
         source-clip-height: Walk.clip-height > 0 ? Walk.clip-height : Walk.picture.height;
         image-fit: fill;
-        opacity: root.off ? 0 : 1;
-        animate x, opacity { duration: root.off ? Motion.travel : 0ms; easing: Ease.firm; }
+        opacity: 1 - Walk.gone;
     }
-    Timer { interval: Motion.travel; running: root.off; triggered => { Walk.walking = false; } }
 }
 
 // Every photo travelling over the screens, laid in the window's space: the flight, and the walk beside a photo.
@@ -133,16 +139,13 @@ export component Travels {
     in property <Place> room;
     if Flight.flying: FlightView { x: 0; y: 0; width: root.width; height: root.height; frame: root.frame; room: root.room; }
     if Walk.walking && root.walk: WalkView { x: 0; y: 0; width: root.width; height: root.height; }
+    // A walk ends once its pace has run: from then nothing reads the clock for it.
+    property <bool> ran: Walk.ran;
+    changed ran => { if (root.ran) { Walk.walking = false; } }
 }
 
 // The canvas's side of a walk: the photo walked to comes in from the side the walk goes, faded in.
 export component WalkIn {
-    property <int> walked: Walk.serial;
-    property <bool> walked-in: true;
-    changed walked => { root.walked-in = false; arrive.start(); }
-    arrive := Timer { interval: Motion.next-frame; running: false; triggered => { self.stop(); root.walked-in = true; } }
-    out property <length> shift: root.walked-in ? 0px : Walk.way * Motion.walk-step;
-    animate shift { duration: root.walked-in ? Motion.travel : 0ms; easing: Ease.firm; }
-    out property <float> fade: root.walked-in ? 1 : 0;
-    animate fade { duration: root.walked-in ? Motion.travel : 0ms; easing: Ease.firm; }
+    out property <length> shift: Walk.way * Motion.walk-step * (1 - Walk.gone);
+    out property <float> fade: Walk.gone;
 }

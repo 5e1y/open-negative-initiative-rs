@@ -28,6 +28,7 @@
 //! `ONI_BENCH=wave` opens a roll never prepared from the gallery, laid at once then as a wave, at the screen's size.
 //! `ONI_BENCH=screens` takes the main screens at the smallest window into `ONI_SHOTS`, in the language spoken.
 //! `ONI_BENCH=motion` times the interface's frames over its journeys, laid at once and moving, at the screen's size.
+//! `ONI_BENCH=walk` walks the editor by its arrows, slowly, in a burst and held, each walk's line in the log.
 //! `ONI_BENCH=wrapped` shows the year on film, holds each scene until it is told and saves every card.
 
 use crate::Store;
@@ -53,13 +54,14 @@ mod sweep;
 mod compare;
 mod stocks;
 mod motion;
+mod walk;
 mod screens;
 mod wave;
 mod wrapped;
 mod holo;
 mod traverse;
 pub mod chain;
-use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, wrapped::*};
+use {zoom::*, traverse::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*, sweep::*, compare::*, stocks::*, motion::*, walk::*, wrapped::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -67,12 +69,15 @@ pub const NOTCHES: usize = 60;
 pub(crate) fn frame_clock(ctl: &Rc<Ctl>) -> Rc<RefCell<Vec<(Instant, Duration)>>> {
     let drawn: Rc<RefCell<Vec<(Instant, Duration)>>> = Rc::default();
     if let Some(w) = ctl.window() {
-        let (log, began) = (drawn.clone(), Cell::new(None::<Instant>));
+        let (log, began, drawing) = (drawn.clone(), Cell::new(None::<Instant>), w.as_weak());
         let _ = w.window().set_rendering_notifier(move |state, _| match state {
             slint::RenderingState::BeforeRendering => began.set(Some(Instant::now())),
             slint::RenderingState::AfterRendering => {
                 if let Some(t) = began.take() {
                     log.borrow_mut().push((t, t.elapsed()));
+                }
+                if let Some(w) = drawing.upgrade() {
+                    crate::walks::drawn(&w);
                 }
             }
             _ => {}
@@ -157,6 +162,7 @@ pub enum Mode {
     Stocks,
     Papers,
     Motion,
+    Walk,
     Screens,
     Wave,
     Wrapped,
@@ -197,6 +203,7 @@ pub fn requested() -> Option<Mode> {
         "stocks" => Some(Mode::Stocks),
         "papers" => Some(Mode::Papers),
         "motion" => Some(Mode::Motion),
+        "walk" => Some(Mode::Walk),
         "screens" => Some(Mode::Screens),
         "wave" => Some(Mode::Wave),
         "wrapped" => Some(Mode::Wrapped),
@@ -264,6 +271,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Grid {
         return grid(ctl, done);
+    }
+    if mode == Mode::Walk {
+        return walk(ctl, done);
     }
     if mode == Mode::Motion {
         return motion(ctl, done);
