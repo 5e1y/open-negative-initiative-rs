@@ -1,5 +1,6 @@
 //! `ONI_BENCH=traverse`: a double click to 100 % and at once a long pan across the frame into parts never shown,
-//! the hand never resting and turning back at each edge, so each step pays whatever the view's first read costs.
+//! the hand never resting and turning back at each edge, so each step pays whatever the view's first read costs;
+//! `ONI_TRAVERSE_RESTS=1` rests the hand half a second every 40 steps, its sharp render made before it moves on.
 
 use super::*;
 
@@ -30,7 +31,8 @@ pub(super) fn traverse(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             let s = ctl.state.borrow();
             let (ready, count) = (s.renders() >= 1 && s.placed().is_some(), s.views().count());
             drop(s);
-            if ready && healed(&ctl) {
+            let full = std::env::var_os("ONI_TRAVERSE_RESTS").is_none() || ctl.state.borrow().full_built();
+            if ready && full && healed(&ctl) {
                 *drawn.borrow_mut() = frame_clock(&ctl);
                 began.set(Instant::now());
                 c.invoke_double_clicked();
@@ -41,6 +43,10 @@ pub(super) fn traverse(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         };
         let n = step.get() + 1;
         step.set(n);
+        let resting = std::env::var_os("ONI_TRAVERSE_RESTS").is_some() && n % 100 >= 40;
+        if n <= STEPS && resting {
+            return;
+        }
         if n <= STEPS {
             let ((x, y), (dx, dy)) = hand.get();
             let before = ctl.state.borrow().viewport().offset;

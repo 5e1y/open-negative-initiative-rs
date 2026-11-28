@@ -67,6 +67,8 @@ pub struct Stats {
 
 struct SourceInner {
     id: u64,
+    // The recipe it was evaluated from, with its region and precision: what a chain reading it keys on.
+    recipe: Option<u64>,
     extent: Rect,
     tiles: Vec<(Rect, FloatTexture)>,
 }

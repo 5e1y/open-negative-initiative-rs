@@ -152,7 +152,12 @@ impl Engine {
             _ => {
                 let made = match self.fitted.ahead.iter().position(|(k, _)| *k == image.key()) {
                     Some(i) => self.fitted.ahead.remove(i).1,
-                    None => self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?,
+                    None => {
+                        let at = std::time::Instant::now();
+                        let made = self.graph.materialise_half_cached(&image, Some(&mut self.fitted.scan_stages)).map_err(|e| e.to_string())?;
+                        crate::timing::line(&format!("a digital photo's preview scan made, {} px wide, encoded in {:.0} ms", made.extent().w, at.elapsed().as_secs_f64() * 1000.0));
+                        made
+                    }
                 };
                 // The scan left stays ahead, so the hand going back finds it made.
                 if let Some(left) = self.fitted.scan.replace((image.key(), made.clone())) {
@@ -176,7 +181,9 @@ impl Engine {
         }
         // The last full scan goes before the next is made: two would hold twice a full frame.
         self.fitted.full_scan = None;
+        let at = std::time::Instant::now();
         let made = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
+        crate::timing::line(&format!("a digital photo's full scan made, {} px wide, encoded in {:.0} ms", made.extent().w, at.elapsed().as_secs_f64() * 1000.0));
         self.fitted.full_scan = Some((image.key(), made.clone()));
         Ok((preview, Some(made)))
     }

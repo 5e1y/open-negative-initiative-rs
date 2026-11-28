@@ -81,7 +81,8 @@ impl Graph {
         self.settle(cache);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, owned)] })))
+        let recipe = Some(recipe_key(image, region, Precision::Full));
+        Ok(Source(Arc::new(SourceInner { id, recipe, extent: region, tiles: vec![(region, owned)] })))
     }
 
     /// Ends a render: the pool frees what no render took again, and the device lets go of what the GPU
@@ -363,4 +364,11 @@ pub(super) enum Last<'a> {
     Owned,
     /// At this corner of a sheet the caller holds.
     Sheet(&'a FloatTexture, [i32; 2]),
+}
+
+/// The identity of `region` of `image` evaluated at `precision`: two evaluations of it hold the same pixels.
+pub(super) fn recipe_key(image: &Image, region: Rect, precision: Precision) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    (image.key(), region.x, region.y, region.w, region.h, precision == Precision::Half).hash(&mut hasher);
+    hasher.finish()
 }

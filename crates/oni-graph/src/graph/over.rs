@@ -55,6 +55,6 @@ impl Graph {
         self.submit(encoder);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, owned)] })))
+        Ok(Source(Arc::new(SourceInner { id, recipe: None, extent: region, tiles: vec![(region, owned)] })))
     }
 }

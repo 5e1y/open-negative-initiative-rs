@@ -58,7 +58,9 @@ impl Batch {
         assert_eq!(source.tiles(), 1, "a batch reads one texture");
         assert!(at.iter().all(|r| !r.is_empty() && source.extent().contains(r)), "a member lies on its source");
         let mut hasher = DefaultHasher::new();
-        ("batch", source.id(), &at).hash(&mut hasher);
+        "batch".hash(&mut hasher);
+        source.identity(&mut hasher);
+        at.hash(&mut hasher);
         let extents = at.iter().map(|r| Rect::new(0, 0, r.w, r.h)).collect();
         Batch(Arc::new(BatchInner { key: hasher.finish(), source: source.clone(), at: Arc::new(at), steps: Vec::new(), extents: vec![Arc::new(extents)] }))
     }

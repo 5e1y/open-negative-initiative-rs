@@ -115,7 +115,8 @@ impl Graph {
             self.ended();
         }
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, half)] })))
+        let recipe = Some(super::rendering::recipe_key(&image, region, Precision::Half));
+        Ok(Source(Arc::new(SourceInner { id, recipe, extent: region, tiles: vec![(region, half)] })))
     }
 }
 

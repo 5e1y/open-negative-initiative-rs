@@ -16,6 +16,15 @@ impl Source {
         self.0.id
     }
 
+    /// What a recipe reading it keys on: the recipe it was evaluated from, so the same recipe evaluated again keys
+    /// alike and what was made of the first is found again; its id for pixels uploaded.
+    pub(super) fn identity(&self, hasher: &mut impl Hasher) {
+        match self.0.recipe {
+            Some(recipe) => ("recipe", recipe).hash(hasher),
+            None => ("source", self.0.id).hash(hasher),
+        }
+    }
+
     /// The one texture covering the whole extent, its texel (0, 0) at the extent's corner; none when tiled.
     pub fn view(&self) -> Option<&wgpu::TextureView> {
         match self.0.tiles.as_slice() {
@@ -132,7 +141,7 @@ fn laid(
         }
     }
     let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-    Ok(Source(Arc::new(SourceInner { id, extent, tiles })))
+    Ok(Source(Arc::new(SourceInner { id, recipe: None, extent, tiles })))
 }
 
 impl Graph {

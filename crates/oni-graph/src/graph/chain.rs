@@ -80,7 +80,7 @@ impl Image {
     /// Every node this image reads, inputs before the stages reading them, each once; returns the last.
     pub(super) fn flatten<'a>(&'a self, nodes: &mut Vec<Flat<'a>>, seen: &mut HashMap<u64, usize>) -> usize {
         let mut hasher = DefaultHasher::new();
-        ("source", self.source.0.id).hash(&mut hasher);
+        self.source.identity(&mut hasher);
         let key = hasher.finish();
         let mut at = intern(nodes, seen, Flat { key, extent: self.source.extent(), kind: Kind::Source(&self.source) });
         for node in &self.stages {

@@ -52,7 +52,7 @@ impl Graph {
         self.submit(encoder);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
+        Ok(Source(Arc::new(SourceInner { id, recipe: None, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
     }
 
     /// Each source copied whole with its corner at its place on one sheet of `size`, in one submission:
@@ -78,6 +78,6 @@ impl Graph {
         }
         self.submit(encoder);
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
+        Ok(Source(Arc::new(SourceInner { id, recipe: None, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
     }
 }
