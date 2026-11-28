@@ -1,5 +1,5 @@
 //! ⌘Z and ⌘⇧Z typed in a field step the field's typing, never the photos' history the menu bar holds;
-//! with the photos holding the keyboard, they step the history.
+//! with the photos holding the keyboard, they step the history. ⌘C in a field copies no settings, as with them it does.
 
 use oni_app::Library;
 use slint::platform::Key;
@@ -50,4 +50,20 @@ pub(crate) fn undo_in_a_field_steps_its_typing_and_leaves_the_photos_history() {
     assert_eq!(medal(), 0, "with the photos holding the keyboard, ⌘Z undoes the silver");
     rig.chord_with(&[Key::Control, Key::Shift], "z");
     assert_eq!(medal(), 2, "and ⌘⇧Z redoes it");
+
+    // ⌘C typed in a field is the field's own copy: no settings copied. Twin: the photos holding the keyboard, it copies them.
+    let presets = w.global::<oni_app::Presets>();
+    for _ in 0..80 {
+        if !w.get_keys_held() {
+            break;
+        }
+        rig.key("\t");
+    }
+    assert!(!w.get_keys_held(), "a field holds the keyboard");
+    rig.chord(Key::Control, "c");
+    assert!(!presets.get_copying(), "⌘C typed in a field copies no settings");
+    w.invoke_refocus();
+    rig.pump();
+    rig.chord(Key::Control, "c");
+    assert!(presets.get_copying(), "with the photos holding the keyboard, ⌘C copies the settings");
 }

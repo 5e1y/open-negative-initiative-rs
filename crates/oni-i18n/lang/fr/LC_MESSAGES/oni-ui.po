@@ -463,7 +463,7 @@ msgstr "The Lens DB"
 msgid "THE LENS DB"
 msgstr "THE LENS DB"
 
-#: crates/oni-ui/ui/ds/tldb.slint
+#: crates/oni-ui/ui/ds/tldb.slint crates/oni-ui/ui/ds/welcome_overture.slint
 msgid "ONI"
 msgstr "ONI"
 
@@ -1899,7 +1899,7 @@ msgstr "Déplace les photos préparées avec cette pellicule dans un dossier de 
 msgid "Finding the photos prepared with this roll…"
 msgstr "Recherche des photos préparées avec cette pellicule…"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/roll_step_keys.slint
 msgid "Film Type"
 msgstr "Type de film"
 
@@ -1927,7 +1927,7 @@ msgstr "Numérique"
 msgid "What this roll was shot on. Lighting reads every photo of the roll back through this stock's curve: picked here, it changes for the whole roll, as in Prepare the Roll and in the gallery, and Undo takes it back."
 msgstr "L’émulsion sur laquelle cette pellicule a été prise. Lumière relit chaque photo de la pellicule par la courbe de cette émulsion : choisie ici, elle change pour toute la pellicule, comme dans Préparer la pellicule et dans la galerie, et Annuler la reprend."
 
-#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/roll_step_keys.slint
 msgid "Flat-Field"
 msgstr "Flat-field"
 
@@ -2315,6 +2315,18 @@ msgstr "Toutes les photos"
 msgid "All"
 msgstr "Toutes"
 
+#: crates/oni-ui/ui/roll_step_keys.slint
+msgid "Base"
+msgstr "Base"
+
+#: crates/oni-ui/ui/roll_step_keys.slint
+msgid "Flags"
+msgstr "Marques"
+
+#: crates/oni-ui/ui/roll_step_keys.slint
+msgid "Window"
+msgstr "Fenêtre"
+
 #: crates/oni-ui/ui/settings.slint
 msgid "Language"
 msgstr "Langue"
@@ -2508,18 +2520,6 @@ msgid "Don't Show Again"
 msgstr "Ne plus afficher"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Base"
-msgstr "Base"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Flags"
-msgstr "Marques"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Window"
-msgstr "Fenêtre"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "Sheet"
 msgstr "Planche"
 
@@ -2624,12 +2624,8 @@ msgid "Gallery (Esc or {})"
 msgstr "Galerie (Échap ou {})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Gallery (Esc, Space or {})"
-msgstr "Galerie (Échap, Espace ou {})"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Editor (Space or {})"
-msgstr "Éditeur (Espace ou {})"
+msgid "Editor (Return or {})"
+msgstr "Éditeur (Entrée ou {})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "UPDATING"

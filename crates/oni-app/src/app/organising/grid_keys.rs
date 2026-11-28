@@ -1,4 +1,4 @@
-//! The grid's keys: the arrows, Return, Space and ⌘A.
+//! The grid's keys: the arrows, Return and ⌘A.
 
 use super::*;
 
@@ -14,14 +14,14 @@ impl Ctl {
         crate::picking::select_all(&keys, &s.picks.selection, focus.as_ref()) == s.picks.selection
     }
 
-    /// The arrows, Return, Space and ⌘A, while the gallery shows.
+    /// The arrows, Return and ⌘A, while the gallery shows: Return alone opens the editor (owner's call).
     pub(in crate::app) fn grid_key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let key = match text {
             "\u{F702}" if !command => GridKey::Left,
             "\u{F703}" if !command => GridKey::Right,
             "\u{F700}" if !command => GridKey::Up,
             "\u{F701}" if !command => GridKey::Down,
-            "\r" | "\n" | " " => GridKey::Open { repeat, modified: !bare },
+            "\r" | "\n" => GridKey::Open { repeat, modified: !bare },
             "a" | "A" if command && !shift => GridKey::SelectAll,
             _ => return false,
         };

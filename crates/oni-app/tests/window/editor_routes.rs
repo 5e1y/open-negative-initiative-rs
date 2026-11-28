@@ -154,8 +154,20 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[0].as_str()));
     assert!(panel.get_tab() == PanelTab::Color && canvas.get_split() < 0.0, "A opens again with no mode");
 
-    // Space beside a photo goes to the gallery.
+    // Space beside a photo fits it to the window, once, and leaves no editor (owner's call).
+    ctl.act(oni_app::Act::Larger);
+    rig.pump();
+    assert!(ctl.state.borrow().viewport().scale.is_some(), "zoomed in");
     rig.key(" ");
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().viewport().scale.is_none(), "Space fits the picture, beside it");
+    // Escape is the way back; in the gallery Space opens nothing, Return the editor. Twin: Return and Escape go and come.
+    rig.key("\u{1b}");
+    assert!(w.global::<App>().get_gallery(), "Escape leaves the editor");
+    rig.key(" ");
+    assert!(w.global::<App>().get_gallery(), "Space opens no editor");
+    rig.key("\r");
+    assert!(!w.global::<App>().get_gallery(), "Return opens the editor");
+    rig.key("\u{1b}");
     assert!(w.global::<App>().get_gallery());
 
     // A preset naming the balance key balances two photos Each, asking nothing.

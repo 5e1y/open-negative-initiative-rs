@@ -87,8 +87,8 @@ impl Ctl {
             let _ = s.disk.send(fingerprint);
         }
         let flags = Ctl::tile_flags(&s);
-        // The photo Space and the arrows act on, which the keyboard's ring marks.
-        let target = crate::picking::space_target(s.shown_picks().cursor.as_deref(), &s.shown_picks().selection, &s.order);
+        // The photo Return and the arrows act on, which the keyboard's ring marks.
+        let target = crate::picking::open_target(s.shown_picks().cursor.as_deref(), &s.shown_picks().selection, &s.order);
         let tiles: Vec<Tile> = range
             .clone()
             .filter_map(|i| {

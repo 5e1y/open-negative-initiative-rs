@@ -1,7 +1,7 @@
 //! What one grid's pointer and keys do to its picks, `GalleryEngine.click`, `move` and `selectAll`:
 //! the selection, its anchor and the keyboard's cursor, kept by path so a relayout keeps them.
 
-use crate::picking::{self, Click, ClickTracker, SpaceKey, Step};
+use crate::picking::{self, Click, ClickTracker, OpenKey, Step};
 use std::collections::HashSet;
 
 mod cells;
@@ -31,7 +31,7 @@ pub enum GridKey {
     Right,
     Up,
     Down,
-    /// Return or Space, one key; `modified`: ⌘, ⌥, ⌃ or ⇧ held, any of which leaves it to someone else.
+    /// Return; `modified`: ⌘, ⌥, ⌃ or ⇧ held, any of which leaves it to someone else.
     Open { repeat: bool, modified: bool },
     SelectAll,
 }
@@ -89,11 +89,11 @@ impl Picks {
             GridKey::Up => Step::Rows(-1),
             GridKey::Down => Step::Rows(1),
             GridKey::Open { repeat, modified } => {
-                return match picking::space_key(repeat, modified) {
-                    SpaceKey::Ignore => None,
-                    SpaceKey::Swallow => Some(Outcome::None),
-                    SpaceKey::Open => Some(
-                        picking::space_target(self.cursor.as_deref(), &self.selection, shown.order)
+                return match picking::open_key(repeat, modified) {
+                    OpenKey::Ignore => None,
+                    OpenKey::Swallow => Some(Outcome::None),
+                    OpenKey::Open => Some(
+                        picking::open_target(self.cursor.as_deref(), &self.selection, shown.order)
                             .filter(|p| shown.index(p).is_some())
                             .map_or(Outcome::None, Outcome::Open),
                     ),

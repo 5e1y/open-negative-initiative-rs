@@ -138,8 +138,8 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     w.global::<oni_app::Store>().invoke_step(Field::Exposure.index(), 5);
     rig.pump();
     let donor = oni_app::store::get(ctl.state.borrow().store(), Field::Exposure);
-    rig.chord_with(&[Key::Control, Key::Shift], "c");
-    assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "the copy sheet asks what it carries first");
+    rig.chord(Key::Control, "c");
+    assert!(w.global::<oni_app::Presets>().get_copying() && !menus.get_live().paste_to_roll, "⌘C's copy sheet asks what it carries first");
     rig.key("\n");
     assert!(menus.get_live().paste_to_roll, "twin: Return copies");
     rig.chord(Key::Control, "g");
@@ -152,8 +152,8 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     let (b0, c0) = (exposure(&b), exposure(&c));
     assert!((b0 - donor).abs() > 1e-3);
 
-    // Another roll's look asks first; Escape leaves both frames as they were.
-    rig.chord_with(&[Key::Control, Key::Shift], "v");
+    // Another roll's look asks first, by ⌘V; Escape leaves both frames as they were.
+    rig.chord(Key::Control, "v");
     let confirm = w.global::<Confirm>();
     assert!(confirm.get_shown());
     assert_eq!((confirm.get_title().as_str(), confirm.get_key().as_str()), ("Another Roll", "Paste Settings"));
@@ -163,7 +163,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.key("\u{1b}");
     assert!(!confirm.get_shown());
     assert_eq!((exposure(&b), exposure(&c)), (b0, c0), "a cancelled paste writes nothing");
-    // Twin: Return goes ahead, both frames take the look, and ⌘Z names the gallery's step.
+    // Twin: by ⇧⌘V, the key before it, Return goes ahead, both frames take the look, and ⌘Z names the gallery's step.
     rig.chord_with(&[Key::Control, Key::Shift], "v");
     rig.key("\n");
     assert!((exposure(&b) - donor).abs() < 1e-5 && (exposure(&c) - donor).abs() < 1e-5);

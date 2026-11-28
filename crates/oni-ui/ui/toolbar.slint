@@ -212,13 +212,13 @@ component EditorKeys inherits Centre {
     }
     ButtonGroup {
         joined: true;
-        Key { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
+        Key { compact: root.compact; action: Act.copy; word: @tr("Copy"); icon: Icons.copy; help: @tr("Copy Settings ({})", KeyWords.command + "C"); enabled: Bar.has-photo; }
         Key {
             compact: root.compact;
             action: Act.paste;
             word: @tr("Paste");
             icon: Icons.paste;
-            help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command-shift + "V") : @tr("Paste settings ({})", KeyWords.command-shift + "V");
+            help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, KeyWords.command + "V") : @tr("Paste settings ({})", KeyWords.command + "V");
             enabled: Bar.can-paste;
         }
         // Every frame of the roll rewritten at once, as the menu's title counts them, its notice's Undo after.
@@ -325,7 +325,7 @@ export component Toolbar inherits Surface {
             icon: root.back ? Icons.back : Icons.edit;
             fixed-width: max(edit-sizing.preferred-width, back-sizing.preferred-width);
             help: Preparing.shown ? @tr("Gallery (Esc or {})", KeyWords.command + "G")
-                : Bar.editing ? @tr("Gallery (Esc, Space or {})", KeyWords.command + "G") : @tr("Editor (Space or {})", KeyWords.command + "G");
+                : Bar.editing ? @tr("Gallery (Esc or {})", KeyWords.command + "G") : @tr("Editor (Return or {})", KeyWords.command + "G");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.can-toggle-mode;
         }
         // The zone holds the widest set of keys with its words, and the widest compact one at least, alone

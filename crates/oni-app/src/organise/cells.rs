@@ -66,8 +66,8 @@ impl CellAction {
     pub fn chord(&self, platform: Platform) -> String {
         let k = platform::keys(platform);
         match self {
-            CellAction::Copy => format!("{}C", k.command_shift),
-            CellAction::Paste => format!("{}V", k.command_shift),
+            CellAction::Copy => format!("{}C", k.command),
+            CellAction::Paste => format!("{}V", k.command),
             CellAction::Reset => format!("{}R", k.command_shift),
             CellAction::NewRoll => format!("{}G", k.command_shift),
             CellAction::Ungroup => format!("{}G", k.option_command_shift),

@@ -10,8 +10,8 @@ const LEFT: &str = "\u{F702}";
 const RIGHT: &str = "\u{F703}";
 
 impl Ctl {
-    /// `walkKeys`: beside a photo a bare arrow walks the open frame's group and a bare Space, outside De-dust, goes to
-    /// the gallery, once while held.
+    /// `walkKeys`: beside a photo a bare arrow walks the open frame's group and a bare Space, outside De-dust, fits the
+    /// picture to the window, once while held (owner's call).
     fn walk_key(self: &Rc<Self>, text: &str, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
         if w.global::<App>().get_gallery() {
@@ -21,7 +21,7 @@ impl Ctl {
         match text {
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),
-            SPACE if bare && !repeat && !dedust => self.act(crate::Act::ToggleMode),
+            SPACE if bare && !repeat && !dedust => self.act(crate::Act::Fit),
             _ => return false,
         }
         true
@@ -116,6 +116,16 @@ impl Ctl {
         }
         // Beside the crop the arrows move its frame rather than walk the photos.
         if self.nudge_frame(text, command, shift, option, bare) || self.walk_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
+            return true;
+        }
+        // The menu's ⌘C and ⌘V copy and paste the settings; ⇧⌘C and ⇧⌘V, their keys before, still do.
+        if command && shift && !option && matches!(text, "c" | "C" | "v" | "V") {
+            let (live, copy) = (w.global::<Menus>().get_live(), matches!(text, "c" | "C"));
+            if copy && live.copy_settings {
+                self.act(crate::Act::Copy);
+            } else if !copy && live.paste_settings {
+                self.act(crate::Act::Paste);
+            }
             return true;
         }
         if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {

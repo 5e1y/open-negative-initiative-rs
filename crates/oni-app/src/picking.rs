@@ -108,25 +108,25 @@ pub fn destination(index: usize, step: Step, blocks: &[usize], columns: usize) -
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SpaceKey {
+pub enum OpenKey {
     Ignore,
     Swallow,
     Open,
 }
 
-/// Space opens with no modifier among ⌘ ⌥ ⌃ ⇧, and a repeat is swallowed.
-pub fn space_key(repeat: bool, modified: bool) -> SpaceKey {
+/// Return opens with no modifier among ⌘ ⌥ ⌃ ⇧, and a repeat is swallowed.
+pub fn open_key(repeat: bool, modified: bool) -> OpenKey {
     if modified {
-        SpaceKey::Ignore
+        OpenKey::Ignore
     } else if repeat {
-        SpaceKey::Swallow
+        OpenKey::Swallow
     } else {
-        SpaceKey::Open
+        OpenKey::Open
     }
 }
 
 /// The cursor, else the first selected photo shown, else the first shown.
-pub fn space_target(cursor: Option<&str>, selection: &HashSet<String>, shown: &[String]) -> Option<String> {
+pub fn open_target(cursor: Option<&str>, selection: &HashSet<String>, shown: &[String]) -> Option<String> {
     if let Some(c) = cursor {
         return Some(c.to_owned());
     }
@@ -306,15 +306,15 @@ mod tests {
     }
 
     #[test]
-    fn space_opens_bare_swallows_a_repeat_and_targets_the_cursor_then_the_selection() {
-        assert_eq!(space_key(false, false), SpaceKey::Open);
-        assert_eq!(space_key(true, false), SpaceKey::Swallow);
-        assert_eq!(space_key(false, true), SpaceKey::Ignore);
+    fn return_opens_bare_swallows_a_repeat_and_targets_the_cursor_then_the_selection() {
+        assert_eq!(open_key(false, false), OpenKey::Open);
+        assert_eq!(open_key(true, false), OpenKey::Swallow);
+        assert_eq!(open_key(false, true), OpenKey::Ignore);
         let shown = order(&["a", "b", "c"]);
-        assert_eq!(space_target(Some("c"), &set(&["b"]), &shown).as_deref(), Some("c"));
-        assert_eq!(space_target(None, &set(&["c", "b"]), &shown).as_deref(), Some("b"), "the first selected in the order shown");
-        assert_eq!(space_target(None, &set(&[]), &shown).as_deref(), Some("a"));
-        assert_eq!(space_target(None, &set(&[]), &[]), None);
+        assert_eq!(open_target(Some("c"), &set(&["b"]), &shown).as_deref(), Some("c"));
+        assert_eq!(open_target(None, &set(&["c", "b"]), &shown).as_deref(), Some("b"), "the first selected in the order shown");
+        assert_eq!(open_target(None, &set(&[]), &shown).as_deref(), Some("a"));
+        assert_eq!(open_target(None, &set(&[]), &[]), None);
     }
 
     /// `galleryEngineSelectAllSelfCheck`.
