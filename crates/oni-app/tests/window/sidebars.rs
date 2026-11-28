@@ -55,9 +55,9 @@ fn spans_alone(met: &[(String, f32, f32)], start: f32, edge: f32) -> bool {
     matches!(met, [(_, from, to)] if from - start <= 4.0 && *to <= edge && edge - to <= 4.0)
 }
 
-/// One span of ink, the glyph and its word, centred on a key across the block, to within a few points.
+/// The glyph and its word, from the first ink to the last, centred on a key across the block, to within a few points.
 fn centred(words: &[(f32, f32)], start: f32, edge: f32) -> bool {
-    matches!(words, [(from, to)] if ((from + to) / 2.0 - (start + edge) / 2.0).abs() <= 3.0)
+    matches!((words.first(), words.last()), (Some((from, _)), Some((_, to))) if ((from + to) / 2.0 - (start + edge) / 2.0).abs() <= 3.0)
 }
 
 /// The sum of a 565 pixel's three channels, each scaled to 8 bits.

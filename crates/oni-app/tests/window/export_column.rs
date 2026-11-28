@@ -32,8 +32,6 @@ pub(crate) fn the_export_column_lies_over_the_editors() {
     let Some(app) = opened("export-column") else { return };
     let common::App { rig, shell, .. } = &app;
     let (ctl, w) = (shell.ctl.clone(), &shell.window);
-    // The Mac's traffic lights, under which the bar's room stays as the export opens.
-    w.global::<oni_app::Bar>().set_traffic_lights(100.0);
     rig.window.set_size(slint::PhysicalSize::new(1280, 900));
     rig.settle();
     let editor = laid(w, "CanvasCard", "Panel", "Exposure");
@@ -49,6 +47,23 @@ pub(crate) fn the_export_column_lies_over_the_editors() {
     assert!((a.x - b.x).abs() < 0.5 && (a.width - b.width).abs() < 0.5 && (a.y - b.y).abs() < 0.5, "the column in the same place: {a:?} {b:?}");
     assert!((editor.2 - export.2).abs() < 0.5, "the content as far in: {} against {}", editor.2, export.2);
     println!("shot {}", rig.shot("export-column").display());
+    // The colour space's tabs inside the narrower column in every language: the last as far in as the first.
+    for language in [oni_i18n::Language::English, oni_i18n::Language::French, oni_i18n::Language::Spanish] {
+        oni_app::language::speak(Some(language));
+        rig.settle();
+        let bar = one(w, "SpaceTabs");
+        let mut tabs: Vec<Placed> = common::placed_all(w, Role::Tab).into_iter().filter(|t| t.y >= bar.y && t.y + t.height <= bar.y + bar.height + 0.5).collect();
+        tabs.sort_by(|a, b| a.x.total_cmp(&b.x));
+        tabs.dedup_by(|a, b| (a.x - b.x).abs() < 0.5);
+        let (first, last) = (tabs[0], tabs[tabs.len() - 1]);
+        let (left, right) = (first.x - bar.x, bar.x + bar.width - (last.x + last.width));
+        println!("{language:?}: the space's tabs {left} pt in at the left, {right} at the right");
+        assert_eq!(tabs.len(), 5, "{language:?}: five tabs: {tabs:?}");
+        assert!((left - right).abs() < 0.5 && right > 0.0, "{language:?}: the last tab {right} pt in, the first {left}");
+        // Twin: measured from the column's edge, the last tab would read off the first's inset.
+        assert!(((b.x + b.width) - (last.x + last.width) - left).abs() > 0.5, "twin: the column's edge reads as the tabs'");
+    }
+    oni_app::language::speak(Some(oni_i18n::Language::English));
     // Twin: the editor's panel hidden, its card reaches past where the export's column stands.
     ctl.leave_export();
     rig.settle();

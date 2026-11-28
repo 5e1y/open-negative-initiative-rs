@@ -10,9 +10,9 @@ export global TabsStyle {
     out property <length> height: DS.control-tab-bar-height;
     out property <length> inset: DS.space-xs;
     out property <length> gap: DS.stroke-line;
-    // The room either side of every label: `room` where the bar holds it, never under `margin`; a tab is its
-    // label and an equal share of the rest, so the gaps between labels match however long each is.
-    out property <length> margin: DS.space-sm;
+    // The room either side of every label: `room` where the bar holds it, never under `margin`, so a bar of
+    // five tabs in the editor's column keeps every word; a tab is its label and an equal share of the rest.
+    out property <length> margin: DS.space-xs;
     out property <length> room: DS.space-sm + DS.space-xs;
     out property <length> mark: DS.space-xs;
     out property <length> mark-inset: DS.space-xxs;

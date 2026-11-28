@@ -14762,5 +14762,12 @@
     "title": "A patch's file names the healer that made it: one made before #4600 is made again, never laid",
     "status": "done",
     "detail": "Patches are purged at a clean quit only; one kept past a crash under the same key would be laid with its former tone. The file name carries the healer's revision (`patches::HEALER`, 2), so an older patch is not found and the stroke is healed again. Check: patches::tests (twin: the same key under the former name finds nothing)."
+  },
+  {
+    "id": 4111,
+    "type": "ui",
+    "title": "WRAPPED 26 a keycap of the interface's grey at the bar's left end, its glyph and word inked in holographic foil; the export under the bar's room on every system; a bar of five tabs keeps its insets",
+    "status": "done",
+    "detail": "Owner's calls: (9) the year on film's key is an ordinary keycap of the interface's grey, its glyph and its word inked in the welcome gifts' holographic foil (Button's foil now inks BarFace's glyph and word with HoloStyle.foil-ink; the foil face is gone), at the bar's left end, in the gallery alone through December and January; its word is still the first the bar lets go of. The export keeps the bar's room on every system, so its column starts where the editor's does on Windows too (the card's rest and its help cards' top no longer read the traffic lights). In the export's column, now the editor's 340 pt, the colour space's five tabs ran 7 pt past its right edge in English while the first stood 4 pt in: a tab's least margin is now Space.xs, every tab still taking its full room where the bar has it. The window checks that described the bar before #4104, #4105 and #4108 follow it: toolbar (the history heads the centre; ⌘C), sidebars (a glyph and its word read from first ink to last), help_card (the export's column under the bar's room), panel_bindings (a window tall enough for the Size under the room). Checks: export_column (the space's tabs as far in at both ends in English, French and Spanish; twin: read from the column's edge they differ), wrapped, toolbar_fit, the whole window suite."
   }
 ]

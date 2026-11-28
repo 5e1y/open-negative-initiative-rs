@@ -186,6 +186,8 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     }));
     let named = |key: Key| slint::SharedString::from(key);
 
+    // Tall enough for the export's column to show its Size under the bar's room.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 1000));
     // 48 typed into W; Full resolution then writes 96, which the box shows, so Return asks nothing.
     ctl.act(oni_app::Act::Export);
     rig.settle();

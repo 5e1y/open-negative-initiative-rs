@@ -114,14 +114,14 @@ pub(crate) fn every_mode_lays_the_bar_alike_and_the_picture_opens_its_menu() {
     rig.until("A in the editor", Duration::from_secs(60), || !w.global::<App>().get_gallery() && ctl.state.borrow().renders() >= 1);
     let editor = keys();
     println!("shot {}", rig.shot("toolbar-editor").display());
-    // The mode key and the history at the left, feedback, settings and the commit at the right.
-    assert_eq!((&gallery[..3], &preparing[..3]), (&editor[..3], &editor[..3]), "{gallery:?} {preparing:?} {editor:?}");
+    // The mode key at the left, feedback, settings and the commit at the right; the history heads each mode's centre.
+    assert_eq!((&gallery[..1], &preparing[..1]), (&editor[..1], &editor[..1]), "{gallery:?} {preparing:?} {editor:?}");
     let ends = |s: &[(f32, f32)], slot: usize| s[s.len() - slot - 2..s.len() - slot].to_vec();
     assert_eq!((ends(&gallery, 1), ends(&preparing, 0)), (ends(&editor, 1), ends(&editor, 1)), "{gallery:?} {preparing:?} {editor:?}");
     assert_eq!(gallery.last(), editor.last(), "EXPORT stands in one place in both screens");
     assert!(editor.last().unwrap().1 <= 1100.0 - END, "EXPORT ends inside the window: {editor:?}");
     // Twin: the keys between them are the mode's own, which a bar laid once would not show.
-    assert_ne!(gallery[3..gallery.len() - 3], editor[3..editor.len() - 3]);
+    assert_ne!(gallery[1..gallery.len() - 3], editor[1..editor.len() - 3]);
 
     // A right click on the canvas lays the photo's own menu, as its tile's does; one on the bar lays none.
     // Above the picture: the measuring window, armed on an unmeasured frame, takes the press on it.
@@ -252,7 +252,7 @@ pub(crate) fn the_bar_reads_by_groups_reset_names_its_scope_and_trash_stands_las
     let k = oni_app::platform::keys(oni_app::platform::Platform::THIS);
     let keys = |text: &str| lines.iter().find(|l| l.text == text).map(|l| l.keys.to_string()).unwrap_or_else(|| panic!("{text}"));
     assert_eq!((keys("Reset Settings"), keys("Move to ONI Trash")), (format!("{}R", k.command_shift), format!("{}{}", k.command, k.delete)));
-    assert_eq!(keys("Copy Settings\u{2026}"), format!("{}C", k.command_shift));
+    assert_eq!(keys("Copy Settings\u{2026}"), format!("{}C", k.command));
     assert!(keys(reveal).is_empty(), "twin: a line with no chord prints none");
     rig.key("\u{1b}");
     // A click on EXPORT opens the sheet on what is picked, the one photo, then both.

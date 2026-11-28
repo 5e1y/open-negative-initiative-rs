@@ -12,6 +12,9 @@ export global HoloStyle {
     // The key's body under its face, and the ink that stands on the foil.
     out property <color> body: Foil.body(1);
     out property <color> ink: SealStyle.ink;
+    // The foil laid as an ink, on a glyph and a word: the seal's seven inks across them.
+    out property <brush> foil-ink: @linear-gradient(100deg, #f0aa78 0%, #dada6b 14%, #90ff90 29%, #6bdada 43%, #9090ff 57%, #da6bda 71%,
+        #ff9090 86%, #f0aa78 100%);
     // The wordmark's rows: their height, the letters' size in them, and how far the inks travel under the hand.
     out property <length> row: 7px;
     out property <length> letters: 5px;

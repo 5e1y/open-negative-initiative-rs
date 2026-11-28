@@ -7,7 +7,6 @@ import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
 import { BarFace } from "bar_face.slint";
 import { KeyScope, Keyboard } from "keyboard.slint";
-import { HoloFace, HoloStyle } from "holo.slint";
 
 // `accent` the one primary of a view; `destructive` a plain key whose glyph says the danger; `ghost` a
 // glyph alone on no face, which shows the hover's veil under the hand as every key does.
@@ -126,7 +125,7 @@ export component Button inherits Rectangle {
     in property <bool> square;
     // The glyph's own ink in place of the kind's, as the favourite star's.
     in property <color> glyph-ink: transparent;
-    // A keycap whose face is holographic foil, its inks sliding under the hand.
+    // A keycap of the interface's grey whose glyph and word shine in holographic foil.
     in property <bool> foil;
     // A key whose state shows apart from it while on, as a canvas tool's tab under its bar key: no lit face.
     in property <bool> on-apart;
@@ -157,7 +156,7 @@ export component Button inherits Rectangle {
     property <color> tint: root.swatch ? root.fill : root.primary ? ButtonStyle.primary : transparent;
     // The tint, the lit face while on, else the plain one: the keycap's grey or a flat key's.
     property <bool> lit-face: root.on && !root.on-apart;
-    property <color> face: root.foil ? HoloStyle.body : root.tint.alpha > 0 ? root.tint : root.lit-face ? ButtonStyle.on : root.keycap ? (root.ground.alpha > 0 ? root.ground : ButtonStyle.cap) : ButtonStyle.face;
+    property <color> face: root.tint.alpha > 0 ? root.tint : root.lit-face ? ButtonStyle.on : root.keycap ? (root.ground.alpha > 0 ? root.ground : ButtonStyle.cap) : ButtonStyle.face;
     // Lifted before the hold was over: the timer lifts it.
     property <bool> waiting;
     // Lifted while still hovered: going back up to the hover depth is a release, not a press.
@@ -187,7 +186,6 @@ export component Button inherits Rectangle {
     // The glyph's ink: its own, the danger's red on a destructive key reached, else dark on a light face and
     // light on a dark one; a ghost's lifts under the hand. At rest no red stands beside the photo.
     property <color> ink: root.glyph-ink.alpha > 0 ? root.glyph-ink
-        : root.foil ? HoloStyle.ink
         : root.ghost ? Tones.ink(root.hovered || (root.live && touch.pressed) ? Tone.primary : Tone.tertiary)
         : root.kind == ButtonKind.destructive && root.reached ? Colour.destructive-ink
         : Tones.ink(KeyInk.light(root.face) ? Tone.on-light : Tone.on-fill);
@@ -245,11 +243,6 @@ export component Button inherits Rectangle {
         depth: root.depth;
         edge-width: root.swatch && root.on ? Stroke.emphasis : 0px;
         edge-color: Colour.accent;
-        if root.foil: HoloFace {
-            radius: Depth.face-corner * parent.factor;
-            hand: touch.has-hover ? clamp(touch.mouse-x / max(1px, root.width), 0, 1) : 0.5;
-            hovered: root.hovered;
-        }
         // The hand's light on the face, the same on a flat key, a cap or a ghost, stronger while a key presses.
         Rectangle {
             border-radius: root.keycap ? Depth.face-corner * parent.factor : root.radius;
@@ -283,6 +276,7 @@ export component Button inherits Rectangle {
             weight: root.weight;
             tracking: root.tracking;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad : 0px;
+            foil: root.foil;
         }
     }
     // Out of reach, the key still tells its help under the hand, so it can say why; it takes no press.

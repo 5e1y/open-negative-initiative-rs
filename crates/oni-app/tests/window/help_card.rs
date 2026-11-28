@@ -18,6 +18,8 @@ const PAD: f32 = 16.0;
 const GAP: f32 = 8.0;
 const MARGIN: f32 = 8.0;
 const MENU: f32 = 40.0;
+/// `ShellStyle.panel-width`: the editor's column, the export's too.
+const COLUMN: f32 = 340.0;
 
 /// The card's insets round what it holds: left, top, right, bottom.
 fn insets(card: &Placed, first: &Placed, last: &Placed) -> [f32; 4] {
@@ -211,16 +213,17 @@ pub(crate) fn a_help_card_stands_inside_a_short_window_and_beside_every_column()
     assert!((card.x + card.width - (w.get_panel_x() - GAP)).abs() < 0.5, "lifted, still left of the panel: {card:?}");
     press_help(rig, w, "Lighting");
 
-    // The export's column is wider and has no bar above: the card keeps its step from it, at the window's top.
+    // The export's column is the editor's, under the bar's room: the card keeps its step from it, under the room.
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     ctl.act(Act::Export);
     rig.until("the export's column", std::time::Duration::from_secs(30), || w.global::<Exporting>().get_shown());
     rig.settle();
     let presets = mark(w, "Presets");
-    assert!(presets.x > 1280.0 - 400.0, "the mark in the export's column: {presets:?}");
+    assert!(presets.x > 1280.0 - COLUMN, "the mark in the export's column: {presets:?}");
     press_help(rig, w, "Presets");
     let card = common::the(w, Role::Groupbox, "Help on Presets");
-    assert!((card.x + card.width - (1280.0 - 400.0 - GAP)).abs() < 0.5 && (card.y - MENU - MARGIN).abs() < 0.5, "left of the export's column: {card:?}");
+    let room = w.global::<oni_app::Bar>().get_height();
+    assert!((card.x + card.width - (1280.0 - COLUMN - GAP)).abs() < 0.5 && (card.y - MENU - room - MARGIN).abs() < 0.5, "left of the export's column, under the bar's room: {card:?}");
     // Escape takes the card first; twin: the next one leaves the export.
     rig.key("\u{1b}");
     rig.settle();

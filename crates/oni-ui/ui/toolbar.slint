@@ -317,6 +317,8 @@ export component Toolbar inherits Surface {
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
         cross-axis-alignment: center;
+        // The year on film's key first, through its season, at the bar's left end (owner's call).
+        if root.year: YearKey { worded: root.year-worded; }
         // The mode key names its action, EDIT or BACK, as wide as the wider so the bar holds still; while a
         // roll is prepared it leaves it, as Cancel does, except while it measures.
         mode := Cap {
@@ -363,7 +365,6 @@ export component Toolbar inherits Surface {
                 x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width));
             }
         }
-        if root.year: YearKey { worded: root.year-worded; }
         own := Own { compact: root.compact; }
         // `ExportButton`: one slot in both screens, EXPORT or an update over it, the primary except beside a
         // roll awaiting Prepare Roll or under a tool; hidden while a roll is prepared.
@@ -382,8 +383,8 @@ export component Toolbar inherits Surface {
     }
 }
 
-// The bar's room at the window's top: the bar slides up out of it as the export opens, which keeps the room
-// to drag the window under the traffic lights; that room takes every press from the bar on its way out.
+// The bar's room at the window's top: the bar slides up out of it as the export opens, the room kept so every
+// screen's content starts under it; it takes every press from the bar on its way out, the window's drag included.
 export component BarRoom inherits Rectangle {
     in property <bool> exporting;
     // How far the bar has gone, 1 once it is out of sight.
