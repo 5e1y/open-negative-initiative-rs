@@ -89,6 +89,7 @@ pub(crate) const CHECKS: &[(&str, fn())] = &[
     check!(kit_vault::the_launch_reads_no_vault_and_the_first_use_reads_it_once_off_the_interface),
     check!(kit_vault::a_sign_out_never_read_reads_the_token_once_to_revoke_it),
     check!(export_column::the_export_column_lies_over_the_editors),
+    check!(library_surfaces::the_projects_rise_from_the_archives_lower_half_and_a_press_turns_them_back),
     check!(export_columns::the_exif_folds_beside_each_picture_and_the_name_stays_under_it),
     check!(export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most),
     check!(export_speed::a_parameter_change_on_a_batch_is_timed),

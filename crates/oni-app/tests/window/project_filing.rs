@@ -55,7 +55,7 @@ pub(crate) fn new_project_is_made_and_named_in_its_tab_and_a_double_click_opens(
     // Twin: the Archive's column offers no such key.
     assert!(column_key(&hand).is_none(), "no New Project key in the Archive's column");
     lib.invoke_surface_picked(1);
-    hand.rig.pump();
+    hand.rig.settle();
     let key = column_key(&hand).expect("the Projects tab's New Project key");
     common::click(&hand.rig, &hand.shell.window, key.middle());
     assert_eq!(hand.members(), [Vec::<String>::new()], "a project made, no photo in it yet");
@@ -71,7 +71,7 @@ pub(crate) fn new_project_is_made_and_named_in_its_tab_and_a_double_click_opens(
     hand.click(&b, true);
     hand.menu(&a, "Add to Project", Some("Client Tanaka"));
     lib.invoke_surface_picked(1);
-    hand.rig.pump();
+    hand.rig.settle();
     assert_eq!(hand.shown(), [a.clone(), b.clone()]);
     assert!(column_key(&hand).is_some(), "New Project stays offered beside a project's photos");
 
@@ -133,7 +133,7 @@ pub(crate) fn a_project_opens_at_its_top_and_a_long_name_reads_whole() {
     // Twin: back from the editor, the open photo lands down the grid.
     assert!(lib.get_scroll() > 0.0, "the open photo landed: {}", lib.get_scroll());
     lib.invoke_surface_picked(1);
-    hand.rig.pump();
+    hand.rig.settle();
     assert_eq!(lib.get_scroll(), 0.0, "the Projects tab opens at its top, its first row whole");
 
     let long = "Client Tanaka — Autumn festival delivery, rolls 8 and 10, final selects for the printed catalogue";

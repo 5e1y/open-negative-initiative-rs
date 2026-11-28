@@ -58,6 +58,7 @@ mod sheet_paper;
 mod export_window;
 mod export_panel;
 mod export_column;
+mod library_surfaces;
 mod export_columns;
 mod export_speed;
 mod filmstrip;

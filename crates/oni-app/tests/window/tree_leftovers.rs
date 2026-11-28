@@ -91,6 +91,9 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     let b00 = project_rows(&lib)[at(&lib, "B00")].clone();
     assert!(b00.thumb && b00.width < 150.0, "two thumbnails per row: {b00:?}");
     rig.until("the projects' thumbnails", Duration::from_secs(60), || project_rows(&lib).iter().filter(|r| r.thumb).all(|r| r.picture.size().width > 0));
+    // The projects risen whole to the column's top, `Motion.travel` after the tab was picked.
+    std::thread::sleep(Duration::from_millis(450));
+    rig.pump();
     rig.shot("tree-leftovers-thumbnails");
     let select = common::placed(w, i_slint_backend_testing::AccessibleRole::Button, "Two per row");
     assert_eq!(select.len(), 1, "the select on the projects names the layout in words");

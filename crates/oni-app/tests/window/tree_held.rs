@@ -89,7 +89,7 @@ pub(crate) fn a_held_drag_follows_the_hand_through_an_undo_that_changes_the_rows
     hand.menu(&e, "Add to Project", Some("Client"));
     let lib = hand.lib();
     lib.invoke_surface_picked(1);
-    hand.rig.pump();
+    hand.rig.settle();
     lib.invoke_project_row_folded(0);
     hand.rig.drawn();
     hand.rig.pump();

@@ -14809,5 +14809,19 @@
     "status": "done",
     "title": "Every motion that laid its start and let it go on a 1 ms timer reads its progress off the animation clock: the flight between the screens, the panel's panes, Prepare's step and its wave",
     "detail": "Same cause as the walk's (#4501): a timer standing for the window's next frame let each motion go before the real window, drawing on the display link after the event loop's timers, had laid its start, and Slint animates from the value last laid, so the motion jumped to its end. One mechanism now: `Sprung.at`, Slint's spring(bounce) computed in place over a pace, read off `animation-tick()` from the motion's start, set by Rust (the walk, the flight) or by the change that starts it (a pane, a step, the wave); each ends once its pace has run. The flight follows the place it aims at as the next screen lays out; a landing on the same picture hands over at once. `Motion.next-frame` is gone. Measured with ONI_BENCH=motion: the four flights first drawn at 0 to 1 % of their way, against three of four at their end before. Checks: motion_clock, each motion's first frame drawn only once the clock has passed 40 ms, as the real window draws: the flight into the editor, a pane, Prepare's wave and step still on their way (twin: two frames at rest differ in nothing). On the former mechanism the pane (0.03 of its region moved, 0.1 asked) and the wave (0.00) fail; the flight's first frame in the check is laid by the frozen rig, which is why the log line measures it on the real window."
+  },
+  {
+    "id": 4112,
+    "type": "ui",
+    "title": "Picking Projects, the archive's lower half rises to the column's top as the projects' tree; picking Archive sends it back down",
+    "status": "done",
+    "detail": "Owner's call: the switch between Archive and Projects moves the column's lower half up to its top, the two layouts the same: beside a photo the projects' tree rises from where the archive's photos stand under the rows, in the gallery from the column's foot, over Motion.travel on Ease.weighted, and sinks back as Archive is picked; a press while it moves turns it from where it stands, the tab taken at once. Both surfaces are laid at their resting height and clipped at the moving edge, so nothing lays its rows again as it moves (library_tree.slint). The window checks that read the projects the instant their tab was picked wait for the rise: project_filing, tree_held, tree_leftovers. Check: library_surfaces::the_projects_rise_from_the_archives_lower_half_and_a_press_turns_them_back (beside a photo the head starts 185 pt under its rest, 16 pt half way, a press turning it back; twin: in the gallery it starts from the column's foot, 875 pt under)."
+  },
+  {
+    "id": 4113,
+    "type": "fix",
+    "title": "Two checks that described before: the menus' twin on ⌘G, and a favourite's spelling that held only under /var",
+    "status": "done",
+    "detail": "menus::every_menu_shortcut_is_claimed_once caught a clash by writing New Roll's ⇧⌘G as the mode's ⌘G, which #4106 removed: its twin now writes Reset's ⇧⌘R as Refresh's ⌘R. disk_turns::a_favourite_in_another_spelling_opens_in_the_archives made its other spelling by prefixing /private, true only of a scratch under /var: it now links to its scratch and spells the favourite through the link, which the disk resolves wherever the scratch lies (checked with TMPDIR under /Volumes and under /var)."
   }
 ]
