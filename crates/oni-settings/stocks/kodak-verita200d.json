@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "cine-negative",
  "iso": 200,
+ "canister": "kodak-verita200d.svg",
  "dyes": "kodak-verita-200d",
  "film": {
   "key": "kodak-verita-200d",

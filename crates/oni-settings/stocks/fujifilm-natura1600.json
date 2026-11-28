@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "colour-negative",
  "iso": 1600,
+ "canister": "fujifilm-natura1600.svg",
  "dyes": "fujifilm-natura-1600",
  "film": {
   "key": "fujifilm-natura-1600",

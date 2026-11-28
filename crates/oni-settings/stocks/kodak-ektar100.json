@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "colour-negative",
  "iso": 100,
+ "canister": "kodak-ektar100.svg",
  "dyes": "kodak-ektar-100",
  "film": {
   "key": "kodak-ektar-100",

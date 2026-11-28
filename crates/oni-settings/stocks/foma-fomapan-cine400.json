@@ -6,6 +6,7 @@
  "brand": "Foma",
  "type": "black-and-white",
  "iso": 400,
+ "canister": "foma-fomapan-cine400.svg",
  "film": {
   "key": "foma-fomapan-cine-400",
   "balance": "daylight",

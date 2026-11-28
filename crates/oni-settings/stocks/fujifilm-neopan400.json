@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "black-and-white",
  "iso": 400,
+ "canister": "fujifilm-neopan400.svg",
  "film": {
   "key": "fujifilm-neopan-400",
   "balance": "daylight",

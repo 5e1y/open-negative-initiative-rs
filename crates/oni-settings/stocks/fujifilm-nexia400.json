@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "colour-negative",
  "iso": 400,
+ "canister": "fujifilm-nexia400.svg",
  "dyes": "fujifilm-nexia-400",
  "film": {
   "key": "fujifilm-nexia-400",

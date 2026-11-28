@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "cine-negative",
  "iso": 250,
+ "canister": "kodak-vision3-250d.svg",
  "dyes": "kodak-vision3-250d",
  "film": {
   "key": "kodak-vision3-250d",

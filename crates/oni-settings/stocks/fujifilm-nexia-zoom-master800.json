@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "colour-negative",
  "iso": 800,
+ "canister": "fujifilm-nexia-zoom-master800.svg",
  "dyes": "fujifilm-nexia-zoom-master-800",
  "film": {
   "key": "fujifilm-nexia-zoom-master-800",

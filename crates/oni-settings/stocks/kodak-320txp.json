@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "black-and-white",
  "iso": 320,
+ "canister": "kodak-320txp.svg",
  "film": {
   "key": "kodak-tri-x-320",
   "balance": "daylight",

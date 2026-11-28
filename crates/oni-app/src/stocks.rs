@@ -176,6 +176,18 @@ mod tests {
         assert_eq!(by_brand(None).iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::offered_stocks().len());
     }
 
+    /// Every shipped canister passes the app's SVG reader and draws something at a row's side.
+    #[test]
+    fn every_shipped_canister_draws_at_a_rows_side() {
+        for (name, bytes) in shipped_svgs() {
+            let pixels = sized(bytes, 44).and_then(|svg| Image::load_from_svg_data(&svg).ok()).and_then(|i| i.to_rgba8());
+            let inked = pixels.is_some_and(|p| p.as_bytes().chunks(4).any(|px| px[3] > 0));
+            assert!(inked, "{name} draws nothing through the SVG reader");
+        }
+        // Twin: a file the reader refuses is seen.
+        assert!(sized(b"<svg", 44).and_then(|svg| Image::load_from_svg_data(&svg).ok()).is_none());
+    }
+
     #[test]
     fn the_picker_lists_no_foma_401_yet_its_artwork_still_draws() {
         let listed: Vec<&str> = by_brand(None).into_iter().flat_map(|(_, l)| l).map(|i| oni_settings::film::stocks()[i].id).collect();
@@ -216,9 +228,9 @@ mod tests {
             assert!(shipped_svg(&svg).is_none() || kind.canister == Some(svg.as_str()), "{svg} is drawn: its file names it");
         }
         // Twin: a stock still undrawn stands on its type's generic canister.
-        let ektar = oni_settings::film::film_stock(Some("kodak-ektar100")).unwrap();
-        assert!(shipped_svg("kodak-ektar100.svg").is_none() && ektar.canister.is_none());
-        assert_eq!(artwork(ektar.id).map(|a| a.hash), artwork(ektar.kind.generic()).map(|a| a.hash));
+        let neutral = oni_settings::film::film_stock(Some("generic-neutral")).unwrap();
+        assert!(shipped_svg("generic-neutral.svg").is_none() && neutral.canister.is_none());
+        assert_eq!(artwork(neutral.id).map(|a| a.hash), artwork(neutral.kind.generic()).map(|a| a.hash));
     }
 
     /// A stock drawn with its line's or its kind's generic canister draws it by its own key, at any size.
@@ -226,7 +238,7 @@ mod tests {
     fn a_stock_draws_the_canister_its_catalogue_line_names() {
         let pixels = |id: &str| row_icon(id, 44).and_then(|i| i.to_rgba8()).map(|p| p.as_slice().to_vec());
         assert!(pixels("kodak-portra400").is_some() && pixels("kodak-portra400") == pixels("kodak-portra"), "Portra 400 draws the Portra canister");
-        assert!(pixels("kodak-ektar100") == pixels("generic-color-negative") && icon("kodak-ektar100").is_some(), "an undrawn negative draws its kind's");
+        assert!(pixels("generic-neutral") == pixels("generic-color-negative") && icon("generic-neutral").is_some(), "an undrawn negative draws its kind's");
         // Twin: a stock of its own draws its own, never its brand's line.
         assert_ne!(pixels("kodak-gold200"), pixels("kodak-portra"));
     }
@@ -288,7 +300,7 @@ mod tests {
 
     /// The owner's own artworks, as 1.5.6 shipped them and the site shows them: a stock's canister is
     /// never redrawn here; a new one comes from the owner, dropped in the folder under its stock's key.
-    const ORIGINAL: [(&str, u64); 41] = [
+    const ORIGINAL: [(&str, u64); 67] = [
         ("generic-azure", 0xe5b9ddefcbbbf16e),
         ("generic-black-and-white", 0x86243de8f26df732),
         ("generic-color-negative", 0xf6f28336b3522056),
@@ -330,6 +342,32 @@ mod tests {
         ("lucky-color200", 0x0915466f940ab916),
         ("mira-color400", 0x607a0d4bf47a937e),
         ("mira-color800", 0xff728fefb330f751),
+        ("foma-cine-ortho400", 0x0b74b92ae9808a92),
+        ("foma-fomapan-cine100", 0x02882fe3ab8e893c),
+        ("foma-fomapan-cine400", 0x70c5294ce26194ea),
+        ("foma-fomapan100", 0xcc226324abfc9ffa),
+        ("foma-ortho400", 0x5eec145ae0a2ae0b),
+        ("foma-retropan320", 0x952d8ee3cf9c2591),
+        ("fujifilm-natura1600", 0x7b6f9cd06660523a),
+        ("fujifilm-neopan-ortho", 0x4ed2b6d21945ef9c),
+        ("fujifilm-neopan1600", 0x60fb5c96649fbde9),
+        ("fujifilm-neopan400", 0x4e9f5bb0e9f59df9),
+        ("fujifilm-nexia-a200", 0xc1a21600a2c59e20),
+        ("fujifilm-nexia-zoom-master800", 0x10e9ad3f2bdec65b),
+        ("fujifilm-nexia400", 0x6de143df0dd35944),
+        ("fujifilm-reala-ace", 0x05100fef45ba93c1),
+        ("kodak-320txp", 0x487fcec4c6e8a446),
+        ("kodak-double-x", 0x083a392b7659f4d0),
+        ("kodak-ektar100", 0x41f608ddba4c7749),
+        ("kodak-kodachrome64", 0x35f1c8b1534dfaaa),
+        ("kodak-tmax-p3200", 0x61cca7f08a0a4bdc),
+        ("kodak-tmax100", 0x88d83fb2a655d2f9),
+        ("kodak-tmax400", 0x51451e0839455ecb),
+        ("kodak-verita200d", 0x70981ac419c45f93),
+        ("kodak-vision3-200t", 0x3d865976c30348f2),
+        ("kodak-vision3-250d", 0x24ba945f98509b3a),
+        ("kodak-vision3-500t", 0x5541511bd8fdf404),
+        ("kodak-vision3-50d", 0xfa8436ea0f877f71),
     ];
 
     #[test]

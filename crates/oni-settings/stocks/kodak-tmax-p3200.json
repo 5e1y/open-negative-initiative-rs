@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "black-and-white",
  "iso": 3200,
+ "canister": "kodak-tmax-p3200.svg",
  "film": {
   "key": "kodak-tmax-p3200",
   "balance": "daylight",

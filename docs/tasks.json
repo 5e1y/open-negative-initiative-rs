@@ -14830,5 +14830,12 @@
     "title": "The healer holds no dead method: the plain mean goes to its tests, the rectangle's emptiness goes",
     "status": "done",
     "detail": "After #4600 the tone match reads every mean through `Region::summed`: `Region::mean` was read by the tests alone and `Rect::is_empty` by nothing, so clippy refused oni-app and the workspace went unlinted. The tests carry the plain mean they compare against; `is_empty` is gone. Checks: scripts/lint green, heal::tests, the De-dust window checks."
+  },
+  {
+    "id": 4114,
+    "type": "feature",
+    "title": "The owner's 26 new canisters, each beside its stock file",
+    "status": "done",
+    "detail": "Foma (6), Fujifilm (8) and Kodak (12) stocks that stood on their line's or their type's generic canister now draw the owner's own artwork, copied byte for byte from the owner's folder and named in each file's canister field. Every shipped canister is now proven to pass the app's SVG reader at a row's side (every_shipped_canister_draws_at_a_rows_side); the ORIGINAL list holds the 67 artworks' hashes; the checks that took Ektar 100, Kodachrome 64 and Vision3 500T as undrawn stocks now take the neutral film, the one film stock left on its type's generic canister."
   }
 ]

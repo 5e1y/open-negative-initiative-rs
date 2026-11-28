@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "colour-negative",
  "iso": 200,
+ "canister": "fujifilm-nexia-a200.svg",
  "dyes": "fujifilm-nexia-a200",
  "film": {
   "key": "fujifilm-nexia-a200",

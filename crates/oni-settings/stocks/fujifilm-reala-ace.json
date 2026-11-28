@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "colour-negative",
  "iso": 100,
+ "canister": "fujifilm-reala-ace.svg",
  "dyes": "fujifilm-reala-ace",
  "film": {
   "key": "fujifilm-reala-ace",

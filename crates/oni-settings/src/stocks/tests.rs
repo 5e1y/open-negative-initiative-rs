@@ -75,7 +75,7 @@ fn a_broken_file_is_refused_with_why() {
 #[test]
 fn the_shipped_catalogue_holds_every_stock_and_its_defaults() {
     let (files, canisters) = shipped();
-    assert_eq!((files.len(), canisters.len()), (111, 41), "every shipped file reads");
+    assert_eq!((files.len(), canisters.len()), (111, 67), "every shipped file reads");
     let (_, refused) = Catalogue::build(files, canisters);
     assert!(refused.is_empty(), "every shipped file is taken: {refused:?}");
     let c = current();

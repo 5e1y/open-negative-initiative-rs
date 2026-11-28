@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "black-and-white",
  "iso": 400,
+ "canister": "kodak-tmax400.svg",
  "film": {
   "key": "kodak-tmax-400",
   "balance": "daylight",

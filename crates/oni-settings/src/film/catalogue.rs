@@ -151,10 +151,10 @@ mod tests {
         for t in [FilmType::ColourNegative, FilmType::ColourSlide, FilmType::BlackAndWhite] {
             assert_eq!(film_stock(Some(t.generic())).map(|k| k.kind), Some(t));
         }
-        assert_eq!(film_stock(Some("kodak-kodachrome64")).map(|k| k.canister), Some(None));
+        assert_eq!(film_stock(Some("generic-neutral")).map(|k| (k.canister, k.kind.generic())), Some((None, "generic-color-negative")));
         assert_eq!(film_stock(Some("kodak-portra800-push1")).map(|k| (k.canister, k.iso)), Some((Some("kodak-portra.svg"), Some(1600))));
         // Twin: a cine negative stands on the colour negative's canister, never a slide's.
         assert_ne!(FilmType::CineNegative.generic(), FilmType::ColourSlide.generic());
-        assert_eq!(film_stock(Some("kodak-vision3-500t")).map(|k| (k.canister, k.kind.generic())), Some((None, "generic-color-negative")));
+        assert_eq!(film_stock(Some("kodak-vision3-500t")).map(|k| (k.canister, k.kind.generic())), Some((Some("kodak-vision3-500t.svg"), "generic-color-negative")));
     }
 }

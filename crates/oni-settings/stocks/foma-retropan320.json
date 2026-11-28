@@ -6,6 +6,7 @@
  "brand": "Foma",
  "type": "black-and-white",
  "iso": 320,
+ "canister": "foma-retropan320.svg",
  "film": {
   "key": "foma-retropan-320",
   "balance": "daylight",

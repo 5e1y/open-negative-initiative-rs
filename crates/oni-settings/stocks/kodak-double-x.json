@@ -6,6 +6,7 @@
  "brand": "Kodak",
  "type": "black-and-white",
  "iso": 250,
+ "canister": "kodak-double-x.svg",
  "film": {
   "key": "kodak-double-x",
   "balance": "daylight",

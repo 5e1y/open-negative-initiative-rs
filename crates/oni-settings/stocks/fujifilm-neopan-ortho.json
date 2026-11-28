@@ -6,6 +6,7 @@
  "brand": "Fujifilm",
  "type": "black-and-white",
  "iso": 20,
+ "canister": "fujifilm-neopan-ortho.svg",
  "film": {
   "key": "fujifilm-neopan-ortho",
   "balance": "daylight",
